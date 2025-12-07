@@ -1,4 +1,3 @@
-import Chart from 'chart.js/auto';
 import { MDCRipple } from '@material/ripple';
 import { leadsApi, usersApi, crmTagsApi } from '../../lib/api/client.js';
 import { Table, Pagination, Modal, Spinner, Toast, TextField } from '../../components/index.js';
@@ -65,19 +64,6 @@ export function LeadsList() {
 
   header.append(title, searchField.element, ownerFilter, disqualifiedFilter, orderingFilter, hidePhoneWrap, newBtn);
 
-  // KPI chart
-  const chartCard = document.createElement('div');
-  chartCard.className = 'mdc-card';
-  chartCard.style.padding = '16px';
-  chartCard.style.marginBottom = '16px';
-  chartCard.style.minHeight = '220px';
-  const chartTitle = document.createElement('div');
-  chartTitle.textContent = 'Lead sources (current page)';
-  chartTitle.style.fontWeight = '600';
-  chartTitle.style.marginBottom = '8px';
-  const chartCanvas = document.createElement('canvas');
-  chartCard.append(chartTitle, chartCanvas);
-
   const bulkBar = document.createElement('div');
   bulkBar.style.display = 'flex';
   bulkBar.style.alignItems = 'center';
@@ -105,7 +91,7 @@ export function LeadsList() {
   pagerWrap.style.marginTop = '12px';
 
   tableCard.append(tableWrap, pagerWrap);
-  root.append(header, chartCard, bulkBar, tableCard);
+  root.append(header, bulkBar, tableCard);
 
   const state = {
     page: 1,
@@ -121,7 +107,6 @@ export function LeadsList() {
   const selectedIds = new Set();
   let users = [];
   let tags = [];
-  let chart;
 
   async function loadUsers() {
     try {
@@ -184,7 +169,6 @@ export function LeadsList() {
 
       renderTable(items);
       renderPagination();
-      renderChart(items);
     } catch (err) {
       console.error(err);
       Toast.error(err.message || 'Failed to load leads, showing sample data');
@@ -193,7 +177,6 @@ export function LeadsList() {
       ];
       renderTable(sample);
       renderPagination();
-      renderChart(sample);
     }
   }
 
@@ -210,31 +193,6 @@ export function LeadsList() {
         },
       }),
     );
-  }
-
-  function renderChart(items) {
-    const counts = items.reduce((acc, item) => {
-      const key = item.lead_source ?? 'Unspecified';
-      acc[key] = (acc[key] || 0) + 1;
-      return acc;
-    }, {});
-    const labels = Object.keys(counts);
-    const data = Object.values(counts);
-
-    if (chart) chart.destroy();
-    chart = new Chart(chartCanvas, {
-      type: 'doughnut',
-      data: {
-        labels,
-        datasets: [
-          {
-            data,
-            backgroundColor: ['#2563eb', '#16a34a', '#f59e0b', '#f97316', '#64748b', '#0ea5e9'],
-          },
-        ],
-      },
-      options: { plugins: { legend: { position: 'bottom' } } },
-    });
   }
 
   function createOwnerCell(row) {

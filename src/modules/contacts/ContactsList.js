@@ -1,4 +1,3 @@
-import Chart from 'chart.js/auto';
 import { MDCRipple } from '@material/ripple';
 import { contactsApi, usersApi, crmTagsApi } from '../../lib/api/client.js';
 import { Table, Pagination, Modal, Spinner, Toast, TextField } from '../../components/index.js';
@@ -64,18 +63,6 @@ export function ContactsList() {
 
   header.append(title, searchField.element, ownerFilter, disqualifiedFilter, orderingFilter, hidePhoneWrap, newBtn);
 
-  // KPI card
-  const chartCard = document.createElement('div');
-  chartCard.className = 'mdc-card';
-  chartCard.style.padding = '16px';
-  chartCard.style.marginBottom = '16px';
-  const chartTitle = document.createElement('div');
-  chartTitle.textContent = 'Status distribution (current page)';
-  chartTitle.style.fontWeight = '600';
-  chartTitle.style.marginBottom = '8px';
-  const chartCanvas = document.createElement('canvas');
-  chartCard.append(chartTitle, chartCanvas);
-
   const tableCard = document.createElement('div');
   tableCard.className = 'mdc-card';
   tableCard.style.padding = '16px';
@@ -87,7 +74,7 @@ export function ContactsList() {
   pagerWrap.style.marginTop = '12px';
 
   tableCard.append(tableWrap, pagerWrap);
-  root.append(header, chartCard, tableCard);
+  root.append(header, tableCard);
 
   const state = {
     page: 1,
@@ -103,7 +90,6 @@ export function ContactsList() {
   const selectedIds = new Set();
   let users = [];
   let tags = [];
-  let chart;
 
   async function loadUsers() {
     try {
@@ -156,7 +142,6 @@ export function ContactsList() {
 
       renderTable(items);
       renderPagination();
-      renderChart(items);
     } catch (err) {
       tableWrap.innerHTML = `<div class="alert alert-danger">${err.message || 'Failed to load contacts'}</div>`;
     }
@@ -175,33 +160,6 @@ export function ContactsList() {
         },
       }),
     );
-  }
-
-  function renderChart(items) {
-    const counts = items.reduce(
-      (acc, item) => {
-        const key = item.disqualified ? 'Disqualified' : 'Active';
-        acc[key] = (acc[key] || 0) + 1;
-        return acc;
-      },
-      {},
-    );
-    const labels = Object.keys(counts);
-    const data = Object.values(counts);
-    if (chart) chart.destroy();
-    chart = new Chart(chartCanvas, {
-      type: 'doughnut',
-      data: {
-        labels,
-        datasets: [
-          {
-            data,
-            backgroundColor: ['#16a34a', '#ef4444', '#94a3b8'],
-          },
-        ],
-      },
-      options: { plugins: { legend: { position: 'bottom' } } },
-    });
   }
 
   function ownerCell(row) {
