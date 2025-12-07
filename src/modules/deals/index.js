@@ -1,15 +1,3 @@
-import { DealsList } from './DealsList.js';
-
-export function mountDeals(rootEl, route = { name: 'deals-list', params: {} }) {
-  rootEl.innerHTML = '';
-  const wrapper = document.createElement('div');
-  
-  function renderList() {
-    wrapper.innerHTML = '';
-    const list = DealsList();
-    wrapper.appendChild(list);
-  }
-
-  renderList();
-  rootEl.appendChild(wrapper);
-}
+export { default as DealsList } from './DealsList.jsx';
+export { default as DealForm } from './DealForm.jsx';
+export { default as DealDetail } from './DealDetail.jsx';

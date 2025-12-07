@@ -306,3 +306,40 @@ export const taskStagesApi = {
   list: (params) => api.get('/api/task-stages/', { params }),
   retrieve: (id) => api.get(`/api/task-stages/${id}/`),
 };
+
+// Convenience functions for React components
+export const getLeads = (params) => leadsApi.list(params);
+export const getLead = (id) => leadsApi.retrieve(id);
+export const createLead = (payload) => leadsApi.create(payload);
+export const updateLead = (id, payload) => leadsApi.update(id, payload);
+export const deleteLead = (id) => leadsApi.remove(id);
+
+export const getContacts = (params) => contactsApi.list(params);
+export const getContact = (id) => contactsApi.retrieve(id);
+export const createContact = (payload) => contactsApi.create(payload);
+export const updateContact = (id, payload) => contactsApi.update(id, payload);
+export const deleteContact = (id) => contactsApi.remove(id);
+
+export const getCompanies = (params) => companiesApi.list(params);
+export const getCompany = (id) => companiesApi.retrieve(id);
+export const createCompany = (payload) => companiesApi.create(payload);
+export const updateCompany = (id, payload) => companiesApi.update(id, payload);
+export const deleteCompany = (id) => companiesApi.remove(id);
+
+export const getDeals = (params) => dealsApi.list(params);
+export const getDeal = (id) => dealsApi.retrieve(id);
+export const createDeal = (payload) => dealsApi.create(payload);
+export const updateDeal = (id, payload) => dealsApi.update(id, payload);
+export const deleteDeal = (id) => dealsApi.remove(id);
+
+export const getTasks = (params) => tasksApi.list(params);
+export const getTask = (id) => tasksApi.retrieve(id);
+export const createTask = (payload) => tasksApi.create(payload);
+export const updateTask = (id, payload) => tasksApi.update(id, payload);
+export const deleteTask = (id) => tasksApi.remove(id);
+
+export const getProjects = (params) => projectsApi.list(params);
+export const getProject = (id) => projectsApi.retrieve(id);
+export const createProject = (payload) => projectsApi.create(payload);
+export const updateProject = (id, payload) => projectsApi.update(id, payload);
+export const deleteProject = (id) => projectsApi.remove(id);
