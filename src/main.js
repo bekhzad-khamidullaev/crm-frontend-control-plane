@@ -39,7 +39,7 @@ function mountPage(page) {
 function routeTo(name) {
   const authed = isAuthenticated();
   const protectedPages = new Set(['dashboard', 'leads']);
-  if (!authed && protectedPages.has(name)) {
+  if (!authed && !isDemoMode() && protectedPages.has(name)) {
     setTitle('Login');
     import('./pages/login.js').then(({ LoginPage }) => {
       mountPage(LoginPage({ onSuccess: () => { renderAuthNav(); updateNavVisibility(); routeTo('leads'); } }));
@@ -65,7 +65,7 @@ function routeTo(name) {
   }
 }
 
-import { isAuthenticated, clearToken } from './lib/api/auth.js';
+import { isAuthenticated, clearToken, isDemoMode } from './lib/api/auth.js';
 
 function renderAuthNav() {
   const nav = document.querySelector('.navbar .navbar-nav');
@@ -182,7 +182,7 @@ function handleRoute(route) {
     });
   }
 
-  if (!authed && protectedNames.has(route.name)) {
+  if (!authed && !isDemoMode() && protectedNames.has(route.name)) {
     goLoginPreserve();
     return;
   }
@@ -286,7 +286,7 @@ onRouteChange((route) => handleRoute(route));
   try { await i18n.setLocale(locale); setLocale(locale); } catch {}
 })();
 
-// Initialize global call widget if authenticated
-if (isAuthenticated()) {
+// Initialize global call widget if authenticated and SIP is available
+if (isAuthenticated() && typeof window !== 'undefined' && window.SIPml) {
   initCallWidget();
 }

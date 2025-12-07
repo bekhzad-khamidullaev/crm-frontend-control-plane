@@ -5,6 +5,15 @@
 
 class SIPClient {
   constructor() {
+    if (typeof SIPml === 'undefined') {
+      this.isInitialized = false;
+      this.isRegistered = false;
+      this.emit = () => {};
+      this.init = async () => Promise.resolve();
+      this.register = async () => Promise.resolve();
+      this.call = async () => { throw new Error('SIP disabled in demo/offline mode'); };
+      return;
+    }
     this.stack = null;
     this.session = null;
     this.callSession = null;
