@@ -110,13 +110,21 @@ function updateNavVisibility() {
 
 function wireNav() {
   const sidebar = document.querySelector('.app-sidebar');
+  const overlay = document.getElementById('sidebar-overlay');
   const menuButton = document.getElementById('menu-button');
   if (menuButton) {
     menuButton.addEventListener('click', () => {
       document.body.classList.toggle('app-sidebar-open');
       sidebar?.classList.toggle('app-sidebar--open');
+      overlay?.classList.toggle('app-sidebar-overlay--visible');
     });
   }
+
+  overlay?.addEventListener('click', () => {
+    document.body.classList.remove('app-sidebar-open');
+    sidebar?.classList.remove('app-sidebar--open');
+    overlay?.classList.remove('app-sidebar-overlay--visible');
+  });
 
   document.addEventListener('click', (e) => {
     const a = e.target.closest('a[href^="#/"]');
@@ -125,6 +133,7 @@ function wireNav() {
     const href = a.getAttribute('href').slice(1);
     document.body.classList.remove('app-sidebar-open');
     sidebar?.classList.remove('app-sidebar--open');
+    overlay?.classList.remove('app-sidebar-overlay--visible');
     navigate(href);
   });
 
