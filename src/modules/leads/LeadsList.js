@@ -176,7 +176,14 @@ export function LeadsList() {
       renderPagination();
       renderChart(items);
     } catch (err) {
-      tableWrap.innerHTML = `<div class="alert alert-danger">${err.message || 'Failed to load leads'}</div>`;
+      console.error(err);
+      Toast.error(err.message || 'Failed to load leads, showing sample data');
+      const sample = [
+        { id: 101, first_name: 'Sample', last_name: 'Lead', email: 'sample@example.com', phone: '+1 555 100-2000', lead_source: 1, was_in_touch: null, disqualified: false },
+      ];
+      renderTable(sample);
+      renderPagination();
+      renderChart(sample);
     }
   }
 
@@ -253,9 +260,10 @@ export function LeadsList() {
       if (next === (row[field] || '')) return;
       input.disabled = true;
       try {
-        await updateLead(row.id, { [field]: next || null });
+        const payloadValue = type === 'number' && next !== '' ? Number(next) : (next || null);
+        await updateLead(row.id, { [field]: payloadValue });
         Toast.success('Updated');
-        row[field] = next;
+        row[field] = payloadValue;
       } catch (err) {
         Toast.error(err.message || 'Update failed');
         input.value = row[field] || '';
