@@ -109,7 +109,16 @@ export function LoginPage({ onSuccess } = {}) {
         Toast.info('Demo fallback: continuing offline');
         onSuccess?.();
       } else {
-        const msg = err?.details?.detail || err?.details?.non_field_errors?.[0] || err.message || 'Login failed';
+        const details = err?.details || {};
+        const fieldErrors = [
+          ...(details.non_field_errors || []),
+          ...(details.detail ? [details.detail] : []),
+          ...(details.username || []),
+          ...(details.password || []),
+        ];
+        const msg = fieldErrors.length
+          ? fieldErrors.join(', ')
+          : err.message || 'Login failed';
         errorBox.textContent = msg;
         errorBox.style.display = 'block';
         Toast.error(msg);

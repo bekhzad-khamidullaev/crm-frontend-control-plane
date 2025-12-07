@@ -155,6 +155,10 @@ async function request(method, path, { params, body, headers, retry = 1 } = {}) 
     if (retry > 0 && method === 'GET' && isNetworkError) {
       return request(method, path, { params, body, headers, retry: retry - 1 });
     }
+    // Bubble up normalized errors
+    if (!(err instanceof Error) && err?.status) {
+      throw err;
+    }
     throw err;
   }
 }
