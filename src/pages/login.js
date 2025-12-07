@@ -86,6 +86,8 @@ export function LoginPage({ onSuccess } = {}) {
   form.addEventListener('submit', async (e) => {
     e.preventDefault(); 
     errorBox.style.display = 'none';
+    uWrap.classList.remove('mdc-text-field--invalid');
+    pWrap.classList.remove('mdc-text-field--invalid');
     submit.disabled = true;
     const label = submit.querySelector('.mdc-button__label');
     const originalText = label.textContent;
@@ -122,6 +124,10 @@ export function LoginPage({ onSuccess } = {}) {
         errorBox.textContent = msg;
         errorBox.style.display = 'block';
         Toast.error(msg);
+        if (msg.toLowerCase().includes('credential')) {
+          uWrap.classList.add('mdc-text-field--invalid');
+          pWrap.classList.add('mdc-text-field--invalid');
+        }
       }
     } finally {
       submit.disabled = false;
