@@ -88,11 +88,12 @@ async function loadMessages(container, filters = {}) {
       params.search = filters.search;
     }
 
-    const data = await getChatMessages(params);
+    const data = await getChatMessages(params) || {};
+    const results = data.results || [];
     
     container.innerHTML = '';
 
-    if (data.results.length === 0) {
+    if (results.length === 0) {
       const empty = document.createElement('div');
       empty.className = 'chat-list__empty';
       empty.innerHTML = `
@@ -104,7 +105,7 @@ async function loadMessages(container, filters = {}) {
     }
 
     // Group messages by conversation
-    const conversations = groupMessagesByConversation(data.results);
+    const conversations = groupMessagesByConversation(results);
 
     conversations.forEach(conv => {
       const item = createConversationItem(conv);
