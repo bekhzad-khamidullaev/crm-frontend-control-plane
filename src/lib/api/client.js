@@ -4,6 +4,89 @@ import { getToken } from './auth.js';
 const runtimeConfig = typeof window !== 'undefined' ? window.__APP_CONFIG__ || {} : {};
 const BASE_URL = (import.meta.env.VITE_API_BASE_URL || runtimeConfig.apiBaseUrl || 'http://localhost:8000').replace(/\/$/, '');
 const TIMEOUT = Number(import.meta.env.VITE_API_TIMEOUT || runtimeConfig.apiTimeout || 15000);
+const IS_TEST = typeof process !== 'undefined' && process.env && process.env.NODE_ENV === 'test';
+const DEMO_MODE = !IS_TEST && (import.meta.env.VITE_DEMO_MODE ?? 'true') !== 'false';
+
+const demoData = {
+  users: [
+    { id: 1, username: 'alice', first_name: 'Alice', last_name: 'Admin', email: 'alice@example.com' },
+    { id: 2, username: 'bob', first_name: 'Bob', last_name: 'Manager', email: 'bob@example.com' },
+  ],
+  tags: [
+    { id: 1, name: 'Priority' },
+    { id: 2, name: 'Hot' },
+    { id: 3, name: 'Follow-up' },
+  ],
+  leads: [
+    { id: 1, first_name: 'Demo', last_name: 'Lead', email: 'lead@example.com', phone: '+1 555 000-1111', lead_source: 1, owner: 1, was_in_touch: '2024-05-01', disqualified: false, company_name: 'Acme Inc' },
+    { id: 2, first_name: 'Test', last_name: 'User', email: 'test@example.com', phone: '+1 555 000-2222', lead_source: 2, owner: 2, was_in_touch: null, disqualified: true, company_name: 'Example LLC' },
+  ],
+  contacts: [
+    { id: 10, first_name: 'Contact', last_name: 'Demo', email: 'contact@example.com', phone: '+1 555 123-4567', lead_source: 1, owner: 1, was_in_touch: null, disqualified: false, company_name: 'Acme Inc' },
+  ],
+};
+
+function demoResponse(method, path, { params, body } = {}) {
+  // Auth
+  if (path.startsWith('/api/auth/token')) {
+    return Promise.resolve({ token: 'demo-token' });
+  }
+  // Users
+  if (path.startsWith('/api/users/')) {
+    const parts = path.split('/').filter(Boolean);
+    const id = Number(parts[parts.length - 1]);
+    if (Number.isFinite(id)) {
+      return Promise.resolve(demoData.users.find((u) => u.id === id) || demoData.users[0]);
+    }
+    return Promise.resolve({ count: demoData.users.length, results: demoData.users });
+  }
+  // CRM tags
+  if (path.startsWith('/api/crm-tags/')) {
+    return Promise.resolve({ count: demoData.tags.length, results: demoData.tags });
+  }
+  // Leads
+  if (path.startsWith('/api/leads/')) {
+    const parts = path.split('/').filter(Boolean);
+    const id = Number(parts[parts.length - 1]);
+    if (Number.isFinite(id)) {
+      if (method === 'DELETE') return Promise.resolve({});
+      if (method === 'PATCH' || method === 'PUT') {
+        const idx = demoData.leads.findIndex((l) => l.id === id);
+        if (idx >= 0) demoData.leads[idx] = { ...demoData.leads[idx], ...(body || {}) };
+        return Promise.resolve(demoData.leads[idx] || { id, ...(body || {}) });
+      }
+      return Promise.resolve(demoData.leads.find((l) => l.id === id) || { id, first_name: 'Lead', last_name: String(id) });
+    }
+    if (method === 'POST') {
+      const next = { id: demoData.leads.length + 1, ...(body || {}) };
+      demoData.leads.push(next);
+      return Promise.resolve(next);
+    }
+    return Promise.resolve({ count: demoData.leads.length, results: demoData.leads });
+  }
+  // Contacts
+  if (path.startsWith('/api/contacts/')) {
+    const parts = path.split('/').filter(Boolean);
+    const id = Number(parts[parts.length - 1]);
+    if (Number.isFinite(id)) {
+      if (method === 'DELETE') return Promise.resolve({});
+      if (method === 'PATCH' || method === 'PUT') {
+        const idx = demoData.contacts.findIndex((c) => c.id === id);
+        if (idx >= 0) demoData.contacts[idx] = { ...demoData.contacts[idx], ...(body || {}) };
+        return Promise.resolve(demoData.contacts[idx] || { id, ...(body || {}) });
+      }
+      return Promise.resolve(demoData.contacts.find((c) => c.id === id) || { id, first_name: 'Contact', last_name: String(id) });
+    }
+    if (method === 'POST') {
+      const next = { id: demoData.contacts.length + 10, ...(body || {}) };
+      demoData.contacts.push(next);
+      return Promise.resolve(next);
+    }
+    return Promise.resolve({ count: demoData.contacts.length, results: demoData.contacts });
+  }
+  // Fallback
+  return Promise.resolve({});
+}
 
 function withTimeout(promise, ms) {
   return new Promise((resolve, reject) => {
@@ -41,6 +124,9 @@ function buildUrl(path, params) {
 }
 
 async function request(method, path, { params, body, headers, retry = 1 } = {}) {
+  if (DEMO_MODE) {
+    return demoResponse(method, path, { params, body });
+  }
   const url = buildUrl(path, params);
   const token = getToken();
   const finalHeaders = new Headers({ 'Accept': 'application/json', ...headers });
