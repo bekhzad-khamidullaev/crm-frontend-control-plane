@@ -3,7 +3,7 @@
  * Handles all chat-messages operations according to Django-CRM API.yaml
  */
 
-import apiClient from './client.js';
+import { api as apiClient } from './client.js';
 
 /**
  * Get list of chat messages with optional filters
@@ -99,14 +99,3 @@ export async function markMessagesAsRead(messageIds) {
     messageIds.map(id => updateChatMessage(id, { is_read: true }))
   );
 }
-
-export default {
-  getChatMessages,
-  getChatMessage,
-  createChatMessage,
-  updateChatMessage,
-  deleteChatMessage,
-  getMessageThread,
-  getEntityChatMessages,
-  markMessagesAsRead,
-};

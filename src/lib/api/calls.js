@@ -3,7 +3,7 @@
  * Handles all call-logs operations according to Django-CRM API.yaml
  */
 
-import apiClient from './client.js';
+import { api as apiClient } from './client.js';
 
 /**
  * Get list of call logs with optional filters
@@ -104,13 +104,3 @@ export async function getCallStatistics(params = {}) {
       : 0,
   };
 }
-
-export default {
-  getCallLogs,
-  getCallLog,
-  createCallLog,
-  updateCallLog,
-  deleteCallLog,
-  getEntityCallLogs,
-  getCallStatistics,
-};

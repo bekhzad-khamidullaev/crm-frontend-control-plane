@@ -6,8 +6,7 @@
 import { getEntityChatMessages, createChatMessage, deleteChatMessage } from '../../lib/api/chat.js';
 import ChatMessage from '../../components/ui-ChatMessage.js';
 import ChatInput from '../../components/ui-ChatInput.js';
-import Spinner from '../../components/ui-Spinner.js';
-import { showToast } from '../../components/ui-Toast.js';
+import { Spinner, Toast } from '../../components/index.js';
 
 /**
  * Create chat thread view
@@ -117,7 +116,7 @@ export function ChatThread({ entityType, entityId, threadId } = {}) {
       
     } catch (error) {
       console.error('Error sending message:', error);
-      showToast('Failed to send message', 'error');
+      Toast.error(error.message || 'Failed to send message');
     }
   }
 
@@ -187,10 +186,10 @@ async function loadMessages(container, entityType, entityId, threadId, silent = 
             try {
               await deleteChatMessage(message.id);
               await loadMessages(container, entityType, entityId, threadId, true);
-              showToast('Message deleted', 'success');
+              Toast.success('Message deleted');
             } catch (error) {
               console.error('Error deleting message:', error);
-              showToast('Failed to delete message', 'error');
+              Toast.error(error.message || 'Failed to delete message');
             }
           }
         },
@@ -204,7 +203,7 @@ async function loadMessages(container, entityType, entityId, threadId, silent = 
 
   } catch (error) {
     console.error('Error loading messages:', error);
-    showToast('Failed to load messages', 'error');
+    Toast.error(error.message || 'Failed to load messages');
     
     if (!silent) {
       container.innerHTML = `

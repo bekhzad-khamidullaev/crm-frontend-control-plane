@@ -4,9 +4,7 @@
  */
 
 import { getCallLogs, getCallStatistics } from '../../lib/api/calls.js';
-import Spinner from '../../components/ui-Spinner.js';
-import { showToast } from '../../components/ui-Toast.js';
-import Pagination from '../../components/ui-Pagination.js';
+import { Spinner, Pagination, Toast } from '../../components/index.js';
 
 /**
  * Create calls list view
@@ -142,6 +140,7 @@ async function loadStatistics(header) {
 
   } catch (error) {
     console.error('Error loading statistics:', error);
+    Toast.error(error.message || 'Failed to load call statistics');
   }
 }
 
@@ -194,22 +193,20 @@ async function loadCalls(tableContainer, paginationContainer, params) {
 
     // Update pagination
     paginationContainer.innerHTML = '';
-    if (data.count > params.page_size) {
-      const pagination = Pagination({
-        currentPage: params.page,
-        totalPages: Math.ceil(data.count / params.page_size),
-        onPageChange: (page) => {
-          tableContainer.innerHTML = '';
-          tableContainer.appendChild(Spinner());
-          loadCalls(tableContainer, paginationContainer, { ...params, page });
-        },
-      });
-      paginationContainer.appendChild(pagination);
-    }
+    paginationContainer.appendChild(Pagination({
+      page: params.page,
+      pageSize: params.page_size,
+      total: data.count,
+      onChange: (page) => {
+        tableContainer.innerHTML = '';
+        tableContainer.appendChild(Spinner({ text: 'Loading…' }));
+        loadCalls(tableContainer, paginationContainer, { ...params, page });
+      },
+    }));
 
   } catch (error) {
     console.error('Error loading calls:', error);
-    showToast('Failed to load call logs', 'error');
+    Toast.error(error.message || 'Failed to load call logs');
 
     tableContainer.innerHTML = `
       <div class="calls-list__error">

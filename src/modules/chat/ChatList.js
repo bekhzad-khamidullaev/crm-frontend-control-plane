@@ -4,8 +4,7 @@
  */
 
 import { getChatMessages } from '../../lib/api/chat.js';
-import Spinner from '../../components/ui-Spinner.js';
-import { showToast } from '../../components/ui-Toast.js';
+import { Spinner, Toast } from '../../components/index.js';
 
 /**
  * Create chat list view
@@ -114,7 +113,7 @@ async function loadMessages(container, filters = {}) {
 
   } catch (error) {
     console.error('Error loading messages:', error);
-    showToast('Failed to load messages', 'error');
+    Toast.error(error.message || 'Failed to load messages');
     
     container.innerHTML = `
       <div class="chat-list__error">
