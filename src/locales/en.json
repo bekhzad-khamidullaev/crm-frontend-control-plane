@@ -1,0 +1,26 @@
+{
+  "nav": {
+    "dashboard": "Dashboard",
+    "leads": "Leads",
+    "contacts": "Contacts",
+    "companies": "Companies",
+    "deals": "Deals",
+    "tasks": "Tasks",
+    "projects": "Projects",
+    "chat": "Chat",
+    "calls": "Call Logs",
+    "settings": "Settings"
+  },
+  "actions": {
+    "edit": "Edit",
+    "delete": "Delete",
+    "save": "Save",
+    "cancel": "Cancel",
+    "create": "Create",
+    "search": "Search"
+  },
+  "leads": {
+    "title": "Leads",
+    "empty": "No leads found"
+  }
+}

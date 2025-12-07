@@ -1,0 +1,48 @@
+{
+  "name": "crm-frontend",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "lint": "eslint .",
+    "format": "prettier -w .",
+    "prepare": "husky install"
+  },
+  "dependencies": {
+    "chart.js": "^4.4.1",
+    "@material/drawer": "^14.0.0",
+    "@material/top-app-bar": "^14.0.0",
+    "@material/button": "^14.0.0",
+    "@material/card": "^14.0.0",
+    "@material/textfield": "^14.0.0",
+    "@material/data-table": "^14.0.0",
+    "@material/dialog": "^14.0.0",
+    "@material/snackbar": "^14.0.0",
+    "@material/list": "^14.0.0",
+    "@material/icon-button": "^14.0.0",
+    "@material/fab": "^14.0.0",
+    "@material/ripple": "^14.0.0"
+  },
+  "lint-staged": {
+    "*.{js,jsx,css,html}": [
+      "prettier -w",
+      "eslint --fix"
+    ]
+  },
+  "devDependencies": {
+    "vite": "^5.2.0",
+    "vitest": "^1.5.0",
+    "jsdom": "^24.0.0",
+    "eslint": "^9.0.0",
+    "@eslint/js": "^9.0.0",
+    "eslint-config-prettier": "^9.0.0",
+    "prettier": "^3.3.0",
+    "husky": "^9.0.0",
+    "lint-staged": "^15.2.0"
+  }
+}

@@ -1,0 +1,640 @@
+/**
+ * Telephony Styles
+ * Styles for call widget, controls, and telephony components
+ */
+
+/* Call Widget */
+.call-widget {
+  background: #fff;
+  border-radius: 8px;
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.15);
+  overflow: hidden;
+  width: 320px;
+}
+
+.call-widget-global {
+  position: fixed;
+  bottom: 20px;
+  right: 20px;
+  z-index: 1000;
+}
+
+.call-widget__header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 16px;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: #fff;
+}
+
+.call-widget__title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-weight: 500;
+}
+
+.call-widget__status {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+}
+
+.call-widget__status-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #9e9e9e;
+}
+
+.call-widget__status-dot--connecting {
+  background: #ff9800;
+  animation: pulse 1.5s infinite;
+}
+
+.call-widget__status-dot--connected {
+  background: #4caf50;
+}
+
+.call-widget__status-dot--active {
+  background: #2196f3;
+  animation: pulse 1.5s infinite;
+}
+
+.call-widget__status-dot--error {
+  background: #f44336;
+}
+
+.call-widget__body {
+  padding: 16px;
+}
+
+/* Dialer */
+.call-widget__dialer {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.call-widget__dialer-input {
+  width: 100%;
+  padding: 12px;
+  border: 1px solid #e0e0e0;
+  border-radius: 8px;
+  font-size: 18px;
+  text-align: center;
+  letter-spacing: 1px;
+}
+
+.call-widget__keypad {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+}
+
+.call-widget__keypad-btn {
+  aspect-ratio: 1;
+  border: none;
+  background: #f5f5f5;
+  font-size: 20px;
+  font-weight: 500;
+  border-radius: 50%;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.call-widget__keypad-btn:hover {
+  background: #e0e0e0;
+  transform: scale(1.05);
+}
+
+.call-widget__keypad-btn:active {
+  transform: scale(0.95);
+}
+
+.call-widget__call-btn {
+  width: 100%;
+  padding: 12px;
+  background: #4caf50;
+  color: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+
+.call-widget__call-btn:hover {
+  background: #43a047;
+}
+
+/* Active Call */
+.call-widget__active-call {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+  padding: 12px 0;
+}
+
+.call-widget__call-info {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  text-align: center;
+}
+
+.call-widget__call-icon {
+  font-size: 48px;
+  color: #1976d2;
+  background: #e3f2fd;
+  padding: 12px;
+  border-radius: 50%;
+}
+
+.call-widget__call-number {
+  font-size: 20px;
+  font-weight: 500;
+}
+
+.call-widget__call-status {
+  font-size: 14px;
+  color: #757575;
+}
+
+.call-widget__timer-container {
+  margin-top: 8px;
+}
+
+/* Call Controls */
+.call-controls {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.call-controls__main {
+  display: flex;
+  justify-content: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.call-controls__btn {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  padding: 12px;
+  background: #f5f5f5;
+  border: none;
+  border-radius: 12px;
+  cursor: pointer;
+  transition: all 0.2s;
+  min-width: 60px;
+}
+
+.call-controls__btn:hover {
+  background: #e0e0e0;
+  transform: translateY(-2px);
+}
+
+.call-controls__btn i {
+  font-size: 24px;
+  color: #424242;
+}
+
+.call-controls__btn-label {
+  font-size: 11px;
+  color: #616161;
+}
+
+.call-controls__btn--active {
+  background: #e3f2fd;
+  border: 2px solid #1976d2;
+}
+
+.call-controls__btn--active i {
+  color: #1976d2;
+}
+
+.call-controls__btn--danger {
+  background: #f44336;
+}
+
+.call-controls__btn--danger:hover {
+  background: #d32f2f;
+}
+
+.call-controls__btn--danger i,
+.call-controls__btn--danger .call-controls__btn-label {
+  color: #fff;
+}
+
+/* DTMF Keypad */
+.call-controls__dtmf-pad {
+  padding: 16px;
+  background: #f5f5f5;
+  border-radius: 8px;
+}
+
+.call-controls__dtmf-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+}
+
+.call-controls__dtmf-btn {
+  aspect-ratio: 1;
+  border: none;
+  background: #fff;
+  font-size: 18px;
+  font-weight: 500;
+  border-radius: 8px;
+  cursor: pointer;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  transition: all 0.2s;
+}
+
+.call-controls__dtmf-btn:hover {
+  background: #e3f2fd;
+  transform: scale(1.05);
+}
+
+.call-controls__dtmf-btn--pressed {
+  background: #1976d2;
+  color: #fff;
+  transform: scale(0.95);
+}
+
+/* Transfer Dialog */
+.call-controls__transfer-dialog {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 2000;
+}
+
+.call-controls__transfer-content {
+  background: #fff;
+  padding: 24px;
+  border-radius: 8px;
+  box-shadow: 0 8px 16px rgba(0, 0, 0, 0.2);
+  max-width: 400px;
+  width: 90%;
+}
+
+.call-controls__transfer-content h3 {
+  margin: 0 0 16px 0;
+}
+
+.call-controls__transfer-input {
+  width: 100%;
+  padding: 12px;
+  border: 1px solid #e0e0e0;
+  border-radius: 4px;
+  font-size: 16px;
+  margin-bottom: 16px;
+}
+
+.call-controls__transfer-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
+/* Call Timer */
+.call-timer {
+  display: inline-block;
+}
+
+.call-timer__display {
+  font-size: 18px;
+  font-weight: 500;
+  font-variant-numeric: tabular-nums;
+  color: #424242;
+}
+
+/* Incoming Call Modal */
+.incoming-call-modal {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 3000;
+  opacity: 0;
+  transition: opacity 0.3s;
+}
+
+.incoming-call-modal--visible {
+  opacity: 1;
+}
+
+.incoming-call-modal__overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.7);
+}
+
+.incoming-call-modal__content {
+  position: relative;
+  background: #fff;
+  padding: 32px;
+  border-radius: 16px;
+  box-shadow: 0 16px 32px rgba(0, 0, 0, 0.3);
+  max-width: 400px;
+  width: 90%;
+  text-align: center;
+  transform: scale(0.9);
+  transition: transform 0.3s;
+}
+
+.incoming-call-modal--visible .incoming-call-modal__content {
+  transform: scale(1);
+}
+
+.incoming-call-modal__ring {
+  position: absolute;
+  top: 32px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 120px;
+  height: 120px;
+  border: 3px solid #4caf50;
+  border-radius: 50%;
+  animation: ringPulse 1.5s infinite;
+}
+
+.incoming-call-modal__icon {
+  width: 120px;
+  height: 120px;
+  margin: 0 auto 24px;
+  background: linear-gradient(135deg, #4caf50 0%, #45a049 100%);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #fff;
+  animation: iconBounce 1.5s infinite;
+}
+
+.incoming-call-modal__icon i {
+  font-size: 64px;
+}
+
+.incoming-call-modal__title {
+  margin: 0 0 16px 0;
+  font-size: 24px;
+  font-weight: 500;
+}
+
+.incoming-call-modal__caller {
+  margin-bottom: 32px;
+}
+
+.incoming-call-modal__name {
+  font-size: 20px;
+  font-weight: 500;
+  margin-bottom: 4px;
+}
+
+.incoming-call-modal__number {
+  font-size: 16px;
+  color: #757575;
+}
+
+.incoming-call-modal__actions {
+  display: flex;
+  justify-content: center;
+  gap: 24px;
+}
+
+.incoming-call-modal__btn {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  padding: 16px 24px;
+  border: none;
+  border-radius: 12px;
+  cursor: pointer;
+  transition: all 0.2s;
+  font-size: 14px;
+  font-weight: 500;
+}
+
+.incoming-call-modal__btn i {
+  font-size: 32px;
+}
+
+.incoming-call-modal__btn--accept {
+  background: #4caf50;
+  color: #fff;
+}
+
+.incoming-call-modal__btn--accept:hover {
+  background: #43a047;
+  transform: scale(1.05);
+}
+
+.incoming-call-modal__btn--reject {
+  background: #f44336;
+  color: #fff;
+}
+
+.incoming-call-modal__btn--reject:hover {
+  background: #d32f2f;
+  transform: scale(1.05);
+}
+
+/* Calls List */
+.calls-list {
+  padding: 24px;
+}
+
+.calls-list__header {
+  margin-bottom: 24px;
+}
+
+.calls-list__title {
+  margin: 0 0 16px 0;
+  font-size: 24px;
+  font-weight: 500;
+}
+
+.calls-list__stats {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 16px;
+  margin-bottom: 16px;
+}
+
+.calls-list__stat {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 16px;
+  background: #fff;
+  border-radius: 8px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.calls-list__stat i {
+  font-size: 32px;
+  color: #1976d2;
+}
+
+.calls-list__stat-value {
+  display: block;
+  font-size: 24px;
+  font-weight: 500;
+  color: #424242;
+}
+
+.calls-list__stat-label {
+  display: block;
+  font-size: 12px;
+  color: #757575;
+}
+
+.calls-list__filters {
+  display: flex;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+.calls-list__filter,
+.calls-list__search {
+  padding: 8px 12px;
+  border: 1px solid #e0e0e0;
+  border-radius: 4px;
+  font-size: 14px;
+}
+
+.calls-list__search {
+  flex: 1;
+}
+
+.calls-list__table-element {
+  width: 100%;
+  border-collapse: collapse;
+  background: #fff;
+  border-radius: 8px;
+  overflow: hidden;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.calls-list__table-element th {
+  background: #f5f5f5;
+  padding: 12px;
+  text-align: left;
+  font-weight: 500;
+  font-size: 13px;
+  color: #616161;
+  border-bottom: 1px solid #e0e0e0;
+}
+
+.calls-list__table-element td {
+  padding: 12px;
+  border-bottom: 1px solid #f5f5f5;
+  font-size: 14px;
+}
+
+.calls-list__row {
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.calls-list__row:hover {
+  background: #f5f5f5;
+}
+
+.calls-list__status {
+  display: inline-block;
+  padding: 4px 8px;
+  border-radius: 4px;
+  font-size: 12px;
+  font-weight: 500;
+}
+
+.calls-list__status--completed {
+  background: #e8f5e9;
+  color: #2e7d32;
+}
+
+.calls-list__status--missed {
+  background: #ffebee;
+  color: #c62828;
+}
+
+.calls-list__status--busy {
+  background: #fff3e0;
+  color: #e65100;
+}
+
+.calls-list__status--failed {
+  background: #fce4ec;
+  color: #880e4f;
+}
+
+.calls-list__empty,
+.calls-list__error {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 48px;
+  text-align: center;
+  color: #757575;
+}
+
+.calls-list__empty i,
+.calls-list__error i {
+  font-size: 64px;
+  margin-bottom: 16px;
+  opacity: 0.5;
+}
+
+/* Animations */
+@keyframes pulse {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.5;
+  }
+}
+
+@keyframes ringPulse {
+  0% {
+    transform: translateX(-50%) scale(1);
+    opacity: 1;
+  }
+  100% {
+    transform: translateX(-50%) scale(1.2);
+    opacity: 0;
+  }
+}
+
+@keyframes iconBounce {
+  0%, 100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-8px);
+  }
+}

@@ -1,0 +1,14 @@
+import{M as g,a as L,b as T,s as k,T as _}from"./index-Br2yXtxL.js";function M({onSuccess:p}={}){const d=document.createElement("div");d.className="login-container";const r=document.createElement("div");r.className="mdc-card login-card elevation-4",r.style.padding="24px";const c=document.createElement("h4");c.textContent="CRM Login",c.className="text-center mb-3",c.style.margin="0 0 24px 0",c.style.color="var(--mdc-theme-primary)";const s=document.createElement("form");s.style.display="flex",s.style.flexDirection="column",s.style.gap="24px";const l=document.createElement("label");l.className="mdc-text-field mdc-text-field--filled",l.style.width="100%",l.innerHTML=`
+    <span class="mdc-text-field__ripple"></span>
+    <span class="mdc-floating-label">Username</span>
+    <input class="mdc-text-field__input" type="text" required>
+    <span class="mdc-line-ripple"></span>
+  `;const h=l.querySelector("input");new g(l);const a=document.createElement("label");a.className="mdc-text-field mdc-text-field--filled",a.style.width="100%",a.innerHTML=`
+    <span class="mdc-text-field__ripple"></span>
+    <span class="mdc-floating-label">Password</span>
+    <input class="mdc-text-field__input" type="password" required>
+    <span class="mdc-line-ripple"></span>
+  `;const E=a.querySelector("input");new g(a);const o=document.createElement("div");o.style.display="flex",o.style.alignItems="center",o.style.gap="8px";const m=document.createElement("input");m.type="checkbox",m.id="remember-me";const u=document.createElement("label");u.htmlFor="remember-me",u.textContent="Remember me",o.append(m,u);const n=document.createElement("div");n.style.color="var(--mdc-theme-error)",n.style.fontSize="14px",n.style.display="none",n.style.marginTop="-12px";const t=document.createElement("button");return t.type="submit",t.className="mdc-button mdc-button--raised",t.style.width="100%",t.innerHTML=`
+    <span class="mdc-button__ripple"></span>
+    <span class="mdc-button__label">Login</span>
+  `,L.attachTo(t),s.append(l,a,o,n,t),r.append(c,s),s.addEventListener("submit",async w=>{var x,f,b;w.preventDefault(),n.style.display="none",t.disabled=!0;const y=t.querySelector(".mdc-button__label"),v=y.textContent;y.textContent="Logging in...";try{const e=await T.login({username:h.value.trim(),password:E.value}),i=(e==null?void 0:e.token)||(e==null?void 0:e.key)||(e==null?void 0:e.auth_token)||(e==null?void 0:e.access)||(e==null?void 0:e.access_token);if(!i)throw new Error("Token not found in response");k(i,{persist:m.checked}),_.success("Login successful"),p==null||p()}catch(e){const i=((x=e==null?void 0:e.details)==null?void 0:x.detail)||((b=(f=e==null?void 0:e.details)==null?void 0:f.non_field_errors)==null?void 0:b[0])||e.message||"Login failed";n.textContent=i,n.style.display="block",_.error(i)}finally{t.disabled=!1,y.textContent=v}}),d.appendChild(r),d}export{M as LoginPage};
