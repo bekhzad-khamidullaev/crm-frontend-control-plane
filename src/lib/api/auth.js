@@ -1,4 +1,5 @@
 // Simple token storage with in-memory default and optional localStorage persistence
+const DEMO_MODE = import.meta.env.VITE_DEMO_MODE === 'true';
 let _token = null;
 const KEY = 'crm_token';
 
@@ -24,5 +25,9 @@ export function clearToken() {
 }
 
 export function isAuthenticated() {
-  return !!getToken();
+  return DEMO_MODE || !!getToken();
+}
+
+export function isDemoMode() {
+  return DEMO_MODE;
 }

@@ -1,5 +1,5 @@
 import { authApi } from '../lib/api/client.js';
-import { setToken } from '../lib/api/auth.js';
+import { setToken, isDemoMode } from '../lib/api/auth.js';
 import { Toast } from '../components/index.js';
 import { MDCTextField } from '@material/textfield';
 import { MDCRipple } from '@material/ripple';
@@ -92,11 +92,16 @@ export function LoginPage({ onSuccess } = {}) {
     label.textContent = 'Logging in...';
     
     try {
-      const data = await authApi.login({ username: username.value.trim(), password: password.value });
-      const token = data?.token || data?.key || data?.auth_token || data?.access || data?.access_token;
-      if (!token) throw new Error('Token not found in response');
-      setToken(token, { persist: persist.checked });
-      Toast.success('Login successful');
+      if (isDemoMode()) {
+        setToken('demo-token', { persist: true });
+        Toast.success('Demo mode: logged in');
+      } else {
+        const data = await authApi.login({ username: username.value.trim(), password: password.value });
+        const token = data?.token || data?.key || data?.auth_token || data?.access || data?.access_token;
+        if (!token) throw new Error('Token not found in response');
+        setToken(token, { persist: persist.checked });
+        Toast.success('Login successful');
+      }
       onSuccess?.();
     } catch (err) {
       const msg = err?.details?.detail || err?.details?.non_field_errors?.[0] || err.message || 'Login failed';
