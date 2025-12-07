@@ -23,6 +23,10 @@ function Dashboard() {
     leadSource: useRef(null),
     pipeline: useRef(null),
     revenue: useRef(null),
+    leadStatus: useRef(null),
+    winRate: useRef(null),
+    tasks: useRef(null),
+    ownerLoad: useRef(null),
   };
   const chartInstances = useRef({});
 
@@ -85,6 +89,36 @@ function Dashboard() {
     { month: 'Апр', value: 210000 },
     { month: 'Май', value: 240000 },
     { month: 'Июн', value: 260000 },
+  ];
+
+  const leadStatus = [
+    { label: 'Новые', value: 68 },
+    { label: 'В работе', value: 92 },
+    { label: 'Дисквалифицированы', value: 23 },
+    { label: 'Успешно закрыты', value: 15 },
+  ];
+
+  const winRateTrend = [
+    { month: 'Янв', value: 12 },
+    { month: 'Фев', value: 15 },
+    { month: 'Мар', value: 17 },
+    { month: 'Апр', value: 19 },
+    { month: 'Май', value: 21 },
+    { month: 'Июн', value: 24 },
+  ];
+
+  const tasksStatus = [
+    { label: 'В работе', value: 42 },
+    { label: 'Просрочены', value: 8 },
+    { label: 'В ожидании', value: 15 },
+    { label: 'Закрыты', value: 51 },
+  ];
+
+  const ownerLoad = [
+    { owner: 'Alice', leads: 34, deals: 12 },
+    { owner: 'Bob', leads: 27, deals: 9 },
+    { owner: 'Carlos', leads: 18, deals: 6 },
+    { owner: 'Dana', leads: 22, deals: 7 },
   ];
 
   const palette = ['#1677ff', '#52c41a', '#fa8c16', '#13c2c2', '#722ed1', '#eb2f96'];
@@ -200,6 +234,127 @@ function Dashboard() {
       },
     }));
 
+    buildChart('leadStatus', () => ({
+      type: 'doughnut',
+      data: {
+        labels: leadStatus.map((item) => item.label),
+        datasets: [
+          {
+            data: leadStatus.map((item) => item.value),
+            backgroundColor: palette,
+            borderWidth: 0,
+          },
+        ],
+      },
+      options: {
+        maintainAspectRatio: false,
+        plugins: {
+          legend: { position: 'bottom' },
+          tooltip: {
+            callbacks: { label: (ctx) => `${ctx.label}: ${ctx.raw}` },
+          },
+        },
+      },
+    }));
+
+    buildChart('winRate', () => ({
+      type: 'line',
+      data: {
+        labels: winRateTrend.map((r) => r.month),
+        datasets: [
+          {
+            label: 'Win-rate, %',
+            data: winRateTrend.map((r) => r.value),
+            borderColor: '#eb2f96',
+            backgroundColor: 'rgba(235,47,150,0.12)',
+            tension: 0.25,
+            fill: true,
+            pointRadius: 4,
+            pointBackgroundColor: '#eb2f96',
+          },
+        ],
+      },
+      options: {
+        maintainAspectRatio: false,
+        plugins: {
+          legend: { display: false },
+          tooltip: {
+            callbacks: { label: (ctx) => `${ctx.raw}%` },
+          },
+        },
+        scales: {
+          y: {
+            beginAtZero: true,
+            suggestedMax: 30,
+            ticks: { callback: (val) => `${val}%` },
+          },
+        },
+      },
+    }));
+
+    buildChart('tasks', () => ({
+      type: 'doughnut',
+      data: {
+        labels: tasksStatus.map((item) => item.label),
+        datasets: [
+          {
+            data: tasksStatus.map((item) => item.value),
+            backgroundColor: ['#1677ff', '#fa8c16', '#13c2c2', '#52c41a'],
+            borderWidth: 0,
+          },
+        ],
+      },
+      options: {
+        maintainAspectRatio: false,
+        plugins: {
+          legend: { position: 'bottom' },
+          tooltip: {
+            callbacks: { label: (ctx) => `${ctx.label}: ${ctx.raw}` },
+          },
+        },
+      },
+    }));
+
+    buildChart('ownerLoad', () => ({
+      type: 'bar',
+      data: {
+        labels: ownerLoad.map((o) => o.owner),
+        datasets: [
+          {
+            label: 'Лиды',
+            data: ownerLoad.map((o) => o.leads),
+            backgroundColor: '#1677ff',
+            borderRadius: 8,
+          },
+          {
+            label: 'Сделки',
+            data: ownerLoad.map((o) => o.deals),
+            backgroundColor: '#52c41a',
+            borderRadius: 8,
+          },
+        ],
+      },
+      options: {
+        maintainAspectRatio: false,
+        responsive: true,
+        interaction: { mode: 'index' },
+        plugins: {
+          legend: { position: 'top' },
+          tooltip: {
+            callbacks: {
+              label: (ctx) => `${ctx.dataset.label}: ${ctx.raw}`,
+            },
+          },
+        },
+        scales: {
+          y: {
+            beginAtZero: true,
+            ticks: { precision: 0 },
+          },
+        },
+      },
+    }));
+
     return () => {
       Object.values(chartInstances.current).forEach((inst) => inst?.destroy());
     };
@@ -306,6 +461,40 @@ function Dashboard() {
           <Card title="Динамика выручки">
             <div style={{ height: 260 }}>
               <canvas ref={chartRefs.revenue} />
+            </div>
+          </Card>
+        </Col>
+      </Row>
+
+      <Row gutter={[16, 16]} style={{ marginBottom: 24 }}>
+        <Col xs={24} md={12} lg={8}>
+          <Card title="Статус лидов">
+            <div style={{ height: 240 }}>
+              <canvas ref={chartRefs.leadStatus} />
+            </div>
+          </Card>
+        </Col>
+        <Col xs={24} md={12} lg={8}>
+          <Card title="Win-rate по месяцам">
+            <div style={{ height: 240 }}>
+              <canvas ref={chartRefs.winRate} />
+            </div>
+          </Card>
+        </Col>
+        <Col xs={24} md={24} lg={8}>
+          <Card title="Нагрузка по владельцам">
+            <div style={{ height: 240 }}>
+              <canvas ref={chartRefs.ownerLoad} />
+            </div>
+          </Card>
+        </Col>
+      </Row>
+
+      <Row gutter={[16, 16]} style={{ marginBottom: 24 }}>
+        <Col xs={24} md={12} lg={8}>
+          <Card title="Статусы задач">
+            <div style={{ height: 240 }}>
+              <canvas ref={chartRefs.tasks} />
             </div>
           </Card>
         </Col>
