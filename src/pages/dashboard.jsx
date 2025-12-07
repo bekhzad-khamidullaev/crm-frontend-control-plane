@@ -27,6 +27,9 @@ function Dashboard() {
     winRate: useRef(null),
     tasks: useRef(null),
     ownerLoad: useRef(null),
+    conversion: useRef(null),
+    response: useRef(null),
+    forecast: useRef(null),
   };
   const chartInstances = useRef({});
 
@@ -119,6 +122,33 @@ function Dashboard() {
     { owner: 'Bob', leads: 27, deals: 9 },
     { owner: 'Carlos', leads: 18, deals: 6 },
     { owner: 'Dana', leads: 22, deals: 7 },
+  ];
+
+  const conversionFunnel = [
+    { label: 'Лиды', value: 245 },
+    { label: 'Квалификация', value: 180 },
+    { label: 'Переговоры', value: 110 },
+    { label: 'Коммерческое', value: 72 },
+    { label: 'Успешно', value: 46 },
+  ];
+
+  const responseTime = [
+    { label: 'Пн', value: 42 },
+    { label: 'Вт', value: 38 },
+    { label: 'Ср', value: 36 },
+    { label: 'Чт', value: 35 },
+    { label: 'Пт', value: 34 },
+    { label: 'Сб', value: 48 },
+    { label: 'Вс', value: 55 },
+  ];
+
+  const forecast = [
+    { month: 'Июл', fact: 180000, target: 200000 },
+    { month: 'Авг', fact: 210000, target: 220000 },
+    { month: 'Сен', fact: 230000, target: 240000 },
+    { month: 'Окт', fact: 250000, target: 260000 },
+    { month: 'Ноя', fact: 270000, target: 280000 },
+    { month: 'Дек', fact: 300000, target: 300000 },
   ];
 
   const palette = ['#1677ff', '#52c41a', '#fa8c16', '#13c2c2', '#722ed1', '#eb2f96'];
@@ -355,6 +385,101 @@ function Dashboard() {
       },
     }));
 
+    buildChart('conversion', () => ({
+      type: 'bar',
+      data: {
+        labels: conversionFunnel.map((s) => s.label),
+        datasets: [
+          {
+            label: 'Конверсия по стадиям',
+            data: conversionFunnel.map((s) => s.value),
+            backgroundColor: '#13c2c2',
+            borderRadius: 10,
+          },
+        ],
+      },
+      options: {
+        maintainAspectRatio: false,
+        indexAxis: 'y',
+        plugins: {
+          legend: { display: false },
+          tooltip: { callbacks: { label: (ctx) => `${ctx.raw}` } },
+        },
+        scales: {
+          x: { beginAtZero: true, ticks: { precision: 0 } },
+        },
+      },
+    }));
+
+    buildChart('response', () => ({
+      type: 'line',
+      data: {
+        labels: responseTime.map((r) => r.label),
+        datasets: [
+          {
+            label: 'Ответ, мин',
+            data: responseTime.map((r) => r.value),
+            borderColor: '#fa8c16',
+            backgroundColor: 'rgba(250,140,22,0.15)',
+            fill: true,
+            tension: 0.35,
+            pointRadius: 4,
+            pointBackgroundColor: '#fa8c16',
+          },
+        ],
+      },
+      options: {
+        maintainAspectRatio: false,
+        plugins: {
+          legend: { display: false },
+          tooltip: { callbacks: { label: (ctx) => `${ctx.raw} мин` } },
+        },
+        scales: {
+          y: { beginAtZero: true, ticks: { callback: (v) => `${v} мин` } },
+        },
+      },
+    }));
+
+    buildChart('forecast', () => ({
+      type: 'bar',
+      data: {
+        labels: forecast.map((f) => f.month),
+        datasets: [
+          {
+            label: 'Факт',
+            data: forecast.map((f) => f.fact),
+            backgroundColor: '#1677ff',
+            borderRadius: 6,
+          },
+          {
+            label: 'План',
+            data: forecast.map((f) => f.target),
+            backgroundColor: '#d9d9d9',
+            borderRadius: 6,
+          },
+        ],
+      },
+      options: {
+        maintainAspectRatio: false,
+        responsive: true,
+        interaction: { mode: 'index' },
+        plugins: {
+          legend: { position: 'top' },
+          tooltip: {
+            callbacks: {
+              label: (ctx) => `${ctx.dataset.label}: ${ctx.raw.toLocaleString('ru-RU')} ₽`,
+            },
+          },
+        },
+        scales: {
+          y: {
+            beginAtZero: true,
+            ticks: { callback: (v) => `${Number(v).toLocaleString('ru-RU')} ₽` },
+          },
+        },
+      },
+    }));
+
     return () => {
       Object.values(chartInstances.current).forEach((inst) => inst?.destroy());
     };
@@ -495,6 +620,30 @@ function Dashboard() {
           <Card title="Статусы задач">
             <div style={{ height: 240 }}>
               <canvas ref={chartRefs.tasks} />
+            </div>
+          </Card>
+        </Col>
+        <Col xs={24} md={12} lg={8}>
+          <Card title="Конверсия по этапам">
+            <div style={{ height: 240 }}>
+              <canvas ref={chartRefs.conversion} />
+            </div>
+          </Card>
+        </Col>
+        <Col xs={24} md={24} lg={8}>
+          <Card title="Среднее время ответа">
+            <div style={{ height: 240 }}>
+              <canvas ref={chartRefs.response} />
+            </div>
+          </Card>
+        </Col>
+      </Row>
+
+      <Row gutter={[16, 16]} style={{ marginBottom: 24 }}>
+        <Col xs={24} md={24} lg={12}>
+          <Card title="План/факт по выручке">
+            <div style={{ height: 260 }}>
+              <canvas ref={chartRefs.forecast} />
             </div>
           </Card>
         </Col>
