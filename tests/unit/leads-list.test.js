@@ -89,4 +89,23 @@ describe('LeadsList', () => {
 
     expect(leadsApi.list).toHaveBeenCalledWith(expect.objectContaining({ search: 'prospect' }));
   });
+
+  it('saves inline edits on blur', async () => {
+    const { leadsApi } = await import('../../src/lib/api/client.js');
+    leadsApi.list.mockResolvedValue({
+      results: [{ id: 3, first_name: 'Alan', last_name: 'Turing', email: 'old@test.com', phone: '123' }],
+      count: 1,
+    });
+    leadsApi.patch.mockResolvedValue({});
+
+    const { list } = render();
+    await flush();
+
+    const emailInput = list.querySelector('input[type="email"]');
+    emailInput.value = 'new@test.com';
+    emailInput.dispatchEvent(new Event('blur'));
+
+    await flush();
+    expect(leadsApi.patch).toHaveBeenCalledWith(3, expect.objectContaining({ email: 'new@test.com' }));
+  });
 });

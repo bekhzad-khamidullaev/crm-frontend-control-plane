@@ -242,6 +242,34 @@ export function LeadsList() {
     return select;
   }
 
+  function inlineInput(row, field, { type = 'text', placeholder = '' } = {}) {
+    const input = document.createElement('input');
+    input.type = type;
+    input.className = 'inline-input';
+    input.value = row[field] || '';
+    input.placeholder = placeholder;
+    input.addEventListener('blur', async () => {
+      const next = input.value.trim();
+      if (next === (row[field] || '')) return;
+      input.disabled = true;
+      try {
+        await updateLead(row.id, { [field]: next || null });
+        Toast.success('Updated');
+        row[field] = next;
+      } catch (err) {
+        Toast.error(err.message || 'Update failed');
+        input.value = row[field] || '';
+      } finally {
+        input.disabled = false;
+      }
+    });
+    return input;
+  }
+
+  function inlineDate(row, field) {
+    return inlineInput(row, field, { type: 'date' });
+  }
+
   function createDisqualifyToggle(row) {
     const wrap = document.createElement('label');
     wrap.style.display = 'flex';
@@ -384,9 +412,19 @@ export function LeadsList() {
       },
       { key: 'company_name', label: 'Company' },
       {
+        key: 'email',
+        label: 'Email',
+        render: (_, row) => inlineInput(row, 'email', { type: 'email', placeholder: 'email' }),
+      },
+      {
+        key: 'phone',
+        label: 'Phone',
+        render: (_, row) => inlineInput(row, 'phone', { type: 'tel', placeholder: 'phone' }),
+      },
+      {
         key: 'lead_source',
         label: 'Source',
-        render: (v) => (v === undefined || v === null || v === '' ? '—' : v),
+        render: (_, row) => inlineInput(row, 'lead_source', { type: 'number', placeholder: 'source id' }),
       },
       {
         key: 'owner',
@@ -396,7 +434,7 @@ export function LeadsList() {
       {
         key: 'was_in_touch',
         label: 'Last contact',
-        render: (v) => (v ? new Date(v).toLocaleDateString() : '—'),
+        render: (_, row) => inlineDate(row, 'was_in_touch'),
       },
       {
         key: 'disqualified',
