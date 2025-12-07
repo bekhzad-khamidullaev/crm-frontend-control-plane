@@ -1,0 +1,78 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>CRM Frontend</title>
+    <link rel="stylesheet" href="https://fonts.googleapis.com/icon?family=Material+Icons">
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&display=swap">
+    <link rel="stylesheet" href="/src/styles/material-theme.css">
+    <link rel="stylesheet" href="/src/styles/enterprise-components.css">
+    <link rel="stylesheet" href="/src/styles/enterprise-forms.css">
+    <!-- SIPml.js for WebRTC telephony -->
+    <script src="https://sipml5.org/dist/SIPml-api.js"></script>
+  </head>
+  <body>
+    <header class="app-topbar">
+      <button class="material-icons app-topbar__icon" id="menu-button">menu</button>
+      <div class="app-topbar__brand">
+        <span class="material-icons">analytics</span>
+        <span id="page-title">CRM</span>
+      </div>
+      <div class="app-topbar__spacer"></div>
+      <button class="material-icons app-topbar__icon" id="auth-button">person</button>
+    </header>
+
+    <aside class="app-sidebar" id="drawer">
+      <div class="app-sidebar__brand">
+        <span class="material-icons">business_center</span>
+        <div>
+          <div class="app-sidebar__title">Enterprise CRM</div>
+          <div class="app-sidebar__subtitle">Clean workspace</div>
+        </div>
+      </div>
+      <nav class="app-sidebar__nav">
+        <a class="app-sidebar__item" href="#/dashboard" id="nav-dashboard">
+          <span class="material-icons">dashboard</span><span>Dashboard</span>
+        </a>
+        <a class="app-sidebar__item" href="#/leads" id="nav-leads">
+          <span class="material-icons">people</span><span>Leads</span>
+        </a>
+        <a class="app-sidebar__item" href="#/contacts" id="nav-contacts">
+          <span class="material-icons">perm_contact_calendar</span><span>Contacts</span>
+        </a>
+        <a class="app-sidebar__item" href="#/companies" id="nav-companies">
+          <span class="material-icons">business</span><span>Companies</span>
+        </a>
+        <a class="app-sidebar__item" href="#/deals" id="nav-deals">
+          <span class="material-icons">monetization_on</span><span>Deals</span>
+        </a>
+        <a class="app-sidebar__item" href="#/tasks" id="nav-tasks">
+          <span class="material-icons">task_alt</span><span>Tasks</span>
+        </a>
+        <a class="app-sidebar__item" href="#/projects" id="nav-projects">
+          <span class="material-icons">folder</span><span>Projects</span>
+        </a>
+        <a class="app-sidebar__item" href="#/chat" id="nav-chat">
+          <span class="material-icons">chat</span><span>Chat</span>
+        </a>
+        <a class="app-sidebar__item" href="#/calls" id="nav-calls">
+          <span class="material-icons">phone</span><span>Call Logs</span>
+        </a>
+        <a class="app-sidebar__item" href="#/memos" id="nav-memos">
+          <span class="material-icons">note</span><span>Memos</span>
+        </a>
+        <a class="app-sidebar__item" href="#/settings" id="nav-settings">
+          <span class="material-icons">settings</span><span>Settings</span>
+        </a>
+      </nav>
+    </aside>
+
+    <!-- Main Content -->
+    <main class="app-shell">
+      <section class="main-content" id="page-root"></section>
+    </main>
+
+    <script type="module" src="/src/main.js"></script>
+  </body>
+</html>
