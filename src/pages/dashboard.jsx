@@ -165,7 +165,7 @@ function Dashboard() {
     if (loading) return undefined;
 
     buildChart('leadSource', () => ({
-      type: 'doughnut',
+      type: 'polarArea',
       data: {
         labels: leadSources.map((item) => item.label),
         datasets: [
@@ -179,7 +179,7 @@ function Dashboard() {
       options: {
         maintainAspectRatio: false,
         plugins: {
-          legend: { position: 'bottom' },
+          legend: { position: 'right' },
           tooltip: {
             callbacks: { label: (ctx) => `${ctx.label}: ${ctx.raw}` },
           },
@@ -188,28 +188,29 @@ function Dashboard() {
     }));
 
     buildChart('pipeline', () => ({
-      type: 'bar',
+      type: 'radar',
       data: {
         labels: pipeline.map((p) => p.stage),
         datasets: [
           {
             label: 'Сумма, ₽',
             data: pipeline.map((p) => p.amount),
-            backgroundColor: '#1677ff',
-            borderRadius: 8,
+            backgroundColor: 'rgba(22,119,255,0.2)',
+            borderColor: '#1677ff',
+            pointBackgroundColor: '#1677ff',
           },
           {
             label: 'Количество сделок',
             data: pipeline.map((p) => p.deals),
-            backgroundColor: '#faad14',
-            borderRadius: 8,
+            backgroundColor: 'rgba(250,173,20,0.2)',
+            borderColor: '#faad14',
+            pointBackgroundColor: '#faad14',
           },
         ],
       },
       options: {
         maintainAspectRatio: false,
         responsive: true,
-        interaction: { mode: 'index' },
         plugins: {
           legend: { position: 'top' },
           tooltip: {
@@ -219,29 +220,25 @@ function Dashboard() {
           },
         },
         scales: {
-          x: { stacked: false },
-          y: {
+          r: {
             beginAtZero: true,
             ticks: { callback: (val) => Number(val).toLocaleString('ru-RU') },
+            grid: { color: 'rgba(0,0,0,0.05)' },
           },
         },
       },
     }));
 
     buildChart('revenue', () => ({
-      type: 'line',
+      type: 'bar',
       data: {
         labels: revenueTrend.map((r) => r.month),
         datasets: [
           {
             label: 'Выручка, ₽',
             data: revenueTrend.map((r) => r.value),
-            borderColor: '#52c41a',
-            backgroundColor: 'rgba(82,196,26,0.15)',
-            fill: true,
-            tension: 0.3,
-            pointRadius: 4,
-            pointBackgroundColor: '#52c41a',
+            backgroundColor: revenueTrend.map(() => 'rgba(82,196,26,0.7)'),
+            borderRadius: 10,
           },
         ],
       },
@@ -265,7 +262,7 @@ function Dashboard() {
     }));
 
     buildChart('leadStatus', () => ({
-      type: 'doughnut',
+      type: 'pie',
       data: {
         labels: leadStatus.map((item) => item.label),
         datasets: [
@@ -279,7 +276,7 @@ function Dashboard() {
       options: {
         maintainAspectRatio: false,
         plugins: {
-          legend: { position: 'bottom' },
+          legend: { position: 'right' },
           tooltip: {
             callbacks: { label: (ctx) => `${ctx.label}: ${ctx.raw}` },
           },
@@ -297,8 +294,8 @@ function Dashboard() {
             data: winRateTrend.map((r) => r.value),
             borderColor: '#eb2f96',
             backgroundColor: 'rgba(235,47,150,0.12)',
-            tension: 0.25,
-            fill: true,
+            tension: 0.15,
+            fill: false,
             pointRadius: 4,
             pointBackgroundColor: '#eb2f96',
           },
@@ -307,7 +304,7 @@ function Dashboard() {
       options: {
         maintainAspectRatio: false,
         plugins: {
-          legend: { display: false },
+          legend: { position: 'top' },
           tooltip: {
             callbacks: { label: (ctx) => `${ctx.raw}%` },
           },
@@ -323,7 +320,7 @@ function Dashboard() {
     }));
 
     buildChart('tasks', () => ({
-      type: 'doughnut',
+      type: 'polarArea',
       data: {
         labels: tasksStatus.map((item) => item.label),
         datasets: [
@@ -337,7 +334,7 @@ function Dashboard() {
       options: {
         maintainAspectRatio: false,
         plugins: {
-          legend: { position: 'bottom' },
+          legend: { position: 'right' },
           tooltip: {
             callbacks: { label: (ctx) => `${ctx.label}: ${ctx.raw}` },
           },
@@ -351,16 +348,20 @@ function Dashboard() {
         labels: ownerLoad.map((o) => o.owner),
         datasets: [
           {
+            type: 'bar',
             label: 'Лиды',
             data: ownerLoad.map((o) => o.leads),
             backgroundColor: '#1677ff',
             borderRadius: 8,
           },
           {
+            type: 'line',
             label: 'Сделки',
             data: ownerLoad.map((o) => o.deals),
-            backgroundColor: '#52c41a',
-            borderRadius: 8,
+            borderColor: '#52c41a',
+            backgroundColor: 'rgba(82,196,26,0.2)',
+            tension: 0.2,
+            pointRadius: 4,
           },
         ],
       },
@@ -391,6 +392,7 @@ function Dashboard() {
         labels: conversionFunnel.map((s) => s.label),
         datasets: [
           {
+            type: 'bar',
             label: 'Конверсия по стадиям',
             data: conversionFunnel.map((s) => s.value),
             backgroundColor: '#13c2c2',
