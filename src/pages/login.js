@@ -104,10 +104,16 @@ export function LoginPage({ onSuccess } = {}) {
       }
       onSuccess?.();
     } catch (err) {
-      const msg = err?.details?.detail || err?.details?.non_field_errors?.[0] || err.message || 'Login failed';
-      errorBox.textContent = msg;
-      errorBox.style.display = 'block';
-      Toast.error(msg);
+      if (isDemoMode()) {
+        setToken('demo-token', { persist: true });
+        Toast.info('Demo fallback: continuing offline');
+        onSuccess?.();
+      } else {
+        const msg = err?.details?.detail || err?.details?.non_field_errors?.[0] || err.message || 'Login failed';
+        errorBox.textContent = msg;
+        errorBox.style.display = 'block';
+        Toast.error(msg);
+      }
     } finally {
       submit.disabled = false;
       label.textContent = originalText;
