@@ -54,7 +54,16 @@ export function LeadsList() {
   MDCRipple.attachTo(newBtn);
   newBtn.addEventListener('click', () => import('../../router.js').then(({ navigate }) => navigate('/leads/new')));
 
-  header.append(title, searchField.element, ownerFilter, disqualifiedFilter, orderingFilter, newBtn);
+  const hidePhoneWrap = document.createElement('label');
+  hidePhoneWrap.style.display = 'flex';
+  hidePhoneWrap.style.alignItems = 'center';
+  hidePhoneWrap.style.gap = '6px';
+  const hidePhoneCheckbox = document.createElement('input');
+  hidePhoneCheckbox.type = 'checkbox';
+  hidePhoneCheckbox.checked = localStorage.getItem('leads_hide_phone') === 'true';
+  hidePhoneWrap.append(hidePhoneCheckbox, document.createTextNode('Hide phones'));
+
+  header.append(title, searchField.element, ownerFilter, disqualifiedFilter, orderingFilter, hidePhoneWrap, newBtn);
 
   // KPI chart
   const chartCard = document.createElement('div');
@@ -106,6 +115,7 @@ export function LeadsList() {
     owner: '',
     disqualified: '',
     ordering: '-update_date',
+    hidePhones: hidePhoneCheckbox.checked,
   };
 
   const selectedIds = new Set();
@@ -427,7 +437,7 @@ export function LeadsList() {
       {
         key: 'phone',
         label: 'Phone',
-        render: (_, row) => inlineInput(row, 'phone', { type: 'tel', placeholder: 'phone' }),
+        render: (_, row) => state.hidePhones ? '•••••••' : inlineInput(row, 'phone', { type: 'tel', placeholder: 'phone' }),
       },
       {
         key: 'lead_source',
@@ -483,6 +493,11 @@ export function LeadsList() {
   });
   orderingFilter.addEventListener('change', () => {
     state.ordering = orderingFilter.value;
+    load();
+  });
+  hidePhoneCheckbox.addEventListener('change', () => {
+    state.hidePhones = hidePhoneCheckbox.checked;
+    localStorage.setItem('leads_hide_phone', String(state.hidePhones));
     load();
   });
   bulkTagSelect.addEventListener('change', updateBulkState);

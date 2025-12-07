@@ -53,7 +53,16 @@ export function ContactsList() {
   MDCRipple.attachTo(newBtn);
   newBtn.addEventListener('click', () => import('../../router.js').then(({ navigate }) => navigate('/contacts/new')));
 
-  header.append(title, searchField.element, ownerFilter, disqualifiedFilter, orderingFilter, newBtn);
+  const hidePhoneWrap = document.createElement('label');
+  hidePhoneWrap.style.display = 'flex';
+  hidePhoneWrap.style.alignItems = 'center';
+  hidePhoneWrap.style.gap = '6px';
+  const hidePhoneCheckbox = document.createElement('input');
+  hidePhoneCheckbox.type = 'checkbox';
+  hidePhoneCheckbox.checked = localStorage.getItem('contacts_hide_phone') === 'true';
+  hidePhoneWrap.append(hidePhoneCheckbox, document.createTextNode('Hide phones'));
+
+  header.append(title, searchField.element, ownerFilter, disqualifiedFilter, orderingFilter, hidePhoneWrap, newBtn);
 
   // KPI card
   const chartCard = document.createElement('div');
@@ -88,6 +97,7 @@ export function ContactsList() {
     owner: '',
     disqualified: '',
     ordering: '-update_date',
+    hidePhones: hidePhoneCheckbox.checked,
   };
 
   const selectedIds = new Set();
@@ -281,6 +291,11 @@ export function ContactsList() {
       { key: 'was_in_touch', label: 'Last contact', render: (v) => (v ? new Date(v).toLocaleDateString() : '—') },
       { key: 'disqualified', label: 'Status', render: (_, row) => disqualifyToggle(row) },
       {
+        key: 'phone',
+        label: 'Phone',
+        render: (_, row) => state.hidePhones ? '•••••••' : (row.phone || ''),
+      },
+      {
         key: '_actions',
         label: '',
         render: (_, row) => {
@@ -361,6 +376,11 @@ export function ContactsList() {
   });
   orderingFilter.addEventListener('change', () => {
     state.ordering = orderingFilter.value;
+    load();
+  });
+  hidePhoneCheckbox.addEventListener('change', () => {
+    state.hidePhones = hidePhoneCheckbox.checked;
+    localStorage.setItem('contacts_hide_phone', String(state.hidePhones));
     load();
   });
 
