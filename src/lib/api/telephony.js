@@ -97,7 +97,12 @@ export async function getCallStatus(callId) {
  * @returns {Promise<Object>}
  */
 export async function getCallHistory(params = {}) {
-  return api.get('/api/call-logs/', { params });
+  try {
+    return await api.get('/api/call-logs/', { params });
+  } catch (error) {
+    // Call logs endpoint may not be available
+    return { results: [], count: 0 };
+  }
 }
 
 /**
@@ -253,4 +258,148 @@ export async function getTelephonySettings() {
     console.warn('Error getting telephony settings:', error);
     return { active: false };
   }
+}
+
+// ============================================================================
+// VoIP Connections (полный CRUD)
+// ============================================================================
+
+/**
+ * Get all VoIP connections
+ * @param {Object} params - Query parameters
+ * @returns {Promise<Object>}
+ */
+export async function getVoIPConnections(params = {}) {
+  return api.get('/api/voip/connections/', { params });
+}
+
+/**
+ * Get single VoIP connection by ID
+ * @param {number} id - Connection ID
+ * @returns {Promise<Object>}
+ */
+export async function getVoIPConnection(id) {
+  return api.get(`/api/voip/connections/${id}/`);
+}
+
+/**
+ * Create new VoIP connection
+ * @param {Object} data - Connection data
+ * @param {string} data.name - Connection name
+ * @param {string} data.provider - Provider name
+ * @param {string} data.type - Connection type
+ * @param {string} data.server - SIP server
+ * @param {string} data.username - SIP username
+ * @param {string} data.password - SIP password
+ * @param {boolean} data.active - Is active
+ * @returns {Promise<Object>}
+ */
+export async function createVoIPConnection(data) {
+  return api.post('/api/voip/connections/', data);
+}
+
+/**
+ * Update VoIP connection (full update)
+ * @param {number} id - Connection ID
+ * @param {Object} data - Connection data
+ * @returns {Promise<Object>}
+ */
+export async function updateVoIPConnection(id, data) {
+  return api.put(`/api/voip/connections/${id}/`, data);
+}
+
+/**
+ * Partially update VoIP connection
+ * @param {number} id - Connection ID
+ * @param {Object} data - Partial connection data
+ * @returns {Promise<Object>}
+ */
+export async function patchVoIPConnection(id, data) {
+  return api.patch(`/api/voip/connections/${id}/`, data);
+}
+
+/**
+ * Delete VoIP connection
+ * @param {number} id - Connection ID
+ * @returns {Promise<void>}
+ */
+export async function deleteVoIPConnection(id) {
+  return api.delete(`/api/voip/connections/${id}/`);
+}
+
+// ============================================================================
+// Incoming Calls (входящие звонки)
+// ============================================================================
+
+/**
+ * Get all incoming calls
+ * @param {Object} params - Query parameters
+ * @param {number} params.page - Page number
+ * @param {number} params.page_size - Items per page
+ * @param {string} params.status - Filter by status
+ * @param {string} params.date_from - Filter from date
+ * @param {string} params.date_to - Filter to date
+ * @returns {Promise<Object>}
+ */
+export async function getIncomingCalls(params = {}) {
+  return api.get('/api/voip/incoming-calls/', { params });
+}
+
+/**
+ * Get single incoming call by ID
+ * @param {number} id - Incoming call ID
+ * @returns {Promise<Object>}
+ */
+export async function getIncomingCall(id) {
+  return api.get(`/api/voip/incoming-calls/${id}/`);
+}
+
+// ============================================================================
+// Utility Functions
+// ============================================================================
+
+/**
+ * Get active VoIP connection
+ * @returns {Promise<Object|null>}
+ */
+export async function getActiveVoIPConnection() {
+  const connections = await getVoIPConnections();
+  const results = connections.results || connections;
+  return results.find(c => c.active) || null;
+}
+
+/**
+ * Set VoIP connection as active
+ * @param {number} id - Connection ID
+ * @returns {Promise<Object>}
+ */
+export async function activateVoIPConnection(id) {
+  return patchVoIPConnection(id, { active: true });
+}
+
+/**
+ * Deactivate VoIP connection
+ * @param {number} id - Connection ID
+ * @returns {Promise<Object>}
+ */
+export async function deactivateVoIPConnection(id) {
+  return patchVoIPConnection(id, { active: false });
+}
+
+/**
+ * Get recent incoming calls
+ * @param {number} limit - Number of calls to retrieve
+ * @returns {Promise<Object>}
+ */
+export async function getRecentIncomingCalls(limit = 10) {
+  return getIncomingCalls({ page_size: limit, ordering: '-timestamp' });
+}
+
+/**
+ * Get missed calls
+ * @param {Object} params - Additional query parameters
+ * @returns {Promise<Object>}
+ */
+export async function getMissedCalls(params = {}) {
+  return getIncomingCalls({ ...params, status: 'missed' });
 }

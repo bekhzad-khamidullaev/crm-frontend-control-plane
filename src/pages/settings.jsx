@@ -28,19 +28,8 @@ import {
   SafetyOutlined,
   HistoryOutlined,
 } from '@ant-design/icons';
-import {
-  getSettings,
-  updateSettings,
-  getAPIKeys,
-  createAPIKey,
-  revokeAPIKey,
-  getWebhooks,
-  createWebhook,
-  deleteWebhook,
-  getIntegrationLogs,
-  getSecuritySettings,
-  updateSecuritySettings,
-} from '../lib/api/settings';
+// Settings API removed - not available in Django-CRM API.yaml
+// These features require backend implementation
 import InstagramConnect from '../components/InstagramConnect';
 import FacebookConnect from '../components/FacebookConnect';
 import TelegramConnect from '../components/TelegramConnect';
@@ -68,121 +57,54 @@ function SettingsPage() {
   }, []);
 
   const loadSettings = async () => {
-    try {
-      const data = await getSettings();
-      form.setFieldsValue(data);
-    } catch (error) {
-      console.error('Error loading settings:', error);
-    }
+    // Settings API not available - using defaults
+    console.warn('Settings API not available in Django-CRM');
   };
 
   const loadAPIKeys = async () => {
-    try {
-      const data = await getAPIKeys();
-      setApiKeys(data);
-    } catch (error) {
-      console.error('Error loading API keys:', error);
-    }
+    // API Keys management not available
+    setApiKeys([]);
   };
 
   const handleSettingsUpdate = async (values) => {
     setLoading(true);
-    try {
-      await updateSettings(values);
-      message.success('Настройки сохранены');
-    } catch (error) {
-      message.error('Ошибка сохранения настроек');
-    } finally {
-      setLoading(false);
-    }
+    message.warning('Settings API requires backend implementation');
+    setLoading(false);
   };
 
   const handleCreateAPIKey = async (values) => {
-    setLoading(true);
-    try {
-      const newKey = await createAPIKey(values);
-      message.success('API ключ создан');
-      message.info(`Ключ: ${newKey.key} (сохраните его, больше не покажется)`);
-      apiKeyForm.resetFields();
-      loadAPIKeys();
-    } catch (error) {
-      message.error('Ошибка создания ключа');
-    } finally {
-      setLoading(false);
-    }
+    message.warning('API Keys management requires backend implementation');
   };
 
   const handleRevokeAPIKey = async (keyId) => {
-    try {
-      await revokeAPIKey(keyId);
-      message.success('API ключ отозван');
-      loadAPIKeys();
-    } catch (error) {
-      message.error('Ошибка отзыва ключа');
-    }
+    message.warning('API Keys management requires backend implementation');
   };
 
   const loadWebhooks = async () => {
-    try {
-      const data = await getWebhooks();
-      setWebhooks(data);
-    } catch (error) {
-      console.error('Error loading webhooks:', error);
-    }
+    // Webhooks not available
+    setWebhooks([]);
   };
 
   const loadIntegrationLogs = async () => {
-    try {
-      const data = await getIntegrationLogs({ page: 1, page_size: 10 });
-      setIntegrationLogs(data.results || []);
-    } catch (error) {
-      console.error('Error loading integration logs:', error);
-    }
+    // Integration logs not available
+    setIntegrationLogs([]);
   };
 
   const loadSecuritySettings = async () => {
-    try {
-      const data = await getSecuritySettings();
-      securityForm.setFieldsValue(data);
-    } catch (error) {
-      console.error('Error loading security settings:', error);
-    }
+    // Security settings not available
+    console.warn('Security settings API not available in Django-CRM');
   };
 
   const handleCreateWebhook = async (values) => {
-    setLoading(true);
-    try {
-      await createWebhook(values);
-      message.success('Webhook создан');
-      webhookForm.resetFields();
-      loadWebhooks();
-    } catch (error) {
-      message.error('Ошибка создания webhook');
-    } finally {
-      setLoading(false);
-    }
+    message.warning('Webhooks require backend implementation');
   };
 
   const handleDeleteWebhook = async (id) => {
-    try {
-      await deleteWebhook(id);
-      message.success('Webhook удален');
-      loadWebhooks();
-    } catch (error) {
-      message.error('Ошибка удаления webhook');
-    }
+    message.warning('Webhooks require backend implementation');
   };
 
   const handleUpdateSecurity = async (values) => {
-    setLoading(true);
-    try {
-      await updateSecuritySettings(values);
-      message.success('Настройки безопасности обновлены');
-    } catch (error) {
-      message.error('Ошибка обновления настроек');
-    } finally {
-      setLoading(false);
-    }
+    message.warning('Security settings require backend implementation');
   };
 
   const handleIntegrationSuccess = () => {

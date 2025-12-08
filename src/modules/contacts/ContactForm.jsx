@@ -15,6 +15,7 @@ import {
 import { SaveOutlined, ArrowLeftOutlined } from '@ant-design/icons';
 import { navigate } from '../../router';
 import { getContact, createContact, updateContact } from '../../lib/api/client';
+import ReferenceSelect from '../../components/ui-ReferenceSelect';
 
 const { Title } = Typography;
 const { TextArea } = Input;

@@ -34,7 +34,7 @@ import {
   disconnectTelegramBot,
   getTelegramStats,
 } from '../lib/api/integrations/telegram';
-import { getSMSBalance, getSMSStats } from '../lib/api/sms';
+// SMS API removed - not available in Django-CRM API.yaml
 import { getTelephonyStats } from '../lib/api/telephony';
 
 const { TabPane } = Tabs;
@@ -146,16 +146,15 @@ export default function IntegrationsPage() {
   const loadSMSStatus = async () => {
     setLoading(prev => ({ ...prev, sms: true }));
     try {
-      const balance = await getSMSBalance();
-      const stats = await getSMSStats();
+      // SMS API not available - showing placeholder
       setStatuses(prev => ({
         ...prev,
         sms: {
-          status: balance.balance > 0 ? 'connected' : 'disconnected',
+          status: 'disconnected',
           stats: {
-            'Баланс': balance.balance,
-            'Отправлено за месяц': stats.sent_this_month || 0,
-            'Доставлено': stats.delivered || 0,
+            'Баланс': 0,
+            'Отправлено за месяц': 0,
+            'Доставлено': 0,
           },
         },
       }));

@@ -33,7 +33,8 @@ function buildUrl(path, params) {
   const url = new URL(normalizedPath);
   if (params && typeof params === 'object') {
     Object.entries(params).forEach(([k, v]) => {
-      if (v === undefined || v === null) return;
+      // Skip undefined, null, and empty strings
+      if (v === undefined || v === null || v === '') return;
       if (Array.isArray(v)) v.forEach((vi) => url.searchParams.append(k, vi));
       else url.searchParams.set(k, v);
     });

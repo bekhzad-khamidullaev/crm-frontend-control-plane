@@ -2,7 +2,6 @@ import React, { useState, useEffect } from 'react';
 import {
   Form,
   Input,
-  Select,
   Button,
   Card,
   Space,
@@ -13,10 +12,10 @@ import {
 import { SaveOutlined, ArrowLeftOutlined } from '@ant-design/icons';
 import { navigate } from '../../router';
 import { getLead, createLead, updateLead } from '../../lib/api/client';
+import ReferenceSelect from '../../components/ui-ReferenceSelect';
 
 const { Title } = Typography;
 const { TextArea } = Input;
-const { Option } = Select;
 
 function LeadForm({ id }) {
   const [form] = Form.useForm();
@@ -75,7 +74,7 @@ function LeadForm({ id }) {
   if (loading) {
     return (
       <div style={{ textAlign: 'center', padding: '50px' }}>
-        <Spin size="large" />
+        <Spin size="large" tip="Загрузка данных..." />
       </div>
     );
   }
@@ -141,35 +140,19 @@ function LeadForm({ id }) {
           </Form.Item>
 
           <Form.Item
-            label="Статус"
-            name="status"
-            rules={[{ required: true, message: 'Выберите статус' }]}
-            initialValue="new"
+            label="Этап"
+            name="stage"
+            rules={[{ required: true, message: 'Выберите этап' }]}
           >
-            <Select placeholder="Выберите статус">
-              <Option value="new">Новый</Option>
-              <Option value="contacted">Связались</Option>
-              <Option value="qualified">Квалифицирован</Option>
-              <Option value="converted">Конвертирован</Option>
-              <Option value="lost">Потерян</Option>
-            </Select>
+            <ReferenceSelect type="stages" placeholder="Выберите этап" />
           </Form.Item>
 
           <Form.Item
             label="Источник"
             name="source"
             rules={[{ required: true, message: 'Выберите источник' }]}
-            initialValue="website"
           >
-            <Select placeholder="Выберите источник">
-              <Option value="website">Веб-сайт</Option>
-              <Option value="referral">Реферал</Option>
-              <Option value="email">Email</Option>
-              <Option value="phone">Телефон</Option>
-              <Option value="social">Соцсети</Option>
-              <Option value="advertisement">Реклама</Option>
-              <Option value="other">Другое</Option>
-            </Select>
+            <ReferenceSelect type="lead-sources" placeholder="Выберите источник" />
           </Form.Item>
 
           <Form.Item label="Описание" name="description">

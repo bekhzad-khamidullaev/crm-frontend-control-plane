@@ -6,16 +6,15 @@
 import React, { useState, useEffect } from 'react';
 import { Form, Input, Select, Button, Space, App, Card, Alert, Switch, Divider, Modal, Table } from 'antd';
 import { MessageOutlined, CheckCircleOutlined, PlusOutlined, DeleteOutlined, EditOutlined } from '@ant-design/icons';
-import { 
-  getSMSProviderConfig, 
-  updateSMSProviderConfig, 
-  testSMSConnection,
-  getSMSTemplates,
-  createSMSTemplate,
-  updateSMSTemplate,
-  deleteSMSTemplate,
-  getSMSBalance
-} from '../lib/api/sms';
+// SMS API not available in Django-CRM API.yaml
+const getSMSProviderConfig = async () => { return {}; };
+const updateSMSProviderConfig = async () => { throw new Error('SMS API requires backend implementation'); };
+const testSMSConnection = async () => { throw new Error('SMS API requires backend implementation'); };
+const getSMSTemplates = async () => { return []; };
+const createSMSTemplate = async () => { throw new Error('SMS API requires backend implementation'); };
+const updateSMSTemplate = async () => { throw new Error('SMS API requires backend implementation'); };
+const deleteSMSTemplate = async () => { throw new Error('SMS API requires backend implementation'); };
+const getSMSBalance = async () => { return { balance: 0 }; };
 
 export default function SMSSettings({ onSuccess }) {
   const { message } = App.useApp();

@@ -30,38 +30,64 @@ export async function exportData(entityType, params = {}) {
 }
 
 /**
+ * Export projects
+ * Note: According to Django-CRM API.yaml, only /api/projects/export/ exists
+ */
+export async function exportProjects(params = {}) {
+  return exportData('projects', params);
+}
+
+/**
  * Export leads
+ * Note: This endpoint doesn't exist in Django-CRM API.yaml
+ * This is a placeholder that will fail gracefully
  */
 export async function exportLeads(params = {}) {
-  return exportData('leads', params);
+  try {
+    return await exportData('leads', params);
+  } catch (error) {
+    console.warn('Export endpoint for leads not available in API');
+    throw new Error('Leads export requires backend implementation');
+  }
 }
 
 /**
  * Export contacts
+ * Note: This endpoint doesn't exist in Django-CRM API.yaml
  */
 export async function exportContacts(params = {}) {
-  return exportData('contacts', params);
+  try {
+    return await exportData('contacts', params);
+  } catch (error) {
+    console.warn('Export endpoint for contacts not available in API');
+    throw new Error('Contacts export requires backend implementation');
+  }
 }
 
 /**
  * Export deals
+ * Note: This endpoint doesn't exist in Django-CRM API.yaml
  */
 export async function exportDeals(params = {}) {
-  return exportData('deals', params);
+  try {
+    return await exportData('deals', params);
+  } catch (error) {
+    console.warn('Export endpoint for deals not available in API');
+    throw new Error('Deals export requires backend implementation');
+  }
 }
 
 /**
  * Export tasks
+ * Note: This endpoint doesn't exist in Django-CRM API.yaml
  */
 export async function exportTasks(params = {}) {
-  return exportData('tasks', params);
-}
-
-/**
- * Export projects
- */
-export async function exportProjects(params = {}) {
-  return exportData('projects', params);
+  try {
+    return await exportData('tasks', params);
+  } catch (error) {
+    console.warn('Export endpoint for tasks not available in API');
+    throw new Error('Tasks export requires backend implementation');
+  }
 }
 
 /**

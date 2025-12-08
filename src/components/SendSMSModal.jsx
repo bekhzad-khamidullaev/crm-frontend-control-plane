@@ -6,7 +6,9 @@
 import React, { useState, useEffect } from 'react';
 import { Modal, Form, Input, Select, Button, Space, App, Typography, Alert, Divider } from 'antd';
 import { MessageOutlined, SendOutlined, EyeOutlined } from '@ant-design/icons';
-import { sendSMS, getSMSTemplates } from '../lib/api/sms';
+// SMS API not available in Django-CRM API.yaml
+const sendSMS = async () => { throw new Error('SMS API requires backend implementation'); };
+const getSMSTemplates = async () => { return []; };
 
 const { TextArea } = Input;
 const { Text, Paragraph } = Typography;

@@ -56,7 +56,7 @@ function LeadsList() {
       const response = await getLeads({
         page,
         page_size: pagination.pageSize,
-        search,
+        search: search || undefined, // Don't send empty string
       });
       setLeads(response.results || []);
       setPagination({
@@ -65,7 +65,9 @@ function LeadsList() {
         total: response.count || 0,
       });
     } catch (error) {
-      message.error('Ошибка загрузки лидов');
+      console.error('Error fetching leads:', error);
+      const errorMessage = error?.details?.detail || error?.message || 'Ошибка загрузки лидов';
+      message.error(errorMessage);
       // Mock data for demo
       setLeads([
         {
