@@ -1,22 +1,47 @@
-export { Table } from './ui-Table.js';
-export { Pagination } from './ui-Pagination.js';
-export { Modal } from './ui-Modal.js';
-export { Spinner } from './ui-Spinner.js';
-export { Toast, showToast } from './ui-Toast.js';
-export { TextField } from './ui-TextField.js';
-export { FAB } from './ui-FAB.js';
-export { StatusBadge, createBadge, smartBadge } from './ui-StatusBadge.js';
-export { Tabs } from './ui-Tabs.js';
-export { InfoCard } from './ui-InfoCard.js';
-export { Timeline } from './ui-Timeline.js';
-export { FormSection } from './ui-FormSection.js';
-export { FormPreview } from './ui-FormPreview.js';
+export { Table } from './ui-Table.jsx';
+export { Pagination } from './ui-Pagination.jsx';
+export { Modal } from './ui-Modal.jsx';
+export { Spinner } from './ui-Spinner.jsx';
+export { Toast, showToast } from './ui-Toast.jsx';
+export { TextField } from './ui-TextField.jsx';
+export { FAB } from './ui-FAB.jsx';
+export { StatusBadge, createBadge, smartBadge } from './ui-StatusBadge.jsx';
+export { Tabs } from './ui-Tabs.jsx';
+export { InfoCard } from './ui-InfoCard.jsx';
+export { Timeline } from './ui-Timeline.jsx';
+export { FormSection } from './ui-FormSection.jsx';
+export { FormPreview } from './ui-FormPreview.jsx';
 
 // Enterprise Form Components
-export { Select } from './ui-Select.js';
-export { DatePicker } from './ui-DatePicker.js';
-export { TagsInput } from './ui-TagsInput.js';
-export { FileUpload } from './ui-FileUpload.js';
-export { RichTextEditor } from './ui-RichTextEditor.js';
-export { AutoSave } from './ui-AutoSave.js';
-export { ValidationSummary } from './ui-ValidationSummary.js';
+export { Select } from './ui-Select.jsx';
+export { DatePicker } from './ui-DatePicker.jsx';
+export { TagsInput } from './ui-TagsInput.jsx';
+export { FileUpload } from './ui-FileUpload.jsx';
+export { RichTextEditor } from './ui-RichTextEditor.jsx';
+export { AutoSave } from './ui-AutoSave.jsx';
+export { ValidationSummary } from './ui-ValidationSummary.jsx';
+
+// CRM Components
+export { default as CallButton } from './CallButton.jsx';
+export { default as IntegrationCard } from './IntegrationCard.jsx';
+export { default as SendSMSModal } from './SendSMSModal.jsx';
+export { default as BulkSMSModal } from './BulkSMSModal.jsx';
+export { default as FacebookConnect } from './FacebookConnect.jsx';
+export { default as InstagramConnect } from './InstagramConnect.jsx';
+export { default as TelegramConnect } from './TelegramConnect.jsx';
+export { default as TelephonySettings } from './TelephonySettings.jsx';
+export { default as SMSSettings } from './SMSSettings.jsx';
+export { default as ActiveCallWidget } from './ActiveCallWidget.jsx';
+export { default as CallsCharts } from './CallsCharts.jsx';
+export { default as ChatMessageComposer } from './ChatMessageComposer.jsx';
+export { default as ChatMessageItem } from './ChatMessageItem.jsx';
+export { default as AudioPlayer } from './AudioPlayer.jsx';
+
+// UI Action Components
+export { default as BulkActions } from './ui-BulkActions.jsx';
+export { default as ClickToCall } from './ui-ClickToCall.jsx';
+
+// Analytics components
+export { default as AnalyticsCard } from './analytics/AnalyticsCard.jsx';
+export { default as PredictionChart } from './analytics/PredictionChart.jsx';
+export { default as AnalyticsStatusBanner } from './analytics/AnalyticsStatusBanner.jsx';

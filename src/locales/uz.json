@@ -1,0 +1,34 @@
+{
+  "nav": {
+    "dashboard": "Boshqaruv paneli",
+    "leads": "Lidlar",
+    "contacts": "Kontaktlar",
+    "companies": "Kompaniyalar",
+    "deals": "Bitimlar",
+    "tasks": "Vazifalar",
+    "projects": "Loyihalar",
+    "chat": "Chat",
+    "calls": "Qo'ng'iroqlar",
+    "settings": "Sozlamalar"
+  },
+  "actions": {
+    "edit": "Tahrirlash",
+    "delete": "O'chirish",
+    "save": "Saqlash",
+    "cancel": "Bekor qilish",
+    "create": "Yaratish",
+    "search": "Qidirish",
+    "retry": "Qayta urinib ko'rish"
+  },
+  "dashboard": {
+    "analytics": {
+      "partialBadge": "Qisman mavjud",
+      "partialTooltip": "Ba'zi analitik vidjetlar mavjud emas. KPI va Faollik mavjud.",
+      "unavailable": "Analitika vaqtincha mavjud emas (server xatosi)",
+      "predictionTitle": "Kelgusi 6 oy uchun daromad prognozi"
+    },
+    "kpi": {
+      "conversion": "Konversiya: {value}%"
+    }
+  }
+}

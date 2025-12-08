@@ -4,8 +4,8 @@
  */
 
 import { getEntityChatMessages, createChatMessage, deleteChatMessage } from '../../lib/api/chat.js';
-import ChatMessage from '../../components/ui-ChatMessage.js';
-import ChatInput from '../../components/ui-ChatInput.js';
+import ChatMessage from '../../components/ui-ChatMessage.jsx';
+import ChatInput from '../../components/ui-ChatInput.jsx';
 import { Spinner, Toast } from '../../components/index.js';
 
 /**

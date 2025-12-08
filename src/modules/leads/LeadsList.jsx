@@ -10,6 +10,8 @@ import {
   Card,
   Typography,
   Segmented,
+  Modal,
+  Select,
 } from 'antd';
 import {
   PlusOutlined,
@@ -19,11 +21,17 @@ import {
   SearchOutlined,
   TableOutlined,
   AppstoreOutlined,
+  ExportOutlined,
+  MessageOutlined,
 } from '@ant-design/icons';
 import { navigate } from '../../router';
-import { getLeads, deleteLead } from '../../lib/api/client';
+import { getLeads, deleteLead, api } from '../../lib/api/client';
 import LeadsKanban from './LeadsKanban';
 import CallButton from '../../components/CallButton';
+import ClickToCall from '../../components/ui-ClickToCall.jsx';
+import BulkActions from '../../components/ui-BulkActions.jsx';
+import BulkSMSModal from '../../components/BulkSMSModal';
+import { exportAndDownload } from '../../lib/api/export';
 
 const { Title } = Typography;
 
@@ -37,6 +45,10 @@ function LeadsList() {
     pageSize: 10,
     total: 0,
   });
+  const [selectedRowKeys, setSelectedRowKeys] = useState([]);
+  const [bulkSMSModalVisible, setBulkSMSModalVisible] = useState(false);
+  const [statusChangeModalVisible, setStatusChangeModalVisible] = useState(false);
+  const [bulkStatus, setBulkStatus] = useState('');
 
   const fetchLeads = async (page = 1, search = '') => {
     setLoading(true);
@@ -119,6 +131,79 @@ function LeadsList() {
     }
   };
 
+  // Bulk actions handlers
+  const handleBulkDelete = async (ids) => {
+    try {
+      await Promise.all(ids.map(id => deleteLead(id)));
+      message.success(`Удалено ${ids.length} лидов`);
+      setSelectedRowKeys([]);
+      fetchLeads(pagination.current, searchText);
+    } catch (error) {
+      message.error('Ошибка массового удаления');
+    }
+  };
+
+  const handleBulkSMS = () => {
+    const recipients = leads
+      .filter(lead => selectedRowKeys.includes(lead.id))
+      .map(lead => ({
+        id: lead.id,
+        name: `${lead.first_name} ${lead.last_name}`,
+        phone: lead.phone,
+      }));
+    
+    if (recipients.some(r => !r.phone)) {
+      message.warning('У некоторых выбранных лидов отсутствует номер телефона');
+    }
+    
+    setBulkSMSModalVisible(true);
+  };
+
+  const handleBulkStatusChange = () => {
+    setStatusChangeModalVisible(true);
+  };
+
+  const handleStatusChangeConfirm = async () => {
+    if (!bulkStatus) {
+      message.error('Выберите статус');
+      return;
+    }
+
+    try {
+      await Promise.all(
+        selectedRowKeys.map(id =>
+          api.patch(`/api/leads/${id}/`, { status: bulkStatus })
+        )
+      );
+      message.success(`Статус изменен для ${selectedRowKeys.length} лидов`);
+      setSelectedRowKeys([]);
+      setStatusChangeModalVisible(false);
+      setBulkStatus('');
+      fetchLeads(pagination.current, searchText);
+    } catch (error) {
+      message.error('Ошибка изменения статуса');
+    }
+  };
+
+  const handleBulkExport = async () => {
+    try {
+      await exportAndDownload('leads', {
+        format: 'csv',
+        filters: { id__in: selectedRowKeys.join(',') },
+      });
+      message.success('Данные экспортированы');
+    } catch (error) {
+      message.error('Ошибка экспорта данных');
+    }
+  };
+
+  const rowSelection = {
+    selectedRowKeys,
+    onChange: (newSelectedRowKeys) => {
+      setSelectedRowKeys(newSelectedRowKeys);
+    },
+  };
+
   const handleTableChange = (newPagination) => {
     fetchLeads(newPagination.current, searchText);
   };
@@ -147,6 +232,16 @@ function LeadsList() {
       title: 'Телефон',
       dataIndex: 'phone',
       key: 'phone',
+      render: (phone, record) => phone ? (
+        <ClickToCall 
+          phoneNumber={phone}
+          contactName={`${record.first_name} ${record.last_name}`}
+          contactId={record.id}
+          entityType="lead"
+          size="small"
+          type="link"
+        />
+      ) : '-',
     },
     {
       title: 'Компания',
@@ -264,14 +359,64 @@ function LeadsList() {
             dataSource={leads}
             rowKey="id"
             loading={loading}
-            pagination={pagination}
+            pagination={{
+              ...pagination,
+              showSizeChanger: true,
+              showTotal: (total) => `Всего ${total} лидов`,
+            }}
             onChange={handleTableChange}
+            rowSelection={rowSelection}
             scroll={{ x: 1200 }}
           />
         </Card>
       ) : (
         <LeadsKanban />
       )}
+
+      <BulkActions
+        selectedRowKeys={selectedRowKeys}
+        onClearSelection={() => setSelectedRowKeys([])}
+        onDelete={handleBulkDelete}
+        onStatusChange={handleBulkStatusChange}
+        onExport={handleBulkExport}
+        onSendSMS={handleBulkSMS}
+        entityName="лидов"
+      />
+
+      <BulkSMSModal
+        visible={bulkSMSModalVisible}
+        onClose={() => setBulkSMSModalVisible(false)}
+        recipients={leads
+          .filter(lead => selectedRowKeys.includes(lead.id))
+          .map(lead => ({
+            id: lead.id,
+            name: `${lead.first_name} ${lead.last_name}`,
+            phone: lead.phone,
+          }))}
+      />
+
+      <Modal
+        title="Изменить статус лидов"
+        open={statusChangeModalVisible}
+        onCancel={() => setStatusChangeModalVisible(false)}
+        onOk={handleStatusChangeConfirm}
+        okText="Применить"
+        cancelText="Отмена"
+      >
+        <p>Изменить статус для {selectedRowKeys.length} выбранных лидов</p>
+        <Select
+          style={{ width: '100%' }}
+          placeholder="Выберите статус"
+          value={bulkStatus}
+          onChange={setBulkStatus}
+        >
+          {Object.keys(statusConfig).map(key => (
+            <Select.Option key={key} value={key}>
+              {statusConfig[key].text}
+            </Select.Option>
+          ))}
+        </Select>
+      </Modal>
     </div>
   );
 }

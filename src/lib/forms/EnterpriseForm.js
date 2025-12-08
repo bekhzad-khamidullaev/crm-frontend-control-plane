@@ -1,7 +1,7 @@
-import { AutoSave } from '../../components/ui-AutoSave.js';
+import { AutoSave } from '../../components/ui-AutoSave.jsx';
 import { FormValidator } from './FormValidator.js';
 import { FormStateManager } from './FormStateManager.js';
-import { Toast } from '../../components/ui-Toast.js';
+import { Toast } from '../../components/ui-Toast.jsx';
 
 /**
  * Enterprise base class for all forms

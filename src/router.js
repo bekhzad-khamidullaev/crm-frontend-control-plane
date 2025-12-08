@@ -32,6 +32,9 @@ export const routeMeta = {
  'chat-list': { auth: true, title: 'Chat' },
  'calls-list': { auth: true, title: 'Call Logs' },
  'calls-dashboard': { auth: true, title: 'Calls Dashboard' },
+ 'profile': { auth: true, title: 'Profile' },
+ 'settings': { auth: true, title: 'Settings' },
+ 'integrations': { auth: true, title: 'Integrations' },
  'forbidden': { auth: false, title: 'Forbidden' },
  'not-found': { auth: false, title: 'Not Found' }
 };
@@ -102,6 +105,9 @@ export function parseHash() {
     const id = segments[1];
     return { name: 'calls-detail', params: { id } };
   }
+  if (segments[0] === 'profile') return { name: 'profile', params: {} };
+  if (segments[0] === 'settings') return { name: 'settings', params: {} };
+  if (segments[0] === 'integrations') return { name: 'integrations', params: {} };
   return { name: 'leads-list', params: {} };
 }
 

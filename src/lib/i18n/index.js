@@ -5,6 +5,7 @@ let current = 'en';
 const loaders = {
   en: () => import('../../locales/en.json').then((m) => m.default || m),
   ru: () => import('../../locales/ru.json').then((m) => m.default || m),
+  uz: () => import('../../locales/uz.json').then((m) => m.default || m),
 };
 
 export async function setLocale(locale) {

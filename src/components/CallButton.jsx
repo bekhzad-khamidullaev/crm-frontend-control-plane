@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Button, Modal, Space, Typography, message, Input, Select, Badge, Tooltip } from 'antd';
+import { Button, Modal, Space, Typography, App, Input, Select, Badge, Tooltip } from 'antd';
 import { PhoneOutlined, ClockCircleOutlined, CheckCircleOutlined, AudioOutlined, AudioMutedOutlined } from '@ant-design/icons';
 import { createCallLog, updateCallLog, uploadRecording } from '../lib/api/calls.js';
 import sipClient from '../lib/telephony/SIPClient.js';
@@ -10,6 +10,7 @@ const { TextArea } = Input;
 const { Option } = Select;
 
 function CallButton({ phone, name, entityType, entityId, size = 'middle', type = 'default', icon = true, mode = 'browser' }) {
+  const { message } = App.useApp();
   const [modalVisible, setModalVisible] = useState(false);
   const [callStatus, setCallStatus] = useState('idle'); // idle, calling, connected, completed
   const [callNotes, setCallNotes] = useState('');

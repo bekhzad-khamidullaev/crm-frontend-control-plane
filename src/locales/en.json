@@ -17,7 +17,19 @@
     "save": "Save",
     "cancel": "Cancel",
     "create": "Create",
-    "search": "Search"
+    "search": "Search",
+    "retry": "Retry"
+  },
+  "dashboard": {
+    "analytics": {
+      "partialBadge": "Partially available",
+      "partialTooltip": "Some analytic widgets are unavailable. KPI and Activity are available.",
+      "unavailable": "Analytics temporarily unavailable (server error)",
+      "predictionTitle": "Predicted revenue for the next 6 months"
+    },
+    "kpi": {
+      "conversion": "Conversion: {value}%"
+    }
   },
   "leads": {
     "title": "Leads",

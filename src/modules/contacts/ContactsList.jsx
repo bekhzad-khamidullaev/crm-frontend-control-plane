@@ -10,6 +10,8 @@ import {
   Card,
   Typography,
   Avatar,
+  Modal,
+  Select,
 } from 'antd';
 import {
   PlusOutlined,
@@ -22,8 +24,12 @@ import {
   PhoneOutlined,
 } from '@ant-design/icons';
 import { navigate } from '../../router';
-import { getContacts, deleteContact } from '../../lib/api/client';
+import { getContacts, deleteContact, api } from '../../lib/api/client';
 import CallButton from '../../components/CallButton';
+import ClickToCall from '../../components/ui-ClickToCall.jsx';
+import BulkActions from '../../components/ui-BulkActions.jsx';
+import BulkSMSModal from '../../components/BulkSMSModal';
+import { exportAndDownload } from '../../lib/api/export';
 
 const { Title } = Typography;
 
@@ -36,6 +42,10 @@ function ContactsList() {
     pageSize: 10,
     total: 0,
   });
+  const [selectedRowKeys, setSelectedRowKeys] = useState([]);
+  const [bulkSMSModalVisible, setBulkSMSModalVisible] = useState(false);
+  const [statusChangeModalVisible, setStatusChangeModalVisible] = useState(false);
+  const [bulkStatus, setBulkStatus] = useState('');
 
   const fetchContacts = async (page = 1, search = '') => {
     setLoading(true);
@@ -122,6 +132,92 @@ function ContactsList() {
     fetchContacts(newPagination.current, searchText);
   };
 
+  // Bulk actions handlers
+  const handleBulkDelete = async (ids) => {
+    try {
+      await Promise.all(ids.map(id => deleteContact(id)));
+      message.success(`Удалено ${ids.length} контактов`);
+      setSelectedRowKeys([]);
+      fetchContacts(pagination.current, searchText);
+    } catch (error) {
+      message.error('Ошибка массового удаления');
+    }
+  };
+
+  const handleBulkSMS = () => {
+    const recipients = contacts
+      .filter(contact => selectedRowKeys.includes(contact.id))
+      .map(contact => ({
+        id: contact.id,
+        name: `${contact.first_name} ${contact.last_name}`,
+        phone: contact.phone,
+      }));
+    
+    if (recipients.some(r => !r.phone)) {
+      message.warning('У некоторых выбранных контактов отсутствует номер телефона');
+    }
+    
+    setBulkSMSModalVisible(true);
+  };
+
+  const handleBulkEmail = () => {
+    const recipients = contacts
+      .filter(contact => selectedRowKeys.includes(contact.id))
+      .filter(contact => contact.email);
+    
+    if (recipients.length === 0) {
+      message.warning('У выбранных контактов нет email адресов');
+      return;
+    }
+    
+    message.info('Функция массовой отправки email в разработке');
+  };
+
+  const handleBulkStatusChange = () => {
+    setStatusChangeModalVisible(true);
+  };
+
+  const handleStatusChangeConfirm = async () => {
+    if (!bulkStatus) {
+      message.error('Выберите статус');
+      return;
+    }
+
+    try {
+      await Promise.all(
+        selectedRowKeys.map(id =>
+          api.patch(`/api/contacts/${id}/`, { type: bulkStatus })
+        )
+      );
+      message.success(`Тип изменен для ${selectedRowKeys.length} контактов`);
+      setSelectedRowKeys([]);
+      setStatusChangeModalVisible(false);
+      setBulkStatus('');
+      fetchContacts(pagination.current, searchText);
+    } catch (error) {
+      message.error('Ошибка изменения типа');
+    }
+  };
+
+  const handleBulkExport = async () => {
+    try {
+      await exportAndDownload('contacts', {
+        format: 'csv',
+        filters: { id__in: selectedRowKeys.join(',') },
+      });
+      message.success('Данные экспортированы');
+    } catch (error) {
+      message.error('Ошибка экспорта данных');
+    }
+  };
+
+  const rowSelection = {
+    selectedRowKeys,
+    onChange: (newSelectedRowKeys) => {
+      setSelectedRowKeys(newSelectedRowKeys);
+    },
+  };
+
   const typeConfig = {
     client: { color: 'blue', text: 'Клиент' },
     partner: { color: 'green', text: 'Партнер' },
@@ -157,10 +253,16 @@ function ContactsList() {
             <MailOutlined style={{ color: '#999' }} />
             <a href={`mailto:${record.email}`}>{record.email}</a>
           </Space>
-          <Space size="small">
-            <PhoneOutlined style={{ color: '#999' }} />
-            <a href={`tel:${record.phone}`}>{record.phone}</a>
-          </Space>
+          {record.phone && (
+            <ClickToCall 
+              phoneNumber={record.phone}
+              contactName={`${record.first_name} ${record.last_name}`}
+              contactId={record.id}
+              entityType="contact"
+              size="small"
+              type="link"
+            />
+          )}
         </Space>
       ),
     },
@@ -263,11 +365,62 @@ function ContactsList() {
           dataSource={contacts}
           rowKey="id"
           loading={loading}
-          pagination={pagination}
+          pagination={{
+            ...pagination,
+            showSizeChanger: true,
+            showTotal: (total) => `Всего ${total} контактов`,
+          }}
           onChange={handleTableChange}
+          rowSelection={rowSelection}
           scroll={{ x: 1200 }}
         />
       </Card>
+
+      <BulkActions
+        selectedRowKeys={selectedRowKeys}
+        onClearSelection={() => setSelectedRowKeys([])}
+        onDelete={handleBulkDelete}
+        onStatusChange={handleBulkStatusChange}
+        onExport={handleBulkExport}
+        onSendEmail={handleBulkEmail}
+        onSendSMS={handleBulkSMS}
+        entityName="контактов"
+      />
+
+      <BulkSMSModal
+        visible={bulkSMSModalVisible}
+        onClose={() => setBulkSMSModalVisible(false)}
+        recipients={contacts
+          .filter(contact => selectedRowKeys.includes(contact.id))
+          .map(contact => ({
+            id: contact.id,
+            name: `${contact.first_name} ${contact.last_name}`,
+            phone: contact.phone,
+          }))}
+      />
+
+      <Modal
+        title="Изменить тип контактов"
+        open={statusChangeModalVisible}
+        onCancel={() => setStatusChangeModalVisible(false)}
+        onOk={handleStatusChangeConfirm}
+        okText="Применить"
+        cancelText="Отмена"
+      >
+        <p>Изменить тип для {selectedRowKeys.length} выбранных контактов</p>
+        <Select
+          style={{ width: '100%' }}
+          placeholder="Выберите тип"
+          value={bulkStatus}
+          onChange={setBulkStatus}
+        >
+          {Object.keys(typeConfig).map(key => (
+            <Select.Option key={key} value={key}>
+              {typeConfig[key].text}
+            </Select.Option>
+          ))}
+        </Select>
+      </Modal>
     </div>
   );
 }

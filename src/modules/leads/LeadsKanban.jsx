@@ -371,23 +371,56 @@ function LeadsKanban() {
 
     setActiveId(null);
 
-    if (!over) return;
+    if (!over) {
+      console.log('No over target');
+      return;
+    }
 
     const activeContainer = findContainer(active.id);
     const overContainer = findContainer(over.id) || over.id;
 
-    if (!activeContainer || !overContainer) return;
+    console.log('Drag end:', {
+      activeId: active.id,
+      overId: over.id,
+      activeContainer,
+      overContainer,
+    });
+
+    if (!activeContainer || !overContainer) {
+      console.log('Container not found');
+      return;
+    }
 
     const activeLead = columns[activeContainer].find((l) => l.id === active.id);
 
+    if (!activeLead) {
+      console.error('Active lead not found');
+      return;
+    }
+
     if (activeContainer !== overContainer) {
+      console.log('Updating lead status:', {
+        leadId: activeLead.id,
+        oldStatus: activeContainer,
+        newStatus: overContainer,
+      });
+
       try {
-        await updateLead(activeLead.id, { status: overContainer });
+        const response = await updateLead(activeLead.id, { status: overContainer });
+        console.log('Update response:', response);
         message.success(
           `Лид перемещен в "${statusColumns[overContainer].title}"`
         );
+        // Refresh data to ensure consistency
+        await fetchLeads();
       } catch (error) {
-        message.error('Ошибка обновления статуса лида');
+        console.error('Error updating lead:', error);
+        message.error(
+          error?.details?.detail || 
+          error?.message || 
+          'Ошибка обновления статуса лида'
+        );
+        // Revert changes
         fetchLeads();
       }
     }

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Layout, Menu, Avatar, Dropdown, Space, Typography, Badge, Tooltip } from 'antd';
+import { Layout, Menu, Avatar, Dropdown, Space, Typography, Badge, Tooltip, Select } from 'antd';
 import {
   MenuFoldOutlined,
   MenuUnfoldOutlined,
@@ -21,6 +21,7 @@ import {
 } from '@ant-design/icons';
 import { parseHash, navigate, onRouteChange } from './router';
 import { subscribe, getIncomingCalls, setWsConnected, setWsReconnecting, addIncomingCall, removeIncomingCall, setChatWsConnected, setChatWsReconnecting, getUnreadCount } from './lib/store';
+import { isAuthenticated, getToken, clearToken, getUserFromToken } from './lib/api/auth';
 import callsWebSocket from './lib/websocket/CallsWebSocket.js';
 import chatWebSocket from './lib/websocket/ChatWebSocket.js';
 import IncomingCallModal from './modules/calls/IncomingCallModal.jsx';
@@ -47,9 +48,13 @@ import ProjectDetail from './modules/projects/ProjectDetail.jsx';
 import CallsList from './modules/calls/CallsList.jsx';
 import CallsDashboard from './pages/calls-dashboard.jsx';
 import ChatPage from './pages/chat-page.jsx';
+import ProfilePage from './pages/profile.jsx';
+import SettingsPage from './pages/settings.jsx';
+import IntegrationsPage from './pages/integrations.jsx';
 
 const { Header, Sider, Content } = Layout;
 const { Text } = Typography;
+const { Option } = Select;
 
 function App() {
   const [collapsed, setCollapsed] = useState(false);
@@ -63,18 +68,32 @@ function App() {
 
   useEffect(() => {
     // Check auth
-    const token = localStorage.getItem('authToken');
-    if (token) {
-      setUser({ name: 'User', email: 'user@example.com' });
+    if (isAuthenticated()) {
+      const token = getToken();
+      const userInfo = getUserFromToken();
       
-      // Initialize WebSocket connections
-      initializeWebSocket(token);
-      initializeChatWebSocket(token);
+      setUser(userInfo || { name: 'User', email: 'user@example.com' });
+      
+      // Initialize WebSocket connections if we have a token
+      if (token) {
+        initializeWebSocket(token);
+        initializeChatWebSocket(token);
+      }
+    } else {
+      // Not authenticated, redirect to login if not already there
+      if (route.name !== 'login') {
+        navigate('/login');
+      }
     }
 
     // Subscribe to route changes
     const unsubscribeRoute = onRouteChange((newRoute) => {
       setRoute(newRoute);
+      
+      // Check auth on route change
+      if (newRoute.name !== 'login' && !isAuthenticated()) {
+        navigate('/login');
+      }
     });
 
     // Subscribe to store changes for incoming calls and chats
@@ -151,7 +170,7 @@ function App() {
   };
 
   const handleLogout = () => {
-    localStorage.removeItem('authToken');
+    clearToken();
     callsWebSocket.disconnect();
     chatWebSocket.disconnect();
     setUser(null);
@@ -171,16 +190,23 @@ function App() {
     setCurrentIncomingCall(null);
   };
 
+  const handleMenuClick = ({ key }) => {
+    if (key === 'profile') navigate('/profile');
+    else if (key === 'settings') navigate('/settings');
+  };
+
   const userMenuItems = [
     {
       key: 'profile',
       label: 'Профиль',
       icon: <UserOutlined />,
+      onClick: () => navigate('/profile'),
     },
     {
       key: 'settings',
       label: 'Настройки',
       icon: <SettingOutlined />,
+      onClick: () => navigate('/settings'),
     },
     {
       type: 'divider',
@@ -265,6 +291,15 @@ function App() {
       label: 'Заметки',
       onClick: () => navigate('/memos'),
     },
+    {
+      type: 'divider',
+    },
+    {
+      key: 'integrations',
+      icon: <SettingOutlined />,
+      label: 'Интеграции',
+      onClick: () => navigate('/integrations'),
+    },
   ];
 
   const getSelectedKey = () => {
@@ -340,14 +375,24 @@ function App() {
       case 'chat':
       case 'chat-list':
         return <ChatPage />;
+      case 'profile':
+        return <ProfilePage />;
+      case 'settings':
+        return <SettingsPage />;
+      case 'integrations':
+        return <IntegrationsPage />;
       default:
         return <Dashboard />;
     }
   };
 
   // Show login page without layout if not authenticated or on login route
-  if (!user || route.name === 'login') {
-    return <LoginPage onLogin={setUser} />;
+  if (!isAuthenticated() || route.name === 'login') {
+    return <LoginPage onLogin={(userData) => {
+      setUser(userData);
+      // After successful login, navigate to dashboard
+      navigate('/dashboard');
+    }} />;
   }
 
   return (
@@ -401,30 +446,42 @@ function App() {
             onClick: () => setCollapsed(!collapsed),
             style: { fontSize: 18, cursor: 'pointer' },
           })}
-          <Dropdown menu={{ items: userMenuItems }} placement="bottomRight">
-            <Space style={{ cursor: 'pointer' }}>
-              {/* WebSocket Status Indicator */}
-              <Tooltip title={wsConnected ? 'WebSocket подключен' : 'WebSocket отключен'}>
-                <Badge dot={wsConnected} color={wsConnected ? 'green' : 'red'}>
-                  {wsConnected ? (
-                    <WifiOutlined style={{ fontSize: 18 }} />
-                  ) : (
-                    <DisconnectOutlined style={{ fontSize: 18 }} />
-                  )}
-                </Badge>
-              </Tooltip>
-              
-              {/* Incoming calls indicator */}
-              {incomingCalls.length > 0 && (
-                <Badge count={incomingCalls.length}>
-                  <PhoneFilled style={{ color: '#52c41a', fontSize: 18 }} />
-                </Badge>
-              )}
-              
-              <Avatar icon={<UserOutlined />} />
-              <Text>{user?.name || 'Guest'}</Text>
-            </Space>
-          </Dropdown>
+          <Space>
+            {/* Language selector */}
+            <Select size="small" defaultValue="ru" style={{ width: 110 }} onChange={async (val) => {
+              const { setLocale } = await import('./lib/i18n');
+              setLocale(val);
+            }}>
+              <Option value="en">English</Option>
+              <Option value="ru">Русский</Option>
+              <Option value="uz">O‘zbekcha</Option>
+            </Select>
+
+            <Dropdown menu={{ items: userMenuItems }} placement="bottomRight">
+              <Space style={{ cursor: 'pointer' }}>
+                {/* WebSocket Status Indicator */}
+                <Tooltip title={wsConnected ? 'WebSocket подключен' : 'WebSocket отключен'}>
+                  <Badge dot={wsConnected} color={wsConnected ? 'green' : 'red'}>
+                    {wsConnected ? (
+                      <WifiOutlined style={{ fontSize: 18 }} />
+                    ) : (
+                      <DisconnectOutlined style={{ fontSize: 18 }} />
+                    )}
+                  </Badge>
+                </Tooltip>
+                
+                {/* Incoming calls indicator */}
+                {incomingCalls.length > 0 && (
+                  <Badge count={incomingCalls.length}>
+                    <PhoneFilled style={{ color: '#52c41a', fontSize: 18 }} />
+                  </Badge>
+                )}
+                
+                <Avatar icon={<UserOutlined />} />
+                <Text>{user?.name || 'Guest'}</Text>
+              </Space>
+            </Dropdown>
+          </Space>
         </Header>
         <Content
           style={{

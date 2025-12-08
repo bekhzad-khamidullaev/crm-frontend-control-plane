@@ -20,7 +20,7 @@ import { api as apiClient } from './client.js';
  * @returns {Promise<{count: number, results: Array}>}
  */
 export async function getChatMessages(params = {}) {
-  return apiClient.get('/api/chat/messages/', { params });
+  return apiClient.get('/api/chat-messages/', { params });
 }
 
 /**
@@ -43,7 +43,7 @@ export async function getChatMessage(id) {
  * @returns {Promise<Object>}
  */
 export async function createChatMessage(data) {
-  return apiClient.post('/api/chat/messages/', data);
+  return apiClient.post('/api/chat-messages/', data);
 }
 
 /**
@@ -95,7 +95,7 @@ export async function getEntityChatMessages(entityType, entityId, params = {}) {
 export async function markMessagesAsRead(messageIds) {
   // Try bulk endpoint first, fallback to individual updates
   try {
-    return await apiClient.post('/api/chat/messages/bulk-mark-read/', {
+    return await apiClient.post('/api/chat-messages/bulk-mark-read/', {
       message_ids: messageIds
     });
   } catch (error) {
@@ -119,7 +119,7 @@ export async function uploadAttachment(file, messageId = null) {
     formData.append('message_id', messageId);
   }
 
-  return apiClient.post('/api/chat/messages/upload-attachment/', formData, {
+  return apiClient.post('/api/chat-messages/upload-attachment/', formData, {
     headers: {
       'Content-Type': 'multipart/form-data',
     },
@@ -142,40 +142,53 @@ export async function deleteAttachment(attachmentId) {
  */
 export async function getChatStatistics(params = {}) {
   try {
-    return await apiClient.get('/api/chat/messages/statistics/', { params });
+    return await apiClient.get('/api/chat-messages/statistics/', { params });
   } catch (error) {
     console.warn('Statistics endpoint not available, calculating from messages');
-    const messages = await getChatMessages({ ...params, page_size: 1000 });
-    
-    const stats = {
-      total: messages.data.count || 0,
-      unread: 0,
-      by_entity_type: {
-        lead: 0,
-        contact: 0,
-        deal: 0,
-      },
-      today: 0,
-      this_week: 0,
-    };
-
-    const now = new Date();
-    const todayStart = new Date(now.setHours(0, 0, 0, 0));
-    const weekStart = new Date(now.setDate(now.getDate() - 7));
-
-    messages.data.results?.forEach(msg => {
-      if (!msg.is_read) stats.unread++;
+    try {
+      const messages = await getChatMessages({ ...params, page_size: 1000 });
       
-      const createdAt = new Date(msg.created_at);
-      if (createdAt >= todayStart) stats.today++;
-      if (createdAt >= weekStart) stats.this_week++;
-      
-      if (msg.related_lead) stats.by_entity_type.lead++;
-      if (msg.related_contact) stats.by_entity_type.contact++;
-      if (msg.related_deal) stats.by_entity_type.deal++;
-    });
+      const stats = {
+        total: messages?.data?.count || 0,
+        unread: 0,
+        by_entity_type: {
+          lead: 0,
+          contact: 0,
+          deal: 0,
+        },
+        today: 0,
+        this_week: 0,
+      };
 
-    return { data: stats };
+      const now = new Date();
+      const todayStart = new Date(now.setHours(0, 0, 0, 0));
+      const weekStart = new Date(now.setDate(now.getDate() - 7));
+
+      messages?.data?.results?.forEach(msg => {
+        if (!msg.is_read) stats.unread++;
+        
+        const createdAt = new Date(msg.created_at);
+        if (createdAt >= todayStart) stats.today++;
+        if (createdAt >= weekStart) stats.this_week++;
+        
+        if (msg.related_lead) stats.by_entity_type.lead++;
+        if (msg.related_contact) stats.by_entity_type.contact++;
+        if (msg.related_deal) stats.by_entity_type.deal++;
+      });
+
+      return { data: stats };
+    } catch (innerError) {
+      console.error('Error calculating statistics from messages:', innerError);
+      return {
+        data: {
+          total: 0,
+          unread: 0,
+          by_entity_type: { lead: 0, contact: 0, deal: 0 },
+          today: 0,
+          this_week: 0,
+        }
+      };
+    }
   }
 }
 
