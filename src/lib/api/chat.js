@@ -20,7 +20,7 @@ import { api as apiClient } from './client.js';
  * @returns {Promise<{count: number, results: Array}>}
  */
 export async function getChatMessages(params = {}) {
-  return apiClient.get('/api/chat-messages/', { params });
+  return apiClient.get('/api/chat/messages/', { params });
 }
 
 /**
@@ -29,7 +29,7 @@ export async function getChatMessages(params = {}) {
  * @returns {Promise<Object>}
  */
 export async function getChatMessage(id) {
-  return apiClient.get(`/api/chat-messages/${id}/`);
+  return apiClient.get(`/api/chat/messages/${id}/`);
 }
 
 /**
@@ -43,7 +43,7 @@ export async function getChatMessage(id) {
  * @returns {Promise<Object>}
  */
 export async function createChatMessage(data) {
-  return apiClient.post('/api/chat-messages/', data);
+  return apiClient.post('/api/chat/messages/', data);
 }
 
 /**
@@ -53,7 +53,7 @@ export async function createChatMessage(data) {
  * @returns {Promise<Object>}
  */
 export async function updateChatMessage(id, data) {
-  return apiClient.patch(`/api/chat-messages/${id}/`, data);
+  return apiClient.patch(`/api/chat/messages/${id}/`, data);
 }
 
 /**
@@ -62,7 +62,7 @@ export async function updateChatMessage(id, data) {
  * @returns {Promise<void>}
  */
 export async function deleteChatMessage(id) {
-  return apiClient.delete(`/api/chat-messages/${id}/`);
+  return apiClient.delete(`/api/chat/messages/${id}/`);
 }
 
 /**
@@ -93,9 +93,148 @@ export async function getEntityChatMessages(entityType, entityId, params = {}) {
  * @returns {Promise<Object>}
  */
 export async function markMessagesAsRead(messageIds) {
-  // This would require a custom endpoint in the backend
-  // For now, we can update each message individually if needed
-  return Promise.all(
-    messageIds.map(id => updateChatMessage(id, { is_read: true }))
-  );
+  // Try bulk endpoint first, fallback to individual updates
+  try {
+    return await apiClient.post('/api/chat/messages/bulk-mark-read/', {
+      message_ids: messageIds
+    });
+  } catch (error) {
+    console.warn('Bulk mark-read not available, using individual updates');
+    return Promise.all(
+      messageIds.map(id => updateChatMessage(id, { is_read: true }))
+    );
+  }
+}
+
+/**
+ * Upload attachment for a chat message
+ * @param {File} file - File to upload
+ * @param {string|number} messageId - Message ID (optional)
+ * @returns {Promise<Object>}
+ */
+export async function uploadAttachment(file, messageId = null) {
+  const formData = new FormData();
+  formData.append('file', file);
+  if (messageId) {
+    formData.append('message_id', messageId);
+  }
+
+  return apiClient.post('/api/chat/messages/upload-attachment/', formData, {
+    headers: {
+      'Content-Type': 'multipart/form-data',
+    },
+  });
+}
+
+/**
+ * Delete attachment
+ * @param {string|number} attachmentId - Attachment ID
+ * @returns {Promise<void>}
+ */
+export async function deleteAttachment(attachmentId) {
+  return apiClient.delete(`/api/chat-attachments/${attachmentId}/`);
+}
+
+/**
+ * Get chat statistics
+ * @param {Object} params - Query parameters
+ * @returns {Promise<Object>}
+ */
+export async function getChatStatistics(params = {}) {
+  try {
+    return await apiClient.get('/api/chat/messages/statistics/', { params });
+  } catch (error) {
+    console.warn('Statistics endpoint not available, calculating from messages');
+    const messages = await getChatMessages({ ...params, page_size: 1000 });
+    
+    const stats = {
+      total: messages.data.count || 0,
+      unread: 0,
+      by_entity_type: {
+        lead: 0,
+        contact: 0,
+        deal: 0,
+      },
+      today: 0,
+      this_week: 0,
+    };
+
+    const now = new Date();
+    const todayStart = new Date(now.setHours(0, 0, 0, 0));
+    const weekStart = new Date(now.setDate(now.getDate() - 7));
+
+    messages.data.results?.forEach(msg => {
+      if (!msg.is_read) stats.unread++;
+      
+      const createdAt = new Date(msg.created_at);
+      if (createdAt >= todayStart) stats.today++;
+      if (createdAt >= weekStart) stats.this_week++;
+      
+      if (msg.related_lead) stats.by_entity_type.lead++;
+      if (msg.related_contact) stats.by_entity_type.contact++;
+      if (msg.related_deal) stats.by_entity_type.deal++;
+    });
+
+    return { data: stats };
+  }
+}
+
+/**
+ * Search messages
+ * @param {string} query - Search query
+ * @param {Object} params - Additional parameters
+ * @returns {Promise<{count: number, results: Array}>}
+ */
+export async function searchMessages(query, params = {}) {
+  return getChatMessages({
+    ...params,
+    search: query,
+    ordering: '-created_at',
+  });
+}
+
+/**
+ * Reply to a message (creates a message with parent reference)
+ * @param {string|number} parentId - Parent message ID
+ * @param {Object} data - Reply data
+ * @returns {Promise<Object>}
+ */
+export async function replyToMessage(parentId, data) {
+  return createChatMessage({
+    ...data,
+    parent: parentId,
+  });
+}
+
+/**
+ * Get unread message count
+ * @param {Object} params - Query parameters
+ * @returns {Promise<number>}
+ */
+export async function getUnreadCount(params = {}) {
+  try {
+    const response = await getChatMessages({
+      ...params,
+      is_read: false,
+      page_size: 1,
+    });
+    return response.data.count || 0;
+  } catch (error) {
+    console.error('Error fetching unread count:', error);
+    return 0;
+  }
+}
+
+/**
+ * Get messages for a company (through related contacts)
+ * @param {string|number} companyId - Company ID
+ * @param {Object} params - Additional parameters
+ * @returns {Promise<{count: number, results: Array}>}
+ */
+export async function getCompanyChatMessages(companyId, params = {}) {
+  return getChatMessages({
+    ...params,
+    company: companyId,
+    ordering: '-created_at',
+  });
 }

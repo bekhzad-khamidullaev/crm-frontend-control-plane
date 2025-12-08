@@ -1,7 +1,3 @@
-import { ProjectsList } from './ProjectsList.js';
-
-export function mountProjects(rootEl) {
-  rootEl.innerHTML = '';
-  const list = ProjectsList();
-  rootEl.appendChild(list);
-}
+export { default as ProjectsList } from './ProjectsList.jsx';
+export { default as ProjectForm } from './ProjectForm.jsx';
+export { default as ProjectDetail } from './ProjectDetail.jsx';

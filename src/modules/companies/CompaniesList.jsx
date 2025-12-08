@@ -24,6 +24,7 @@ import {
 } from '@ant-design/icons';
 import { navigate } from '../../router';
 import { getCompanies, deleteCompany } from '../../lib/api/client';
+import CallButton from '../../components/CallButton';
 
 const { Title } = Typography;
 
@@ -212,9 +213,17 @@ function CompaniesList() {
     {
       title: 'Действия',
       key: 'actions',
-      width: 200,
+      width: 280,
       render: (_, record) => (
-        <Space size="small">
+        <Space size="small" wrap>
+          <CallButton
+            phone={record.phone}
+            name={record.name}
+            entityType="company"
+            entityId={record.id}
+            size="small"
+            type="primary"
+          />
           <Button
             type="link"
             icon={<EyeOutlined />}

@@ -9,6 +9,7 @@ import {
   message,
   Card,
   Typography,
+  Segmented,
 } from 'antd';
 import {
   PlusOutlined,
@@ -16,9 +17,13 @@ import {
   DeleteOutlined,
   EyeOutlined,
   SearchOutlined,
+  TableOutlined,
+  AppstoreOutlined,
 } from '@ant-design/icons';
 import { navigate } from '../../router';
 import { getLeads, deleteLead } from '../../lib/api/client';
+import LeadsKanban from './LeadsKanban';
+import CallButton from '../../components/CallButton';
 
 const { Title } = Typography;
 
@@ -26,6 +31,7 @@ function LeadsList() {
   const [leads, setLeads] = useState([]);
   const [loading, setLoading] = useState(false);
   const [searchText, setSearchText] = useState('');
+  const [viewMode, setViewMode] = useState('table'); // 'table' or 'kanban'
   const [pagination, setPagination] = useState({
     current: 1,
     pageSize: 10,
@@ -170,8 +176,17 @@ function LeadsList() {
     {
       title: 'Действия',
       key: 'actions',
+      width: 280,
       render: (_, record) => (
-        <Space size="small">
+        <Space size="small" wrap>
+          <CallButton
+            phone={record.phone}
+            name={`${record.first_name} ${record.last_name}`}
+            entityType="lead"
+            entityId={record.id}
+            size="small"
+            type="primary"
+          />
           <Button
             type="link"
             icon={<EyeOutlined />}
@@ -204,37 +219,59 @@ function LeadsList() {
 
   return (
     <div>
-      <div style={{ marginBottom: 16, display: 'flex', justifyContent: 'space-between' }}>
-        <Title level={2}>Лиды</Title>
-        <Button
-          type="primary"
-          icon={<PlusOutlined />}
-          onClick={() => navigate('/leads/new')}
-        >
-          Создать лид
-        </Button>
+      <div style={{ marginBottom: 16, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+        <Title level={2} style={{ margin: 0 }}>Лиды</Title>
+        <Space>
+          <Segmented
+            value={viewMode}
+            onChange={setViewMode}
+            options={[
+              {
+                label: 'Таблица',
+                value: 'table',
+                icon: <TableOutlined />,
+              },
+              {
+                label: 'Канбан',
+                value: 'kanban',
+                icon: <AppstoreOutlined />,
+              },
+            ]}
+          />
+          <Button
+            type="primary"
+            icon={<PlusOutlined />}
+            onClick={() => navigate('/leads/new')}
+          >
+            Создать лид
+          </Button>
+        </Space>
       </div>
 
-      <Card>
-        <Input.Search
-          placeholder="Поиск по имени, email, телефону..."
-          allowClear
-          enterButton={<SearchOutlined />}
-          size="large"
-          onSearch={handleSearch}
-          style={{ marginBottom: 16 }}
-        />
+      {viewMode === 'table' ? (
+        <Card>
+          <Input.Search
+            placeholder="Поиск по имени, email, телефону..."
+            allowClear
+            enterButton={<SearchOutlined />}
+            size="large"
+            onSearch={handleSearch}
+            style={{ marginBottom: 16 }}
+          />
 
-        <Table
-          columns={columns}
-          dataSource={leads}
-          rowKey="id"
-          loading={loading}
-          pagination={pagination}
-          onChange={handleTableChange}
-          scroll={{ x: 1200 }}
-        />
-      </Card>
+          <Table
+            columns={columns}
+            dataSource={leads}
+            rowKey="id"
+            loading={loading}
+            pagination={pagination}
+            onChange={handleTableChange}
+            scroll={{ x: 1200 }}
+          />
+        </Card>
+      ) : (
+        <LeadsKanban />
+      )}
     </div>
   );
 }

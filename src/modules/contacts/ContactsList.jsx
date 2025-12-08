@@ -23,6 +23,7 @@ import {
 } from '@ant-design/icons';
 import { navigate } from '../../router';
 import { getContacts, deleteContact } from '../../lib/api/client';
+import CallButton from '../../components/CallButton';
 
 const { Title } = Typography;
 
@@ -195,7 +196,15 @@ function ContactsList() {
       key: 'actions',
       width: 200,
       render: (_, record) => (
-        <Space size="small">
+        <Space size="small" wrap>
+          <CallButton
+            phone={record.phone}
+            name={`${record.first_name} ${record.last_name}`}
+            entityType="contact"
+            entityId={record.id}
+            size="small"
+            type="primary"
+          />
           <Button
             type="link"
             icon={<EyeOutlined />}

@@ -20,12 +20,26 @@ class SIPClient {
     this.isRegistered = false;
     this.isInitialized = false;
     
+    // Call metadata tracking
+    this.currentCall = null;
+    
+    // Recording
+    this.mediaRecorder = null;
+    this.recordedChunks = [];
+    this.isRecording = false;
+    
     // Event listeners
     this.listeners = {
       registered: [],
       unregistered: [],
       incomingCall: [],
       callStateChange: [],
+      callStarted: [],
+      callAnswered: [],
+      callEnded: [],
+      callFailed: [],
+      recordingStarted: [],
+      recordingStopped: [],
       error: []
     };
 
@@ -135,7 +149,7 @@ class SIPClient {
   /**
    * Make an outgoing call
    */
-  async call(destination, audioElement) {
+  async call(destination, audioElement, metadata = {}) {
     if (!this.isRegistered) {
       throw new Error('Not registered to SIP server');
     }
@@ -149,15 +163,32 @@ class SIPClient {
 
         this.callSession = this.stack.newSession('call-audio', callConfig);
         
+        // Initialize call metadata
+        this.currentCall = {
+          id: null, // Will be set after API call
+          phoneNumber: destination,
+          direction: 'outbound',
+          status: 'initiated',
+          startedAt: new Date().toISOString(),
+          answeredAt: null,
+          endedAt: null,
+          duration: 0,
+          ...metadata
+        };
+        
         const result = this.callSession.call(destination);
         
         if (result !== 0) {
+          this.currentCall = null;
           reject(new Error('Failed to initiate call'));
         } else {
+          // Emit call started event
+          this.emit('callStarted', { ...this.currentCall });
           resolve(this.callSession);
         }
       } catch (error) {
         console.error('[SIPClient] Call error:', error);
+        this.currentCall = null;
         this.emit('error', { type: 'call', error });
         reject(error);
       }
@@ -319,10 +350,23 @@ class SIPClient {
     const from = event.getSipMessage().getFrom().getUri().replace(/^sip:/, '').replace(/@.*$/, '');
     const displayName = event.getSipMessage().getFrom().getDisplayName();
     
+    // Initialize call metadata for incoming call
+    this.currentCall = {
+      id: null,
+      phoneNumber: from,
+      direction: 'inbound',
+      status: 'ringing',
+      startedAt: new Date().toISOString(),
+      answeredAt: null,
+      endedAt: null,
+      duration: 0
+    };
+    
     this.emit('incomingCall', {
       from,
       displayName,
-      session: this.callSession
+      session: this.callSession,
+      callMetadata: { ...this.currentCall }
     });
   }
 
@@ -340,13 +384,35 @@ class SIPClient {
     switch (event.type) {
       case 'connecting':
         state.status = 'connecting';
+        if (this.currentCall) {
+          this.currentCall.status = 'connecting';
+        }
         break;
       case 'connected':
         state.status = 'connected';
+        if (this.currentCall) {
+          this.currentCall.status = 'connected';
+          this.currentCall.answeredAt = new Date().toISOString();
+          // Emit call answered event
+          this.emit('callAnswered', { ...this.currentCall });
+        }
         break;
       case 'terminating':
       case 'terminated':
         state.status = 'terminated';
+        if (this.currentCall) {
+          this.currentCall.status = 'completed';
+          this.currentCall.endedAt = new Date().toISOString();
+          
+          // Calculate duration
+          const startTime = new Date(this.currentCall.answeredAt || this.currentCall.startedAt);
+          const endTime = new Date(this.currentCall.endedAt);
+          this.currentCall.duration = Math.floor((endTime - startTime) / 1000);
+          
+          // Emit call ended event
+          this.emit('callEnded', { ...this.currentCall });
+          this.currentCall = null;
+        }
         this.callSession = null;
         break;
       case 'i_ao_request':
@@ -357,9 +423,15 @@ class SIPClient {
         break;
       case 'm_local_hold_ok':
         state.status = 'held';
+        if (this.currentCall) {
+          this.currentCall.status = 'held';
+        }
         break;
       case 'm_local_resume_ok':
         state.status = 'resumed';
+        if (this.currentCall) {
+          this.currentCall.status = 'connected';
+        }
         break;
     }
 
@@ -370,21 +442,35 @@ class SIPClient {
    * Event listener management
    */
   on(event, callback) {
-    if (this.listeners[event]) {
-      this.listeners[event].push(callback);
+    if (!this.listeners) {
+      console.warn('[SIPClient] Listeners not initialized');
+      return;
     }
+    if (!this.listeners[event]) {
+      console.warn(`[SIPClient] Unknown event type: ${event}`);
+      return;
+    }
+    this.listeners[event].push(callback);
   }
 
   off(event, callback) {
-    if (this.listeners[event]) {
-      this.listeners[event] = this.listeners[event].filter(cb => cb !== callback);
+    if (!this.listeners || !this.listeners[event]) {
+      return;
     }
+    this.listeners[event] = this.listeners[event].filter(cb => cb !== callback);
   }
 
   emit(event, data) {
-    if (this.listeners[event]) {
-      this.listeners[event].forEach(callback => callback(data));
+    if (!this.listeners || !this.listeners[event]) {
+      return;
     }
+    this.listeners[event].forEach(callback => {
+      try {
+        callback(data);
+      } catch (error) {
+        console.error(`[SIPClient] Error in event handler for ${event}:`, error);
+      }
+    });
   }
 
   /**
@@ -395,8 +481,118 @@ class SIPClient {
       isInitialized: this.isInitialized,
       isRegistered: this.isRegistered,
       hasActiveCall: !!this.callSession,
-      username: this.config.impi
+      username: this.config.impi,
+      currentCall: this.currentCall ? { ...this.currentCall } : null
     };
+  }
+
+  /**
+   * Get current call metadata
+   */
+  getCurrentCallMetadata() {
+    return this.currentCall ? { ...this.currentCall } : null;
+  }
+
+  /**
+   * Update current call metadata
+   */
+  updateCurrentCallMetadata(updates) {
+    if (this.currentCall) {
+      this.currentCall = { ...this.currentCall, ...updates };
+    }
+  }
+
+  /**
+   * Start recording the call
+   */
+  startRecording() {
+    if (this.isRecording || !this.callSession) {
+      console.warn('[SIPClient] Cannot start recording');
+      return false;
+    }
+
+    try {
+      // Get the audio stream from the call session
+      const stream = this.callSession.getLocalStreams()[0];
+      
+      if (!stream) {
+        console.error('[SIPClient] No audio stream available');
+        return false;
+      }
+
+      // Create MediaRecorder
+      this.recordedChunks = [];
+      this.mediaRecorder = new MediaRecorder(stream, {
+        mimeType: 'audio/webm;codecs=opus'
+      });
+
+      this.mediaRecorder.ondataavailable = (event) => {
+        if (event.data && event.data.size > 0) {
+          this.recordedChunks.push(event.data);
+        }
+      };
+
+      this.mediaRecorder.onstop = () => {
+        console.log('[SIPClient] Recording stopped');
+        this.isRecording = false;
+        this.emit('recordingStopped', {
+          chunks: this.recordedChunks.length,
+          blob: this.getRecordingBlob()
+        });
+      };
+
+      this.mediaRecorder.start(1000); // Collect data every second
+      this.isRecording = true;
+      
+      console.log('[SIPClient] Recording started');
+      this.emit('recordingStarted');
+      
+      return true;
+    } catch (error) {
+      console.error('[SIPClient] Error starting recording:', error);
+      this.emit('error', { type: 'recording', error });
+      return false;
+    }
+  }
+
+  /**
+   * Stop recording the call
+   */
+  stopRecording() {
+    if (!this.isRecording || !this.mediaRecorder) {
+      console.warn('[SIPClient] No active recording');
+      return false;
+    }
+
+    try {
+      this.mediaRecorder.stop();
+      return true;
+    } catch (error) {
+      console.error('[SIPClient] Error stopping recording:', error);
+      return false;
+    }
+  }
+
+  /**
+   * Get the recording as a Blob
+   */
+  getRecordingBlob() {
+    if (this.recordedChunks.length === 0) {
+      return null;
+    }
+
+    return new Blob(this.recordedChunks, {
+      type: 'audio/webm;codecs=opus'
+    });
+  }
+
+  /**
+   * Clear recording data
+   */
+  clearRecording() {
+    this.recordedChunks = [];
+    this.mediaRecorder = null;
+    this.isRecording = false;
   }
 
   /**

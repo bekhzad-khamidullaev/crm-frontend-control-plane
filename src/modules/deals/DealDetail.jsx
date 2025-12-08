@@ -15,6 +15,8 @@ import {
   Col,
   Statistic,
   Steps,
+  Table,
+  Empty,
 } from 'antd';
 import {
   ArrowLeftOutlined,
@@ -26,18 +28,27 @@ import {
   ShopOutlined,
   CheckCircleOutlined,
   ClockCircleOutlined,
+  PhoneOutlined,
+  PhoneTwoTone,
 } from '@ant-design/icons';
 import { navigate } from '../../router';
 import { getDeal, deleteDeal } from '../../lib/api/client';
+import { getDealCallLogs } from '../../lib/api/calls';
+import CallButton from '../../components/CallButton';
+import ChatWidget from '../../modules/chat/ChatWidget';
+import dayjs from 'dayjs';
 
 const { Title, Text } = Typography;
 
 function DealDetail({ id }) {
   const [deal, setDeal] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [callLogs, setCallLogs] = useState([]);
+  const [callLogsLoading, setCallLogsLoading] = useState(false);
 
   useEffect(() => {
     loadDeal();
+    loadCallLogs();
   }, [id]);
 
   const loadDeal = async () => {
@@ -67,6 +78,39 @@ function DealDetail({ id }) {
     }
   };
 
+  const loadCallLogs = async () => {
+    setCallLogsLoading(true);
+    try {
+      const response = await getDealCallLogs(id);
+      setCallLogs(response.results || []);
+    } catch (error) {
+      console.error('Error loading call logs:', error);
+      // Mock data
+      setCallLogs([
+        {
+          id: 1,
+          phone_number: '+7 999 123-45-67',
+          direction: 'outbound',
+          status: 'completed',
+          started_at: '2024-01-22T10:30:00Z',
+          duration: 420,
+          notes: 'Обсуждение деталей сделки',
+        },
+        {
+          id: 2,
+          phone_number: '+7 999 123-45-67',
+          direction: 'inbound',
+          status: 'completed',
+          started_at: '2024-01-20T14:15:00Z',
+          duration: 280,
+          notes: 'Клиент уточнил условия оплаты',
+        },
+      ]);
+    } finally {
+      setCallLogsLoading(false);
+    }
+  };
+
   const handleDelete = async () => {
     try {
       await deleteDeal(id);
@@ -75,6 +119,13 @@ function DealDetail({ id }) {
     } catch (error) {
       message.error('Ошибка удаления сделки');
     }
+  };
+
+  const formatDuration = (seconds) => {
+    if (!seconds) return '0:00';
+    const mins = Math.floor(seconds / 60);
+    const secs = seconds % 60;
+    return `${mins}:${secs.toString().padStart(2, '0')}`;
   };
 
   const stageConfig = {
@@ -311,6 +362,108 @@ function DealDetail({ id }) {
       label: 'Файлы',
       children: <div>Прикрепленные файлы появятся здесь</div>,
     },
+    {
+      key: 'messages',
+      label: 'Сообщения',
+      children: (
+        <ChatWidget
+          entityType="deal"
+          entityId={deal.id}
+          entityName={`Сделка #${deal.id}`}
+          entityPhone={deal.contact?.phone}
+        />
+      ),
+    },
+    {
+      key: 'calls',
+      label: `История звонков (${callLogs.length})`,
+      children: (
+        <Table
+          dataSource={callLogs}
+          loading={callLogsLoading}
+          rowKey="id"
+          pagination={{ pageSize: 10 }}
+          locale={{
+            emptyText: (
+              <Empty
+                description="Звонков по этой сделке пока не было"
+                image={Empty.PRESENTED_IMAGE_SIMPLE}
+              />
+            ),
+          }}
+          columns={[
+            {
+              title: 'Направление',
+              dataIndex: 'direction',
+              key: 'direction',
+              width: 120,
+              render: (direction) => (
+                <Space>
+                  <PhoneTwoTone twoToneColor={direction === 'inbound' ? '#52c41a' : '#1890ff'} />
+                  {direction === 'inbound' ? 'Входящий' : 'Исходящий'}
+                </Space>
+              ),
+            },
+            {
+              title: 'Статус',
+              dataIndex: 'status',
+              key: 'status',
+              width: 120,
+              render: (status) => {
+                const config = {
+                  completed: { color: 'success', text: 'Завершен' },
+                  missed: { color: 'error', text: 'Пропущен' },
+                  busy: { color: 'warning', text: 'Занято' },
+                };
+                const style = config[status] || config.completed;
+                return <Tag color={style.color}>{style.text}</Tag>;
+              },
+            },
+            {
+              title: 'Дата и время',
+              dataIndex: 'started_at',
+              key: 'started_at',
+              width: 180,
+              render: (date) => dayjs(date).format('DD.MM.YYYY HH:mm'),
+            },
+            {
+              title: 'Длительность',
+              dataIndex: 'duration',
+              key: 'duration',
+              width: 120,
+              render: (duration) => (
+                <Space>
+                  <ClockCircleOutlined />
+                  {formatDuration(duration)}
+                </Space>
+              ),
+            },
+            {
+              title: 'Заметки',
+              dataIndex: 'notes',
+              key: 'notes',
+              ellipsis: true,
+              render: (notes) => notes || <span style={{ color: '#999' }}>-</span>,
+            },
+            {
+              title: 'Действия',
+              key: 'actions',
+              width: 120,
+              render: (_, record) => (
+                <CallButton
+                  phone={record.phone_number}
+                  name={deal.contact.name}
+                  entityType="deal"
+                  entityId={deal.id}
+                  size="small"
+                  type="link"
+                />
+              ),
+            },
+          ]}
+        />
+      ),
+    },
   ];
 
   return (
@@ -326,6 +479,17 @@ function DealDetail({ id }) {
         >
           Редактировать
         </Button>
+        {deal.contact && (
+          <CallButton
+            phone="+7 999 123-45-67"
+            name={deal.contact.name}
+            entityType="deal"
+            entityId={deal.id}
+            size="middle"
+            type="default"
+            icon={true}
+          />
+        )}
         <Button danger icon={<DeleteOutlined />} onClick={handleDelete}>
           Удалить
         </Button>

@@ -21,9 +21,17 @@ export const routeMeta = {
  'deals-detail': { auth: true, title: 'Deal' },
  'deals-edit': { auth: true, title: 'Edit Deal' },
  'tasks-list': { auth: true, title: 'Tasks' },
+ 'tasks-new': { auth: true, title: 'New Task' },
+ 'tasks-detail': { auth: true, title: 'Task' },
+ 'tasks-edit': { auth: true, title: 'Edit Task' },
  'projects-list': { auth: true, title: 'Projects' },
+ 'projects-new': { auth: true, title: 'New Project' },
+ 'projects-detail': { auth: true, title: 'Project' },
+ 'projects-edit': { auth: true, title: 'Edit Project' },
+ 'chat': { auth: true, title: 'Chat' },
  'chat-list': { auth: true, title: 'Chat' },
  'calls-list': { auth: true, title: 'Call Logs' },
+ 'calls-dashboard': { auth: true, title: 'Calls Dashboard' },
  'forbidden': { auth: false, title: 'Forbidden' },
  'not-found': { auth: false, title: 'Not Found' }
 };
@@ -90,6 +98,7 @@ export function parseHash() {
   }
   if (segments[0] === 'calls') {
     if (!segments[1]) return { name: 'calls-list', params: {} };
+    if (segments[1] === 'dashboard') return { name: 'calls-dashboard', params: {} };
     const id = segments[1];
     return { name: 'calls-detail', params: { id } };
   }

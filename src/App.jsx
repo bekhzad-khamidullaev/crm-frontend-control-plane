@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Layout, Menu, Avatar, Dropdown, Space, Typography } from 'antd';
+import { Layout, Menu, Avatar, Dropdown, Space, Typography, Badge, Tooltip } from 'antd';
 import {
   MenuFoldOutlined,
   MenuUnfoldOutlined,
@@ -15,8 +15,15 @@ import {
   FileTextOutlined,
   SettingOutlined,
   LogoutOutlined,
+  WifiOutlined,
+  DisconnectOutlined,
+  PhoneFilled,
 } from '@ant-design/icons';
 import { parseHash, navigate, onRouteChange } from './router';
+import { subscribe, getIncomingCalls, setWsConnected, setWsReconnecting, addIncomingCall, removeIncomingCall, setChatWsConnected, setChatWsReconnecting, getUnreadCount } from './lib/store';
+import callsWebSocket from './lib/websocket/CallsWebSocket.js';
+import chatWebSocket from './lib/websocket/ChatWebSocket.js';
+import IncomingCallModal from './modules/calls/IncomingCallModal.jsx';
 import Dashboard from './pages/dashboard.jsx';
 import LoginPage from './pages/login.jsx';
 import LeadsList from './modules/leads/LeadsList.jsx';
@@ -32,7 +39,14 @@ import DealsList from './modules/deals/DealsList.jsx';
 import DealForm from './modules/deals/DealForm.jsx';
 import DealDetail from './modules/deals/DealDetail.jsx';
 import TasksList from './modules/tasks/TasksList.jsx';
+import TaskForm from './modules/tasks/TaskForm.jsx';
+import TaskDetail from './modules/tasks/TaskDetail.jsx';
 import ProjectsList from './modules/projects/ProjectsList.jsx';
+import ProjectForm from './modules/projects/ProjectForm.jsx';
+import ProjectDetail from './modules/projects/ProjectDetail.jsx';
+import CallsList from './modules/calls/CallsList.jsx';
+import CallsDashboard from './pages/calls-dashboard.jsx';
+import ChatPage from './pages/chat-page.jsx';
 
 const { Header, Sider, Content } = Layout;
 const { Text } = Typography;
@@ -41,26 +55,120 @@ function App() {
   const [collapsed, setCollapsed] = useState(false);
   const [route, setRoute] = useState(parseHash());
   const [user, setUser] = useState(null);
+  const [wsConnected, setWsConnectedState] = useState(false);
+  const [incomingCalls, setIncomingCalls] = useState([]);
+  const [currentIncomingCall, setCurrentIncomingCall] = useState(null);
+  const [chatWsConnected, setChatWsConnectedState] = useState(false);
+  const [unreadCount, setUnreadCount] = useState(0);
 
   useEffect(() => {
     // Check auth
     const token = localStorage.getItem('authToken');
     if (token) {
       setUser({ name: 'User', email: 'user@example.com' });
+      
+      // Initialize WebSocket connections
+      initializeWebSocket(token);
+      initializeChatWebSocket(token);
     }
 
     // Subscribe to route changes
-    const unsubscribe = onRouteChange((newRoute) => {
+    const unsubscribeRoute = onRouteChange((newRoute) => {
       setRoute(newRoute);
     });
 
-    return unsubscribe;
+    // Subscribe to store changes for incoming calls and chats
+    const unsubscribeStore = subscribe((state) => {
+      setWsConnectedState(state.telephony.wsConnected);
+      setIncomingCalls(state.telephony.incomingCalls);
+      setChatWsConnectedState(state.chat.chatWsConnected);
+      setUnreadCount(state.chat.unreadCount);
+      
+      // Show modal for first incoming call
+      if (state.telephony.incomingCalls.length > 0) {
+        setCurrentIncomingCall(state.telephony.incomingCalls[0]);
+      }
+    });
+
+    return () => {
+      unsubscribeRoute();
+      unsubscribeStore();
+      callsWebSocket.disconnect();
+      chatWebSocket.disconnect();
+    };
   }, []);
+
+  const initializeWebSocket = (token) => {
+    // Setup event listeners
+    callsWebSocket.on('connected', () => {
+      console.log('[App] WebSocket connected');
+      setWsConnected(true);
+    });
+
+    callsWebSocket.on('disconnected', () => {
+      console.log('[App] WebSocket disconnected');
+      setWsConnected(false);
+    });
+
+    callsWebSocket.on('reconnecting', (data) => {
+      console.log('[App] WebSocket reconnecting:', data);
+      setWsReconnecting(true);
+    });
+
+    callsWebSocket.on('incomingCall', (callData) => {
+      console.log('[App] Incoming call:', callData);
+      addIncomingCall(callData);
+    });
+
+    callsWebSocket.on('callEnded', (data) => {
+      console.log('[App] Call ended:', data);
+      removeIncomingCall(data.callId);
+    });
+
+    // Connect to WebSocket
+    callsWebSocket.connect(token);
+  };
+
+  const initializeChatWebSocket = (token) => {
+    // Setup event listeners
+    chatWebSocket.on('connected', () => {
+      console.log('[App] Chat WebSocket connected');
+      setChatWsConnected(true);
+    });
+
+    chatWebSocket.on('disconnected', () => {
+      console.log('[App] Chat WebSocket disconnected');
+      setChatWsConnected(false);
+    });
+
+    chatWebSocket.on('reconnecting', (data) => {
+      console.log('[App] Chat WebSocket reconnecting:', data);
+      setChatWsReconnecting(true);
+    });
+
+    // Connect to Chat WebSocket
+    chatWebSocket.connect(token);
+  };
 
   const handleLogout = () => {
     localStorage.removeItem('authToken');
+    callsWebSocket.disconnect();
+    chatWebSocket.disconnect();
     setUser(null);
     navigate('/login');
+  };
+
+  const handleAnswerCall = (callData) => {
+    console.log('[App] Answering call:', callData);
+    removeIncomingCall(callData.callId);
+    setCurrentIncomingCall(null);
+    // Additional answer logic would be handled by SIPClient
+  };
+
+  const handleRejectCall = (callData) => {
+    console.log('[App] Rejecting call:', callData);
+    removeIncomingCall(callData.callId);
+    setCurrentIncomingCall(null);
   };
 
   const userMenuItems = [
@@ -130,7 +238,7 @@ function App() {
     },
     {
       key: 'chat',
-      icon: <MessageOutlined />,
+      icon: unreadCount > 0 ? <Badge count={unreadCount} size="small"><MessageOutlined /></Badge> : <MessageOutlined />,
       label: 'Чат',
       onClick: () => navigate('/chat'),
     },
@@ -138,7 +246,18 @@ function App() {
       key: 'calls',
       icon: <PhoneOutlined />,
       label: 'Звонки',
-      onClick: () => navigate('/calls'),
+      children: [
+        {
+          key: 'calls-dashboard',
+          label: 'Дашборд',
+          onClick: () => navigate('/calls/dashboard'),
+        },
+        {
+          key: 'calls-list',
+          label: 'История звонков',
+          onClick: () => navigate('/calls'),
+        },
+      ],
     },
     {
       key: 'memos',
@@ -163,13 +282,7 @@ function App() {
   };
 
   const renderContent = () => {
-    if (!user && route.name !== 'login') {
-      return <LoginPage onLogin={setUser} />;
-    }
-
     switch (route.name) {
-      case 'login':
-        return <LoginPage onLogin={setUser} />;
       case 'dashboard':
         return <Dashboard />;
       case 'leads-list':
@@ -206,14 +319,34 @@ function App() {
         return <DealDetail id={route.params.id} />;
       case 'tasks-list':
         return <TasksList />;
+      case 'tasks-new':
+        return <TaskForm />;
+      case 'tasks-edit':
+        return <TaskForm id={route.params.id} />;
+      case 'tasks-detail':
+        return <TaskDetail id={route.params.id} />;
       case 'projects-list':
         return <ProjectsList />;
+      case 'projects-new':
+        return <ProjectForm />;
+      case 'projects-edit':
+        return <ProjectForm id={route.params.id} />;
+      case 'projects-detail':
+        return <ProjectDetail id={route.params.id} />;
+      case 'calls-list':
+        return <CallsList />;
+      case 'calls-dashboard':
+        return <CallsDashboard />;
+      case 'chat':
+      case 'chat-list':
+        return <ChatPage />;
       default:
         return <Dashboard />;
     }
   };
 
-  if (!user && route.name === 'login') {
+  // Show login page without layout if not authenticated or on login route
+  if (!user || route.name === 'login') {
     return <LoginPage onLogin={setUser} />;
   }
 
@@ -270,6 +403,24 @@ function App() {
           })}
           <Dropdown menu={{ items: userMenuItems }} placement="bottomRight">
             <Space style={{ cursor: 'pointer' }}>
+              {/* WebSocket Status Indicator */}
+              <Tooltip title={wsConnected ? 'WebSocket подключен' : 'WebSocket отключен'}>
+                <Badge dot={wsConnected} color={wsConnected ? 'green' : 'red'}>
+                  {wsConnected ? (
+                    <WifiOutlined style={{ fontSize: 18 }} />
+                  ) : (
+                    <DisconnectOutlined style={{ fontSize: 18 }} />
+                  )}
+                </Badge>
+              </Tooltip>
+              
+              {/* Incoming calls indicator */}
+              {incomingCalls.length > 0 && (
+                <Badge count={incomingCalls.length}>
+                  <PhoneFilled style={{ color: '#52c41a', fontSize: 18 }} />
+                </Badge>
+              )}
+              
               <Avatar icon={<UserOutlined />} />
               <Text>{user?.name || 'Guest'}</Text>
             </Space>
@@ -287,6 +438,14 @@ function App() {
           {renderContent()}
         </Content>
       </Layout>
+
+      {/* Incoming Call Modal */}
+      <IncomingCallModal
+        visible={!!currentIncomingCall}
+        callData={currentIncomingCall}
+        onAnswer={handleAnswerCall}
+        onReject={handleRejectCall}
+      />
     </Layout>
   );
 }

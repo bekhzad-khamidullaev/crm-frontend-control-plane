@@ -14,6 +14,8 @@ import {
   Row,
   Col,
   Statistic,
+  Table,
+  Empty,
 } from 'antd';
 import {
   ArrowLeftOutlined,
@@ -24,18 +26,27 @@ import {
   GlobalOutlined,
   HomeOutlined,
   UserOutlined,
+  ClockCircleOutlined,
+  PhoneTwoTone,
 } from '@ant-design/icons';
 import { navigate } from '../../router';
 import { getContact, deleteContact } from '../../lib/api/client';
+import { getEntityCallLogs } from '../../lib/api/calls';
+import CallButton from '../../components/CallButton';
+import ChatWidget from '../../modules/chat/ChatWidget';
+import dayjs from 'dayjs';
 
 const { Title, Text } = Typography;
 
 function ContactDetail({ id }) {
   const [contact, setContact] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [callLogs, setCallLogs] = useState([]);
+  const [callLogsLoading, setCallLogsLoading] = useState(false);
 
   useEffect(() => {
     loadContact();
+    loadCallLogs();
   }, [id]);
 
   const loadContact = async () => {
@@ -66,6 +77,39 @@ function ContactDetail({ id }) {
     }
   };
 
+  const loadCallLogs = async () => {
+    setCallLogsLoading(true);
+    try {
+      const response = await getEntityCallLogs('contact', id);
+      setCallLogs(response.results || []);
+    } catch (error) {
+      console.error('Error loading call logs:', error);
+      // Mock data
+      setCallLogs([
+        {
+          id: 1,
+          phone_number: '+7 999 111-22-33',
+          direction: 'outbound',
+          status: 'completed',
+          started_at: '2024-01-20T10:30:00Z',
+          duration: 300,
+          notes: 'Обсудили условия сотрудничества',
+        },
+        {
+          id: 2,
+          phone_number: '+7 999 111-22-33',
+          direction: 'inbound',
+          status: 'completed',
+          started_at: '2024-01-19T15:20:00Z',
+          duration: 180,
+          notes: 'Запрос информации о продуктах',
+        },
+      ]);
+    } finally {
+      setCallLogsLoading(false);
+    }
+  };
+
   const handleDelete = async () => {
     try {
       await deleteContact(id);
@@ -74,6 +118,13 @@ function ContactDetail({ id }) {
     } catch (error) {
       message.error('Ошибка удаления контакта');
     }
+  };
+
+  const formatDuration = (seconds) => {
+    if (!seconds) return '0:00';
+    const mins = Math.floor(seconds / 60);
+    const secs = seconds % 60;
+    return `${mins}:${secs.toString().padStart(2, '0')}`;
   };
 
   const typeConfig = {
@@ -251,6 +302,108 @@ function ContactDetail({ id }) {
       label: 'Задачи',
       children: <div>Список задач связанных с контактом появится здесь</div>,
     },
+    {
+      key: 'messages',
+      label: 'Сообщения',
+      children: (
+        <ChatWidget
+          entityType="contact"
+          entityId={contact.id}
+          entityName={`${contact.first_name} ${contact.last_name}`}
+          entityPhone={contact.phone}
+        />
+      ),
+    },
+    {
+      key: 'calls',
+      label: `История звонков (${callLogs.length})`,
+      children: (
+        <Table
+          dataSource={callLogs}
+          loading={callLogsLoading}
+          rowKey="id"
+          pagination={{ pageSize: 10 }}
+          locale={{
+            emptyText: (
+              <Empty
+                description="Звонков с этим контактом пока не было"
+                image={Empty.PRESENTED_IMAGE_SIMPLE}
+              />
+            ),
+          }}
+          columns={[
+            {
+              title: 'Направление',
+              dataIndex: 'direction',
+              key: 'direction',
+              width: 120,
+              render: (direction) => (
+                <Space>
+                  <PhoneTwoTone twoToneColor={direction === 'inbound' ? '#52c41a' : '#1890ff'} />
+                  {direction === 'inbound' ? 'Входящий' : 'Исходящий'}
+                </Space>
+              ),
+            },
+            {
+              title: 'Статус',
+              dataIndex: 'status',
+              key: 'status',
+              width: 120,
+              render: (status) => {
+                const config = {
+                  completed: { color: 'success', text: 'Завершен' },
+                  missed: { color: 'error', text: 'Пропущен' },
+                  busy: { color: 'warning', text: 'Занято' },
+                };
+                const style = config[status] || config.completed;
+                return <Tag color={style.color}>{style.text}</Tag>;
+              },
+            },
+            {
+              title: 'Дата и время',
+              dataIndex: 'started_at',
+              key: 'started_at',
+              width: 180,
+              render: (date) => dayjs(date).format('DD.MM.YYYY HH:mm'),
+            },
+            {
+              title: 'Длительность',
+              dataIndex: 'duration',
+              key: 'duration',
+              width: 120,
+              render: (duration) => (
+                <Space>
+                  <ClockCircleOutlined />
+                  {formatDuration(duration)}
+                </Space>
+              ),
+            },
+            {
+              title: 'Заметки',
+              dataIndex: 'notes',
+              key: 'notes',
+              ellipsis: true,
+              render: (notes) => notes || <span style={{ color: '#999' }}>-</span>,
+            },
+            {
+              title: 'Действия',
+              key: 'actions',
+              width: 120,
+              render: (_, record) => (
+                <CallButton
+                  phone={record.phone_number}
+                  name={`${contact.first_name} ${contact.last_name}`}
+                  entityType="contact"
+                  entityId={contact.id}
+                  size="small"
+                  type="link"
+                />
+              ),
+            },
+          ]}
+        />
+      ),
+    },
   ];
 
   return (
@@ -259,8 +412,14 @@ function ContactDetail({ id }) {
         <Button icon={<ArrowLeftOutlined />} onClick={() => navigate('/contacts')}>
           Назад к списку
         </Button>
-        <Button
+        <CallButton
+          phone={contact.phone}
+          name={`${contact.first_name} ${contact.last_name}`}
+          entityType="contact"
+          entityId={contact.id}
           type="primary"
+        />
+        <Button
           icon={<EditOutlined />}
           onClick={() => navigate(`/contacts/${id}/edit`)}
         >

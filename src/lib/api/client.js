@@ -1,4 +1,4 @@
-import { getToken } from './auth.js';
+import { getToken, getRefreshToken, setToken, clearToken, isTokenExpired } from './auth.js';
 
 // Allow runtime config injection (window.__APP_CONFIG__) in addition to Vite env
 const runtimeConfig = typeof window !== 'undefined' ? window.__APP_CONFIG__ || {} : {};
@@ -123,23 +123,108 @@ function buildUrl(path, params) {
   return url.toString();
 }
 
-async function request(method, path, { params, body, headers, retry = 1 } = {}) {
+// Request queue for handling concurrent requests during token refresh
+let isRefreshing = false;
+let refreshQueue = [];
+
+/**
+ * Refresh the access token using refresh token
+ */
+async function refreshAccessToken() {
+  const refresh = getRefreshToken();
+  if (!refresh) {
+    throw new Error('No refresh token available');
+  }
+
+  try {
+    const response = await fetch(`${BASE_URL}/api/token/refresh/`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ refresh }),
+    });
+
+    if (!response.ok) {
+      throw new Error('Failed to refresh token');
+    }
+
+    const data = await response.json();
+    setToken(data.access, refresh);
+    return data.access;
+  } catch (error) {
+    console.error('Token refresh failed:', error);
+    // Clear tokens and redirect to login
+    clearToken();
+    if (typeof window !== 'undefined') {
+      window.location.href = '/login';
+    }
+    throw error;
+  }
+}
+
+/**
+ * Main request function with automatic token refresh
+ */
+async function request(method, path, { params, body, headers, retry = 1, _isRetry = false } = {}) {
   if (DEMO_MODE) {
     return demoResponse(method, path, { params, body });
   }
+
+  // Skip token refresh for auth endpoints
+  const isAuthEndpoint = path.includes('/token/') || path.includes('/auth/');
+  
+  // Check if token is expired and refresh if needed
+  if (!isAuthEndpoint && !_isRetry) {
+    const token = getToken();
+    if (token && isTokenExpired(token)) {
+      // If already refreshing, queue this request
+      if (isRefreshing) {
+        return new Promise((resolve, reject) => {
+          refreshQueue.push({ resolve, reject, method, path, params, body, headers, retry });
+        });
+      }
+
+      // Start refresh process
+      isRefreshing = true;
+      try {
+        await refreshAccessToken();
+        
+        // Process queued requests
+        refreshQueue.forEach(({ resolve, method, path, params, body, headers, retry }) => {
+          request(method, path, { params, body, headers, retry, _isRetry: true })
+            .then(resolve)
+            .catch(reject);
+        });
+        refreshQueue = [];
+      } catch (error) {
+        // Reject all queued requests
+        refreshQueue.forEach(({ reject }) => reject(error));
+        refreshQueue = [];
+        throw error;
+      } finally {
+        isRefreshing = false;
+      }
+    }
+  }
+
   const url = buildUrl(path, params);
   const token = getToken();
   const finalHeaders = new Headers({ 'Accept': 'application/json', ...headers });
+  
   if (body && !(body instanceof FormData)) {
     finalHeaders.set('Content-Type', 'application/json');
   }
-  if (token) finalHeaders.set('Authorization', `Token ${token}`);
+  
+  if (token && !isAuthEndpoint) {
+    finalHeaders.set('Authorization', `Bearer ${token}`);
+  }
 
   const fetcher = fetch(url, {
     method,
     headers: finalHeaders,
     body: body ? (body instanceof FormData ? body : JSON.stringify(body)) : undefined,
-    credentials: 'include', // support cookieAuth as well
+    credentials: 'include',
   });
 
   try {
@@ -147,13 +232,25 @@ async function request(method, path, { params, body, headers, retry = 1 } = {}) 
     const contentType = res.headers.get('content-type') || '';
     const isJson = contentType.includes('application/json');
     const data = isJson ? await res.json().catch(() => ({})) : await res.text();
+    
+    // Handle 401 Unauthorized - try to refresh token
+    if (res.status === 401 && !isAuthEndpoint && !_isRetry) {
+      try {
+        await refreshAccessToken();
+        // Retry the original request with new token
+        return request(method, path, { params, body, headers, retry, _isRetry: true });
+      } catch (refreshError) {
+        throw normalizeError(data, res);
+      }
+    }
+    
     if (!res.ok) throw normalizeError(data, res);
     return data;
   } catch (err) {
     // Retry only GET for network errors (Error instances). Do not retry HTTP errors (object payloads)
     const isNetworkError = err instanceof Error;
     if (retry > 0 && method === 'GET' && isNetworkError) {
-      return request(method, path, { params, body, headers, retry: retry - 1 });
+      return request(method, path, { params, body, headers, retry: retry - 1, _isRetry });
     }
     // Bubble up normalized errors
     if (!(err instanceof Error) && err?.status) {
@@ -186,7 +283,9 @@ export const leadsApi = {
 };
 
 export const authApi = {
-  login: ({ username, password }) => api.post('/api/auth/token/', { body: { username, password } }),
+  login: ({ username, password }) => api.post('/api/token/', { body: { username, password } }),
+  refresh: ({ refresh }) => api.post('/api/token/refresh/', { body: { refresh } }),
+  verify: ({ token }) => api.post('/api/token/verify/', { body: { token } }),
 };
 
 export const usersApi = {
@@ -257,14 +356,18 @@ export const memosApi = {
 };
 
 export const chatApi = {
-  list: (params) => api.get('/api/chat-messages/', { params }),
-  retrieve: (id) => api.get(`/api/chat-messages/${id}/`),
-  create: (payload) => api.post('/api/chat-messages/', { body: payload }),
-  update: (id, payload) => api.put(`/api/chat-messages/${id}/`, { body: payload }),
-  patch: (id, payload) => api.patch(`/api/chat-messages/${id}/`, { body: payload }),
-  remove: (id) => api.delete(`/api/chat-messages/${id}/`),
-  replies: (id, params) => api.get(`/api/chat-messages/${id}/replies/`, { params }),
-  thread: (id, params) => api.get(`/api/chat-messages/${id}/thread/`, { params }),
+  list: (params) => api.get('/api/chat/messages/', { params }),
+  retrieve: (id) => api.get(`/api/chat/messages/${id}/`),
+  create: (payload) => api.post('/api/chat/messages/', { body: payload }),
+  update: (id, payload) => api.put(`/api/chat/messages/${id}/`, { body: payload }),
+  patch: (id, payload) => api.patch(`/api/chat/messages/${id}/`, { body: payload }),
+  remove: (id) => api.delete(`/api/chat/messages/${id}/`),
+  reply: (id, payload) => api.post(`/api/chat/messages/${id}/reply/`, { body: payload }),
+  replies: (id, params) => api.get(`/api/chat/messages/${id}/replies/`, { params }),
+  thread: (id, params) => api.get(`/api/chat/messages/${id}/thread/`, { params }),
+  byObject: (params) => api.get('/api/chat/messages/by_object/', { params }),
+  statistics: (params) => api.get('/api/chat/messages/statistics/', { params }),
+  unreadCount: (params) => api.get('/api/chat/messages/unread_count/', { params }),
 };
 
 export const callLogsApi = {

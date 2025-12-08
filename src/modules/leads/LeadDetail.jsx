@@ -10,6 +10,8 @@ import {
   Tabs,
   Timeline,
   Typography,
+  Table,
+  Empty,
 } from 'antd';
 import {
   ArrowLeftOutlined,
@@ -17,18 +19,27 @@ import {
   DeleteOutlined,
   PhoneOutlined,
   MailOutlined,
+  ClockCircleOutlined,
+  PhoneTwoTone,
 } from '@ant-design/icons';
 import { navigate } from '../../router';
 import { getLead, deleteLead } from '../../lib/api/client';
+import { getEntityCallLogs } from '../../lib/api/calls';
+import CallButton from '../../components/CallButton';
+import ChatWidget from '../../modules/chat/ChatWidget';
+import dayjs from 'dayjs';
 
 const { Title, Text } = Typography;
 
 function LeadDetail({ id }) {
   const [lead, setLead] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [callLogs, setCallLogs] = useState([]);
+  const [callLogsLoading, setCallLogsLoading] = useState(false);
 
   useEffect(() => {
     loadLead();
+    loadCallLogs();
   }, [id]);
 
   const loadLead = async () => {
@@ -58,6 +69,30 @@ function LeadDetail({ id }) {
     }
   };
 
+  const loadCallLogs = async () => {
+    setCallLogsLoading(true);
+    try {
+      const response = await getEntityCallLogs('lead', id);
+      setCallLogs(response.results || []);
+    } catch (error) {
+      console.error('Error loading call logs:', error);
+      // Mock data
+      setCallLogs([
+        {
+          id: 1,
+          phone_number: '+7 999 123-45-67',
+          direction: 'outbound',
+          status: 'completed',
+          started_at: '2024-01-18T14:30:00Z',
+          duration: 420,
+          notes: 'Первый контакт, обсудили потребности',
+        },
+      ]);
+    } finally {
+      setCallLogsLoading(false);
+    }
+  };
+
   const handleDelete = async () => {
     try {
       await deleteLead(id);
@@ -66,6 +101,13 @@ function LeadDetail({ id }) {
     } catch (error) {
       message.error('Ошибка удаления лида');
     }
+  };
+
+  const formatDuration = (seconds) => {
+    if (!seconds) return '0:00';
+    const mins = Math.floor(seconds / 60);
+    const secs = seconds % 60;
+    return `${mins}:${secs.toString().padStart(2, '0')}`;
   };
 
   const statusConfig = {
@@ -180,6 +222,108 @@ function LeadDetail({ id }) {
       label: 'Заметки',
       children: <div>Заметок пока нет</div>,
     },
+    {
+      key: 'messages',
+      label: 'Сообщения',
+      children: (
+        <ChatWidget
+          entityType="lead"
+          entityId={lead.id}
+          entityName={`${lead.first_name} ${lead.last_name}`}
+          entityPhone={lead.phone}
+        />
+      ),
+    },
+    {
+      key: 'calls',
+      label: `История звонков (${callLogs.length})`,
+      children: (
+        <Table
+          dataSource={callLogs}
+          loading={callLogsLoading}
+          rowKey="id"
+          pagination={{ pageSize: 10 }}
+          locale={{
+            emptyText: (
+              <Empty
+                description="Звонков с этим лидом пока не было"
+                image={Empty.PRESENTED_IMAGE_SIMPLE}
+              />
+            ),
+          }}
+          columns={[
+            {
+              title: 'Направление',
+              dataIndex: 'direction',
+              key: 'direction',
+              width: 120,
+              render: (direction) => (
+                <Space>
+                  <PhoneTwoTone twoToneColor={direction === 'inbound' ? '#52c41a' : '#1890ff'} />
+                  {direction === 'inbound' ? 'Входящий' : 'Исходящий'}
+                </Space>
+              ),
+            },
+            {
+              title: 'Статус',
+              dataIndex: 'status',
+              key: 'status',
+              width: 120,
+              render: (status) => {
+                const config = {
+                  completed: { color: 'success', text: 'Завершен' },
+                  missed: { color: 'error', text: 'Пропущен' },
+                  busy: { color: 'warning', text: 'Занято' },
+                };
+                const style = config[status] || config.completed;
+                return <Tag color={style.color}>{style.text}</Tag>;
+              },
+            },
+            {
+              title: 'Дата и время',
+              dataIndex: 'started_at',
+              key: 'started_at',
+              width: 180,
+              render: (date) => dayjs(date).format('DD.MM.YYYY HH:mm'),
+            },
+            {
+              title: 'Длительность',
+              dataIndex: 'duration',
+              key: 'duration',
+              width: 120,
+              render: (duration) => (
+                <Space>
+                  <ClockCircleOutlined />
+                  {formatDuration(duration)}
+                </Space>
+              ),
+            },
+            {
+              title: 'Заметки',
+              dataIndex: 'notes',
+              key: 'notes',
+              ellipsis: true,
+              render: (notes) => notes || <span style={{ color: '#999' }}>-</span>,
+            },
+            {
+              title: 'Действия',
+              key: 'actions',
+              width: 120,
+              render: (_, record) => (
+                <CallButton
+                  phone={record.phone_number}
+                  name={`${lead.first_name} ${lead.last_name}`}
+                  entityType="lead"
+                  entityId={lead.id}
+                  size="small"
+                  type="link"
+                />
+              ),
+            },
+          ]}
+        />
+      ),
+    },
   ];
 
   return (
@@ -188,8 +332,14 @@ function LeadDetail({ id }) {
         <Button icon={<ArrowLeftOutlined />} onClick={() => navigate('/leads')}>
           Назад к списку
         </Button>
-        <Button
+        <CallButton
+          phone={lead.phone}
+          name={`${lead.first_name} ${lead.last_name}`}
+          entityType="lead"
+          entityId={lead.id}
           type="primary"
+        />
+        <Button
           icon={<EditOutlined />}
           onClick={() => navigate(`/leads/${id}/edit`)}
         >

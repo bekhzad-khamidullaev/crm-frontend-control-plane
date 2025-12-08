@@ -1,6 +1,6 @@
 import React from 'react';
 import ReactDOM from 'react-dom/client';
-import { ConfigProvider } from 'antd';
+import { ConfigProvider, App as AntApp } from 'antd';
 import ruRU from 'antd/locale/ru_RU';
 import 'antd/dist/reset.css';
 import './styles/custom-theme.css';
@@ -24,7 +24,9 @@ root.render(
         },
       }}
     >
-      <App />
+      <AntApp>
+        <App />
+      </AntApp>
     </ConfigProvider>
   </React.StrictMode>
 );

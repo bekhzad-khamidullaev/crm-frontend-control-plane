@@ -2,6 +2,8 @@ import React, { useState } from 'react';
 import { Form, Input, Button, Card, Typography, message } from 'antd';
 import { UserOutlined, LockOutlined } from '@ant-design/icons';
 import { navigate } from '../router';
+import { authApi } from '../lib/api/client';
+import { setToken, getUserFromToken } from '../lib/api/auth';
 
 const { Title } = Typography;
 
@@ -11,20 +13,30 @@ function LoginPage({ onLogin }) {
   const onFinish = async (values) => {
     setLoading(true);
     try {
-      // Mock authentication
-      await new Promise((resolve) => setTimeout(resolve, 1000));
+      // JWT Authentication with custom claims
+      const response = await authApi.login({
+        username: values.username,
+        password: values.password,
+      });
       
-      const mockUser = {
-        name: values.username,
-        email: `${values.username}@example.com`,
+      // Save JWT tokens (access + refresh)
+      setToken(response.access, response.refresh);
+      
+      // Get user info from JWT token
+      const userInfo = getUserFromToken();
+      
+      const user = {
+        name: userInfo?.username || response.user?.username || values.username,
+        email: userInfo?.email || response.user?.email || `${values.username}@example.com`,
+        id: userInfo?.user_id || response.user?.id,
       };
       
-      localStorage.setItem('authToken', 'mock-token-' + Date.now());
-      onLogin(mockUser);
+      onLogin(user);
       message.success('Успешный вход!');
       navigate('/dashboard');
     } catch (error) {
-      message.error('Ошибка входа');
+      console.error('Login error:', error);
+      message.error(error?.details?.detail || 'Неверное имя пользователя или пароль');
     } finally {
       setLoading(false);
     }

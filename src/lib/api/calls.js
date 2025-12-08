@@ -83,6 +83,29 @@ export async function getEntityCallLogs(entityType, entityId, params = {}) {
 }
 
 /**
+ * Get call logs for a company (through related contacts)
+ * @param {string|number} companyId - Company ID
+ * @param {Object} params - Additional query parameters
+ * @returns {Promise<{count: number, results: Array}>}
+ */
+export async function getCompanyCallLogs(companyId, params = {}) {
+  // In real implementation, backend should filter by company's contacts
+  // For now, we'll use a search parameter or custom endpoint
+  return getCallLogs({ ...params, company: companyId, ordering: '-started_at' });
+}
+
+/**
+ * Get call logs for a deal (through related contact)
+ * @param {string|number} dealId - Deal ID
+ * @param {Object} params - Additional query parameters
+ * @returns {Promise<{count: number, results: Array}>}
+ */
+export async function getDealCallLogs(dealId, params = {}) {
+  // Backend should filter by deal's primary contact
+  return getCallLogs({ ...params, deal: dealId, ordering: '-started_at' });
+}
+
+/**
  * Get call statistics
  * @param {Object} params - Query parameters for filtering
  * @returns {Promise<Object>} Statistics object
@@ -103,4 +126,21 @@ export async function getCallStatistics(params = {}) {
       ? results.reduce((sum, c) => sum + (c.duration || 0), 0) / results.length 
       : 0,
   };
+}
+
+/**
+ * Upload call recording
+ * @param {string|number} callLogId - Call log ID
+ * @param {Blob} audioBlob - Audio recording blob
+ * @returns {Promise<Object>}
+ */
+export async function uploadRecording(callLogId, audioBlob) {
+  const formData = new FormData();
+  formData.append('recording', audioBlob, `call_${callLogId}_${Date.now()}.webm`);
+  
+  return apiClient.post(`/api/call-logs/${callLogId}/upload-recording/`, formData, {
+    headers: {
+      'Content-Type': 'multipart/form-data',
+    },
+  });
 }

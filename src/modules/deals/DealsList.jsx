@@ -21,9 +21,11 @@ import {
   DollarOutlined,
   UserOutlined,
   ShopOutlined,
+  PhoneOutlined,
 } from '@ant-design/icons';
 import { navigate } from '../../router';
 import { getDeals, deleteDeal } from '../../lib/api/client';
+import CallButton from '../../components/CallButton';
 
 const { Title, Text } = Typography;
 
@@ -63,6 +65,7 @@ function DealsList() {
           probability: 70,
           expected_close_date: '2024-03-15',
           contact: 'Иван Петров',
+          contact_phone: '+7 999 111-22-33',
           company: 'ООО "ТехноПром"',
           owner: 'Алексей Иванов',
           created_at: '2024-01-20',
@@ -75,6 +78,7 @@ function DealsList() {
           probability: 50,
           expected_close_date: '2024-03-30',
           contact: 'Мария Сидорова',
+          contact_phone: '+7 999 222-33-44',
           company: 'АО "Инновации"',
           owner: 'Елена Смирнова',
           created_at: '2024-01-18',
@@ -198,6 +202,17 @@ function DealsList() {
         <Space>
           <Avatar size="small" icon={<UserOutlined />} />
           <Text>{record.contact}</Text>
+          {record.contact_phone && (
+            <CallButton
+              phone={record.contact_phone}
+              name={record.contact}
+              entityType="deal"
+              entityId={record.id}
+              size="small"
+              type="link"
+              icon={true}
+            />
+          )}
         </Space>
       ),
     },

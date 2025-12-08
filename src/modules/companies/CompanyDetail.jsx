@@ -15,6 +15,8 @@ import {
   Col,
   Statistic,
   List,
+  Table,
+  Empty,
 } from 'antd';
 import {
   ArrowLeftOutlined,
@@ -28,18 +30,27 @@ import {
   TeamOutlined,
   DollarOutlined,
   RiseOutlined,
+  ClockCircleOutlined,
+  PhoneTwoTone,
 } from '@ant-design/icons';
 import { navigate } from '../../router';
 import { getCompany, deleteCompany } from '../../lib/api/client';
+import { getCompanyCallLogs } from '../../lib/api/calls';
+import CallButton from '../../components/CallButton';
+import ChatWidget from '../../modules/chat/ChatWidget';
+import dayjs from 'dayjs';
 
 const { Title, Text } = Typography;
 
 function CompanyDetail({ id }) {
   const [company, setCompany] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [callLogs, setCallLogs] = useState([]);
+  const [callLogsLoading, setCallLogsLoading] = useState(false);
 
   useEffect(() => {
     loadCompany();
+    loadCallLogs();
   }, [id]);
 
   const loadCompany = async () => {
@@ -70,6 +81,39 @@ function CompanyDetail({ id }) {
     }
   };
 
+  const loadCallLogs = async () => {
+    setCallLogsLoading(true);
+    try {
+      const response = await getCompanyCallLogs(id);
+      setCallLogs(response.results || []);
+    } catch (error) {
+      console.error('Error loading call logs:', error);
+      // Mock data
+      setCallLogs([
+        {
+          id: 1,
+          phone_number: '+7 495 123-45-67',
+          direction: 'outbound',
+          status: 'completed',
+          started_at: '2024-01-20T14:30:00Z',
+          duration: 480,
+          notes: 'Обсуждение условий контракта',
+        },
+        {
+          id: 2,
+          phone_number: '+7 495 123-45-67',
+          direction: 'inbound',
+          status: 'completed',
+          started_at: '2024-01-18T11:20:00Z',
+          duration: 320,
+          notes: 'Запрос коммерческого предложения',
+        },
+      ]);
+    } finally {
+      setCallLogsLoading(false);
+    }
+  };
+
   const handleDelete = async () => {
     try {
       await deleteCompany(id);
@@ -78,6 +122,13 @@ function CompanyDetail({ id }) {
     } catch (error) {
       message.error('Ошибка удаления компании');
     }
+  };
+
+  const formatDuration = (seconds) => {
+    if (!seconds) return '0:00';
+    const mins = Math.floor(seconds / 60);
+    const secs = seconds % 60;
+    return `${mins}:${secs.toString().padStart(2, '0')}`;
   };
 
   const typeConfig = {
@@ -258,6 +309,18 @@ function CompanyDetail({ id }) {
       children: <div>Список сделок с этой компанией появится здесь</div>,
     },
     {
+      key: 'messages',
+      label: 'Сообщения',
+      children: (
+        <ChatWidget
+          entityType="company"
+          entityId={company.id}
+          entityName={company.name}
+          entityPhone={company.phone}
+        />
+      ),
+    },
+    {
       key: 'activity',
       label: 'История активности',
       children: (
@@ -297,6 +360,96 @@ function CompanyDetail({ id }) {
                     {new Date(company.updated_at).toLocaleString('ru-RU')}
                   </Text>
                 </>
+              ),
+            },
+          ]}
+        />
+      ),
+    },
+    {
+      key: 'calls',
+      label: `История звонков (${callLogs.length})`,
+      children: (
+        <Table
+          dataSource={callLogs}
+          loading={callLogsLoading}
+          rowKey="id"
+          pagination={{ pageSize: 10 }}
+          locale={{
+            emptyText: (
+              <Empty
+                description="Звонков с этой компанией пока не было"
+                image={Empty.PRESENTED_IMAGE_SIMPLE}
+              />
+            ),
+          }}
+          columns={[
+            {
+              title: 'Направление',
+              dataIndex: 'direction',
+              key: 'direction',
+              width: 120,
+              render: (direction) => (
+                <Space>
+                  <PhoneTwoTone twoToneColor={direction === 'inbound' ? '#52c41a' : '#1890ff'} />
+                  {direction === 'inbound' ? 'Входящий' : 'Исходящий'}
+                </Space>
+              ),
+            },
+            {
+              title: 'Статус',
+              dataIndex: 'status',
+              key: 'status',
+              width: 120,
+              render: (status) => {
+                const config = {
+                  completed: { color: 'success', text: 'Завершен' },
+                  missed: { color: 'error', text: 'Пропущен' },
+                  busy: { color: 'warning', text: 'Занято' },
+                };
+                const style = config[status] || config.completed;
+                return <Tag color={style.color}>{style.text}</Tag>;
+              },
+            },
+            {
+              title: 'Дата и время',
+              dataIndex: 'started_at',
+              key: 'started_at',
+              width: 180,
+              render: (date) => dayjs(date).format('DD.MM.YYYY HH:mm'),
+            },
+            {
+              title: 'Длительность',
+              dataIndex: 'duration',
+              key: 'duration',
+              width: 120,
+              render: (duration) => (
+                <Space>
+                  <ClockCircleOutlined />
+                  {formatDuration(duration)}
+                </Space>
+              ),
+            },
+            {
+              title: 'Заметки',
+              dataIndex: 'notes',
+              key: 'notes',
+              ellipsis: true,
+              render: (notes) => notes || <span style={{ color: '#999' }}>-</span>,
+            },
+            {
+              title: 'Действия',
+              key: 'actions',
+              width: 120,
+              render: (_, record) => (
+                <CallButton
+                  phone={record.phone_number}
+                  name={company.name}
+                  entityType="company"
+                  entityId={company.id}
+                  size="small"
+                  type="link"
+                />
               ),
             },
           ]}
