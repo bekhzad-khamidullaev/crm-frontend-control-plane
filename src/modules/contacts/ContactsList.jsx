@@ -12,6 +12,7 @@ import {
   Avatar,
   Modal,
   Select,
+  Form,
 } from 'antd';
 import {
   PlusOutlined,
@@ -22,13 +23,17 @@ import {
   UserOutlined,
   MailOutlined,
   PhoneOutlined,
+  BarChartOutlined,
 } from '@ant-design/icons';
 import { navigate } from '../../router';
-import { getContacts, deleteContact, api } from '../../lib/api/client';
+import { getContacts, deleteContact, contactsApi } from '../../lib/api/client';
 import CallButton from '../../components/CallButton';
 import ClickToCall from '../../components/ui-ClickToCall.jsx';
 import BulkActions from '../../components/ui-BulkActions.jsx';
 import BulkSMSModal from '../../components/BulkSMSModal';
+import EditableCell from '../../components/ui-EditableCell';
+import ContactsKPI from './ContactsKPI.jsx';
+import ReferenceSelect from '../../components/ui-ReferenceSelect';
 import { exportAndDownload } from '../../lib/api/export';
 
 const { Title } = Typography;
@@ -44,8 +49,11 @@ function ContactsList() {
   });
   const [selectedRowKeys, setSelectedRowKeys] = useState([]);
   const [bulkSMSModalVisible, setBulkSMSModalVisible] = useState(false);
+  const [showKPI, setShowKPI] = useState(true);
   const [statusChangeModalVisible, setStatusChangeModalVisible] = useState(false);
   const [bulkStatus, setBulkStatus] = useState('');
+  const [bulkTagModalVisible, setBulkTagModalVisible] = useState(false);
+  const [selectedTags, setSelectedTags] = useState([]);
 
   const fetchContacts = async (page = 1, search = '') => {
     setLoading(true);
@@ -62,48 +70,10 @@ function ContactsList() {
         total: response.count || 0,
       });
     } catch (error) {
-      message.error('Ошибка загрузки контактов');
-      // Mock data for demo
-      setContacts([
-        {
-          id: 1,
-          first_name: 'Анна',
-          last_name: 'Смирнова',
-          email: 'anna@example.com',
-          phone: '+7 999 111-22-33',
-          company: 'ООО "Альфа"',
-          position: 'Менеджер',
-          type: 'client',
-          created_at: '2024-01-20',
-        },
-        {
-          id: 2,
-          first_name: 'Дмитрий',
-          last_name: 'Козлов',
-          email: 'dmitry@example.com',
-          phone: '+7 999 222-33-44',
-          company: 'ИП Козлов',
-          position: 'Директор',
-          type: 'partner',
-          created_at: '2024-01-19',
-        },
-        {
-          id: 3,
-          first_name: 'Елена',
-          last_name: 'Волкова',
-          email: 'elena@example.com',
-          phone: '+7 999 333-44-55',
-          company: 'АО "Бета"',
-          position: 'Главный специалист',
-          type: 'client',
-          created_at: '2024-01-18',
-        },
-      ]);
-      setPagination({
-        ...pagination,
-        current: 1,
-        total: 3,
-      });
+      console.error('Error fetching contacts:', error);
+      const errorMessage = error?.details?.detail || error?.message || 'Ошибка загрузки контактов';
+      message.error(errorMessage);
+      setContacts([]);
     } finally {
       setLoading(false);
     }
@@ -211,6 +181,49 @@ function ContactsList() {
     }
   };
 
+  const handleCellSave = async (id, field, value) => {
+    try {
+      await contactsApi.patch(id, { [field]: value });
+      message.success('Изменения сохранены');
+      // Update local state
+      setContacts(contacts.map(contact => 
+        contact.id === id ? { ...contact, [field]: value } : contact
+      ));
+    } catch (error) {
+      const errorMessage = error?.details?.detail || error?.message || 'Ошибка сохранения';
+      message.error(errorMessage);
+      throw error; // Re-throw to revert EditableCell changes
+    }
+  };
+
+  const handleBulkTag = () => {
+    setBulkTagModalVisible(true);
+  };
+
+  const handleBulkTagConfirm = async () => {
+    if (!selectedTags.length) {
+      message.error('Выберите хотя бы один тег');
+      return;
+    }
+
+    try {
+      // Contacts API doesn't have bulk_tag endpoint, so we update individually
+      await Promise.all(
+        selectedRowKeys.map(id =>
+          contactsApi.patch(id, { tags: selectedTags })
+        )
+      );
+      message.success(`Теги применены к ${selectedRowKeys.length} контактам`);
+      setSelectedRowKeys([]);
+      setBulkTagModalVisible(false);
+      setSelectedTags([]);
+      fetchContacts(pagination.current, searchText);
+    } catch (error) {
+      const errorMessage = error?.details?.detail || error?.message || 'Ошибка применения тегов';
+      message.error(errorMessage);
+    }
+  };
+
   const rowSelection = {
     selectedRowKeys,
     onChange: (newSelectedRowKeys) => {
@@ -236,40 +249,73 @@ function ContactsList() {
             <div style={{ fontWeight: 500 }}>
               {record.first_name} {record.last_name}
             </div>
-            {record.position && (
-              <div style={{ fontSize: 12, color: '#999' }}>{record.position}</div>
-            )}
+            <EditableCell
+              value={record.position}
+              onSave={(value) => handleCellSave(record.id, 'position', value)}
+              placeholder="Должность"
+              renderView={(value) => value ? (
+                <div style={{ fontSize: 12, color: '#999' }}>{value}</div>
+              ) : (
+                <div style={{ fontSize: 12, color: '#ccc' }}>Добавить должность</div>
+              )}
+            />
           </div>
         </Space>
       ),
       sorter: (a, b) => a.first_name.localeCompare(b.first_name),
     },
     {
-      title: 'Контактная информация',
-      key: 'info',
-      render: (_, record) => (
-        <Space direction="vertical" size="small">
-          <Space size="small">
-            <MailOutlined style={{ color: '#999' }} />
-            <a href={`mailto:${record.email}`}>{record.email}</a>
-          </Space>
-          {record.phone && (
+      title: 'Email',
+      dataIndex: 'email',
+      key: 'email',
+      render: (email, record) => (
+        <EditableCell
+          value={email}
+          onSave={(value) => handleCellSave(record.id, 'email', value)}
+          type="email"
+          placeholder="email@example.com"
+          renderView={(value) => value ? (
+            <Space size="small">
+              <MailOutlined style={{ color: '#999' }} />
+              <a href={`mailto:${value}`}>{value}</a>
+            </Space>
+          ) : '-'}
+        />
+      ),
+    },
+    {
+      title: 'Телефон',
+      dataIndex: 'phone',
+      key: 'phone',
+      render: (phone, record) => (
+        <EditableCell
+          value={phone}
+          onSave={(value) => handleCellSave(record.id, 'phone', value)}
+          placeholder="+7 999 123-45-67"
+          renderView={(value) => value ? (
             <ClickToCall 
-              phoneNumber={record.phone}
+              phoneNumber={value}
               contactName={`${record.first_name} ${record.last_name}`}
               contactId={record.id}
               entityType="contact"
               size="small"
               type="link"
             />
-          )}
-        </Space>
+          ) : '-'}
+        />
       ),
     },
     {
       title: 'Компания',
       dataIndex: 'company',
       key: 'company',
+      render: (company, record) => (
+        <EditableCell
+          value={company}
+          onSave={(value) => handleCellSave(record.id, 'company', value)}
+          placeholder="Название компании"
+        />
+      ),
       sorter: (a, b) => (a.company || '').localeCompare(b.company || ''),
     },
     {
@@ -341,14 +387,24 @@ function ContactsList() {
     <div>
       <div style={{ marginBottom: 16, display: 'flex', justifyContent: 'space-between' }}>
         <Title level={2}>Контакты</Title>
-        <Button
-          type="primary"
-          icon={<PlusOutlined />}
-          onClick={() => navigate('/contacts/new')}
-        >
-          Создать контакт
-        </Button>
+        <Space>
+          <Button
+            icon={<BarChartOutlined />}
+            onClick={() => setShowKPI(!showKPI)}
+          >
+            {showKPI ? 'Скрыть статистику' : 'Показать статистику'}
+          </Button>
+          <Button
+            type="primary"
+            icon={<PlusOutlined />}
+            onClick={() => navigate('/contacts/new')}
+          >
+            Создать контакт
+          </Button>
+        </Space>
       </div>
+
+      {showKPI && <ContactsKPI contacts={contacts} />}
 
       <Card>
         <Input.Search
@@ -384,6 +440,7 @@ function ContactsList() {
         onExport={handleBulkExport}
         onSendEmail={handleBulkEmail}
         onSendSMS={handleBulkSMS}
+        onBulkTag={handleBulkTag}
         entityName="контактов"
       />
 
@@ -420,6 +477,29 @@ function ContactsList() {
             </Select.Option>
           ))}
         </Select>
+      </Modal>
+
+      <Modal
+        title="Добавить теги к контактам"
+        open={bulkTagModalVisible}
+        onCancel={() => {
+          setBulkTagModalVisible(false);
+          setSelectedTags([]);
+        }}
+        onOk={handleBulkTagConfirm}
+        okText="Применить"
+        cancelText="Отмена"
+      >
+        <p>Добавить теги к {selectedRowKeys.length} выбранным контактам</p>
+        <Form.Item label="Теги">
+          <ReferenceSelect
+            type="crm-tags"
+            mode="multiple"
+            placeholder="Выберите теги"
+            value={selectedTags}
+            onChange={setSelectedTags}
+          />
+        </Form.Item>
       </Modal>
     </div>
   );

@@ -72,8 +72,10 @@ function App() {
   const [unreadCount, setUnreadCount] = useState(0);
 
   useEffect(() => {
-    // Check auth
-    if (isAuthenticated()) {
+    // Check auth on mount
+    const authenticated = isAuthenticated();
+    
+    if (authenticated) {
       const token = getToken();
       const userInfo = getUserFromToken();
       
@@ -95,9 +97,20 @@ function App() {
     const unsubscribeRoute = onRouteChange((newRoute) => {
       setRoute(newRoute);
       
-      // Check auth on route change
-      if (newRoute.name !== 'login' && !isAuthenticated()) {
+      // Check auth on every route change
+      const authenticated = isAuthenticated();
+      
+      // If trying to access protected route without authentication
+      if (newRoute.name !== 'login' && !authenticated) {
+        console.warn('Unauthorized access attempt, redirecting to login');
         navigate('/login');
+        return;
+      }
+      
+      // If trying to access login while authenticated, redirect to dashboard
+      if (newRoute.name === 'login' && authenticated) {
+        navigate('/dashboard');
+        return;
       }
     });
 

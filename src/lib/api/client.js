@@ -76,7 +76,10 @@ async function refreshAccessToken() {
     // Clear tokens and redirect to login
     clearToken();
     if (typeof window !== 'undefined') {
-      window.location.href = '/login';
+      // Use hash navigation for consistency
+      window.location.hash = '/login';
+      // Reload to ensure clean state
+      window.location.reload();
     }
     throw error;
   }
@@ -155,8 +158,21 @@ async function request(method, path, { params, body, headers, retry = 1, _isRetr
         // Retry the original request with new token
         return request(method, path, { params, body, headers, retry, _isRetry: true });
       } catch (refreshError) {
+        // Refresh failed, clear tokens and redirect to login
+        console.error('Token refresh failed, redirecting to login');
+        clearToken();
+        if (typeof window !== 'undefined') {
+          window.location.hash = '/login';
+          // Force reload to clear app state
+          setTimeout(() => window.location.reload(), 100);
+        }
         throw normalizeError(data, res);
       }
+    }
+    
+    // Handle 401 on auth endpoints (login failed, etc.)
+    if (res.status === 401 && isAuthEndpoint) {
+      throw normalizeError(data, res);
     }
     
     if (!res.ok) {
@@ -164,6 +180,16 @@ async function request(method, path, { params, body, headers, retry = 1, _isRetr
     }
     return data;
   } catch (err) {
+    // If error is 401, ensure we redirect to login
+    if (err?.status === 401 && !isAuthEndpoint) {
+      console.warn('401 Unauthorized error, redirecting to login');
+      clearToken();
+      if (typeof window !== 'undefined') {
+        window.location.hash = '/login';
+        setTimeout(() => window.location.reload(), 100);
+      }
+    }
+    
     // Retry only GET for network errors (Error instances). Do not retry HTTP errors (object payloads)
     const isNetworkError = err instanceof Error;
     if (retry > 0 && method === 'GET' && isNetworkError) {

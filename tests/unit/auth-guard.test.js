@@ -1,51 +1,175 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
+import { checkAuth, authGuardMiddleware, getAuthStatus, useAuthGuard } from '../../src/lib/auth-guard';
+import * as auth from '../../src/lib/api/auth';
+import * as router from '../../src/router';
 
-// Mock auth module
-vi.mock('../../src/lib/api/auth.js', () => ({
-  isAuthenticated: vi.fn(),
-  clearToken: vi.fn(),
-  setToken: vi.fn(),
-  getToken: vi.fn(),
-}));
-
-// Mock router
-vi.mock('../../src/router.js', () => ({
-  parseHash: vi.fn(),
-  navigate: vi.fn(),
-  onRouteChange: vi.fn(),
-}));
+// Mock dependencies
+vi.mock('../../src/lib/api/auth');
+vi.mock('../../src/router');
 
 describe('Auth Guard', () => {
   beforeEach(() => {
     vi.clearAllMocks();
   });
 
-  it('redirects unauthenticated users from protected routes', async () => {
-    const { isAuthenticated } = await import('../../src/lib/api/auth.js');
-    isAuthenticated.mockReturnValue(false);
-    
-    // Simulate accessing a protected route
-    const protectedRoute = { name: 'leads-detail', params: { id: '123' } };
-    
-    // This would normally trigger the auth guard logic in main.js
-    expect(isAuthenticated()).toBe(false);
+  describe('checkAuth', () => {
+    it('allows access for authenticated users', () => {
+      auth.isAuthenticated.mockReturnValue(true);
+      auth.getToken.mockReturnValue('valid-token');
+      auth.isTokenExpired.mockReturnValue(false);
+
+      const result = checkAuth({ name: 'dashboard' }, true);
+
+      expect(result).toBe(true);
+      expect(router.navigate).not.toHaveBeenCalled();
+    });
+
+    it('redirects to login for unauthenticated users', () => {
+      auth.isAuthenticated.mockReturnValue(false);
+
+      const result = checkAuth({ name: 'dashboard' }, true);
+
+      expect(result).toBe(false);
+      expect(router.navigate).toHaveBeenCalledWith('/login');
+    });
+
+    it('allows access to public routes without auth', () => {
+      auth.isAuthenticated.mockReturnValue(false);
+
+      const result = checkAuth({ name: 'login' }, false);
+
+      expect(result).toBe(true);
+      expect(router.navigate).not.toHaveBeenCalled();
+    });
+
+    it('redirects to login when token is expired', () => {
+      auth.isAuthenticated.mockReturnValue(true);
+      auth.getToken.mockReturnValue('expired-token');
+      auth.isTokenExpired.mockReturnValue(true);
+
+      const result = checkAuth({ name: 'dashboard' }, true);
+
+      expect(result).toBe(false);
+      expect(auth.clearToken).toHaveBeenCalled();
+      expect(router.navigate).toHaveBeenCalledWith('/login');
+    });
   });
 
-  it('allows authenticated users to access protected routes', async () => {
-    const { isAuthenticated } = await import('../../src/lib/api/auth.js');
-    isAuthenticated.mockReturnValue(true);
-    
-    const protectedRoute = { name: 'leads-list', params: {} };
-    
-    expect(isAuthenticated()).toBe(true);
+  describe('authGuardMiddleware', () => {
+    it('allows authenticated users to protected routes', () => {
+      auth.isAuthenticated.mockReturnValue(true);
+      auth.getToken.mockReturnValue('valid-token');
+      auth.isTokenExpired.mockReturnValue(false);
+
+      const result = authGuardMiddleware(
+        { name: 'dashboard' },
+        { auth: true }
+      );
+
+      expect(result).toBe(true);
+    });
+
+    it('blocks unauthenticated users from protected routes', () => {
+      auth.isAuthenticated.mockReturnValue(false);
+
+      const result = authGuardMiddleware(
+        { name: 'dashboard' },
+        { auth: true }
+      );
+
+      expect(result).toBe(false);
+      expect(router.navigate).toHaveBeenCalledWith('/login');
+    });
+
+    it('allows unauthenticated users to public routes', () => {
+      auth.isAuthenticated.mockReturnValue(false);
+
+      const result = authGuardMiddleware(
+        { name: 'login' },
+        { auth: false }
+      );
+
+      expect(result).toBe(true);
+    });
+
+    it('redirects authenticated users from login to dashboard', () => {
+      auth.isAuthenticated.mockReturnValue(true);
+
+      const result = authGuardMiddleware(
+        { name: 'login' },
+        { auth: false }
+      );
+
+      expect(result).toBe(false);
+      expect(router.navigate).toHaveBeenCalledWith('/dashboard');
+    });
   });
 
-  it('preserves intended route for post-login redirect', () => {
-    // Simulate the intended route storage logic
-    const intendedRoute = { name: 'leads-edit', params: { id: '456' } };
-    
-    // This would be stored and restored after login in main.js
-    expect(intendedRoute.name).toBe('leads-edit');
-    expect(intendedRoute.params.id).toBe('456');
+  describe('getAuthStatus', () => {
+    it('returns correct status for authenticated user', () => {
+      auth.isAuthenticated.mockReturnValue(true);
+      auth.getToken.mockReturnValue('valid-token');
+      auth.isTokenExpired.mockReturnValue(false);
+
+      const status = getAuthStatus();
+
+      expect(status).toEqual({
+        authenticated: true,
+        tokenValid: true,
+        user: expect.any(Object),
+      });
+    });
+
+    it('returns correct status for unauthenticated user', () => {
+      auth.isAuthenticated.mockReturnValue(false);
+
+      const status = getAuthStatus();
+
+      expect(status).toEqual({
+        authenticated: false,
+        tokenValid: false,
+        user: null,
+      });
+    });
+
+    it('returns invalid token status when token is expired', () => {
+      auth.isAuthenticated.mockReturnValue(true);
+      auth.getToken.mockReturnValue('expired-token');
+      auth.isTokenExpired.mockReturnValue(true);
+
+      const status = getAuthStatus();
+
+      expect(status.authenticated).toBe(true);
+      expect(status.tokenValid).toBe(false);
+    });
+  });
+
+  describe('useAuthGuard', () => {
+    it('returns true for authenticated users', () => {
+      auth.isAuthenticated.mockReturnValue(true);
+
+      const result = useAuthGuard();
+
+      expect(result).toBe(true);
+      expect(router.navigate).not.toHaveBeenCalled();
+    });
+
+    it('returns false and redirects for unauthenticated users', () => {
+      auth.isAuthenticated.mockReturnValue(false);
+
+      const result = useAuthGuard(true);
+
+      expect(result).toBe(false);
+      expect(router.navigate).toHaveBeenCalledWith('/login');
+    });
+
+    it('returns false without redirect when redirect is disabled', () => {
+      auth.isAuthenticated.mockReturnValue(false);
+
+      const result = useAuthGuard(false);
+
+      expect(result).toBe(false);
+      expect(router.navigate).not.toHaveBeenCalled();
+    });
   });
 });

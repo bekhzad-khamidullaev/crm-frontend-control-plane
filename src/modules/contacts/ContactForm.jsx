@@ -40,19 +40,7 @@ function ContactForm({ id }) {
       form.setFieldsValue(contact);
     } catch (error) {
       message.error('Ошибка загрузки данных контакта');
-      // Mock data for demo
-      form.setFieldsValue({
-        first_name: 'Анна',
-        last_name: 'Смирнова',
-        email: 'anna@example.com',
-        phone: '+7 999 111-22-33',
-        company: 'ООО "Альфа"',
-        position: 'Менеджер',
-        type: 'client',
-        address: 'г. Москва, ул. Ленина, д. 1',
-        website: 'https://example.com',
-        notes: 'Постоянный клиент',
-      });
+      console.error('Error loading contact:', error);
     } finally {
       setLoading(false);
     }

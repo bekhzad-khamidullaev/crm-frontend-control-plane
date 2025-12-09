@@ -56,22 +56,7 @@ function ContactDetail({ id }) {
       setContact(data);
     } catch (error) {
       message.error('Ошибка загрузки данных контакта');
-      // Mock data for demo
-      setContact({
-        id,
-        first_name: 'Анна',
-        last_name: 'Смирнова',
-        email: 'anna@example.com',
-        phone: '+7 999 111-22-33',
-        company: 'ООО "Альфа"',
-        position: 'Менеджер',
-        type: 'client',
-        address: 'г. Москва, ул. Ленина, д. 1',
-        website: 'https://example.com',
-        notes: 'Постоянный клиент, работает с компанией с 2022 года',
-        created_at: '2024-01-20T10:30:00Z',
-        updated_at: '2024-01-20T10:30:00Z',
-      });
+      console.error('Error loading contact:', error);
     } finally {
       setLoading(false);
     }
@@ -84,27 +69,7 @@ function ContactDetail({ id }) {
       setCallLogs(response.results || []);
     } catch (error) {
       console.error('Error loading call logs:', error);
-      // Mock data
-      setCallLogs([
-        {
-          id: 1,
-          phone_number: '+7 999 111-22-33',
-          direction: 'outbound',
-          status: 'completed',
-          started_at: '2024-01-20T10:30:00Z',
-          duration: 300,
-          notes: 'Обсудили условия сотрудничества',
-        },
-        {
-          id: 2,
-          phone_number: '+7 999 111-22-33',
-          direction: 'inbound',
-          status: 'completed',
-          started_at: '2024-01-19T15:20:00Z',
-          duration: 180,
-          notes: 'Запрос информации о продуктах',
-        },
-      ]);
+      setCallLogs([]);
     } finally {
       setCallLogsLoading(false);
     }

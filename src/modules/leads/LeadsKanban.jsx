@@ -260,50 +260,11 @@ function LeadsKanban() {
       setColumns(grouped);
     } catch (error) {
       message.error('Ошибка загрузки лидов');
-      // Mock data for demo
+      console.error('Error loading leads:', error);
       setColumns({
-        new: [
-          {
-            id: 1,
-            first_name: 'Иван',
-            last_name: 'Иванов',
-            email: 'ivan@example.com',
-            phone: '+7 999 123-45-67',
-            company: 'ООО "Технологии"',
-            status: 'new',
-          },
-          {
-            id: 4,
-            first_name: 'Ольга',
-            last_name: 'Соколова',
-            email: 'olga@example.com',
-            phone: '+7 999 456-78-90',
-            company: 'ИП Соколова',
-            status: 'new',
-          },
-        ],
-        contacted: [
-          {
-            id: 2,
-            first_name: 'Мария',
-            last_name: 'Петрова',
-            email: 'maria@example.com',
-            phone: '+7 999 234-56-78',
-            company: 'АО "Инновации"',
-            status: 'contacted',
-          },
-        ],
-        qualified: [
-          {
-            id: 3,
-            first_name: 'Алексей',
-            last_name: 'Сидоров',
-            email: 'alexey@example.com',
-            phone: '+7 999 345-67-89',
-            company: 'ИП Сидоров',
-            status: 'qualified',
-          },
-        ],
+        new: [],
+        contacted: [],
+        qualified: [],
         converted: [],
         lost: [],
       });

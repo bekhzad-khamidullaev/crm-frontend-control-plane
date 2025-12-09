@@ -12,6 +12,7 @@ import {
   Typography,
   Table,
   Empty,
+  Popconfirm,
 } from 'antd';
 import {
   ArrowLeftOutlined,
@@ -21,9 +22,11 @@ import {
   MailOutlined,
   ClockCircleOutlined,
   PhoneTwoTone,
+  CheckCircleOutlined,
+  CloseCircleOutlined,
 } from '@ant-design/icons';
 import { navigate } from '../../router';
-import { getLead, deleteLead } from '../../lib/api/client';
+import { getLead, deleteLead, leadsApi } from '../../lib/api/client';
 import { getEntityCallLogs } from '../../lib/api/calls';
 import CallButton from '../../components/CallButton';
 import ChatWidget from '../../modules/chat/ChatWidget';
@@ -51,21 +54,7 @@ function LeadDetail({ id }) {
       setLead(data);
     } catch (error) {
       message.error('Ошибка загрузки данных лида');
-      // Mock data for demo
-      setLead({
-        id,
-        first_name: 'Иван',
-        last_name: 'Иванов',
-        email: 'ivan@example.com',
-        phone: '+7 999 123-45-67',
-        company: 'ООО "Технологии"',
-        position: 'Директор',
-        status: 'new',
-        source: 'website',
-        description: 'Интересуется нашими услугами',
-        created_at: '2024-01-15T10:30:00Z',
-        updated_at: '2024-01-15T10:30:00Z',
-      });
+      console.error('Error loading lead:', error);
     } finally {
       setLoading(false);
     }
@@ -78,18 +67,7 @@ function LeadDetail({ id }) {
       setCallLogs(response.results || []);
     } catch (error) {
       console.error('Error loading call logs:', error);
-      // Mock data
-      setCallLogs([
-        {
-          id: 1,
-          phone_number: '+7 999 123-45-67',
-          direction: 'outbound',
-          status: 'completed',
-          started_at: '2024-01-18T14:30:00Z',
-          duration: 420,
-          notes: 'Первый контакт, обсудили потребности',
-        },
-      ]);
+      setCallLogs([]);
     } finally {
       setCallLogsLoading(false);
     }
@@ -102,6 +80,28 @@ function LeadDetail({ id }) {
       navigate('/leads');
     } catch (error) {
       message.error('Ошибка удаления лида');
+    }
+  };
+
+  const handleConvert = async () => {
+    try {
+      await leadsApi.convert(id);
+      message.success('Лид конвертирован в сделку');
+      loadLead();
+    } catch (error) {
+      const errorMessage = error?.details?.detail || error?.message || 'Ошибка конвертации лида';
+      message.error(errorMessage);
+    }
+  };
+
+  const handleDisqualify = async () => {
+    try {
+      await leadsApi.disqualify(id);
+      message.success('Лид дисквалифицирован');
+      loadLead();
+    } catch (error) {
+      const errorMessage = error?.details?.detail || error?.message || 'Ошибка дисквалификации лида';
+      message.error(errorMessage);
     }
   };
 
@@ -330,7 +330,7 @@ function LeadDetail({ id }) {
 
   return (
     <div>
-      <Space style={{ marginBottom: 16 }}>
+      <Space style={{ marginBottom: 16 }} wrap>
         <Button icon={<ArrowLeftOutlined />} onClick={() => navigate('/leads')}>
           Назад к списку
         </Button>
@@ -347,9 +347,43 @@ function LeadDetail({ id }) {
         >
           Редактировать
         </Button>
-        <Button danger icon={<DeleteOutlined />} onClick={handleDelete}>
-          Удалить
-        </Button>
+        <Popconfirm
+          title="Конвертировать лид в сделку?"
+          description="Это создаст новую сделку на основе данных лида"
+          onConfirm={handleConvert}
+          okText="Да"
+          cancelText="Нет"
+        >
+          <Button 
+            type="primary" 
+            icon={<CheckCircleOutlined />}
+            style={{ backgroundColor: '#52c41a', borderColor: '#52c41a' }}
+          >
+            Конвертировать
+          </Button>
+        </Popconfirm>
+        <Popconfirm
+          title="Дисквалифицировать лид?"
+          description="Лид будет помечен как дисквалифицированный"
+          onConfirm={handleDisqualify}
+          okText="Да"
+          cancelText="Нет"
+        >
+          <Button icon={<CloseCircleOutlined />}>
+            Дисквалифицировать
+          </Button>
+        </Popconfirm>
+        <Popconfirm
+          title="Удалить этот лид?"
+          description="Это действие нельзя отменить"
+          onConfirm={handleDelete}
+          okText="Да"
+          cancelText="Нет"
+        >
+          <Button danger icon={<DeleteOutlined />}>
+            Удалить
+          </Button>
+        </Popconfirm>
       </Space>
 
       <Title level={2}>

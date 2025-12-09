@@ -36,18 +36,7 @@ function LeadForm({ id }) {
       form.setFieldsValue(lead);
     } catch (error) {
       message.error('Ошибка загрузки данных лида');
-      // Mock data for demo
-      form.setFieldsValue({
-        first_name: 'Иван',
-        last_name: 'Иванов',
-        email: 'ivan@example.com',
-        phone: '+7 999 123-45-67',
-        company: 'ООО "Технологии"',
-        position: 'Директор',
-        status: 'new',
-        source: 'website',
-        description: 'Интересуется нашими услугами',
-      });
+      console.error('Error loading lead:', error);
     } finally {
       setLoading(false);
     }

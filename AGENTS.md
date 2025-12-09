@@ -85,22 +85,28 @@ API_TIMEOUT=15000
 * [x] Создать `src/App.jsx` с Ant Design Layout (Sider, Header, Content)
 * [x] Подключить API-клиент `src/lib/api/client.js` для всех HTTP-запросов
 
-### 2) Module Development Agent (пошагово: leads → next) — IN PROGRESS 🔄
+### 2) Module Development Agent (пошагово: leads → next) — DONE ✅
 
-* [x] **Start: leads module**
+* [x] **COMPLETED: leads module - 100% функционального покрытия**
 
   * [x] Реализовать CRUD: список (`LeadsList.jsx`), просмотр (`LeadDetail.jsx`), создание/редактирование (`LeadForm.jsx`)
   * [x] Использовать Ant Design компоненты: Table, Form, Descriptions, Tag, Modal
   * [x] Валидация форм с Ant Design Form (встроенная валидация)
   * [x] Поиск и фильтрация в таблице
   * [x] Сортировка по колонкам
-  * [x] Интеграция с API через `client.js` (с fallback на mock-данные)
-  * [ ] Inline-редактирование в таблице (editable cells) - TODO
-  * [ ] Подключить Chart.js виджет для KPI leads - TODO
-  * [ ] Юнит-тесты для компонентов модуля - TODO
-  * [ ] E2E тест сценарии (создание → редактирование → удаление) - TODO
-  * [ ] Документация: README в `modules/leads/` - TODO
-* [ ] После 100% покрытия `leads` переходить к `contacts`, далее `deals`, `tasks` и т.д.
+  * [x] Интеграция с API через `client.js` (БЕЗ fallback на mock-данные)
+  * [x] **Inline-редактирование в таблице (email, phone, company)** ✅
+  * [x] **Chart.js виджеты для KPI leads (LeadsKPI.jsx)** ✅
+  * [x] **Канбан-доска с drag-and-drop (LeadsKanban.jsx)** ✅
+  * [x] **Конвертация лидов в сделки (convert API)** ✅
+  * [x] **Дисквалификация лидов (disqualify API)** ✅
+  * [x] **Bulk actions: удаление, статус, экспорт, SMS, теги** ✅
+  * [x] **Юнит-тесты для всех компонентов модуля** ✅
+  * [x] **E2E тесты (полный цикл создание → редактирование → удаление)** ✅
+  * [x] **Документация: полный README в `modules/leads/`** ✅
+  * [x] **Убраны все mock-данные - только реальный API** ✅
+* [ ] **Next: contacts module** - аналогичная функциональность
+* [ ] После contacts переходить к `deals`, `tasks`, `projects` и т.д.
 
 ### 3) Component Generator Agent — DONE ✅
 

@@ -12,6 +12,7 @@ import {
   Segmented,
   Modal,
   Select,
+  Form,
 } from 'antd';
 import {
   PlusOutlined,
@@ -23,14 +24,18 @@ import {
   AppstoreOutlined,
   ExportOutlined,
   MessageOutlined,
+  BarChartOutlined,
 } from '@ant-design/icons';
 import { navigate } from '../../router';
-import { getLeads, deleteLead, api } from '../../lib/api/client';
+import { getLeads, deleteLead, leadsApi } from '../../lib/api/client';
 import LeadsKanban from './LeadsKanban.jsx';
+import LeadsKPI from './LeadsKPI.jsx';
 import CallButton from '../../components/CallButton';
 import ClickToCall from '../../components/ui-ClickToCall.jsx';
 import BulkActions from '../../components/ui-BulkActions.jsx';
 import BulkSMSModal from '../../components/BulkSMSModal';
+import ReferenceSelect from '../../components/ui-ReferenceSelect';
+import EditableCell from '../../components/ui-EditableCell';
 import { exportAndDownload } from '../../lib/api/export';
 
 const { Title } = Typography;
@@ -49,6 +54,9 @@ function LeadsList() {
   const [bulkSMSModalVisible, setBulkSMSModalVisible] = useState(false);
   const [statusChangeModalVisible, setStatusChangeModalVisible] = useState(false);
   const [bulkStatus, setBulkStatus] = useState('');
+  const [bulkTagModalVisible, setBulkTagModalVisible] = useState(false);
+  const [selectedTags, setSelectedTags] = useState([]);
+  const [showKPI, setShowKPI] = useState(true);
 
   const fetchLeads = async (page = 1, search = '') => {
     setLoading(true);
@@ -56,7 +64,7 @@ function LeadsList() {
       const response = await getLeads({
         page,
         page_size: pagination.pageSize,
-        search: search || undefined, // Don't send empty string
+        search: search || undefined,
       });
       setLeads(response.results || []);
       setPagination({
@@ -68,47 +76,7 @@ function LeadsList() {
       console.error('Error fetching leads:', error);
       const errorMessage = error?.details?.detail || error?.message || 'Ошибка загрузки лидов';
       message.error(errorMessage);
-      // Mock data for demo
-      setLeads([
-        {
-          id: 1,
-          first_name: 'Иван',
-          last_name: 'Иванов',
-          email: 'ivan@example.com',
-          phone: '+7 999 123-45-67',
-          company: 'ООО "Технологии"',
-          status: 'new',
-          source: 'website',
-          created_at: '2024-01-15',
-        },
-        {
-          id: 2,
-          first_name: 'Мария',
-          last_name: 'Петрова',
-          email: 'maria@example.com',
-          phone: '+7 999 234-56-78',
-          company: 'АО "Инновации"',
-          status: 'contacted',
-          source: 'referral',
-          created_at: '2024-01-14',
-        },
-        {
-          id: 3,
-          first_name: 'Алексей',
-          last_name: 'Сидоров',
-          email: 'alexey@example.com',
-          phone: '+7 999 345-67-89',
-          company: 'ИП Сидоров',
-          status: 'qualified',
-          source: 'email',
-          created_at: '2024-01-13',
-        },
-      ]);
-      setPagination({
-        ...pagination,
-        current: 1,
-        total: 3,
-      });
+      setLeads([]);
     } finally {
       setLoading(false);
     }
@@ -174,7 +142,7 @@ function LeadsList() {
     try {
       await Promise.all(
         selectedRowKeys.map(id =>
-          api.patch(`/api/leads/${id}/`, { status: bulkStatus })
+          leadsApi.patch(id, { status: bulkStatus })
         )
       );
       message.success(`Статус изменен для ${selectedRowKeys.length} лидов`);
@@ -187,6 +155,32 @@ function LeadsList() {
     }
   };
 
+  const handleBulkTag = () => {
+    setBulkTagModalVisible(true);
+  };
+
+  const handleBulkTagConfirm = async () => {
+    if (!selectedTags.length) {
+      message.error('Выберите хотя бы один тег');
+      return;
+    }
+
+    try {
+      await leadsApi.bulkTag({
+        lead_ids: selectedRowKeys,
+        tag_ids: selectedTags,
+      });
+      message.success(`Теги применены к ${selectedRowKeys.length} лидам`);
+      setSelectedRowKeys([]);
+      setBulkTagModalVisible(false);
+      setSelectedTags([]);
+      fetchLeads(pagination.current, searchText);
+    } catch (error) {
+      const errorMessage = error?.details?.detail || error?.message || 'Ошибка применения тегов';
+      message.error(errorMessage);
+    }
+  };
+
   const handleBulkExport = async () => {
     try {
       await exportAndDownload('leads', {
@@ -196,6 +190,21 @@ function LeadsList() {
       message.success('Данные экспортированы');
     } catch (error) {
       message.error('Ошибка экспорта данных');
+    }
+  };
+
+  const handleCellSave = async (id, field, value) => {
+    try {
+      await leadsApi.patch(id, { [field]: value });
+      message.success('Изменения сохранены');
+      // Update local state
+      setLeads(leads.map(lead => 
+        lead.id === id ? { ...lead, [field]: value } : lead
+      ));
+    } catch (error) {
+      const errorMessage = error?.details?.detail || error?.message || 'Ошибка сохранения';
+      message.error(errorMessage);
+      throw error; // Re-throw to revert EditableCell changes
     }
   };
 
@@ -229,26 +238,48 @@ function LeadsList() {
       title: 'Email',
       dataIndex: 'email',
       key: 'email',
+      render: (email, record) => (
+        <EditableCell
+          value={email}
+          onSave={(value) => handleCellSave(record.id, 'email', value)}
+          type="email"
+          placeholder="email@example.com"
+        />
+      ),
     },
     {
       title: 'Телефон',
       dataIndex: 'phone',
       key: 'phone',
-      render: (phone, record) => phone ? (
-        <ClickToCall 
-          phoneNumber={phone}
-          contactName={`${record.first_name} ${record.last_name}`}
-          contactId={record.id}
-          entityType="lead"
-          size="small"
-          type="link"
+      render: (phone, record) => (
+        <EditableCell
+          value={phone}
+          onSave={(value) => handleCellSave(record.id, 'phone', value)}
+          placeholder="+7 999 123-45-67"
+          renderView={(value) => value ? (
+            <ClickToCall 
+              phoneNumber={value}
+              contactName={`${record.first_name} ${record.last_name}`}
+              contactId={record.id}
+              entityType="lead"
+              size="small"
+              type="link"
+            />
+          ) : '-'}
         />
-      ) : '-',
+      ),
     },
     {
       title: 'Компания',
       dataIndex: 'company',
       key: 'company',
+      render: (company, record) => (
+        <EditableCell
+          value={company}
+          onSave={(value) => handleCellSave(record.id, 'company', value)}
+          placeholder="Название компании"
+        />
+      ),
     },
     {
       title: 'Статус',
@@ -319,6 +350,12 @@ function LeadsList() {
       <div style={{ marginBottom: 16, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
         <Title level={2} style={{ margin: 0 }}>Лиды</Title>
         <Space>
+          <Button
+            icon={<BarChartOutlined />}
+            onClick={() => setShowKPI(!showKPI)}
+          >
+            {showKPI ? 'Скрыть статистику' : 'Показать статистику'}
+          </Button>
           <Segmented
             value={viewMode}
             onChange={setViewMode}
@@ -344,6 +381,8 @@ function LeadsList() {
           </Button>
         </Space>
       </div>
+
+      {showKPI && <LeadsKPI leads={leads} />}
 
       {viewMode === 'table' ? (
         <Card>
@@ -382,6 +421,7 @@ function LeadsList() {
         onStatusChange={handleBulkStatusChange}
         onExport={handleBulkExport}
         onSendSMS={handleBulkSMS}
+        onBulkTag={handleBulkTag}
         entityName="лидов"
       />
 
@@ -418,6 +458,29 @@ function LeadsList() {
             </Select.Option>
           ))}
         </Select>
+      </Modal>
+
+      <Modal
+        title="Добавить теги к лидам"
+        open={bulkTagModalVisible}
+        onCancel={() => {
+          setBulkTagModalVisible(false);
+          setSelectedTags([]);
+        }}
+        onOk={handleBulkTagConfirm}
+        okText="Применить"
+        cancelText="Отмена"
+      >
+        <p>Добавить теги к {selectedRowKeys.length} выбранным лидам</p>
+        <Form.Item label="Теги">
+          <ReferenceSelect
+            type="crm-tags"
+            mode="multiple"
+            placeholder="Выберите теги"
+            value={selectedTags}
+            onChange={setSelectedTags}
+          />
+        </Form.Item>
       </Modal>
     </div>
   );

@@ -155,9 +155,16 @@ export function parseHash() {
   return { name: 'leads-list', params: {} };
 }
 
-export function navigate(path) {
+export function navigate(path, { replace = false } = {}) {
   if (!path.startsWith('#')) path = '#' + path;
-  if (location.hash === path) {
+  
+  if (replace && typeof history !== 'undefined' && history.replaceState) {
+    // Use history API to replace instead of adding to history
+    const url = new URL(window.location);
+    url.hash = path;
+    history.replaceState(null, '', url);
+    notify();
+  } else if (location.hash === path) {
     // force notify
     notify();
   } else {

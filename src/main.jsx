@@ -5,6 +5,10 @@ import ruRU from 'antd/locale/ru_RU';
 import 'antd/dist/reset.css';
 import './styles/custom-theme.css';
 import App from './App.jsx';
+import { setupGlobalErrorHandler } from './lib/api/interceptor';
+
+// Setup global error handler for 401 errors
+setupGlobalErrorHandler();
 
 const root = ReactDOM.createRoot(document.getElementById('root'));
 
