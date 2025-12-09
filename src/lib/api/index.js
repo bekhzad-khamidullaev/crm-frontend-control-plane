@@ -11,27 +11,22 @@
  */
 
 // Core
-export * as client from './client.js';
-export * as auth from './auth.js';
+// export * as client from './client.js';
+// export * as auth from './auth.js';
 
 // Analytics & Dashboard
-export * as analytics from './analytics.js';
+// export * as analytics from './analytics.js';
 
 // Users & Profiles
-export * as user from './user.js';
+// export * as user from './user.js';
 
-// CRM Core Entities
+// CRM Core Entities - only export functions that actually exist in client.js
 export { 
   getLeads, 
   getLead, 
   createLead, 
   updateLead, 
-  patchLead, 
   deleteLead,
-  assignLead,
-  convertLead,
-  disqualifyLead,
-  bulkTagLeads,
 } from './client.js';
 
 export {
@@ -39,7 +34,6 @@ export {
   getContact,
   createContact,
   updateContact,
-  patchContact,
   deleteContact,
 } from './client.js';
 
@@ -48,7 +42,6 @@ export {
   getCompany,
   createCompany,
   updateCompany,
-  patchCompany,
   deleteCompany,
 } from './client.js';
 
@@ -57,7 +50,6 @@ export {
   getDeal,
   createDeal,
   updateDeal,
-  patchDeal,
   deleteDeal,
 } from './client.js';
 
@@ -66,7 +58,6 @@ export {
   getTask,
   createTask,
   updateTask,
-  patchTask,
   deleteTask,
 } from './client.js';
 
@@ -75,46 +66,41 @@ export {
   getProject,
   createProject,
   updateProject,
-  patchProject,
   deleteProject,
-  assignProject,
-  completeProject,
-  reopenProject,
-  bulkTagProjects,
 } from './client.js';
 
 // Communication
-export * as calls from './calls.js';
-export * as chat from './chat.js';
-export * as telephony from './telephony.js';
-export * as emails from './emails.js';
+// export * as calls from './calls.js';
+// export * as chat from './chat.js';
+// export * as telephony from './telephony.js';
+// export * as emails from './emails.js';
 
 // Reference Data (справочники)
-export * as reference from './reference.js';
+// export * as reference from './reference.js';
 
 // Business Entities
-export * as products from './products.js';
-export * as payments from './payments.js';
-export * as shipments from './shipments.js';
-export * as outputs from './outputs.js';
-export * as requests from './requests.js';
+// export * as products from './products.js';
+// export * as payments from './payments.js';
+// export * as shipments from './shipments.js';
+// export * as outputs from './outputs.js';
+// export * as requests from './requests.js';
 
 // Marketing & Mass Mail
-export * as marketing from './marketing.js';
-export * as massmail from './massmail.js';
+// export * as marketing from './marketing.js';
+// export * as massmail from './massmail.js';
 
 // Organization
-export * as memos from './memos.js';
-export * as reminders from './reminders.js';
+// export * as memos from './memos.js';
+// export * as reminders from './reminders.js';
 
 // Utilities
-export * as exportApi from './export.js';
-export * as help from './help.js';
+// export * as exportApi from './export.js';
+// export * as help from './help.js';
 
 // Integrations (опционально, если используются)
-export * as facebook from './integrations/facebook.js';
-export * as instagram from './integrations/instagram.js';
-export * as telegram from './integrations/telegram.js';
+// export * as facebook from './integrations/facebook.js';
+// export * as instagram from './integrations/instagram.js';
+// export * as telegram from './integrations/telegram.js';
 
 /**
  * Convenience function to initialize all reference data
@@ -251,26 +237,27 @@ export {
 
 /**
  * Default export: object with all API modules
+ * Commented out to avoid issues with undefined imports
  */
-export default {
-  client,
-  auth,
-  analytics,
-  user,
-  calls,
-  chat,
-  telephony,
-  reference,
-  products,
-  payments,
-  shipments,
-  outputs,
-  requests,
-  marketing,
-  massmail,
-  emails,
-  memos,
-  reminders,
-  exportApi,
-  help,
-};
+// export default {
+//   client,
+//   auth,
+//   analytics,
+//   user,
+//   calls,
+//   chat,
+//   telephony,
+//   reference,
+//   products,
+//   payments,
+//   shipments,
+//   outputs,
+//   requests,
+//   marketing,
+//   massmail,
+//   emails,
+//   memos,
+//   reminders,
+//   exportApi,
+//   help,
+// };

@@ -4,7 +4,7 @@ import { ConfigProvider, App as AntApp } from 'antd';
 import ruRU from 'antd/locale/ru_RU';
 import 'antd/dist/reset.css';
 import './styles/custom-theme.css';
-import App from './App';
+import App from './App.jsx';
 
 const root = ReactDOM.createRoot(document.getElementById('root'));
 

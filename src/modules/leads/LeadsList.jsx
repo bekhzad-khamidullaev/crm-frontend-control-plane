@@ -26,7 +26,7 @@ import {
 } from '@ant-design/icons';
 import { navigate } from '../../router';
 import { getLeads, deleteLead, api } from '../../lib/api/client';
-import LeadsKanban from './LeadsKanban';
+import LeadsKanban from './LeadsKanban.jsx';
 import CallButton from '../../components/CallButton';
 import ClickToCall from '../../components/ui-ClickToCall.jsx';
 import BulkActions from '../../components/ui-BulkActions.jsx';

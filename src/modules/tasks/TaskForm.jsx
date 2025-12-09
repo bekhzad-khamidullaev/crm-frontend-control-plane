@@ -17,6 +17,7 @@ import {
 import { SaveOutlined, ArrowLeftOutlined } from '@ant-design/icons';
 import { navigate } from '../../router';
 import { getTask, createTask, updateTask } from '../../lib/api/client';
+import ReferenceSelect from '../../components/ui-ReferenceSelect';
 import dayjs from 'dayjs';
 
 const { Title } = Typography;
@@ -153,12 +154,11 @@ function TaskForm({ id }) {
                 rules={[{ required: true, message: 'Выберите статус' }]}
                 initialValue="todo"
               >
-                <Select placeholder="Выберите статус">
-                  <Option value="todo">К выполнению</Option>
-                  <Option value="in_progress">В работе</Option>
-                  <Option value="completed">Выполнено</Option>
-                  <Option value="cancelled">Отменено</Option>
-                </Select>
+                <ReferenceSelect
+                  type="task-stages"
+                  placeholder="Выберите статус"
+                  allowClear
+                />
               </Form.Item>
             </Col>
 

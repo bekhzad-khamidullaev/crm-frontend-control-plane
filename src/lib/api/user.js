@@ -174,5 +174,23 @@ export async function getUserActivity(params = {}) {
   }
 }
 
+/**
+ * Get list of users
+ * Uses /api/users/ endpoint
+ * @param {Object} [params]
+ * @param {number} [params.page]
+ * @param {number} [params.page_size]
+ * @param {string} [params.search]
+ * @returns {Promise<Object>}
+ */
+export async function getUsers(params = {}) {
+  try {
+    return await api.get('/api/users/', { params });
+  } catch (error) {
+    console.warn('Users list not available');
+    return { results: [], count: 0 };
+  }
+}
+
 // Note: 2FA and session management endpoints do not exist in Django-CRM API.yaml
 // These features require backend implementation if needed in the future

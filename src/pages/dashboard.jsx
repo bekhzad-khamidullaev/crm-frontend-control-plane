@@ -20,6 +20,7 @@ import Chart from 'chart.js/auto';
 import AnalyticsCard from '../components/analytics/AnalyticsCard.jsx';
 import PredictionChart from '../components/analytics/PredictionChart.jsx';
 import AnalyticsStatusBanner from '../components/analytics/AnalyticsStatusBanner.jsx';
+import { MemosWidget, CampaignsWidget, RevenueChart } from '../components';
 import { getOverview, getDashboardAnalytics, getFunnelData, getActivityFeed } from '../lib/api/analytics.js';
 import { t } from '../lib/i18n';
 
@@ -544,6 +545,19 @@ function Dashboard() {
           </Col>
         </Row>
       )}
+
+      {/* New Widgets Row - Memos, Campaigns, Revenue Chart */}
+      <Row gutter={[16, 16]} style={{ marginBottom: 24 }}>
+        <Col xs={24} lg={8}>
+          <MemosWidget />
+        </Col>
+        <Col xs={24} lg={8}>
+          <CampaignsWidget />
+        </Col>
+        <Col xs={24} lg={8}>
+          <RevenueChart />
+        </Col>
+      </Row>
 
       {/* Activity Feed & Tasks */}
       <Row gutter={[16, 16]}>

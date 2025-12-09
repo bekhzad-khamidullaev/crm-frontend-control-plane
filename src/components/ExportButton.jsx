@@ -1,0 +1,102 @@
+import { useState } from 'react';
+import { Button, Dropdown, message } from 'antd';
+import { DownloadOutlined, FileExcelOutlined, FilePdfOutlined, FileTextOutlined } from '@ant-design/icons';
+import { exportToCSV, exportToExcel, exportToPDF, generateFilename } from '../lib/utils/export';
+
+/**
+ * Reusable ExportButton component with dropdown menu for different export formats
+ * @param {Object} props
+ * @param {Array} props.data - Data to export
+ * @param {Array} props.columns - Column configuration [{ key, label, format }]
+ * @param {string} props.filename - Base filename (without extension)
+ * @param {string} props.title - Title for PDF export
+ * @param {Function} props.onExport - Callback before export (can return filtered data)
+ */
+export default function ExportButton({ 
+  data = [], 
+  columns = [], 
+  filename = 'export',
+  title = 'Export',
+  onExport,
+  ...buttonProps 
+}) {
+  const [loading, setLoading] = useState(false);
+
+  const handleExport = async (format) => {
+    setLoading(true);
+    
+    try {
+      // Allow parent to modify data before export
+      let exportData = data;
+      if (onExport && typeof onExport === 'function') {
+        exportData = await onExport(data, format);
+      }
+
+      if (!exportData || exportData.length === 0) {
+        message.warning('No data to export');
+        return;
+      }
+
+      const fname = generateFilename(filename, format === 'pdf' ? 'pdf' : 'csv');
+
+      switch (format) {
+        case 'csv':
+          exportToCSV(exportData, columns, fname);
+          message.success(`Exported ${exportData.length} records to CSV`);
+          break;
+        case 'excel':
+          exportToExcel(exportData, columns, fname);
+          message.success(`Exported ${exportData.length} records to Excel`);
+          break;
+        case 'pdf':
+          exportToPDF(exportData, columns, fname, { title });
+          message.success(`Exported ${exportData.length} records to PDF`);
+          break;
+        default:
+          message.error('Unknown export format');
+      }
+    } catch (error) {
+      console.error('Export error:', error);
+      message.error('Failed to export data');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const items = [
+    {
+      key: 'csv',
+      label: 'Export to CSV',
+      icon: <FileTextOutlined />,
+      onClick: () => handleExport('csv'),
+    },
+    {
+      key: 'excel',
+      label: 'Export to Excel',
+      icon: <FileExcelOutlined />,
+      onClick: () => handleExport('excel'),
+    },
+    {
+      key: 'pdf',
+      label: 'Export to PDF',
+      icon: <FilePdfOutlined />,
+      onClick: () => handleExport('pdf'),
+    },
+  ];
+
+  return (
+    <Dropdown
+      menu={{ items }}
+      placement="bottomRight"
+      trigger={['click']}
+    >
+      <Button
+        icon={<DownloadOutlined />}
+        loading={loading}
+        {...buttonProps}
+      >
+        Export
+      </Button>
+    </Dropdown>
+  );
+}

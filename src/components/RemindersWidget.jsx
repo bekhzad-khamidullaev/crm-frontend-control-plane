@@ -9,7 +9,6 @@ import {
   BellOutlined,
   ClockCircleOutlined,
   CheckOutlined,
-  SnoozeOutlined,
   PlusOutlined,
 } from '@ant-design/icons';
 import {

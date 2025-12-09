@@ -7,7 +7,7 @@ import React, { useState } from 'react';
 import { Button, Dropdown, App, Modal } from 'antd';
 import { PhoneOutlined, CopyOutlined, MessageOutlined } from '@ant-design/icons';
 import { initiateCall } from '../lib/api/telephony';
-import SendSMSModal from './SendSMSModal';
+import SendSMSModal from './SendSMSModal.jsx';
 
 export default function ClickToCall({ 
   phoneNumber, 

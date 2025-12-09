@@ -18,6 +18,7 @@ import {
 import { SaveOutlined, ArrowLeftOutlined } from '@ant-design/icons';
 import { navigate } from '../../router';
 import { getDeal, createDeal, updateDeal } from '../../lib/api/client';
+import ReferenceSelect from '../../components/ui-ReferenceSelect';
 import dayjs from 'dayjs';
 
 const { Title } = Typography;
@@ -148,26 +149,37 @@ function DealForm({ id }) {
           </Row>
 
           <Row gutter={16}>
-            <Col xs={24} md={12}>
+            <Col xs={24} md={8}>
+              <Form.Item
+                label="Валюта"
+                name="currency"
+                rules={[{ required: true, message: 'Выберите валюту' }]}
+                initialValue="RUB"
+              >
+                <ReferenceSelect
+                  type="currencies"
+                  placeholder="Выберите валюту"
+                  allowClear
+                />
+              </Form.Item>
+            </Col>
+
+            <Col xs={24} md={8}>
               <Form.Item
                 label="Стадия"
                 name="stage"
                 rules={[{ required: true, message: 'Выберите стадию' }]}
                 initialValue="lead"
               >
-                <Select placeholder="Выберите стадию">
-                  <Option value="lead">Лид</Option>
-                  <Option value="qualification">Квалификация</Option>
-                  <Option value="meeting">Встреча</Option>
-                  <Option value="proposal">Предложение</Option>
-                  <Option value="negotiation">Переговоры</Option>
-                  <Option value="closed_won">Выиграна</Option>
-                  <Option value="closed_lost">Проиграна</Option>
-                </Select>
+                <ReferenceSelect
+                  type="stages"
+                  placeholder="Выберите стадию"
+                  allowClear
+                />
               </Form.Item>
             </Col>
 
-            <Col xs={24} md={12}>
+            <Col xs={24} md={8}>
               <Form.Item
                 label="Ожидаемая дата закрытия"
                 name="expected_close_date"

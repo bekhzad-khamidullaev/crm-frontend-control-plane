@@ -18,10 +18,11 @@ import {
   WifiOutlined,
   DisconnectOutlined,
   PhoneFilled,
+  ClockCircleOutlined,
 } from '@ant-design/icons';
-import { parseHash, navigate, onRouteChange } from './router';
-import { subscribe, getIncomingCalls, setWsConnected, setWsReconnecting, addIncomingCall, removeIncomingCall, setChatWsConnected, setChatWsReconnecting, getUnreadCount } from './lib/store';
-import { isAuthenticated, getToken, clearToken, getUserFromToken } from './lib/api/auth';
+import { parseHash, navigate, onRouteChange } from './router.js';
+import { subscribe, getIncomingCalls, setWsConnected, setWsReconnecting, addIncomingCall, removeIncomingCall, setChatWsConnected, setChatWsReconnecting, getUnreadCount } from './lib/store/index.js';
+import { isAuthenticated, getToken, clearToken, getUserFromToken } from './lib/api/auth.js';
 import callsWebSocket from './lib/websocket/CallsWebSocket.js';
 import chatWebSocket from './lib/websocket/ChatWebSocket.js';
 import IncomingCallModal from './modules/calls/IncomingCallModal.jsx';
@@ -51,6 +52,10 @@ import ChatPage from './pages/chat-page.jsx';
 import ProfilePage from './pages/profile.jsx';
 import SettingsPage from './pages/settings.jsx';
 import IntegrationsPage from './pages/integrations.jsx';
+import { PaymentsList, PaymentDetail, PaymentForm } from './modules/payments/index.js';
+import { RemindersList, ReminderDetail, ReminderForm } from './modules/reminders/index.js';
+import { CampaignsList, CampaignDetail, CampaignForm } from './modules/marketing/index.js';
+import { MemosList, MemoDetail, MemoForm } from './modules/memos/index.js';
 
 const { Header, Sider, Content } = Layout;
 const { Text } = Typography;
@@ -286,6 +291,24 @@ function App() {
       ],
     },
     {
+      key: 'payments',
+      icon: <DollarOutlined />,
+      label: 'Платежи',
+      onClick: () => navigate('/payments'),
+    },
+    {
+      key: 'reminders',
+      icon: <ClockCircleOutlined />,
+      label: 'Напоминания',
+      onClick: () => navigate('/reminders'),
+    },
+    {
+      key: 'campaigns',
+      icon: <FileTextOutlined />,
+      label: 'Кампании',
+      onClick: () => navigate('/campaigns'),
+    },
+    {
       key: 'memos',
       icon: <FileTextOutlined />,
       label: 'Заметки',
@@ -312,6 +335,9 @@ function App() {
     if (name.startsWith('projects')) return 'projects';
     if (name.startsWith('chat')) return 'chat';
     if (name.startsWith('calls')) return 'calls';
+    if (name.startsWith('payments')) return 'payments';
+    if (name.startsWith('reminders')) return 'reminders';
+    if (name.startsWith('campaigns')) return 'campaigns';
     if (name.startsWith('memos')) return 'memos';
     return name;
   };
@@ -372,6 +398,38 @@ function App() {
         return <CallsList />;
       case 'calls-dashboard':
         return <CallsDashboard />;
+      case 'payments-list':
+        return <PaymentsList />;
+      case 'payments-new':
+        return <PaymentForm />;
+      case 'payments-edit':
+        return <PaymentForm id={route.params.id} />;
+      case 'payments-detail':
+        return <PaymentDetail id={route.params.id} />;
+      case 'reminders-list':
+        return <RemindersList />;
+      case 'reminders-new':
+        return <ReminderForm />;
+      case 'reminders-edit':
+        return <ReminderForm id={route.params.id} />;
+      case 'reminders-detail':
+        return <ReminderDetail id={route.params.id} />;
+      case 'campaigns-list':
+        return <CampaignsList />;
+      case 'campaigns-new':
+        return <CampaignForm />;
+      case 'campaigns-edit':
+        return <CampaignForm id={route.params.id} />;
+      case 'campaigns-detail':
+        return <CampaignDetail id={route.params.id} />;
+      case 'memos-list':
+        return <MemosList />;
+      case 'memos-new':
+        return <MemoForm />;
+      case 'memos-edit':
+        return <MemoForm id={route.params.id} />;
+      case 'memos-detail':
+        return <MemoDetail id={route.params.id} />;
       case 'chat':
       case 'chat-list':
         return <ChatPage />;

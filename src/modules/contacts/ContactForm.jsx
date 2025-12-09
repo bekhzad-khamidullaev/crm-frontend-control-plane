@@ -176,12 +176,33 @@ function ContactForm({ id }) {
                 rules={[{ required: true, message: 'Выберите тип' }]}
                 initialValue="client"
               >
-                <Select placeholder="Выберите тип">
-                  <Option value="client">Клиент</Option>
-                  <Option value="partner">Партнер</Option>
-                  <Option value="supplier">Поставщик</Option>
-                  <Option value="employee">Сотрудник</Option>
-                </Select>
+                <ReferenceSelect
+                  type="contact-types"
+                  placeholder="Выберите тип"
+                  allowClear
+                />
+              </Form.Item>
+            </Col>
+
+            <Col xs={24} md={12}>
+              <Form.Item label="Страна" name="country">
+                <ReferenceSelect
+                  type="countries"
+                  placeholder="Выберите страну"
+                  allowClear
+                />
+              </Form.Item>
+            </Col>
+          </Row>
+
+          <Row gutter={16}>
+            <Col xs={24} md={12}>
+              <Form.Item label="Город" name="city">
+                <ReferenceSelect
+                  type="cities"
+                  placeholder="Выберите город"
+                  allowClear
+                />
               </Form.Item>
             </Col>
 

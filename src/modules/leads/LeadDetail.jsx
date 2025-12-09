@@ -27,6 +27,8 @@ import { getLead, deleteLead } from '../../lib/api/client';
 import { getEntityCallLogs } from '../../lib/api/calls';
 import CallButton from '../../components/CallButton';
 import ChatWidget from '../../modules/chat/ChatWidget';
+// Temporarily commented out to debug
+// import { ActivityLog } from '../../components';
 import dayjs from 'dayjs';
 
 const { Title, Text } = Typography;

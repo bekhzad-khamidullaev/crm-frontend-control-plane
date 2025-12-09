@@ -32,6 +32,22 @@ export const routeMeta = {
  'chat-list': { auth: true, title: 'Chat' },
  'calls-list': { auth: true, title: 'Call Logs' },
  'calls-dashboard': { auth: true, title: 'Calls Dashboard' },
+ 'payments-list': { auth: true, title: 'Payments' },
+ 'payments-new': { auth: true, title: 'New Payment' },
+ 'payments-detail': { auth: true, title: 'Payment' },
+ 'payments-edit': { auth: true, title: 'Edit Payment' },
+ 'reminders-list': { auth: true, title: 'Reminders' },
+ 'reminders-new': { auth: true, title: 'New Reminder' },
+ 'reminders-detail': { auth: true, title: 'Reminder' },
+ 'reminders-edit': { auth: true, title: 'Edit Reminder' },
+ 'campaigns-list': { auth: true, title: 'Campaigns' },
+ 'campaigns-new': { auth: true, title: 'New Campaign' },
+ 'campaigns-detail': { auth: true, title: 'Campaign' },
+ 'campaigns-edit': { auth: true, title: 'Edit Campaign' },
+ 'memos-list': { auth: true, title: 'Memos' },
+ 'memos-new': { auth: true, title: 'New Memo' },
+ 'memos-detail': { auth: true, title: 'Memo' },
+ 'memos-edit': { auth: true, title: 'Edit Memo' },
  'profile': { auth: true, title: 'Profile' },
  'settings': { auth: true, title: 'Settings' },
  'integrations': { auth: true, title: 'Integrations' },
@@ -104,6 +120,34 @@ export function parseHash() {
     if (segments[1] === 'dashboard') return { name: 'calls-dashboard', params: {} };
     const id = segments[1];
     return { name: 'calls-detail', params: { id } };
+  }
+  if (segments[0] === 'payments') {
+    if (!segments[1]) return { name: 'payments-list', params: {} };
+    if (segments[1] === 'new') return { name: 'payments-new', params: {} };
+    const id = segments[1];
+    if (segments[2] === 'edit') return { name: 'payments-edit', params: { id } };
+    return { name: 'payments-detail', params: { id } };
+  }
+  if (segments[0] === 'reminders') {
+    if (!segments[1]) return { name: 'reminders-list', params: {} };
+    if (segments[1] === 'new') return { name: 'reminders-new', params: {} };
+    const id = segments[1];
+    if (segments[2] === 'edit') return { name: 'reminders-edit', params: { id } };
+    return { name: 'reminders-detail', params: { id } };
+  }
+  if (segments[0] === 'campaigns') {
+    if (!segments[1]) return { name: 'campaigns-list', params: {} };
+    if (segments[1] === 'new') return { name: 'campaigns-new', params: {} };
+    const id = segments[1];
+    if (segments[2] === 'edit') return { name: 'campaigns-edit', params: { id } };
+    return { name: 'campaigns-detail', params: { id } };
+  }
+  if (segments[0] === 'memos') {
+    if (!segments[1]) return { name: 'memos-list', params: {} };
+    if (segments[1] === 'new') return { name: 'memos-new', params: {} };
+    const id = segments[1];
+    if (segments[2] === 'edit') return { name: 'memos-edit', params: { id } };
+    return { name: 'memos-detail', params: { id } };
   }
   if (segments[0] === 'profile') return { name: 'profile', params: {} };
   if (segments[0] === 'settings') return { name: 'settings', params: {} };

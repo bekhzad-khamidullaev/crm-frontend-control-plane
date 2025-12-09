@@ -16,6 +16,7 @@ import {
 import { SaveOutlined, ArrowLeftOutlined } from '@ant-design/icons';
 import { navigate } from '../../router';
 import { getCompany, createCompany, updateCompany } from '../../lib/api/client';
+import ReferenceSelect from '../../components/ui-ReferenceSelect';
 
 const { Title } = Typography;
 const { TextArea } = Input;
@@ -121,17 +122,11 @@ function CompanyForm({ id }) {
                 name="industry"
                 rules={[{ required: true, message: 'Введите отрасль' }]}
               >
-                <Select placeholder="Выберите отрасль">
-                  <Option value="IT">IT и технологии</Option>
-                  <Option value="Производство">Производство</Option>
-                  <Option value="Торговля">Торговля</Option>
-                  <Option value="Услуги">Услуги</Option>
-                  <Option value="Финансы">Финансы</Option>
-                  <Option value="Строительство">Строительство</Option>
-                  <Option value="Образование">Образование</Option>
-                  <Option value="Здравоохранение">Здравоохранение</Option>
-                  <Option value="Другое">Другое</Option>
-                </Select>
+                <ReferenceSelect
+                  type="industries"
+                  placeholder="Выберите отрасль"
+                  allowClear
+                />
               </Form.Item>
             </Col>
           </Row>
@@ -178,12 +173,33 @@ function CompanyForm({ id }) {
                 rules={[{ required: true, message: 'Выберите тип' }]}
                 initialValue="client"
               >
-                <Select placeholder="Выберите тип">
-                  <Option value="client">Клиент</Option>
-                  <Option value="partner">Партнер</Option>
-                  <Option value="supplier">Поставщик</Option>
-                  <Option value="competitor">Конкурент</Option>
-                </Select>
+                <ReferenceSelect
+                  type="client-types"
+                  placeholder="Выберите тип"
+                  allowClear
+                />
+              </Form.Item>
+            </Col>
+          </Row>
+
+          <Row gutter={16}>
+            <Col xs={24} md={12}>
+              <Form.Item label="Страна" name="country">
+                <ReferenceSelect
+                  type="countries"
+                  placeholder="Выберите страну"
+                  allowClear
+                />
+              </Form.Item>
+            </Col>
+
+            <Col xs={24} md={12}>
+              <Form.Item label="Город" name="city">
+                <ReferenceSelect
+                  type="cities"
+                  placeholder="Выберите город"
+                  allowClear
+                />
               </Form.Item>
             </Col>
           </Row>
