@@ -1,5 +1,5 @@
-import React, { useState, useEffect } from 'react';
-import { Layout, Menu, Avatar, Dropdown, Space, Typography, Badge, Tooltip, Select, ConfigProvider } from 'antd';
+import React, { useState, useEffect, Suspense, lazy } from 'react';
+import { Layout, Menu, Avatar, Dropdown, Space, Typography, Badge, Tooltip, Select, ConfigProvider, Spin } from 'antd';
 import ruRU from 'antd/locale/ru_RU';
 import enUS from 'antd/locale/en_US';
 import { setLocale, t, getLocale } from './lib/i18n/index.js';
@@ -30,37 +30,70 @@ import { isAuthenticated, getToken, clearToken, getUserFromToken } from './lib/a
 import callsWebSocket from './lib/websocket/CallsWebSocket.js';
 import chatWebSocket from './lib/websocket/ChatWebSocket.js';
 import IncomingCallModal from './modules/calls/IncomingCallModal.jsx';
-import Dashboard from './pages/dashboard.jsx';
-import AnalyticsPage from './pages/analytics-page.jsx';
-import LoginPage from './pages/login.jsx';
-import LeadsList from './modules/leads/LeadsList.jsx';
-import LeadForm from './modules/leads/LeadForm.jsx';
-import LeadDetail from './modules/leads/LeadDetail.jsx';
-import ContactsList from './modules/contacts/ContactsList.jsx';
-import ContactForm from './modules/contacts/ContactForm.jsx';
-import ContactDetail from './modules/contacts/ContactDetail.jsx';
-import CompaniesList from './modules/companies/CompaniesList.jsx';
-import CompanyForm from './modules/companies/CompanyForm.jsx';
-import CompanyDetail from './modules/companies/CompanyDetail.jsx';
-import DealsList from './modules/deals/DealsList.jsx';
-import DealForm from './modules/deals/DealForm.jsx';
-import DealDetail from './modules/deals/DealDetail.jsx';
-import TasksList from './modules/tasks/TasksList.jsx';
-import TaskForm from './modules/tasks/TaskForm.jsx';
-import TaskDetail from './modules/tasks/TaskDetail.jsx';
-import ProjectsList from './modules/projects/ProjectsList.jsx';
-import ProjectForm from './modules/projects/ProjectForm.jsx';
-import ProjectDetail from './modules/projects/ProjectDetail.jsx';
-import CallsList from './modules/calls/CallsList.jsx';
-import CallsDashboard from './pages/calls-dashboard.jsx';
-import ChatPage from './pages/chat-page.jsx';
-import ProfilePage from './pages/profile.jsx';
-import SettingsPage from './pages/settings.jsx';
-import IntegrationsPage from './pages/integrations.jsx';
-import { PaymentsList, PaymentDetail, PaymentForm } from './modules/payments/index.js';
-import { RemindersList, ReminderDetail, ReminderForm } from './modules/reminders/index.js';
-import { CampaignsList, CampaignDetail, CampaignForm } from './modules/marketing/index.js';
-import { MemosList, MemoDetail, MemoForm } from './modules/memos/index.js';
+
+// Lazy load all page components for better code splitting
+const Dashboard = lazy(() => import('./pages/dashboard.jsx'));
+const AnalyticsPage = lazy(() => import('./pages/analytics-page.jsx'));
+const LoginPage = lazy(() => import('./pages/login.jsx'));
+
+// Leads module
+const LeadsList = lazy(() => import('./modules/leads/LeadsList.jsx'));
+const LeadForm = lazy(() => import('./modules/leads/LeadForm.jsx'));
+const LeadDetail = lazy(() => import('./modules/leads/LeadDetail.jsx'));
+
+// Contacts module
+const ContactsList = lazy(() => import('./modules/contacts/ContactsList.jsx'));
+const ContactForm = lazy(() => import('./modules/contacts/ContactForm.jsx'));
+const ContactDetail = lazy(() => import('./modules/contacts/ContactDetail.jsx'));
+
+// Companies module
+const CompaniesList = lazy(() => import('./modules/companies/CompaniesList.jsx'));
+const CompanyForm = lazy(() => import('./modules/companies/CompanyForm.jsx'));
+const CompanyDetail = lazy(() => import('./modules/companies/CompanyDetail.jsx'));
+
+// Deals module
+const DealsList = lazy(() => import('./modules/deals/DealsList.jsx'));
+const DealForm = lazy(() => import('./modules/deals/DealForm.jsx'));
+const DealDetail = lazy(() => import('./modules/deals/DealDetail.jsx'));
+
+// Tasks module
+const TasksList = lazy(() => import('./modules/tasks/TasksList.jsx'));
+const TaskForm = lazy(() => import('./modules/tasks/TaskForm.jsx'));
+const TaskDetail = lazy(() => import('./modules/tasks/TaskDetail.jsx'));
+
+// Projects module
+const ProjectsList = lazy(() => import('./modules/projects/ProjectsList.jsx'));
+const ProjectForm = lazy(() => import('./modules/projects/ProjectForm.jsx'));
+const ProjectDetail = lazy(() => import('./modules/projects/ProjectDetail.jsx'));
+
+// Calls module
+const CallsList = lazy(() => import('./modules/calls/CallsList.jsx'));
+const CallsDashboard = lazy(() => import('./pages/calls-dashboard.jsx'));
+
+// Chat module
+const ChatPage = lazy(() => import('./pages/chat-page.jsx'));
+
+// Other pages
+const ProfilePage = lazy(() => import('./pages/profile.jsx'));
+const SettingsPage = lazy(() => import('./pages/settings.jsx'));
+const IntegrationsPage = lazy(() => import('./pages/integrations.jsx'));
+
+// Lazy load sub-modules
+const PaymentsList = lazy(() => import('./modules/payments/index.js').then(m => ({ default: m.PaymentsList })));
+const PaymentDetail = lazy(() => import('./modules/payments/index.js').then(m => ({ default: m.PaymentDetail })));
+const PaymentForm = lazy(() => import('./modules/payments/index.js').then(m => ({ default: m.PaymentForm })));
+
+const RemindersList = lazy(() => import('./modules/reminders/index.js').then(m => ({ default: m.RemindersList })));
+const ReminderDetail = lazy(() => import('./modules/reminders/index.js').then(m => ({ default: m.ReminderDetail })));
+const ReminderForm = lazy(() => import('./modules/reminders/index.js').then(m => ({ default: m.ReminderForm })));
+
+const CampaignsList = lazy(() => import('./modules/marketing/index.js').then(m => ({ default: m.CampaignsList })));
+const CampaignDetail = lazy(() => import('./modules/marketing/index.js').then(m => ({ default: m.CampaignDetail })));
+const CampaignForm = lazy(() => import('./modules/marketing/index.js').then(m => ({ default: m.CampaignForm })));
+
+const MemosList = lazy(() => import('./modules/memos/index.js').then(m => ({ default: m.MemosList })));
+const MemoDetail = lazy(() => import('./modules/memos/index.js').then(m => ({ default: m.MemoDetail })));
+const MemoForm = lazy(() => import('./modules/memos/index.js').then(m => ({ default: m.MemoForm })));
 
 const { Header, Sider, Content } = Layout;
 const { Text } = Typography;
@@ -600,7 +633,13 @@ function App() {
             borderRadius: 8,
           }}
         >
-          {renderContent()}
+          <Suspense fallback={
+            <div style={{ textAlign: 'center', padding: '50px' }}>
+              <Spin size="large" tip={t('loading')} />
+            </div>
+          }>
+            {renderContent()}
+          </Suspense>
         </Content>
       </Layout>
 
