@@ -94,7 +94,9 @@ function ProductForm({ id }) {
   if (loading) {
     return (
       <div style={{ textAlign: 'center', padding: '50px' }}>
-        <Spin size="large" tip="Загрузка данных..." />
+        <Spin size="large" tip="Загрузка данных...">
+          <div style={{ padding: '20px' }}></div>
+        </Spin>
       </div>
     );
   }

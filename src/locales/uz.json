@@ -1,6 +1,7 @@
 {
   "nav": {
     "dashboard": "Boshqaruv paneli",
+    "analytics": "Analitika",
     "leads": "Lidlar",
     "contacts": "Kontaktlar",
     "companies": "Kompaniyalar",
@@ -9,7 +10,16 @@
     "projects": "Loyihalar",
     "chat": "Chat",
     "calls": "Qo'ng'iroqlar",
-    "settings": "Sozlamalar"
+    "callsDashboard": "Boshqaruv paneli",
+    "callsHistory": "Qo'ng'iroqlar tarixi",
+    "payments": "To'lovlar",
+    "reminders": "Eslatmalar",
+    "campaigns": "Kampaniyalar",
+    "memos": "Qaydlar",
+    "integrations": "Integratsiyalar",
+    "profile": "Profil",
+    "settings": "Sozlamalar",
+    "logout": "Chiqish"
   },
   "actions": {
     "edit": "Tahrirlash",
@@ -29,6 +39,109 @@
     },
     "kpi": {
       "conversion": "Konversiya: {value}%"
+    }
+  },
+  "leads": {
+    "title": "Lidlar",
+    "empty": "Lidlar topilmadi"
+  },
+  "analytics": {
+    "leads": {
+      "title": "Lidlar analitikasi",
+      "totalLeads": "Jami lidlar",
+      "converted": "Konvertatsiya qilingan",
+      "conversionRate": "Konversiya darajasi",
+      "lost": "Yo'qotilgan",
+      "statusDistribution": "Status bo'yicha taqsimot",
+      "sourceDistribution": "Manba bo'yicha lidlar",
+      "conversionFunnel": "Konversiya voronkasi",
+      "goToLeads": "Lidlarga o'tish"
+    },
+    "contacts": {
+      "title": "Kontaktlar analitikasi",
+      "totalContacts": "Jami kontaktlar",
+      "companies": "Kompaniyalar",
+      "vipContacts": "VIP kontaktlar",
+      "withPhone": "Telefon bilan",
+      "typeDistribution": "Tur bo'yicha taqsimot",
+      "sourceDistribution": "Manba bo'yicha kontaktlar",
+      "activityByMonth": "Oylar bo'yicha faollik",
+      "goToContacts": "Kontaktlarga o'tish"
+    },
+    "deals": {
+      "title": "Bitimlar analitikasi",
+      "totalDeals": "Jami bitimlar",
+      "totalAmount": "Umumiy summa",
+      "averageCheck": "O'rtacha chek",
+      "winRate": "Yutish darajasi",
+      "salesFunnel": "Bosqichlar bo'yicha sotuv voronkasi",
+      "topManagers": "Summa bo'yicha top-5 menejerlar",
+      "sourceDistribution": "Manba bo'yicha bitimlar",
+      "goToDeals": "Bitimlarga o'tish"
+    },
+    "filters": {
+      "period": "Davr",
+      "last7days": "Oxirgi 7 kun",
+      "last30days": "Oxirgi 30 kun",
+      "last90days": "Oxirgi 90 kun",
+      "last180days": "Oxirgi 180 kun",
+      "lastYear": "Oxirgi yil",
+      "customPeriod": "Maxsus davr",
+      "dateRange": "Sana oralig'i",
+      "startDate": "Boshlanish",
+      "endDate": "Tugash"
+    },
+    "export": {
+      "title": "Eksport",
+      "csv": "CSV ga eksport",
+      "pdf": "PDF ga eksport",
+      "image": "Rasm sifatida eksport",
+      "success": "Ma'lumotlar eksport qilindi",
+      "error": "Eksport xatosi",
+      "noData": "Eksport qilish uchun ma'lumot yo'q"
+    },
+    "realtime": {
+      "enabled": "Real-time yoqilgan",
+      "disabled": "Real-time o'chirilgan",
+      "updating": "Yangilanmoqda...",
+      "lastUpdate": "Oxirgi yangilanish",
+      "interval": "Interval",
+      "updateEvery": "Har safar yangilash",
+      "autoUpdateOn": "Avto-yangilanish yoqilgan",
+      "autoUpdateOff": "Avto-yangilanish o'chirilgan"
+    },
+    "drilldown": {
+      "title": "Batafsil ma'lumot",
+      "filter": "Filtr",
+      "totalRecords": "Jami yozuvlar",
+      "showing": "Ko'rsatilmoqda",
+      "close": "Yopish",
+      "noData": "Ko'rsatish uchun ma'lumot yo'q",
+      "loading": "Ma'lumotlar yuklanmoqda..."
+    },
+    "statuses": {
+      "new": "Yangi",
+      "contacted": "Bog'lanilgan",
+      "qualified": "Kvalifikatsiya qilingan",
+      "converted": "Konvertatsiya qilingan",
+      "lost": "Yo'qotilgan"
+    },
+    "sources": {
+      "website": "Veb-sayt",
+      "referral": "Referal",
+      "email": "Email",
+      "phone": "Telefon",
+      "social": "Ijtimoiy tarmoqlar",
+      "advertisement": "Reklama",
+      "other": "Boshqa"
+    },
+    "common": {
+      "refresh": "Yangilash",
+      "statistics": "Statistika",
+      "hideStatistics": "Statistikani yashirish",
+      "showStatistics": "Statistikani ko'rsatish",
+      "noDataAvailable": "Ma'lumot mavjud emas",
+      "loadingError": "Ma'lumotlarni yuklashda xato"
     }
   }
 }

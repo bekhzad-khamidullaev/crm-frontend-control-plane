@@ -152,7 +152,8 @@ paths:
         - in: path
           name: id
           schema:
-            type: string
+            type: integer
+          description: A unique integer value identifying this call log.
           required: true
       tags:
         - Call Logs
@@ -176,7 +177,8 @@ paths:
         - in: path
           name: id
           schema:
-            type: string
+            type: integer
+          description: A unique integer value identifying this call log.
           required: true
       tags:
         - Call Logs
@@ -212,7 +214,8 @@ paths:
         - in: path
           name: id
           schema:
-            type: string
+            type: integer
+          description: A unique integer value identifying this call log.
           required: true
       tags:
         - Call Logs
@@ -247,7 +250,8 @@ paths:
         - in: path
           name: id
           schema:
-            type: string
+            type: integer
+          description: A unique integer value identifying this call log.
           required: true
       tags:
         - Call Logs
@@ -4525,6 +4529,186 @@ paths:
               schema:
                 $ref: "#/components/schemas/Payment"
           description: ""
+  /api/predictions/clients/forecast/:
+    get:
+      operationId: predictions_clients_forecast_retrieve
+      description: Get clients forecast data
+      tags:
+        - Analytics & Predictions
+      security:
+        - cookieAuth: []
+        - tokenAuth: []
+        - jwtAuth: []
+        - jwtAuth: []
+        - tokenAuth: []
+      responses:
+        "200":
+          description: No response body
+  /api/predictions/clients/predict/:
+    post:
+      operationId: predictions_clients_predict_create
+      description: Trigger clients prediction task
+      tags:
+        - Analytics & Predictions
+      security:
+        - cookieAuth: []
+        - tokenAuth: []
+        - jwtAuth: []
+        - jwtAuth: []
+        - tokenAuth: []
+      responses:
+        "200":
+          description: No response body
+  /api/predictions/leads/forecast/:
+    get:
+      operationId: predictions_leads_forecast_retrieve
+      description: Get leads forecast data
+      tags:
+        - Analytics & Predictions
+      security:
+        - cookieAuth: []
+        - tokenAuth: []
+        - jwtAuth: []
+        - jwtAuth: []
+        - tokenAuth: []
+      responses:
+        "200":
+          description: No response body
+  /api/predictions/leads/predict/:
+    post:
+      operationId: predictions_leads_predict_create
+      description: Trigger leads prediction task
+      tags:
+        - Analytics & Predictions
+      security:
+        - cookieAuth: []
+        - tokenAuth: []
+        - jwtAuth: []
+        - jwtAuth: []
+        - tokenAuth: []
+      responses:
+        "200":
+          description: No response body
+  /api/predictions/next-actions/clients/:
+    get:
+      operationId: predictions_next_actions_clients_retrieve
+      description: Get predicted next actions for clients
+      tags:
+        - Analytics & Predictions
+      security:
+        - cookieAuth: []
+        - tokenAuth: []
+        - jwtAuth: []
+        - jwtAuth: []
+        - tokenAuth: []
+      responses:
+        "200":
+          description: No response body
+  /api/predictions/next-actions/clients/predict/:
+    post:
+      operationId: predictions_next_actions_clients_predict_create
+      description: Trigger next actions prediction for clients
+      tags:
+        - Analytics & Predictions
+      security:
+        - cookieAuth: []
+        - tokenAuth: []
+        - jwtAuth: []
+        - jwtAuth: []
+        - tokenAuth: []
+      responses:
+        "200":
+          description: No response body
+  /api/predictions/next-actions/deals/:
+    get:
+      operationId: predictions_next_actions_deals_retrieve
+      description: Get predicted next actions for deals
+      tags:
+        - Analytics & Predictions
+      security:
+        - cookieAuth: []
+        - tokenAuth: []
+        - jwtAuth: []
+        - jwtAuth: []
+        - tokenAuth: []
+      responses:
+        "200":
+          description: No response body
+  /api/predictions/next-actions/predict/:
+    post:
+      operationId: predictions_next_actions_predict_create
+      description: Trigger next actions prediction for deals
+      tags:
+        - Analytics & Predictions
+      security:
+        - cookieAuth: []
+        - tokenAuth: []
+        - jwtAuth: []
+        - jwtAuth: []
+        - tokenAuth: []
+      responses:
+        "200":
+          description: No response body
+  /api/predictions/predict-all/:
+    post:
+      operationId: predictions_predict_all_create
+      description: Trigger all prediction tasks
+      tags:
+        - Analytics & Predictions
+      security:
+        - cookieAuth: []
+        - tokenAuth: []
+        - jwtAuth: []
+        - jwtAuth: []
+        - tokenAuth: []
+      responses:
+        "200":
+          description: No response body
+  /api/predictions/revenue/forecast/:
+    get:
+      operationId: predictions_revenue_forecast_retrieve
+      description: Get revenue forecast data
+      tags:
+        - Analytics & Predictions
+      security:
+        - cookieAuth: []
+        - tokenAuth: []
+        - jwtAuth: []
+        - jwtAuth: []
+        - tokenAuth: []
+      responses:
+        "200":
+          description: No response body
+  /api/predictions/revenue/predict/:
+    post:
+      operationId: predictions_revenue_predict_create
+      description: Trigger revenue prediction task
+      tags:
+        - Analytics & Predictions
+      security:
+        - cookieAuth: []
+        - tokenAuth: []
+        - jwtAuth: []
+        - jwtAuth: []
+        - tokenAuth: []
+      responses:
+        "200":
+          description: No response body
+  /api/predictions/status/:
+    get:
+      operationId: predictions_status_retrieve
+      description: Get overall prediction status
+      tags:
+        - Analytics & Predictions
+      security:
+        - cookieAuth: []
+        - tokenAuth: []
+        - jwtAuth: []
+        - jwtAuth: []
+        - tokenAuth: []
+      responses:
+        "200":
+          description: No response body
   /api/product-categories/:
     get:
       operationId: product_categories_list
@@ -5053,6 +5237,50 @@ paths:
               schema:
                 $ref: "#/components/schemas/UserProfile"
           description: ""
+  /api/profiles/me/avatar/:
+    post:
+      operationId: profiles_me_avatar_create
+      description: Upload or delete user avatar
+      tags:
+        - User Profiles
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UserProfile"
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: "#/components/schemas/UserProfile"
+          multipart/form-data:
+            schema:
+              $ref: "#/components/schemas/UserProfile"
+      security:
+        - cookieAuth: []
+        - tokenAuth: []
+        - jwtAuth: []
+        - jwtAuth: []
+        - tokenAuth: []
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UserProfile"
+          description: ""
+    delete:
+      operationId: profiles_me_avatar_destroy
+      description: Upload or delete user avatar
+      tags:
+        - User Profiles
+      security:
+        - cookieAuth: []
+        - tokenAuth: []
+        - jwtAuth: []
+        - jwtAuth: []
+        - tokenAuth: []
+      responses:
+        "204":
+          description: No response body
   /api/project-stages/:
     get:
       operationId: project_stages_list
@@ -5916,6 +6144,79 @@ paths:
       responses:
         "204":
           description: No response body
+  /api/settings/massmail/:
+    get:
+      operationId: settings_massmail_retrieve
+      description: Get or update massmail settings
+      tags:
+        - System Settings
+      security:
+        - cookieAuth: []
+        - tokenAuth: []
+        - jwtAuth: []
+        - jwtAuth: []
+        - tokenAuth: []
+      responses:
+        "200":
+          description: No response body
+    patch:
+      operationId: settings_massmail_partial_update
+      description: Get or update massmail settings
+      tags:
+        - System Settings
+      security:
+        - cookieAuth: []
+        - tokenAuth: []
+        - jwtAuth: []
+        - jwtAuth: []
+        - tokenAuth: []
+      responses:
+        "200":
+          description: No response body
+  /api/settings/public_email_domains/:
+    get:
+      operationId: settings_public_email_domains_retrieve
+      description: Get list of public email domains
+      tags:
+        - System Settings
+      security:
+        - cookieAuth: []
+        - tokenAuth: []
+        - jwtAuth: []
+        - jwtAuth: []
+        - tokenAuth: []
+      responses:
+        "200":
+          description: No response body
+  /api/settings/reminders/:
+    get:
+      operationId: settings_reminders_retrieve
+      description: Get or update reminder settings
+      tags:
+        - System Settings
+      security:
+        - cookieAuth: []
+        - tokenAuth: []
+        - jwtAuth: []
+        - jwtAuth: []
+        - tokenAuth: []
+      responses:
+        "200":
+          description: No response body
+    patch:
+      operationId: settings_reminders_partial_update
+      description: Get or update reminder settings
+      tags:
+        - System Settings
+      security:
+        - cookieAuth: []
+        - tokenAuth: []
+        - jwtAuth: []
+        - jwtAuth: []
+        - tokenAuth: []
+      responses:
+        "200":
+          description: No response body
   /api/shipments/:
     get:
       operationId: shipments_list
@@ -6115,6 +6416,99 @@ paths:
         - tokenAuth: []
       responses:
         "204":
+          description: No response body
+  /api/sms/history/:
+    get:
+      operationId: sms_history_retrieve
+      description: |-
+        Get SMS history
+
+        Query params:
+        - limit: Number of messages to return (default: 50)
+        - channel_id: Filter by channel
+      tags:
+        - SMS
+      security:
+        - cookieAuth: []
+        - tokenAuth: []
+        - jwtAuth: []
+        - jwtAuth: []
+        - tokenAuth: []
+      responses:
+        "200":
+          description: No response body
+  /api/sms/providers/:
+    get:
+      operationId: sms_providers_retrieve
+      description: List available SMS providers
+      tags:
+        - SMS
+      security:
+        - cookieAuth: []
+        - tokenAuth: []
+        - jwtAuth: []
+        - jwtAuth: []
+        - tokenAuth: []
+      responses:
+        "200":
+          description: No response body
+  /api/sms/send/:
+    post:
+      operationId: sms_send_create
+      description: |-
+        Send single SMS
+
+        Required fields:
+        - channel_id: ID of the SMS provider channel
+        - to: Phone number
+        - text: Message content
+        - async: (optional) Send asynchronously via Celery (default: true)
+      tags:
+        - SMS
+      security:
+        - cookieAuth: []
+        - tokenAuth: []
+        - jwtAuth: []
+        - jwtAuth: []
+        - tokenAuth: []
+      responses:
+        "200":
+          description: No response body
+  /api/sms/send_bulk/:
+    post:
+      operationId: sms_send_bulk_create
+      description: |-
+        Send SMS to multiple recipients
+
+        Required fields:
+        - channel_id: ID of the SMS provider channel
+        - phone_numbers: List of phone numbers
+        - text: Message content
+      tags:
+        - SMS
+      security:
+        - cookieAuth: []
+        - tokenAuth: []
+        - jwtAuth: []
+        - jwtAuth: []
+        - tokenAuth: []
+      responses:
+        "200":
+          description: No response body
+  /api/sms/status/:
+    get:
+      operationId: sms_status_retrieve
+      description: Get SMS service status and statistics
+      tags:
+        - SMS
+      security:
+        - cookieAuth: []
+        - tokenAuth: []
+        - jwtAuth: []
+        - jwtAuth: []
+        - tokenAuth: []
+      responses:
+        "200":
           description: No response body
   /api/stages/:
     get:
@@ -6711,6 +7105,292 @@ paths:
               schema:
                 $ref: "#/components/schemas/User"
           description: ""
+  /api/users/me/2fa/status/:
+    get:
+      operationId: users_me_2fa_status_retrieve
+      description: Read-only user directory.
+      tags:
+        - Users
+      security:
+        - cookieAuth: []
+        - tokenAuth: []
+        - jwtAuth: []
+        - jwtAuth: []
+        - tokenAuth: []
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/User"
+          description: ""
+  /api/users/me/change-password/:
+    post:
+      operationId: users_me_change_password_create
+      description: Read-only user directory.
+      tags:
+        - Users
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/User"
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: "#/components/schemas/User"
+          multipart/form-data:
+            schema:
+              $ref: "#/components/schemas/User"
+        required: true
+      security:
+        - cookieAuth: []
+        - tokenAuth: []
+        - jwtAuth: []
+        - jwtAuth: []
+        - tokenAuth: []
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/User"
+          description: ""
+  /api/users/me/sessions/:
+    get:
+      operationId: users_me_sessions_retrieve
+      description: Read-only user directory.
+      tags:
+        - Users
+      security:
+        - cookieAuth: []
+        - tokenAuth: []
+        - jwtAuth: []
+        - jwtAuth: []
+        - tokenAuth: []
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/User"
+          description: ""
+    delete:
+      operationId: users_me_sessions_destroy
+      description: Read-only user directory.
+      tags:
+        - Users
+      security:
+        - cookieAuth: []
+        - tokenAuth: []
+        - jwtAuth: []
+        - jwtAuth: []
+        - tokenAuth: []
+      responses:
+        "204":
+          description: No response body
+  /api/users/me/sessions/revoke-all/:
+    post:
+      operationId: users_me_sessions_revoke_all_create
+      description: Read-only user directory.
+      tags:
+        - Users
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/User"
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: "#/components/schemas/User"
+          multipart/form-data:
+            schema:
+              $ref: "#/components/schemas/User"
+        required: true
+      security:
+        - cookieAuth: []
+        - tokenAuth: []
+        - jwtAuth: []
+        - jwtAuth: []
+        - tokenAuth: []
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/User"
+          description: ""
+  /api/voip/call-logs/:
+    get:
+      operationId: voip_call_logs_retrieve
+      description: |-
+        Get call logs with filtering
+
+        Query params:
+        - direction: inbound/outbound/internal
+        - status: ringing/answered/busy/no_answer/failed
+        - limit: Number of records (default: 50)
+        - date_from: ISO datetime
+        - date_to: ISO datetime
+      tags:
+        - VoIP & Cold Calls
+      security:
+        - cookieAuth: []
+        - tokenAuth: []
+        - jwtAuth: []
+        - jwtAuth: []
+        - tokenAuth: []
+      responses:
+        "200":
+          description: No response body
+  /api/voip/call-logs/{log_id}/:
+    get:
+      operationId: voip_call_logs_retrieve_2
+      description: Get detailed information about a specific call
+      parameters:
+        - in: path
+          name: log_id
+          schema:
+            type: string
+            pattern: ^[0-9]+$
+          required: true
+      tags:
+        - VoIP & Cold Calls
+      security:
+        - cookieAuth: []
+        - tokenAuth: []
+        - jwtAuth: []
+        - jwtAuth: []
+        - tokenAuth: []
+      responses:
+        "200":
+          description: No response body
+  /api/voip/call-logs/{log_id}/add-note/:
+    post:
+      operationId: voip_call_logs_add_note_create
+      description: Add a note to a call log
+      parameters:
+        - in: path
+          name: log_id
+          schema:
+            type: string
+            pattern: ^[0-9]+$
+          required: true
+      tags:
+        - VoIP & Cold Calls
+      security:
+        - cookieAuth: []
+        - tokenAuth: []
+        - jwtAuth: []
+        - jwtAuth: []
+        - tokenAuth: []
+      responses:
+        "200":
+          description: No response body
+  /api/voip/call-queue/:
+    get:
+      operationId: voip_call_queue_retrieve
+      description: Get current call queue status
+      tags:
+        - VoIP & Cold Calls
+      security:
+        - cookieAuth: []
+        - tokenAuth: []
+        - jwtAuth: []
+        - jwtAuth: []
+        - tokenAuth: []
+      responses:
+        "200":
+          description: No response body
+  /api/voip/call-statistics/:
+    get:
+      operationId: voip_call_statistics_retrieve
+      description: |-
+        Get call statistics for dashboard
+
+        Query params:
+        - period: today/week/month (default: today)
+      tags:
+        - VoIP & Cold Calls
+      security:
+        - cookieAuth: []
+        - tokenAuth: []
+        - jwtAuth: []
+        - jwtAuth: []
+        - tokenAuth: []
+      responses:
+        "200":
+          description: No response body
+  /api/voip/cold-call/bulk/:
+    post:
+      operationId: voip_cold_call_bulk_create
+      description: |-
+        Schedule multiple cold calls in bulk
+
+        Required fields:
+        - phone_numbers: List of phone numbers
+
+        Optional fields:
+        - from_number: Caller ID to use
+        - campaign_id: Campaign ID
+        - delay_between_calls: Seconds between calls (default: 30)
+      tags:
+        - VoIP & Cold Calls
+      security:
+        - cookieAuth: []
+        - tokenAuth: []
+        - jwtAuth: []
+        - jwtAuth: []
+        - tokenAuth: []
+      responses:
+        "200":
+          description: No response body
+  /api/voip/cold-call/initiate/:
+    post:
+      operationId: voip_cold_call_initiate_create
+      description: |-
+        Initiate a cold call immediately
+
+        Required fields:
+        - to_number: Phone number to call
+        - from_number: (optional) Caller ID to use
+        - lead_id: (optional) Lead ID
+        - contact_id: (optional) Contact ID
+        - campaign_id: (optional) Campaign ID
+      tags:
+        - VoIP & Cold Calls
+      security:
+        - cookieAuth: []
+        - tokenAuth: []
+        - jwtAuth: []
+        - jwtAuth: []
+        - tokenAuth: []
+      responses:
+        "200":
+          description: No response body
+  /api/voip/cold-call/schedule/:
+    post:
+      operationId: voip_cold_call_schedule_create
+      description: |-
+        Schedule a cold call for later
+
+        Required fields:
+        - to_number OR lead_id OR contact_id
+
+        Optional fields:
+        - from_number: Caller ID to use
+        - scheduled_time: ISO format datetime (e.g., "2024-01-15T14:30:00Z")
+        - campaign_id: Campaign ID
+      tags:
+        - VoIP & Cold Calls
+      security:
+        - cookieAuth: []
+        - tokenAuth: []
+        - jwtAuth: []
+        - jwtAuth: []
+        - tokenAuth: []
+      responses:
+        "200":
+          description: No response body
   /api/voip/connections/:
     get:
       operationId: voip_connections_list

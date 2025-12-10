@@ -22,10 +22,12 @@ import {
   UserOutlined,
   ShopOutlined,
   PhoneOutlined,
+  BarChartOutlined,
 } from '@ant-design/icons';
 import { navigate } from '../../router';
 import { getDeals, deleteDeal } from '../../lib/api/client';
 import CallButton from '../../components/CallButton';
+import DealsKPI from './DealsKPI.jsx';
 
 const { Title, Text } = Typography;
 
@@ -33,6 +35,7 @@ function DealsList() {
   const [deals, setDeals] = useState([]);
   const [loading, setLoading] = useState(false);
   const [searchText, setSearchText] = useState('');
+  const [showKPI, setShowKPI] = useState(true);
   const [pagination, setPagination] = useState({
     current: 1,
     pageSize: 10,
@@ -289,14 +292,24 @@ function DealsList() {
     <div>
       <div style={{ marginBottom: 16, display: 'flex', justifyContent: 'space-between' }}>
         <Title level={2}>Сделки</Title>
-        <Button
-          type="primary"
-          icon={<PlusOutlined />}
-          onClick={() => navigate('/deals/new')}
-        >
-          Создать сделку
-        </Button>
+        <Space>
+          <Button
+            icon={<BarChartOutlined />}
+            onClick={() => setShowKPI(!showKPI)}
+          >
+            {showKPI ? 'Скрыть статистику' : 'Показать статистику'}
+          </Button>
+          <Button
+            type="primary"
+            icon={<PlusOutlined />}
+            onClick={() => navigate('/deals/new')}
+          >
+            Создать сделку
+          </Button>
+        </Space>
       </div>
+
+      {showKPI && <DealsKPI deals={deals} />}
 
       <Card>
         <Input.Search

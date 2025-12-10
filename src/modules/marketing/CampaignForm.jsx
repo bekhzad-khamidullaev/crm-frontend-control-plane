@@ -108,7 +108,9 @@ function CampaignForm({ id }) {
   if (loading) {
     return (
       <div style={{ textAlign: 'center', padding: '50px' }}>
-        <Spin size="large" tip="Загрузка данных..." />
+        <Spin size="large" tip="Загрузка данных...">
+          <div style={{ padding: '20px' }}></div>
+        </Spin>
       </div>
     );
   }
@@ -204,13 +206,19 @@ function CampaignForm({ id }) {
                 label="Бюджет"
                 name="budget"
               >
-                <InputNumber
-                  style={{ width: '100%' }}
-                  min={0}
-                  precision={2}
-                  placeholder="0.00"
-                  addonAfter="₽"
-                />
+                <Space.Compact style={{ width: '100%' }}>
+                  <InputNumber
+                    style={{ width: '100%' }}
+                    min={0}
+                    precision={2}
+                    placeholder="0.00"
+                  />
+                  <Input
+                    style={{ width: '50px' }}
+                    disabled
+                    value="₽"
+                  />
+                </Space.Compact>
               </Form.Item>
             </Col>
             <Col span={12}>

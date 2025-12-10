@@ -21,15 +21,17 @@ function AnalyticsCard({
     <Card
       title={title}
       extra={extra}
-      bordered={bordered}
+      variant={bordered ? 'outlined' : 'borderless'}
       size={size}
       className={className}
       style={style}
-      bodyStyle={bodyStyle}
+      styles={{ body: bodyStyle }}
     >
       {loading ? (
         <div style={{ textAlign: 'center', padding: '40px 0' }}>
-          <Spin size="large" tip="Загрузка данных..." />
+          <Spin size="large">
+            <div style={{ padding: '20px' }}>Загрузка данных...</div>
+          </Spin>
         </div>
       ) : error ? (
         <Alert

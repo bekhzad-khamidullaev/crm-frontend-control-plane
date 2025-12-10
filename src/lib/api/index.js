@@ -261,3 +261,12 @@ export {
 //   exportApi,
 //   help,
 // };
+
+// NEW: AI/ML Predictions API
+export * from './predictions.js';
+
+// NEW: SMS API
+export * from './sms.js';
+
+// NEW: Settings API
+export * from './settings.js';

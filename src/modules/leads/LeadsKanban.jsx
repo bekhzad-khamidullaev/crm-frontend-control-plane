@@ -333,22 +333,17 @@ function LeadsKanban() {
     setActiveId(null);
 
     if (!over) {
-      console.log('No over target');
+      // No over target - drag cancelled
       return;
     }
 
     const activeContainer = findContainer(active.id);
     const overContainer = findContainer(over.id) || over.id;
 
-    console.log('Drag end:', {
-      activeId: active.id,
-      overId: over.id,
-      activeContainer,
-      overContainer,
-    });
+    // Drag end - processing status change
 
     if (!activeContainer || !overContainer) {
-      console.log('Container not found');
+      // Container not found - invalid drag target
       return;
     }
 
@@ -360,15 +355,11 @@ function LeadsKanban() {
     }
 
     if (activeContainer !== overContainer) {
-      console.log('Updating lead status:', {
-        leadId: activeLead.id,
-        oldStatus: activeContainer,
-        newStatus: overContainer,
-      });
+      // Updating lead status via API
 
       try {
         const response = await updateLead(activeLead.id, { status: overContainer });
-        console.log('Update response:', response);
+        // Lead status updated successfully
         message.success(
           `Лид перемещен в "${statusColumns[overContainer].title}"`
         );

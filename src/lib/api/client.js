@@ -109,15 +109,15 @@ async function request(method, path, { params, body, headers, retry = 1, _isRetr
         await refreshAccessToken();
         
         // Process queued requests
-        refreshQueue.forEach(({ resolve, method, path, params, body, headers, retry }) => {
+        refreshQueue.forEach(({ resolve: qResolve, reject: qReject, method, path, params, body, headers, retry }) => {
           request(method, path, { params, body, headers, retry, _isRetry: true })
-            .then(resolve)
-            .catch(reject);
+            .then(qResolve)
+            .catch(qReject);
         });
         refreshQueue = [];
       } catch (error) {
         // Reject all queued requests
-        refreshQueue.forEach(({ reject }) => reject(error));
+        refreshQueue.forEach(({ reject: qReject }) => qReject(error));
         refreshQueue = [];
         throw error;
       } finally {
@@ -143,6 +143,7 @@ async function request(method, path, { params, body, headers, retry = 1, _isRetr
     headers: finalHeaders,
     body: body ? (body instanceof FormData ? body : JSON.stringify(body)) : undefined,
     credentials: 'include',
+    mode: 'cors',
   });
 
   try {
@@ -159,9 +160,9 @@ async function request(method, path, { params, body, headers, retry = 1, _isRetr
         return request(method, path, { params, body, headers, retry, _isRetry: true });
       } catch (refreshError) {
         // Refresh failed, clear tokens and redirect to login
-        console.error('Token refresh failed, redirecting to login');
+        console.error('Token refresh failed');
         clearToken();
-        if (typeof window !== 'undefined') {
+        if (typeof window !== 'undefined' && !window.location.hash.includes('/login')) {
           window.location.hash = '/login';
           // Force reload to clear app state
           setTimeout(() => window.location.reload(), 100);
@@ -175,16 +176,27 @@ async function request(method, path, { params, body, headers, retry = 1, _isRetr
       throw normalizeError(data, res);
     }
     
+    // Handle 403 Forbidden - treat like 401 for authentication purposes
+    if (res.status === 403 && !isAuthEndpoint) {
+      console.warn('403 Forbidden error');
+      clearToken();
+      if (typeof window !== 'undefined' && !window.location.hash.includes('/login')) {
+        window.location.hash = '/login';
+        setTimeout(() => window.location.reload(), 100);
+      }
+      throw normalizeError(data, res);
+    }
+    
     if (!res.ok) {
       throw normalizeError(data, res);
     }
     return data;
   } catch (err) {
-    // If error is 401, ensure we redirect to login
-    if (err?.status === 401 && !isAuthEndpoint) {
-      console.warn('401 Unauthorized error, redirecting to login');
+    // If error is 401 or 403, ensure we redirect to login (prevent infinite loop)
+    if ((err?.status === 401 || err?.status === 403) && !isAuthEndpoint) {
+      console.warn(`${err?.status} ${err?.status === 401 ? 'Unauthorized' : 'Forbidden'} error`);
       clearToken();
-      if (typeof window !== 'undefined') {
+      if (typeof window !== 'undefined' && !window.location.hash.includes('/login')) {
         window.location.hash = '/login';
         setTimeout(() => window.location.reload(), 100);
       }

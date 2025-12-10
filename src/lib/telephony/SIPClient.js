@@ -443,12 +443,11 @@ class SIPClient {
    */
   on(event, callback) {
     if (!this.listeners) {
-      console.warn('[SIPClient] Listeners not initialized');
-      return;
+      console.warn('[SIPClient] Listeners not initialized, initializing now');
+      this.listeners = {};
     }
     if (!this.listeners[event]) {
-      console.warn(`[SIPClient] Unknown event type: ${event}`);
-      return;
+      this.listeners[event] = [];
     }
     this.listeners[event].push(callback);
   }

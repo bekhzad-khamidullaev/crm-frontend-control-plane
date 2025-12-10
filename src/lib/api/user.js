@@ -192,5 +192,44 @@ export async function getUsers(params = {}) {
   }
 }
 
-// Note: 2FA and session management endpoints do not exist in Django-CRM API.yaml
-// These features require backend implementation if needed in the future
+/**
+ * Get user sessions
+ * Uses /api/users/me/sessions/ endpoint
+ * @returns {Promise<Array>}
+ */
+export async function getUserSessions() {
+  try {
+    return await api.get('/api/users/me/sessions/');
+  } catch (error) {
+    console.warn('Sessions endpoint not available');
+    return [];
+  }
+}
+
+/**
+ * Revoke all user sessions
+ * Uses /api/users/me/sessions/revoke-all/ endpoint
+ * @returns {Promise<Object>}
+ */
+export async function revokeAllSessions() {
+  try {
+    return await api.post('/api/users/me/sessions/revoke-all/');
+  } catch (error) {
+    console.warn('Revoke sessions endpoint not available');
+    throw new Error('Session revocation functionality requires backend implementation');
+  }
+}
+
+/**
+ * Get 2FA status
+ * Uses /api/users/me/2fa/status/ endpoint
+ * @returns {Promise<Object>}
+ */
+export async function get2FAStatus() {
+  try {
+    return await api.get('/api/users/me/2fa/status/');
+  } catch (error) {
+    console.warn('2FA status endpoint not available');
+    return { enabled: false, method: null };
+  }
+}

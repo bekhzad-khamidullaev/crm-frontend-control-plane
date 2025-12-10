@@ -1,4 +1,5 @@
 import React from 'react';
+import { ContactAnalyticsCard } from '../../components/analytics';
 import { Card, Row, Col, Statistic, Space } from 'antd';
 import {
   UserOutlined,

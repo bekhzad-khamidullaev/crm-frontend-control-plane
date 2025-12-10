@@ -1,9 +1,13 @@
 import React, { useState, useEffect } from 'react';
-import { Layout, Menu, Avatar, Dropdown, Space, Typography, Badge, Tooltip, Select } from 'antd';
+import { Layout, Menu, Avatar, Dropdown, Space, Typography, Badge, Tooltip, Select, ConfigProvider } from 'antd';
+import ruRU from 'antd/locale/ru_RU';
+import enUS from 'antd/locale/en_US';
+import { setLocale, t, getLocale } from './lib/i18n/index.js';
 import {
   MenuFoldOutlined,
   MenuUnfoldOutlined,
   DashboardOutlined,
+  BarChartOutlined,
   UserOutlined,
   TeamOutlined,
   ShopOutlined,
@@ -27,6 +31,7 @@ import callsWebSocket from './lib/websocket/CallsWebSocket.js';
 import chatWebSocket from './lib/websocket/ChatWebSocket.js';
 import IncomingCallModal from './modules/calls/IncomingCallModal.jsx';
 import Dashboard from './pages/dashboard.jsx';
+import AnalyticsPage from './pages/analytics-page.jsx';
 import LoginPage from './pages/login.jsx';
 import LeadsList from './modules/leads/LeadsList.jsx';
 import LeadForm from './modules/leads/LeadForm.jsx';
@@ -70,8 +75,14 @@ function App() {
   const [currentIncomingCall, setCurrentIncomingCall] = useState(null);
   const [chatWsConnected, setChatWsConnectedState] = useState(false);
   const [unreadCount, setUnreadCount] = useState(0);
+  const [locale, setLocaleState] = useState('ru');
+  const [antdLocale, setAntdLocale] = useState(ruRU);
 
   useEffect(() => {
+    // Initialize locale on mount
+    const savedLocale = localStorage.getItem('crm_locale') || 'ru';
+    handleLocaleChange(savedLocale);
+    
     // Check auth on mount
     const authenticated = isAuthenticated();
     
@@ -187,6 +198,20 @@ function App() {
     chatWebSocket.connect(token);
   };
 
+  const handleLocaleChange = async (lang) => {
+    await setLocale(lang);
+    setLocaleState(lang);
+    localStorage.setItem('crm_locale', lang);
+    
+    // Update Ant Design locale
+    const localeMap = {
+      en: enUS,
+      ru: ruRU,
+      uz: ruRU, // Fallback to Russian for Uzbek
+    };
+    setAntdLocale(localeMap[lang] || ruRU);
+  };
+
   const handleLogout = () => {
     clearToken();
     callsWebSocket.disconnect();
@@ -216,13 +241,13 @@ function App() {
   const userMenuItems = [
     {
       key: 'profile',
-      label: 'Профиль',
+      label: t('nav.profile') || 'Профиль',
       icon: <UserOutlined />,
       onClick: () => navigate('/profile'),
     },
     {
       key: 'settings',
-      label: 'Настройки',
+      label: t('nav.settings') || 'Настройки',
       icon: <SettingOutlined />,
       onClick: () => navigate('/settings'),
     },
@@ -231,7 +256,7 @@ function App() {
     },
     {
       key: 'logout',
-      label: 'Выход',
+      label: t('nav.logout') || 'Выход',
       icon: <LogoutOutlined />,
       onClick: handleLogout,
     },
@@ -241,64 +266,70 @@ function App() {
     {
       key: 'dashboard',
       icon: <DashboardOutlined />,
-      label: 'Dashboard',
+      label: t('nav.dashboard') || 'Dashboard',
       onClick: () => navigate('/dashboard'),
+    },
+    {
+      key: 'analytics',
+      icon: <BarChartOutlined />,
+      label: t('nav.analytics') || 'Аналитика',
+      onClick: () => navigate('/analytics'),
     },
     {
       key: 'leads',
       icon: <UserOutlined />,
-      label: 'Leads',
+      label: t('nav.leads') || 'Leads',
       onClick: () => navigate('/leads'),
     },
     {
       key: 'contacts',
       icon: <TeamOutlined />,
-      label: 'Контакты',
+      label: t('nav.contacts') || 'Контакты',
       onClick: () => navigate('/contacts'),
     },
     {
       key: 'companies',
       icon: <ShopOutlined />,
-      label: 'Компании',
+      label: t('nav.companies') || 'Компании',
       onClick: () => navigate('/companies'),
     },
     {
       key: 'deals',
       icon: <DollarOutlined />,
-      label: 'Сделки',
+      label: t('nav.deals') || 'Сделки',
       onClick: () => navigate('/deals'),
     },
     {
       key: 'tasks',
       icon: <CheckSquareOutlined />,
-      label: 'Задачи',
+      label: t('nav.tasks') || 'Задачи',
       onClick: () => navigate('/tasks'),
     },
     {
       key: 'projects',
       icon: <FolderOutlined />,
-      label: 'Проекты',
+      label: t('nav.projects') || 'Проекты',
       onClick: () => navigate('/projects'),
     },
     {
       key: 'chat',
       icon: unreadCount > 0 ? <Badge count={unreadCount} size="small"><MessageOutlined /></Badge> : <MessageOutlined />,
-      label: 'Чат',
+      label: t('nav.chat') || 'Чат',
       onClick: () => navigate('/chat'),
     },
     {
       key: 'calls',
       icon: <PhoneOutlined />,
-      label: 'Звонки',
+      label: t('nav.calls') || 'Звонки',
       children: [
         {
           key: 'calls-dashboard',
-          label: 'Дашборд',
+          label: t('nav.callsDashboard') || 'Дашборд',
           onClick: () => navigate('/calls/dashboard'),
         },
         {
           key: 'calls-list',
-          label: 'История звонков',
+          label: t('nav.callsHistory') || 'История звонков',
           onClick: () => navigate('/calls'),
         },
       ],
@@ -306,25 +337,25 @@ function App() {
     {
       key: 'payments',
       icon: <DollarOutlined />,
-      label: 'Платежи',
+      label: t('nav.payments') || 'Платежи',
       onClick: () => navigate('/payments'),
     },
     {
       key: 'reminders',
       icon: <ClockCircleOutlined />,
-      label: 'Напоминания',
+      label: t('nav.reminders') || 'Напоминания',
       onClick: () => navigate('/reminders'),
     },
     {
       key: 'campaigns',
       icon: <FileTextOutlined />,
-      label: 'Кампании',
+      label: t('nav.campaigns') || 'Кампании',
       onClick: () => navigate('/campaigns'),
     },
     {
       key: 'memos',
       icon: <FileTextOutlined />,
-      label: 'Заметки',
+      label: t('nav.memos') || 'Заметки',
       onClick: () => navigate('/memos'),
     },
     {
@@ -333,13 +364,14 @@ function App() {
     {
       key: 'integrations',
       icon: <SettingOutlined />,
-      label: 'Интеграции',
+      label: t('nav.integrations') || 'Интеграции',
       onClick: () => navigate('/integrations'),
     },
   ];
 
   const getSelectedKey = () => {
     const name = route.name;
+    if (name === 'analytics') return 'analytics';
     if (name.startsWith('leads')) return 'leads';
     if (name.startsWith('contacts')) return 'contacts';
     if (name.startsWith('companies')) return 'companies';
@@ -359,6 +391,8 @@ function App() {
     switch (route.name) {
       case 'dashboard':
         return <Dashboard />;
+      case 'analytics':
+        return <AnalyticsPage />;
       case 'leads-list':
         return <LeadsList />;
       case 'leads-new':
@@ -467,6 +501,7 @@ function App() {
   }
 
   return (
+    <ConfigProvider locale={antdLocale}>
     <Layout style={{ minHeight: '100vh' }}>
       <Sider
         trigger={null}
@@ -519,13 +554,15 @@ function App() {
           })}
           <Space>
             {/* Language selector */}
-            <Select size="small" defaultValue="ru" style={{ width: 110 }} onChange={async (val) => {
-              const { setLocale } = await import('./lib/i18n');
-              setLocale(val);
-            }}>
+            <Select 
+              size="small" 
+              value={locale} 
+              style={{ width: 110 }} 
+              onChange={handleLocaleChange}
+            >
               <Option value="en">English</Option>
               <Option value="ru">Русский</Option>
-              <Option value="uz">O‘zbekcha</Option>
+              <Option value="uz">O'zbekcha</Option>
             </Select>
 
             <Dropdown menu={{ items: userMenuItems }} placement="bottomRight">
@@ -575,6 +612,7 @@ function App() {
         onReject={handleRejectCall}
       />
     </Layout>
+    </ConfigProvider>
   );
 }
 

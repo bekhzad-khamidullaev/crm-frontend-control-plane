@@ -1,6 +1,7 @@
 {
   "nav": {
     "dashboard": "Dashboard",
+    "analytics": "Analytics",
     "leads": "Leads",
     "contacts": "Contacts",
     "companies": "Companies",
@@ -8,8 +9,17 @@
     "tasks": "Tasks",
     "projects": "Projects",
     "chat": "Chat",
-    "calls": "Call Logs",
-    "settings": "Settings"
+    "calls": "Calls",
+    "callsDashboard": "Dashboard",
+    "callsHistory": "Call History",
+    "payments": "Payments",
+    "reminders": "Reminders",
+    "campaigns": "Campaigns",
+    "memos": "Memos",
+    "integrations": "Integrations",
+    "profile": "Profile",
+    "settings": "Settings",
+    "logout": "Logout"
   },
   "actions": {
     "edit": "Edit",
@@ -34,5 +44,104 @@
   "leads": {
     "title": "Leads",
     "empty": "No leads found"
+  },
+  "analytics": {
+    "leads": {
+      "title": "Lead Analytics",
+      "totalLeads": "Total Leads",
+      "converted": "Converted",
+      "conversionRate": "Conversion Rate",
+      "lost": "Lost",
+      "statusDistribution": "Status Distribution",
+      "sourceDistribution": "Leads by Source",
+      "conversionFunnel": "Conversion Funnel",
+      "goToLeads": "Go to Leads"
+    },
+    "contacts": {
+      "title": "Contact Analytics",
+      "totalContacts": "Total Contacts",
+      "companies": "Companies",
+      "vipContacts": "VIP Contacts",
+      "withPhone": "With Phone",
+      "typeDistribution": "Distribution by Type",
+      "sourceDistribution": "Contacts by Source",
+      "activityByMonth": "Activity by Month",
+      "goToContacts": "Go to Contacts"
+    },
+    "deals": {
+      "title": "Deal Analytics",
+      "totalDeals": "Total Deals",
+      "totalAmount": "Total Amount",
+      "averageCheck": "Average Deal",
+      "winRate": "Win Rate",
+      "salesFunnel": "Sales Funnel by Stage",
+      "topManagers": "Top 5 Managers by Amount",
+      "sourceDistribution": "Deals by Source",
+      "goToDeals": "Go to Deals"
+    },
+    "filters": {
+      "period": "Period",
+      "last7days": "Last 7 Days",
+      "last30days": "Last 30 Days",
+      "last90days": "Last 90 Days",
+      "last180days": "Last 180 Days",
+      "lastYear": "Last Year",
+      "customPeriod": "Custom Period",
+      "dateRange": "Date Range",
+      "startDate": "Start",
+      "endDate": "End"
+    },
+    "export": {
+      "title": "Export",
+      "csv": "Export to CSV",
+      "pdf": "Export to PDF",
+      "image": "Export as Image",
+      "success": "Data exported",
+      "error": "Export error",
+      "noData": "No data to export"
+    },
+    "realtime": {
+      "enabled": "Real-time enabled",
+      "disabled": "Real-time disabled",
+      "updating": "Updating...",
+      "lastUpdate": "Last update",
+      "interval": "Interval",
+      "updateEvery": "Update every",
+      "autoUpdateOn": "Auto-update enabled",
+      "autoUpdateOff": "Auto-update disabled"
+    },
+    "drilldown": {
+      "title": "Detailed Information",
+      "filter": "Filter",
+      "totalRecords": "Total records",
+      "showing": "Showing",
+      "close": "Close",
+      "noData": "No data to display",
+      "loading": "Loading data..."
+    },
+    "statuses": {
+      "new": "New",
+      "contacted": "Contacted",
+      "qualified": "Qualified",
+      "converted": "Converted",
+      "lost": "Lost"
+    },
+    "sources": {
+      "website": "Website",
+      "referral": "Referral",
+      "email": "Email",
+      "phone": "Phone",
+      "social": "Social Media",
+      "advertisement": "Advertisement",
+      "other": "Other"
+    },
+    "common": {
+      "refresh": "Refresh",
+      "statistics": "Statistics",
+      "hideStatistics": "Hide Statistics",
+      "showStatistics": "Show Statistics",
+      "noDataAvailable": "Data unavailable",
+      "loadingError": "Failed to load data"
+    }
   }
 }

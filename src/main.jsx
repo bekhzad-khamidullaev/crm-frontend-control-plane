@@ -4,6 +4,7 @@ import { ConfigProvider, App as AntApp } from 'antd';
 import ruRU from 'antd/locale/ru_RU';
 import 'antd/dist/reset.css';
 import './styles/custom-theme.css';
+import './styles/charts-animations.css';
 import App from './App.jsx';
 import { setupGlobalErrorHandler } from './lib/api/interceptor';
 

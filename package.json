@@ -21,6 +21,8 @@
     "antd": "^5.29.1",
     "chart.js": "^4.5.1",
     "dayjs": "^1.11.19",
+    "html2canvas": "^1.4.1",
+    "jspdf": "^3.0.4",
     "prop-types": "^15.8.1",
     "react": "^19.2.1",
     "react-chartjs-2": "^5.3.1",

@@ -1,6 +1,7 @@
 {
   "nav": {
     "dashboard": "Дашборд",
+    "analytics": "Аналитика",
     "leads": "Лиды",
     "contacts": "Контакты",
     "companies": "Компании",
@@ -9,7 +10,16 @@
     "projects": "Проекты",
     "chat": "Чаты",
     "calls": "Звонки",
-    "settings": "Настройки"
+    "callsDashboard": "Дашборд",
+    "callsHistory": "История звонков",
+    "payments": "Платежи",
+    "reminders": "Напоминания",
+    "campaigns": "Кампании",
+    "memos": "Заметки",
+    "integrations": "Интеграции",
+    "profile": "Профиль",
+    "settings": "Настройки",
+    "logout": "Выход"
   },
   "actions": {
     "edit": "Редактировать",
@@ -34,5 +44,104 @@
   "leads": {
     "title": "Лиды",
     "empty": "Лиды не найдены"
+  },
+  "analytics": {
+    "leads": {
+      "title": "Аналитика лидов",
+      "totalLeads": "Всего лидов",
+      "converted": "Конвертировано",
+      "conversionRate": "Коэффициент конверсии",
+      "lost": "Потеряно",
+      "statusDistribution": "Распределение по статусам",
+      "sourceDistribution": "Лиды по источникам",
+      "conversionFunnel": "Воронка конверсии",
+      "goToLeads": "Перейти к лидам"
+    },
+    "contacts": {
+      "title": "Аналитика контактов",
+      "totalContacts": "Всего контактов",
+      "companies": "Компании",
+      "vipContacts": "VIP контакты",
+      "withPhone": "С телефоном",
+      "typeDistribution": "Распределение по типам",
+      "sourceDistribution": "Контакты по источникам",
+      "activityByMonth": "Активность по месяцам",
+      "goToContacts": "Перейти к контактам"
+    },
+    "deals": {
+      "title": "Аналитика сделок",
+      "totalDeals": "Всего сделок",
+      "totalAmount": "Общая сумма",
+      "averageCheck": "Средний чек",
+      "winRate": "Win Rate",
+      "salesFunnel": "Воронка продаж по стадиям",
+      "topManagers": "Топ-5 менеджеров по сумме",
+      "sourceDistribution": "Сделки по источникам",
+      "goToDeals": "Перейти к сделкам"
+    },
+    "filters": {
+      "period": "Период",
+      "last7days": "Последние 7 дней",
+      "last30days": "Последние 30 дней",
+      "last90days": "Последние 90 дней",
+      "last180days": "Последние 180 дней",
+      "lastYear": "Последний год",
+      "customPeriod": "Произвольный период",
+      "dateRange": "Диапазон дат",
+      "startDate": "Начало",
+      "endDate": "Конец"
+    },
+    "export": {
+      "title": "Экспорт",
+      "csv": "Экспорт в CSV",
+      "pdf": "Экспорт в PDF",
+      "image": "Экспорт как изображение",
+      "success": "Данные экспортированы",
+      "error": "Ошибка экспорта",
+      "noData": "Нет данных для экспорта"
+    },
+    "realtime": {
+      "enabled": "Real-time активен",
+      "disabled": "Real-time выключен",
+      "updating": "Обновление...",
+      "lastUpdate": "Последнее обновление",
+      "interval": "Интервал",
+      "updateEvery": "Обновление каждые",
+      "autoUpdateOn": "Автообновление включено",
+      "autoUpdateOff": "Автообновление выключено"
+    },
+    "drilldown": {
+      "title": "Детальная информация",
+      "filter": "Фильтр",
+      "totalRecords": "Всего записей",
+      "showing": "Показано",
+      "close": "Закрыть",
+      "noData": "Нет данных для отображения",
+      "loading": "Загрузка данных..."
+    },
+    "statuses": {
+      "new": "Новые",
+      "contacted": "Связались",
+      "qualified": "Квалифицированы",
+      "converted": "Конвертированы",
+      "lost": "Потеряны"
+    },
+    "sources": {
+      "website": "Веб-сайт",
+      "referral": "Реферал",
+      "email": "Email",
+      "phone": "Телефон",
+      "social": "Соцсети",
+      "advertisement": "Реклама",
+      "other": "Другое"
+    },
+    "common": {
+      "refresh": "Обновить",
+      "statistics": "Статистика",
+      "hideStatistics": "Скрыть статистику",
+      "showStatistics": "Показать статистику",
+      "noDataAvailable": "Данные недоступны",
+      "loadingError": "Не удалось загрузить данные"
+    }
   }
 }

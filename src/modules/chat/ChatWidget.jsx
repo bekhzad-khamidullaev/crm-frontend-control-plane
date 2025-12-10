@@ -227,7 +227,7 @@ function ChatWidget({ entityType, entityId, entityName, entityPhone }) {
   return (
     <Card
       style={{ height: 600, display: 'flex', flexDirection: 'column' }}
-      bodyStyle={{ flex: 1, display: 'flex', flexDirection: 'column', padding: 0 }}
+      styles={{ body: { flex: 1, display: 'flex', flexDirection: 'column', padding: 0 } }}
       title={
         <Space>
           <MessageOutlined />

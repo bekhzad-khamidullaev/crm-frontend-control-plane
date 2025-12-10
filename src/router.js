@@ -4,6 +4,7 @@ let listeners = [];
 export const routeMeta = {
  'login': { auth: false, title: 'Login', breadcrumbs: [{ label: 'Login' }] },
  'dashboard': { auth: true, title: 'Dashboard', breadcrumbs: [{ label: 'Dashboard', href: '#/dashboard' }] },
+ 'analytics': { auth: true, title: 'Analytics', breadcrumbs: [{ label: 'Analytics', href: '#/analytics' }] },
  'leads-list': { auth: true, title: 'Leads', breadcrumbs: [{ label: 'Leads', href: '#/leads' }] },
  'leads-new': { auth: true, title: 'New Lead', breadcrumbs: [{ label: 'Leads', href: '#/leads' }, { label: 'New' }] },
  'leads-detail': { auth: true, title: 'Lead', breadcrumbs: [{ label: 'Leads', href: '#/leads' }, { label: 'Detail' }] },
@@ -63,9 +64,10 @@ export function parseHash() {
   const raw = (location.hash || '').replace(/^#/, '');
   const path = raw || '/leads';
   const segments = path.split('/').filter(Boolean);
-  // routes: /login, /dashboard, /leads, /leads/new, /leads/:id, /leads/:id/edit
+  // routes: /login, /dashboard, /analytics, /leads, /leads/new, /leads/:id, /leads/:id/edit
   if (segments[0] === 'login') return { name: 'login', params: {} };
   if (segments[0] === 'dashboard') return { name: 'dashboard', params: {} };
+  if (segments[0] === 'analytics') return { name: 'analytics', params: {} };
   if (segments[0] === 'leads') {
     if (!segments[1]) return { name: 'leads-list', params: {} };
     if (segments[1] === 'new') return { name: 'leads-new', params: {} };

@@ -16,6 +16,8 @@ export default function EditableCell({
   options = [], // for select type
   onSave,
   format, // function to format display value
+  renderView, // custom render function for view mode
+  placeholder,
   ...restProps
 }) {
   const [editing, setEditing] = useState(false);
@@ -149,14 +151,14 @@ export default function EditableCell({
 
   if (!editable) {
     return (
-      <div {...restProps}>
-        {getDisplayValue()}
+      <div style={restProps.style}>
+        {renderView ? renderView(initialValue) : getDisplayValue()}
       </div>
     );
   }
 
   return editing ? (
-    <div style={{ display: 'flex', gap: '4px', alignItems: 'center' }} {...restProps}>
+    <div style={{ display: 'flex', gap: '4px', alignItems: 'center', ...restProps.style }}>
       {renderInput()}
       <CheckOutlined
         style={{ color: '#52c41a', cursor: 'pointer' }}
@@ -169,7 +171,6 @@ export default function EditableCell({
     </div>
   ) : (
     <div
-      {...restProps}
       style={{
         cursor: editable ? 'pointer' : 'default',
         padding: '4px 8px',
@@ -189,7 +190,7 @@ export default function EditableCell({
       role="button"
       aria-label="Click to edit"
     >
-      {getDisplayValue()}
+      {renderView ? renderView(initialValue) : getDisplayValue()}
     </div>
   );
 }

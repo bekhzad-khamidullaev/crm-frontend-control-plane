@@ -85,22 +85,50 @@ function LeadDetail({ id }) {
 
   const handleConvert = async () => {
     try {
+      // Проверяем, не конвертирован ли уже лид
+      if (lead.status === 'converted') {
+        message.warning('Этот лид уже конвертирован в сделку');
+        return;
+      }
+      
       await leadsApi.convert(id);
-      message.success('Лид конвертирован в сделку');
+      message.success('Лид успешно конвертирован в сделку');
       loadLead();
     } catch (error) {
-      const errorMessage = error?.details?.detail || error?.message || 'Ошибка конвертации лида';
-      message.error(errorMessage);
+      console.error('Convert error:', error);
+      
+      // Обработка различных типов ошибок
+      if (error?.response?.status === 409) {
+        message.warning('Этот лид уже был конвертирован ранее');
+        loadLead(); // Обновляем данные
+      } else {
+        const errorMessage = error?.response?.data?.detail 
+          || error?.details?.detail 
+          || error?.message 
+          || 'Ошибка конвертации лида';
+        message.error(errorMessage);
+      }
     }
   };
 
   const handleDisqualify = async () => {
     try {
+      // Проверяем статус лида
+      if (lead.status === 'lost') {
+        message.warning('Этот лид уже дисквалифицирован');
+        return;
+      }
+      
       await leadsApi.disqualify(id);
-      message.success('Лид дисквалифицирован');
+      message.success('Лид успешно дисквалифицирован');
       loadLead();
     } catch (error) {
-      const errorMessage = error?.details?.detail || error?.message || 'Ошибка дисквалификации лида';
+      console.error('Disqualify error:', error);
+      
+      const errorMessage = error?.response?.data?.detail 
+        || error?.details?.detail 
+        || error?.message 
+        || 'Ошибка дисквалификации лида';
       message.error(errorMessage);
     }
   };
@@ -353,13 +381,16 @@ function LeadDetail({ id }) {
           onConfirm={handleConvert}
           okText="Да"
           cancelText="Нет"
+          disabled={lead.status === 'converted'}
         >
           <Button 
             type="primary" 
             icon={<CheckCircleOutlined />}
             style={{ backgroundColor: '#52c41a', borderColor: '#52c41a' }}
+            disabled={lead.status === 'converted'}
+            title={lead.status === 'converted' ? 'Лид уже конвертирован' : ''}
           >
-            Конвертировать
+            {lead.status === 'converted' ? 'Уже конвертирован' : 'Конвертировать'}
           </Button>
         </Popconfirm>
         <Popconfirm
@@ -368,9 +399,14 @@ function LeadDetail({ id }) {
           onConfirm={handleDisqualify}
           okText="Да"
           cancelText="Нет"
+          disabled={lead.status === 'lost' || lead.status === 'converted'}
         >
-          <Button icon={<CloseCircleOutlined />}>
-            Дисквалифицировать
+          <Button 
+            icon={<CloseCircleOutlined />}
+            disabled={lead.status === 'lost' || lead.status === 'converted'}
+            title={lead.status === 'lost' ? 'Лид уже дисквалифицирован' : lead.status === 'converted' ? 'Нельзя дисквалифицировать конвертированный лид' : ''}
+          >
+            {lead.status === 'lost' ? 'Уже дисквалифицирован' : 'Дисквалифицировать'}
           </Button>
         </Popconfirm>
         <Popconfirm
