@@ -2,26 +2,22 @@ import { api } from './client';
 
 /**
  * Activity Log API
- * Handles audit trail and activity tracking
+ * Uses dashboard activity endpoint from Django-CRM API.yaml
  */
 
 /**
- * Get activity log with pagination and filters
+ * Get activity log (uses dashboard activity endpoint)
  * @param {Object} params
  * @param {number} [params.page]
  * @param {number} [params.page_size]
- * @param {string} [params.action] - Action type filter
- * @param {string} [params.user] - User ID filter
- * @param {string} [params.start_date] - Date range start
- * @param {string} [params.end_date] - Date range end
  * @returns {Promise<Object>}
  */
 export async function getActivityLog(params = {}) {
   try {
-    return await api.get('/api/activity/', { params });
+    // Use dashboard activity endpoint from API.yaml (line 1568)
+    return await api.get('/api/dashboard/activity/', { params });
   } catch (error) {
-    console.warn('Activity log not available, using mock data');
-    // Return mock data
+    console.warn('Activity log not available');
     return {
       results: [],
       count: 0,
@@ -31,22 +27,20 @@ export async function getActivityLog(params = {}) {
 
 /**
  * Get activity log for specific entity
+ * Note: This endpoint doesn't exist in API.yaml, using mock data
  * @param {string} contentType - Entity type (lead, deal, contact, etc.)
  * @param {number} objectId - Entity ID
  * @param {Object} [params] - Additional query params
  * @returns {Promise<Object>}
  */
 export async function getEntityActivity(contentType, objectId, params = {}) {
-  try {
-    return await api.get(`/api/activity/${contentType}/${objectId}/`, { params });
-  } catch (error) {
-    console.warn('Entity activity not available, using mock data');
-    // Return mock data for development
-    return {
-      results: generateMockActivity(contentType, objectId),
-      count: 5,
-    };
-  }
+  // This endpoint doesn't exist in Django-CRM API.yaml
+  // Using mock data until backend implements it
+  console.warn('Entity activity endpoint not available in API, using mock data');
+  return {
+    results: generateMockActivity(contentType, objectId),
+    count: 5,
+  };
 }
 
 /**
@@ -77,18 +71,17 @@ function generateMockActivity(contentType, objectId) {
 
 /**
  * Get activity statistics
+ * Note: This endpoint doesn't exist in API.yaml, returns mock data
  * @param {Object} params
  * @returns {Promise<Object>}
  */
 export async function getActivityStats(params = {}) {
-  try {
-    return await api.get('/api/activity/stats/', { params });
-  } catch (error) {
-    console.warn('Activity stats not available');
-    return {
-      total: 0,
-      by_action: {},
-      by_user: {},
-    };
-  }
+  // This endpoint doesn't exist in Django-CRM API.yaml
+  // Consider using /api/dashboard/analytics/ instead
+  console.warn('Activity stats endpoint not available in API');
+  return {
+    total: 0,
+    by_action: {},
+    by_user: {},
+  };
 }

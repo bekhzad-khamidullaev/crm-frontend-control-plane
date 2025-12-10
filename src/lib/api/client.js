@@ -317,21 +317,18 @@ export const chatApi = {
   update: (id, payload) => api.put(`/api/chat-messages/${id}/`, { body: payload }),
   patch: (id, payload) => api.patch(`/api/chat-messages/${id}/`, { body: payload }),
   remove: (id) => api.delete(`/api/chat-messages/${id}/`),
-  reply: (id, payload) => api.post(`/api/chat-messages/${id}/reply/`, { body: payload }),
   replies: (id, params) => api.get(`/api/chat-messages/${id}/replies/`, { params }),
   thread: (id, params) => api.get(`/api/chat-messages/${id}/thread/`, { params }),
-  byObject: (params) => api.get('/api/chat-messages/by_object/', { params }),
-  statistics: (params) => api.get('/api/chat-messages/statistics/', { params }),
-  unreadCount: (params) => api.get('/api/chat-messages/unread_count/', { params }),
+  // Note: Following endpoints don't exist in Django-CRM API.yaml
+  // byObject, statistics, unreadCount - removed
 };
 
 export const callLogsApi = {
-  list: (params) => api.get('/api/call-logs/', { params }),
-  retrieve: (id) => api.get(`/api/call-logs/${id}/`),
-  create: (payload) => api.post('/api/call-logs/', { body: payload }),
-  update: (id, payload) => api.put(`/api/call-logs/${id}/`, { body: payload }),
-  patch: (id, payload) => api.patch(`/api/call-logs/${id}/`, { body: payload }),
-  remove: (id) => api.delete(`/api/call-logs/${id}/`),
+  list: (params) => api.get('/api/voip/call-logs/', { params }),
+  retrieve: (logId) => api.get(`/api/voip/call-logs/${logId}/`),
+  addNote: (logId, payload) => api.post(`/api/voip/call-logs/${logId}/add-note/`, { body: payload }),
+  // Note: POST, PUT, PATCH, DELETE not supported in API.yaml for call logs
+  // Call logs are read-only and created by VoIP system
 };
 
 export const dashboardApi = {

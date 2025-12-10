@@ -273,6 +273,58 @@ function ProfilePage() {
                 <TextArea rows={4} />
               </Form.Item>
 
+              <Divider>Настройки телефонии</Divider>
+
+              <Form.Item 
+                label="Внутренний номер (PBX)" 
+                name="pbx_number"
+                tooltip="Ваш внутренний телефонный номер в системе"
+              >
+                <Input prefix={<PhoneOutlined />} placeholder="1001" />
+              </Form.Item>
+
+              <Row gutter={16}>
+                <Col span={12}>
+                  <Form.Item 
+                    label="WebSocket URI (JsSIP)" 
+                    name="jssip_ws_uri"
+                    tooltip="Пример: wss://sip.example.com:7443"
+                  >
+                    <Input placeholder="wss://sip.example.com:7443" />
+                  </Form.Item>
+                </Col>
+                <Col span={12}>
+                  <Form.Item 
+                    label="SIP URI (JsSIP)" 
+                    name="jssip_sip_uri"
+                    tooltip="Пример: sip:1001@sip.example.com"
+                  >
+                    <Input placeholder="sip:1001@sip.example.com" />
+                  </Form.Item>
+                </Col>
+              </Row>
+
+              <Row gutter={16}>
+                <Col span={12}>
+                  <Form.Item 
+                    label="Пароль SIP (JsSIP)" 
+                    name="jssip_sip_password"
+                    tooltip="Будет использоваться веб-клиентом для звонков"
+                  >
+                    <Input.Password placeholder="••••••••" />
+                  </Form.Item>
+                </Col>
+                <Col span={12}>
+                  <Form.Item 
+                    label="Отображаемое имя" 
+                    name="jssip_display_name"
+                    tooltip="Имя, которое увидит собеседник при звонке"
+                  >
+                    <Input placeholder="Иван Иванов" />
+                  </Form.Item>
+                </Col>
+              </Row>
+
               <Form.Item>
                 <Button type="primary" htmlType="submit" loading={loading}>
                   Сохранить изменения

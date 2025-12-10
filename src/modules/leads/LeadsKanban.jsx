@@ -34,7 +34,8 @@ import {
   DragOutlined,
 } from '@ant-design/icons';
 import { navigate } from '../../router';
-import { getLeads, updateLead } from '../../lib/api/client';
+import { getLeads } from '../../lib/api/client';
+import { leadsApi } from '../../lib/api/client';
 import './LeadsKanban.css';
 
 const { Text } = Typography;
@@ -355,25 +356,36 @@ function LeadsKanban() {
     }
 
     if (activeContainer !== overContainer) {
-      // Updating lead status via API
-
+      // Updating lead status via API using PATCH (partial update)
       try {
-        const response = await updateLead(activeLead.id, { status: overContainer });
+        await leadsApi.patch(activeLead.id, { status: overContainer });
         // Lead status updated successfully
         message.success(
-          `Лид перемещен в "${statusColumns[overContainer].title}"`
+          `Лид "${activeLead.first_name} ${activeLead.last_name}" перемещен в "${statusColumns[overContainer].title}"`,
+          3
         );
-        // Refresh data to ensure consistency
-        await fetchLeads();
+        // UI already updated via handleDragOver, no need to refetch unless needed
+        // Optional: uncomment to force server sync
+        // await fetchLeads();
       } catch (error) {
-        console.error('Error updating lead:', error);
-        message.error(
-          error?.details?.detail || 
-          error?.message || 
-          'Ошибка обновления статуса лида'
-        );
-        // Revert changes
-        fetchLeads();
+        console.error('Error updating lead status:', error);
+        
+        // Extract error message
+        let errorMessage = 'Ошибка обновления статуса лида';
+        if (error?.details?.detail) {
+          errorMessage = error.details.detail;
+        } else if (error?.details?.status) {
+          errorMessage = Array.isArray(error.details.status) 
+            ? error.details.status[0] 
+            : error.details.status;
+        } else if (error?.message) {
+          errorMessage = error.message;
+        }
+        
+        message.error(errorMessage, 5);
+        
+        // Revert changes on error - reload from server
+        await fetchLeads();
       }
     }
   };

@@ -91,16 +91,37 @@ function LeadDetail({ id }) {
         return;
       }
       
-      await leadsApi.convert(id);
+      // Подготавливаем данные лида с правильным форматированием дат
+      // Backend требует, чтобы все date поля были строками в ISO формате
+      const leadData = {
+        first_name: lead.first_name,
+        last_name: lead.last_name,
+        email: lead.email,
+        phone: lead.phone || '',
+        // Форматируем date поля в ISO строки, если они существуют
+        birth_date: lead.birth_date || null,
+        was_in_touch: lead.was_in_touch || null,
+      };
+      
+      await leadsApi.convert(id, leadData);
       message.success('Лид успешно конвертирован в сделку');
       loadLead();
     } catch (error) {
       console.error('Convert error:', error);
       
       // Обработка различных типов ошибок
-      if (error?.response?.status === 409) {
+      if (error?.status === 409 || error?.response?.status === 409) {
         message.warning('Этот лид уже был конвертирован ранее');
         loadLead(); // Обновляем данные
+      } else if (error?.status === 500 || error?.response?.status === 500) {
+        // Внутренняя ошибка сервера
+        const detailMsg = error?.details?.detail || error?.response?.data?.detail || '';
+        if (detailMsg.includes('fromisoformat')) {
+          message.error('Ошибка формата даты на сервере. Проверьте данные лида.');
+        } else {
+          message.error('Внутренняя ошибка сервера при конвертации лида');
+        }
+        console.error('Server error details:', detailMsg);
       } else {
         const errorMessage = error?.response?.data?.detail 
           || error?.details?.detail 
@@ -119,17 +140,39 @@ function LeadDetail({ id }) {
         return;
       }
       
-      await leadsApi.disqualify(id);
+      // Подготавливаем данные лида с правильным форматированием дат
+      // Backend требует, чтобы все date поля были строками в ISO формате
+      const leadData = {
+        first_name: lead.first_name,
+        last_name: lead.last_name,
+        email: lead.email,
+        phone: lead.phone || '',
+        // Форматируем date поля в ISO строки, если они существуют
+        birth_date: lead.birth_date || null,
+        was_in_touch: lead.was_in_touch || null,
+      };
+      
+      await leadsApi.disqualify(id, leadData);
       message.success('Лид успешно дисквалифицирован');
       loadLead();
     } catch (error) {
       console.error('Disqualify error:', error);
       
-      const errorMessage = error?.response?.data?.detail 
-        || error?.details?.detail 
-        || error?.message 
-        || 'Ошибка дисквалификации лида';
-      message.error(errorMessage);
+      if (error?.status === 500 || error?.response?.status === 500) {
+        const detailMsg = error?.details?.detail || error?.response?.data?.detail || '';
+        if (detailMsg.includes('fromisoformat')) {
+          message.error('Ошибка формата даты на сервере. Проверьте данные лида.');
+        } else {
+          message.error('Внутренняя ошибка сервера при дисквалификации лида');
+        }
+        console.error('Server error details:', detailMsg);
+      } else {
+        const errorMessage = error?.response?.data?.detail 
+          || error?.details?.detail 
+          || error?.message 
+          || 'Ошибка дисквалификации лида';
+        message.error(errorMessage);
+      }
     }
   };
 

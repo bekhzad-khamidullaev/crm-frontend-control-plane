@@ -1,17 +1,18 @@
 /**
  * TelephonySettings Component
- * Component for configuring telephony settings
+ * Component for configuring VoIP connections
  */
 
 import React, { useState, useEffect } from 'react';
-import { Form, Input, Select, Button, Space, App, Card, Alert, Switch, Divider } from 'antd';
-import { PhoneOutlined, CheckCircleOutlined } from '@ant-design/icons';
+import { Form, Input, Select, Button, Space, App, Alert, Switch, Divider, Table, Modal, Tag, Popconfirm } from 'antd';
+import { PhoneOutlined, PlusOutlined, EditOutlined, DeleteOutlined, CheckCircleOutlined } from '@ant-design/icons';
 import { 
-  getSIPConfig, 
-  saveSIPConfig, 
-  updateSIPConfig,
-  testSIPConnection,
-  updateTelephonySettings
+  getVoIPConnections, 
+  createVoIPConnection, 
+  updateVoIPConnection,
+  deleteVoIPConnection,
+  patchVoIPConnection,
+  testSIPConnection
 } from '../lib/api/telephony';
 
 export default function TelephonySettings({ onSuccess }) {
@@ -19,80 +20,95 @@ export default function TelephonySettings({ onSuccess }) {
   const [form] = Form.useForm();
   const [loading, setLoading] = useState(false);
   const [testing, setTesting] = useState(false);
-  const [provider, setProvider] = useState('sip');
+  const [connections, setConnections] = useState([]);
+  const [modalVisible, setModalVisible] = useState(false);
+  const [editingConnection, setEditingConnection] = useState(null);
+  const [tableLoading, setTableLoading] = useState(false);
 
   useEffect(() => {
-    loadConfig();
+    loadConnections();
   }, []);
 
-  const loadConfig = async () => {
+  const loadConnections = async () => {
+    setTableLoading(true);
     try {
-      const config = await getSIPConfig();
-      form.setFieldsValue(config);
-      setProvider(config.provider || 'sip');
+      const response = await getVoIPConnections();
+      setConnections(response.results || []);
     } catch (error) {
-      console.error('Error loading telephony config:', error);
+      console.error('Error loading VoIP connections:', error);
+      message.error('Ошибка загрузки подключений');
+    } finally {
+      setTableLoading(false);
     }
   };
 
   const handleSave = async (values) => {
     setLoading(true);
     try {
-      const config = await getSIPConfig();
-      
-      if (config.results && config.results.length > 0) {
+      const connectionData = {
+        provider: values.provider,
+        type: values.type,
+        number: values.number,
+        callerid: values.callerid,
+        active: values.active !== undefined ? values.active : true,
+      };
+
+      if (editingConnection) {
         // Update existing connection
-        await updateSIPConfig(config.results[0].id, {
-          provider: values.provider === 'sip' ? 'OnlinePBX' : 'Zadarma',
-          type: 'sip',
-          number: values.sip_username,
-          callerid: values.sip_username,
-          active: true,
-        });
+        await updateVoIPConnection(editingConnection.id, connectionData);
+        message.success('Подключение обновлено');
       } else {
         // Create new connection
-        await saveSIPConfig({
-          provider: values.provider === 'sip' ? 'OnlinePBX' : 'Zadarma',
-          type: 'sip',
-          number: values.sip_username,
-          callerid: values.sip_username,
-          active: true,
-        });
+        await createVoIPConnection(connectionData);
+        message.success('Подключение создано');
       }
       
-      // Save additional settings
-      await updateTelephonySettings({
-        sip_server: values.sip_server,
-        sip_username: values.sip_username,
-        sip_password: values.sip_password,
-        ws_url: values.ws_url,
-        auto_record: values.auto_record,
-        auto_log: values.auto_log,
-        provider: values.provider,
-      });
-      
-      message.success('Настройки телефонии сохранены');
+      setModalVisible(false);
+      form.resetFields();
+      setEditingConnection(null);
+      await loadConnections();
       onSuccess?.();
     } catch (error) {
-      console.error('Error saving telephony settings:', error);
-      message.error('Ошибка сохранения настроек');
+      console.error('Error saving VoIP connection:', error);
+      message.error('Ошибка сохранения подключения');
     } finally {
       setLoading(false);
     }
   };
 
-  const handleTestCall = async () => {
+  const handleEdit = (connection) => {
+    setEditingConnection(connection);
+    form.setFieldsValue(connection);
+    setModalVisible(true);
+  };
+
+  const handleDelete = async (id) => {
+    try {
+      await deleteVoIPConnection(id);
+      message.success('Подключение удалено');
+      await loadConnections();
+    } catch (error) {
+      console.error('Error deleting connection:', error);
+      message.error('Ошибка удаления подключения');
+    }
+  };
+
+  const handleToggleActive = async (connection) => {
+    try {
+      await patchVoIPConnection(connection.id, { active: !connection.active });
+      message.success(connection.active ? 'Подключение деактивировано' : 'Подключение активировано');
+      await loadConnections();
+    } catch (error) {
+      console.error('Error toggling connection:', error);
+      message.error('Ошибка изменения статуса');
+    }
+  };
+
+  const handleTestConnection = async () => {
     setTesting(true);
     try {
       const values = form.getFieldsValue();
-      
-      await testSIPConnection({
-        sip_server: values.sip_server,
-        sip_username: values.sip_username,
-        sip_password: values.sip_password,
-        ws_url: values.ws_url,
-      });
-      
+      await testSIPConnection(values);
       message.success('SIP подключение успешно проверено');
     } catch (error) {
       console.error('Error testing SIP connection:', error);
@@ -102,71 +118,198 @@ export default function TelephonySettings({ onSuccess }) {
     }
   };
 
+  const columns = [
+    {
+      title: 'ID',
+      dataIndex: 'id',
+      key: 'id',
+      width: 60,
+    },
+    {
+      title: 'Провайдер',
+      dataIndex: 'provider',
+      key: 'provider',
+      render: (provider) => <Tag color="blue">{provider}</Tag>,
+    },
+    {
+      title: 'Тип',
+      dataIndex: 'type',
+      key: 'type',
+      render: (type) => {
+        const colors = { pbx: 'green', sip: 'orange', voip: 'purple' };
+        return <Tag color={colors[type]}>{type?.toUpperCase()}</Tag>;
+      },
+    },
+    {
+      title: 'Номер',
+      dataIndex: 'number',
+      key: 'number',
+    },
+    {
+      title: 'Caller ID',
+      dataIndex: 'callerid',
+      key: 'callerid',
+    },
+    {
+      title: 'Владелец',
+      dataIndex: 'owner_name',
+      key: 'owner_name',
+      render: (name) => name || '-',
+    },
+    {
+      title: 'Статус',
+      dataIndex: 'active',
+      key: 'active',
+      render: (active) => (
+        <Tag color={active ? 'success' : 'default'}>
+          {active ? 'Активно' : 'Неактивно'}
+        </Tag>
+      ),
+    },
+    {
+      title: 'Действия',
+      key: 'actions',
+      render: (_, record) => (
+        <Space>
+          <Button
+            type="link"
+            size="small"
+            icon={<EditOutlined />}
+            onClick={() => handleEdit(record)}
+          >
+            Изменить
+          </Button>
+          <Button
+            type="link"
+            size="small"
+            onClick={() => handleToggleActive(record)}
+          >
+            {record.active ? 'Деактивировать' : 'Активировать'}
+          </Button>
+          <Popconfirm
+            title="Вы уверены?"
+            onConfirm={() => handleDelete(record.id)}
+            okText="Да"
+            cancelText="Нет"
+          >
+            <Button type="link" size="small" danger icon={<DeleteOutlined />}>
+              Удалить
+            </Button>
+          </Popconfirm>
+        </Space>
+      ),
+    },
+  ];
+
   return (
     <div>
       <Alert
         message="Настройка телефонии"
-        description="Подключите SIP/WebRTC провайдера для совершения звонков прямо из CRM"
+        description="Управление VoIP подключениями для совершения звонков прямо из CRM"
         type="info"
         showIcon
         style={{ marginBottom: 24 }}
       />
 
-      <Form form={form} layout="vertical" onFinish={handleSave}>
-        <Form.Item label="Провайдер" name="provider">
-          <Select onChange={setProvider}>
-            <Select.Option value="sip">SIP/VoIP</Select.Option>
-            <Select.Option value="webrtc">WebRTC</Select.Option>
-            <Select.Option value="twilio">Twilio</Select.Option>
-            <Select.Option value="asterisk">Asterisk</Select.Option>
-          </Select>
-        </Form.Item>
+      <div style={{ marginBottom: 16 }}>
+        <Button
+          type="primary"
+          icon={<PlusOutlined />}
+          onClick={() => {
+            setEditingConnection(null);
+            form.resetFields();
+            setModalVisible(true);
+          }}
+        >
+          Добавить подключение
+        </Button>
+      </div>
 
-        {provider === 'sip' && (
-          <>
-            <Form.Item
-              label="SIP Server"
-              name="sip_server"
-              rules={[{ required: true, message: 'Введите адрес SIP сервера' }]}
-            >
-              <Input placeholder="sip.example.com" />
-            </Form.Item>
+      <Table
+        columns={columns}
+        dataSource={connections}
+        rowKey="id"
+        loading={tableLoading}
+        pagination={{ pageSize: 10 }}
+      />
 
-            <Form.Item label="SIP Username" name="sip_username" rules={[{ required: true }]}>
-              <Input placeholder="user@domain" />
-            </Form.Item>
+      <Modal
+        title={editingConnection ? 'Редактировать подключение' : 'Новое подключение'}
+        open={modalVisible}
+        onCancel={() => {
+          setModalVisible(false);
+          form.resetFields();
+          setEditingConnection(null);
+        }}
+        footer={null}
+        width={600}
+      >
+        <Form form={form} layout="vertical" onFinish={handleSave}>
+          <Form.Item
+            label="Провайдер"
+            name="provider"
+            rules={[{ required: true, message: 'Выберите провайдера' }]}
+          >
+            <Select placeholder="Выберите провайдера">
+              <Select.Option value="OnlinePBX">OnlinePBX</Select.Option>
+              <Select.Option value="Zadarma">Zadarma</Select.Option>
+            </Select>
+          </Form.Item>
 
-            <Form.Item label="SIP Password" name="sip_password" rules={[{ required: true }]}>
-              <Input.Password />
-            </Form.Item>
+          <Form.Item
+            label="Тип подключения"
+            name="type"
+            rules={[{ required: true, message: 'Выберите тип' }]}
+          >
+            <Select placeholder="Выберите тип">
+              <Select.Option value="pbx">PBX extension</Select.Option>
+              <Select.Option value="sip">SIP connection</Select.Option>
+              <Select.Option value="voip">Virtual phone number</Select.Option>
+            </Select>
+          </Form.Item>
 
-            <Form.Item label="WebSocket URL" name="ws_url">
-              <Input placeholder="wss://sip.example.com:443" />
-            </Form.Item>
-          </>
-        )}
+          <Form.Item
+            label="Номер телефона"
+            name="number"
+            rules={[{ required: true, message: 'Введите номер' }]}
+          >
+            <Input placeholder="+1234567890" />
+          </Form.Item>
 
-        <Divider />
+          <Form.Item
+            label="Caller ID"
+            name="callerid"
+            rules={[{ required: true, message: 'Введите Caller ID' }]}
+            tooltip="Номер, который будет отображаться при исходящих звонках"
+          >
+            <Input placeholder="+1234567890" />
+          </Form.Item>
 
-        <Form.Item label="Автоматическая запись звонков" name="auto_record" valuePropName="checked">
-          <Switch />
-        </Form.Item>
+          <Form.Item label="Активно" name="active" valuePropName="checked" initialValue={true}>
+            <Switch />
+          </Form.Item>
 
-        <Form.Item label="Автоматическое создание логов" name="auto_log" valuePropName="checked">
-          <Switch />
-        </Form.Item>
-
-        <Form.Item>
-          <Space>
-            <Button type="primary" htmlType="submit" loading={loading}>
-              Сохранить настройки
-            </Button>
-            <Button onClick={handleTestCall} loading={testing} icon={<PhoneOutlined />}>
-              Тестовый звонок
-            </Button>
-          </Space>
-        </Form.Item>
-      </Form>
+          <Form.Item>
+            <Space>
+              <Button type="primary" htmlType="submit" loading={loading}>
+                {editingConnection ? 'Обновить' : 'Создать'}
+              </Button>
+              <Button onClick={handleTestConnection} loading={testing} icon={<PhoneOutlined />}>
+                Тест
+              </Button>
+              <Button
+                onClick={() => {
+                  setModalVisible(false);
+                  form.resetFields();
+                  setEditingConnection(null);
+                }}
+              >
+                Отмена
+              </Button>
+            </Space>
+          </Form.Item>
+        </Form>
+      </Modal>
     </div>
   );
 }

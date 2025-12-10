@@ -29,7 +29,7 @@ export async function getChatMessages(params = {}) {
  * @returns {Promise<Object>}
  */
 export async function getChatMessage(id) {
-  return apiClient.get(`/api/chat/messages/${id}/`);
+  return apiClient.get(`/api/chat-messages/${id}/`);
 }
 
 /**
@@ -53,7 +53,7 @@ export async function createChatMessage(data) {
  * @returns {Promise<Object>}
  */
 export async function updateChatMessage(id, data) {
-  return apiClient.patch(`/api/chat/messages/${id}/`, data);
+  return apiClient.patch(`/api/chat-messages/${id}/`, data);
 }
 
 /**
@@ -62,7 +62,7 @@ export async function updateChatMessage(id, data) {
  * @returns {Promise<void>}
  */
 export async function deleteChatMessage(id) {
-  return apiClient.delete(`/api/chat/messages/${id}/`);
+  return apiClient.delete(`/api/chat-messages/${id}/`);
 }
 
 /**
@@ -88,63 +88,53 @@ export async function getEntityChatMessages(entityType, entityId, params = {}) {
 }
 
 /**
- * Mark messages as read (custom action if available in API)
+ * Mark messages as read
+ * Note: Bulk mark-read endpoint doesn't exist in API.yaml
+ * Falls back to individual updates
  * @param {Array<string|number>} messageIds - Array of message IDs
  * @returns {Promise<Object>}
  */
 export async function markMessagesAsRead(messageIds) {
-  // Try bulk endpoint first, fallback to individual updates
-  try {
-    return await apiClient.post('/api/chat-messages/bulk-mark-read/', {
-      message_ids: messageIds
-    });
-  } catch (error) {
-    console.warn('Bulk mark-read not available, using individual updates');
-    return Promise.all(
-      messageIds.map(id => updateChatMessage(id, { is_read: true }))
-    );
-  }
+  // Bulk endpoint doesn't exist in API.yaml, use individual updates
+  console.warn('Bulk mark-read endpoint not available in API, using individual PATCH requests');
+  return Promise.all(
+    messageIds.map(id => updateChatMessage(id, { is_read: true }))
+  );
 }
 
 /**
  * Upload attachment for a chat message
+ * Note: This endpoint doesn't exist in API.yaml
  * @param {File} file - File to upload
  * @param {string|number} messageId - Message ID (optional)
  * @returns {Promise<Object>}
  */
 export async function uploadAttachment(file, messageId = null) {
-  const formData = new FormData();
-  formData.append('file', file);
-  if (messageId) {
-    formData.append('message_id', messageId);
-  }
-
-  return apiClient.post('/api/chat-messages/upload-attachment/', formData, {
-    headers: {
-      'Content-Type': 'multipart/form-data',
-    },
-  });
+  console.warn('Chat attachment upload endpoint not available in API');
+  throw new Error('Chat message attachments are not supported by API');
 }
 
 /**
  * Delete attachment
+ * Note: This endpoint doesn't exist in API.yaml
  * @param {string|number} attachmentId - Attachment ID
  * @returns {Promise<void>}
  */
 export async function deleteAttachment(attachmentId) {
-  return apiClient.delete(`/api/chat-attachments/${attachmentId}/`);
+  console.warn('Chat attachment deletion endpoint not available in API');
+  throw new Error('Chat message attachments are not supported by API');
 }
 
 /**
  * Get chat statistics
+ * Note: This endpoint doesn't exist in API.yaml
+ * Calculates statistics from fetched messages
  * @param {Object} params - Query parameters
  * @returns {Promise<Object>}
  */
 export async function getChatStatistics(params = {}) {
-  try {
-    return await apiClient.get('/api/chat-messages/statistics/', { params });
-  } catch (error) {
-    console.warn('Statistics endpoint not available, calculating from messages');
+  // Statistics endpoint doesn't exist in API.yaml
+  console.warn('Chat statistics endpoint not available in API, calculating from messages');
     try {
       const messages = await getChatMessages({ ...params, page_size: 1000 });
       
@@ -189,7 +179,6 @@ export async function getChatStatistics(params = {}) {
         }
       };
     }
-  }
 }
 
 /**

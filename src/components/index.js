@@ -14,6 +14,7 @@ export { default as FacebookConnect } from './FacebookConnect.jsx';
 export { default as InstagramConnect } from './InstagramConnect.jsx';
 export { default as TelegramConnect } from './TelegramConnect.jsx';
 export { default as TelephonySettings } from './TelephonySettings.jsx';
+export { default as VoIPConnectionsList } from './VoIPConnectionsList.jsx';
 export { default as SMSSettings } from './SMSSettings.jsx';
 export { CallsActivityChart, CallsDistributionChart, CallsStatusChart, CallsDurationChart } from './CallsCharts.jsx';
 

@@ -7,6 +7,7 @@ import { api } from './client';
 
 /**
  * Initiate outgoing call
+ * Note: This should use VoIP integration endpoints like /api/voip/cold-call/initiate/
  * @param {Object} data
  * @param {string} data.phone_number - Phone number to call
  * @param {string} [data.contact_name] - Contact name
@@ -15,90 +16,109 @@ import { api } from './client';
  * @returns {Promise<Object>}
  */
 export async function initiateCall(data) {
-  return api.post('/api/call-logs/', { number: data.phone_number, direction: 'outgoing', status: 'initiated', timestamp: new Date().toISOString() });
+  // Use VoIP cold-call initiate endpoint from API.yaml (line 7346)
+  return api.post('/api/voip/cold-call/initiate/', { 
+    phone: data.phone_number,
+    contact_name: data.contact_name 
+  });
 }
 
 /**
  * End active call
+ * Note: These call control endpoints don't exist in API.yaml
+ * Call control should be handled by WebRTC/SIP client (JsSIP)
  * @param {string} callId - Call ID
  * @returns {Promise<Object>}
  */
 export async function endCall(callId) {
-  return api.post(`/api/telephony/calls/${callId}/end/`);
+  console.warn('Call control endpoints not available in API. Use WebRTC client (JsSIP) for call control.');
+  throw new Error('Call control should be handled by WebRTC/SIP client.');
 }
 
 /**
  * Answer incoming call
+ * Note: Call control should be handled by WebRTC/SIP client (JsSIP)
  * @param {string} callId - Call ID
  * @returns {Promise<Object>}
  */
 export async function answerCall(callId) {
-  return api.post(`/api/telephony/calls/${callId}/answer/`);
+  console.warn('Call control should be handled by WebRTC/SIP client.');
+  throw new Error('Use WebRTC/SIP client (JsSIP) to answer calls.');
 }
 
 /**
  * Reject incoming call
+ * Note: Call control should be handled by WebRTC/SIP client (JsSIP)
  * @param {string} callId - Call ID
  * @returns {Promise<Object>}
  */
 export async function rejectCall(callId) {
-  return api.post(`/api/telephony/calls/${callId}/reject/`);
+  console.warn('Call control should be handled by WebRTC/SIP client.');
+  throw new Error('Use WebRTC/SIP client (JsSIP) to reject calls.');
 }
 
 /**
  * Hold/Unhold call
+ * Note: Call control should be handled by WebRTC/SIP client (JsSIP)
  * @param {string} callId - Call ID
  * @param {boolean} hold - True to hold, false to unhold
  * @returns {Promise<Object>}
  */
 export async function holdCall(callId, hold = true) {
-  return api.post(`/api/telephony/calls/${callId}/hold/`, { hold });
+  console.warn('Call control should be handled by WebRTC/SIP client.');
+  throw new Error('Use WebRTC/SIP client (JsSIP) for hold/unhold.');
 }
 
 /**
  * Mute/Unmute call
+ * Note: Call control should be handled by WebRTC/SIP client (JsSIP)
  * @param {string} callId - Call ID
  * @param {boolean} mute - True to mute, false to unmute
  * @returns {Promise<Object>}
  */
 export async function muteCall(callId, mute = true) {
-  return api.post(`/api/telephony/calls/${callId}/mute/`, { mute });
+  console.warn('Call control should be handled by WebRTC/SIP client.');
+  throw new Error('Use WebRTC/SIP client (JsSIP) for mute/unmute.');
 }
 
 /**
  * Transfer call
+ * Note: Call control should be handled by WebRTC/SIP client (JsSIP)
  * @param {string} callId - Call ID
  * @param {string} targetNumber - Target phone number
  * @returns {Promise<Object>}
  */
 export async function transferCall(callId, targetNumber) {
-  return api.post(`/api/telephony/calls/${callId}/transfer/`, {
-    target_number: targetNumber,
-  });
+  console.warn('Call control should be handled by WebRTC/SIP client.');
+  throw new Error('Use WebRTC/SIP client (JsSIP) for call transfer.');
 }
 
 /**
  * Get active call status
+ * Note: This endpoint doesn't exist in API.yaml
  * @param {string} callId - Call ID
  * @returns {Promise<Object>}
  */
 export async function getCallStatus(callId) {
-  return api.get(`/api/telephony/calls/${callId}/`);
+  console.warn('Call status endpoint not available. Use call queue instead.');
+  // Could use /api/voip/call-queue/ instead
+  throw new Error('Call status endpoint not available.');
 }
 
 /**
- * Get call history
+ * Get call history (uses VoIP call logs endpoint)
  * @param {Object} [params] - Query parameters
  * @param {number} [params.page] - Page number
  * @param {number} [params.page_size] - Items per page
- * @param {string} [params.call_type] - Filter by type (incoming, outgoing, missed)
+ * @param {string} [params.direction] - Filter by direction (inbound/outbound)
+ * @param {string} [params.status] - Filter by status
  * @param {string} [params.date_from] - Filter from date
  * @param {string} [params.date_to] - Filter to date
  * @returns {Promise<Object>}
  */
 export async function getCallHistory(params = {}) {
   try {
-    return await api.get('/api/call-logs/', { params });
+    return await api.get('/api/voip/call-logs/', { params });
   } catch (error) {
     // Call logs endpoint may not be available
     return { results: [], count: 0 };
@@ -107,32 +127,35 @@ export async function getCallHistory(params = {}) {
 
 /**
  * Get call recording
+ * Note: This endpoint doesn't exist in API.yaml
+ * Recordings might be stored in call logs
  * @param {string} callId - Call ID
  * @returns {Promise<Object>}
  */
 export async function getCallRecording(callId) {
-  return api.get(`/api/telephony/calls/${callId}/recording/`);
+  console.warn('Call recording endpoint not available. Check call log recording_url field.');
+  throw new Error('Call recording endpoint not available. Use call log recording_url.');
 }
 
 /**
- * Add note to call
- * @param {string} callId - Call ID
+ * Add note to call log
+ * @param {string|number} logId - Call log ID
  * @param {string} note - Note text
  * @returns {Promise<Object>}
  */
-export async function addCallNote(callId, note) {
-  return api.post(`/api/telephony/calls/${callId}/notes/`, { note });
+export async function addCallNote(logId, note) {
+  return api.post(`/api/voip/call-logs/${logId}/add-note/`, { note });
 }
 
 /**
- * Get telephony statistics
+ * Get telephony statistics (uses VoIP call statistics endpoint)
  * @param {Object} [params]
  * @param {string} [params.date_from]
  * @param {string} [params.date_to]
  * @returns {Promise<Object>}
  */
 export async function getTelephonyStats(params = {}) {
-  return api.get('/api/telephony/statistics/', { params });
+  return api.get('/api/voip/call-statistics/', { params });
 }
 
 /**
