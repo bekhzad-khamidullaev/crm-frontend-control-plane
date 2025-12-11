@@ -30,8 +30,9 @@ export default function RemindersList() {
         content_type: contentTypeFilter || undefined,
       };
       const res = await getReminders(params);
-      setData(res.results || []);
-      setPagination((prev) => ({ ...prev, total: res.count || 0 }));
+      const results = res.results || [];
+      setData(results);
+      setPagination((prev) => ({ ...prev, total: res.count || results.length }));
     } catch (error) {
       message.error('Failed to fetch reminders');
       console.error(error);

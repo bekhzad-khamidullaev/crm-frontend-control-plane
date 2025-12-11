@@ -1,5 +1,5 @@
 // JWT Token storage and authentication utilities
-const DEMO_MODE = (import.meta.env.VITE_DEMO_MODE ?? 'true') !== 'false';
+
 let _accessToken = null;
 let _refreshToken = null;
 const ACCESS_KEY = 'crm_access_token';
@@ -88,15 +88,7 @@ export function clearToken() {
  * @returns {boolean}
  */
 export function isAuthenticated() {
-  return DEMO_MODE || !!getToken();
-}
-
-/**
- * Check if running in demo mode
- * @returns {boolean}
- */
-export function isDemoMode() {
-  return DEMO_MODE;
+  return !!getToken();
 }
 
 /**

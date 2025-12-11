@@ -30,8 +30,9 @@ export default function CampaignsList() {
         segment: segmentFilter || undefined,
       };
       const res = await getCampaigns(params);
-      setData(res.results || []);
-      setPagination((prev) => ({ ...prev, total: res.count || 0 }));
+      const results = res.results || [];
+      setData(results);
+      setPagination((prev) => ({ ...prev, total: res.count || results.length }));
     } catch (error) {
       message.error('Failed to fetch campaigns');
       console.error(error);

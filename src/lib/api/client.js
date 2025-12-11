@@ -1,4 +1,10 @@
-import { getToken, getRefreshToken, setToken, clearToken, isTokenExpired } from './auth.js';
+import { 
+  getToken, 
+  getRefreshToken, 
+  setToken, 
+  clearToken, 
+  isTokenExpired
+} from './auth.js';
 
 // Allow runtime config injection (window.__APP_CONFIG__) in addition to Vite env
 const runtimeConfig = typeof window !== 'undefined' ? window.__APP_CONFIG__ || {} : {};
@@ -6,9 +12,14 @@ const BASE_URL = (import.meta.env.VITE_API_BASE_URL || runtimeConfig.apiBaseUrl 
 const TIMEOUT = Number(import.meta.env.VITE_API_TIMEOUT || runtimeConfig.apiTimeout || 15000);
 const IS_TEST = typeof process !== 'undefined' && process.env && process.env.NODE_ENV === 'test';
 
-function withTimeout(promise, ms) {
+function withTimeout(promise, ms, abortController) {
   return new Promise((resolve, reject) => {
-    const id = setTimeout(() => reject(new Error('Request timeout')), ms);
+    const id = setTimeout(() => {
+      if (abortController) {
+        abortController.abort();
+      }
+      reject(new Error('Request timeout'));
+    }, ms);
     promise.then((res) => { clearTimeout(id); resolve(res); })
            .catch((err) => { clearTimeout(id); reject(err); });
   });
@@ -88,7 +99,7 @@ async function refreshAccessToken() {
 /**
  * Main request function with automatic token refresh
  */
-async function request(method, path, { params, body, headers, retry = 1, _isRetry = false } = {}) {
+async function request(method, path, { params, body, headers, retry = 0, _isRetry = false, _retryCount = 0 } = {}) {
   // Skip token refresh for auth endpoints
   const isAuthEndpoint = path.includes('/token/') || path.includes('/auth/');
   
@@ -134,20 +145,25 @@ async function request(method, path, { params, body, headers, retry = 1, _isRetr
     finalHeaders.set('Content-Type', 'application/json');
   }
   
+  // Add JWT token for authentication
   if (token && !isAuthEndpoint) {
     finalHeaders.set('Authorization', `Bearer ${token}`);
   }
+
+  // Create AbortController for request cancellation
+  const abortController = new AbortController();
 
   const fetcher = fetch(url, {
     method,
     headers: finalHeaders,
     body: body ? (body instanceof FormData ? body : JSON.stringify(body)) : undefined,
-    credentials: 'include',
+    credentials: 'include', // Always include cookies for session auth
     mode: 'cors',
+    signal: abortController.signal,
   });
 
   try {
-    const res = await withTimeout(fetcher, TIMEOUT);
+    const res = await withTimeout(fetcher, TIMEOUT, abortController);
     const contentType = res.headers.get('content-type') || '';
     const isJson = contentType.includes('application/json');
     const data = isJson ? await res.json().catch(() => ({})) : await res.text();
@@ -164,7 +180,6 @@ async function request(method, path, { params, body, headers, retry = 1, _isRetr
         clearToken();
         if (typeof window !== 'undefined' && !window.location.hash.includes('/login')) {
           window.location.hash = '/login';
-          // Force reload to clear app state
           setTimeout(() => window.location.reload(), 100);
         }
         throw normalizeError(data, res);
@@ -205,7 +220,23 @@ async function request(method, path, { params, body, headers, retry = 1, _isRetr
     // Retry only GET for network errors (Error instances). Do not retry HTTP errors (object payloads)
     const isNetworkError = err instanceof Error;
     if (retry > 0 && method === 'GET' && isNetworkError) {
-      return request(method, path, { params, body, headers, retry: retry - 1, _isRetry });
+      // Add exponential backoff delay before retry
+      const delay = Math.min(1000 * Math.pow(2, _retryCount), 5000);
+      await new Promise(resolve => setTimeout(resolve, delay));
+      return request(method, path, { params, body, headers, retry: retry - 1, _isRetry, _retryCount: _retryCount + 1 });
+    }
+    
+    // Improve error message for network errors
+    if (isNetworkError && err.message === 'Failed to fetch') {
+      throw new Error('Cannot connect to server. Please check if the backend is running at ' + BASE_URL);
+    }
+    
+    // If we have a 403 error object (not network error), provide better message
+    if (err?.status === 403) {
+      const detail = err?.details?.detail || '';
+      if (detail.includes('Authentication credentials')) {
+        throw new Error('Authentication required. Please login to access this resource.');
+      }
     }
     // Bubble up normalized errors
     if (!(err instanceof Error) && err?.status) {
@@ -238,15 +269,30 @@ export const leadsApi = {
 };
 
 export const authApi = {
+  // JWT Authentication
   login: ({ username, password }) => api.post('/api/token/', { body: { username, password } }),
   refresh: ({ refresh }) => api.post('/api/token/refresh/', { body: { refresh } }),
   verify: ({ token }) => api.post('/api/token/verify/', { body: { token } }),
+  
+  // Auth token endpoint (alternative to /api/token/)
+  authToken: ({ username, password }) => api.post('/api/auth/token/', { body: { username, password } }),
+  
+  // Auth Statistics
+  authStats: () => api.get('/api/auth-stats/'),
 };
 
 export const usersApi = {
   list: (params) => api.get('/api/users/', { params }),
   retrieve: (id) => api.get(`/api/users/${id}/`),
   me: () => api.get('/api/users/me/'),
+};
+
+export const profilesApi = {
+  retrieve: (userId) => api.get(`/api/profiles/${userId}/`),
+  retrieveByUser: (user) => api.get(`/api/profiles/${user}/`), // Alternative: can be ID or username
+  me: () => api.get('/api/profiles/me/'),
+  uploadAvatar: (formData) => api.post('/api/profiles/me/avatar/', { body: formData }),
+  deleteAvatar: () => api.delete('/api/profiles/me/avatar/'),
 };
 
 export const contactsApi = {
@@ -324,11 +370,14 @@ export const chatApi = {
 };
 
 export const callLogsApi = {
+  // VoIP call logs endpoints
   list: (params) => api.get('/api/voip/call-logs/', { params }),
   retrieve: (logId) => api.get(`/api/voip/call-logs/${logId}/`),
   addNote: (logId, payload) => api.post(`/api/voip/call-logs/${logId}/add-note/`, { body: payload }),
-  // Note: POST, PUT, PATCH, DELETE not supported in API.yaml for call logs
-  // Call logs are read-only and created by VoIP system
+  
+  // Legacy call-logs endpoints (alternative paths)
+  listLegacy: (params) => api.get('/api/call-logs/', { params }),
+  retrieveLegacy: (id) => api.get(`/api/call-logs/${id}/`),
 };
 
 export const dashboardApi = {

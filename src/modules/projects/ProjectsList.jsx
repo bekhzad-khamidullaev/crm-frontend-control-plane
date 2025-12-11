@@ -1,31 +1,22 @@
 import React, { useState, useEffect } from 'react';
 import {
-  Table,
   Button,
   Space,
-  Input,
   Tag,
-  Popconfirm,
   message,
-  Card,
-  Typography,
   Avatar,
   Progress,
 } from 'antd';
 import {
-  PlusOutlined,
-  EditOutlined,
-  DeleteOutlined,
-  EyeOutlined,
-  SearchOutlined,
   FolderOutlined,
   TeamOutlined,
-  CalendarOutlined,
+  InboxOutlined,
 } from '@ant-design/icons';
 import { navigate } from '../../router';
 import { getProjects, deleteProject } from '../../lib/api/client';
-
-const { Title, Text } = Typography;
+import EnhancedTable from '../../components/ui-EnhancedTable.jsx';
+import TableToolbar from '../../components/ui-TableToolbar.jsx';
+import QuickActions from '../../components/QuickActions.jsx';
 
 function ProjectsList() {
   const [projects, setProjects] = useState([]);
@@ -277,37 +268,31 @@ function ProjectsList() {
 
   return (
     <div>
-      <div style={{ marginBottom: 16, display: 'flex', justifyContent: 'space-between' }}>
-        <Title level={2}>Проекты</Title>
-        <Button
-          type="primary"
-          icon={<PlusOutlined />}
-          onClick={() => navigate('/projects/new')}
-        >
-          Создать проект
-        </Button>
-      </div>
+      <TableToolbar
+        title="Проекты"
+        total={pagination.total}
+        loading={loading}
+        searchPlaceholder="Поиск по названию, описанию, клиенту..."
+        onSearch={handleSearch}
+        onCreate={() => navigate('/projects/new')}
+        onRefresh={() => fetchProjects(pagination.current, searchText)}
+        createButtonText="Создать проект"
+        showViewModeSwitch={false}
+        showExportButton={false}
+      />
 
-      <Card>
-        <Input.Search
-          placeholder="Поиск по названию, описанию, клиенту..."
-          allowClear
-          enterButton={<SearchOutlined />}
-          size="large"
-          onSearch={handleSearch}
-          style={{ marginBottom: 16 }}
-        />
-
-        <Table
-          columns={columns}
-          dataSource={projects}
-          rowKey="id"
-          loading={loading}
-          pagination={pagination}
-          onChange={handleTableChange}
-          scroll={{ x: 1600 }}
-        />
-      </Card>
+      <EnhancedTable
+        columns={columns}
+        dataSource={projects}
+        loading={loading}
+        pagination={pagination}
+        onChange={handleTableChange}
+        scroll={{ x: 1600 }}
+        showTotal={true}
+        showSizeChanger={true}
+        emptyText="Нет проектов"
+        emptyDescription="Создайте первый проект"
+      />
     </div>
   );
 }

@@ -15,10 +15,12 @@ export { default as InstagramConnect } from './InstagramConnect.jsx';
 export { default as TelegramConnect } from './TelegramConnect.jsx';
 export { default as TelephonySettings } from './TelephonySettings.jsx';
 export { default as VoIPConnectionsList } from './VoIPConnectionsList.jsx';
+export { default as TableToolbar } from './ui-TableToolbar.jsx';
 export { default as SMSSettings } from './SMSSettings.jsx';
 export { CallsActivityChart, CallsDistributionChart, CallsStatusChart, CallsDurationChart } from './CallsCharts.jsx';
 
 // UI Components (React with default exports)
+export { default as EnhancedTable } from './ui-EnhancedTable.jsx';
 export { default as ReferenceSelect } from './ui-ReferenceSelect.jsx';
 export { default as BulkActions } from './ui-BulkActions.jsx';
 export { default as ClickToCall } from './ui-ClickToCall.jsx';
@@ -27,6 +29,7 @@ export { default as CallTimer } from './ui-CallTimer.jsx';
 export { default as ChatInput } from './ui-ChatInput.jsx';
 export { default as ChatMessage } from './ui-ChatMessage.jsx';
 export { default as Layout } from './ui-Layout.jsx';
+export { default as QuickActions } from './QuickActions.jsx';
 
 // Widgets
 export { default as RemindersWidget } from './RemindersWidget.jsx';

@@ -1,32 +1,23 @@
 import React, { useState, useEffect } from 'react';
 import {
-  Table,
   Button,
   Space,
-  Input,
   Tag,
-  Popconfirm,
   message,
-  Card,
-  Typography,
   Avatar,
   Checkbox,
   Progress,
 } from 'antd';
 import {
-  PlusOutlined,
-  EditOutlined,
-  DeleteOutlined,
-  EyeOutlined,
-  SearchOutlined,
   UserOutlined,
-  CalendarOutlined,
-  ClockCircleOutlined,
+  CheckOutlined,
+  CopyOutlined,
 } from '@ant-design/icons';
 import { navigate } from '../../router';
 import { getTasks, deleteTask } from '../../lib/api/client';
-
-const { Title, Text } = Typography;
+import EnhancedTable from '../../components/ui-EnhancedTable.jsx';
+import TableToolbar from '../../components/ui-TableToolbar.jsx';
+import QuickActions from '../../components/QuickActions.jsx';
 
 function TasksList() {
   const [tasks, setTasks] = useState([]);
@@ -300,40 +291,34 @@ function TasksList() {
 
   return (
     <div>
-      <div style={{ marginBottom: 16, display: 'flex', justifyContent: 'space-between' }}>
-        <Title level={2}>Задачи</Title>
-        <Button
-          type="primary"
-          icon={<PlusOutlined />}
-          onClick={() => navigate('/tasks/new')}
-        >
-          Создать задачу
-        </Button>
-      </div>
+      <TableToolbar
+        title="Задачи"
+        total={pagination.total}
+        loading={loading}
+        searchPlaceholder="Поиск по названию, описанию..."
+        onSearch={handleSearch}
+        onCreate={() => navigate('/tasks/new')}
+        onRefresh={() => fetchTasks(pagination.current, searchText)}
+        createButtonText="Создать задачу"
+        showViewModeSwitch={false}
+        showExportButton={false}
+      />
 
-      <Card>
-        <Input.Search
-          placeholder="Поиск по названию, описанию..."
-          allowClear
-          enterButton={<SearchOutlined />}
-          size="large"
-          onSearch={handleSearch}
-          style={{ marginBottom: 16 }}
-        />
-
-        <Table
-          columns={columns}
-          dataSource={tasks}
-          rowKey="id"
-          loading={loading}
-          pagination={pagination}
-          onChange={handleTableChange}
-          scroll={{ x: 1400 }}
-          rowClassName={(record) =>
-            record.status === 'completed' ? 'row-completed' : ''
-          }
-        />
-      </Card>
+      <EnhancedTable
+        columns={columns}
+        dataSource={tasks}
+        loading={loading}
+        pagination={pagination}
+        onChange={handleTableChange}
+        scroll={{ x: 1400 }}
+        rowClassName={(record) =>
+          record.status === 'completed' ? 'row-completed' : ''
+        }
+        showTotal={true}
+        showSizeChanger={true}
+        emptyText="Нет задач"
+        emptyDescription="Создайте первую задачу"
+      />
 
       <style jsx>{`
         .row-completed {

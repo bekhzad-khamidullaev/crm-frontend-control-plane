@@ -111,7 +111,9 @@ function DrillDownModal({
       {/* Таблица данных */}
       {loading ? (
         <div style={{ textAlign: 'center', padding: '40px 0' }}>
-          <Spin size="large" tip="Загрузка данных..." />
+          <Spin size="large" tip="Загрузка данных..." spinning={true}>
+            <div style={{ minHeight: '100px' }}></div>
+          </Spin>
         </div>
       ) : data.length === 0 ? (
         <Empty description="Нет данных для отображения" />

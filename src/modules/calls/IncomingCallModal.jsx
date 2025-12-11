@@ -102,8 +102,8 @@ function IncomingCallModal({ visible, callData, onAnswer, onReject }) {
 
         {/* Caller information */}
         {searchingContact ? (
-          <Spin tip="Поиск контакта...">
-            <div style={{ padding: '20px' }}></div>
+          <Spin tip="Поиск контакта..." spinning={true}>
+            <div style={{ minHeight: '80px' }}></div>
           </Spin>
         ) : contactInfo ? (
           <div style={{ marginBottom: 20 }}>

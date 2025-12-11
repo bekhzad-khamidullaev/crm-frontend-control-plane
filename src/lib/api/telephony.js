@@ -426,3 +426,22 @@ export async function getRecentIncomingCalls(limit = 10) {
 export async function getMissedCalls(params = {}) {
   return getIncomingCalls({ ...params, status: 'missed' });
 }
+// Cold Call Bulk and Schedule endpoints
+
+/**
+ * Bulk create cold calls
+ * @param {Object} data - Bulk cold call data
+ * @returns {Promise<Object>}
+ */
+export async function bulkCreateColdCalls(data) {
+  return api.post('/api/voip/cold-call/bulk/', data);
+}
+
+/**
+ * Schedule cold calls
+ * @param {Object} data - Schedule data
+ * @returns {Promise<Object>}
+ */
+export async function scheduleColdCalls(data) {
+  return api.post('/api/voip/cold-call/schedule/', data);
+}

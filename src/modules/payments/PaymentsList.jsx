@@ -1,15 +1,13 @@
 import { useState, useEffect } from 'react';
-import { Table, Button, Space, Tag, Input, Select, message, Modal, Card } from 'antd';
-import { PlusOutlined, EditOutlined, DeleteOutlined, EyeOutlined, SearchOutlined, DollarOutlined, UploadOutlined } from '@ant-design/icons';
+import { Button, Space, Tag, Select, message, Modal } from 'antd';
+import { DollarOutlined, PrinterOutlined } from '@ant-design/icons';
 import { getPayments, deletePayment, updatePayment } from '../../lib/api/payments';
 import { navigate } from '../../router';
 import dayjs from 'dayjs';
-// Temporarily commented to debug white screen
-// import { ExportButton, ImportModal, BulkActions } from '../../components';
-// import { formatters } from '../../lib/utils/export';
 import BulkActions from '../../components/ui-BulkActions.jsx';
-
-const { Search } = Input;
+import EnhancedTable from '../../components/ui-EnhancedTable.jsx';
+import TableToolbar from '../../components/ui-TableToolbar.jsx';
+import QuickActions from '../../components/QuickActions.jsx';
 
 export default function PaymentsList() {
   const [data, setData] = useState([]);
@@ -36,8 +34,9 @@ export default function PaymentsList() {
         status: statusFilter || undefined,
       };
       const res = await getPayments(params);
-      setData(res.results || []);
-      setPagination((prev) => ({ ...prev, total: res.count || 0 }));
+      const results = res.results || [];
+      setData(results);
+      setPagination((prev) => ({ ...prev, total: res.count || results.length }));
     } catch (error) {
       message.error('Failed to fetch payments');
       console.error(error);
@@ -256,77 +255,71 @@ export default function PaymentsList() {
   };
 
   return (
-    <Card
-      title={
-        <Space>
-          <DollarOutlined />
-          <span>Payments</span>
-        </Space>
-      }
-      extra={
-        <Button
-          type="primary"
-          icon={<PlusOutlined />}
-          onClick={() => navigate('/payments/new')}
-        >
-          New Payment
-        </Button>
-      }
-    >
-      <Space direction="vertical" size="middle" style={{ width: '100%' }}>
-        <Space wrap>
-          <Search
-            placeholder="Search payments..."
-            allowClear
-            enterButton={<SearchOutlined />}
-            style={{ width: 300 }}
-            onSearch={setSearchText}
-          />
-          <Select
-            placeholder="Filter by Currency"
-            style={{ width: 150 }}
-            allowClear
-            onChange={setCurrencyFilter}
-            value={currencyFilter}
-          >
-            <Select.Option value="USD">USD</Select.Option>
-            <Select.Option value="EUR">EUR</Select.Option>
-            <Select.Option value="GBP">GBP</Select.Option>
-            <Select.Option value="UZS">UZS</Select.Option>
-          </Select>
-          <Select
-            placeholder="Filter by Status"
-            style={{ width: 150 }}
-            allowClear
-            onChange={setStatusFilter}
-            value={statusFilter}
-          >
-            <Select.Option value="pending">Pending</Select.Option>
-            <Select.Option value="completed">Completed</Select.Option>
-            <Select.Option value="failed">Failed</Select.Option>
-            <Select.Option value="cancelled">Cancelled</Select.Option>
-          </Select>
-        </Space>
+    <div>
+      <TableToolbar
+        title="Платежи"
+        total={pagination.total}
+        loading={loading}
+        searchPlaceholder="Поиск платежей..."
+        onSearch={setSearchText}
+        onCreate={() => navigate('/payments/new')}
+        onRefresh={fetchData}
+        filters={[
+          {
+            key: 'currency',
+            placeholder: 'Валюта',
+            value: currencyFilter,
+            options: [
+              { label: 'USD', value: 'USD' },
+              { label: 'EUR', value: 'EUR' },
+              { label: 'GBP', value: 'GBP' },
+              { label: 'UZS', value: 'UZS' },
+            ],
+            width: 120,
+          },
+          {
+            key: 'status',
+            placeholder: 'Статус',
+            value: statusFilter,
+            options: [
+              { label: 'Ожидание', value: 'pending' },
+              { label: 'Завершен', value: 'completed' },
+              { label: 'Ошибка', value: 'failed' },
+              { label: 'Отменен', value: 'cancelled' },
+            ],
+            width: 130,
+          },
+        ]}
+        onFilterChange={(key, value) => {
+          if (key === 'currency') setCurrencyFilter(value);
+          if (key === 'status') setStatusFilter(value);
+        }}
+        createButtonText="Новый платеж"
+        showViewModeSwitch={false}
+        showExportButton={false}
+      />
 
-        <Table
-          columns={columns}
-          dataSource={data}
-          loading={loading}
-          rowKey="id"
-          pagination={pagination}
-          onChange={handleTableChange}
-          scroll={{ x: 1000 }}
-          rowSelection={rowSelection}
-        />
-      </Space>
+      <EnhancedTable
+        columns={columns}
+        dataSource={data}
+        loading={loading}
+        pagination={pagination}
+        onChange={handleTableChange}
+        rowSelection={rowSelection}
+        scroll={{ x: 1000 }}
+        showTotal={true}
+        showSizeChanger={true}
+        emptyText="Нет платежей"
+        emptyDescription="Создайте первый платеж"
+      />
 
       <BulkActions
         selectedRowKeys={selectedRowKeys}
         onClearSelection={() => setSelectedRowKeys([])}
         onDelete={handleBulkDelete}
         onStatusChange={handleBulkStatusChange}
-        entityName="payments"
+        entityName="платежей"
       />
-    </Card>
+    </div>
   );
 }

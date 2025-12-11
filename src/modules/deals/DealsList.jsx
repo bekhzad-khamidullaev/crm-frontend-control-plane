@@ -1,46 +1,42 @@
 import React, { useState, useEffect } from 'react';
 import {
-  Table,
   Button,
   Space,
-  Input,
   Tag,
-  Popconfirm,
   message,
-  Card,
-  Typography,
   Progress,
   Avatar,
+  Modal,
+  Select,
+  Tooltip,
 } from 'antd';
 import {
-  PlusOutlined,
-  EditOutlined,
-  DeleteOutlined,
-  EyeOutlined,
-  SearchOutlined,
   DollarOutlined,
   UserOutlined,
   ShopOutlined,
-  PhoneOutlined,
-  BarChartOutlined,
+  InboxOutlined,
 } from '@ant-design/icons';
 import { navigate } from '../../router';
-import { getDeals, deleteDeal } from '../../lib/api/client';
+import { getDeals, deleteDeal, dealsApi } from '../../lib/api/client';
 import CallButton from '../../components/CallButton';
-import DealsKPI from './DealsKPI.jsx';
-
-const { Title, Text } = Typography;
+import QuickActions from '../../components/QuickActions';
+import BulkActions from '../../components/ui-BulkActions';
+import EnhancedTable from '../../components/ui-EnhancedTable.jsx';
+import TableToolbar from '../../components/ui-TableToolbar.jsx';
+import { exportAndDownload } from '../../lib/api/export';
 
 function DealsList() {
   const [deals, setDeals] = useState([]);
   const [loading, setLoading] = useState(false);
   const [searchText, setSearchText] = useState('');
-  const [showKPI, setShowKPI] = useState(true);
   const [pagination, setPagination] = useState({
     current: 1,
     pageSize: 10,
     total: 0,
   });
+  const [selectedRowKeys, setSelectedRowKeys] = useState([]);
+  const [stageChangeModalVisible, setStageChangeModalVisible] = useState(false);
+  const [bulkStage, setBulkStage] = useState('');
 
   const fetchDeals = async (page = 1, search = '') => {
     setLoading(true);
@@ -128,8 +124,78 @@ function DealsList() {
     }
   };
 
-  const handleTableChange = (newPagination) => {
+  const handleTableChange = (newPagination, filters, sorter) => {
     fetchDeals(newPagination.current, searchText);
+  };
+
+  // Bulk actions handlers
+  const handleBulkDelete = async (ids) => {
+    try {
+      await Promise.all(ids.map(id => deleteDeal(id)));
+      message.success(`Удалено ${ids.length} сделок`);
+      setSelectedRowKeys([]);
+      fetchDeals(pagination.current, searchText);
+    } catch (error) {
+      message.error('Ошибка массового удаления');
+    }
+  };
+
+  const handleBulkStageChange = () => {
+    setStageChangeModalVisible(true);
+  };
+
+  const handleStageChangeConfirm = async () => {
+    if (!bulkStage) {
+      message.error('Выберите стадию');
+      return;
+    }
+
+    try {
+      await Promise.all(
+        selectedRowKeys.map(id =>
+          dealsApi.patch(id, { stage: bulkStage })
+        )
+      );
+      message.success(`Стадия изменена для ${selectedRowKeys.length} сделок`);
+      setSelectedRowKeys([]);
+      setStageChangeModalVisible(false);
+      setBulkStage('');
+      fetchDeals(pagination.current, searchText);
+    } catch (error) {
+      message.error('Ошибка изменения стадии');
+    }
+  };
+
+  const handleBulkExport = async () => {
+    try {
+      await exportAndDownload('deals', {
+        format: 'csv',
+        filters: { id__in: selectedRowKeys.join(',') },
+      });
+      message.success('Данные экспортированы');
+    } catch (error) {
+      message.error('Ошибка экспорта данных');
+    }
+  };
+
+  const handleDuplicate = async (record) => {
+    try {
+      const newDeal = { ...record };
+      delete newDeal.id;
+      newDeal.title = `${record.title} (копия)`;
+      await dealsApi.create(newDeal);
+      message.success('Сделка дублирована');
+      fetchDeals(pagination.current, searchText);
+    } catch (error) {
+      message.error('Ошибка дублирования сделки');
+    }
+  };
+
+  const rowSelection = {
+    selectedRowKeys,
+    onChange: (newSelectedRowKeys) => {
+      setSelectedRowKeys(newSelectedRowKeys);
+    },
   };
 
   const stageConfig = {
@@ -142,17 +208,41 @@ function DealsList() {
     closed_lost: { color: 'red', text: 'Проиграна' },
   };
 
+  // Обработчики для QuickActions
+  const handleChangeStage = async (record, newStage) => {
+    try {
+      await dealsApi.patch(record.id, { stage: newStage });
+      message.success('Стадия сделки изменена');
+      fetchDeals(pagination.current, searchText);
+    } catch (error) {
+      message.error('Ошибка изменения стадии');
+    }
+  };
+
+  const handleArchive = async (record) => {
+    try {
+      await dealsApi.patch(record.id, { is_archived: true });
+      message.success('Сделка архивирована');
+      fetchDeals(pagination.current, searchText);
+    } catch (error) {
+      message.error('Ошибка архивирования');
+    }
+  };
+
   const columns = [
     {
       title: 'Название',
       dataIndex: 'title',
       key: 'title',
+      width: 200,
       render: (title, record) => (
         <div>
           <div style={{ fontWeight: 500 }}>{title}</div>
-          <Text type="secondary" style={{ fontSize: 12 }}>
-            {record.company}
-          </Text>
+          {record.company && (
+            <div style={{ fontSize: 12, color: '#999' }}>
+              <ShopOutlined /> {record.company}
+            </div>
+          )}
         </div>
       ),
       sorter: (a, b) => a.title.localeCompare(b.title),
@@ -161,10 +251,11 @@ function DealsList() {
       title: 'Сумма',
       dataIndex: 'amount',
       key: 'amount',
+      width: 130,
       render: (amount) => (
         <Space>
           <DollarOutlined style={{ color: '#52c41a' }} />
-          <Text strong>{amount.toLocaleString('ru-RU')} ₽</Text>
+          <span style={{ fontWeight: 500 }}>{amount.toLocaleString('ru-RU')} ₽</span>
         </Space>
       ),
       sorter: (a, b) => a.amount - b.amount,
@@ -173,6 +264,7 @@ function DealsList() {
       title: 'Стадия',
       dataIndex: 'stage',
       key: 'stage',
+      width: 140,
       render: (stage) => {
         const config = stageConfig[stage] || stageConfig.lead;
         return <Tag color={config.color}>{config.text}</Tag>;
@@ -187,35 +279,29 @@ function DealsList() {
       title: 'Вероятность',
       dataIndex: 'probability',
       key: 'probability',
+      width: 120,
       render: (probability) => (
-        <div style={{ width: 100 }}>
-          <Progress
-            percent={probability}
-            size="small"
-            status={probability >= 70 ? 'success' : probability >= 40 ? 'normal' : 'exception'}
-          />
-        </div>
+        <Progress
+          percent={probability}
+          size="small"
+          status={probability >= 70 ? 'success' : probability >= 40 ? 'normal' : 'exception'}
+        />
       ),
       sorter: (a, b) => a.probability - b.probability,
     },
     {
       title: 'Контакт',
       key: 'contact',
+      width: 180,
       render: (_, record) => (
         <Space>
           <Avatar size="small" icon={<UserOutlined />} />
-          <Text>{record.contact}</Text>
-          {record.contact_phone && (
-            <CallButton
-              phone={record.contact_phone}
-              name={record.contact}
-              entityType="deal"
-              entityId={record.id}
-              size="small"
-              type="link"
-              icon={true}
-            />
-          )}
+          <div>
+            <div style={{ fontSize: 13 }}>{record.contact}</div>
+            {record.contact_phone && (
+              <div style={{ fontSize: 11, color: '#999' }}>{record.contact_phone}</div>
+            )}
+          </div>
         </Space>
       ),
     },
@@ -223,29 +309,28 @@ function DealsList() {
       title: 'Ответственный',
       dataIndex: 'owner',
       key: 'owner',
-      sorter: (a, b) => a.owner.localeCompare(b.owner),
+      width: 140,
+      sorter: (a, b) => (a.owner || '').localeCompare(b.owner || ''),
     },
     {
       title: 'Закрытие',
       dataIndex: 'expected_close_date',
       key: 'expected_close_date',
+      width: 120,
       render: (date) => {
+        if (!date) return '-';
         const closeDate = new Date(date);
         const today = new Date();
         const daysLeft = Math.ceil((closeDate - today) / (1000 * 60 * 60 * 24));
         
         return (
           <div>
-            <div>{closeDate.toLocaleDateString('ru-RU')}</div>
-            {daysLeft > 0 && (
-              <Text type="secondary" style={{ fontSize: 12 }}>
-                через {daysLeft} дн.
-              </Text>
+            <div style={{ fontSize: 13 }}>{closeDate.toLocaleDateString('ru-RU')}</div>
+            {daysLeft > 0 && daysLeft <= 7 && (
+              <div style={{ fontSize: 11, color: '#faad14' }}>через {daysLeft} дн.</div>
             )}
             {daysLeft < 0 && (
-              <Text type="danger" style={{ fontSize: 12 }}>
-                просрочено
-              </Text>
+              <div style={{ fontSize: 11, color: '#ff4d4f' }}>просрочено</div>
             )}
           </div>
         );
@@ -255,82 +340,145 @@ function DealsList() {
     {
       title: 'Действия',
       key: 'actions',
-      width: 200,
+      width: 100,
+      fixed: 'right',
+      align: 'center',
       render: (_, record) => (
         <Space size="small">
-          <Button
-            type="link"
-            icon={<EyeOutlined />}
-            onClick={() => navigate(`/deals/${record.id}`)}
-          >
-            Просмотр
-          </Button>
-          <Button
-            type="link"
-            icon={<EditOutlined />}
-            onClick={() => navigate(`/deals/${record.id}/edit`)}
-          >
-            Редактировать
-          </Button>
-          <Popconfirm
-            title="Удалить эту сделку?"
-            description="Это действие нельзя отменить"
-            onConfirm={() => handleDelete(record.id)}
-            okText="Да"
-            cancelText="Нет"
-          >
-            <Button type="link" danger icon={<DeleteOutlined />}>
-              Удалить
-            </Button>
-          </Popconfirm>
+          {record.contact_phone && (
+            <CallButton
+              phone={record.contact_phone}
+              name={record.contact}
+              entityType="deal"
+              entityId={record.id}
+              size="small"
+            />
+          )}
+          <QuickActions
+            record={record}
+            onView={(r) => navigate(`/deals/${r.id}`)}
+            onEdit={(r) => navigate(`/deals/${r.id}/edit`)}
+            onDelete={(r) => handleDelete(r.id)}
+            onDuplicate={handleDuplicate}
+            onCall={record.contact_phone ? (r) => window.open(`tel:${r.contact_phone}`) : null}
+            onChangeStatus={(r) => {
+              Modal.confirm({
+                title: 'Изменить стадию',
+                content: (
+                  <Select
+                    id="stage-select"
+                    style={{ width: '100%', marginTop: 16 }}
+                    placeholder="Выберите стадию"
+                    options={Object.keys(stageConfig).map(key => ({
+                      label: stageConfig[key].text,
+                      value: key,
+                    }))}
+                  />
+                ),
+                onOk: () => {
+                  const newStage = document.getElementById('stage-select')?.value;
+                  if (newStage) handleChangeStage(r, newStage);
+                },
+              });
+            }}
+            onArchive={handleArchive}
+          />
         </Space>
       ),
     },
   ];
 
+  const handleExport = async (format) => {
+    try {
+      await exportAndDownload('deals', {
+        format: format === 'excel' ? 'xlsx' : 'csv',
+        filters: selectedRowKeys.length > 0 ? { id__in: selectedRowKeys.join(',') } : {},
+      });
+      message.success(`Данные экспортированы в ${format.toUpperCase()}`);
+    } catch (error) {
+      message.error('Ошибка экспорта данных');
+    }
+  };
+
+  // Фильтры для toolbar
+  const stageFilters = Object.keys(stageConfig).map(key => ({
+    label: stageConfig[key].text,
+    value: key,
+  }));
+
   return (
     <div>
-      <div style={{ marginBottom: 16, display: 'flex', justifyContent: 'space-between' }}>
-        <Title level={2}>Сделки</Title>
-        <Space>
-          <Button
-            icon={<BarChartOutlined />}
-            onClick={() => setShowKPI(!showKPI)}
-          >
-            {showKPI ? 'Скрыть статистику' : 'Показать статистику'}
-          </Button>
-          <Button
-            type="primary"
-            icon={<PlusOutlined />}
-            onClick={() => navigate('/deals/new')}
-          >
-            Создать сделку
-          </Button>
-        </Space>
-      </div>
+      <TableToolbar
+        title="Сделки"
+        total={pagination.total}
+        loading={loading}
+        searchPlaceholder="Поиск по названию, компании, контакту..."
+        onSearch={handleSearch}
+        onCreate={() => navigate('/deals/new')}
+        onExport={handleExport}
+        onRefresh={() => fetchDeals(pagination.current, searchText)}
+        filters={[
+          {
+            key: 'stage',
+            placeholder: 'Стадия',
+            options: stageFilters,
+            width: 150,
+          },
+        ]}
+        onFilterChange={(key, value) => {
+          // Здесь можно добавить логику фильтрации
+          message.info(`Фильтр ${key}: ${value}`);
+        }}
+        createButtonText="Создать сделку"
+        showViewModeSwitch={false}
+      />
 
-      {showKPI && <DealsKPI deals={deals} />}
+      <EnhancedTable
+        columns={columns}
+        dataSource={deals}
+        loading={loading}
+        pagination={pagination}
+        onChange={handleTableChange}
+        rowSelection={rowSelection}
+        scroll={{ x: 1500 }}
+        showTotal={true}
+        showSizeChanger={true}
+        showQuickJumper={true}
+        emptyText="Нет сделок"
+        emptyDescription="Создайте первую сделку или измените параметры поиска"
+      />
 
-      <Card>
-        <Input.Search
-          placeholder="Поиск по названию, компании, контакту..."
-          allowClear
-          enterButton={<SearchOutlined />}
-          size="large"
-          onSearch={handleSearch}
-          style={{ marginBottom: 16 }}
-        />
+      <BulkActions
+        selectedRowKeys={selectedRowKeys}
+        onClearSelection={() => setSelectedRowKeys([])}
+        onDelete={handleBulkDelete}
+        onStatusChange={handleBulkStageChange}
+        onExport={handleBulkExport}
+        entityName="сделок"
+      />
 
-        <Table
-          columns={columns}
-          dataSource={deals}
-          rowKey="id"
-          loading={loading}
-          pagination={pagination}
-          onChange={handleTableChange}
-          scroll={{ x: 1400 }}
-        />
-      </Card>
+      <Modal
+        title="Изменить стадию сделок"
+        open={stageChangeModalVisible}
+        onCancel={() => setStageChangeModalVisible(false)}
+        onOk={handleStageChangeConfirm}
+        okText="Применить"
+        cancelText="Отмена"
+      >
+        <p>Изменить стадию для {selectedRowKeys.length} выбранных сделок</p>
+        <Select
+          style={{ width: '100%' }}
+          placeholder="Выберите стадию"
+          value={bulkStage}
+          onChange={setBulkStage}
+        >
+          {Object.keys(stageConfig).map(key => (
+            <Select.Option key={key} value={key}>
+              {stageConfig[key].text}
+            </Select.Option>
+          ))}
+        </Select>
+      </Modal>
     </div>
   );
 }

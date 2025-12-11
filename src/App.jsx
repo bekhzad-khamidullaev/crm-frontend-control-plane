@@ -33,7 +33,6 @@ import IncomingCallModal from './modules/calls/IncomingCallModal.jsx';
 
 // Lazy load all page components for better code splitting
 const Dashboard = lazy(() => import('./pages/dashboard.jsx'));
-const AnalyticsPage = lazy(() => import('./pages/analytics-page.jsx'));
 const LoginPage = lazy(() => import('./pages/login.jsx'));
 
 // Leads module
@@ -303,12 +302,6 @@ function App() {
       onClick: () => navigate('/dashboard'),
     },
     {
-      key: 'analytics',
-      icon: <BarChartOutlined />,
-      label: t('nav.analytics') || 'Аналитика',
-      onClick: () => navigate('/analytics'),
-    },
-    {
       key: 'leads',
       icon: <UserOutlined />,
       label: t('nav.leads') || 'Leads',
@@ -404,7 +397,6 @@ function App() {
 
   const getSelectedKey = () => {
     const name = route.name;
-    if (name === 'analytics') return 'analytics';
     if (name.startsWith('leads')) return 'leads';
     if (name.startsWith('contacts')) return 'contacts';
     if (name.startsWith('companies')) return 'companies';
@@ -424,8 +416,6 @@ function App() {
     switch (route.name) {
       case 'dashboard':
         return <Dashboard />;
-      case 'analytics':
-        return <AnalyticsPage />;
       case 'leads-list':
         return <LeadsList />;
       case 'leads-new':
@@ -635,7 +625,9 @@ function App() {
         >
           <Suspense fallback={
             <div style={{ textAlign: 'center', padding: '50px' }}>
-              <Spin size="large" tip={t('loading')} />
+              <Spin size="large" tip={t('loading')} spinning={true}>
+                <div style={{ minHeight: '100px' }}></div>
+              </Spin>
             </div>
           }>
             {renderContent()}

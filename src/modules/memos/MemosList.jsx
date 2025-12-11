@@ -29,8 +29,9 @@ export default function MemosList() {
         draft: draftFilter,
       };
       const res = await getMemos(params);
-      setData(res.results || []);
-      setPagination((prev) => ({ ...prev, total: res.count || 0 }));
+      const results = res.results || [];
+      setData(results);
+      setPagination((prev) => ({ ...prev, total: res.count || results.length }));
     } catch (error) {
       message.error('Failed to fetch memos');
       console.error(error);
