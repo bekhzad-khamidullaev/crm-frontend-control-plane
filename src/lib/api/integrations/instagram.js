@@ -1,9 +1,10 @@
 /**
- * Instagram Integration API
- * Instagram Business API integration
+ * Instagram Integration API (not part of Django-CRM API.yaml)
+ * Disabled to prevent unsupported calls.
  */
 
-import { api } from '../client';
+const notSupported = (feature) =>
+  Promise.reject(new Error(`${feature} is not available in Django-CRM API.yaml (integrations/* endpoints missing).`));
 
 /**
  * Connect Instagram account
@@ -12,25 +13,19 @@ import { api } from '../client';
  * @param {string} data.instagram_business_account_id - Business account ID
  * @returns {Promise<Object>}
  */
-export async function connectInstagram(data) {
-  return api.post('/api/integrations/instagram/connect/', data);
-}
+export const connectInstagram = () => notSupported('Instagram connect');
 
 /**
  * Disconnect Instagram account
  * @returns {Promise<void>}
  */
-export async function disconnectInstagram() {
-  return api.post('/api/integrations/instagram/disconnect/');
-}
+export const disconnectInstagram = () => notSupported('Instagram disconnect');
 
 /**
  * Get Instagram connection status
  * @returns {Promise<Object>}
  */
-export async function getInstagramStatus() {
-  return api.get('/api/integrations/instagram/status/');
-}
+export const getInstagramStatus = () => notSupported('Instagram status');
 
 /**
  * Get Instagram messages/comments
@@ -39,9 +34,7 @@ export async function getInstagramStatus() {
  * @param {number} [params.page_size]
  * @returns {Promise<Object>}
  */
-export async function getInstagramMessages(params = {}) {
-  return api.get('/api/integrations/instagram/messages/', { params });
-}
+export const getInstagramMessages = () => notSupported('Instagram messages');
 
 /**
  * Send Instagram direct message
@@ -50,9 +43,7 @@ export async function getInstagramMessages(params = {}) {
  * @param {string} data.message - Message text
  * @returns {Promise<Object>}
  */
-export async function sendInstagramMessage(data) {
-  return api.post('/api/integrations/instagram/send-message/', data);
-}
+export const sendInstagramMessage = () => notSupported('Instagram send message');
 
 /**
  * Reply to Instagram comment
@@ -61,22 +52,16 @@ export async function sendInstagramMessage(data) {
  * @param {string} data.message - Reply text
  * @returns {Promise<Object>}
  */
-export async function replyToInstagramComment(data) {
-  return api.post('/api/integrations/instagram/reply-comment/', data);
-}
+export const replyToInstagramComment = () => notSupported('Instagram reply comment');
 
 /**
  * Sync Instagram contacts
  * @returns {Promise<Object>}
  */
-export async function syncInstagramContacts() {
-  return api.post('/api/integrations/instagram/sync-contacts/');
-}
+export const syncInstagramContacts = () => notSupported('Instagram sync contacts');
 
 /**
  * Get Instagram statistics
  * @returns {Promise<Object>}
  */
-export async function getInstagramStats() {
-  return api.get('/api/integrations/instagram/statistics/');
-}
+export const getInstagramStats = () => notSupported('Instagram statistics');

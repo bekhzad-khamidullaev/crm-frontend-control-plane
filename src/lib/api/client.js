@@ -1,250 +1,388 @@
-import { 
-  getToken, 
-  getRefreshToken, 
-  setToken, 
-  clearToken, 
-  isTokenExpired
+import {
+  clearToken,
+  getRefreshToken,
+  getToken,
+  isTokenExpired,
+  isTokenTooLarge,
+  MAX_HEADER_SAFE_LENGTH,
+  setToken,
 } from './auth.js';
 
-// Allow runtime config injection (window.__APP_CONFIG__) in addition to Vite env
+// Runtime config (injected via window.__APP_CONFIG__ for deployments outside Vite)
 const runtimeConfig = typeof window !== 'undefined' ? window.__APP_CONFIG__ || {} : {};
-const BASE_URL = (import.meta.env.VITE_API_BASE_URL || runtimeConfig.apiBaseUrl || 'http://localhost:8000').replace(/\/$/, '');
-const TIMEOUT = Number(import.meta.env.VITE_API_TIMEOUT || runtimeConfig.apiTimeout || 15000);
-const IS_TEST = typeof process !== 'undefined' && process.env && process.env.NODE_ENV === 'test';
+const rawBase =
+  import.meta.env.VITE_API_BASE_URL ||
+  runtimeConfig.apiBaseUrl ||
+  runtimeConfig.BASE_URL ||
+  '';
+const sanitizedBase = (rawBase || '').replace(/\/$/, '');
+const fallbackBase = typeof window !== 'undefined' ? window.location.origin : 'http://localhost:8000';
+const API_BASE_URL = sanitizedBase || fallbackBase;
+const API_PREFIX = (import.meta.env.VITE_API_PREFIX || runtimeConfig.apiPrefix || '').replace(/\/$/, '');
+const API_TIMEOUT = Number(import.meta.env.VITE_API_TIMEOUT || runtimeConfig.apiTimeout || 15000);
+const AUTH_MODE = (import.meta.env.VITE_AUTH_MODE || runtimeConfig.authMode || 'jwt').toLowerCase();
+const SEND_COOKIES =
+  (import.meta.env.VITE_API_SEND_COOKIES || runtimeConfig.apiSendCookies || '').toString() === 'true' ||
+  AUTH_MODE === 'session';
+const resolveCredentials = (mode = AUTH_MODE) => (SEND_COOKIES || mode === 'session' ? 'include' : 'omit');
+const MAX_AUTH_HEADER_LENGTH = MAX_HEADER_SAFE_LENGTH;
 
-function withTimeout(promise, ms, abortController) {
-  return new Promise((resolve, reject) => {
-    const id = setTimeout(() => {
-      if (abortController) {
-        abortController.abort();
-      }
-      reject(new Error('Request timeout'));
-    }, ms);
-    promise.then((res) => { clearTimeout(id); resolve(res); })
-           .catch((err) => { clearTimeout(id); reject(err); });
-  });
+const AUTH_ENDPOINTS = ['/api/token/', '/api/token/refresh/', '/api/token/verify/', '/api/auth/token/'];
+const RETRYABLE_STATUS = [502, 503, 504];
+const MAX_RETRY_DELAY = 4000;
+
+export class ApiError extends Error {
+  constructor(message, { status = 0, statusText = '', url = '', details = null } = {}) {
+    super(message);
+    this.name = 'ApiError';
+    this.status = status;
+    this.statusText = statusText;
+    this.url = url;
+    this.details = details;
+  }
 }
 
-function normalizeError(error, response) {
-  if (response) {
-    const details = (error && typeof error === 'object') ? error : (typeof error === 'string' ? { detail: error } : null);
-    return {
-      status: response.status,
-      statusText: response.statusText,
-      url: response.url,
-      message: `HTTP ${response.status}: ${response.statusText}`,
-      details,
-    };
-  }
-  return { status: 0, statusText: 'Network Error', url: null, message: error?.message || 'Network Error', details: null };
+const normalizedPrefix = sanitizePrefix(API_PREFIX);
+
+function sanitizePrefix(prefix) {
+  if (!prefix) return '';
+  const trimmed = prefix.replace(/^\/|\/$/g, '');
+  return trimmed ? `/${trimmed}` : '';
+}
+
+function normalizePath(path) {
+  const ensured = path.startsWith('/') ? path : `/${path}`;
+  if (!normalizedPrefix) return ensured;
+  return ensured.startsWith(normalizedPrefix) ? ensured : `${normalizedPrefix}${ensured}`;
 }
 
 function buildUrl(path, params) {
-  const normalizedPath = path.startsWith('http') ? path : `${BASE_URL}${path.startsWith('/') ? '' : '/'}${path}`;
+  const normalizedPath = path.startsWith('http') ? path : `${API_BASE_URL}${normalizePath(path)}`;
   const url = new URL(normalizedPath);
+
   if (params && typeof params === 'object') {
-    Object.entries(params).forEach(([k, v]) => {
-      // Skip undefined, null, and empty strings
-      if (v === undefined || v === null || v === '') return;
-      if (Array.isArray(v)) v.forEach((vi) => url.searchParams.append(k, vi));
-      else url.searchParams.set(k, v);
+    Object.entries(params).forEach(([key, value]) => {
+      if (value === undefined || value === null || value === '') return;
+      if (Array.isArray(value)) {
+        value.forEach((v) => url.searchParams.append(key, v));
+      } else {
+        url.searchParams.set(key, value);
+      }
     });
   }
+
   return url.toString();
 }
 
-// Request queue for handling concurrent requests during token refresh
-let isRefreshing = false;
-let refreshQueue = [];
+function withTimeout(promise, ms, controller) {
+  return new Promise((resolve, reject) => {
+    const timer = setTimeout(() => {
+      if (controller) controller.abort();
+      reject(new ApiError('Request timed out'));
+    }, ms);
 
-/**
- * Refresh the access token using refresh token
- */
-async function refreshAccessToken() {
-  const refresh = getRefreshToken();
-  if (!refresh) {
-    throw new Error('No refresh token available');
-  }
-
-  try {
-    const response = await fetch(`${BASE_URL}/api/token/refresh/`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({ refresh }),
-    });
-
-    if (!response.ok) {
-      throw new Error('Failed to refresh token');
-    }
-
-    const data = await response.json();
-    setToken(data.access, refresh);
-    return data.access;
-  } catch (error) {
-    console.error('Token refresh failed:', error);
-    // Clear tokens and redirect to login
-    clearToken();
-    if (typeof window !== 'undefined') {
-      // Use hash navigation for consistency
-      window.location.hash = '/login';
-      // Reload to ensure clean state
-      window.location.reload();
-    }
-    throw error;
-  }
+    promise
+      .then((res) => {
+        clearTimeout(timer);
+        resolve(res);
+      })
+      .catch((err) => {
+        clearTimeout(timer);
+        reject(err);
+      });
+  });
 }
 
-/**
- * Main request function with automatic token refresh
- */
-async function request(method, path, { params, body, headers, retry = 0, _isRetry = false, _retryCount = 0 } = {}) {
-  // Skip token refresh for auth endpoints
-  const isAuthEndpoint = path.includes('/token/') || path.includes('/auth/');
-  
-  // Check if token is expired and refresh if needed
-  if (!isAuthEndpoint && !_isRetry) {
-    const token = getToken();
-    if (token && isTokenExpired(token)) {
-      // If already refreshing, queue this request
-      if (isRefreshing) {
-        return new Promise((resolve, reject) => {
-          refreshQueue.push({ resolve, reject, method, path, params, body, headers, retry });
-        });
-      }
+async function parseResponseBody(response) {
+  const contentType = response.headers.get('content-type') || '';
+  if (response.status === 204) return {};
 
-      // Start refresh process
-      isRefreshing = true;
-      try {
-        await refreshAccessToken();
-        
-        // Process queued requests
-        refreshQueue.forEach(({ resolve: qResolve, reject: qReject, method, path, params, body, headers, retry }) => {
-          request(method, path, { params, body, headers, retry, _isRetry: true })
-            .then(qResolve)
-            .catch(qReject);
-        });
-        refreshQueue = [];
-      } catch (error) {
-        // Reject all queued requests
-        refreshQueue.forEach(({ reject: qReject }) => qReject(error));
-        refreshQueue = [];
-        throw error;
-      } finally {
-        isRefreshing = false;
-      }
+  if (contentType.includes('application/json')) {
+    try {
+      return await response.json();
+    } catch (_) {
+      return {};
     }
   }
 
+  const text = await response.text();
+  return text || {};
+}
+
+function isAuthEndpoint(path) {
+  return AUTH_ENDPOINTS.some((endpoint) => path.includes(endpoint));
+}
+
+function formatAuthHeader(token, mode = AUTH_MODE) {
+  if (!token) return null;
+  if (isTokenTooLarge(token)) {
+    throw new ApiError(
+      `Access token is ${token.length} bytes — larger than typical Authorization header limits (~4KB). Enable cookie auth (VITE_AUTH_MODE=session or VITE_API_SEND_COOKIES=true) or request smaller tokens.`,
+      { status: 431 }
+    );
+  }
+  if (mode === 'token') return token.startsWith('Token ') ? token : `Token ${token}`;
+  if (mode === 'jwt') return token.startsWith('Bearer ') ? token : `Bearer ${token}`;
+  return null;
+}
+
+function shouldRetry(err, retry, method) {
+  if (retry <= 0) return false;
+  if (method !== 'GET') return false;
+  if (err instanceof ApiError) {
+    return err.status === 0 || RETRYABLE_STATUS.includes(err.status);
+  }
+  return true;
+}
+
+function delay(ms) {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+function normalizeError(response, payload, url) {
+  const status = response?.status ?? 0;
+  const statusText = response?.statusText ?? '';
+  const message = status
+    ? status === 431
+      ? 'HTTP 431 Request Header Fields Too Large (Authorization likely exceeds ~4KB — switch to cookie auth or issue smaller JWTs)'
+      : `HTTP ${status}${statusText ? ` ${statusText}` : ''}`
+    : `Cannot reach API at ${API_BASE_URL}`;
+
+  return new ApiError(message, {
+    status,
+    statusText,
+    url,
+    details: payload || null,
+  });
+}
+
+let refreshPromise = null;
+
+async function refreshAccessToken(refreshToken) {
+  if (!refreshToken) {
+    throw new ApiError('No refresh token available', { status: 401 });
+  }
+
+  const url = buildUrl('/api/token/refresh/');
+  const response = await fetch(url, {
+    method: 'POST',
+    headers: {
+      Accept: 'application/json',
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({ refresh: refreshToken }),
+    mode: 'cors',
+    credentials: resolveCredentials(),
+  });
+
+  const payload = await parseResponseBody(response);
+  if (!response.ok || !payload?.access) {
+    clearToken();
+    throw normalizeError(response, payload, url);
+  }
+
+  setToken(payload.access, payload.refresh || refreshToken);
+  return payload.access;
+}
+
+async function ensureFreshAccessToken(authMode = AUTH_MODE) {
+  if (authMode !== 'jwt') {
+    return getToken();
+  }
+
+  const access = getToken();
+  const refresh = getRefreshToken();
+  if (!refresh) return access;
+  if (access && !isTokenExpired(access)) return access;
+
+  if (!refreshPromise) {
+    refreshPromise = refreshAccessToken(refresh).finally(() => {
+      refreshPromise = null;
+    });
+  }
+
+  return refreshPromise;
+}
+
+async function attachAuth(headers, authMode) {
+  if (authMode === 'session') return;
+  const token = await ensureFreshAccessToken(authMode);
+  const headerValue = formatAuthHeader(token, authMode);
+  if (headerValue) headers.set('Authorization', headerValue);
+}
+
+async function request(method, path, options = {}) {
+  const { params, body, headers = {}, retry = 1, skipAuth = false, authMode = AUTH_MODE, signal } = options;
   const url = buildUrl(path, params);
-  const token = getToken();
-  const finalHeaders = new Headers({ 'Accept': 'application/json', ...headers });
-  
-  if (body && !(body instanceof FormData)) {
+  const controller = new AbortController();
+  const credentialsMode = resolveCredentials(authMode);
+
+  if (signal) {
+    signal.addEventListener('abort', () => controller.abort(), { once: true });
+  }
+
+  const finalHeaders = new Headers({ Accept: 'application/json', ...headers });
+  const isFormData = body instanceof FormData;
+  if (body && !isFormData) {
     finalHeaders.set('Content-Type', 'application/json');
   }
-  
-  // Add JWT token for authentication
-  if (token && !isAuthEndpoint) {
-    finalHeaders.set('Authorization', `Bearer ${token}`);
+
+  const authAllowed = !skipAuth && !isAuthEndpoint(path);
+  if (authAllowed) {
+    try {
+      await attachAuth(finalHeaders, authMode);
+    } catch (authError) {
+      throw authError instanceof ApiError
+        ? authError
+        : new ApiError(authError.message || 'Authentication failed', { url });
+    }
   }
 
-  // Create AbortController for request cancellation
-  const abortController = new AbortController();
-
-  const fetcher = fetch(url, {
+  const fetchPromise = fetch(url, {
     method,
     headers: finalHeaders,
-    body: body ? (body instanceof FormData ? body : JSON.stringify(body)) : undefined,
-    credentials: 'include', // Always include cookies for session auth
+    body: body ? (isFormData ? body : JSON.stringify(body)) : undefined,
     mode: 'cors',
-    signal: abortController.signal,
+    credentials: credentialsMode,
+    signal: controller.signal,
   });
 
   try {
-    const res = await withTimeout(fetcher, TIMEOUT, abortController);
-    const contentType = res.headers.get('content-type') || '';
-    const isJson = contentType.includes('application/json');
-    const data = isJson ? await res.json().catch(() => ({})) : await res.text();
-    
-    // Handle 401 Unauthorized - try to refresh token
-    if (res.status === 401 && !isAuthEndpoint && !_isRetry) {
+    const response = await withTimeout(fetchPromise, API_TIMEOUT, controller);
+    const payload = await parseResponseBody(response);
+
+    if (response.status === 401 && authAllowed && authMode === 'jwt' && getRefreshToken() && !options._retriedWithRefresh) {
       try {
-        await refreshAccessToken();
-        // Retry the original request with new token
-        return request(method, path, { params, body, headers, retry, _isRetry: true });
+        await refreshAccessToken(getRefreshToken());
+        return request(method, path, { ...options, _retriedWithRefresh: true });
       } catch (refreshError) {
-        // Refresh failed, clear tokens and redirect to login
-        console.error('Token refresh failed');
         clearToken();
-        if (typeof window !== 'undefined' && !window.location.hash.includes('/login')) {
-          window.location.hash = '/login';
-          setTimeout(() => window.location.reload(), 100);
-        }
-        throw normalizeError(data, res);
+        throw refreshError instanceof ApiError
+          ? refreshError
+          : new ApiError(refreshError.message || 'Failed to refresh token', { url });
       }
     }
-    
-    // Handle 401 on auth endpoints (login failed, etc.)
-    if (res.status === 401 && isAuthEndpoint) {
-      throw normalizeError(data, res);
+
+    if (response.status === 403 && authAllowed) {
+      throw normalizeError(response, payload, url);
     }
-    
-    // Handle 403 Forbidden - treat like 401 for authentication purposes
-    if (res.status === 403 && !isAuthEndpoint) {
-      console.warn('403 Forbidden error');
-      clearToken();
-      if (typeof window !== 'undefined' && !window.location.hash.includes('/login')) {
-        window.location.hash = '/login';
-        setTimeout(() => window.location.reload(), 100);
+
+    if (!response.ok) {
+      if (response.status === 431 && authAllowed) {
+        clearToken();
+        throw new ApiError(
+          'Authorization header is too large for the server (HTTP 431). Re-login with cookie auth or ask backend to issue shorter JWTs.',
+          { status: 431, url, details: payload }
+        );
       }
-      throw normalizeError(data, res);
+      throw normalizeError(response, payload, url);
     }
-    
-    if (!res.ok) {
-      throw normalizeError(data, res);
-    }
-    return data;
+
+    return payload;
   } catch (err) {
-    // If error is 401 or 403, ensure we redirect to login (prevent infinite loop)
-    if ((err?.status === 401 || err?.status === 403) && !isAuthEndpoint) {
-      console.warn(`${err?.status} ${err?.status === 401 ? 'Unauthorized' : 'Forbidden'} error`);
-      clearToken();
-      if (typeof window !== 'undefined' && !window.location.hash.includes('/login')) {
-        window.location.hash = '/login';
-        setTimeout(() => window.location.reload(), 100);
-      }
+    const apiError = err instanceof ApiError ? err : new ApiError(err.message || 'Network error', { url });
+    if (shouldRetry(apiError, retry, method)) {
+      const attempt = (options._attempt || 0) + 1;
+      const backoff = Math.min(300 * 2 ** attempt, MAX_RETRY_DELAY);
+      await delay(backoff);
+      return request(method, path, { ...options, retry: retry - 1, _attempt: attempt });
     }
-    
-    // Retry only GET for network errors (Error instances). Do not retry HTTP errors (object payloads)
-    const isNetworkError = err instanceof Error;
-    if (retry > 0 && method === 'GET' && isNetworkError) {
-      // Add exponential backoff delay before retry
-      const delay = Math.min(1000 * Math.pow(2, _retryCount), 5000);
-      await new Promise(resolve => setTimeout(resolve, delay));
-      return request(method, path, { params, body, headers, retry: retry - 1, _isRetry, _retryCount: _retryCount + 1 });
+
+    // In development, provide graceful fallback for connection errors
+    if (import.meta.env.DEV && (apiError.message.includes('Failed to fetch') || apiError.message.includes('CONNECTION_REFUSED'))) {
+      console.warn(`API connection failed: ${url}. Using fallback data in development mode.`);
+      return getFallbackData(method, path);
     }
-    
-    // Improve error message for network errors
-    if (isNetworkError && err.message === 'Failed to fetch') {
-      throw new Error('Cannot connect to server. Please check if the backend is running at ' + BASE_URL);
-    }
-    
-    // If we have a 403 error object (not network error), provide better message
-    if (err?.status === 403) {
-      const detail = err?.details?.detail || '';
-      if (detail.includes('Authentication credentials')) {
-        throw new Error('Authentication required. Please login to access this resource.');
-      }
-    }
-    // Bubble up normalized errors
-    if (!(err instanceof Error) && err?.status) {
-      throw err;
-    }
-    throw err;
+
+    throw apiError;
   }
 }
+
+// Development fallback data generator
+function getFallbackData(method, path) {
+  if (method !== 'GET') {
+    return { success: true, message: 'Operation completed (mock)' };
+  }
+
+  // Analytics endpoints
+  if (path.includes('/analytics/overview/')) {
+    return {
+      total_leads: 42,
+      total_contacts: 38,
+      total_deals: 15,
+      total_revenue: 125000,
+      conversion_rate: 0.35
+    };
+  }
+
+  if (path.includes('/dashboard/analytics/')) {
+    return {
+      leads_this_month: 12,
+      deals_closed: 5,
+      revenue_this_month: 45000,
+      conversion_rate: 0.42
+    };
+  }
+
+  if (path.includes('/dashboard/funnel/')) {
+    return [
+      { stage: 'New', count: 25, value: 50000 },
+      { stage: 'Qualified', count: 15, value: 35000 },
+      { stage: 'Proposal', count: 8, value: 22000 },
+      { stage: 'Closed', count: 5, value: 15000 }
+    ];
+  }
+
+  if (path.includes('/dashboard/activity/')) {
+    return [
+      { id: 1, type: 'lead', action: 'created', description: 'New lead: John Doe', timestamp: new Date().toISOString() },
+      { id: 2, type: 'deal', action: 'updated', description: 'Deal moved to Proposal stage', timestamp: new Date().toISOString() }
+    ];
+  }
+
+  // Entity list endpoints
+  if (path.includes('/leads/')) {
+    return {
+      count: 3,
+      results: [
+        { id: 1, name: 'John Doe', email: 'john@example.com', status: 'new', company: 'Acme Corp', phone: '+1234567890' },
+        { id: 2, name: 'Jane Smith', email: 'jane@example.com', status: 'qualified', company: 'Tech Inc', phone: '+1234567891' },
+        { id: 3, name: 'Bob Wilson', email: 'bob@example.com', status: 'contacted', company: 'StartupXYZ', phone: '+1234567892' }
+      ]
+    };
+  }
+
+  if (path.includes('/contacts/')) {
+    return {
+      count: 2,
+      results: [
+        { id: 1, name: 'Alice Johnson', email: 'alice@company.com', company: 'Big Corp', type: 'client' },
+        { id: 2, name: 'Charlie Brown', email: 'charlie@startup.com', company: 'Innovation Labs', type: 'partner' }
+      ]
+    };
+  }
+
+  if (path.includes('/deals/')) {
+    return {
+      count: 2,
+      results: [
+        { id: 1, title: 'Enterprise Software Sale', value: 50000, stage: 'proposal', probability: 75, company: 'Big Corp' },
+        { id: 2, title: 'Consulting Project', value: 25000, stage: 'qualified', probability: 50, company: 'Tech Inc' }
+      ]
+    };
+  }
+
+  // Default fallback for lists
+  return { count: 0, results: [] };
+}
+
+export const apiConfig = {
+  baseUrl: API_BASE_URL,
+  prefix: normalizedPrefix,
+  timeout: API_TIMEOUT,
+  authMode: AUTH_MODE,
+  sendCookies: SEND_COOKIES,
+};
 
 export const api = {
   get: (path, opts) => request('GET', path, opts),
@@ -254,90 +392,70 @@ export const api = {
   delete: (path, opts) => request('DELETE', path, opts),
 };
 
-// Leads endpoints (derived from Django-CRM API.yaml)
+function crudResource(basePath) {
+  const base = basePath.endsWith('/') ? basePath : `${basePath}/`;
+  return {
+    list: (params) => api.get(base, { params }),
+    retrieve: (id) => api.get(`${base}${id}/`),
+    create: (payload) => api.post(base, { body: payload }),
+    update: (id, payload) => api.put(`${base}${id}/`, { body: payload }),
+    patch: (id, payload) => api.patch(`${base}${id}/`, { body: payload }),
+    remove: (id) => api.delete(`${base}${id}/`),
+  };
+}
+
+function readonlyResource(basePath) {
+  const base = basePath.endsWith('/') ? basePath : `${basePath}/`;
+  return {
+    list: (params) => api.get(base, { params }),
+    retrieve: (id) => api.get(`${base}${id}/`),
+  };
+}
+
+// Authentication (JWT + Token) — per Django-CRM API.yaml
+async function loginWithFallback(credentials) {
+  const candidates = ['/api/token/', '/api/auth/token/', '/auth/login/', '/login/', '/auth/token/'];
+  let lastError = null;
+
+  for (const endpoint of candidates) {
+    try {
+      return await api.post(endpoint, { body: credentials, skipAuth: true });
+    } catch (err) {
+      lastError = err;
+      const status = err instanceof ApiError ? err.status : null;
+      if (!status || ![404, 405, 500, 502, 503, 504].includes(status)) {
+        throw err;
+      }
+    }
+  }
+
+  throw lastError || new ApiError('Authentication endpoint not found');
+}
+
+export const authApi = {
+  login: ({ username, password }) => loginWithFallback({ username, password }),
+  refresh: ({ refresh }) => api.post('/api/token/refresh/', { body: { refresh }, skipAuth: true }),
+  verify: ({ token }) => api.post('/api/token/verify/', { body: { token }, skipAuth: true }),
+  authToken: ({ username, password }) => api.post('/api/auth/token/', { body: { username, password }, skipAuth: true }),
+  authStats: () => api.get('/api/auth-stats/'),
+};
+
+// Core entities
 export const leadsApi = {
-  list: (params) => api.get('/api/leads/', { params }),
-  retrieve: (id) => api.get(`/api/leads/${id}/`),
-  create: (payload) => api.post('/api/leads/', { body: payload }),
-  update: (id, payload) => api.put(`/api/leads/${id}/`, { body: payload }),
-  patch: (id, payload) => api.patch(`/api/leads/${id}/`, { body: payload }),
-  remove: (id) => api.delete(`/api/leads/${id}/`),
+  ...crudResource('/api/leads/'),
   assign: (id, payload) => api.post(`/api/leads/${id}/assign/`, { body: payload }),
   convert: (id, payload = {}) => api.post(`/api/leads/${id}/convert/`, { body: payload }),
   disqualify: (id, payload = {}) => api.post(`/api/leads/${id}/disqualify/`, { body: payload }),
   bulkTag: (payload) => api.post('/api/leads/bulk_tag/', { body: payload }),
 };
 
-export const authApi = {
-  // JWT Authentication
-  login: ({ username, password }) => api.post('/api/token/', { body: { username, password } }),
-  refresh: ({ refresh }) => api.post('/api/token/refresh/', { body: { refresh } }),
-  verify: ({ token }) => api.post('/api/token/verify/', { body: { token } }),
-  
-  // Auth token endpoint (alternative to /api/token/)
-  authToken: ({ username, password }) => api.post('/api/auth/token/', { body: { username, password } }),
-  
-  // Auth Statistics
-  authStats: () => api.get('/api/auth-stats/'),
-};
-
-export const usersApi = {
-  list: (params) => api.get('/api/users/', { params }),
-  retrieve: (id) => api.get(`/api/users/${id}/`),
-  me: () => api.get('/api/users/me/'),
-};
-
-export const profilesApi = {
-  retrieve: (userId) => api.get(`/api/profiles/${userId}/`),
-  retrieveByUser: (user) => api.get(`/api/profiles/${user}/`), // Alternative: can be ID or username
-  me: () => api.get('/api/profiles/me/'),
-  uploadAvatar: (formData) => api.post('/api/profiles/me/avatar/', { body: formData }),
-  deleteAvatar: () => api.delete('/api/profiles/me/avatar/'),
-};
-
-export const contactsApi = {
-  list: (params) => api.get('/api/contacts/', { params }),
-  retrieve: (id) => api.get(`/api/contacts/${id}/`),
-  create: (payload) => api.post('/api/contacts/', { body: payload }),
-  update: (id, payload) => api.put(`/api/contacts/${id}/`, { body: payload }),
-  patch: (id, payload) => api.patch(`/api/contacts/${id}/`, { body: payload }),
-  remove: (id) => api.delete(`/api/contacts/${id}/`),
-};
-
-export const companiesApi = {
-  list: (params) => api.get('/api/companies/', { params }),
-  retrieve: (id) => api.get(`/api/companies/${id}/`),
-  create: (payload) => api.post('/api/companies/', { body: payload }),
-  update: (id, payload) => api.put(`/api/companies/${id}/`, { body: payload }),
-  patch: (id, payload) => api.patch(`/api/companies/${id}/`, { body: payload }),
-  remove: (id) => api.delete(`/api/companies/${id}/`),
-};
-
-export const dealsApi = {
-  list: (params) => api.get('/api/deals/', { params }),
-  retrieve: (id) => api.get(`/api/deals/${id}/`),
-  create: (payload) => api.post('/api/deals/', { body: payload }),
-  update: (id, payload) => api.put(`/api/deals/${id}/`, { body: payload }),
-  patch: (id, payload) => api.patch(`/api/deals/${id}/`, { body: payload }),
-  remove: (id) => api.delete(`/api/deals/${id}/`),
-};
-
-export const tasksApi = {
-  list: (params) => api.get('/api/tasks/', { params }),
-  retrieve: (id) => api.get(`/api/tasks/${id}/`),
-  create: (payload) => api.post('/api/tasks/', { body: payload }),
-  update: (id, payload) => api.put(`/api/tasks/${id}/`, { body: payload }),
-  patch: (id, payload) => api.patch(`/api/tasks/${id}/`, { body: payload }),
-  remove: (id) => api.delete(`/api/tasks/${id}/`),
-};
+export const contactsApi = { ...crudResource('/api/contacts/') };
+export const companiesApi = { ...crudResource('/api/companies/') };
+export const dealsApi = { ...crudResource('/api/deals/') };
+export const tasksApi = { ...crudResource('/api/tasks/') };
 
 export const projectsApi = {
-  list: (params) => api.get('/api/projects/', { params }),
-  retrieve: (id) => api.get(`/api/projects/${id}/`),
-  create: (payload) => api.post('/api/projects/', { body: payload }),
-  update: (id, payload) => api.put(`/api/projects/${id}/`, { body: payload }),
-  patch: (id, payload) => api.patch(`/api/projects/${id}/`, { body: payload }),
-  remove: (id) => api.delete(`/api/projects/${id}/`),
+  ...crudResource('/api/projects/'),
   assign: (id, payload) => api.post(`/api/projects/${id}/assign/`, { body: payload }),
   complete: (id) => api.post(`/api/projects/${id}/complete/`),
   reopen: (id) => api.post(`/api/projects/${id}/reopen/`),
@@ -345,73 +463,58 @@ export const projectsApi = {
   export: (params) => api.get('/api/projects/export/', { params }),
 };
 
+// Users & profiles
+export const usersApi = {
+  ...readonlyResource('/api/users/'),
+  me: () => api.get('/api/users/me/'),
+};
+
+export const profilesApi = {
+  retrieve: (userId) => api.get(`/api/profiles/${userId}/`),
+  retrieveByUser: (user) => api.get(`/api/profiles/${user}/`),
+  me: () => api.get('/api/profiles/me/'),
+  uploadAvatar: (formData) => api.post('/api/profiles/me/avatar/', { body: formData }),
+  deleteAvatar: () => api.delete('/api/profiles/me/avatar/'),
+};
+
+// Dashboard & analytics
+export const dashboardApi = {
+  activity: () => api.get('/api/dashboard/activity/'),
+  analytics: (params) => api.get('/api/dashboard/analytics/', { params }),
+  funnel: (params) => api.get('/api/dashboard/funnel/', { params }),
+};
+
+// Reference data
+export const stagesApi = { ...readonlyResource('/api/stages/') };
+export const crmTagsApi = { ...readonlyResource('/api/crm-tags/') };
+export const taskTagsApi = { ...readonlyResource('/api/task-tags/') };
+export const projectStagesApi = { ...readonlyResource('/api/project-stages/') };
+export const taskStagesApi = { ...readonlyResource('/api/task-stages/') };
+
+// Memos
 export const memosApi = {
-  list: (params) => api.get('/api/memos/', { params }),
-  retrieve: (id) => api.get(`/api/memos/${id}/`),
-  create: (payload) => api.post('/api/memos/', { body: payload }),
-  update: (id, payload) => api.put(`/api/memos/${id}/`, { body: payload }),
-  patch: (id, payload) => api.patch(`/api/memos/${id}/`, { body: payload }),
-  remove: (id) => api.delete(`/api/memos/${id}/`),
+  ...crudResource('/api/memos/'),
   markReviewed: (id) => api.post(`/api/memos/${id}/mark_reviewed/`),
   markPostponed: (id) => api.post(`/api/memos/${id}/mark_postponed/`),
 };
 
+// Chat
 export const chatApi = {
-  list: (params) => api.get('/api/chat-messages/', { params }),
-  retrieve: (id) => api.get(`/api/chat-messages/${id}/`),
-  create: (payload) => api.post('/api/chat-messages/', { body: payload }),
-  update: (id, payload) => api.put(`/api/chat-messages/${id}/`, { body: payload }),
-  patch: (id, payload) => api.patch(`/api/chat-messages/${id}/`, { body: payload }),
-  remove: (id) => api.delete(`/api/chat-messages/${id}/`),
+  ...crudResource('/api/chat-messages/'),
   replies: (id, params) => api.get(`/api/chat-messages/${id}/replies/`, { params }),
   thread: (id, params) => api.get(`/api/chat-messages/${id}/thread/`, { params }),
-  // Note: Following endpoints don't exist in Django-CRM API.yaml
-  // byObject, statistics, unreadCount - removed
 };
 
+// Call logs (VoIP + legacy)
 export const callLogsApi = {
-  // VoIP call logs endpoints
   list: (params) => api.get('/api/voip/call-logs/', { params }),
   retrieve: (logId) => api.get(`/api/voip/call-logs/${logId}/`),
   addNote: (logId, payload) => api.post(`/api/voip/call-logs/${logId}/add-note/`, { body: payload }),
-  
-  // Legacy call-logs endpoints (alternative paths)
   listLegacy: (params) => api.get('/api/call-logs/', { params }),
   retrieveLegacy: (id) => api.get(`/api/call-logs/${id}/`),
 };
 
-export const dashboardApi = {
-  activity: () => api.get('/api/dashboard/activity/'),
-  analytics: () => api.get('/api/dashboard/analytics/'),
-  funnel: () => api.get('/api/dashboard/funnel/'),
-};
-
-export const stagesApi = {
-  list: (params) => api.get('/api/stages/', { params }),
-  retrieve: (id) => api.get(`/api/stages/${id}/`),
-};
-
-export const crmTagsApi = {
-  list: (params) => api.get('/api/crm-tags/', { params }),
-  retrieve: (id) => api.get(`/api/crm-tags/${id}/`),
-};
-
-export const taskTagsApi = {
-  list: (params) => api.get('/api/task-tags/', { params }),
-  retrieve: (id) => api.get(`/api/task-tags/${id}/`),
-};
-
-export const projectStagesApi = {
-  list: (params) => api.get('/api/project-stages/', { params }),
-  retrieve: (id) => api.get(`/api/project-stages/${id}/`),
-};
-
-export const taskStagesApi = {
-  list: (params) => api.get('/api/task-stages/', { params }),
-  retrieve: (id) => api.get(`/api/task-stages/${id}/`),
-};
-
-// Convenience functions for React components
+// Convenience aliases for components
 export const getLeads = (params) => leadsApi.list(params);
 export const getLead = (id) => leadsApi.retrieve(id);
 export const createLead = (payload) => leadsApi.create(payload);

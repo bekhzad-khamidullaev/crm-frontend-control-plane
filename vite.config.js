@@ -10,6 +10,33 @@ export default defineConfig({
   ],
   server: {
     port: 3000,
+    proxy: {
+      // Прокси для API, чтобы обойти CORS в dev
+      '/api': {
+        target: 'http://127.0.0.1:8000',
+        changeOrigin: true,
+        secure: false,
+        configure: (proxy, options) => {
+          proxy.on('error', (err, req, res) => {
+            console.log('🔗 Backend not available - using mock data mode');
+          });
+          proxy.on('proxyReq', (proxyReq, req, res) => {
+            console.log('📡 API Request:', req.method, req.url);
+          });
+        },
+      },
+      // Медиа/статика с backend (опционально)
+      '/media': {
+        target: 'http://127.0.0.1:8000',
+        changeOrigin: true,
+        secure: false,
+      },
+      '/static': {
+        target: 'http://127.0.0.1:8000',
+        changeOrigin: true,
+        secure: false,
+      },
+    },
   },
   build: {
     outDir: 'dist',

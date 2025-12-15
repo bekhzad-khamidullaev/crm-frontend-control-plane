@@ -174,6 +174,25 @@ export function navigate(path, { replace = false } = {}) {
 
 function notify() {
   const route = parseHash();
+  
+  // Check auth guard before notifying listeners
+  const meta = getRouteMeta(route.name);
+  if (meta.auth !== false) {
+    // Route requires authentication
+    try {
+      if (!isAuthenticated()) {
+        console.warn('[Router] Unauthorized access, redirecting to login');
+        // Prevent infinite loop by checking if already on login
+        if (route.name !== 'login') {
+          location.hash = '#/login';
+          return; // Don't notify listeners
+        }
+      }
+    } catch (err) {
+      console.error('[Router] Auth check failed:', err);
+    }
+  }
+  
   listeners.forEach((cb) => cb(route));
 }
 
@@ -186,3 +205,4 @@ window.addEventListener('hashchange', notify);
 
 // initial tick for consumers who import after DOM ready
 setTimeout(() => notify(), 0);
+import { isAuthenticated } from './lib/api/auth.js';

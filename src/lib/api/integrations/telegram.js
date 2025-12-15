@@ -1,9 +1,10 @@
 /**
- * Telegram Integration API
- * Telegram Bot API integration
+ * Telegram Integration API (not part of Django-CRM API.yaml)
+ * Disabled to prevent unsupported calls.
  */
 
-import { api } from '../client';
+const notSupported = (feature) =>
+  Promise.reject(new Error(`${feature} is not available in Django-CRM API.yaml (integrations/* endpoints missing).`));
 
 /**
  * Connect Telegram bot
@@ -11,34 +12,26 @@ import { api } from '../client';
  * @param {string} data.bot_token - Telegram bot token from @BotFather
  * @returns {Promise<Object>}
  */
-export async function connectTelegramBot(data) {
-  return api.post('/api/integrations/telegram/connect/', data);
-}
+export const connectTelegramBot = () => notSupported('Telegram connect');
 
 /**
  * Disconnect Telegram bot
  * @returns {Promise<void>}
  */
-export async function disconnectTelegramBot() {
-  return api.post('/api/integrations/telegram/disconnect/');
-}
+export const disconnectTelegramBot = () => notSupported('Telegram disconnect');
 
 /**
  * Get Telegram bot status
  * @returns {Promise<Object>}
  */
-export async function getTelegramStatus() {
-  return api.get('/api/integrations/telegram/status/');
-}
+export const getTelegramStatus = () => notSupported('Telegram status');
 
 /**
  * Get Telegram updates/messages
  * @param {Object} [params]
  * @returns {Promise<Object>}
  */
-export async function getTelegramUpdates(params = {}) {
-  return api.get('/api/integrations/telegram/updates/', { params });
-}
+export const getTelegramUpdates = () => notSupported('Telegram updates');
 
 /**
  * Send Telegram message
@@ -47,9 +40,7 @@ export async function getTelegramUpdates(params = {}) {
  * @param {string} data.message - Message text
  * @returns {Promise<Object>}
  */
-export async function sendTelegramMessage(data) {
-  return api.post('/api/integrations/telegram/send-message/', data);
-}
+export const sendTelegramMessage = () => notSupported('Telegram send message');
 
 /**
  * Set Telegram webhook
@@ -57,22 +48,16 @@ export async function sendTelegramMessage(data) {
  * @param {string} data.webhook_url - Webhook URL
  * @returns {Promise<Object>}
  */
-export async function setTelegramWebhook(data) {
-  return api.post('/api/integrations/telegram/set-webhook/', data);
-}
+export const setTelegramWebhook = () => notSupported('Telegram set webhook');
 
 /**
  * Get Telegram webhook info
  * @returns {Promise<Object>}
  */
-export async function getTelegramWebhookInfo() {
-  return api.get('/api/integrations/telegram/webhook-info/');
-}
+export const getTelegramWebhookInfo = () => notSupported('Telegram webhook info');
 
 /**
  * Get Telegram statistics
  * @returns {Promise<Object>}
  */
-export async function getTelegramStats() {
-  return api.get('/api/integrations/telegram/statistics/');
-}
+export const getTelegramStats = () => notSupported('Telegram statistics');

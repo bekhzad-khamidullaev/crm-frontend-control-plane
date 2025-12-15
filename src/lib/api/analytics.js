@@ -15,6 +15,17 @@ export async function getOverview() {
     return response;
   } catch (error) {
     console.error('Failed to fetch analytics overview:', error);
+    // Return fallback data instead of throwing for graceful degradation
+    if (error.message && error.message.includes('Cannot connect to server')) {
+      console.warn('Returning fallback overview data - backend unavailable');
+      return {
+        total_leads: 0,
+        total_contacts: 0,
+        total_deals: 0,
+        total_revenue: 0,
+        conversion_rate: 0,
+      };
+    }
     throw error;
   }
 }
@@ -33,6 +44,15 @@ export async function getDashboardAnalytics(params = {}) {
     return response;
   } catch (error) {
     console.error('Failed to fetch dashboard analytics:', error);
+    // Return fallback data for graceful degradation
+    if (error.message && error.message.includes('Cannot connect to server')) {
+      console.warn('Returning fallback analytics data - backend unavailable');
+      return {
+        leads_by_status: [],
+        deals_by_stage: [],
+        revenue_trend: [],
+      };
+    }
     throw error;
   }
 }
@@ -51,6 +71,11 @@ export async function getFunnelData(params = {}) {
     return response;
   } catch (error) {
     console.error('Failed to fetch funnel data:', error);
+    // Return fallback data for graceful degradation
+    if (error.message && error.message.includes('Cannot connect to server')) {
+      console.warn('Returning fallback funnel data - backend unavailable');
+      return [];
+    }
     throw error;
   }
 }
@@ -66,6 +91,11 @@ export async function getActivityFeed(params = {}) {
     return response;
   } catch (error) {
     console.error('Failed to fetch activity feed:', error);
+    // Return fallback data for graceful degradation
+    if (error.message && error.message.includes('Cannot connect to server')) {
+      console.warn('Returning fallback activity data - backend unavailable');
+      return [];
+    }
     throw error;
   }
 }

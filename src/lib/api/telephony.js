@@ -155,7 +155,19 @@ export async function addCallNote(logId, note) {
  * @returns {Promise<Object>}
  */
 export async function getTelephonyStats(params = {}) {
-  return api.get('/api/voip/call-statistics/', { params });
+  try {
+    return await api.get('/api/voip/call-statistics/', { params });
+  } catch (error) {
+    console.warn('Telephony stats endpoint not available:', error.message);
+    // Return fallback data for graceful degradation
+    return {
+      total_calls: 0,
+      incoming_calls: 0,
+      outgoing_calls: 0,
+      missed_calls: 0,
+      average_duration: 0,
+    };
+  }
 }
 
 /**
@@ -205,19 +217,8 @@ export async function deleteSIPConfig(id) {
  * @param {Object} data
  * @returns {Promise<Object>}
  */
-export async function testSIPConnection(data) {
-  try {
-    // Try custom endpoint if available
-    return await api.post('/api/telephony/test-connection/', data);
-  } catch (error) {
-    console.warn('Test connection endpoint not available, returning mock response');
-    // Return mock success for UI testing
-    return {
-      success: true,
-      message: 'SIP connection test successful (mock)',
-      latency: Math.floor(Math.random() * 100) + 50,
-    };
-  }
+export async function testSIPConnection() {
+  throw new Error('SIP connection test endpoint is not defined in Django-CRM API.yaml');
 }
 
 /**
@@ -375,6 +376,15 @@ export async function getIncomingCalls(params = {}) {
  */
 export async function getIncomingCall(id) {
   return api.get(`/api/voip/incoming-calls/${id}/`);
+}
+
+/**
+ * Get current call queue
+ * @param {Object} params
+ * @returns {Promise<Object>}
+ */
+export async function getCallQueue(params = {}) {
+  return api.get('/api/voip/call-queue/', { params });
 }
 
 // ============================================================================

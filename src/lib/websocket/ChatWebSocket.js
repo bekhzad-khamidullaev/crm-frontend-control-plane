@@ -124,8 +124,13 @@ class ChatWebSocket {
    * Handle WebSocket error event
    */
   handleError(error) {
-    console.error('[ChatWebSocket] Error:', error);
-    this.emit('error', { type: 'socket', error });
+    console.error('[ChatWebSocket] Connection error:', error);
+    // Don't throw - graceful degradation for optional WebSocket
+    this.emit('error', { 
+      type: 'connection_error',
+      message: 'WebSocket connection failed. Real-time chat updates disabled.',
+      error 
+    });
   }
 
   /**
@@ -136,6 +141,17 @@ class ChatWebSocket {
     this.isConnected = false;
     this.typingTimers.clear();
     this.emit('disconnected', { code: event.code, reason: event.reason });
+
+    // Don't reconnect if server is unavailable (code 1006 = abnormal closure)
+    if (event.code === 1006 && this.reconnectAttempts === 0) {
+      console.warn('[ChatWebSocket] Server unavailable, disabling auto-reconnect');
+      this.shouldReconnect = false;
+      this.emit('error', {
+        type: 'server_unavailable',
+        message: 'WebSocket server is not available. Real-time chat updates disabled.'
+      });
+      return;
+    }
 
     if (this.shouldReconnect) {
       this.scheduleReconnect();

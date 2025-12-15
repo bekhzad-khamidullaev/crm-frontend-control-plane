@@ -1,70 +1,15 @@
 /**
- * Facebook Messenger Integration API
+ * Facebook Messenger Integration API (not part of Django-CRM API.yaml)
+ * These endpoints are intentionally disabled to avoid 404s against the official backend.
  */
 
-import { api } from '../client';
+const notSupported = (feature) =>
+  Promise.reject(new Error(`${feature} is not available in Django-CRM API.yaml (integrations/* endpoints missing).`));
 
-/**
- * Connect Facebook page
- * @param {Object} data
- * @param {string} data.access_token - Facebook page access token
- * @param {string} data.page_id - Facebook page ID
- * @returns {Promise<Object>}
- */
-export async function connectFacebook(data) {
-  return api.post('/api/integrations/facebook/connect/', data);
-}
-
-/**
- * Disconnect Facebook page
- * @returns {Promise<void>}
- */
-export async function disconnectFacebook() {
-  return api.post('/api/integrations/facebook/disconnect/');
-}
-
-/**
- * Get Facebook connection status
- * @returns {Promise<Object>}
- */
-export async function getFacebookStatus() {
-  return api.get('/api/integrations/facebook/status/');
-}
-
-/**
- * Get Facebook Messenger conversations
- * @param {Object} [params]
- * @returns {Promise<Object>}
- */
-export async function getFacebookConversations(params = {}) {
-  return api.get('/api/integrations/facebook/conversations/', { params });
-}
-
-/**
- * Get messages from conversation
- * @param {string} conversationId - Conversation ID
- * @param {Object} [params]
- * @returns {Promise<Object>}
- */
-export async function getFacebookMessages(conversationId, params = {}) {
-  return api.get(`/api/integrations/facebook/conversations/${conversationId}/messages/`, { params });
-}
-
-/**
- * Send Facebook message
- * @param {Object} data
- * @param {string} data.recipient_id - Recipient PSID
- * @param {string} data.message - Message text
- * @returns {Promise<Object>}
- */
-export async function sendFacebookMessage(data) {
-  return api.post('/api/integrations/facebook/send-message/', data);
-}
-
-/**
- * Get Facebook statistics
- * @returns {Promise<Object>}
- */
-export async function getFacebookStats() {
-  return api.get('/api/integrations/facebook/statistics/');
-}
+export const connectFacebook = () => notSupported('Facebook connect');
+export const disconnectFacebook = () => notSupported('Facebook disconnect');
+export const getFacebookStatus = () => notSupported('Facebook status');
+export const getFacebookConversations = () => notSupported('Facebook conversations');
+export const getFacebookMessages = () => notSupported('Facebook messages');
+export const sendFacebookMessage = () => notSupported('Facebook send message');
+export const getFacebookStats = () => notSupported('Facebook stats');

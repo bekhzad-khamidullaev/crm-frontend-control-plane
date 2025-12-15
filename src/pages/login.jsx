@@ -3,7 +3,7 @@ import { Form, Input, Button, Card, Typography, App } from 'antd';
 import { UserOutlined, LockOutlined } from '@ant-design/icons';
 import { navigate } from '../router';
 import { authApi } from '../lib/api/client';
-import { setToken, getUserFromToken } from '../lib/api/auth';
+import { setToken, getUserFromToken, isTokenTooLarge, MAX_HEADER_SAFE_LENGTH, clearToken } from '../lib/api/auth';
 
 const { Title } = Typography;
 
@@ -19,6 +19,14 @@ function LoginPage({ onLogin }) {
         username: values.username,
         password: values.password,
       });
+
+      if (isTokenTooLarge(response.access)) {
+        message.error(
+          `Полученный токен слишком большой для Authorization header (> ${MAX_HEADER_SAFE_LENGTH} байт). Включите cookie auth (VITE_AUTH_MODE=session или VITE_API_SEND_COOKIES=true) или уменьшите JWT на backend.`
+        );
+        clearToken();
+        return;
+      }
       
       // Save JWT tokens (access + refresh)
       setToken(response.access, response.refresh);
@@ -66,7 +74,7 @@ function LoginPage({ onLogin }) {
 
         <Form
           name="login"
-          initialValues={{ username: 'admin', password: 'password' }}
+          initialValues={{ username: 'admin', password: 'admin123' }}
           onFinish={onFinish}
           size="large"
         >

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
   Space,
   Input,
@@ -76,6 +76,13 @@ export default function TableToolbar({
 }) {
   const [searchValue, setSearchValue] = useState('');
   const [debouncedSearch, setDebouncedSearch] = useState('');
+  const onSearchRef = useRef(onSearch);
+  const hasTriggeredInitialSearch = useRef(false);
+
+  // Keep latest onSearch handler without retriggering effect on every render
+  useEffect(() => {
+    onSearchRef.current = onSearch;
+  }, [onSearch]);
 
   // Debounce для поиска
   useEffect(() => {
@@ -88,10 +95,16 @@ export default function TableToolbar({
 
   // Вызов callback при изменении debounced значения
   useEffect(() => {
-    if (onSearch) {
-      onSearch(debouncedSearch);
+    // Skip the implicit first run with empty value to avoid double fetch on mount
+    if (!hasTriggeredInitialSearch.current) {
+      hasTriggeredInitialSearch.current = true;
+      if (!debouncedSearch) return;
     }
-  }, [debouncedSearch, onSearch]);
+
+    if (onSearchRef.current) {
+      onSearchRef.current(debouncedSearch);
+    }
+  }, [debouncedSearch]);
 
   const handleSearchChange = (e) => {
     setSearchValue(e.target.value);

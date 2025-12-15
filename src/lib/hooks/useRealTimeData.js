@@ -179,7 +179,8 @@ export function useWebSocketData(url, options = {}) {
       ws.onerror = (event) => {
         if (!isMountedRef.current) return;
         
-        const err = new Error('WebSocket error');
+        console.error('[useRealTimeData] WebSocket connection error:', event);
+        const err = new Error('WebSocket connection failed. Real-time updates unavailable.');
         setError(err);
         
         if (onError) {
@@ -187,13 +188,22 @@ export function useWebSocketData(url, options = {}) {
         }
       };
 
-      ws.onclose = () => {
+      ws.onclose = (event) => {
         if (!isMountedRef.current) return;
         
+        console.log('[useRealTimeData] WebSocket disconnected', event.code, event.reason);
         setConnected(false);
         
         if (onClose) {
           onClose();
+        }
+
+        // Don't reconnect if server is unavailable (code 1006 = abnormal closure)
+        if (event.code === 1006) {
+          console.warn('[useRealTimeData] Server unavailable, not reconnecting');
+          const err = new Error('WebSocket server unavailable. Real-time updates disabled.');
+          setError(err);
+          return;
         }
 
         // Попытка переподключения

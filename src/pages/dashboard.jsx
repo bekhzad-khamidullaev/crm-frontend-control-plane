@@ -72,6 +72,10 @@ function Dashboard() {
 
   // Load dashboard data
   useEffect(() => {
+    // Don't load data if not on dashboard page or not authenticated
+    if (window.location.hash.includes('/login')) {
+      return;
+    }
     loadDashboardData();
   }, [period]);
 
@@ -725,10 +729,8 @@ function Dashboard() {
                 realTimeInterval={30000}
                 lastUpdate={leadsLastUpdate}
                 onRealTimeToggle={(enabled) => {
-                  if (enabled) {
-                    const interval = setInterval(() => loadDashboardData(), 30000);
-                    return () => clearInterval(interval);
-                  }
+                  // Real-time updates are handled by AnalyticsWrapper internally
+                  console.log('Real-time toggle:', enabled);
                 }}
                 extra={
                   <Button type="link" href="#/leads">

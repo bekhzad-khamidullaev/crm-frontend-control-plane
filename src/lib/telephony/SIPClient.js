@@ -638,23 +638,16 @@ class SIPClient {
    */
   async logCallToAPI(callData) {
     try {
-      const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/api/call-logs/`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Token ${localStorage.getItem('token') || ''}`,
-        },
-        body: JSON.stringify(callData),
-      });
+      // Import api from client to use centralized error handling
+      const { api } = await import('../api/client.js');
+      const response = await api.post('/api/voip/call-logs/', { body: callData });
       
-      if (!response.ok) {
-        throw new Error(`Failed to log call: ${response.statusText}`);
-      }
-      
-      return await response.json();
+      console.log('[SIPClient] Call logged to API:', response);
+      return response.id;
     } catch (error) {
       console.error('[SIPClient] Error logging call to API:', error);
-      throw error;
+      // Don't throw - graceful degradation for logging errors
+      return null;
     }
   }
 
@@ -663,23 +656,16 @@ class SIPClient {
    */
   async updateCallLogInAPI(callLogId, updates) {
     try {
-      const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/api/call-logs/${callLogId}/`, {
-        method: 'PATCH',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Token ${localStorage.getItem('token') || ''}`,
-        },
-        body: JSON.stringify(updates),
-      });
+      // Import api from client to use centralized error handling
+      const { api } = await import('../api/client.js');
+      const response = await api.patch(`/api/voip/call-logs/${callLogId}/`, { body: updates });
       
-      if (!response.ok) {
-        throw new Error(`Failed to update call log: ${response.statusText}`);
-      }
-      
-      return await response.json();
+      console.log('[SIPClient] Call log updated in API:', response);
+      return true;
     } catch (error) {
       console.error('[SIPClient] Error updating call log in API:', error);
-      throw error;
+      // Don't throw - graceful degradation for logging errors
+      return false;
     }
   }
 }

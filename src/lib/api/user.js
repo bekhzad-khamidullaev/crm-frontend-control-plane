@@ -53,21 +53,12 @@ export async function updateProfile(data) {
 export async function uploadAvatar(file) {
   const formData = new FormData();
   formData.append('avatar', file);
-  
-  try {
-    return await api.patch('/api/profiles/me/', formData, {
-      headers: {
-        'Content-Type': 'multipart/form-data',
-      },
-    });
-  } catch (error) {
-    console.warn('Avatar upload through profiles failed, trying users endpoint');
-    return api.post('/api/users/me/avatar/', formData, {
-      headers: {
-        'Content-Type': 'multipart/form-data',
-      },
-    });
-  }
+
+  return api.post('/api/profiles/me/avatar/', formData, {
+    headers: {
+      'Content-Type': 'multipart/form-data',
+    },
+  });
 }
 
 /**

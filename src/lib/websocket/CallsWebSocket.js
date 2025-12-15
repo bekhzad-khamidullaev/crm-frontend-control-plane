@@ -114,8 +114,13 @@ class CallsWebSocket {
    * Handle WebSocket error event
    */
   handleError(error) {
-    console.error('[CallsWebSocket] Error:', error);
-    this.emit('error', { type: 'socket', error });
+    console.error('[CallsWebSocket] Connection error:', error);
+    // Don't throw - graceful degradation for optional WebSocket
+    this.emit('error', { 
+      type: 'connection_error',
+      message: 'WebSocket connection failed. Real-time call updates disabled.',
+      error 
+    });
   }
 
   /**
@@ -125,6 +130,17 @@ class CallsWebSocket {
     console.log('[CallsWebSocket] Disconnected:', event.code, event.reason);
     this.isConnected = false;
     this.emit('disconnected', { code: event.code, reason: event.reason });
+
+    // Don't reconnect if server is unavailable (code 1006 = abnormal closure)
+    if (event.code === 1006 && this.reconnectAttempts === 0) {
+      console.warn('[CallsWebSocket] Server unavailable, disabling auto-reconnect');
+      this.shouldReconnect = false;
+      this.emit('error', {
+        type: 'server_unavailable',
+        message: 'WebSocket server is not available. Real-time call updates disabled.'
+      });
+      return;
+    }
 
     if (this.shouldReconnect) {
       this.scheduleReconnect();

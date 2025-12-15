@@ -4,6 +4,26 @@ let _accessToken = null;
 let _refreshToken = null;
 const ACCESS_KEY = 'crm_access_token';
 const REFRESH_KEY = 'crm_refresh_token';
+const MAX_TOKEN_LENGTH = 16384; // warn but keep to avoid auth failures with long JWTs
+export const MAX_HEADER_SAFE_LENGTH = 4000;
+
+function normalizeToken(token) {
+  if (!token) return null;
+  const normalized = token.trim();
+  if (normalized.length > MAX_TOKEN_LENGTH) {
+    console.warn('Access/refresh token is large; headers may exceed limits. Consider enabling cookie auth or increasing server header limits.');
+  }
+  if (normalized.length > MAX_HEADER_SAFE_LENGTH) {
+    console.warn(
+      `Token length (${normalized.length} bytes) is likely too large for Authorization headers (~4KB). Prefer cookie auth (VITE_AUTH_MODE=session) or request smaller JWTs.`
+    );
+  }
+  return normalized;
+}
+
+export function isTokenTooLarge(token) {
+  return !!token && token.length > MAX_HEADER_SAFE_LENGTH;
+}
 
 /**
  * Set authentication token
@@ -13,8 +33,8 @@ const REFRESH_KEY = 'crm_refresh_token';
  */
 export function setToken(token, refreshToken = null, { persist = true } = {}) {
   // Support both Token Auth and JWT
-  _accessToken = token || null;
-  _refreshToken = refreshToken || null;
+  _accessToken = normalizeToken(token);
+  _refreshToken = normalizeToken(refreshToken);
   
   if (persist) {
     try {
@@ -42,8 +62,8 @@ export function getToken() {
   
   try {
     const saved = localStorage.getItem(ACCESS_KEY);
-    if (saved) {
-      _accessToken = saved;
+    if (saved) { 
+      _accessToken = normalizeToken(saved);
       return _accessToken;
     }
   } catch (_) { /* ignore */ }
@@ -60,8 +80,8 @@ export function getRefreshToken() {
   
   try {
     const saved = localStorage.getItem(REFRESH_KEY);
-    if (saved) {
-      _refreshToken = saved;
+    if (saved) { 
+      _refreshToken = normalizeToken(saved);
       return _refreshToken;
     }
   } catch (_) { /* ignore */ }

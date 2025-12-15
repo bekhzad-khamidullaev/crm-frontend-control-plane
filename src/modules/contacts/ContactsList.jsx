@@ -1,5 +1,6 @@
-import React, { useState, useEffect } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import {
+  Alert,
   Button,
   Space,
   Tag,
@@ -13,7 +14,6 @@ import {
   UserOutlined,
   MailOutlined,
   PhoneOutlined,
-  ShopOutlined,
 } from '@ant-design/icons';
 import { navigate } from '../../router';
 import { getContacts, deleteContact, contactsApi } from '../../lib/api/client';
@@ -27,11 +27,11 @@ import TableToolbar from '../../components/ui-TableToolbar.jsx';
 import QuickActions from '../../components/QuickActions.jsx';
 import EditableCell from '../../components/ui-EditableCell';
 import { exportAndDownload } from '../../lib/api/export';
-import { createTagColumn, createDateColumn } from '../../lib/utils/table-columns.jsx';
 
 function ContactsList() {
   const [contacts, setContacts] = useState([]);
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(null);
   const [searchText, setSearchText] = useState('');
   const [pagination, setPagination] = useState({
     current: 1,
@@ -44,90 +44,76 @@ function ContactsList() {
   const [bulkStatus, setBulkStatus] = useState('');
   const [bulkTagModalVisible, setBulkTagModalVisible] = useState(false);
   const [selectedTags, setSelectedTags] = useState([]);
+  const isMountedRef = useRef(true);
 
-  const fetchContacts = async (page = 1, search = '') => {
+  const fetchContacts = async (page = 1, search = '', pageSize = pagination.pageSize) => {
+    if (!isMountedRef.current) return;
     setLoading(true);
+    setError(null);
     try {
       const response = await getContacts({
         page,
-        page_size: pagination.pageSize,
-        search,
+        page_size: pageSize,
+        search: search || undefined,
       });
+
+      if (!isMountedRef.current) return;
+
       setContacts(response.results || []);
-      setPagination({
-        ...pagination,
+      setPagination((prev) => ({
+        ...prev,
         current: page,
+        pageSize,
         total: response.count || 0,
-      });
+      }));
     } catch (error) {
       console.error('Error fetching contacts:', error);
-      // Mock data for demo when API is unavailable
-      setContacts([
-        {
-          id: 1,
-          first_name: 'Анна',
-          last_name: 'Васильева',
-          email: 'anna.vasilyeva@example.com',
-          phone: '+7 999 777-88-99',
-          company: 'ООО "Медиа Групп"',
-          position: 'Директор по маркетингу',
-          type: 'client',
-          created_at: '2024-01-15T10:00:00Z',
-        },
-        {
-          id: 2,
-          first_name: 'Сергей',
-          last_name: 'Николаев',
-          email: 'sergey.nikolaev@example.com',
-          phone: '+7 999 888-99-00',
-          company: 'АО "Промтех"',
-          position: 'Генеральный директор',
-          type: 'partner',
-          created_at: '2024-01-12T14:30:00Z',
-        },
-        {
-          id: 3,
-          first_name: 'Ольга',
-          last_name: 'Морозова',
-          email: 'olga.morozova@example.com',
-          phone: '+7 999 000-11-22',
-          company: 'ИП Морозова',
-          position: 'Владелец',
-          type: 'supplier',
-          created_at: '2024-01-08T09:15:00Z',
-        },
-      ]);
-      setPagination({
-        ...pagination,
+      if (!isMountedRef.current) return;
+
+      setContacts([]);
+      setPagination((prev) => ({
+        ...prev,
         current: 1,
-        total: 3,
-      });
+        total: 0,
+      }));
+      const errorMessage = error?.details?.detail || error?.message || 'Не удалось загрузить контакты';
+      setError(errorMessage);
+      message.error('Не удалось загрузить контакты. Проверьте подключение или авторизацию.');
     } finally {
+      if (!isMountedRef.current) return;
       setLoading(false);
     }
   };
 
   useEffect(() => {
-    fetchContacts(1, searchText);
+    fetchContacts(1, searchText, pagination.pageSize);
+    return () => {
+      isMountedRef.current = false;
+    };
   }, []);
 
   const handleSearch = (value) => {
     setSearchText(value);
-    fetchContacts(1, value);
+    fetchContacts(1, value, pagination.pageSize);
   };
 
   const handleDelete = async (id) => {
     try {
       await deleteContact(id);
       message.success('Контакт удален');
-      fetchContacts(pagination.current, searchText);
+      fetchContacts(pagination.current, searchText, pagination.pageSize);
     } catch (error) {
       message.error('Ошибка удаления контакта');
     }
   };
 
   const handleTableChange = (newPagination) => {
-    fetchContacts(newPagination.current, searchText);
+    setPagination((prev) => ({
+      ...prev,
+      current: newPagination.current,
+      pageSize: newPagination.pageSize,
+    }));
+    fetchContacts(newPagination.current, searchText, newPagination.pageSize);
   };
 
   // Bulk actions handlers
@@ -136,7 +122,7 @@ function ContactsList() {
       await Promise.all(ids.map(id => deleteContact(id)));
       message.success(`Удалено ${ids.length} контактов`);
       setSelectedRowKeys([]);
-      fetchContacts(pagination.current, searchText);
+      fetchContacts(pagination.current, searchText, pagination.pageSize);
     } catch (error) {
       message.error('Ошибка массового удаления');
     }
@@ -184,14 +170,14 @@ function ContactsList() {
     try {
       await Promise.all(
         selectedRowKeys.map(id =>
-          api.patch(`/api/contacts/${id}/`, { type: bulkStatus })
+          contactsApi.patch(id, { type: bulkStatus })
         )
       );
       message.success(`Тип изменен для ${selectedRowKeys.length} контактов`);
       setSelectedRowKeys([]);
       setStatusChangeModalVisible(false);
       setBulkStatus('');
-      fetchContacts(pagination.current, searchText);
+      fetchContacts(pagination.current, searchText, pagination.pageSize);
     } catch (error) {
       message.error('Ошибка изменения типа');
     }
@@ -245,7 +231,7 @@ function ContactsList() {
       setSelectedRowKeys([]);
       setBulkTagModalVisible(false);
       setSelectedTags([]);
-      fetchContacts(pagination.current, searchText);
+      fetchContacts(pagination.current, searchText, pagination.pageSize);
     } catch (error) {
       const errorMessage = error?.details?.detail || error?.message || 'Ошибка применения тегов';
       message.error(errorMessage);
@@ -444,10 +430,22 @@ function ContactsList() {
         onSearch={handleSearch}
         onCreate={() => navigate('/contacts/new')}
         onExport={handleExport}
-        onRefresh={() => fetchContacts(pagination.current, searchText)}
+        onRefresh={() => fetchContacts(pagination.current, searchText, pagination.pageSize)}
         createButtonText="Создать контакт"
         showViewModeSwitch={false}
       />
+
+      {error && (
+        <Alert
+          type="error"
+          message="Ошибка загрузки контактов"
+          description={error}
+          showIcon
+          closable
+          onClose={() => setError(null)}
+          style={{ marginBottom: 16 }}
+        />
+      )}
 
       <EnhancedTable
         columns={columns}

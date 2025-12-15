@@ -53,6 +53,36 @@ Username: admin (or any)
 Password: any password
 ```
 
+### 🔧 Backend Setup (Optional)
+
+The frontend works in **standalone mode** with mock data, but for full functionality, you'll need the Django backend:
+
+```bash
+# Option 1: Use mock data (default - no backend needed)
+npm run dev  # Frontend runs with fallback mock data
+
+# Option 2: Connect to Django backend
+# 1. Start Django server on http://127.0.0.1:8000
+# 2. Update .env: VITE_API_BASE_URL=http://127.0.0.1:8000
+# 3. Restart frontend: npm run dev
+```
+
+### 🛠️ Troubleshooting
+
+**API Connection Issues:**
+- ✅ **Normal**: Seeing "API connection failed" warnings in console is expected in development without backend
+- ✅ **Mock Data**: Dashboard and modules work with fallback data when backend is unavailable
+- ⚠️ **Backend Required**: For production or full testing, start Django backend on port 8000
+
+**Environment Configuration:**
+```bash
+# For standalone development (default)
+VITE_API_BASE_URL=
+
+# For backend integration
+VITE_API_BASE_URL=http://127.0.0.1:8000
+```
+
 ## 📚 Documentation
 
 - 📖 [INDEX.md](INDEX.md) - Documentation navigator
