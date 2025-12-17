@@ -1,0 +1,134 @@
+================================================================================
+⚠️  TODO: ВЫПОЛНИТЕ ЭТИ ШАГИ ПЕРЕД ДЕПЛОЕМ
+================================================================================
+
+НА ВАШЕЙ ЛОКАЛЬНОЙ МАШИНЕ:
+---------------------------
+
+1. ✅ Установите недостающие npm зависимости:
+   
+   npm install --save-dev rollup-plugin-visualizer vite-plugin-compression @vitest/coverage-v8
+
+2. ✅ Обновите SIP credentials в .env.production:
+   
+   Откройте .env.production и установите:
+   VITE_SIP_USERNAME=<ваш-реальный-username>
+   VITE_SIP_PASSWORD=<ваш-реальный-password>
+
+3. ✅ Протестируйте production build:
+   
+   npm run build:production
+   npm run preview:production
+   # Откройте http://localhost:4173 и проверьте
+
+4. ✅ Закоммитьте изменения:
+   
+   git add .
+   git commit -m "Production deployment configuration"
+   git push origin main
+
+
+НА PRODUCTION СЕРВЕРЕ:
+-----------------------
+
+5. ✅ Настройте DNS записи:
+   
+   windevs.uz      A    <IP-адрес-сервера>
+   www.windevs.uz  A    <IP-адрес-сервера>
+   
+   Проверка: dig windevs.uz
+
+6. ✅ Клонируйте репозиторий на сервер:
+   
+   ssh root@<server-ip>
+   git clone <your-repo-url> /opt/crm-frontend
+   cd /opt/crm-frontend
+
+7. ✅ Запустите автоматическую настройку сервера:
+   
+   sudo ./scripts/setup-server.sh
+   
+   Это установит:
+   - Docker & Docker Compose
+   - Nginx
+   - Certbot
+   - UFW (firewall)
+   - Fail2ban
+
+8. ✅ Получите SSL сертификаты:
+   
+   sudo certbot --nginx -d windevs.uz -d www.windevs.uz
+
+9. ✅ Убедитесь, что backend доступен:
+   
+   curl https://crm.windevs.uz/api/
+   curl https://pbx.windevs.uz
+   
+   ⚠️  ВАЖНО: На backend (Django) должен быть настроен CORS:
+   CORS_ALLOWED_ORIGINS = [
+       "https://windevs.uz",
+       "https://www.windevs.uz",
+   ]
+
+10. ✅ Запустите деплой:
+    
+    ./deploy.sh production
+
+11. ✅ Проверьте работоспособность:
+    
+    ./scripts/health-check.sh
+    
+    Откройте в браузере:
+    - https://windevs.uz
+    - https://windevs.uz/health
+
+12. ✅ Настройте автоматический мониторинг:
+    
+    crontab -e
+    
+    Добавьте:
+    */5 * * * * cd /opt/crm-frontend && ./scripts/health-check.sh >> /var/log/crm-health.log 2>&1
+    0 3 * * * cd /opt/crm-frontend && ./scripts/backup.sh >> /var/log/crm-backup.log 2>&1
+
+
+ДЛЯ CI/CD (ОПЦИОНАЛЬНО):
+-------------------------
+
+13. ✅ Настройте GitHub Secrets:
+    
+    В GitHub repository → Settings → Secrets → Actions добавьте:
+    
+    PRODUCTION_HOST=<IP-адрес-сервера>
+    PRODUCTION_USER=<ssh-username>
+    PRODUCTION_SSH_KEY=<приватный-ssh-ключ>
+
+14. ✅ После этого деплой будет автоматическим:
+    
+    git push origin main  # → автоматический деплой на production
+
+
+ПРОВЕРКА УСПЕШНОГО ДЕПЛОЯ:
+---------------------------
+
+✓ https://windevs.uz загружается
+✓ https://windevs.uz/health возвращает "healthy"
+✓ Логин работает
+✓ API запросы проходят (проверьте Network в браузере)
+✓ WebSocket подключения работают
+✓ Нет ошибок в консоли браузера
+✓ SSL сертификат валидный (нет предупреждений в браузере)
+
+================================================================================
+
+📚 Детальные инструкции смотрите в:
+   - NEXT_STEPS.md (этот файл детально)
+   - QUICK_START.md (быстрый старт за 15 минут)
+   - DEPLOYMENT.md (полная документация)
+   - DEPLOYMENT_CHECKLIST.md (чеклист)
+
+🆘 Если что-то пошло не так:
+   - Смотрите логи: docker-compose logs -f frontend
+   - Запустите health check: ./scripts/health-check.sh
+   - Читайте DEPLOYMENT.md → Troubleshooting
+
+================================================================================

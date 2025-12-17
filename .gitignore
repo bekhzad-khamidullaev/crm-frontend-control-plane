@@ -1,15 +1,20 @@
 # Dependencies
 node_modules/
 dist/
+dist-ssr/
+*.local
 
 # Environment files
 .env
 .env.local
 .env.production.local
 .env.development.local
+.env.staging.local
 
 # Editor files
-.vscode/
+.vscode/*
+!.vscode/settings.json
+!.vscode/extensions.json
 .idea/
 *.swp
 *.swo
@@ -25,9 +30,22 @@ coverage/
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
+
+# Production
+build/
+backups/
+
+# Bundle analyzer
+dist/stats.html
+
+# Logs
+logs/
 
 # Temporary files
 tmp_*
 *.tmp
 *.bak
 *.old
+.cache/

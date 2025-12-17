@@ -1,0 +1,66 @@
+version: '3.8'
+
+services:
+  # Production frontend service
+  frontend:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        BUILD_MODE: production
+    container_name: crm-frontend-production
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+    environment:
+      - API_BASE_URL=https://crm.windevs.uz
+      - API_PREFIX=/api
+      - PBX_SERVER=wss://pbx.windevs.uz:5061
+    volumes:
+      # Mount SSL certificates (update paths as needed)
+      - /etc/letsencrypt/live/windevs.uz/fullchain.pem:/etc/ssl/certs/windevs.uz/fullchain.pem:ro
+      - /etc/letsencrypt/live/windevs.uz/privkey.pem:/etc/ssl/certs/windevs.uz/privkey.pem:ro
+      # Mount nginx logs
+      - ./logs/nginx:/var/log/nginx
+    networks:
+      - crm-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost/health"]
+      interval: 30s
+      timeout: 3s
+      retries: 3
+      start_period: 10s
+    labels:
+      - "com.windevs.app=crm-frontend"
+      - "com.windevs.environment=production"
+
+  # Staging frontend service (optional)
+  frontend-staging:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        BUILD_MODE: staging
+    container_name: crm-frontend-staging
+    restart: unless-stopped
+    ports:
+      - "8080:80"
+    environment:
+      - API_BASE_URL=https://staging.crm.windevs.uz
+      - API_PREFIX=/api
+      - PBX_SERVER=wss://pbx.windevs.uz:5061
+    networks:
+      - crm-network
+    profiles:
+      - staging
+    labels:
+      - "com.windevs.app=crm-frontend"
+      - "com.windevs.environment=staging"
+
+networks:
+  crm-network:
+    driver: bridge
+
+volumes:
+  nginx-logs:

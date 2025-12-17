@@ -214,3 +214,70 @@ Start with `npm run dev` and explore at http://localhost:3000
 **Version:** 2.3.0  
 **Last Updated:** 2024-01-XX  
 **Maintained by:** Development Team
+
+---
+
+## 📦 Production Deployment
+
+### Quick Links
+- **⚠️ Start Here:** [TODO_BEFORE_DEPLOY.txt](TODO_BEFORE_DEPLOY.txt)
+- **🎯 Next Steps:** [NEXT_STEPS.md](NEXT_STEPS.md)
+- **⚡ Quick Start:** [QUICK_START.md](QUICK_START.md) (15 min to production)
+- **📚 Full Guide:** [DEPLOYMENT.md](DEPLOYMENT.md)
+- **✅ Checklist:** [DEPLOYMENT_CHECKLIST.md](DEPLOYMENT_CHECKLIST.md)
+
+### Production URLs
+- **Frontend:** https://windevs.uz
+- **API Backend:** https://crm.windevs.uz/api/
+- **PBX Server:** wss://pbx.windevs.uz:5061
+
+### Deployment Methods
+
+#### Method 1: Automated Script (Recommended)
+```bash
+./deploy.sh production
+```
+
+#### Method 2: Docker Compose
+```bash
+docker-compose up -d frontend
+```
+
+#### Method 3: CI/CD (Automatic)
+```bash
+git push origin main  # Auto-deploys via GitHub Actions
+```
+
+### Key Commands
+```bash
+# Build & Test
+npm run build:production    # Production build
+npm run test               # Run tests
+npm run lint               # Check code quality
+
+# Docker Operations
+make docker-up             # Start containers
+make docker-logs           # View logs
+make deploy-prod           # Deploy to production
+
+# Monitoring
+./scripts/health-check.sh  # Check all services
+docker-compose logs -f     # Live logs
+```
+
+---
+
+## 🏗️ Architecture
+
+```
+Internet → Nginx (SSL) → Docker (React SPA)
+                      ↓
+                [API Proxy] → crm.windevs.uz (Django)
+                      ↓
+                [WebSocket] → crm.windevs.uz/ws/
+                      ↓
+                [PBX] → pbx.windevs.uz:5061 (VoIP)
+```
+
+---
+
