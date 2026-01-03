@@ -5,21 +5,19 @@
 
 import React, { useState, useEffect } from 'react';
 import { Form, Input, Select, Button, Space, App, Alert, Switch, Divider, Table, Modal, Tag, Popconfirm } from 'antd';
-import { PhoneOutlined, PlusOutlined, EditOutlined, DeleteOutlined, CheckCircleOutlined } from '@ant-design/icons';
+import { PlusOutlined, EditOutlined, DeleteOutlined } from '@ant-design/icons';
 import { 
   getVoIPConnections, 
   createVoIPConnection, 
   updateVoIPConnection,
   deleteVoIPConnection,
-  patchVoIPConnection,
-  testSIPConnection
+  patchVoIPConnection
 } from '../lib/api/telephony';
 
 export default function TelephonySettings({ onSuccess }) {
   const { message } = App.useApp();
   const [form] = Form.useForm();
   const [loading, setLoading] = useState(false);
-  const [testing, setTesting] = useState(false);
   const [connections, setConnections] = useState([]);
   const [modalVisible, setModalVisible] = useState(false);
   const [editingConnection, setEditingConnection] = useState(null);
@@ -104,19 +102,6 @@ export default function TelephonySettings({ onSuccess }) {
     }
   };
 
-  const handleTestConnection = async () => {
-    setTesting(true);
-    try {
-      const values = form.getFieldsValue();
-      await testSIPConnection(values);
-      message.success('SIP подключение успешно проверено');
-    } catch (error) {
-      console.error('Error testing SIP connection:', error);
-      message.error('Ошибка тестирования подключения');
-    } finally {
-      setTesting(false);
-    }
-  };
 
   const columns = [
     {
@@ -293,9 +278,6 @@ export default function TelephonySettings({ onSuccess }) {
             <Space>
               <Button type="primary" htmlType="submit" loading={loading}>
                 {editingConnection ? 'Обновить' : 'Создать'}
-              </Button>
-              <Button onClick={handleTestConnection} loading={testing} icon={<PhoneOutlined />}>
-                Тест
               </Button>
               <Button
                 onClick={() => {

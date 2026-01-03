@@ -15,13 +15,8 @@ import {
   CloseCircleOutlined,
   FileTextOutlined,
 } from '@ant-design/icons';
-import {
-  endCall,
-  muteCall,
-  holdCall,
-  transferCall,
-  addCallNote,
-} from '../lib/api/telephony';
+import { addCallNote } from '../lib/api/telephony';
+import sipClient from '../lib/telephony/SIPClient.js';
 
 const { TextArea } = Input;
 
@@ -55,9 +50,9 @@ export default function ActiveCallWidget({ call, onCallEnd, onUpdate }) {
 
   const handleMute = async () => {
     try {
-      await muteCall(call.id, !muted);
-      setMuted(!muted);
-      message.success(muted ? 'Микрофон включен' : 'Микрофон выключен');
+      const nextState = sipClient.toggleMute();
+      setMuted(nextState);
+      message.success(nextState ? 'Микрофон выключен' : 'Микрофон включен');
       onUpdate?.();
     } catch (error) {
       message.error('Ошибка управления микрофоном');
@@ -66,9 +61,9 @@ export default function ActiveCallWidget({ call, onCallEnd, onUpdate }) {
 
   const handleHold = async () => {
     try {
-      await holdCall(call.id, !onHold);
-      setOnHold(!onHold);
-      message.success(onHold ? 'Звонок возобновлен' : 'Звонок поставлен на удержание');
+      const nextState = sipClient.toggleHold();
+      setOnHold(nextState);
+      message.success(nextState ? 'Звонок поставлен на удержание' : 'Звонок возобновлен');
       onUpdate?.();
     } catch (error) {
       message.error('Ошибка управления удержанием');
@@ -82,11 +77,15 @@ export default function ActiveCallWidget({ call, onCallEnd, onUpdate }) {
     }
 
     try {
-      await transferCall(call.id, transferNumber);
-      message.success('Звонок переведен');
-      setShowTransferInput(false);
-      setTransferNumber('');
-      onUpdate?.();
+      const transferred = sipClient.transferCall(transferNumber);
+      if (transferred) {
+        message.success('Звонок переведен');
+        setShowTransferInput(false);
+        setTransferNumber('');
+        onUpdate?.();
+      } else {
+        message.error('Не удалось перевести звонок');
+      }
     } catch (error) {
       message.error('Ошибка перевода звонка');
     }
@@ -94,7 +93,7 @@ export default function ActiveCallWidget({ call, onCallEnd, onUpdate }) {
 
   const handleEnd = async () => {
     try {
-      await endCall(call.id);
+      sipClient.hangup();
       message.success('Звонок завершен');
       onCallEnd?.();
     } catch (error) {

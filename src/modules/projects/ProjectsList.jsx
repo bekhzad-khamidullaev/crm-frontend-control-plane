@@ -1,22 +1,34 @@
-import React, { useState, useEffect } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import {
   Button,
   Space,
   Tag,
   message,
   Avatar,
-  Progress,
+  Checkbox,
+  Typography,
+  Popconfirm,
+  Modal,
+  Form,
 } from 'antd';
 import {
   FolderOutlined,
-  TeamOutlined,
-  InboxOutlined,
+  CalendarOutlined,
+  ClockCircleOutlined,
+  EyeOutlined,
+  EditOutlined,
+  DeleteOutlined,
 } from '@ant-design/icons';
 import { navigate } from '../../router';
-import { getProjects, deleteProject } from '../../lib/api/client';
+import { getProjects, deleteProject, getUsers, projectsApi } from '../../lib/api/client';
+import { getProjectStages } from '../../lib/api/reference';
 import EnhancedTable from '../../components/ui-EnhancedTable.jsx';
 import TableToolbar from '../../components/ui-TableToolbar.jsx';
-import QuickActions from '../../components/QuickActions.jsx';
+import BulkActions from '../../components/ui-BulkActions.jsx';
+import ReferenceSelect from '../../components/ui-ReferenceSelect.jsx';
+import { exportAndDownload } from '../../lib/api/export.js';
+
+const { Text } = Typography;
 
 function ProjectsList() {
   const [projects, setProjects] = useState([]);
@@ -27,6 +39,31 @@ function ProjectsList() {
     pageSize: 10,
     total: 0,
   });
+  const [stages, setStages] = useState([]);
+  const [users, setUsers] = useState([]);
+  const [selectedRowKeys, setSelectedRowKeys] = useState([]);
+  const [bulkTagModalVisible, setBulkTagModalVisible] = useState(false);
+  const [selectedTags, setSelectedTags] = useState([]);
+
+  useEffect(() => {
+    fetchProjects(1, searchText);
+    loadReferences();
+  }, []);
+
+  const loadReferences = async () => {
+    try {
+      const [stagesResponse, usersResponse] = await Promise.all([
+        getProjectStages({ page_size: 200 }),
+        getUsers({ page_size: 200 }),
+      ]);
+      setStages(stagesResponse.results || stagesResponse || []);
+      setUsers(usersResponse.results || usersResponse || []);
+    } catch (error) {
+      console.error('Error loading project references:', error);
+      setStages([]);
+      setUsers([]);
+    }
+  };
 
   const fetchProjects = async (page = 1, search = '') => {
     setLoading(true);
@@ -34,74 +71,26 @@ function ProjectsList() {
       const response = await getProjects({
         page,
         page_size: pagination.pageSize,
-        search,
+        search: search || undefined,
       });
       setProjects(response.results || []);
-      setPagination({
-        ...pagination,
+      setPagination((prev) => ({
+        ...prev,
         current: page,
         total: response.count || 0,
-      });
+      }));
     } catch (error) {
       message.error('Ошибка загрузки проектов');
-      // Mock data for demo
-      setProjects([
-        {
-          id: 1,
-          name: 'Внедрение CRM системы',
-          description: 'Полное внедрение CRM для компании',
-          status: 'in_progress',
-          progress: 45,
-          start_date: '2024-01-15',
-          end_date: '2024-04-30',
-          budget: 2500000,
-          client: 'ООО "ТехноПром"',
-          manager: 'Алексей Иванов',
-          team_size: 5,
-          created_at: '2024-01-10',
-        },
-        {
-          id: 2,
-          name: 'Разработка мобильного приложения',
-          description: 'iOS и Android приложение',
-          status: 'planning',
-          progress: 10,
-          start_date: '2024-02-01',
-          end_date: '2024-06-30',
-          budget: 3500000,
-          client: 'АО "Инновации"',
-          manager: 'Елена Смирнова',
-          team_size: 8,
-          created_at: '2024-01-20',
-        },
-        {
-          id: 3,
-          name: 'Консалтинг по автоматизации',
-          description: 'Аудит и рекомендации',
-          status: 'completed',
-          progress: 100,
-          start_date: '2023-12-01',
-          end_date: '2024-01-31',
-          budget: 850000,
-          client: 'ИП Козлов',
-          manager: 'Дмитрий Козлов',
-          team_size: 3,
-          created_at: '2023-11-25',
-        },
-      ]);
-      setPagination({
-        ...pagination,
+      setProjects([]);
+      setPagination((prev) => ({
+        ...prev,
         current: 1,
-        total: 3,
-      });
+        total: 0,
+      }));
     } finally {
       setLoading(false);
     }
   };
-
-  useEffect(() => {
-    fetchProjects(1, searchText);
-  }, []);
 
   const handleSearch = (value) => {
     setSearchText(value);
@@ -122,15 +111,104 @@ function ProjectsList() {
     fetchProjects(newPagination.current, searchText);
   };
 
-  const statusConfig = {
-    planning: { color: 'default', text: 'Планирование' },
-    in_progress: { color: 'blue', text: 'В работе' },
-    on_hold: { color: 'orange', text: 'Приостановлен' },
-    completed: { color: 'green', text: 'Завершен' },
-    cancelled: { color: 'red', text: 'Отменен' },
+  const handleExport = async (format) => {
+    try {
+      await exportAndDownload('projects', {
+        format: format === 'excel' ? 'xlsx' : 'csv',
+      });
+      message.success('Проекты экспортированы');
+    } catch (error) {
+      message.error('Ошибка экспорта проектов');
+    }
+  };
+
+  const handleBulkDelete = async (ids) => {
+    try {
+      await Promise.all(ids.map((id) => deleteProject(id)));
+      message.success(`Удалено ${ids.length} проектов`);
+      setSelectedRowKeys([]);
+      fetchProjects(pagination.current, searchText);
+    } catch (error) {
+      message.error('Ошибка массового удаления');
+    }
+  };
+
+  const handleBulkTag = () => {
+    setBulkTagModalVisible(true);
+  };
+
+  const handleBulkTagConfirm = async () => {
+    if (!selectedTags.length) {
+      message.error('Выберите хотя бы один тег');
+      return;
+    }
+
+    try {
+      await projectsApi.bulkTag({
+        project_ids: selectedRowKeys,
+        tag_ids: selectedTags,
+      });
+      message.success(`Теги применены к ${selectedRowKeys.length} проектам`);
+      setSelectedRowKeys([]);
+      setBulkTagModalVisible(false);
+      setSelectedTags([]);
+      fetchProjects(pagination.current, searchText);
+    } catch (error) {
+      const errorMessage = error?.details?.detail || error?.message || 'Ошибка применения тегов';
+      message.error(errorMessage);
+    }
+  };
+
+  const stagesById = useMemo(() => {
+    return stages.reduce((acc, stage) => {
+      acc[stage.id] = stage;
+      return acc;
+    }, {});
+  }, [stages]);
+
+  const userNameById = useMemo(() => {
+    return users.reduce((acc, user) => {
+      acc[user.id] = user.username || user.email || `#${user.id}`;
+      return acc;
+    }, {});
+  }, [users]);
+
+  const doneStage = stages.find((stage) => stage.done);
+
+  const handleToggleComplete = async (project) => {
+    const isDone = doneStage ? project.stage === doneStage.id : project.active === false;
+    try {
+      if (isDone) {
+        await projectsApi.reopen(project.id);
+        message.success('Проект возобновлен');
+      } else {
+        await projectsApi.complete(project.id);
+        message.success('Проект завершен');
+      }
+      fetchProjects(pagination.current, searchText);
+    } catch (error) {
+      message.error('Ошибка обновления статуса проекта');
+    }
+  };
+
+  const priorityConfig = {
+    1: { color: 'green', text: 'Низкий' },
+    2: { color: 'orange', text: 'Средний' },
+    3: { color: 'red', text: 'Высокий' },
   };
 
   const columns = [
+    {
+      title: '',
+      key: 'checkbox',
+      width: 50,
+      render: (_, record) => (
+        <Checkbox
+          checked={doneStage ? record.stage === doneStage.id : false}
+          onChange={() => handleToggleComplete(record)}
+        />
+      ),
+    },
     {
       title: 'Проект',
       key: 'project',
@@ -147,88 +225,66 @@ function ProjectsList() {
           </div>
         </Space>
       ),
-      sorter: (a, b) => a.name.localeCompare(b.name),
+      sorter: (a, b) => (a.name || '').localeCompare(b.name || ''),
     },
     {
-      title: 'Статус',
-      dataIndex: 'status',
-      key: 'status',
-      render: (status) => {
-        const config = statusConfig[status] || statusConfig.planning;
+      title: 'Этап',
+      dataIndex: 'stage',
+      key: 'stage',
+      render: (stageId) => {
+        const stage = stagesById[stageId];
+        return stage ? <Tag color={stage.done ? 'green' : stage.in_progress ? 'blue' : 'default'}>{stage.name}</Tag> : '-';
+      },
+    },
+    {
+      title: 'Приоритет',
+      dataIndex: 'priority',
+      key: 'priority',
+      render: (priority) => {
+        const config = priorityConfig[priority] || { color: 'default', text: '-' };
         return <Tag color={config.color}>{config.text}</Tag>;
       },
-      filters: Object.keys(statusConfig).map((key) => ({
-        text: statusConfig[key].text,
-        value: key,
-      })),
-      onFilter: (value, record) => record.status === value,
     },
     {
-      title: 'Прогресс',
-      dataIndex: 'progress',
-      key: 'progress',
-      render: (progress) => (
-        <div style={{ width: 120 }}>
-          <Progress
-            percent={progress}
-            size="small"
-            status={progress === 100 ? 'success' : 'active'}
-          />
-        </div>
-      ),
-      sorter: (a, b) => a.progress - b.progress,
+      title: 'Ответственные',
+      dataIndex: 'responsible',
+      key: 'responsible',
+      render: (responsible, record) => {
+        const ids = Array.isArray(responsible) ? responsible : [];
+        const names = ids.map((id) => userNameById[id]).filter(Boolean);
+        const ownerLabel = record.owner ? userNameById[record.owner] || `#${record.owner}` : null;
+        return <Text>{names.length ? names.join(', ') : ownerLabel || '-'}</Text>;
+      },
     },
     {
-      title: 'Клиент',
-      dataIndex: 'client',
-      key: 'client',
-      sorter: (a, b) => a.client.localeCompare(b.client),
-    },
-    {
-      title: 'Менеджер',
-      dataIndex: 'manager',
-      key: 'manager',
-      sorter: (a, b) => a.manager.localeCompare(b.manager),
-    },
-    {
-      title: 'Команда',
-      dataIndex: 'team_size',
-      key: 'team_size',
-      render: (size) => (
-        <Space>
-          <TeamOutlined />
-          <Text>{size} чел.</Text>
-        </Space>
-      ),
-      sorter: (a, b) => a.team_size - b.team_size,
-    },
-    {
-      title: 'Бюджет',
-      dataIndex: 'budget',
-      key: 'budget',
-      render: (budget) => `${(budget / 1000000).toFixed(1)} млн ₽`,
-      sorter: (a, b) => a.budget - b.budget,
-    },
-    {
-      title: 'Сроки',
-      key: 'dates',
-      render: (_, record) => (
-        <Space direction="vertical" size="small">
-          <Space size="small">
-            <CalendarOutlined />
-            <Text style={{ fontSize: 12 }}>
-              {new Date(record.start_date).toLocaleDateString('ru-RU')}
-            </Text>
+      title: 'Срок',
+      dataIndex: 'due_date',
+      key: 'due_date',
+      render: (date) => {
+        if (!date) return '-';
+        const dueDate = new Date(date);
+        const today = new Date();
+        const daysLeft = Math.ceil((dueDate - today) / (1000 * 60 * 60 * 24));
+        return (
+          <Space direction="vertical" size="small">
+            <Space size="small">
+              <CalendarOutlined />
+              {dueDate.toLocaleDateString('ru-RU')}
+            </Space>
+            {daysLeft > 0 && daysLeft <= 3 && (
+              <Text type="warning" style={{ fontSize: 12 }}>
+                <ClockCircleOutlined /> {daysLeft} дн.
+              </Text>
+            )}
+            {daysLeft < 0 && (
+              <Text type="danger" style={{ fontSize: 12 }}>
+                <ClockCircleOutlined /> просрочено
+              </Text>
+            )}
           </Space>
-          <Space size="small">
-            <CalendarOutlined />
-            <Text style={{ fontSize: 12 }}>
-              {new Date(record.end_date).toLocaleDateString('ru-RU')}
-            </Text>
-          </Space>
-        </Space>
-      ),
-      sorter: (a, b) => new Date(a.end_date) - new Date(b.end_date),
+        );
+      },
+      sorter: (a, b) => new Date(a.due_date || 0) - new Date(b.due_date || 0),
     },
     {
       title: 'Действия',
@@ -266,19 +322,25 @@ function ProjectsList() {
     },
   ];
 
+  const rowSelection = {
+    selectedRowKeys,
+    onChange: (keys) => setSelectedRowKeys(keys),
+  };
+
   return (
     <div>
       <TableToolbar
         title="Проекты"
         total={pagination.total}
         loading={loading}
-        searchPlaceholder="Поиск по названию, описанию, клиенту..."
+        searchPlaceholder="Поиск по названию, описанию..."
         onSearch={handleSearch}
         onCreate={() => navigate('/projects/new')}
         onRefresh={() => fetchProjects(pagination.current, searchText)}
+        onExport={handleExport}
         createButtonText="Создать проект"
         showViewModeSwitch={false}
-        showExportButton={false}
+        showExportButton={true}
       />
 
       <EnhancedTable
@@ -287,12 +349,54 @@ function ProjectsList() {
         loading={loading}
         pagination={pagination}
         onChange={handleTableChange}
-        scroll={{ x: 1600 }}
+        rowSelection={rowSelection}
+        scroll={{ x: 1400 }}
+        rowClassName={(record) =>
+          doneStage && record.stage === doneStage.id ? 'row-completed' : ''
+        }
         showTotal={true}
         showSizeChanger={true}
         emptyText="Нет проектов"
         emptyDescription="Создайте первый проект"
       />
+
+      <BulkActions
+        selectedRowKeys={selectedRowKeys}
+        onClearSelection={() => setSelectedRowKeys([])}
+        onDelete={handleBulkDelete}
+        onBulkTag={handleBulkTag}
+        entityName="проектов"
+      />
+
+      <Modal
+        title="Добавить теги к проектам"
+        open={bulkTagModalVisible}
+        onCancel={() => {
+          setBulkTagModalVisible(false);
+          setSelectedTags([]);
+        }}
+        onOk={handleBulkTagConfirm}
+        okText="Применить"
+        cancelText="Отмена"
+      >
+        <p>Добавить теги к {selectedRowKeys.length} выбранным проектам</p>
+        <Form.Item label="Теги">
+          <ReferenceSelect
+            type="crm-tags"
+            mode="multiple"
+            placeholder="Выберите теги"
+            value={selectedTags}
+            onChange={setSelectedTags}
+          />
+        </Form.Item>
+      </Modal>
+
+      <style jsx>{`
+        .row-completed {
+          opacity: 0.6;
+          text-decoration: line-through;
+        }
+      `}</style>
     </div>
   );
 }

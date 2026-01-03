@@ -31,7 +31,7 @@ import ReferenceSelect from '../../components/ui-ReferenceSelect';
 import EnhancedTable from '../../components/ui-EnhancedTable.jsx';
 import TableToolbar from '../../components/ui-TableToolbar.jsx';
 import QuickActions from '../../components/QuickActions.jsx';
-import { exportAndDownload } from '../../lib/api/export';
+import { exportToCSV, exportToExcel } from '../../lib/utils/export';
 import {
   createTwoLineColumn,
   createTagColumn,
@@ -236,16 +236,39 @@ function LeadsList() {
     }
   };
 
-  const handleBulkExport = async () => {
-    try {
-      await exportAndDownload('leads', {
-        format: 'csv',
-        filters: { id__in: selectedRowKeys.join(',') },
-      });
-      message.success('Данные экспортированы');
-    } catch (error) {
-      message.error('Ошибка экспорта данных');
+  const exportColumns = [
+    { key: 'first_name', label: 'Имя' },
+    { key: 'last_name', label: 'Фамилия' },
+    { key: 'email', label: 'Email' },
+    { key: 'phone', label: 'Телефон' },
+    { key: 'company_name', label: 'Компания' },
+    { key: 'status', label: 'Статус' },
+    { key: 'owner_name', label: 'Ответственный' },
+  ];
+
+  const buildExportRows = (ids = []) => {
+    const source = ids.length ? leads.filter((lead) => ids.includes(lead.id)) : leads;
+    return source;
+  };
+
+  const performExport = (format, ids = []) => {
+    const rows = buildExportRows(ids);
+    if (!rows.length) {
+      message.warning('Нет данных для экспорта');
+      return;
     }
+    const ext = format === 'excel' ? 'xlsx' : 'csv';
+    const filename = `leads_${new Date().toISOString().split('T')[0]}.${ext}`;
+    if (format === 'excel') {
+      exportToExcel(rows, exportColumns, filename);
+    } else {
+      exportToCSV(rows, exportColumns, filename);
+    }
+    message.success('Данные экспортированы');
+  };
+
+  const handleBulkExport = (ids) => {
+    performExport('csv', ids);
   };
 
   const handleCellSave = async (id, field, value) => {
@@ -434,16 +457,8 @@ function LeadsList() {
     },
   ];
 
-  const handleExport = async (format) => {
-    try {
-      await exportAndDownload('leads', {
-        format: format === 'excel' ? 'xlsx' : 'csv',
-        filters: selectedRowKeys.length > 0 ? { id__in: selectedRowKeys.join(',') } : {},
-      });
-      message.success(`Данные экспортированы в ${format.toUpperCase()}`);
-    } catch (error) {
-      message.error('Ошибка экспорта данных');
-    }
+  const handleExport = (format) => {
+    performExport(format, selectedRowKeys);
   };
 
   return (

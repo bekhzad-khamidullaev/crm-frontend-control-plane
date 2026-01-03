@@ -13,7 +13,7 @@ import {
   Legend,
   Filler
 } from 'chart.js';
-import dayjs from 'dayjs';
+import { getDashboardAnalytics } from '../lib/api/analytics';
 
 // Register ChartJS components
 ChartJS.register(
@@ -30,7 +30,7 @@ ChartJS.register(
 export default function RevenueChart() {
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
-  const [period, setPeriod] = useState('month'); // day, week, month, year
+  const [period, setPeriod] = useState('30d');
 
   useEffect(() => {
     fetchData();
@@ -39,79 +39,44 @@ export default function RevenueChart() {
   const fetchData = async () => {
     setLoading(true);
     try {
-      // Mock data for now - replace with actual API call
-      const labels = generateLabels(period);
-      const mockData = {
+      const analytics = await getDashboardAnalytics({ period });
+      const series = analytics?.monthly_growth || analytics?.revenue || analytics?.data;
+
+      let labels = [];
+      let values = [];
+
+      if (series?.labels && Array.isArray(series?.revenue)) {
+        labels = series.labels;
+        values = series.revenue;
+      } else if (Array.isArray(series)) {
+        labels = series.map((item) => item.label || item.date || item.name || '');
+        values = series.map((item) => item.value || item.amount || item.total || 0);
+      }
+
+      if (!labels.length) {
+        setData(null);
+        return;
+      }
+
+      setData({
         labels,
         datasets: [
           {
-            label: 'USD',
-            data: labels.map(() => Math.floor(Math.random() * 50000) + 10000),
-            borderColor: 'rgb(75, 192, 192)',
-            backgroundColor: 'rgba(75, 192, 192, 0.1)',
-            fill: true,
-            tension: 0.4,
-          },
-          {
-            label: 'EUR',
-            data: labels.map(() => Math.floor(Math.random() * 30000) + 5000),
-            borderColor: 'rgb(255, 99, 132)',
-            backgroundColor: 'rgba(255, 99, 132, 0.1)',
-            fill: true,
-            tension: 0.4,
-          },
-          {
-            label: 'UZS',
-            data: labels.map(() => Math.floor(Math.random() * 100000000) + 50000000),
-            borderColor: 'rgb(54, 162, 235)',
-            backgroundColor: 'rgba(54, 162, 235, 0.1)',
+            label: 'Выручка',
+            data: values,
+            borderColor: 'rgb(22, 119, 255)',
+            backgroundColor: 'rgba(22, 119, 255, 0.12)',
             fill: true,
             tension: 0.4,
           },
         ],
-      };
-      setData(mockData);
+      });
     } catch (error) {
       console.error('Failed to fetch revenue data:', error);
+      setData(null);
     } finally {
       setLoading(false);
     }
-  };
-
-  const generateLabels = (period) => {
-    const now = dayjs();
-    let labels = [];
-    
-    switch (period) {
-      case 'day':
-        // Last 7 days
-        for (let i = 6; i >= 0; i--) {
-          labels.push(now.subtract(i, 'day').format('DD MMM'));
-        }
-        break;
-      case 'week':
-        // Last 8 weeks
-        for (let i = 7; i >= 0; i--) {
-          labels.push(now.subtract(i, 'week').format('DD MMM'));
-        }
-        break;
-      case 'month':
-        // Last 12 months
-        for (let i = 11; i >= 0; i--) {
-          labels.push(now.subtract(i, 'month').format('MMM YYYY'));
-        }
-        break;
-      case 'year':
-        // Last 5 years
-        for (let i = 4; i >= 0; i--) {
-          labels.push(now.subtract(i, 'year').format('YYYY'));
-        }
-        break;
-      default:
-        labels = [];
-    }
-    
-    return labels;
   };
 
   const options = {
@@ -151,7 +116,7 @@ export default function RevenueChart() {
       title={
         <Space>
           <LineChartOutlined />
-          <span>Revenue Overview</span>
+          <span>Динамика выручки</span>
         </Space>
       }
       extra={
@@ -160,10 +125,9 @@ export default function RevenueChart() {
           onChange={setPeriod}
           style={{ width: 120 }}
           options={[
-            { value: 'day', label: 'Last 7 Days' },
-            { value: 'week', label: 'Last 8 Weeks' },
-            { value: 'month', label: 'Last 12 Months' },
-            { value: 'year', label: 'Last 5 Years' },
+            { value: '7d', label: '7 дней' },
+            { value: '30d', label: '30 дней' },
+            { value: '90d', label: '90 дней' },
           ]}
         />
       }
@@ -173,7 +137,7 @@ export default function RevenueChart() {
           <Spin size="large" />
         </div>
       ) : !data ? (
-        <Empty description="No data available" style={{ padding: '80px' }} />
+        <Empty description="Нет данных" style={{ padding: '80px' }} />
       ) : (
         <div style={{ height: '300px' }}>
           <Line options={options} data={data} />

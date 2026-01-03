@@ -1,6 +1,13 @@
-import { useState, useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { Card, Descriptions, Button, Space, Tag, message, Modal, Spin } from 'antd';
-import { EditOutlined, DeleteOutlined, ArrowLeftOutlined, BellOutlined, CheckOutlined, CloseOutlined } from '@ant-design/icons';
+import {
+  EditOutlined,
+  DeleteOutlined,
+  ArrowLeftOutlined,
+  BellOutlined,
+  CheckOutlined,
+  CloseOutlined,
+} from '@ant-design/icons';
 import { getReminder, deleteReminder, updateReminder } from '../../lib/api/reminders';
 import { navigate } from '../../router';
 import dayjs from 'dayjs';
@@ -19,7 +26,7 @@ export default function ReminderDetail({ id }) {
       const res = await getReminder(id);
       setData(res);
     } catch (error) {
-      message.error('Failed to fetch reminder details');
+      message.error('Не удалось загрузить напоминание');
       console.error(error);
     } finally {
       setLoading(false);
@@ -28,17 +35,17 @@ export default function ReminderDetail({ id }) {
 
   const handleDelete = () => {
     Modal.confirm({
-      title: 'Delete Reminder',
-      content: 'Are you sure you want to delete this reminder?',
-      okText: 'Delete',
+      title: 'Удалить напоминание?',
+      content: 'Действие нельзя отменить.',
+      okText: 'Удалить',
       okType: 'danger',
       onOk: async () => {
         try {
           await deleteReminder(id);
-          message.success('Reminder deleted successfully');
+          message.success('Напоминание удалено');
           navigate('/reminders');
         } catch (error) {
-          message.error('Failed to delete reminder');
+          message.error('Не удалось удалить напоминание');
         }
       },
     });
@@ -47,19 +54,11 @@ export default function ReminderDetail({ id }) {
   const handleToggleActive = async () => {
     try {
       await updateReminder(id, { active: !data.active });
-      message.success(`Reminder ${!data.active ? 'activated' : 'deactivated'}`);
+      message.success(!data.active ? 'Напоминание активировано' : 'Напоминание деактивировано');
       fetchData();
     } catch (error) {
-      message.error('Failed to update reminder');
+      message.error('Не удалось обновить напоминание');
     }
-  };
-
-  const getRelatedEntity = () => {
-    if (data.lead) return { type: 'Lead', id: data.lead.id, title: data.lead.title };
-    if (data.deal) return { type: 'Deal', id: data.deal.id, title: data.deal.title };
-    if (data.contact) return { type: 'Contact', id: data.contact.id, title: data.contact.name };
-    if (data.task) return { type: 'Task', id: data.task.id, title: data.task.title };
-    return null;
   };
 
   if (loading) {
@@ -76,112 +75,88 @@ export default function ReminderDetail({ id }) {
     return (
       <Card>
         <div style={{ textAlign: 'center', padding: '50px' }}>
-          Reminder not found
+          Напоминание не найдено
         </div>
       </Card>
     );
   }
 
-  const entity = getRelatedEntity();
-  const reminderDate = dayjs(data.remind_at);
-  const isPast = reminderDate.isBefore(dayjs());
+  const reminderDate = data.reminder_date ? dayjs(data.reminder_date) : null;
+  const isPast = reminderDate ? reminderDate.isBefore(dayjs()) : false;
 
   return (
     <Card
       title={
         <Space>
           <BellOutlined />
-          <span>Reminder Details</span>
+          <span>Детали напоминания</span>
         </Space>
       }
       extra={
         <Space>
-          <Button
-            icon={<ArrowLeftOutlined />}
-            onClick={() => navigate('/reminders')}
-          >
-            Back
+          <Button icon={<ArrowLeftOutlined />} onClick={() => navigate('/reminders')}>
+            Назад
           </Button>
           <Button
             type={data.active ? 'default' : 'primary'}
             icon={data.active ? <CloseOutlined /> : <CheckOutlined />}
             onClick={handleToggleActive}
           >
-            {data.active ? 'Deactivate' : 'Activate'}
+            {data.active ? 'Отключить' : 'Включить'}
           </Button>
-          <Button
-            type="primary"
-            icon={<EditOutlined />}
-            onClick={() => navigate(`/reminders/${id}/edit`)}
-          >
-            Edit
+          <Button type="primary" icon={<EditOutlined />} onClick={() => navigate(`/reminders/${id}/edit`)}>
+            Редактировать
           </Button>
-          <Button
-            danger
-            icon={<DeleteOutlined />}
-            onClick={handleDelete}
-          >
-            Delete
+          <Button danger icon={<DeleteOutlined />} onClick={handleDelete}>
+            Удалить
           </Button>
         </Space>
       }
     >
       <Descriptions bordered column={2}>
-        <Descriptions.Item label="Title" span={2}>
-          <span style={{ fontSize: '18px', fontWeight: 'bold' }}>
-            {data.title}
-          </span>
+        <Descriptions.Item label="Тема" span={2}>
+          <span style={{ fontSize: 18, fontWeight: 600 }}>{data.subject}</span>
         </Descriptions.Item>
 
-        <Descriptions.Item label="Status">
+        <Descriptions.Item label="Статус">
           <Tag color={data.active ? 'green' : 'default'}>
-            {data.active ? 'ACTIVE' : 'INACTIVE'}
+            {data.active ? 'Активно' : 'Неактивно'}
           </Tag>
         </Descriptions.Item>
 
-        <Descriptions.Item label="Remind At">
-          <span style={{ color: isPast ? '#ff4d4f' : undefined, fontWeight: 'bold' }}>
-            {reminderDate.format('DD MMM YYYY HH:mm')}
-            {isPast && ' (Past)'}
-          </span>
+        <Descriptions.Item label="Дата напоминания">
+          {reminderDate ? (
+            <span style={{ color: isPast ? '#ff4d4f' : undefined, fontWeight: 600 }}>
+              {reminderDate.format('DD MMM YYYY HH:mm')}
+              {isPast && ' (Просрочено)'}
+            </span>
+          ) : (
+            '-'
+          )}
         </Descriptions.Item>
 
-        {entity && (
-          <>
-            <Descriptions.Item label="Related Entity Type">
-              <Tag color="blue">{entity.type}</Tag>
-            </Descriptions.Item>
-
-            <Descriptions.Item label="Related Entity">
-              <Button
-                type="link"
-                onClick={() => navigate(`/${entity.type.toLowerCase()}s/${entity.id}`)}
-                style={{ padding: 0 }}
-              >
-                {entity.title || `${entity.type} #${entity.id}`}
-              </Button>
-            </Descriptions.Item>
-          </>
-        )}
-
-        <Descriptions.Item label="Owner">
-          {data.owner?.username || data.owner?.email || '-'}
+        <Descriptions.Item label="Content type ID">
+          {data.content_type ?? '-'}
         </Descriptions.Item>
 
-        <Descriptions.Item label="Created By">
-          {data.created_by?.username || data.created_by?.email || '-'}
+        <Descriptions.Item label="Object ID">
+          {data.object_id ?? '-'}
         </Descriptions.Item>
 
-        <Descriptions.Item label="Description" span={2}>
+        <Descriptions.Item label="Владелец">
+          {data.owner_name || '-'}
+        </Descriptions.Item>
+
+        <Descriptions.Item label="Email уведомление">
+          {data.send_notification_email ? 'Да' : 'Нет'}
+        </Descriptions.Item>
+
+        <Descriptions.Item label="Описание" span={2}>
           {data.description || '-'}
         </Descriptions.Item>
 
-        <Descriptions.Item label="Created At">
-          {data.created_at ? dayjs(data.created_at).format('DD MMM YYYY HH:mm') : '-'}
-        </Descriptions.Item>
-
-        <Descriptions.Item label="Updated At">
-          {data.updated_at ? dayjs(data.updated_at).format('DD MMM YYYY HH:mm') : '-'}
+        <Descriptions.Item label="Дата создания">
+          {data.creation_date ? dayjs(data.creation_date).format('DD MMM YYYY HH:mm') : '-'}
         </Descriptions.Item>
       </Descriptions>
     </Card>

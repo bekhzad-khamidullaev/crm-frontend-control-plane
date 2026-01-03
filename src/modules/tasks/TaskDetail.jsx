@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import {
   Card,
   Descriptions,
@@ -8,13 +8,7 @@ import {
   Spin,
   message,
   Tabs,
-  Timeline,
   Typography,
-  Progress,
-  Row,
-  Col,
-  Checkbox,
-  Avatar,
 } from 'antd';
 import {
   ArrowLeftOutlined,
@@ -22,21 +16,25 @@ import {
   DeleteOutlined,
   CalendarOutlined,
   UserOutlined,
-  ClockCircleOutlined,
-  CheckCircleOutlined,
-  LinkOutlined,
 } from '@ant-design/icons';
 import { navigate } from '../../router';
-import { getTask, deleteTask } from '../../lib/api/client';
+import { getTask, deleteTask, getUsers } from '../../lib/api/client';
+import { getTaskStages, getTaskTags } from '../../lib/api/reference';
+import ActivityLog from '../../components/ActivityLog';
+import dayjs from 'dayjs';
 
 const { Title, Text } = Typography;
 
 function TaskDetail({ id }) {
   const [task, setTask] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [stages, setStages] = useState([]);
+  const [tags, setTags] = useState([]);
+  const [users, setUsers] = useState([]);
 
   useEffect(() => {
     loadTask();
+    loadReferences();
   }, [id]);
 
   const loadTask = async () => {
@@ -46,24 +44,26 @@ function TaskDetail({ id }) {
       setTask(data);
     } catch (error) {
       message.error('Ошибка загрузки данных задачи');
-      // Mock data for demo
-      setTask({
-        id,
-        title: 'Подготовить коммерческое предложение',
-        description: 'Создать детальное коммерческое предложение для компании ООО "ТехноПром". Включить прайс-лист, условия оплаты и сроки поставки.',
-        status: 'in_progress',
-        priority: 'high',
-        due_date: '2024-02-15',
-        assignee: { id: 1, name: 'Алексей Иванов' },
-        related_type: 'deal',
-        related_id: '1',
-        related_name: 'Поставка оборудования',
-        progress: 60,
-        created_at: '2024-01-20T10:30:00Z',
-        updated_at: '2024-01-22T15:45:00Z',
-      });
     } finally {
       setLoading(false);
+    }
+  };
+
+  const loadReferences = async () => {
+    try {
+      const [stagesResponse, tagsResponse, usersResponse] = await Promise.all([
+        getTaskStages({ page_size: 200 }),
+        getTaskTags({ page_size: 200 }),
+        getUsers({ page_size: 200 }),
+      ]);
+      setStages(stagesResponse.results || stagesResponse || []);
+      setTags(tagsResponse.results || tagsResponse || []);
+      setUsers(usersResponse.results || usersResponse || []);
+    } catch (error) {
+      console.error('Error loading task references:', error);
+      setStages([]);
+      setTags([]);
+      setUsers([]);
     }
   };
 
@@ -77,25 +77,26 @@ function TaskDetail({ id }) {
     }
   };
 
-  const handleToggleComplete = () => {
-    const newStatus = task.status === 'completed' ? 'in_progress' : 'completed';
-    message.success(`Задача отмечена как ${newStatus === 'completed' ? 'выполненная' : 'в работе'}`);
-    setTask({ ...task, status: newStatus, progress: newStatus === 'completed' ? 100 : task.progress });
-  };
+  const stageMap = useMemo(() => {
+    return stages.reduce((acc, stage) => {
+      acc[stage.id] = stage;
+      return acc;
+    }, {});
+  }, [stages]);
 
-  const statusConfig = {
-    todo: { color: 'default', text: 'К выполнению' },
-    in_progress: { color: 'blue', text: 'В работе' },
-    completed: { color: 'green', text: 'Выполнено' },
-    cancelled: { color: 'red', text: 'Отменено' },
-  };
+  const userMap = useMemo(() => {
+    return users.reduce((acc, user) => {
+      acc[user.id] = user.username || user.email || `#${user.id}`;
+      return acc;
+    }, {});
+  }, [users]);
 
-  const priorityConfig = {
-    low: { color: 'green', text: 'Низкий' },
-    medium: { color: 'orange', text: 'Средний' },
-    high: { color: 'red', text: 'Высокий' },
-    urgent: { color: 'magenta', text: 'Срочно' },
-  };
+  const tagMap = useMemo(() => {
+    return tags.reduce((acc, tag) => {
+      acc[tag.id] = tag.name;
+      return acc;
+    }, {});
+  }, [tags]);
 
   if (loading) {
     return (
@@ -109,11 +110,17 @@ function TaskDetail({ id }) {
     return <div>Задача не найдена</div>;
   }
 
-  const statusStyle = statusConfig[task.status] || statusConfig.todo;
-  const priorityStyle = priorityConfig[task.priority] || priorityConfig.medium;
-  const dueDate = new Date(task.due_date);
-  const today = new Date();
-  const daysLeft = Math.ceil((dueDate - today) / (1000 * 60 * 60 * 24));
+  const stage = stageMap[task.stage];
+  const priorityLabel = task.priority ? `Приоритет ${task.priority}` : '-';
+  const responsibleNames = Array.isArray(task.responsible)
+    ? task.responsible.map((id) => userMap[id]).filter(Boolean)
+    : [];
+  const subscriberNames = Array.isArray(task.subscribers)
+    ? task.subscribers.map((id) => userMap[id]).filter(Boolean)
+    : [];
+  const tagNames = Array.isArray(task.tags)
+    ? task.tags.map((id) => tagMap[id]).filter(Boolean)
+    : [];
 
   const tabItems = [
     {
@@ -123,165 +130,96 @@ function TaskDetail({ id }) {
         <>
           <Descriptions bordered column={2} style={{ marginBottom: 24 }}>
             <Descriptions.Item label="Название" span={2}>
-              <Space>
-                <Checkbox
-                  checked={task.status === 'completed'}
-                  onChange={handleToggleComplete}
-                />
-                <Text strong style={{ fontSize: 16 }}>
-                  {task.title}
-                </Text>
-              </Space>
+              <Text strong style={{ fontSize: 16 }}>
+                {task.name}
+              </Text>
             </Descriptions.Item>
-            <Descriptions.Item label="Статус">
-              <Tag color={statusStyle.color}>{statusStyle.text}</Tag>
+            <Descriptions.Item label="Этап">
+              {stage ? (
+                <Tag color={stage.done ? 'green' : stage.in_progress ? 'blue' : 'default'}>
+                  {stage.name}
+                </Tag>
+              ) : (
+                '-'
+              )}
             </Descriptions.Item>
-            <Descriptions.Item label="Приоритет">
-              <Tag color={priorityStyle.color}>{priorityStyle.text}</Tag>
-            </Descriptions.Item>
-            <Descriptions.Item label="Прогресс" span={2}>
-              <Progress
-                percent={task.progress}
-                status={task.progress === 100 ? 'success' : 'active'}
-              />
-            </Descriptions.Item>
-            <Descriptions.Item label="Ответственный">
-              <Space>
-                <Avatar size="small" icon={<UserOutlined />} />
-                {task.assignee.name}
-              </Space>
-            </Descriptions.Item>
-            <Descriptions.Item label="Срок выполнения">
-              <Space direction="vertical" size="small">
+            <Descriptions.Item label="Приоритет">{priorityLabel}</Descriptions.Item>
+            <Descriptions.Item label="Дата начала">
+              {task.start_date ? (
                 <Space>
                   <CalendarOutlined />
-                  {dueDate.toLocaleDateString('ru-RU')}
+                  {dayjs(task.start_date).format('DD.MM.YYYY')}
                 </Space>
-                {daysLeft > 0 && (
-                  <Text type={daysLeft <= 3 ? 'warning' : 'secondary'} style={{ fontSize: 12 }}>
-                    <ClockCircleOutlined /> через {daysLeft} дней
-                  </Text>
-                )}
-                {daysLeft < 0 && (
-                  <Text type="danger" style={{ fontSize: 12 }}>
-                    <ClockCircleOutlined /> просрочено на {Math.abs(daysLeft)} дней
-                  </Text>
-                )}
+              ) : (
+                '-'
+              )}
+            </Descriptions.Item>
+            <Descriptions.Item label="Срок выполнения">
+              {task.due_date ? (
+                <Space>
+                  <CalendarOutlined />
+                  {dayjs(task.due_date).format('DD.MM.YYYY')}
+                </Space>
+              ) : (
+                '-'
+              )}
+            </Descriptions.Item>
+            <Descriptions.Item label="Дата закрытия">
+              {task.closing_date ? dayjs(task.closing_date).format('DD.MM.YYYY') : '-'}
+            </Descriptions.Item>
+            <Descriptions.Item label="Следующий шаг">{task.next_step || '-'}</Descriptions.Item>
+            <Descriptions.Item label="Дата следующего шага">
+              {task.next_step_date ? dayjs(task.next_step_date).format('DD.MM.YYYY') : '-'}
+            </Descriptions.Item>
+            <Descriptions.Item label="Lead time">{task.lead_time || '-'}</Descriptions.Item>
+            <Descriptions.Item label="Активна">
+              <Tag color={task.active ? 'green' : 'default'}>{task.active ? 'Да' : 'Нет'}</Tag>
+            </Descriptions.Item>
+            <Descriptions.Item label="Напоминать">
+              <Tag color={task.remind_me ? 'blue' : 'default'}>{task.remind_me ? 'Да' : 'Нет'}</Tag>
+            </Descriptions.Item>
+            <Descriptions.Item label="Владелец">
+              <Space>
+                <UserOutlined />
+                {task.owner ? userMap[task.owner] || `#${task.owner}` : '-'}
               </Space>
             </Descriptions.Item>
-            {task.related_type && (
-              <Descriptions.Item label="Связано с" span={2}>
-                <Space>
-                  <LinkOutlined />
-                  <a onClick={() => navigate(`/${task.related_type}s/${task.related_id}`)}>
-                    {task.related_name || `${task.related_type} #${task.related_id}`}
-                  </a>
-                </Space>
-              </Descriptions.Item>
-            )}
+            <Descriptions.Item label="Со-владелец">
+              {task.co_owner ? userMap[task.co_owner] || `#${task.co_owner}` : '-'}
+            </Descriptions.Item>
+            <Descriptions.Item label="Ответственные" span={2}>
+              {responsibleNames.length ? responsibleNames.join(', ') : '-'}
+            </Descriptions.Item>
+            <Descriptions.Item label="Подписчики" span={2}>
+              {subscriberNames.length ? subscriberNames.join(', ') : '-'}
+            </Descriptions.Item>
+            <Descriptions.Item label="Теги" span={2}>
+              {tagNames.length ? tagNames.map((tag) => <Tag key={tag}>{tag}</Tag>) : '-'}
+            </Descriptions.Item>
             <Descriptions.Item label="Дата создания">
-              {new Date(task.created_at).toLocaleString('ru-RU')}
+              {task.creation_date ? dayjs(task.creation_date).format('DD.MM.YYYY HH:mm') : '-'}
             </Descriptions.Item>
             <Descriptions.Item label="Последнее обновление">
-              {new Date(task.updated_at).toLocaleString('ru-RU')}
+              {task.update_date ? dayjs(task.update_date).format('DD.MM.YYYY HH:mm') : '-'}
             </Descriptions.Item>
             {task.description && (
               <Descriptions.Item label="Описание" span={2}>
                 {task.description}
               </Descriptions.Item>
             )}
+            {task.note && (
+              <Descriptions.Item label="Заметка" span={2}>
+                {task.note}
+              </Descriptions.Item>
+            )}
           </Descriptions>
-
-          <Row gutter={16}>
-            <Col xs={24} md={8}>
-              <Card>
-                <div style={{ textAlign: 'center' }}>
-                  <div style={{ fontSize: 36, marginBottom: 8 }}>
-                    {daysLeft > 0 ? daysLeft : 0}
-                  </div>
-                  <Text type="secondary">Дней до дедлайна</Text>
-                </div>
-              </Card>
-            </Col>
-            <Col xs={24} md={8}>
-              <Card>
-                <div style={{ textAlign: 'center' }}>
-                  <div style={{ fontSize: 36, marginBottom: 8, color: '#52c41a' }}>
-                    {task.progress}%
-                  </div>
-                  <Text type="secondary">Завершено</Text>
-                </div>
-              </Card>
-            </Col>
-            <Col xs={24} md={8}>
-              <Card>
-                <div style={{ textAlign: 'center' }}>
-                  <div style={{ fontSize: 36, marginBottom: 8 }}>
-                    <CheckCircleOutlined style={{ color: task.status === 'completed' ? '#52c41a' : '#d9d9d9' }} />
-                  </div>
-                  <Text type="secondary">{statusStyle.text}</Text>
-                </div>
-              </Card>
-            </Col>
-          </Row>
         </>
       ),
     },
     {
       key: 'activity',
       label: 'История активности',
-      children: (
-        <Timeline
-          items={[
-            {
-              color: 'green',
-              children: (
-                <>
-                  <Text strong>Задача создана</Text>
-                  <br />
-                  <Text type="secondary">
-                    {new Date(task.created_at).toLocaleString('ru-RU')}
-                  </Text>
-                </>
-              ),
-            },
-            {
-              color: 'blue',
-              children: (
-                <>
-                  <Text strong>Статус изменен на "{statusStyle.text}"</Text>
-                  <br />
-                  <Text type="secondary">
-                    {new Date(task.updated_at).toLocaleString('ru-RU')}
-                  </Text>
-                </>
-              ),
-            },
-            {
-              color: 'orange',
-              children: (
-                <>
-                  <Text strong>Прогресс обновлен до {task.progress}%</Text>
-                  <br />
-                  <Text type="secondary">
-                    {new Date(task.updated_at).toLocaleString('ru-RU')}
-                  </Text>
-                </>
-              ),
-            },
-          ]}
-        />
-      ),
-    },
-    {
-      key: 'comments',
-      label: 'Комментарии',
-      children: <div>Комментарии к задаче появятся здесь</div>,
-    },
-    {
-      key: 'files',
-      label: 'Файлы',
-      children: <div>Прикрепленные файлы появятся здесь</div>,
+      children: <ActivityLog entityType="task" entityId={task.id} />,
     },
   ];
 
@@ -289,7 +227,7 @@ function TaskDetail({ id }) {
     <div>
       <Space style={{ marginBottom: 16 }}>
         <Button icon={<ArrowLeftOutlined />} onClick={() => navigate('/tasks')}>
-          Назад к списку
+          Назад
         </Button>
         <Button
           type="primary"
@@ -298,19 +236,12 @@ function TaskDetail({ id }) {
         >
           Редактировать
         </Button>
-        <Button
-          type={task.status === 'completed' ? 'default' : 'primary'}
-          icon={<CheckCircleOutlined />}
-          onClick={handleToggleComplete}
-        >
-          {task.status === 'completed' ? 'Вернуть в работу' : 'Отметить выполненной'}
-        </Button>
         <Button danger icon={<DeleteOutlined />} onClick={handleDelete}>
           Удалить
         </Button>
       </Space>
 
-      <Title level={2}>{task.title}</Title>
+      <Title level={2}>{task.name}</Title>
 
       <Card>
         <Tabs items={tabItems} />

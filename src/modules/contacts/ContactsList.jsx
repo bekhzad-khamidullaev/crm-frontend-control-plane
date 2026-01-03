@@ -1,22 +1,16 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import {
   Alert,
   Button,
   Space,
-  Tag,
   message,
   Avatar,
   Modal,
-  Select,
   Form,
 } from 'antd';
-import {
-  UserOutlined,
-  MailOutlined,
-  PhoneOutlined,
-} from '@ant-design/icons';
+import { UserOutlined, MailOutlined } from '@ant-design/icons';
 import { navigate } from '../../router';
-import { getContacts, deleteContact, contactsApi } from '../../lib/api/client';
+import { getContacts, deleteContact, contactsApi, getCompanies } from '../../lib/api/client';
 import CallButton from '../../components/CallButton';
 import ClickToCall from '../../components/ui-ClickToCall.jsx';
 import BulkActions from '../../components/ui-BulkActions.jsx';
@@ -26,10 +20,11 @@ import EnhancedTable from '../../components/ui-EnhancedTable.jsx';
 import TableToolbar from '../../components/ui-TableToolbar.jsx';
 import QuickActions from '../../components/QuickActions.jsx';
 import EditableCell from '../../components/ui-EditableCell';
-import { exportAndDownload } from '../../lib/api/export';
+import { exportToCSV, exportToExcel } from '../../lib/utils/export';
 
 function ContactsList() {
   const [contacts, setContacts] = useState([]);
+  const [companies, setCompanies] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const [searchText, setSearchText] = useState('');
@@ -40,11 +35,27 @@ function ContactsList() {
   });
   const [selectedRowKeys, setSelectedRowKeys] = useState([]);
   const [bulkSMSModalVisible, setBulkSMSModalVisible] = useState(false);
-  const [statusChangeModalVisible, setStatusChangeModalVisible] = useState(false);
-  const [bulkStatus, setBulkStatus] = useState('');
   const [bulkTagModalVisible, setBulkTagModalVisible] = useState(false);
   const [selectedTags, setSelectedTags] = useState([]);
   const isMountedRef = useRef(true);
+
+  useEffect(() => {
+    fetchContacts(1, searchText, pagination.pageSize);
+    loadCompanies();
+    return () => {
+      isMountedRef.current = false;
+    };
+  }, []);
+
+  const loadCompanies = async () => {
+    try {
+      const response = await getCompanies({ page_size: 200 });
+      setCompanies(response.results || response || []);
+    } catch (error) {
+      console.error('Error loading companies:', error);
+      setCompanies([]);
+    }
+  };
 
   const fetchContacts = async (page = 1, search = '', pageSize = pagination.pageSize) => {
     if (!isMountedRef.current) return;
@@ -85,12 +96,12 @@ function ContactsList() {
     }
   };
 
-  useEffect(() => {
-    fetchContacts(1, searchText, pagination.pageSize);
-    return () => {
-      isMountedRef.current = false;
-    };
-  }, []);
+  const companyNameById = useMemo(() => {
+    return companies.reduce((acc, company) => {
+      acc[company.id] = company.full_name || company.name || `#${company.id}`;
+      return acc;
+    }, {});
+  }, [companies]);
 
   const handleSearch = (value) => {
     setSearchText(value);
@@ -116,10 +127,9 @@ function ContactsList() {
     fetchContacts(newPagination.current, searchText, newPagination.pageSize);
   };
 
-  // Bulk actions handlers
   const handleBulkDelete = async (ids) => {
     try {
-      await Promise.all(ids.map(id => deleteContact(id)));
+      await Promise.all(ids.map((contactId) => deleteContact(contactId)));
       message.success(`Удалено ${ids.length} контактов`);
       setSelectedRowKeys([]);
       fetchContacts(pagination.current, searchText, pagination.pageSize);
@@ -130,83 +140,68 @@ function ContactsList() {
 
   const handleBulkSMS = () => {
     const recipients = contacts
-      .filter(contact => selectedRowKeys.includes(contact.id))
-      .map(contact => ({
+      .filter((contact) => selectedRowKeys.includes(contact.id))
+      .map((contact) => ({
         id: contact.id,
-        name: `${contact.first_name} ${contact.last_name}`,
+        name: contact.full_name || `${contact.first_name || ''} ${contact.last_name || ''}`.trim(),
         phone: contact.phone,
       }));
-    
-    if (recipients.some(r => !r.phone)) {
+
+    if (recipients.some((r) => !r.phone)) {
       message.warning('У некоторых выбранных контактов отсутствует номер телефона');
     }
-    
+
     setBulkSMSModalVisible(true);
   };
 
-  const handleBulkEmail = () => {
-    const recipients = contacts
-      .filter(contact => selectedRowKeys.includes(contact.id))
-      .filter(contact => contact.email);
-    
-    if (recipients.length === 0) {
-      message.warning('У выбранных контактов нет email адресов');
+  const exportColumns = [
+    { key: 'first_name', label: 'Имя' },
+    { key: 'last_name', label: 'Фамилия' },
+    { key: 'email', label: 'Email' },
+    { key: 'phone', label: 'Телефон' },
+    { key: 'company_name', label: 'Компания' },
+    { key: 'position', label: 'Должность' },
+    { key: 'owner_name', label: 'Ответственный' },
+  ];
+
+  const buildExportRows = (ids = []) => {
+    const source = ids.length ? contacts.filter((contact) => ids.includes(contact.id)) : contacts;
+    return source;
+  };
+
+  const performExport = (format, ids = []) => {
+    const rows = buildExportRows(ids);
+    if (!rows.length) {
+      message.warning('Нет данных для экспорта');
       return;
     }
-    
-    message.info('Функция массовой отправки email в разработке');
+    const ext = format === 'excel' ? 'xlsx' : 'csv';
+    const filename = `contacts_${new Date().toISOString().split('T')[0]}.${ext}`;
+    if (format === 'excel') {
+      exportToExcel(rows, exportColumns, filename);
+    } else {
+      exportToCSV(rows, exportColumns, filename);
+    }
+    message.success('Данные экспортированы');
   };
 
-  const handleBulkStatusChange = () => {
-    setStatusChangeModalVisible(true);
-  };
-
-  const handleStatusChangeConfirm = async () => {
-    if (!bulkStatus) {
-      message.error('Выберите статус');
-      return;
-    }
-
-    try {
-      await Promise.all(
-        selectedRowKeys.map(id =>
-          contactsApi.patch(id, { type: bulkStatus })
-        )
-      );
-      message.success(`Тип изменен для ${selectedRowKeys.length} контактов`);
-      setSelectedRowKeys([]);
-      setStatusChangeModalVisible(false);
-      setBulkStatus('');
-      fetchContacts(pagination.current, searchText, pagination.pageSize);
-    } catch (error) {
-      message.error('Ошибка изменения типа');
-    }
-  };
-
-  const handleBulkExport = async () => {
-    try {
-      await exportAndDownload('contacts', {
-        format: 'csv',
-        filters: { id__in: selectedRowKeys.join(',') },
-      });
-      message.success('Данные экспортированы');
-    } catch (error) {
-      message.error('Ошибка экспорта данных');
-    }
+  const handleBulkExport = (ids) => {
+    performExport('csv', ids);
   };
 
   const handleCellSave = async (id, field, value) => {
     try {
       await contactsApi.patch(id, { [field]: value });
       message.success('Изменения сохранены');
-      // Update local state
-      setContacts(contacts.map(contact => 
-        contact.id === id ? { ...contact, [field]: value } : contact
-      ));
+      setContacts((prev) =>
+        prev.map((contact) =>
+          contact.id === id ? { ...contact, [field]: value } : contact
+        )
+      );
     } catch (error) {
       const errorMessage = error?.details?.detail || error?.message || 'Ошибка сохранения';
       message.error(errorMessage);
-      throw error; // Re-throw to revert EditableCell changes
+      throw error;
     }
   };
 
@@ -221,11 +216,8 @@ function ContactsList() {
     }
 
     try {
-      // Contacts API doesn't have bulk_tag endpoint, so we update individually
       await Promise.all(
-        selectedRowKeys.map(id =>
-          contactsApi.patch(id, { tags: selectedTags })
-        )
+        selectedRowKeys.map((contactId) => contactsApi.patch(contactId, { tags: selectedTags }))
       );
       message.success(`Теги применены к ${selectedRowKeys.length} контактам`);
       setSelectedRowKeys([]);
@@ -245,14 +237,6 @@ function ContactsList() {
     },
   };
 
-  const typeConfig = {
-    client: { color: 'blue', text: 'Клиент' },
-    partner: { color: 'green', text: 'Партнер' },
-    supplier: { color: 'orange', text: 'Поставщик' },
-    employee: { color: 'purple', text: 'Сотрудник' },
-  };
-
-  // Обработчики для QuickActions
   const handleSendSMS = (record) => {
     if (!record.phone) {
       message.warning('У контакта отсутствует номер телефона');
@@ -260,14 +244,6 @@ function ContactsList() {
     }
     setSelectedRowKeys([record.id]);
     setBulkSMSModalVisible(true);
-  };
-
-  const handleSendEmail = (record) => {
-    if (!record.email) {
-      message.warning('У контакта отсутствует email');
-      return;
-    }
-    window.location.href = `mailto:${record.email}`;
   };
 
   const columns = [
@@ -280,22 +256,24 @@ function ContactsList() {
           <Avatar icon={<UserOutlined />} style={{ backgroundColor: '#1890ff' }} />
           <div>
             <div style={{ fontWeight: 500 }}>
-              {record.first_name} {record.last_name}
+              {record.full_name || `${record.first_name || ''} ${record.last_name || ''}`.trim()}
             </div>
             <EditableCell
-              value={record.position}
-              onSave={(value) => handleCellSave(record.id, 'position', value)}
+              value={record.title}
+              onSave={(value) => handleCellSave(record.id, 'title', value)}
               placeholder="Должность"
-              renderView={(value) => value ? (
-                <div style={{ fontSize: 12, color: '#999' }}>{value}</div>
-              ) : (
-                <div style={{ fontSize: 12, color: '#ccc' }}>Добавить должность</div>
-              )}
+              renderView={(value) =>
+                value ? (
+                  <div style={{ fontSize: 12, color: '#999' }}>{value}</div>
+                ) : (
+                  <div style={{ fontSize: 12, color: '#ccc' }}>Добавить должность</div>
+                )
+              }
             />
           </div>
         </Space>
       ),
-      sorter: (a, b) => a.first_name.localeCompare(b.first_name),
+      sorter: (a, b) => (a.full_name || a.first_name || '').localeCompare(b.full_name || b.first_name || ''),
     },
     {
       title: 'Email',
@@ -308,12 +286,16 @@ function ContactsList() {
           onSave={(value) => handleCellSave(record.id, 'email', value)}
           type="email"
           placeholder="email@example.com"
-          renderView={(value) => value ? (
-            <Space size="small">
-              <MailOutlined style={{ color: '#999' }} />
-              <a href={`mailto:${value}`}>{value}</a>
-            </Space>
-          ) : '-'}
+          renderView={(value) =>
+            value ? (
+              <Space size="small">
+                <MailOutlined style={{ color: '#999' }} />
+                <a href={`mailto:${value}`}>{value}</a>
+              </Space>
+            ) : (
+              '-'
+            )
+          }
         />
       ),
     },
@@ -327,16 +309,20 @@ function ContactsList() {
           value={phone}
           onSave={(value) => handleCellSave(record.id, 'phone', value)}
           placeholder="+7 999 123-45-67"
-          renderView={(value) => value ? (
-            <ClickToCall 
-              phoneNumber={value}
-              contactName={`${record.first_name} ${record.last_name}`}
-              contactId={record.id}
-              entityType="contact"
-              size="small"
-              type="link"
-            />
-          ) : '-'}
+          renderView={(value) =>
+            value ? (
+              <ClickToCall
+                phoneNumber={value}
+                contactName={record.full_name || `${record.first_name || ''} ${record.last_name || ''}`.trim()}
+                contactId={record.id}
+                entityType="contact"
+                size="small"
+                type="link"
+              />
+            ) : (
+              '-'
+            )
+          }
         />
       ),
     },
@@ -345,37 +331,18 @@ function ContactsList() {
       dataIndex: 'company',
       key: 'company',
       width: 180,
-      render: (company, record) => (
-        <EditableCell
-          value={company}
-          onSave={(value) => handleCellSave(record.id, 'company', value)}
-          placeholder="Название компании"
-        />
-      ),
-      sorter: (a, b) => (a.company || '').localeCompare(b.company || ''),
-    },
-    {
-      title: 'Тип',
-      dataIndex: 'type',
-      key: 'type',
-      width: 120,
-      render: (type) => {
-        const config = typeConfig[type] || typeConfig.client;
-        return <Tag color={config.color}>{config.text}</Tag>;
+      render: (companyId) => {
+        if (!companyId) return '-';
+        return companyNameById[companyId] || `#${companyId}`;
       },
-      filters: Object.keys(typeConfig).map((key) => ({
-        text: typeConfig[key].text,
-        value: key,
-      })),
-      onFilter: (value, record) => record.type === value,
     },
     {
       title: 'Дата создания',
-      dataIndex: 'created_at',
-      key: 'created_at',
+      dataIndex: 'creation_date',
+      key: 'creation_date',
       width: 130,
-      sorter: (a, b) => new Date(a.created_at) - new Date(b.created_at),
-      render: (date) => new Date(date).toLocaleDateString('ru-RU'),
+      sorter: (a, b) => new Date(a.creation_date) - new Date(b.creation_date),
+      render: (date) => (date ? new Date(date).toLocaleDateString('ru-RU') : '-'),
     },
     {
       title: 'Действия',
@@ -388,7 +355,7 @@ function ContactsList() {
           {record.phone && (
             <CallButton
               phone={record.phone}
-              name={`${record.first_name} ${record.last_name}`}
+              name={record.full_name || `${record.first_name || ''} ${record.last_name || ''}`.trim()}
               entityType="contact"
               entityId={record.id}
               size="small"
@@ -401,23 +368,14 @@ function ContactsList() {
             onDelete={(r) => handleDelete(r.id)}
             onCall={record.phone ? (r) => window.open(`tel:${r.phone}`) : null}
             onSMS={record.phone ? handleSendSMS : null}
-            onEmail={record.email ? handleSendEmail : null}
           />
         </Space>
       ),
     },
   ];
 
-  const handleExport = async (format) => {
-    try {
-      await exportAndDownload('contacts', {
-        format: format === 'excel' ? 'xlsx' : 'csv',
-        filters: selectedRowKeys.length > 0 ? { id__in: selectedRowKeys.join(',') } : {},
-      });
-      message.success(`Данные экспортированы в ${format.toUpperCase()}`);
-    } catch (error) {
-      message.error('Ошибка экспорта данных');
-    }
+  const handleExport = (format) => {
+    performExport(format, selectedRowKeys);
   };
 
   return (
@@ -466,9 +424,7 @@ function ContactsList() {
         selectedRowKeys={selectedRowKeys}
         onClearSelection={() => setSelectedRowKeys([])}
         onDelete={handleBulkDelete}
-        onStatusChange={handleBulkStatusChange}
         onExport={handleBulkExport}
-        onSendEmail={handleBulkEmail}
         onSendSMS={handleBulkSMS}
         onBulkTag={handleBulkTag}
         entityName="контактов"
@@ -478,36 +434,13 @@ function ContactsList() {
         visible={bulkSMSModalVisible}
         onClose={() => setBulkSMSModalVisible(false)}
         recipients={contacts
-          .filter(contact => selectedRowKeys.includes(contact.id))
-          .map(contact => ({
+          .filter((contact) => selectedRowKeys.includes(contact.id))
+          .map((contact) => ({
             id: contact.id,
-            name: `${contact.first_name} ${contact.last_name}`,
+            name: contact.full_name || `${contact.first_name || ''} ${contact.last_name || ''}`.trim(),
             phone: contact.phone,
           }))}
       />
-
-      <Modal
-        title="Изменить тип контактов"
-        open={statusChangeModalVisible}
-        onCancel={() => setStatusChangeModalVisible(false)}
-        onOk={handleStatusChangeConfirm}
-        okText="Применить"
-        cancelText="Отмена"
-      >
-        <p>Изменить тип для {selectedRowKeys.length} выбранных контактов</p>
-        <Select
-          style={{ width: '100%' }}
-          placeholder="Выберите тип"
-          value={bulkStatus}
-          onChange={setBulkStatus}
-        >
-          {Object.keys(typeConfig).map(key => (
-            <Select.Option key={key} value={key}>
-              {typeConfig[key].text}
-            </Select.Option>
-          ))}
-        </Select>
-      </Modal>
 
       <Modal
         title="Добавить теги к контактам"

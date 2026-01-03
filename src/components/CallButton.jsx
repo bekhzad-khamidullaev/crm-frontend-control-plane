@@ -1,24 +1,16 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Button, Modal, Space, Typography, App, Input, Select, Badge, Tooltip } from 'antd';
-import { PhoneOutlined, ClockCircleOutlined, CheckCircleOutlined, AudioOutlined, AudioMutedOutlined } from '@ant-design/icons';
-import { createCallLog, updateCallLog, uploadRecording } from '../lib/api/calls.js';
+import { Button, Modal, Space, Typography, App } from 'antd';
+import { PhoneOutlined, ClockCircleOutlined, CheckCircleOutlined } from '@ant-design/icons';
 import sipClient from '../lib/telephony/SIPClient.js';
 import { setActiveCall, clearActiveCall, addCallToHistory } from '../lib/store/index.js';
 
 const { Text, Title } = Typography;
-const { TextArea } = Input;
-const { Option } = Select;
 
 function CallButton({ phone, name, entityType, entityId, size = 'middle', type = 'default', icon = true, mode = 'browser' }) {
   const { message } = App.useApp();
   const [modalVisible, setModalVisible] = useState(false);
   const [callStatus, setCallStatus] = useState('idle'); // idle, calling, connected, completed
-  const [callNotes, setCallNotes] = useState('');
-  const [callOutcome, setCallOutcome] = useState('');
   const [callDuration, setCallDuration] = useState(0);
-  const [callLogId, setCallLogId] = useState(null);
-  const [isRecording, setIsRecording] = useState(false);
-  const [recordingBlob, setRecordingBlob] = useState(null);
   const audioRef = useRef(null);
   const timerRef = useRef(null);
 
@@ -27,55 +19,22 @@ function CallButton({ phone, name, entityType, entityId, size = 'middle', type =
     const handleCallStarted = async (callData) => {
       console.log('[CallButton] Call started:', callData);
       setCallStatus('calling');
-      
-      // Create call log in CRM
-      try {
-        const logData = {
-          phone_number: callData.phoneNumber,
-          direction: callData.direction,
-          status: 'initiated',
-          started_at: callData.startedAt,
-        };
-        
-        if (entityType === 'lead' && entityId) {
-          logData.related_lead = entityId;
-        } else if (entityType === 'contact' && entityId) {
-          logData.related_contact = entityId;
-        }
-        
-        const response = await createCallLog(logData);
-        setCallLogId(response.id);
-        
-        // Update SIP client with call log ID
-        sipClient.updateCurrentCallMetadata({ id: response.id });
-        
-        // Set active call in store
-        setActiveCall({
-          id: response.id,
-          phoneNumber: callData.phoneNumber,
-          direction: callData.direction,
-          status: 'initiated',
-          entityType,
-          entityId,
-          name,
-        });
-      } catch (error) {
-        console.error('[CallButton] Error creating call log:', error);
-      }
+
+      setActiveCall({
+        id: callData.id,
+        phoneNumber: callData.phoneNumber,
+        direction: callData.direction,
+        status: 'initiated',
+        entityType,
+        entityId,
+        name,
+      });
     };
 
     const handleCallAnswered = (callData) => {
       console.log('[CallButton] Call answered:', callData);
       setCallStatus('connected');
       startTimer();
-      
-      // Update call log
-      if (callLogId) {
-        updateCallLog(callLogId, {
-          status: 'connected',
-          answered_at: callData.answeredAt
-        }).catch(console.error);
-      }
     };
 
     const handleCallEnded = async (callData) => {
@@ -86,50 +45,20 @@ function CallButton({ phone, name, entityType, entityId, size = 'middle', type =
       
       // Clear active call from store
       clearActiveCall();
-      
-      // Update call log with final data
-      if (callLogId || callData.id) {
-        try {
-          const updatedCall = await updateCallLog(callLogId || callData.id, {
-            status: 'completed',
-            ended_at: callData.endedAt,
-            duration: callData.duration,
-            notes: callNotes
-          });
-          
-          // Add to call history in store
-          addCallToHistory(updatedCall);
-        } catch (error) {
-          console.error('[CallButton] Error updating call log:', error);
-        }
-      }
-    };
 
-    const handleRecordingStarted = () => {
-      setIsRecording(true);
-      message.success('Запись начата');
-    };
-
-    const handleRecordingStopped = (data) => {
-      setIsRecording(false);
-      setRecordingBlob(data.blob);
-      message.info('Запись остановлена');
+      addCallToHistory(callData);
     };
 
     sipClient.on('callStarted', handleCallStarted);
     sipClient.on('callAnswered', handleCallAnswered);
     sipClient.on('callEnded', handleCallEnded);
-    sipClient.on('recordingStarted', handleRecordingStarted);
-    sipClient.on('recordingStopped', handleRecordingStopped);
 
     return () => {
       sipClient.off('callStarted', handleCallStarted);
       sipClient.off('callAnswered', handleCallAnswered);
       sipClient.off('callEnded', handleCallEnded);
-      sipClient.off('recordingStarted', handleRecordingStarted);
-      sipClient.off('recordingStopped', handleRecordingStopped);
     };
-  }, [callLogId, callNotes, entityType, entityId]);
+  }, [entityType, entityId, name]);
 
   const handleCall = () => {
     if (!phone) {
@@ -166,28 +95,7 @@ function CallButton({ phone, name, entityType, entityId, size = 'middle', type =
     } else if (mode === 'mobile') {
       // Mobile tel: link
       window.location.href = `tel:${phone}`;
-      
-      // Create call log for mobile
-      try {
-        const logData = {
-          phone_number: phone,
-          direction: 'outbound',
-          status: 'initiated',
-          started_at: new Date().toISOString(),
-        };
-        
-        if (entityType === 'lead' && entityId) {
-          logData.related_lead = entityId;
-        } else if (entityType === 'contact' && entityId) {
-          logData.related_contact = entityId;
-        }
-        
-        const response = await createCallLog(logData);
-        setCallLogId(response.id);
-      } catch (error) {
-        console.error('[CallButton] Error creating call log:', error);
-      }
-      
+
       // Simulate connection for mobile
       setTimeout(() => {
         setCallStatus('connected');
@@ -218,24 +126,8 @@ function CallButton({ phone, name, entityType, entityId, size = 'middle', type =
     }
   };
 
-  const toggleRecording = () => {
-    if (isRecording) {
-      sipClient.stopRecording();
-    } else {
-      const started = sipClient.startRecording();
-      if (!started) {
-        message.error('Не удалось начать запись');
-      }
-    }
-  };
-
   const endCall = async () => {
     stopTimer();
-    
-    // Stop recording if active
-    if (isRecording) {
-      sipClient.stopRecording();
-    }
     
     if (mode === 'browser' && sipClient.callSession) {
       // Hangup WebRTC call
@@ -243,57 +135,14 @@ function CallButton({ phone, name, entityType, entityId, size = 'middle', type =
     }
     
     setCallStatus('completed');
-    
-    // Update call log with notes and outcome
-    if (callLogId) {
-      try {
-        await updateCallLog(callLogId, {
-          status: callOutcome || 'completed',
-          notes: callNotes,
-          duration: callDuration,
-          ended_at: new Date().toISOString()
-        });
-        
-        // Upload recording if available
-        if (recordingBlob) {
-          try {
-            await uploadRecording(callLogId, recordingBlob);
-            message.success('Звонок и запись сохранены');
-          } catch (error) {
-            console.error('[CallButton] Error uploading recording:', error);
-            message.warning('Звонок сохранен, но запись не удалось загрузить');
-          }
-        } else {
-          message.success('Звонок завершен и сохранен');
-        }
-      } catch (error) {
-        console.error('[CallButton] Error saving call log:', error);
-        message.error('Ошибка при сохранении звонка');
-      }
-    }
-    
-    // Clear recording data
-    sipClient.clearRecording();
-    setRecordingBlob(null);
   };
 
   const closeModal = () => {
     stopTimer();
-    
-    // Stop recording if active
-    if (isRecording) {
-      sipClient.stopRecording();
-    }
-    
+
     setModalVisible(false);
     setCallStatus('idle');
     setCallDuration(0);
-    setCallNotes('');
-    setCallOutcome('');
-    setCallLogId(null);
-    setIsRecording(false);
-    setRecordingBlob(null);
-    sipClient.clearRecording();
   };
 
   const formatDuration = (seconds) => {
@@ -359,46 +208,7 @@ function CallButton({ phone, name, entityType, entityId, size = 'middle', type =
               }}>
                 <ClockCircleOutlined /> {formatDuration(callDuration)}
               </div>
-              
-              {/* Recording indicator */}
-              {mode === 'browser' && (
-                <div style={{ marginTop: 16 }}>
-                  <Tooltip title={isRecording ? 'Остановить запись' : 'Начать запись'}>
-                    <Badge dot={isRecording} color="red">
-                      <Button
-                        type={isRecording ? 'primary' : 'default'}
-                        danger={isRecording}
-                        icon={isRecording ? <AudioOutlined /> : <AudioMutedOutlined />}
-                        onClick={toggleRecording}
-                      >
-                        {isRecording ? 'Запись...' : 'Записать'}
-                      </Button>
-                    </Badge>
-                  </Tooltip>
-                </div>
-              )}
             </div>
-
-            <Select
-              placeholder="Результат звонка"
-              style={{ width: '100%' }}
-              value={callOutcome}
-              onChange={setCallOutcome}
-            >
-              <Option value="successful">Успешный разговор</Option>
-              <Option value="no_answer">Не ответил</Option>
-              <Option value="busy">Занято</Option>
-              <Option value="voicemail">Голосовая почта</Option>
-              <Option value="wrong_number">Неверный номер</Option>
-              <Option value="callback">Перезвонить позже</Option>
-            </Select>
-
-            <TextArea
-              placeholder="Заметки о звонке..."
-              rows={4}
-              value={callNotes}
-              onChange={(e) => setCallNotes(e.target.value)}
-            />
 
             <Button
               type="primary"

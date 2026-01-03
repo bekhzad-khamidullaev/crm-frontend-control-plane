@@ -1,9 +1,4 @@
-/**
- * Payment Form
- * Форма для создания и редактирования платежей
- */
-
-import React, { useState, useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   Form,
   Input,
@@ -14,24 +9,28 @@ import {
   message,
   Typography,
   Spin,
-  Select,
   DatePicker,
   Row,
   Col,
+  Select,
 } from 'antd';
 import { SaveOutlined, ArrowLeftOutlined, DollarOutlined } from '@ant-design/icons';
 import dayjs from 'dayjs';
 import { navigate } from '../../router';
-import {
-  getPayment,
-  createPayment,
-  updatePayment,
-} from '../../lib/api/payments';
+import { getPayment, createPayment, updatePayment } from '../../lib/api/payments';
+import { getDeal } from '../../lib/api/client';
+import { getDeals } from '../../lib/api/client';
 import ReferenceSelect from '../../components/ui-ReferenceSelect';
+import EntitySelect from '../../components/EntitySelect';
 
 const { Title } = Typography;
-const { TextArea } = Input;
-const { Option } = Select;
+
+const statusOptions = [
+  { value: 'r', label: 'Получен' },
+  { value: 'g', label: 'Гарантирован' },
+  { value: 'h', label: 'Высокая вероятность' },
+  { value: 'l', label: 'Низкая вероятность' },
+];
 
 function PaymentForm({ id }) {
   const [form] = Form.useForm();
@@ -118,9 +117,7 @@ function PaymentForm({ id }) {
           layout="vertical"
           onFinish={handleSubmit}
           initialValues={{
-            status: 'pending',
-            payment_method: 'bank_transfer',
-            currency: 'RUB',
+            status: 'r',
             payment_date: dayjs(),
           }}
         >
@@ -141,11 +138,7 @@ function PaymentForm({ id }) {
               </Form.Item>
             </Col>
             <Col span={12}>
-              <Form.Item
-                label="Валюта"
-                name="currency"
-                rules={[{ required: true, message: 'Выберите валюту' }]}
-              >
+              <Form.Item label="Валюта" name="currency">
                 <ReferenceSelect type="currencies" placeholder="Выберите валюту" />
               </Form.Item>
             </Col>
@@ -154,94 +147,58 @@ function PaymentForm({ id }) {
           <Row gutter={16}>
             <Col span={12}>
               <Form.Item
-                label="Способ оплаты"
-                name="payment_method"
-                rules={[{ required: true, message: 'Выберите способ оплаты' }]}
-              >
-                <Select placeholder="Выберите способ">
-                  <Option value="cash">Наличные</Option>
-                  <Option value="bank_transfer">Банковский перевод</Option>
-                  <Option value="card">Банковская карта</Option>
-                  <Option value="online">Онлайн-платеж</Option>
-                  <Option value="check">Чек</Option>
-                  <Option value="other">Другое</Option>
-                </Select>
-              </Form.Item>
-            </Col>
-            <Col span={12}>
-              <Form.Item
                 label="Статус"
                 name="status"
                 rules={[{ required: true, message: 'Выберите статус' }]}
               >
-                <Select placeholder="Выберите статус">
-                  <Option value="pending">Ожидает</Option>
-                  <Option value="completed">Завершен</Option>
-                  <Option value="failed">Неудачный</Option>
-                  <Option value="refunded">Возвращен</Option>
-                </Select>
+                <Select placeholder="Выберите статус" options={statusOptions} />
+              </Form.Item>
+            </Col>
+            <Col span={12}>
+              <Form.Item label="Дата платежа" name="payment_date">
+                <DatePicker format="YYYY-MM-DD" style={{ width: '100%' }} placeholder="Выберите дату" />
               </Form.Item>
             </Col>
           </Row>
-
-          <Form.Item
-            label="Дата платежа"
-            name="payment_date"
-          >
-            <DatePicker
-              format="YYYY-MM-DD"
-              style={{ width: '100%' }}
-              placeholder="Выберите дату"
-            />
-          </Form.Item>
 
           <Row gutter={16}>
             <Col span={12}>
               <Form.Item
-                label="ID сделки"
+                label="Сделка"
                 name="deal"
+                rules={[{ required: true, message: 'Выберите сделку' }]}
               >
-                <InputNumber
-                  style={{ width: '100%' }}
-                  placeholder="Необязательно"
-                />
-              </Form.Item>
-            </Col>
-            <Col span={12}>
-              <Form.Item
-                label="ID контакта"
-                name="contact"
-              >
-                <InputNumber
-                  style={{ width: '100%' }}
-                  placeholder="Необязательно"
+                <EntitySelect
+                  placeholder="Выберите сделку"
+                  fetchOptions={getDeals}
+                  fetchById={getDeal}
+                  optionLabel={(item) => item?.name || `#${item?.id}`}
                 />
               </Form.Item>
             </Col>
           </Row>
 
-          <Form.Item
-            label="Описание"
-            name="description"
-          >
-            <TextArea rows={3} placeholder="Дополнительная информация о платеже" />
-          </Form.Item>
-
-          <Form.Item
-            label="ID транзакции"
-            name="transaction_id"
-          >
-            <Input placeholder="Внешний ID транзакции (необязательно)" />
-          </Form.Item>
+          <Row gutter={16}>
+            <Col span={8}>
+              <Form.Item label="Номер договора" name="contract_number">
+                <Input placeholder="Договор №" />
+              </Form.Item>
+            </Col>
+            <Col span={8}>
+              <Form.Item label="Номер счета" name="invoice_number">
+                <Input placeholder="Счет №" />
+              </Form.Item>
+            </Col>
+            <Col span={8}>
+              <Form.Item label="Номер заказа" name="order_number">
+                <Input placeholder="Заказ №" />
+              </Form.Item>
+            </Col>
+          </Row>
 
           <Form.Item>
             <Space>
-              <Button
-                type="primary"
-                htmlType="submit"
-                icon={<SaveOutlined />}
-                loading={saving}
-              >
+              <Button type="primary" htmlType="submit" icon={<SaveOutlined />} loading={saving}>
                 {isEdit ? 'Сохранить' : 'Создать'}
               </Button>
               <Button onClick={handleBack}>Отмена</Button>

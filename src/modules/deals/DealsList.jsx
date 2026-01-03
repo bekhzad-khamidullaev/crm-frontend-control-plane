@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import {
   Button,
   Space,
@@ -8,22 +8,21 @@ import {
   Avatar,
   Modal,
   Select,
-  Tooltip,
 } from 'antd';
 import {
   DollarOutlined,
   UserOutlined,
   ShopOutlined,
-  InboxOutlined,
 } from '@ant-design/icons';
 import { navigate } from '../../router';
 import { getDeals, deleteDeal, dealsApi } from '../../lib/api/client';
+import { getStages } from '../../lib/api/reference';
 import CallButton from '../../components/CallButton';
 import QuickActions from '../../components/QuickActions';
 import BulkActions from '../../components/ui-BulkActions';
 import EnhancedTable from '../../components/ui-EnhancedTable.jsx';
 import TableToolbar from '../../components/ui-TableToolbar.jsx';
-import { exportAndDownload } from '../../lib/api/export';
+import { exportToCSV, exportToExcel } from '../../lib/utils/export';
 
 function DealsList() {
   const [deals, setDeals] = useState([]);
@@ -37,14 +36,17 @@ function DealsList() {
   const [selectedRowKeys, setSelectedRowKeys] = useState([]);
   const [stageChangeModalVisible, setStageChangeModalVisible] = useState(false);
   const [bulkStage, setBulkStage] = useState('');
+  const [stages, setStages] = useState([]);
+  const [stageFilter, setStageFilter] = useState(null);
 
-  const fetchDeals = async (page = 1, search = '') => {
+  const fetchDeals = async (page = 1, search = '', stage = stageFilter) => {
     setLoading(true);
     try {
       const response = await getDeals({
         page,
         page_size: pagination.pageSize,
         search,
+        stage: stage || undefined,
       });
       setDeals(response.results || []);
       setPagination({
@@ -54,78 +56,49 @@ function DealsList() {
       });
     } catch (error) {
       message.error('Ошибка загрузки сделок');
-      // Mock data for demo
-      setDeals([
-        {
-          id: 1,
-          title: 'Поставка оборудования',
-          amount: 1500000,
-          stage: 'negotiation',
-          probability: 70,
-          expected_close_date: '2024-03-15',
-          contact: 'Иван Петров',
-          contact_phone: '+7 999 111-22-33',
-          company: 'ООО "ТехноПром"',
-          owner: 'Алексей Иванов',
-          created_at: '2024-01-20',
-        },
-        {
-          id: 2,
-          title: 'Внедрение CRM системы',
-          amount: 850000,
-          stage: 'proposal',
-          probability: 50,
-          expected_close_date: '2024-03-30',
-          contact: 'Мария Сидорова',
-          contact_phone: '+7 999 222-33-44',
-          company: 'АО "Инновации"',
-          owner: 'Елена Смирнова',
-          created_at: '2024-01-18',
-        },
-        {
-          id: 3,
-          title: 'Консалтинговые услуги',
-          amount: 450000,
-          stage: 'closed_won',
-          probability: 100,
-          expected_close_date: '2024-02-28',
-          contact: 'Дмитрий Козлов',
-          company: 'ИП Козлов',
-          owner: 'Алексей Иванов',
-          created_at: '2024-01-15',
-        },
-      ]);
-      setPagination({
-        ...pagination,
+      setDeals([]);
+      setPagination((prev) => ({
+        ...prev,
         current: 1,
-        total: 3,
-      });
+        total: 0,
+      }));
     } finally {
       setLoading(false);
     }
   };
 
   useEffect(() => {
-    fetchDeals(1, searchText);
+    fetchDeals(1, searchText, stageFilter);
+    loadStages();
   }, []);
+
+  const loadStages = async () => {
+    try {
+      const response = await getStages({ page_size: 200 });
+      setStages(response.results || response || []);
+    } catch (error) {
+      console.error('Error loading deal stages:', error);
+      setStages([]);
+    }
+  };
 
   const handleSearch = (value) => {
     setSearchText(value);
-    fetchDeals(1, value);
+    fetchDeals(1, value, stageFilter);
   };
 
   const handleDelete = async (id) => {
     try {
       await deleteDeal(id);
       message.success('Сделка удалена');
-      fetchDeals(pagination.current, searchText);
+      fetchDeals(pagination.current, searchText, stageFilter);
     } catch (error) {
       message.error('Ошибка удаления сделки');
     }
   };
 
   const handleTableChange = (newPagination, filters, sorter) => {
-    fetchDeals(newPagination.current, searchText);
+    fetchDeals(newPagination.current, searchText, stageFilter);
   };
 
   // Bulk actions handlers
@@ -134,7 +107,7 @@ function DealsList() {
       await Promise.all(ids.map(id => deleteDeal(id)));
       message.success(`Удалено ${ids.length} сделок`);
       setSelectedRowKeys([]);
-      fetchDeals(pagination.current, searchText);
+      fetchDeals(pagination.current, searchText, stageFilter);
     } catch (error) {
       message.error('Ошибка массового удаления');
     }
@@ -153,39 +126,74 @@ function DealsList() {
     try {
       await Promise.all(
         selectedRowKeys.map(id =>
-          dealsApi.patch(id, { stage: bulkStage })
+          dealsApi.patch(id, { stage: Number(bulkStage) })
         )
       );
       message.success(`Стадия изменена для ${selectedRowKeys.length} сделок`);
       setSelectedRowKeys([]);
       setStageChangeModalVisible(false);
       setBulkStage('');
-      fetchDeals(pagination.current, searchText);
+      fetchDeals(pagination.current, searchText, stageFilter);
     } catch (error) {
       message.error('Ошибка изменения стадии');
     }
   };
 
-  const handleBulkExport = async () => {
-    try {
-      await exportAndDownload('deals', {
-        format: 'csv',
-        filters: { id__in: selectedRowKeys.join(',') },
-      });
-      message.success('Данные экспортированы');
-    } catch (error) {
-      message.error('Ошибка экспорта данных');
+  const exportColumns = [
+    { key: 'name', label: 'Название' },
+    { key: 'amount', label: 'Сумма' },
+    { key: 'currency_name', label: 'Валюта' },
+    { key: 'stage_name', label: 'Стадия' },
+    { key: 'company_name', label: 'Компания' },
+    { key: 'contact_name', label: 'Контакт' },
+    { key: 'owner_name', label: 'Ответственный' },
+  ];
+
+  const buildExportRows = (ids = []) => {
+    const source = ids.length ? deals.filter((deal) => ids.includes(deal.id)) : deals;
+    return source;
+  };
+
+  const performExport = (format, ids = []) => {
+    const rows = buildExportRows(ids);
+    if (!rows.length) {
+      message.warning('Нет данных для экспорта');
+      return;
     }
+    const ext = format === 'excel' ? 'xlsx' : 'csv';
+    const filename = `deals_${new Date().toISOString().split('T')[0]}.${ext}`;
+    if (format === 'excel') {
+      exportToExcel(rows, exportColumns, filename);
+    } else {
+      exportToCSV(rows, exportColumns, filename);
+    }
+    message.success('Данные экспортированы');
+  };
+
+  const handleBulkExport = (ids) => {
+    performExport('csv', ids);
   };
 
   const handleDuplicate = async (record) => {
     try {
-      const newDeal = { ...record };
-      delete newDeal.id;
-      newDeal.title = `${record.title} (копия)`;
+      const {
+        id,
+        creation_date,
+        update_date,
+        workflow,
+        ticket,
+        stage_name,
+        stages_dates,
+        ...payload
+      } = record;
+      const baseName = record.name || record.title || 'Сделка';
+      const newDeal = {
+        ...payload,
+        name: `${baseName} (копия)`,
+      };
       await dealsApi.create(newDeal);
       message.success('Сделка дублирована');
-      fetchDeals(pagination.current, searchText);
+      fetchDeals(pagination.current, searchText, stageFilter);
     } catch (error) {
       message.error('Ошибка дублирования сделки');
     }
@@ -198,22 +206,24 @@ function DealsList() {
     },
   };
 
-  const stageConfig = {
-    lead: { color: 'default', text: 'Лид' },
-    qualification: { color: 'blue', text: 'Квалификация' },
-    meeting: { color: 'cyan', text: 'Встреча' },
-    proposal: { color: 'orange', text: 'Предложение' },
-    negotiation: { color: 'gold', text: 'Переговоры' },
-    closed_won: { color: 'green', text: 'Выиграна' },
-    closed_lost: { color: 'red', text: 'Проиграна' },
-  };
+  const stageMap = useMemo(() => {
+    return stages.reduce((acc, stage) => {
+      acc[stage.id] = stage.name;
+      return acc;
+    }, {});
+  }, [stages]);
+
+  const stageOptions = stages.map((stage) => ({
+    label: stage.name,
+    value: stage.id,
+  }));
 
   // Обработчики для QuickActions
   const handleChangeStage = async (record, newStage) => {
     try {
-      await dealsApi.patch(record.id, { stage: newStage });
+      await dealsApi.patch(record.id, { stage: Number(newStage) });
       message.success('Стадия сделки изменена');
-      fetchDeals(pagination.current, searchText);
+      fetchDeals(pagination.current, searchText, stageFilter);
     } catch (error) {
       message.error('Ошибка изменения стадии');
     }
@@ -221,9 +231,9 @@ function DealsList() {
 
   const handleArchive = async (record) => {
     try {
-      await dealsApi.patch(record.id, { is_archived: true });
+      await dealsApi.patch(record.id, { active: false });
       message.success('Сделка архивирована');
-      fetchDeals(pagination.current, searchText);
+      fetchDeals(pagination.current, searchText, stageFilter);
     } catch (error) {
       message.error('Ошибка архивирования');
     }
@@ -232,47 +242,53 @@ function DealsList() {
   const columns = [
     {
       title: 'Название',
-      dataIndex: 'title',
-      key: 'title',
+      dataIndex: 'name',
+      key: 'name',
       width: 200,
-      render: (title, record) => (
+      render: (name, record) => (
         <div>
-          <div style={{ fontWeight: 500 }}>{title}</div>
-          {record.company && (
+          <div style={{ fontWeight: 500 }}>{name}</div>
+          {(record.company_name || record.company) && (
             <div style={{ fontSize: 12, color: '#999' }}>
-              <ShopOutlined /> {record.company}
+              <ShopOutlined /> {record.company_name || record.company}
             </div>
           )}
         </div>
       ),
-      sorter: (a, b) => a.title.localeCompare(b.title),
+      sorter: (a, b) => (a.name || '').localeCompare(b.name || ''),
     },
     {
       title: 'Сумма',
       dataIndex: 'amount',
       key: 'amount',
       width: 130,
-      render: (amount) => (
-        <Space>
-          <DollarOutlined style={{ color: '#52c41a' }} />
-          <span style={{ fontWeight: 500 }}>{amount.toLocaleString('ru-RU')} ₽</span>
-        </Space>
-      ),
-      sorter: (a, b) => a.amount - b.amount,
+      render: (amount, record) => {
+        const numeric = Number(amount);
+        const formatted = Number.isFinite(numeric)
+          ? numeric.toLocaleString('ru-RU')
+          : amount || '0';
+        return (
+          <Space>
+            <DollarOutlined style={{ color: '#52c41a' }} />
+            <span style={{ fontWeight: 500 }}>
+              {formatted} {record.currency_name || '₽'}
+            </span>
+          </Space>
+        );
+      },
+      sorter: (a, b) => Number(a.amount || 0) - Number(b.amount || 0),
     },
     {
       title: 'Стадия',
       dataIndex: 'stage',
       key: 'stage',
       width: 140,
-      render: (stage) => {
-        const config = stageConfig[stage] || stageConfig.lead;
-        return <Tag color={config.color}>{config.text}</Tag>;
+      render: (stage, record) => {
+        const label = record.stage_name || stageMap[stage];
+        const display = label || (stage ? `Этап #${stage}` : '-');
+        return stage ? <Tag color="blue">{display}</Tag> : '-';
       },
-      filters: Object.keys(stageConfig).map((key) => ({
-        text: stageConfig[key].text,
-        value: key,
-      })),
+      filters: stageOptions,
       onFilter: (value, record) => record.stage === value,
     },
     {
@@ -280,14 +296,17 @@ function DealsList() {
       dataIndex: 'probability',
       key: 'probability',
       width: 120,
-      render: (probability) => (
-        <Progress
-          percent={probability}
-          size="small"
-          status={probability >= 70 ? 'success' : probability >= 40 ? 'normal' : 'exception'}
-        />
-      ),
-      sorter: (a, b) => a.probability - b.probability,
+      render: (probability) => {
+        const value = Number(probability || 0);
+        return (
+          <Progress
+            percent={value}
+            size="small"
+            status={value >= 70 ? 'success' : value >= 40 ? 'normal' : 'exception'}
+          />
+        );
+      },
+      sorter: (a, b) => Number(a.probability || 0) - Number(b.probability || 0),
     },
     {
       title: 'Контакт',
@@ -297,7 +316,9 @@ function DealsList() {
         <Space>
           <Avatar size="small" icon={<UserOutlined />} />
           <div>
-            <div style={{ fontSize: 13 }}>{record.contact}</div>
+            <div style={{ fontSize: 13 }}>
+              {record.contact_name || record.contact_full_name || (record.contact ? `#${record.contact}` : '-')}
+            </div>
             {record.contact_phone && (
               <div style={{ fontSize: 11, color: '#999' }}>{record.contact_phone}</div>
             )}
@@ -310,12 +331,13 @@ function DealsList() {
       dataIndex: 'owner',
       key: 'owner',
       width: 140,
-      sorter: (a, b) => (a.owner || '').localeCompare(b.owner || ''),
+      render: (owner, record) => record.owner_name || owner || '-',
+      sorter: (a, b) => (a.owner_name || a.owner || '').toString().localeCompare((b.owner_name || b.owner || '').toString()),
     },
     {
       title: 'Закрытие',
-      dataIndex: 'expected_close_date',
-      key: 'expected_close_date',
+      dataIndex: 'closing_date',
+      key: 'closing_date',
       width: 120,
       render: (date) => {
         if (!date) return '-';
@@ -335,7 +357,7 @@ function DealsList() {
           </div>
         );
       },
-      sorter: (a, b) => new Date(a.expected_close_date) - new Date(b.expected_close_date),
+      sorter: (a, b) => new Date(a.closing_date) - new Date(b.closing_date),
     },
     {
       title: 'Действия',
@@ -369,10 +391,7 @@ function DealsList() {
                     id="stage-select"
                     style={{ width: '100%', marginTop: 16 }}
                     placeholder="Выберите стадию"
-                    options={Object.keys(stageConfig).map(key => ({
-                      label: stageConfig[key].text,
-                      value: key,
-                    }))}
+                    options={stageOptions}
                   />
                 ),
                 onOk: () => {
@@ -388,23 +407,12 @@ function DealsList() {
     },
   ];
 
-  const handleExport = async (format) => {
-    try {
-      await exportAndDownload('deals', {
-        format: format === 'excel' ? 'xlsx' : 'csv',
-        filters: selectedRowKeys.length > 0 ? { id__in: selectedRowKeys.join(',') } : {},
-      });
-      message.success(`Данные экспортированы в ${format.toUpperCase()}`);
-    } catch (error) {
-      message.error('Ошибка экспорта данных');
-    }
+  const handleExport = (format) => {
+    performExport(format, selectedRowKeys);
   };
 
   // Фильтры для toolbar
-  const stageFilters = Object.keys(stageConfig).map(key => ({
-    label: stageConfig[key].text,
-    value: key,
-  }));
+  const stageFilters = stageOptions;
 
   return (
     <div>
@@ -416,7 +424,7 @@ function DealsList() {
         onSearch={handleSearch}
         onCreate={() => navigate('/deals/new')}
         onExport={handleExport}
-        onRefresh={() => fetchDeals(pagination.current, searchText)}
+        onRefresh={() => fetchDeals(pagination.current, searchText, stageFilter)}
         filters={[
           {
             key: 'stage',
@@ -426,8 +434,10 @@ function DealsList() {
           },
         ]}
         onFilterChange={(key, value) => {
-          // Здесь можно добавить логику фильтрации
-          message.info(`Фильтр ${key}: ${value}`);
+          if (key === 'stage') {
+            setStageFilter(value || null);
+            fetchDeals(1, searchText, value || null);
+          }
         }}
         createButtonText="Создать сделку"
         showViewModeSwitch={false}
@@ -472,9 +482,9 @@ function DealsList() {
           value={bulkStage}
           onChange={setBulkStage}
         >
-          {Object.keys(stageConfig).map(key => (
-            <Select.Option key={key} value={key}>
-              {stageConfig[key].text}
+          {stageOptions.map((option) => (
+            <Select.Option key={option.value} value={option.value}>
+              {option.label}
             </Select.Option>
           ))}
         </Select>

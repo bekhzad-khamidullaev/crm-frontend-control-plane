@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Card, List, Tag, Button, Space, Empty, Spin } from 'antd';
-import { FileTextOutlined, EyeOutlined, InboxOutlined } from '@ant-design/icons';
-import { getMemos, updateMemo } from '../lib/api/memos';
+import { FileTextOutlined, EyeOutlined, CheckOutlined } from '@ant-design/icons';
+import { getMemos, markMemoReviewed } from '../lib/api/memos';
 import { navigate } from '../router';
 import dayjs from 'dayjs';
 
@@ -16,7 +16,7 @@ export default function MemosWidget() {
   const fetchData = async () => {
     setLoading(true);
     try {
-      const res = await getMemos({ page_size: 5, ordering: '-created_at' });
+      const res = await getMemos({ page_size: 5, ordering: '-update_date' });
       setData(res.results || []);
     } catch (error) {
       console.error('Failed to fetch memos:', error);
@@ -25,12 +25,12 @@ export default function MemosWidget() {
     }
   };
 
-  const handleArchive = async (id, currentArchived) => {
+  const handleReviewed = async (id) => {
     try {
-      await updateMemo(id, { archived: !currentArchived });
+      await markMemoReviewed(id);
       fetchData();
     } catch (error) {
-      console.error('Failed to archive memo:', error);
+      console.error('Failed to update memo:', error);
     }
   };
 
@@ -76,27 +76,27 @@ export default function MemosWidget() {
                 <Button
                   type="link"
                   size="small"
-                  icon={<InboxOutlined />}
-                  onClick={() => handleArchive(item.id, item.archived)}
-                >
-                  {item.archived ? 'Unarchive' : 'Archive'}
+                    icon={<CheckOutlined />}
+                    onClick={() => handleReviewed(item.id)}
+                  >
+                  Отметить
                 </Button>,
               ]}
             >
               <List.Item.Meta
                 title={
                   <Space>
-                    <span>{item.title}</span>
-                    <Tag color={item.draft ? 'orange' : 'green'}>
-                      {item.draft ? 'Draft' : 'Published'}
+                    <span>{item.name}</span>
+                    <Tag color={item.stage === 'rev' ? 'green' : item.stage === 'pos' ? 'orange' : 'blue'}>
+                      {item.stage === 'rev' ? 'Рассмотрено' : item.stage === 'pos' ? 'Отложено' : 'В ожидании'}
                     </Tag>
-                    {item.archived && <Tag>Archived</Tag>}
+                    {item.draft && <Tag color="gold">Черновик</Tag>}
                   </Space>
                 }
                 description={
                   <Space size="small">
-                    <span>{dayjs(item.created_at).format('DD MMM YYYY')}</span>
-                    {item.owner && <span>• {item.owner.username || item.owner.email}</span>}
+                    <span>{dayjs(item.update_date || item.creation_date).format('DD MMM YYYY')}</span>
+                    {item.owner_name && <span>• {item.owner_name}</span>}
                   </Space>
                 }
               />

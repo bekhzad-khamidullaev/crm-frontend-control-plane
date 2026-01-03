@@ -258,17 +258,6 @@ export async function getActiveEmailAccounts(params = {}) {
 }
 
 /**
- * Test email account connection
- * @param {number} id - Email account ID
- * @returns {Promise<Object>}
- */
-export async function testEmailAccountConnection(id) {
-  // Note: This endpoint may need to be implemented on backend
-  // For now, this is a placeholder
-  return patchEmailAccount(id, { test_connection: true });
-}
-
-/**
  * Get messages by mailing
  * @param {number} mailingId - Mailing ID
  * @param {Object} params - Additional query parameters

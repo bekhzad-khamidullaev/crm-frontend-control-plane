@@ -1,9 +1,9 @@
 /**
  * Reminder Form
- * Форма для создания и редактирования напоминаний
+ * Создание и редактирование напоминаний (API schema-aligned)
  */
 
-import React, { useState, useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   Form,
   Input,
@@ -14,9 +14,8 @@ import {
   Typography,
   Spin,
   DatePicker,
-  Select,
-  Row,
-  Col,
+  Switch,
+  InputNumber,
 } from 'antd';
 import { SaveOutlined, ArrowLeftOutlined, BellOutlined } from '@ant-design/icons';
 import dayjs from 'dayjs';
@@ -26,34 +25,23 @@ import {
   createReminder,
   updateReminder,
 } from '../../lib/api/reminders';
-import { getUsers } from '../../lib/api/user';
+import EntitySelect from '../../components/EntitySelect.jsx';
+import { getUsers, getUser } from '../../lib/api/client.js';
 
 const { Title } = Typography;
 const { TextArea } = Input;
-const { Option } = Select;
 
 function ReminderForm({ id }) {
   const [form] = Form.useForm();
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
-  const [users, setUsers] = useState([]);
   const isEdit = !!id;
 
   useEffect(() => {
-    loadUsers();
     if (isEdit) {
       loadReminder();
     }
   }, [id]);
-
-  const loadUsers = async () => {
-    try {
-      const data = await getUsers();
-      setUsers(data.results || data || []);
-    } catch (error) {
-      console.error('Error loading users:', error);
-    }
-  };
 
   const loadReminder = async () => {
     setLoading(true);
@@ -61,7 +49,7 @@ function ReminderForm({ id }) {
       const data = await getReminder(id);
       form.setFieldsValue({
         ...data,
-        remind_at: data.remind_at ? dayjs(data.remind_at) : null,
+        reminder_date: data.reminder_date ? dayjs(data.reminder_date) : null,
       });
     } catch (error) {
       message.error('Ошибка загрузки напоминания');
@@ -76,7 +64,7 @@ function ReminderForm({ id }) {
     try {
       const payload = {
         ...values,
-        remind_at: values.remind_at ? values.remind_at.toISOString() : null,
+        reminder_date: values.reminder_date ? values.reminder_date.toISOString() : null,
       };
 
       if (isEdit) {
@@ -95,10 +83,6 @@ function ReminderForm({ id }) {
     }
   };
 
-  const handleBack = () => {
-    navigate('/reminders');
-  };
-
   if (loading) {
     return (
       <div style={{ textAlign: 'center', padding: '50px' }}>
@@ -113,7 +97,7 @@ function ReminderForm({ id }) {
     <div>
       <div style={{ marginBottom: 16 }}>
         <Space>
-          <Button icon={<ArrowLeftOutlined />} onClick={handleBack}>
+          <Button icon={<ArrowLeftOutlined />} onClick={() => navigate('/reminders')}>
             Назад
           </Button>
           <Title level={2} style={{ margin: 0 }}>
@@ -128,19 +112,16 @@ function ReminderForm({ id }) {
           layout="vertical"
           onFinish={handleSubmit}
           initialValues={{
-            status: 'pending',
-            reminder_type: 'in_app',
+            active: true,
+            send_notification_email: false,
           }}
         >
           <Form.Item
-            label="Заголовок"
-            name="title"
-            rules={[{ required: true, message: 'Введите заголовок' }]}
+            label="Тема"
+            name="subject"
+            rules={[{ required: true, message: 'Введите тему напоминания' }]}
           >
-            <Input 
-              prefix={<BellOutlined />} 
-              placeholder="Например: Позвонить клиенту" 
-            />
+            <Input prefix={<BellOutlined />} placeholder="Например: Связаться с клиентом" />
           </Form.Item>
 
           <Form.Item
@@ -150,105 +131,75 @@ function ReminderForm({ id }) {
             <TextArea rows={4} placeholder="Дополнительная информация" />
           </Form.Item>
 
-          <Row gutter={16}>
-            <Col span={12}>
-              <Form.Item
-                label="Дата и время напоминания"
-                name="remind_at"
-                rules={[{ required: true, message: 'Выберите дату и время' }]}
-              >
-                <DatePicker
-                  showTime
-                  format="YYYY-MM-DD HH:mm"
-                  style={{ width: '100%' }}
-                  placeholder="Выберите дату и время"
-                />
-              </Form.Item>
-            </Col>
-            <Col span={12}>
-              <Form.Item
-                label="Назначить пользователю"
-                name="user"
-                rules={[{ required: true, message: 'Выберите пользователя' }]}
-              >
-                <Select placeholder="Выберите пользователя" showSearch>
-                  {users.map((user) => (
-                    <Option key={user.id} value={user.id}>
-                      {user.first_name} {user.last_name} ({user.email})
-                    </Option>
-                  ))}
-                </Select>
-              </Form.Item>
-            </Col>
-          </Row>
-
-          <Row gutter={16}>
-            <Col span={12}>
-              <Form.Item
-                label="Тип напоминания"
-                name="reminder_type"
-                rules={[{ required: true, message: 'Выберите тип' }]}
-              >
-                <Select placeholder="Выберите тип">
-                  <Option value="email">Email</Option>
-                  <Option value="push">Push уведомление</Option>
-                  <Option value="in_app">В приложении</Option>
-                </Select>
-              </Form.Item>
-            </Col>
-            <Col span={12}>
-              <Form.Item
-                label="Статус"
-                name="status"
-              >
-                <Select placeholder="Выберите статус">
-                  <Option value="pending">Ожидает</Option>
-                  <Option value="completed">Завершено</Option>
-                  <Option value="cancelled">Отменено</Option>
-                </Select>
-              </Form.Item>
-            </Col>
-          </Row>
-
           <Form.Item
-            label="ID связанного лида"
-            name="related_lead"
+            label="Дата и время напоминания"
+            name="reminder_date"
+            rules={[{ required: true, message: 'Выберите дату и время' }]}
           >
-            <Input type="number" placeholder="Необязательно" />
+            <DatePicker
+              showTime
+              format="YYYY-MM-DD HH:mm"
+              style={{ width: '100%' }}
+              placeholder="Выберите дату и время"
+            />
           </Form.Item>
 
-          <Form.Item
-            label="ID связанного контакта"
-            name="related_contact"
-          >
-            <Input type="number" placeholder="Необязательно" />
-          </Form.Item>
+          <Space size="large" style={{ marginBottom: 16 }}>
+            <Form.Item
+              label="Активно"
+              name="active"
+              valuePropName="checked"
+            >
+              <Switch />
+            </Form.Item>
+            <Form.Item
+              label="Email уведомление"
+              name="send_notification_email"
+              valuePropName="checked"
+            >
+              <Switch />
+            </Form.Item>
+          </Space>
 
           <Form.Item
-            label="ID связанной сделки"
-            name="related_deal"
+            label="Владелец"
+            name="owner"
           >
-            <Input type="number" placeholder="Необязательно" />
+            <EntitySelect
+              placeholder="Выберите пользователя"
+              fetchList={getUsers}
+              fetchById={getUser}
+              allowClear
+            />
           </Form.Item>
 
-          <Form.Item
-            label="ID связанной задачи"
-            name="related_task"
-          >
-            <Input type="number" placeholder="Необязательно" />
-          </Form.Item>
+          <Space size="large" style={{ width: '100%', marginBottom: 16 }}>
+            <Form.Item
+              label="Content type ID"
+              name="content_type"
+              rules={[{ required: true, message: 'Укажите content type ID' }]}
+              style={{ flex: 1 }}
+            >
+              <InputNumber min={1} style={{ width: '100%' }} placeholder="Например: 12" />
+            </Form.Item>
+            <Form.Item
+              label="Object ID"
+              name="object_id"
+              rules={[{ required: true, message: 'Укажите object ID' }]}
+              style={{ flex: 1 }}
+            >
+              <InputNumber min={1} style={{ width: '100%' }} placeholder="ID связанного объекта" />
+            </Form.Item>
+          </Space>
 
           <Form.Item>
             <Space>
-              <Button
-                type="primary"
-                htmlType="submit"
-                icon={<SaveOutlined />}
-                loading={saving}
-              >
+              <Button type="primary" htmlType="submit" icon={<SaveOutlined />} loading={saving}>
                 {isEdit ? 'Сохранить' : 'Создать'}
               </Button>
-              <Button onClick={handleBack}>Отмена</Button>
+              <Button onClick={() => navigate('/reminders')}>
+                Отмена
+              </Button>
             </Space>
           </Form.Item>
         </Form>

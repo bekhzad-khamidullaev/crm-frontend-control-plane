@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import {
   Card,
   Descriptions,
@@ -8,12 +8,7 @@ import {
   Spin,
   message,
   Tabs,
-  Timeline,
   Typography,
-  Avatar,
-  Row,
-  Col,
-  Statistic,
   Table,
   Empty,
 } from 'antd';
@@ -23,17 +18,18 @@ import {
   DeleteOutlined,
   PhoneOutlined,
   MailOutlined,
-  GlobalOutlined,
   HomeOutlined,
   UserOutlined,
   ClockCircleOutlined,
   PhoneTwoTone,
 } from '@ant-design/icons';
 import { navigate } from '../../router';
-import { getContact, deleteContact } from '../../lib/api/client';
+import { getContact, deleteContact, getCompanies, getUsers } from '../../lib/api/client';
 import { getEntityCallLogs } from '../../lib/api/calls';
+import { getLeadSources, getCrmTags, getCountries, getCities, getDepartments } from '../../lib/api/reference';
 import CallButton from '../../components/CallButton';
 import ChatWidget from '../../modules/chat/ChatWidget';
+import ActivityLog from '../../components/ActivityLog';
 import dayjs from 'dayjs';
 
 const { Title, Text } = Typography;
@@ -43,10 +39,18 @@ function ContactDetail({ id }) {
   const [loading, setLoading] = useState(true);
   const [callLogs, setCallLogs] = useState([]);
   const [callLogsLoading, setCallLogsLoading] = useState(false);
+  const [companies, setCompanies] = useState([]);
+  const [leadSources, setLeadSources] = useState([]);
+  const [crmTags, setCrmTags] = useState([]);
+  const [countries, setCountries] = useState([]);
+  const [cities, setCities] = useState([]);
+  const [departments, setDepartments] = useState([]);
+  const [users, setUsers] = useState([]);
 
   useEffect(() => {
     loadContact();
     loadCallLogs();
+    loadReferences();
   }, [id]);
 
   const loadContact = async () => {
@@ -75,6 +79,44 @@ function ContactDetail({ id }) {
     }
   };
 
+  const loadReferences = async () => {
+    try {
+      const [
+        companiesResponse,
+        leadSourcesResponse,
+        crmTagsResponse,
+        countriesResponse,
+        citiesResponse,
+        departmentsResponse,
+        usersResponse,
+      ] = await Promise.all([
+        getCompanies({ page_size: 200 }),
+        getLeadSources({ page_size: 200 }),
+        getCrmTags({ page_size: 200 }),
+        getCountries({ page_size: 200 }),
+        getCities({ page_size: 200 }),
+        getDepartments({ page_size: 200 }),
+        getUsers({ page_size: 200 }),
+      ]);
+      setCompanies(companiesResponse.results || companiesResponse || []);
+      setLeadSources(leadSourcesResponse.results || leadSourcesResponse || []);
+      setCrmTags(crmTagsResponse.results || crmTagsResponse || []);
+      setCountries(countriesResponse.results || countriesResponse || []);
+      setCities(citiesResponse.results || citiesResponse || []);
+      setDepartments(departmentsResponse.results || departmentsResponse || []);
+      setUsers(usersResponse.results || usersResponse || []);
+    } catch (error) {
+      console.error('Error loading references:', error);
+      setCompanies([]);
+      setLeadSources([]);
+      setCrmTags([]);
+      setCountries([]);
+      setCities([]);
+      setDepartments([]);
+      setUsers([]);
+    }
+  };
+
   const handleDelete = async () => {
     try {
       await deleteContact(id);
@@ -85,18 +127,60 @@ function ContactDetail({ id }) {
     }
   };
 
+  const companyMap = useMemo(() => {
+    return companies.reduce((acc, company) => {
+      acc[company.id] = company.full_name || company.name || `#${company.id}`;
+      return acc;
+    }, {});
+  }, [companies]);
+
+  const leadSourceMap = useMemo(() => {
+    return leadSources.reduce((acc, source) => {
+      acc[source.id] = source.name;
+      return acc;
+    }, {});
+  }, [leadSources]);
+
+  const tagMap = useMemo(() => {
+    return crmTags.reduce((acc, tag) => {
+      acc[tag.id] = tag.name;
+      return acc;
+    }, {});
+  }, [crmTags]);
+
+  const countryMap = useMemo(() => {
+    return countries.reduce((acc, country) => {
+      acc[country.id] = country.name;
+      return acc;
+    }, {});
+  }, [countries]);
+
+  const cityMap = useMemo(() => {
+    return cities.reduce((acc, city) => {
+      acc[city.id] = city.name;
+      return acc;
+    }, {});
+  }, [cities]);
+
+  const departmentMap = useMemo(() => {
+    return departments.reduce((acc, dep) => {
+      acc[dep.id] = dep.name;
+      return acc;
+    }, {});
+  }, [departments]);
+
+  const userMap = useMemo(() => {
+    return users.reduce((acc, user) => {
+      acc[user.id] = user.username || user.email || `#${user.id}`;
+      return acc;
+    }, {});
+  }, [users]);
+
   const formatDuration = (seconds) => {
     if (!seconds) return '0:00';
     const mins = Math.floor(seconds / 60);
     const secs = seconds % 60;
     return `${mins}:${secs.toString().padStart(2, '0')}`;
-  };
-
-  const typeConfig = {
-    client: { color: 'blue', text: 'Клиент' },
-    partner: { color: 'green', text: 'Партнер' },
-    supplier: { color: 'orange', text: 'Поставщик' },
-    employee: { color: 'purple', text: 'Сотрудник' },
   };
 
   if (loading) {
@@ -111,7 +195,10 @@ function ContactDetail({ id }) {
     return <div>Контакт не найден</div>;
   }
 
-  const typeStyle = typeConfig[contact.type] || typeConfig.client;
+  const fullName = contact.full_name || `${contact.first_name || ''} ${contact.last_name || ''}`.trim();
+  const tagNames = Array.isArray(contact.tags)
+    ? contact.tags.map((id) => tagMap[id]).filter(Boolean)
+    : [];
 
   const tabItems = [
     {
@@ -122,150 +209,100 @@ function ContactDetail({ id }) {
           <Descriptions bordered column={2} style={{ marginBottom: 24 }}>
             <Descriptions.Item label="Полное имя" span={2}>
               <Space>
-                <Avatar icon={<UserOutlined />} size="large" />
-                <Text strong style={{ fontSize: 16 }}>
-                  {contact.first_name} {contact.last_name}
-                </Text>
+                <UserOutlined />
+                <Text strong style={{ fontSize: 16 }}>{fullName}</Text>
               </Space>
             </Descriptions.Item>
             <Descriptions.Item label="Email">
-              <Space>
-                <MailOutlined />
-                <a href={`mailto:${contact.email}`}>{contact.email}</a>
-              </Space>
+              {contact.email ? (
+                <Space>
+                  <MailOutlined />
+                  <a href={`mailto:${contact.email}`}>{contact.email}</a>
+                </Space>
+              ) : (
+                '-'
+              )}
             </Descriptions.Item>
             <Descriptions.Item label="Телефон">
+              {contact.phone ? (
+                <Space>
+                  <PhoneOutlined />
+                  <a href={`tel:${contact.phone}`}>{contact.phone}</a>
+                </Space>
+              ) : (
+                '-'
+              )}
+            </Descriptions.Item>
+            <Descriptions.Item label="Доп. Email">
+              {contact.secondary_email || '-'}
+            </Descriptions.Item>
+            <Descriptions.Item label="Доп. телефон">{contact.other_phone || '-'}</Descriptions.Item>
+            <Descriptions.Item label="Мобильный">{contact.mobile || '-'}</Descriptions.Item>
+            <Descriptions.Item label="Компания">
+              {contact.company ? companyMap[contact.company] || `#${contact.company}` : '-'}
+            </Descriptions.Item>
+            <Descriptions.Item label="Должность">{contact.title || '-'}</Descriptions.Item>
+            <Descriptions.Item label="Пол">{contact.sex || '-'}</Descriptions.Item>
+            <Descriptions.Item label="Дата рождения">
+              {contact.birth_date ? dayjs(contact.birth_date).format('DD.MM.YYYY') : '-'}
+            </Descriptions.Item>
+            <Descriptions.Item label="Источник">
+              {contact.lead_source ? leadSourceMap[contact.lead_source] || `#${contact.lead_source}` : '-'}
+            </Descriptions.Item>
+            <Descriptions.Item label="Страна">
+              {contact.country ? countryMap[contact.country] || `#${contact.country}` : '-'}
+            </Descriptions.Item>
+            <Descriptions.Item label="Город">
+              {contact.city ? cityMap[contact.city] || `#${contact.city}` : contact.city_name || '-'}
+            </Descriptions.Item>
+            <Descriptions.Item label="Регион">{contact.region || '-'}</Descriptions.Item>
+            <Descriptions.Item label="Район">{contact.district || '-'}</Descriptions.Item>
+            <Descriptions.Item label="Адрес" span={2}>
               <Space>
-                <PhoneOutlined />
-                <a href={`tel:${contact.phone}`}>{contact.phone}</a>
+                <HomeOutlined />
+                {contact.address || '-'}
               </Space>
             </Descriptions.Item>
-            <Descriptions.Item label="Компания">{contact.company || '-'}</Descriptions.Item>
-            <Descriptions.Item label="Должность">{contact.position || '-'}</Descriptions.Item>
-            <Descriptions.Item label="Тип">
-              <Tag color={typeStyle.color}>{typeStyle.text}</Tag>
+            <Descriptions.Item label="Ответственный">
+              {contact.owner ? userMap[contact.owner] || `#${contact.owner}` : '-'}
             </Descriptions.Item>
-            {contact.website && (
-              <Descriptions.Item label="Веб-сайт">
-                <Space>
-                  <GlobalOutlined />
-                  <a href={contact.website} target="_blank" rel="noopener noreferrer">
-                    {contact.website}
-                  </a>
-                </Space>
-              </Descriptions.Item>
-            )}
-            {contact.address && (
-              <Descriptions.Item label="Адрес" span={2}>
-                <Space>
-                  <HomeOutlined />
-                  {contact.address}
-                </Space>
-              </Descriptions.Item>
-            )}
+            <Descriptions.Item label="Отдел">
+              {contact.department ? departmentMap[contact.department] || `#${contact.department}` : '-'}
+            </Descriptions.Item>
+            <Descriptions.Item label="Массовая рассылка">
+              <Tag color={contact.massmail ? 'blue' : 'default'}>{contact.massmail ? 'Да' : 'Нет'}</Tag>
+            </Descriptions.Item>
+            <Descriptions.Item label="Дисквалифицирован">
+              <Tag color={contact.disqualified ? 'red' : 'default'}>
+                {contact.disqualified ? 'Да' : 'Нет'}
+              </Tag>
+            </Descriptions.Item>
+            <Descriptions.Item label="Последний контакт">
+              {contact.was_in_touch ? dayjs(contact.was_in_touch).format('DD.MM.YYYY') : '-'}
+            </Descriptions.Item>
+            <Descriptions.Item label="Токен">{contact.token || '-'}</Descriptions.Item>
+            <Descriptions.Item label="Теги" span={2}>
+              {tagNames.length ? tagNames.map((tag) => <Tag key={tag}>{tag}</Tag>) : '-'}
+            </Descriptions.Item>
             <Descriptions.Item label="Дата создания">
-              {new Date(contact.created_at).toLocaleString('ru-RU')}
+              {contact.creation_date ? dayjs(contact.creation_date).format('DD.MM.YYYY HH:mm') : '-'}
             </Descriptions.Item>
             <Descriptions.Item label="Последнее обновление">
-              {new Date(contact.updated_at).toLocaleString('ru-RU')}
+              {contact.update_date ? dayjs(contact.update_date).format('DD.MM.YYYY HH:mm') : '-'}
             </Descriptions.Item>
-            {contact.notes && (
-              <Descriptions.Item label="Заметки" span={2}>
-                {contact.notes}
+            {contact.description && (
+              <Descriptions.Item label="Описание" span={2}>
+                {contact.description}
               </Descriptions.Item>
             )}
           </Descriptions>
-
-          <Row gutter={16}>
-            <Col xs={24} md={8}>
-              <Card>
-                <Statistic
-                  title="Сделок"
-                  value={5}
-                  suffix="шт"
-                  valueStyle={{ color: '#3f8600' }}
-                />
-              </Card>
-            </Col>
-            <Col xs={24} md={8}>
-              <Card>
-                <Statistic
-                  title="Задач"
-                  value={3}
-                  suffix="шт"
-                  valueStyle={{ color: '#1890ff' }}
-                />
-              </Card>
-            </Col>
-            <Col xs={24} md={8}>
-              <Card>
-                <Statistic
-                  title="Общая сумма сделок"
-                  value={1250000}
-                  suffix="₽"
-                  valueStyle={{ color: '#cf1322' }}
-                />
-              </Card>
-            </Col>
-          </Row>
         </>
       ),
     },
     {
       key: 'activity',
       label: 'История активности',
-      children: (
-        <Timeline
-          items={[
-            {
-              color: 'green',
-              children: (
-                <>
-                  <Text strong>Контакт создан</Text>
-                  <br />
-                  <Text type="secondary">
-                    {new Date(contact.created_at).toLocaleString('ru-RU')}
-                  </Text>
-                </>
-              ),
-            },
-            {
-              color: 'blue',
-              children: (
-                <>
-                  <Text strong>Статус изменен на "{typeStyle.text}"</Text>
-                  <br />
-                  <Text type="secondary">
-                    {new Date(contact.updated_at).toLocaleString('ru-RU')}
-                  </Text>
-                </>
-              ),
-            },
-            {
-              color: 'orange',
-              children: (
-                <>
-                  <Text strong>Отправлено письмо</Text>
-                  <br />
-                  <Text type="secondary">
-                    {new Date(contact.updated_at).toLocaleString('ru-RU')}
-                  </Text>
-                </>
-              ),
-            },
-          ]}
-        />
-      ),
-    },
-    {
-      key: 'deals',
-      label: 'Сделки',
-      children: <div>Список сделок с этим контактом появится здесь</div>,
-    },
-    {
-      key: 'tasks',
-      label: 'Задачи',
-      children: <div>Список задач связанных с контактом появится здесь</div>,
+      children: <ActivityLog entityType="contact" entityId={contact.id} />,
     },
     {
       key: 'messages',
@@ -274,7 +311,7 @@ function ContactDetail({ id }) {
         <ChatWidget
           entityType="contact"
           entityId={contact.id}
-          entityName={`${contact.first_name} ${contact.last_name}`}
+          entityName={fullName || `Контакт #${contact.id}`}
           entityPhone={contact.phone}
         />
       ),
@@ -291,7 +328,7 @@ function ContactDetail({ id }) {
           locale={{
             emptyText: (
               <Empty
-                description="Звонков с этим контактом пока не было"
+                description="Звонков по этому контакту пока не было"
                 image={Empty.PRESENTED_IMAGE_SIMPLE}
               />
             ),
@@ -310,26 +347,11 @@ function ContactDetail({ id }) {
               ),
             },
             {
-              title: 'Статус',
-              dataIndex: 'status',
-              key: 'status',
-              width: 120,
-              render: (status) => {
-                const config = {
-                  completed: { color: 'success', text: 'Завершен' },
-                  missed: { color: 'error', text: 'Пропущен' },
-                  busy: { color: 'warning', text: 'Занято' },
-                };
-                const style = config[status] || config.completed;
-                return <Tag color={style.color}>{style.text}</Tag>;
-              },
-            },
-            {
               title: 'Дата и время',
-              dataIndex: 'started_at',
-              key: 'started_at',
+              dataIndex: 'timestamp',
+              key: 'timestamp',
               width: 180,
-              render: (date) => dayjs(date).format('DD.MM.YYYY HH:mm'),
+              render: (date, record) => dayjs(date || record.started_at).format('DD.MM.YYYY HH:mm'),
             },
             {
               title: 'Длительность',
@@ -344,20 +366,13 @@ function ContactDetail({ id }) {
               ),
             },
             {
-              title: 'Заметки',
-              dataIndex: 'notes',
-              key: 'notes',
-              ellipsis: true,
-              render: (notes) => notes || <span style={{ color: '#999' }}>-</span>,
-            },
-            {
               title: 'Действия',
               key: 'actions',
               width: 120,
               render: (_, record) => (
                 <CallButton
-                  phone={record.phone_number}
-                  name={`${contact.first_name} ${contact.last_name}`}
+                  phone={record.phone_number || record.number}
+                  name={fullName}
                   entityType="contact"
                   entityId={contact.id}
                   size="small"
@@ -377,27 +392,30 @@ function ContactDetail({ id }) {
         <Button icon={<ArrowLeftOutlined />} onClick={() => navigate('/contacts')}>
           Назад к списку
         </Button>
-        <CallButton
-          phone={contact.phone}
-          name={`${contact.first_name} ${contact.last_name}`}
-          entityType="contact"
-          entityId={contact.id}
-          type="primary"
-        />
         <Button
+          type="primary"
           icon={<EditOutlined />}
           onClick={() => navigate(`/contacts/${id}/edit`)}
         >
           Редактировать
         </Button>
+        {contact.phone && (
+          <CallButton
+            phone={contact.phone}
+            name={fullName}
+            entityType="contact"
+            entityId={contact.id}
+            size="middle"
+            type="default"
+            icon={true}
+          />
+        )}
         <Button danger icon={<DeleteOutlined />} onClick={handleDelete}>
           Удалить
         </Button>
       </Space>
 
-      <Title level={2}>
-        {contact.first_name} {contact.last_name}
-      </Title>
+      <Title level={2}>{fullName}</Title>
 
       <Card>
         <Tabs items={tabItems} />

@@ -29,11 +29,13 @@ import {
   SettingOutlined,
   HistoryOutlined,
   LineChartOutlined,
+  DeleteOutlined,
 } from '@ant-design/icons';
 import {
   getProfile,
   updateProfile,
   uploadAvatar,
+  deleteAvatar,
   changePassword,
   getPreferences,
   updatePreferences,
@@ -41,8 +43,6 @@ import {
   getUserActivity,
 } from '../lib/api/user';
 import { getCallHistory } from '../lib/api/telephony';
-
-const { TextArea } = Input;
 
 function ProfilePage() {
   const [form] = Form.useForm();
@@ -97,7 +97,14 @@ function ProfilePage() {
   const handleProfileUpdate = async (values) => {
     setLoading(true);
     try {
-      await updateProfile(values);
+      const payload = {
+        pbx_number: values.pbx_number,
+        jssip_ws_uri: values.jssip_ws_uri,
+        jssip_sip_uri: values.jssip_sip_uri,
+        jssip_sip_password: values.jssip_sip_password,
+        jssip_display_name: values.jssip_display_name,
+      };
+      await updateProfile(payload);
       message.success('Профиль успешно обновлен');
       loadProfile();
     } catch (error) {
@@ -125,6 +132,20 @@ function ProfilePage() {
       } finally {
         setLoading(false);
       }
+    }
+  };
+
+  const handleAvatarDelete = async () => {
+    setLoading(true);
+    try {
+      await deleteAvatar();
+      setAvatarUrl(null);
+      message.success('Аватар удален');
+    } catch (error) {
+      console.error('Error deleting avatar:', error);
+      message.error('Ошибка удаления аватара');
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -197,25 +218,36 @@ function ProfilePage() {
                 src={avatarUrl}
                 style={{ marginBottom: 16 }}
               />
-              <Upload
-                showUploadList={false}
-                onChange={handleAvatarChange}
-                beforeUpload={() => false}
-              >
-                <Button icon={<CameraOutlined />} block>
-                  Изменить фото
+              <Space direction="vertical" style={{ width: '100%' }}>
+                <Upload
+                  showUploadList={false}
+                  onChange={handleAvatarChange}
+                  beforeUpload={() => false}
+                >
+                  <Button icon={<CameraOutlined />} block>
+                    Изменить фото
+                  </Button>
+                </Upload>
+                <Button
+                  icon={<DeleteOutlined />}
+                  danger
+                  block
+                  disabled={!avatarUrl}
+                  onClick={handleAvatarDelete}
+                >
+                  Удалить фото
                 </Button>
-              </Upload>
+              </Space>
 
               {stats && (
                 <div style={{ marginTop: 24 }}>
                   <Statistic
-                    title="Активных лидов"
-                    value={stats.active_leads || 0}
+                    title="Всего лидов"
+                    value={stats.total_leads || 0}
                   />
                   <Statistic
-                    title="Звонков за месяц"
-                    value={stats.calls_this_month || 0}
+                    title="Всего сделок"
+                    value={stats.total_deals || 0}
                     style={{ marginTop: 16 }}
                   />
                 </div>
@@ -232,20 +264,18 @@ function ProfilePage() {
               <Row gutter={16}>
                 <Col span={12}>
                   <Form.Item
-                    label="Имя"
-                    name="first_name"
-                    rules={[{ required: true, message: 'Введите имя' }]}
+                    label="Полное имя"
+                    name="full_name"
                   >
-                    <Input prefix={<UserOutlined />} />
+                    <Input prefix={<UserOutlined />} disabled />
                   </Form.Item>
                 </Col>
                 <Col span={12}>
                   <Form.Item
-                    label="Фамилия"
-                    name="last_name"
-                    rules={[{ required: true, message: 'Введите фамилию' }]}
+                    label="Username"
+                    name="username"
                   >
-                    <Input prefix={<UserOutlined />} />
+                    <Input prefix={<UserOutlined />} disabled />
                   </Form.Item>
                 </Col>
               </Row>
@@ -258,19 +288,7 @@ function ProfilePage() {
                   { type: 'email', message: 'Введите корректный email' },
                 ]}
               >
-                <Input prefix={<MailOutlined />} />
-              </Form.Item>
-
-              <Form.Item label="Телефон" name="phone">
-                <Input prefix={<PhoneOutlined />} />
-              </Form.Item>
-
-              <Form.Item label="Должность" name="position">
-                <Input />
-              </Form.Item>
-
-              <Form.Item label="О себе" name="bio">
-                <TextArea rows={4} />
+                <Input prefix={<MailOutlined />} disabled />
               </Form.Item>
 
               <Divider>Настройки телефонии</Divider>
@@ -403,27 +421,9 @@ function ProfilePage() {
             layout="vertical"
             onFinish={handlePreferencesUpdate}
           >
-            <Divider>Уведомления</Divider>
-            
-            <Form.Item
-              label="Email уведомления"
-              name="email_notifications"
-              valuePropName="checked"
-            >
-              <Switch />
-            </Form.Item>
-
-            <Form.Item
-              label="Push уведомления"
-              name="push_notifications"
-              valuePropName="checked"
-            >
-              <Switch />
-            </Form.Item>
-
             <Divider>Региональные настройки</Divider>
 
-            <Form.Item label="Язык" name="language">
+            <Form.Item label="Язык" name="language_code">
               <Select>
                 <Select.Option value="ru">Русский</Select.Option>
                 <Select.Option value="en">English</Select.Option>
@@ -431,12 +431,20 @@ function ProfilePage() {
               </Select>
             </Form.Item>
 
-            <Form.Item label="Часовой пояс" name="timezone">
+            <Form.Item label="Часовой пояс" name="utc_timezone">
               <Select showSearch>
                 <Select.Option value="Europe/Moscow">Москва (UTC+3)</Select.Option>
                 <Select.Option value="Asia/Tashkent">Ташкент (UTC+5)</Select.Option>
                 <Select.Option value="Asia/Almaty">Алматы (UTC+6)</Select.Option>
               </Select>
+            </Form.Item>
+
+            <Form.Item
+              label="Использовать этот часовой пояс"
+              name="activate_timezone"
+              valuePropName="checked"
+            >
+              <Switch />
             </Form.Item>
 
             <Form.Item>
@@ -471,14 +479,14 @@ function ProfilePage() {
                 title="Звонков сегодня" 
                 value={callHistory.filter(c => {
                   const today = new Date().toDateString();
-                  return new Date(c.timestamp).toDateString() === today;
+                  return new Date(c.timestamp || c.started_at).toDateString() === today;
                 }).length} 
               />
             </Col>
             <Col span={8}>
               <Statistic 
                 title="Конверсия лидов" 
-                value={stats?.lead_conversion_rate || 0}
+                value={stats?.conversion_rate || 0}
                 suffix="%"
               />
             </Col>
@@ -510,16 +518,20 @@ function ProfilePage() {
                 title: 'Номер',
                 dataIndex: 'phone_number',
                 key: 'phone_number',
+                render: (value, record) => value || record.number || '-',
               },
               {
                 title: 'Тип',
                 dataIndex: 'call_type',
                 key: 'call_type',
-                render: (type) => (
-                  <Tag color={type === 'incoming' ? 'green' : 'blue'}>
-                    {type === 'incoming' ? 'Входящий' : 'Исходящий'}
-                  </Tag>
-                ),
+                render: (type, record) => {
+                  const direction = type || record.direction;
+                  return (
+                    <Tag color={direction === 'incoming' || direction === 'inbound' ? 'green' : 'blue'}>
+                      {direction === 'incoming' || direction === 'inbound' ? 'Входящий' : 'Исходящий'}
+                    </Tag>
+                  );
+                },
               },
               {
                 title: 'Длительность',
@@ -531,7 +543,7 @@ function ProfilePage() {
                 title: 'Время',
                 dataIndex: 'timestamp',
                 key: 'timestamp',
-                render: (date) => new Date(date).toLocaleString('ru'),
+                render: (date, record) => new Date(date || record.started_at).toLocaleString('ru'),
               },
             ]}
           />

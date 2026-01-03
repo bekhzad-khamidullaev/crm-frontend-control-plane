@@ -1,11 +1,35 @@
-import { useState, useEffect } from 'react';
-import { Table, Button, Space, Tag, Input, Select, message, Modal, Card, Switch } from 'antd';
-import { PlusOutlined, EditOutlined, DeleteOutlined, EyeOutlined, SearchOutlined, BellOutlined, CheckOutlined } from '@ant-design/icons';
+import { useEffect, useMemo, useState } from 'react';
+import {
+  Table,
+  Button,
+  Space,
+  Tag,
+  Input,
+  Select,
+  message,
+  Modal,
+  Card,
+  DatePicker,
+  InputNumber,
+} from 'antd';
+import {
+  PlusOutlined,
+  EditOutlined,
+  DeleteOutlined,
+  EyeOutlined,
+  SearchOutlined,
+  BellOutlined,
+  CheckOutlined,
+  CloseOutlined,
+} from '@ant-design/icons';
 import { getReminders, deleteReminder, updateReminder } from '../../lib/api/reminders';
 import { navigate } from '../../router';
 import dayjs from 'dayjs';
+import EntitySelect from '../../components/EntitySelect.jsx';
+import { getUsers, getUser } from '../../lib/api/client.js';
 
 const { Search } = Input;
+const { RangePicker } = DatePicker;
 
 export default function RemindersList() {
   const [data, setData] = useState([]);
@@ -13,11 +37,13 @@ export default function RemindersList() {
   const [pagination, setPagination] = useState({ current: 1, pageSize: 10, total: 0 });
   const [searchText, setSearchText] = useState('');
   const [activeFilter, setActiveFilter] = useState(null);
+  const [ownerFilter, setOwnerFilter] = useState(null);
   const [contentTypeFilter, setContentTypeFilter] = useState(null);
+  const [dateRange, setDateRange] = useState(null);
 
   useEffect(() => {
     fetchData();
-  }, [pagination.current, pagination.pageSize, searchText, activeFilter, contentTypeFilter]);
+  }, [pagination.current, pagination.pageSize, searchText, activeFilter, ownerFilter, contentTypeFilter, dateRange]);
 
   const fetchData = async () => {
     setLoading(true);
@@ -26,15 +52,26 @@ export default function RemindersList() {
         page: pagination.current,
         page_size: pagination.pageSize,
         search: searchText || undefined,
-        active: activeFilter,
+        active: typeof activeFilter === 'boolean' ? activeFilter : undefined,
+        owner: ownerFilter || undefined,
         content_type: contentTypeFilter || undefined,
+        ordering: '-reminder_date',
       };
       const res = await getReminders(params);
       const results = res.results || [];
-      setData(results);
-      setPagination((prev) => ({ ...prev, total: res.count || results.length }));
+
+      const filteredByDate = dateRange && dateRange.length === 2
+        ? results.filter((item) => {
+            if (!item.reminder_date) return false;
+            const date = dayjs(item.reminder_date);
+            return date.isAfter(dateRange[0].startOf('day')) && date.isBefore(dateRange[1].endOf('day'));
+          })
+        : results;
+
+      setData(filteredByDate);
+      setPagination((prev) => ({ ...prev, total: res.count || filteredByDate.length }));
     } catch (error) {
-      message.error('Failed to fetch reminders');
+      message.error('Не удалось загрузить напоминания');
       console.error(error);
     } finally {
       setLoading(false);
@@ -43,17 +80,17 @@ export default function RemindersList() {
 
   const handleDelete = (id) => {
     Modal.confirm({
-      title: 'Delete Reminder',
-      content: 'Are you sure you want to delete this reminder?',
-      okText: 'Delete',
+      title: 'Удалить напоминание?',
+      content: 'Действие нельзя отменить.',
+      okText: 'Удалить',
       okType: 'danger',
       onOk: async () => {
         try {
           await deleteReminder(id);
-          message.success('Reminder deleted successfully');
+          message.success('Напоминание удалено');
           fetchData();
         } catch (error) {
-          message.error('Failed to delete reminder');
+          message.error('Не удалось удалить напоминание');
         }
       },
     });
@@ -62,10 +99,10 @@ export default function RemindersList() {
   const handleToggleActive = async (id, currentActive) => {
     try {
       await updateReminder(id, { active: !currentActive });
-      message.success(`Reminder ${!currentActive ? 'activated' : 'deactivated'}`);
+      message.success(!currentActive ? 'Напоминание активировано' : 'Напоминание деактивировано');
       fetchData();
     } catch (error) {
-      message.error('Failed to update reminder');
+      message.error('Не удалось обновить напоминание');
     }
   };
 
@@ -73,65 +110,65 @@ export default function RemindersList() {
     setPagination(newPagination);
   };
 
-  const getRelatedEntity = (record) => {
-    if (record.lead) return `Lead: ${record.lead.title || record.lead.id}`;
-    if (record.deal) return `Deal: ${record.deal.title || record.deal.id}`;
-    if (record.contact) return `Contact: ${record.contact.name || record.contact.id}`;
-    if (record.task) return `Task: ${record.task.title || record.task.id}`;
-    return '-';
-  };
-
-  const columns = [
+  const columns = useMemo(() => ([
     {
-      title: 'Title',
-      dataIndex: 'title',
-      key: 'title',
-      render: (title) => <strong>{title}</strong>,
+      title: 'Тема',
+      dataIndex: 'subject',
+      key: 'subject',
+      render: (subject) => <strong>{subject}</strong>,
     },
     {
-      title: 'Remind At',
-      dataIndex: 'remind_at',
-      key: 'remind_at',
+      title: 'Дата напоминания',
+      dataIndex: 'reminder_date',
+      key: 'reminder_date',
       render: (date) => {
         if (!date) return '-';
         const reminderDate = dayjs(date);
-        const now = dayjs();
-        const isPast = reminderDate.isBefore(now);
+        const isPast = reminderDate.isBefore(dayjs());
         return (
           <span style={{ color: isPast ? '#ff4d4f' : undefined }}>
             {reminderDate.format('DD MMM YYYY HH:mm')}
-            {isPast && ' (Past)'}
+            {isPast && ' (Просрочено)'}
           </span>
         );
       },
       sorter: true,
     },
     {
-      title: 'Status',
+      title: 'Статус',
       dataIndex: 'active',
       key: 'active',
       render: (active) => (
         <Tag color={active ? 'green' : 'default'}>
-          {active ? 'ACTIVE' : 'INACTIVE'}
+          {active ? 'Активно' : 'Неактивно'}
         </Tag>
       ),
     },
     {
-      title: 'Related Entity',
-      key: 'related',
-      render: (_, record) => getRelatedEntity(record),
+      title: 'Content Type',
+      dataIndex: 'content_type',
+      key: 'content_type',
+      width: 120,
+      render: (value) => value ?? '-',
     },
     {
-      title: 'Owner',
-      dataIndex: 'owner',
-      key: 'owner',
-      render: (owner) => owner?.username || owner?.email || '-',
+      title: 'Object ID',
+      dataIndex: 'object_id',
+      key: 'object_id',
+      width: 120,
+      render: (value) => value ?? '-',
     },
     {
-      title: 'Actions',
+      title: 'Владелец',
+      dataIndex: 'owner_name',
+      key: 'owner_name',
+      render: (ownerName) => ownerName || '-',
+    },
+    {
+      title: 'Действия',
       key: 'actions',
       fixed: 'right',
-      width: 200,
+      width: 220,
       render: (_, record) => (
         <Space size="small">
           <Button
@@ -140,7 +177,7 @@ export default function RemindersList() {
             icon={<EyeOutlined />}
             onClick={() => navigate(`/reminders/${record.id}`)}
           >
-            View
+            Открыть
           </Button>
           <Button
             type="link"
@@ -151,10 +188,10 @@ export default function RemindersList() {
           <Button
             type="link"
             size="small"
-            icon={<CheckOutlined />}
+            icon={record.active ? <CloseOutlined /> : <CheckOutlined />}
             onClick={() => handleToggleActive(record.id, record.active)}
           >
-            {record.active ? 'Deactivate' : 'Activate'}
+            {record.active ? 'Откл.' : 'Вкл.'}
           </Button>
           <Button
             type="link"
@@ -166,14 +203,14 @@ export default function RemindersList() {
         </Space>
       ),
     },
-  ];
+  ]), []);
 
   return (
     <Card
       title={
         <Space>
           <BellOutlined />
-          <span>Reminders</span>
+          <span>Напоминания</span>
         </Space>
       }
       extra={
@@ -182,41 +219,52 @@ export default function RemindersList() {
           icon={<PlusOutlined />}
           onClick={() => navigate('/reminders/new')}
         >
-          New Reminder
+          Новое напоминание
         </Button>
       }
     >
       <Space direction="vertical" size="middle" style={{ width: '100%' }}>
         <Space wrap>
           <Search
-            placeholder="Search reminders..."
+            placeholder="Поиск по теме или описанию"
             allowClear
             enterButton={<SearchOutlined />}
-            style={{ width: 300 }}
+            style={{ width: 320 }}
             onSearch={setSearchText}
           />
           <Select
-            placeholder="Filter by Status"
-            style={{ width: 150 }}
+            placeholder="Активность"
+            style={{ width: 160 }}
             allowClear
             onChange={setActiveFilter}
             value={activeFilter}
           >
-            <Select.Option value={true}>Active</Select.Option>
-            <Select.Option value={false}>Inactive</Select.Option>
+            <Select.Option value={true}>Активные</Select.Option>
+            <Select.Option value={false}>Неактивные</Select.Option>
           </Select>
-          <Select
-            placeholder="Filter by Type"
-            style={{ width: 150 }}
+          <EntitySelect
+            placeholder="Владелец"
+            value={ownerFilter}
+            onChange={setOwnerFilter}
+            fetchList={getUsers}
+            fetchById={getUser}
+            style={{ width: 220 }}
             allowClear
-            onChange={setContentTypeFilter}
+          />
+          <InputNumber
+            placeholder="Content type ID"
+            style={{ width: 160 }}
+            min={1}
             value={contentTypeFilter}
-          >
-            <Select.Option value="lead">Lead</Select.Option>
-            <Select.Option value="deal">Deal</Select.Option>
-            <Select.Option value="contact">Contact</Select.Option>
-            <Select.Option value="task">Task</Select.Option>
-          </Select>
+            onChange={setContentTypeFilter}
+          />
+          <RangePicker
+            style={{ width: 260 }}
+            value={dateRange}
+            onChange={setDateRange}
+            format="DD.MM.YYYY"
+            placeholder={['Дата от', 'Дата до']}
+          />
         </Space>
 
         <Table

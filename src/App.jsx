@@ -16,6 +16,12 @@ import {
   FolderOutlined,
   MessageOutlined,
   PhoneOutlined,
+  AppstoreOutlined,
+  DatabaseOutlined,
+  MailOutlined,
+  ToolOutlined,
+  RobotOutlined,
+  UserSwitchOutlined,
   FileTextOutlined,
   SettingOutlined,
   LogoutOutlined,
@@ -93,6 +99,26 @@ const CampaignForm = lazy(() => import('./modules/marketing/index.js').then(m =>
 const MemosList = lazy(() => import('./modules/memos/index.js').then(m => ({ default: m.MemosList })));
 const MemoDetail = lazy(() => import('./modules/memos/index.js').then(m => ({ default: m.MemoDetail })));
 const MemoForm = lazy(() => import('./modules/memos/index.js').then(m => ({ default: m.MemoForm })));
+
+// Products
+const ProductsList = lazy(() => import('./modules/products/ProductsList.jsx'));
+const ProductDetail = lazy(() => import('./modules/products/ProductDetail.jsx'));
+const ProductForm = lazy(() => import('./modules/products/ProductForm.jsx'));
+
+// Marketing extra
+const MarketingSegmentsPage = lazy(() => import('./pages/marketing-segments.jsx'));
+const MarketingTemplatesPage = lazy(() => import('./pages/marketing-templates.jsx'));
+
+// Admin/system pages
+const CrmEmailsPage = lazy(() => import('./pages/crm-emails.jsx'));
+const MassmailPage = lazy(() => import('./pages/massmail.jsx'));
+const OperationsPage = lazy(() => import('./pages/operations.jsx'));
+const ReferenceDataPage = lazy(() => import('./pages/reference-data.jsx'));
+const HelpCenterPage = lazy(() => import('./pages/help-center.jsx'));
+const AnalyticsPage = lazy(() => import('./pages/analytics.jsx'));
+const SmsCenterPage = lazy(() => import('./pages/sms-center.jsx'));
+const TelephonyPage = lazy(() => import('./pages/telephony.jsx'));
+const UsersPage = lazy(() => import('./pages/users.jsx'));
 
 const { Header, Sider, Content } = Layout;
 const { Text } = Typography;
@@ -338,6 +364,12 @@ function App() {
       onClick: () => navigate('/projects'),
     },
     {
+      key: 'products',
+      icon: <AppstoreOutlined />,
+      label: 'Продукты',
+      onClick: () => navigate('/products'),
+    },
+    {
       key: 'chat',
       icon: unreadCount > 0 ? <Badge count={unreadCount} size="small"><MessageOutlined /></Badge> : <MessageOutlined />,
       label: t('nav.chat') || 'Чат',
@@ -373,16 +405,90 @@ function App() {
       onClick: () => navigate('/reminders'),
     },
     {
-      key: 'campaigns',
+      key: 'marketing',
       icon: <FileTextOutlined />,
-      label: t('nav.campaigns') || 'Кампании',
-      onClick: () => navigate('/campaigns'),
+      label: 'Маркетинг',
+      children: [
+        {
+          key: 'campaigns',
+          label: t('nav.campaigns') || 'Кампании',
+          onClick: () => navigate('/campaigns'),
+        },
+        {
+          key: 'segments',
+          label: 'Сегменты',
+          onClick: () => navigate('/marketing/segments'),
+        },
+        {
+          key: 'templates',
+          label: 'Шаблоны',
+          onClick: () => navigate('/marketing/templates'),
+        },
+      ],
     },
     {
       key: 'memos',
       icon: <FileTextOutlined />,
       label: t('nav.memos') || 'Заметки',
       onClick: () => navigate('/memos'),
+    },
+    {
+      key: 'communications',
+      icon: <MailOutlined />,
+      label: 'Коммуникации',
+      children: [
+        {
+          key: 'crm-emails',
+          label: 'CRM Emails',
+          onClick: () => navigate('/crm-emails'),
+        },
+        {
+          key: 'massmail',
+          label: 'Massmail',
+          onClick: () => navigate('/massmail'),
+        },
+        {
+          key: 'sms-center',
+          label: 'SMS',
+          onClick: () => navigate('/sms'),
+        },
+      ],
+    },
+    {
+      key: 'operations',
+      icon: <ToolOutlined />,
+      label: 'Операции',
+      onClick: () => navigate('/operations'),
+    },
+    {
+      key: 'reference-data',
+      icon: <DatabaseOutlined />,
+      label: 'Справочники',
+      onClick: () => navigate('/reference-data'),
+    },
+    {
+      key: 'analytics',
+      icon: <BarChartOutlined />,
+      label: 'Аналитика',
+      onClick: () => navigate('/analytics'),
+    },
+    {
+      key: 'help-center',
+      icon: <FileTextOutlined />,
+      label: 'Справка',
+      onClick: () => navigate('/help'),
+    },
+    {
+      key: 'telephony',
+      icon: <PhoneOutlined />,
+      label: 'Телефония',
+      onClick: () => navigate('/telephony'),
+    },
+    {
+      key: 'users',
+      icon: <UserSwitchOutlined />,
+      label: 'Пользователи',
+      onClick: () => navigate('/users'),
     },
     {
       type: 'divider',
@@ -403,12 +509,20 @@ function App() {
     if (name.startsWith('deals')) return 'deals';
     if (name.startsWith('tasks')) return 'tasks';
     if (name.startsWith('projects')) return 'projects';
+    if (name.startsWith('products')) return 'products';
     if (name.startsWith('chat')) return 'chat';
     if (name.startsWith('calls')) return 'calls';
     if (name.startsWith('payments')) return 'payments';
     if (name.startsWith('reminders')) return 'reminders';
-    if (name.startsWith('campaigns')) return 'campaigns';
+    if (name.startsWith('campaigns') || name.startsWith('marketing')) return 'marketing';
     if (name.startsWith('memos')) return 'memos';
+    if (name === 'crm-emails' || name === 'massmail' || name === 'sms-center') return 'communications';
+    if (name === 'operations') return 'operations';
+    if (name === 'reference-data') return 'reference-data';
+    if (name === 'analytics') return 'analytics';
+    if (name === 'help-center') return 'help-center';
+    if (name === 'telephony') return 'telephony';
+    if (name === 'users') return 'users';
     return name;
   };
 
@@ -500,6 +614,36 @@ function App() {
         return <MemoForm id={route.params.id} />;
       case 'memos-detail':
         return <MemoDetail id={route.params.id} />;
+      case 'products-list':
+        return <ProductsList />;
+      case 'products-new':
+        return <ProductForm />;
+      case 'products-edit':
+        return <ProductForm id={route.params.id} />;
+      case 'products-detail':
+        return <ProductDetail id={route.params.id} />;
+      case 'marketing-segments':
+        return <MarketingSegmentsPage />;
+      case 'marketing-templates':
+        return <MarketingTemplatesPage />;
+      case 'crm-emails':
+        return <CrmEmailsPage />;
+      case 'massmail':
+        return <MassmailPage />;
+      case 'operations':
+        return <OperationsPage />;
+      case 'reference-data':
+        return <ReferenceDataPage />;
+      case 'help-center':
+        return <HelpCenterPage />;
+      case 'analytics':
+        return <AnalyticsPage />;
+      case 'sms-center':
+        return <SmsCenterPage />;
+      case 'telephony':
+        return <TelephonyPage />;
+      case 'users':
+        return <UsersPage />;
       case 'chat':
       case 'chat-list':
         return <ChatPage />;

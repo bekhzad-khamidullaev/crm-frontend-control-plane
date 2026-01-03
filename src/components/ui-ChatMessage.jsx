@@ -7,9 +7,9 @@
  * Render a chat message
  * @param {Object} message - Message data
  * @param {string} message.id - Message ID
- * @param {Object} message.sender - Sender user object
+ * @param {Object} message.sender - Sender user object (optional)
  * @param {string} message.content - Message content
- * @param {string} message.created_at - ISO datetime string
+ * @param {string} message.creation_date - ISO datetime string
  * @param {Object} [message.parent] - Parent message if this is a reply
  * @param {Function} onReply - Callback when reply button is clicked
  * @param {Function} onDelete - Callback when delete button is clicked
@@ -27,13 +27,13 @@ export function ChatMessage(message, { onReply, onDelete, isOwn = false } = {}) 
   if (message.sender?.avatar) {
     const img = document.createElement('img');
     img.src = message.sender.avatar;
-    img.alt = message.sender.full_name || 'User';
+    img.alt = message.owner_name || message.sender.full_name || 'User';
     avatar.appendChild(img);
   } else {
     // Default avatar with initials
-    const initials = getInitials(message.sender?.full_name || 'User');
+    const initials = getInitials(message.owner_name || message.sender?.full_name || 'User');
     avatar.textContent = initials;
-    avatar.style.backgroundColor = getColorForUser(message.sender?.id || 0);
+    avatar.style.backgroundColor = getColorForUser(message.owner || message.sender?.id || 0);
   }
 
   const content = document.createElement('div');
@@ -44,11 +44,11 @@ export function ChatMessage(message, { onReply, onDelete, isOwn = false } = {}) 
 
   const senderName = document.createElement('span');
   senderName.className = 'chat-message__sender';
-  senderName.textContent = message.sender?.full_name || 'Unknown User';
+  senderName.textContent = message.owner_name || message.sender?.full_name || 'Unknown User';
 
   const timestamp = document.createElement('span');
   timestamp.className = 'chat-message__timestamp';
-  timestamp.textContent = formatTimestamp(message.created_at);
+  timestamp.textContent = formatTimestamp(message.creation_date || message.created_at);
 
   header.appendChild(senderName);
   header.appendChild(timestamp);

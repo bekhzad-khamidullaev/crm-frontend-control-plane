@@ -11,15 +11,11 @@ import { api } from './client';
  * @returns {Promise<Object>}
  */
 export async function getProfile() {
-  try {
-    const [user, profile] = await Promise.all([
-      api.get('/api/users/me/'),
-      api.get('/api/profiles/me/').catch(() => ({}))
-    ]);
-    return { ...user, ...profile };
-  } catch (error) {
-    return api.get('/api/users/me/');
-  }
+  const [user, profile] = await Promise.all([
+    api.get('/api/users/me/'),
+    api.get('/api/profiles/me/'),
+  ]);
+  return { ...user, ...profile };
 }
 
 /**
@@ -36,12 +32,7 @@ export async function getProfile() {
  * @returns {Promise<Object>}
  */
 export async function updateProfile(data) {
-  try {
-    return await api.patch('/api/profiles/me/', data);
-  } catch (error) {
-    console.warn('Profiles endpoint not available, using users endpoint');
-    return api.patch('/api/users/me/', data);
-  }
+  return api.patch('/api/profiles/me/', data);
 }
 
 /**
@@ -54,11 +45,16 @@ export async function uploadAvatar(file) {
   const formData = new FormData();
   formData.append('avatar', file);
 
-  return api.post('/api/profiles/me/avatar/', formData, {
-    headers: {
-      'Content-Type': 'multipart/form-data',
-    },
-  });
+  return api.post('/api/profiles/me/avatar/', { body: formData });
+}
+
+/**
+ * Delete user avatar
+ * Uses /api/profiles/me/avatar/ endpoint
+ * @returns {Promise<Object>}
+ */
+export async function deleteAvatar() {
+  return api.delete('/api/profiles/me/avatar/');
 }
 
 /**
@@ -71,12 +67,7 @@ export async function uploadAvatar(file) {
  * @returns {Promise<Object>}
  */
 export async function changePassword(data) {
-  try {
-    return await api.post('/api/users/me/change-password/', data);
-  } catch (error) {
-    console.warn('Change password endpoint not available');
-    throw new Error('Password change functionality requires backend implementation');
-  }
+  return api.post('/api/users/me/change-password/', data);
 }
 
 /**
@@ -85,25 +76,12 @@ export async function changePassword(data) {
  * @returns {Promise<Object>}
  */
 export async function getPreferences() {
-  try {
-    const profile = await api.get('/api/profiles/me/');
-    return {
-      email_notifications: profile.email_notifications,
-      sms_notifications: profile.sms_notifications,
-      push_notifications: profile.push_notifications,
-      language: profile.language,
-      timezone: profile.timezone,
-    };
-  } catch (error) {
-    console.warn('Preferences not available, returning defaults');
-    return {
-      email_notifications: true,
-      sms_notifications: false,
-      push_notifications: true,
-      language: 'ru',
-      timezone: 'Europe/Moscow',
-    };
-  }
+  const profile = await api.get('/api/profiles/me/');
+  return {
+    language_code: profile.language_code,
+    utc_timezone: profile.utc_timezone,
+    activate_timezone: profile.activate_timezone,
+  };
 }
 
 /**
@@ -118,12 +96,7 @@ export async function getPreferences() {
  * @returns {Promise<Object>}
  */
 export async function updatePreferences(preferences) {
-  try {
-    return await api.patch('/api/profiles/me/', preferences);
-  } catch (error) {
-    console.warn('Preferences update failed');
-    throw error;
-  }
+  return api.patch('/api/profiles/me/', preferences);
 }
 
 /**
@@ -132,20 +105,7 @@ export async function updatePreferences(preferences) {
  * @returns {Promise<Object>}
  */
 export async function getUserStats() {
-  try {
-    // Try dashboard analytics endpoint
-    const analytics = await api.get('/api/dashboard/analytics/');
-    return analytics;
-  } catch (error) {
-    console.warn('Stats not available, returning mock data');
-    return {
-      leads_count: 0,
-      deals_count: 0,
-      tasks_count: 0,
-      calls_count: 0,
-      lead_conversion_rate: 0,
-    };
-  }
+  return api.get('/api/analytics/overview/');
 }
 
 /**
@@ -157,12 +117,7 @@ export async function getUserStats() {
  * @returns {Promise<Object>}
  */
 export async function getUserActivity(params = {}) {
-  try {
-    return await api.get('/api/dashboard/activity/', { params });
-  } catch (error) {
-    console.warn('User activity not available');
-    return { results: [], count: 0 };
-  }
+  return api.get('/api/dashboard/activity/', { params });
 }
 
 /**
@@ -175,12 +130,26 @@ export async function getUserActivity(params = {}) {
  * @returns {Promise<Object>}
  */
 export async function getUsers(params = {}) {
-  try {
-    return await api.get('/api/users/', { params });
-  } catch (error) {
-    console.warn('Users list not available');
-    return { results: [], count: 0 };
-  }
+  return api.get('/api/users/', { params });
+}
+
+/**
+ * Get profiles list
+ * Uses /api/profiles/ endpoint
+ * @param {Object} [params]
+ * @returns {Promise<Object>}
+ */
+export async function getProfiles(params = {}) {
+  return api.get('/api/profiles/', { params });
+}
+
+/**
+ * Get profile by user ID
+ * @param {number|string} userId
+ * @returns {Promise<Object>}
+ */
+export async function getProfileByUser(userId) {
+  return api.get(`/api/profiles/${userId}/`);
 }
 
 /**
@@ -189,12 +158,7 @@ export async function getUsers(params = {}) {
  * @returns {Promise<Array>}
  */
 export async function getUserSessions() {
-  try {
-    return await api.get('/api/users/me/sessions/');
-  } catch (error) {
-    console.warn('Sessions endpoint not available');
-    return [];
-  }
+  return api.get('/api/users/me/sessions/');
 }
 
 /**
@@ -203,12 +167,7 @@ export async function getUserSessions() {
  * @returns {Promise<Object>}
  */
 export async function revokeAllSessions() {
-  try {
-    return await api.post('/api/users/me/sessions/revoke-all/');
-  } catch (error) {
-    console.warn('Revoke sessions endpoint not available');
-    throw new Error('Session revocation functionality requires backend implementation');
-  }
+  return api.post('/api/users/me/sessions/revoke-all/');
 }
 
 /**
@@ -217,10 +176,5 @@ export async function revokeAllSessions() {
  * @returns {Promise<Object>}
  */
 export async function get2FAStatus() {
-  try {
-    return await api.get('/api/users/me/2fa/status/');
-  } catch (error) {
-    console.warn('2FA status endpoint not available');
-    return { enabled: false, method: null };
-  }
+  return api.get('/api/users/me/2fa/status/');
 }

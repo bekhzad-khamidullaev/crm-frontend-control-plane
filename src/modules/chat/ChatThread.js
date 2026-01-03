@@ -3,7 +3,7 @@
  * Displays a conversation thread with messages and input
  */
 
-import { getEntityChatMessages, createChatMessage, deleteChatMessage } from '../../lib/api/chat.js';
+import { getEntityChatMessages, getMessageThread, createChatMessage, deleteChatMessage } from '../../lib/api/chat.js';
 import ChatMessage from '../../components/ui-ChatMessage.jsx';
 import ChatInput from '../../components/ui-ChatInput.jsx';
 import { Spinner, Toast } from '../../components/index.js';
@@ -98,13 +98,10 @@ export function ChatThread({ entityType, entityId, threadId } = {}) {
     try {
       const messageData = {
         content: data.content,
-        parent: data.parent || threadId || null,
+        answer_to: data.answer_to || threadId || null,
+        content_type: entityType,
+        object_id: entityId,
       };
-
-      // Add entity relation
-      if (entityType && entityId) {
-        messageData[`related_${entityType}`] = entityId;
-      }
 
       await createChatMessage(messageData);
       
@@ -171,7 +168,7 @@ async function loadMessages(container, entityType, entityId, threadId, silent = 
 
     // Display messages
     data.results.forEach(msg => {
-      const isOwn = msg.sender?.id === currentUserId;
+      const isOwn = msg.owner === currentUserId || msg.sender?.id === currentUserId;
       
       const messageEl = ChatMessage(msg, {
         isOwn,

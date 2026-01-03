@@ -13,6 +13,8 @@ import {
   Table,
   Empty,
   Popconfirm,
+  Form,
+  Modal,
 } from 'antd';
 import {
   ArrowLeftOutlined,
@@ -24,11 +26,13 @@ import {
   PhoneTwoTone,
   CheckCircleOutlined,
   CloseCircleOutlined,
+  UserOutlined,
 } from '@ant-design/icons';
 import { navigate } from '../../router';
-import { getLead, deleteLead, leadsApi } from '../../lib/api/client';
+import { getLead, deleteLead, leadsApi, getUsers, getUser } from '../../lib/api/client';
 import { getEntityCallLogs } from '../../lib/api/calls';
 import CallButton from '../../components/CallButton';
+import EntitySelect from '../../components/EntitySelect.jsx';
 import ChatWidget from '../../modules/chat/ChatWidget';
 // Temporarily commented out to debug
 // import { ActivityLog } from '../../components';
@@ -41,11 +45,19 @@ function LeadDetail({ id }) {
   const [loading, setLoading] = useState(true);
   const [callLogs, setCallLogs] = useState([]);
   const [callLogsLoading, setCallLogsLoading] = useState(false);
+  const [assignModalOpen, setAssignModalOpen] = useState(false);
+  const [assigning, setAssigning] = useState(false);
+  const [assignForm] = Form.useForm();
 
   useEffect(() => {
     loadLead();
-    loadCallLogs();
   }, [id]);
+
+  useEffect(() => {
+    if (lead) {
+      loadCallLogs();
+    }
+  }, [lead?.phone, lead?.id]);
 
   const loadLead = async () => {
     setLoading(true);
@@ -63,7 +75,8 @@ function LeadDetail({ id }) {
   const loadCallLogs = async () => {
     setCallLogsLoading(true);
     try {
-      const response = await getEntityCallLogs('lead', id);
+      const search = lead?.phone || lead?.phone_number;
+      const response = await getEntityCallLogs('lead', id, search ? { search } : {});
       setCallLogs(response.results || []);
     } catch (error) {
       console.error('Error loading call logs:', error);
@@ -81,6 +94,33 @@ function LeadDetail({ id }) {
     } catch (error) {
       message.error('Ошибка удаления лида');
     }
+  };
+
+  const openAssignModal = () => {
+    assignForm.setFieldsValue({ owner: lead?.owner || null });
+    setAssignModalOpen(true);
+  };
+
+  const handleAssign = async () => {
+    try {
+      const values = await assignForm.validateFields();
+      setAssigning(true);
+      await leadsApi.assign(id, { owner: values.owner });
+      message.success('Ответственный назначен');
+      setAssignModalOpen(false);
+      assignForm.resetFields();
+      loadLead();
+    } catch (error) {
+      if (error?.errorFields) return;
+      message.error('Ошибка назначения ответственного');
+    } finally {
+      setAssigning(false);
+    }
+  };
+
+  const handleAssignCancel = () => {
+    setAssignModalOpen(false);
+    assignForm.resetFields();
   };
 
   const handleConvert = async () => {
@@ -339,23 +379,27 @@ function LeadDetail({ id }) {
             },
             {
               title: 'Статус',
-              dataIndex: 'status',
-              key: 'status',
-              width: 120,
-              render: (status) => {
-                const config = {
-                  completed: { color: 'success', text: 'Завершен' },
-                  missed: { color: 'error', text: 'Пропущен' },
-                  busy: { color: 'warning', text: 'Занято' },
-                };
-                const style = config[status] || config.completed;
-                return <Tag color={style.color}>{style.text}</Tag>;
-              },
+              dataIndex: 'direction',
+              key: 'direction',
+              width: 140,
+              render: (direction) => (
+                <Space>
+                  <PhoneTwoTone twoToneColor={direction === 'inbound' ? '#52c41a' : '#1890ff'} />
+                  {direction === 'inbound' ? 'Входящий' : 'Исходящий'}
+                </Space>
+              ),
+            },
+            {
+              title: 'Номер',
+              dataIndex: 'number',
+              key: 'number',
+              width: 160,
+              render: (value, record) => value || record.phone_number || '-',
             },
             {
               title: 'Дата и время',
-              dataIndex: 'started_at',
-              key: 'started_at',
+              dataIndex: 'timestamp',
+              key: 'timestamp',
               width: 180,
               render: (date) => dayjs(date).format('DD.MM.YYYY HH:mm'),
             },
@@ -372,19 +416,12 @@ function LeadDetail({ id }) {
               ),
             },
             {
-              title: 'Заметки',
-              dataIndex: 'notes',
-              key: 'notes',
-              ellipsis: true,
-              render: (notes) => notes || <span style={{ color: '#999' }}>-</span>,
-            },
-            {
               title: 'Действия',
               key: 'actions',
               width: 120,
               render: (_, record) => (
                 <CallButton
-                  phone={record.phone_number}
+                  phone={record.number || record.phone_number}
                   name={`${lead.first_name} ${lead.last_name}`}
                   entityType="lead"
                   entityId={lead.id}
@@ -412,6 +449,9 @@ function LeadDetail({ id }) {
           entityId={lead.id}
           type="primary"
         />
+        <Button icon={<UserOutlined />} onClick={openAssignModal}>
+          Назначить
+        </Button>
         <Button
           icon={<EditOutlined />}
           onClick={() => navigate(`/leads/${id}/edit`)}
@@ -472,6 +512,30 @@ function LeadDetail({ id }) {
       <Card>
         <Tabs items={tabItems} />
       </Card>
+
+      <Modal
+        title="Назначить ответственного"
+        open={assignModalOpen}
+        onCancel={handleAssignCancel}
+        onOk={handleAssign}
+        okText="Назначить"
+        cancelText="Отмена"
+        confirmLoading={assigning}
+      >
+        <Form form={assignForm} layout="vertical">
+          <Form.Item
+            name="owner"
+            label="Ответственный"
+            rules={[{ required: true, message: 'Выберите пользователя' }]}
+          >
+            <EntitySelect
+              fetchOptions={getUsers}
+              fetchById={getUser}
+              placeholder="Выберите пользователя"
+            />
+          </Form.Item>
+        </Form>
+      </Modal>
     </div>
   );
 }

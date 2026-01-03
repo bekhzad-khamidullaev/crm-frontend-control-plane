@@ -10,24 +10,7 @@ import { api } from './client.js';
  * @returns {Promise} Analytics overview data
  */
 export async function getOverview() {
-  try {
-    const response = await api.get('/api/analytics/overview/');
-    return response;
-  } catch (error) {
-    console.error('Failed to fetch analytics overview:', error);
-    // Return fallback data instead of throwing for graceful degradation
-    if (error.message && error.message.includes('Cannot connect to server')) {
-      console.warn('Returning fallback overview data - backend unavailable');
-      return {
-        total_leads: 0,
-        total_contacts: 0,
-        total_deals: 0,
-        total_revenue: 0,
-        conversion_rate: 0,
-      };
-    }
-    throw error;
-  }
+  return api.get('/api/analytics/overview/');
 }
 
 /**
@@ -39,22 +22,7 @@ export async function getOverview() {
  * @returns {Promise} Dashboard analytics data
  */
 export async function getDashboardAnalytics(params = {}) {
-  try {
-    const response = await api.get('/api/dashboard/analytics/', { params });
-    return response;
-  } catch (error) {
-    console.error('Failed to fetch dashboard analytics:', error);
-    // Return fallback data for graceful degradation
-    if (error.message && error.message.includes('Cannot connect to server')) {
-      console.warn('Returning fallback analytics data - backend unavailable');
-      return {
-        leads_by_status: [],
-        deals_by_stage: [],
-        revenue_trend: [],
-      };
-    }
-    throw error;
-  }
+  return api.get('/api/dashboard/analytics/', { params });
 }
 
 /**
@@ -66,18 +34,7 @@ export async function getDashboardAnalytics(params = {}) {
  * @returns {Promise} Sales funnel data as list of {label, value}
  */
 export async function getFunnelData(params = {}) {
-  try {
-    const response = await api.get('/api/dashboard/funnel/', { params });
-    return response;
-  } catch (error) {
-    console.error('Failed to fetch funnel data:', error);
-    // Return fallback data for graceful degradation
-    if (error.message && error.message.includes('Cannot connect to server')) {
-      console.warn('Returning fallback funnel data - backend unavailable');
-      return [];
-    }
-    throw error;
-  }
+  return api.get('/api/dashboard/funnel/', { params });
 }
 
 /**
@@ -86,18 +43,7 @@ export async function getFunnelData(params = {}) {
  * @returns {Promise} Activity feed data
  */
 export async function getActivityFeed(params = {}) {
-  try {
-    const response = await api.get('/api/dashboard/activity/', { params });
-    return response;
-  } catch (error) {
-    console.error('Failed to fetch activity feed:', error);
-    // Return fallback data for graceful degradation
-    if (error.message && error.message.includes('Cannot connect to server')) {
-      console.warn('Returning fallback activity data - backend unavailable');
-      return [];
-    }
-    throw error;
-  }
+  return api.get('/api/dashboard/activity/', { params });
 }
 
 /**

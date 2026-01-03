@@ -1,11 +1,24 @@
-import { useState, useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { Card, Descriptions, Button, Space, Tag, message, Modal, Spin, Typography } from 'antd';
-import { EditOutlined, DeleteOutlined, ArrowLeftOutlined, FileTextOutlined, InboxOutlined, CheckOutlined } from '@ant-design/icons';
-import { getMemo, deleteMemo, updateMemo } from '../../lib/api/memos';
+import {
+  EditOutlined,
+  DeleteOutlined,
+  ArrowLeftOutlined,
+  FileTextOutlined,
+  ClockCircleOutlined,
+  CheckOutlined,
+} from '@ant-design/icons';
+import { getMemo, deleteMemo, markMemoReviewed, markMemoPostponed } from '../../lib/api/memos';
 import { navigate } from '../../router';
 import dayjs from 'dayjs';
 
 const { Paragraph } = Typography;
+
+const stageLabels = {
+  pen: { text: 'В ожидании', color: 'blue' },
+  pos: { text: 'Отложено', color: 'orange' },
+  rev: { text: 'Рассмотрено', color: 'green' },
+};
 
 export default function MemoDetail({ id }) {
   const [data, setData] = useState(null);
@@ -21,7 +34,7 @@ export default function MemoDetail({ id }) {
       const res = await getMemo(id);
       setData(res);
     } catch (error) {
-      message.error('Failed to fetch memo details');
+      message.error('Не удалось загрузить мемо');
       console.error(error);
     } finally {
       setLoading(false);
@@ -30,47 +43,40 @@ export default function MemoDetail({ id }) {
 
   const handleDelete = () => {
     Modal.confirm({
-      title: 'Delete Memo',
-      content: 'Are you sure you want to delete this memo?',
-      okText: 'Delete',
+      title: 'Удалить мемо?',
+      content: 'Действие нельзя отменить.',
+      okText: 'Удалить',
       okType: 'danger',
       onOk: async () => {
         try {
           await deleteMemo(id);
-          message.success('Memo deleted successfully');
+          message.success('Мемо удалено');
           navigate('/memos');
         } catch (error) {
-          message.error('Failed to delete memo');
+          message.error('Не удалось удалить мемо');
         }
       },
     });
   };
 
-  const handleArchive = async () => {
+  const handleReviewed = async () => {
     try {
-      await updateMemo(id, { archived: !data.archived });
-      message.success(`Memo ${!data.archived ? 'archived' : 'unarchived'}`);
+      await markMemoReviewed(id);
+      message.success('Мемо отмечено как рассмотренное');
       fetchData();
     } catch (error) {
-      message.error('Failed to update memo');
+      message.error('Не удалось обновить мемо');
     }
   };
 
-  const handlePublish = async () => {
+  const handlePostponed = async () => {
     try {
-      await updateMemo(id, { draft: false });
-      message.success('Memo published successfully');
+      await markMemoPostponed(id);
+      message.success('Мемо отложено');
       fetchData();
     } catch (error) {
-      message.error('Failed to publish memo');
+      message.error('Не удалось обновить мемо');
     }
-  };
-
-  const getRelatedEntity = () => {
-    if (data.deal) return { type: 'Deal', id: data.deal.id, title: data.deal.title };
-    if (data.project) return { type: 'Project', id: data.project.id, title: data.project.name };
-    if (data.contact) return { type: 'Contact', id: data.contact.id, title: data.contact.name };
-    return null;
   };
 
   if (loading) {
@@ -87,13 +93,13 @@ export default function MemoDetail({ id }) {
     return (
       <Card>
         <div style={{ textAlign: 'center', padding: '50px' }}>
-          Memo not found
+          Мемо не найдено
         </div>
       </Card>
     );
   }
 
-  const entity = getRelatedEntity();
+  const stage = stageLabels[data.stage] || { text: data.stage || '—', color: 'default' };
 
   return (
     <Space direction="vertical" size="large" style={{ width: '100%' }}>
@@ -101,108 +107,95 @@ export default function MemoDetail({ id }) {
         title={
           <Space>
             <FileTextOutlined />
-            <span>Memo Details</span>
+            <span>Детали мемо</span>
           </Space>
         }
         extra={
           <Space>
-            <Button
-              icon={<ArrowLeftOutlined />}
-              onClick={() => navigate('/memos')}
-            >
-              Back
+            <Button icon={<ArrowLeftOutlined />} onClick={() => navigate('/memos')}>
+              Назад
             </Button>
-            {data.draft && (
-              <Button
-                type="primary"
-                icon={<CheckOutlined />}
-                onClick={handlePublish}
-              >
-                Publish
-              </Button>
-            )}
-            <Button
-              icon={<InboxOutlined />}
-              onClick={handleArchive}
-            >
-              {data.archived ? 'Unarchive' : 'Archive'}
+            <Button icon={<ClockCircleOutlined />} onClick={handlePostponed}>
+              Отложить
             </Button>
-            <Button
-              type="primary"
-              icon={<EditOutlined />}
-              onClick={() => navigate(`/memos/${id}/edit`)}
-            >
-              Edit
+            <Button type="primary" icon={<CheckOutlined />} onClick={handleReviewed}>
+              Рассмотрено
             </Button>
-            <Button
-              danger
-              icon={<DeleteOutlined />}
-              onClick={handleDelete}
-            >
-              Delete
+            <Button type="primary" icon={<EditOutlined />} onClick={() => navigate(`/memos/${id}/edit`)}>
+              Редактировать
+            </Button>
+            <Button danger icon={<DeleteOutlined />} onClick={handleDelete}>
+              Удалить
             </Button>
           </Space>
         }
       >
         <Descriptions bordered column={2}>
-          <Descriptions.Item label="Title" span={2}>
-            <span style={{ fontSize: '18px', fontWeight: 'bold' }}>
-              {data.title}
-            </span>
+          <Descriptions.Item label="Название" span={2}>
+            <span style={{ fontSize: 18, fontWeight: 600 }}>{data.name}</span>
           </Descriptions.Item>
 
-          <Descriptions.Item label="Status">
-            <Space>
-              <Tag color={data.draft ? 'orange' : 'green'}>
-                {data.draft ? 'DRAFT' : 'PUBLISHED'}
-              </Tag>
-              {data.archived && <Tag color="default">ARCHIVED</Tag>}
-            </Space>
+          <Descriptions.Item label="Стадия">
+            <Tag color={stage.color}>{stage.text}</Tag>
           </Descriptions.Item>
 
-          <Descriptions.Item label="Category">
-            {data.category || '-'}
+          <Descriptions.Item label="Черновик">
+            {data.draft ? 'Да' : 'Нет'}
           </Descriptions.Item>
 
-          {entity && (
-            <>
-              <Descriptions.Item label="Related Entity Type">
-                <Tag color="blue">{entity.type}</Tag>
-              </Descriptions.Item>
-
-              <Descriptions.Item label="Related Entity">
-                <Button
-                  type="link"
-                  onClick={() => navigate(`/${entity.type.toLowerCase()}s/${entity.id}`)}
-                  style={{ padding: 0 }}
-                >
-                  {entity.title || `${entity.type} #${entity.id}`}
-                </Button>
-              </Descriptions.Item>
-            </>
-          )}
-
-          <Descriptions.Item label="Owner">
-            {data.owner?.username || data.owner?.email || '-'}
+          <Descriptions.Item label="Уведомления">
+            {data.notified ? 'Отправлены' : 'Не отправлялись'}
           </Descriptions.Item>
 
-          <Descriptions.Item label="Created By">
-            {data.created_by?.username || data.created_by?.email || '-'}
+          <Descriptions.Item label="Дата обзора">
+            {data.review_date ? dayjs(data.review_date).format('DD.MM.YYYY') : '-'}
           </Descriptions.Item>
 
-          <Descriptions.Item label="Created At">
-            {data.created_at ? dayjs(data.created_at).format('DD MMM YYYY HH:mm') : '-'}
+          <Descriptions.Item label="Получатель">
+            {data.to_name || '-'}
           </Descriptions.Item>
 
-          <Descriptions.Item label="Updated At">
-            {data.updated_at ? dayjs(data.updated_at).format('DD MMM YYYY HH:mm') : '-'}
+          <Descriptions.Item label="Сделка">
+            {data.deal_name || '-'}
+          </Descriptions.Item>
+
+          <Descriptions.Item label="Проект">
+            {data.project_name || '-'}
+          </Descriptions.Item>
+
+          <Descriptions.Item label="Задача">
+            {data.task_name || '-'}
+          </Descriptions.Item>
+
+          <Descriptions.Item label="Resolution">
+            {data.resolution_name || data.resolution || '-'}
+          </Descriptions.Item>
+
+          <Descriptions.Item label="Теги" span={2}>
+            {data.tag_names || '-'}
+          </Descriptions.Item>
+
+          <Descriptions.Item label="Владелец">
+            {data.owner_name || '-'}
+          </Descriptions.Item>
+
+          <Descriptions.Item label="Создано">
+            {data.creation_date ? dayjs(data.creation_date).format('DD.MM.YYYY HH:mm') : '-'}
+          </Descriptions.Item>
+
+          <Descriptions.Item label="Обновлено">
+            {data.update_date ? dayjs(data.update_date).format('DD.MM.YYYY HH:mm') : '-'}
+          </Descriptions.Item>
+
+          <Descriptions.Item label="Описание" span={2}>
+            {data.description || '-'}
           </Descriptions.Item>
         </Descriptions>
       </Card>
 
-      <Card title="Content">
+      <Card title="Заключение">
         <Paragraph style={{ whiteSpace: 'pre-wrap' }}>
-          {data.content || 'No content available'}
+          {data.note || 'Нет заключения'}
         </Paragraph>
       </Card>
     </Space>

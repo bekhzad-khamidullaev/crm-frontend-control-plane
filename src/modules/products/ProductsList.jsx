@@ -1,8 +1,3 @@
-/**
- * Products List Component
- * Каталог продуктов с поиском и фильтрами
- */
-
 import React, { useState, useEffect } from 'react';
 import {
   Table,
@@ -52,6 +47,7 @@ function ProductsList() {
       setCategories(data.results || data || []);
     } catch (error) {
       console.error('Error loading categories:', error);
+      setCategories([]);
     }
   };
 
@@ -68,11 +64,11 @@ function ProductsList() {
       }
 
       if (category) {
-        params.category = category;
+        params.product_category = category;
       }
 
       const response = await getProducts(params);
-      
+
       setProducts(response.results || []);
       setPagination({
         ...pagination,
@@ -114,12 +110,6 @@ function ProductsList() {
 
   const columns = [
     {
-      title: 'SKU',
-      dataIndex: 'sku',
-      key: 'sku',
-      width: 120,
-    },
-    {
       title: 'Название',
       dataIndex: 'name',
       key: 'name',
@@ -131,38 +121,39 @@ function ProductsList() {
       title: 'Категория',
       dataIndex: 'category_name',
       key: 'category',
-      width: 150,
+      width: 180,
+      render: (value) => value || '-',
     },
     {
       title: 'Цена',
       dataIndex: 'price',
       key: 'price',
-      width: 120,
+      width: 150,
       render: (price, record) => (
         <span>
-          {price} {record.currency || '₽'}
+          {Number(price || 0).toLocaleString('ru-RU')} {record.currency_name || '₽'}
         </span>
       ),
     },
     {
-      title: 'Остаток',
-      dataIndex: 'stock_quantity',
-      key: 'stock_quantity',
-      width: 100,
-      render: (quantity) => (
-        <Tag color={quantity > 10 ? 'green' : quantity > 0 ? 'orange' : 'red'}>
-          {quantity || 0}
+      title: 'Тип',
+      dataIndex: 'type',
+      key: 'type',
+      width: 120,
+      render: (type) => (
+        <Tag color={type === 'S' ? 'blue' : 'green'}>
+          {type === 'S' ? 'Услуга' : type === 'G' ? 'Товар' : '-'}
         </Tag>
       ),
     },
     {
-      title: 'Статус',
-      dataIndex: 'is_active',
-      key: 'is_active',
-      width: 100,
-      render: (isActive) => (
-        <Tag color={isActive ? 'green' : 'default'}>
-          {isActive ? 'Активен' : 'Неактивен'}
+      title: 'В продаже',
+      dataIndex: 'on_sale',
+      key: 'on_sale',
+      width: 120,
+      render: (onSale) => (
+        <Tag color={onSale ? 'green' : 'default'}>
+          {onSale ? 'Да' : 'Нет'}
         </Tag>
       ),
     },
@@ -185,12 +176,7 @@ function ProductsList() {
             okText="Да"
             cancelText="Нет"
           >
-            <Button
-              type="link"
-              size="small"
-              danger
-              icon={<DeleteOutlined />}
-            />
+            <Button type="link" size="small" danger icon={<DeleteOutlined />} />
           </Popconfirm>
         </Space>
       ),
@@ -214,7 +200,7 @@ function ProductsList() {
         <Space style={{ marginBottom: 16, width: '100%' }} direction="vertical" size="middle">
           <Space wrap>
             <Search
-              placeholder="Поиск по названию или SKU"
+              placeholder="Поиск по названию"
               allowClear
               enterButton={<SearchOutlined />}
               onSearch={handleSearch}
@@ -233,9 +219,7 @@ function ProductsList() {
                 </Option>
               ))}
             </Select>
-            <Button onClick={() => loadProducts(1)}>
-              Обновить
-            </Button>
+            <Button onClick={() => loadProducts(1)}>Обновить</Button>
           </Space>
         </Space>
 
@@ -246,7 +230,7 @@ function ProductsList() {
           loading={loading}
           pagination={pagination}
           onChange={handleTableChange}
-          scroll={{ x: 1000 }}
+          scroll={{ x: 1100 }}
         />
       </Card>
     </div>

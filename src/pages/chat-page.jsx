@@ -18,6 +18,7 @@ import {
   Spin,
   Tabs,
   Card,
+  message,
 } from 'antd';
 import {
   MessageOutlined,
@@ -28,7 +29,7 @@ import {
   RiseOutlined,
   PhoneOutlined,
 } from '@ant-design/icons';
-import { getChatMessages, getChatStatistics, getUnreadCount } from '../lib/api/chat.js';
+import { getChatMessages, getChatStatistics } from '../lib/api/chat.js';
 import { subscribe, getUnreadCount as getStoreUnreadCount } from '../lib/store/index.js';
 import ChatWidget from '../modules/chat/ChatWidget.jsx';
 import dayjs from 'dayjs';
@@ -48,7 +49,7 @@ function ChatPage() {
   const [activeChat, setActiveChat] = useState(null);
   const [loading, setLoading] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
-  const [filter, setFilter] = useState('all'); // all, unread, archived
+  const [filter, setFilter] = useState('all'); // all, unread
   const [statistics, setStatistics] = useState(null);
 
   useEffect(() => {
@@ -78,17 +79,17 @@ function ChatPage() {
     try {
       const response = await getChatMessages({
         page_size: 100,
-        ordering: '-created_at',
+        ordering: '-creation_date',
       });
 
       // Group messages by entity
       const chatMap = new Map();
       
       // Safely access results
-      const results = response?.data?.results || response?.results || [];
+      const results = response?.results || response || [];
       
       results.forEach(msg => {
-        const entityType = msg.content_type || 'contact';
+        const entityType = msg.content_type_name || msg.content_type || 'chat';
         const entityId = msg.object_id || msg.id;
         const key = `${entityType}_${entityId}`;
 
@@ -97,16 +98,16 @@ function ChatPage() {
             id: key,
             entityType,
             entityId,
-            entityName: msg.related_name || 'Неизвестный',
+            entityName: msg.content_type_name ? `${msg.content_type_name} #${entityId}` : `Чат #${entityId}`,
             entityPhone: msg.related_phone,
-            lastMessage: msg.message,
-            lastMessageTime: msg.created_at,
-            unreadCount: msg.is_read ? 0 : 1,
-            sender: msg.sender,
+            lastMessage: msg.content || msg.message || '',
+            lastMessageTime: msg.creation_date || msg.created_at,
+            unreadCount: msg.is_read === false ? 1 : 0,
+            sender: msg.owner_name,
           });
         } else {
           const chat = chatMap.get(key);
-          if (!msg.is_read) {
+          if (msg.is_read === false) {
             chat.unreadCount++;
           }
         }
@@ -119,41 +120,8 @@ function ChatPage() {
       setChats(chatList);
     } catch (error) {
       console.error('Error loading chats:', error);
-      
-      // Mock data
-      const mockChats = [
-        {
-          id: 'contact_1',
-          entityType: 'contact',
-          entityId: 1,
-          entityName: 'Иван Петров',
-          entityPhone: '+7 999 111-22-33',
-          lastMessage: 'Спасибо за информацию!',
-          lastMessageTime: new Date(Date.now() - 300000).toISOString(),
-          unreadCount: 2,
-        },
-        {
-          id: 'lead_1',
-          entityType: 'lead',
-          entityId: 1,
-          entityName: 'Мария Сидорова',
-          entityPhone: '+7 999 222-33-44',
-          lastMessage: 'Когда можем встретиться?',
-          lastMessageTime: new Date(Date.now() - 3600000).toISOString(),
-          unreadCount: 0,
-        },
-        {
-          id: 'deal_1',
-          entityType: 'deal',
-          entityId: 1,
-          entityName: 'Сделка с ООО "ТехноПром"',
-          lastMessage: 'Отправил документы на подпись',
-          lastMessageTime: new Date(Date.now() - 7200000).toISOString(),
-          unreadCount: 1,
-        },
-      ];
-      
-      setChats(mockChats);
+      message.error('Не удалось загрузить чаты');
+      setChats([]);
     } finally {
       setLoading(false);
     }
@@ -162,7 +130,6 @@ function ChatPage() {
   const loadStatistics = async () => {
     try {
       const stats = await getChatStatistics();
-      // Safely access data
       const data = stats?.data || stats || {};
       setStatistics({
         total: data.total || 0,
@@ -194,15 +161,14 @@ function ChatPage() {
     // Apply status filter
     if (filter === 'unread') {
       filtered = filtered.filter(chat => chat.unreadCount > 0);
-    } else if (filter === 'archived') {
-      filtered = filtered.filter(chat => chat.archived);
     }
 
     setFilteredChats(filtered);
   };
 
   const getEntityIcon = (entityType) => {
-    switch (entityType) {
+    const normalized = entityType?.toString().toLowerCase();
+    switch (normalized) {
       case 'contact':
         return <UserOutlined />;
       case 'lead':
@@ -217,7 +183,8 @@ function ChatPage() {
   };
 
   const getEntityColor = (entityType) => {
-    switch (entityType) {
+    const normalized = entityType?.toString().toLowerCase();
+    switch (normalized) {
       case 'contact':
         return 'blue';
       case 'lead':

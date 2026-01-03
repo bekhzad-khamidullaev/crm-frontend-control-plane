@@ -1,8 +1,7 @@
-import React, { useState, useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   Form,
   Input,
-  Select,
   Button,
   Card,
   Space,
@@ -13,16 +12,23 @@ import {
   Col,
   DatePicker,
   InputNumber,
+  Switch,
 } from 'antd';
 import { SaveOutlined, ArrowLeftOutlined } from '@ant-design/icons';
-import { navigate } from '../../router';
-import { getProject, createProject, updateProject } from '../../lib/api/client';
 import dayjs from 'dayjs';
+import { navigate } from '../../router';
+import {
+  getProject,
+  createProject,
+  updateProject,
+  getUsers,
+  getUser,
+} from '../../lib/api/client';
+import ReferenceSelect from '../../components/ui-ReferenceSelect';
+import EntitySelect from '../../components/EntitySelect';
 
 const { Title } = Typography;
 const { TextArea } = Input;
-const { Option } = Select;
-const { RangePicker } = DatePicker;
 
 function ProjectForm({ id }) {
   const [form] = Form.useForm();
@@ -40,23 +46,15 @@ function ProjectForm({ id }) {
     setLoading(true);
     try {
       const project = await getProject(id);
-      if (project.start_date && project.end_date) {
-        project.dateRange = [dayjs(project.start_date), dayjs(project.end_date)];
-      }
-      form.setFieldsValue(project);
+      form.setFieldsValue({
+        ...project,
+        start_date: project.start_date ? dayjs(project.start_date) : null,
+        due_date: project.due_date ? dayjs(project.due_date) : null,
+        closing_date: project.closing_date ? dayjs(project.closing_date) : null,
+        next_step_date: project.next_step_date ? dayjs(project.next_step_date) : null,
+      });
     } catch (error) {
       message.error('Ошибка загрузки данных проекта');
-      // Mock data for demo
-      form.setFieldsValue({
-        name: 'Внедрение CRM системы',
-        description: 'Полное внедрение CRM системы для автоматизации бизнес-процессов компании',
-        status: 'in_progress',
-        dateRange: [dayjs('2024-01-15'), dayjs('2024-04-30')],
-        budget: 2500000,
-        client_id: '1',
-        manager_id: '1',
-        team_size: 5,
-      });
     } finally {
       setLoading(false);
     }
@@ -67,10 +65,11 @@ function ProjectForm({ id }) {
     try {
       const payload = {
         ...values,
-        start_date: values.dateRange ? values.dateRange[0].format('YYYY-MM-DD') : null,
-        end_date: values.dateRange ? values.dateRange[1].format('YYYY-MM-DD') : null,
+        start_date: values.start_date ? values.start_date.format('YYYY-MM-DD') : null,
+        due_date: values.due_date ? values.due_date.format('YYYY-MM-DD') : null,
+        closing_date: values.closing_date ? values.closing_date.format('YYYY-MM-DD') : null,
+        next_step_date: values.next_step_date ? values.next_step_date.format('YYYY-MM-DD') : null,
       };
-      delete payload.dateRange;
 
       if (isEdit) {
         await updateProject(id, payload);
@@ -108,12 +107,7 @@ function ProjectForm({ id }) {
       </Title>
 
       <Card>
-        <Form
-          form={form}
-          layout="vertical"
-          onFinish={onFinish}
-          autoComplete="off"
-        >
+        <Form form={form} layout="vertical" onFinish={onFinish} autoComplete="off">
           <Title level={4}>Основная информация</Title>
           <Row gutter={16}>
             <Col xs={24} md={16}>
@@ -125,21 +119,9 @@ function ProjectForm({ id }) {
                 <Input placeholder="Внедрение CRM системы" />
               </Form.Item>
             </Col>
-
             <Col xs={24} md={8}>
-              <Form.Item
-                label="Статус"
-                name="status"
-                rules={[{ required: true, message: 'Выберите статус' }]}
-                initialValue="planning"
-              >
-                <Select placeholder="Выберите статус">
-                  <Option value="planning">Планирование</Option>
-                  <Option value="in_progress">В работе</Option>
-                  <Option value="on_hold">Приостановлен</Option>
-                  <Option value="completed">Завершен</Option>
-                  <Option value="cancelled">Отменен</Option>
-                </Select>
+              <Form.Item label="Приоритет" name="priority">
+                <InputNumber min={1} max={3} style={{ width: '100%' }} />
               </Form.Item>
             </Col>
           </Row>
@@ -148,98 +130,123 @@ function ProjectForm({ id }) {
             <TextArea rows={4} placeholder="Детальное описание проекта" />
           </Form.Item>
 
-          <Title level={4} style={{ marginTop: 24 }}>
-            Сроки и бюджет
-          </Title>
+          <Form.Item label="Заметка" name="note">
+            <TextArea rows={3} placeholder="Внутренние заметки" />
+          </Form.Item>
+
           <Row gutter={16}>
-            <Col xs={24} md={12}>
-              <Form.Item
-                label="Период выполнения"
-                name="dateRange"
-                rules={[{ required: true, message: 'Выберите даты' }]}
-              >
-                <RangePicker
-                  style={{ width: '100%' }}
-                  format="DD.MM.YYYY"
-                  placeholder={['Дата начала', 'Дата окончания']}
-                />
+            <Col xs={24} md={8}>
+              <Form.Item label="Этап" name="stage">
+                <ReferenceSelect type="project-stages" placeholder="Выберите этап" allowClear />
               </Form.Item>
             </Col>
+            <Col xs={24} md={8}>
+              <Form.Item label="Дата начала" name="start_date">
+                <DatePicker style={{ width: '100%' }} format="DD.MM.YYYY" />
+              </Form.Item>
+            </Col>
+            <Col xs={24} md={8}>
+              <Form.Item label="Срок завершения" name="due_date">
+                <DatePicker style={{ width: '100%' }} format="DD.MM.YYYY" />
+              </Form.Item>
+            </Col>
+          </Row>
 
+          <Row gutter={16}>
             <Col xs={24} md={12}>
-              <Form.Item
-                label="Бюджет (₽)"
-                name="budget"
-                rules={[{ required: true, message: 'Введите бюджет' }]}
-              >
-                <InputNumber
-                  min={0}
-                  style={{ width: '100%' }}
-                  placeholder="2500000"
-                  formatter={(value) =>
-                    `${value}`.replace(/\B(?=(\d{3})+(?!\d))/g, ' ')
-                  }
-                  parser={(value) => value.replace(/\s/g, '')}
-                />
+              <Form.Item label="Дата закрытия" name="closing_date">
+                <DatePicker style={{ width: '100%' }} format="DD.MM.YYYY" />
+              </Form.Item>
+            </Col>
+            <Col xs={24} md={12}>
+              <Form.Item label="Следующий шаг" name="next_step">
+                <Input placeholder="Определить цели" />
+              </Form.Item>
+            </Col>
+          </Row>
+
+          <Row gutter={16}>
+            <Col xs={24} md={12}>
+              <Form.Item label="Дата следующего шага" name="next_step_date">
+                <DatePicker style={{ width: '100%' }} format="DD.MM.YYYY" />
               </Form.Item>
             </Col>
           </Row>
 
           <Title level={4} style={{ marginTop: 24 }}>
-            Команда и клиент
+            Ответственные
+          </Title>
+          <Row gutter={16}>
+            <Col xs={24} md={12}>
+              <Form.Item label="Владелец" name="owner">
+                <EntitySelect
+                  placeholder="Выберите пользователя"
+                  fetchOptions={getUsers}
+                  fetchById={getUser}
+                />
+              </Form.Item>
+            </Col>
+            <Col xs={24} md={12}>
+              <Form.Item label="Со-владелец" name="co_owner">
+                <EntitySelect
+                  placeholder="Выберите пользователя"
+                  fetchOptions={getUsers}
+                  fetchById={getUser}
+                />
+              </Form.Item>
+            </Col>
+          </Row>
+
+          <Row gutter={16}>
+            <Col xs={24} md={12}>
+              <Form.Item label="Ответственные" name="responsible">
+                <EntitySelect
+                  mode="multiple"
+                  placeholder="Выберите пользователей"
+                  fetchOptions={getUsers}
+                  fetchById={getUser}
+                />
+              </Form.Item>
+            </Col>
+            <Col xs={24} md={12}>
+              <Form.Item label="Подписчики" name="subscribers">
+                <EntitySelect
+                  mode="multiple"
+                  placeholder="Выберите пользователей"
+                  fetchOptions={getUsers}
+                  fetchById={getUser}
+                />
+              </Form.Item>
+            </Col>
+          </Row>
+
+          <Row gutter={16}>
+            <Col xs={24} md={12}>
+              <Form.Item label="Теги" name="tags">
+                <ReferenceSelect type="crm-tags" placeholder="Выберите теги" mode="multiple" allowClear />
+              </Form.Item>
+            </Col>
+          </Row>
+
+          <Title level={4} style={{ marginTop: 24 }}>
+            Статус
           </Title>
           <Row gutter={16}>
             <Col xs={24} md={8}>
-              <Form.Item
-                label="Клиент"
-                name="client_id"
-                rules={[{ required: true, message: 'Выберите клиента' }]}
-              >
-                <Select placeholder="Выберите компанию" showSearch>
-                  <Option value="1">ООО "ТехноПром"</Option>
-                  <Option value="2">АО "Инновации"</Option>
-                  <Option value="3">ИП Козлов</Option>
-                </Select>
+              <Form.Item label="Активен" name="active" valuePropName="checked">
+                <Switch />
               </Form.Item>
             </Col>
-
             <Col xs={24} md={8}>
-              <Form.Item
-                label="Менеджер проекта"
-                name="manager_id"
-                rules={[{ required: true, message: 'Выберите менеджера' }]}
-              >
-                <Select placeholder="Выберите сотрудника" showSearch>
-                  <Option value="1">Алексей Иванов</Option>
-                  <Option value="2">Елена Смирнова</Option>
-                  <Option value="3">Дмитрий Козлов</Option>
-                </Select>
-              </Form.Item>
-            </Col>
-
-            <Col xs={24} md={8}>
-              <Form.Item
-                label="Размер команды"
-                name="team_size"
-                rules={[{ required: true, message: 'Укажите размер команды' }]}
-              >
-                <InputNumber
-                  min={1}
-                  style={{ width: '100%' }}
-                  placeholder="5"
-                />
+              <Form.Item label="Напоминать" name="remind_me" valuePropName="checked">
+                <Switch />
               </Form.Item>
             </Col>
           </Row>
 
           <Form.Item>
             <Space>
-              <Button
-                type="primary"
-                htmlType="submit"
-                icon={<SaveOutlined />}
-                loading={saving}
-              >
+              <Button type="primary" htmlType="submit" icon={<SaveOutlined />} loading={saving}>
                 {isEdit ? 'Обновить' : 'Создать'}
               </Button>
               <Button onClick={() => navigate('/projects')}>Отмена</Button>

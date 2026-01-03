@@ -93,9 +93,30 @@ function withTimeout(promise, ms, controller) {
   });
 }
 
-async function parseResponseBody(response) {
+async function parseResponseBody(response, responseType = 'json', forError = false) {
   const contentType = response.headers.get('content-type') || '';
   if (response.status === 204) return {};
+
+  if (forError) {
+    if (contentType.includes('application/json')) {
+      try {
+        return await response.json();
+      } catch (_) {
+        return {};
+      }
+    }
+
+    const text = await response.text();
+    return text || {};
+  }
+
+  if (responseType === 'blob') {
+    return response.blob();
+  }
+
+  if (responseType === 'text') {
+    return response.text();
+  }
 
   if (contentType.includes('application/json')) {
     try {
@@ -249,7 +270,7 @@ async function request(method, path, options = {}) {
 
   try {
     const response = await withTimeout(fetchPromise, API_TIMEOUT, controller);
-    const payload = await parseResponseBody(response);
+    const payload = await parseResponseBody(response, options.responseType, !response.ok);
 
     if (response.status === 401 && authAllowed && authMode === 'jwt' && getRefreshToken() && !options._retriedWithRefresh) {
       try {
@@ -288,92 +309,8 @@ async function request(method, path, options = {}) {
       return request(method, path, { ...options, retry: retry - 1, _attempt: attempt });
     }
 
-    // In development, provide graceful fallback for connection errors
-    if (import.meta.env.DEV && (apiError.message.includes('Failed to fetch') || apiError.message.includes('CONNECTION_REFUSED'))) {
-      console.warn(`API connection failed: ${url}. Using fallback data in development mode.`);
-      return getFallbackData(method, path);
-    }
-
     throw apiError;
   }
-}
-
-// Development fallback data generator
-function getFallbackData(method, path) {
-  if (method !== 'GET') {
-    return { success: true, message: 'Operation completed (mock)' };
-  }
-
-  // Analytics endpoints
-  if (path.includes('/analytics/overview/')) {
-    return {
-      total_leads: 42,
-      total_contacts: 38,
-      total_deals: 15,
-      total_revenue: 125000,
-      conversion_rate: 0.35
-    };
-  }
-
-  if (path.includes('/dashboard/analytics/')) {
-    return {
-      leads_this_month: 12,
-      deals_closed: 5,
-      revenue_this_month: 45000,
-      conversion_rate: 0.42
-    };
-  }
-
-  if (path.includes('/dashboard/funnel/')) {
-    return [
-      { stage: 'New', count: 25, value: 50000 },
-      { stage: 'Qualified', count: 15, value: 35000 },
-      { stage: 'Proposal', count: 8, value: 22000 },
-      { stage: 'Closed', count: 5, value: 15000 }
-    ];
-  }
-
-  if (path.includes('/dashboard/activity/')) {
-    return [
-      { id: 1, type: 'lead', action: 'created', description: 'New lead: John Doe', timestamp: new Date().toISOString() },
-      { id: 2, type: 'deal', action: 'updated', description: 'Deal moved to Proposal stage', timestamp: new Date().toISOString() }
-    ];
-  }
-
-  // Entity list endpoints
-  if (path.includes('/leads/')) {
-    return {
-      count: 3,
-      results: [
-        { id: 1, name: 'John Doe', email: 'john@example.com', status: 'new', company: 'Acme Corp', phone: '+1234567890' },
-        { id: 2, name: 'Jane Smith', email: 'jane@example.com', status: 'qualified', company: 'Tech Inc', phone: '+1234567891' },
-        { id: 3, name: 'Bob Wilson', email: 'bob@example.com', status: 'contacted', company: 'StartupXYZ', phone: '+1234567892' }
-      ]
-    };
-  }
-
-  if (path.includes('/contacts/')) {
-    return {
-      count: 2,
-      results: [
-        { id: 1, name: 'Alice Johnson', email: 'alice@company.com', company: 'Big Corp', type: 'client' },
-        { id: 2, name: 'Charlie Brown', email: 'charlie@startup.com', company: 'Innovation Labs', type: 'partner' }
-      ]
-    };
-  }
-
-  if (path.includes('/deals/')) {
-    return {
-      count: 2,
-      results: [
-        { id: 1, title: 'Enterprise Software Sale', value: 50000, stage: 'proposal', probability: 75, company: 'Big Corp' },
-        { id: 2, title: 'Consulting Project', value: 25000, stage: 'qualified', probability: 50, company: 'Tech Inc' }
-      ]
-    };
-  }
-
-  // Default fallback for lists
-  return { count: 0, results: [] };
 }
 
 export const apiConfig = {
@@ -391,6 +328,12 @@ export const api = {
   patch: (path, opts) => request('PATCH', path, opts),
   delete: (path, opts) => request('DELETE', path, opts),
 };
+
+export const get = api.get;
+export const post = api.post;
+export const put = api.put;
+export const patch = api.patch;
+export const del = api.delete;
 
 function crudResource(basePath) {
   const base = basePath.endsWith('/') ? basePath : `${basePath}/`;
@@ -550,3 +493,6 @@ export const getProject = (id) => projectsApi.retrieve(id);
 export const createProject = (payload) => projectsApi.create(payload);
 export const updateProject = (id, payload) => projectsApi.update(id, payload);
 export const deleteProject = (id) => projectsApi.remove(id);
+
+export const getUsers = (params) => usersApi.list(params);
+export const getUser = (id) => usersApi.retrieve(id);

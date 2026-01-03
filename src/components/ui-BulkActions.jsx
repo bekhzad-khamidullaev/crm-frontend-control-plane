@@ -12,6 +12,7 @@ import {
   MailOutlined,
   MessageOutlined,
   MoreOutlined,
+  TagOutlined,
 } from '@ant-design/icons';
 
 export default function BulkActions({
@@ -22,6 +23,7 @@ export default function BulkActions({
   onExport,
   onSendEmail,
   onSendSMS,
+  onBulkTag,
   customActions = [],
   entityName = 'записей',
 }) {
@@ -66,6 +68,12 @@ export default function BulkActions({
       icon: <MessageOutlined />,
       label: 'Отправить SMS',
       onClick: () => onSendSMS(selectedRowKeys),
+    },
+    onBulkTag && {
+      key: 'tags',
+      icon: <TagOutlined />,
+      label: 'Добавить теги',
+      onClick: () => onBulkTag(selectedRowKeys),
     },
     ...customActions.map((action) => ({
       key: action.key,

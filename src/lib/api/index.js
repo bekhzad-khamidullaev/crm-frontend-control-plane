@@ -69,6 +69,11 @@ export {
   deleteProject,
 } from './client.js';
 
+export {
+  getUsers,
+  getUser,
+} from './client.js';
+
 // Communication
 // export * as calls from './calls.js';
 // export * as chat from './chat.js';
@@ -173,8 +178,8 @@ export {
   deleteMemo,
   markMemoPostponed,
   markMemoReviewed,
-  getActiveMemos,
-  getMyMemos,
+  getMemosByStage,
+  getMemosByRecipient,
 } from './memos.js';
 
 // From reminders.js
@@ -185,7 +190,7 @@ export {
   updateReminder,
   deleteReminder,
   getUpcomingReminders,
-  getMyReminders,
+  getRemindersByOwner,
   markReminderCompleted,
   snoozeReminder,
 } from './reminders.js';
@@ -219,9 +224,17 @@ export {
 export {
   getCallLogs,
   getCallLog,
+  getVoipCallLogs,
+  getVoipCallLog,
   createCallLog,
   updateCallLog,
   deleteCallLog,
+  addCallNote,
+  getEntityCallLogs,
+  getCompanyCallLogs,
+  getDealCallLogs,
+  getCallStatistics,
+  getCrmCallStatistics,
 } from './calls.js';
 
 // From chat.js
@@ -231,9 +244,21 @@ export {
   createChatMessage,
   updateChatMessage,
   deleteChatMessage,
-  getChatMessageReplies,
-  getChatMessageThread,
+  getMessageThread,
+  getEntityChatMessages,
+  getChatStatistics,
+  getUnreadCount,
 } from './chat.js';
+
+// From user.js
+export {
+  getUsers as getUsersDirectory,
+  getProfiles,
+  getProfileByUser,
+  getUserSessions,
+  revokeAllSessions,
+  get2FAStatus,
+} from './user.js';
 
 /**
  * Default export: object with all API modules

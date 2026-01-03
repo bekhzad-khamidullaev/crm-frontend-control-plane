@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import {
   Button,
   Space,
@@ -6,18 +6,24 @@ import {
   message,
   Avatar,
   Checkbox,
-  Progress,
+  Typography,
+  Popconfirm,
 } from 'antd';
 import {
   UserOutlined,
-  CheckOutlined,
-  CopyOutlined,
+  CalendarOutlined,
+  ClockCircleOutlined,
+  EyeOutlined,
+  EditOutlined,
+  DeleteOutlined,
 } from '@ant-design/icons';
 import { navigate } from '../../router';
-import { getTasks, deleteTask } from '../../lib/api/client';
+import { getTasks, deleteTask, updateTask, getUsers } from '../../lib/api/client';
+import { getTaskStages } from '../../lib/api/reference';
 import EnhancedTable from '../../components/ui-EnhancedTable.jsx';
 import TableToolbar from '../../components/ui-TableToolbar.jsx';
-import QuickActions from '../../components/QuickActions.jsx';
+
+const { Text } = Typography;
 
 function TasksList() {
   const [tasks, setTasks] = useState([]);
@@ -28,6 +34,28 @@ function TasksList() {
     pageSize: 10,
     total: 0,
   });
+  const [stages, setStages] = useState([]);
+  const [users, setUsers] = useState([]);
+
+  useEffect(() => {
+    fetchTasks(1, searchText);
+    loadReferences();
+  }, []);
+
+  const loadReferences = async () => {
+    try {
+      const [stagesResponse, usersResponse] = await Promise.all([
+        getTaskStages({ page_size: 200 }),
+        getUsers({ page_size: 200 }),
+      ]);
+      setStages(stagesResponse.results || stagesResponse || []);
+      setUsers(usersResponse.results || usersResponse || []);
+    } catch (error) {
+      console.error('Error loading task references:', error);
+      setStages([]);
+      setUsers([]);
+    }
+  };
 
   const fetchTasks = async (page = 1, search = '') => {
     setLoading(true);
@@ -35,68 +63,26 @@ function TasksList() {
       const response = await getTasks({
         page,
         page_size: pagination.pageSize,
-        search,
+        search: search || undefined,
       });
       setTasks(response.results || []);
-      setPagination({
-        ...pagination,
+      setPagination((prev) => ({
+        ...prev,
         current: page,
         total: response.count || 0,
-      });
+      }));
     } catch (error) {
       message.error('Ошибка загрузки задач');
-      // Mock data for demo
-      setTasks([
-        {
-          id: 1,
-          title: 'Подготовить коммерческое предложение',
-          description: 'Для компании ООО "ТехноПром"',
-          status: 'in_progress',
-          priority: 'high',
-          due_date: '2024-02-15',
-          assignee: 'Алексей Иванов',
-          related_to: 'Deal #1',
-          progress: 60,
-          created_at: '2024-01-20',
-        },
-        {
-          id: 2,
-          title: 'Провести встречу с клиентом',
-          description: 'Обсудить условия сотрудничества',
-          status: 'todo',
-          priority: 'medium',
-          due_date: '2024-02-20',
-          assignee: 'Елена Смирнова',
-          related_to: 'Contact #2',
-          progress: 0,
-          created_at: '2024-01-19',
-        },
-        {
-          id: 3,
-          title: 'Отправить документы',
-          description: 'Договор и акты',
-          status: 'completed',
-          priority: 'low',
-          due_date: '2024-02-10',
-          assignee: 'Алексей Иванов',
-          related_to: 'Deal #3',
-          progress: 100,
-          created_at: '2024-01-18',
-        },
-      ]);
-      setPagination({
-        ...pagination,
+      setTasks([]);
+      setPagination((prev) => ({
+        ...prev,
         current: 1,
-        total: 3,
-      });
+        total: 0,
+      }));
     } finally {
       setLoading(false);
     }
   };
-
-  useEffect(() => {
-    fetchTasks(1, searchText);
-  }, []);
 
   const handleSearch = (value) => {
     setSearchText(value);
@@ -117,24 +103,43 @@ function TasksList() {
     fetchTasks(newPagination.current, searchText);
   };
 
-  const handleToggleComplete = async (task) => {
-    const newStatus = task.status === 'completed' ? 'in_progress' : 'completed';
-    message.info(`Задача "${task.title}" отмечена как ${newStatus === 'completed' ? 'выполненная' : 'в работе'}`);
-    // Here you would call updateTask API
-  };
+  const stagesById = useMemo(() => {
+    return stages.reduce((acc, stage) => {
+      acc[stage.id] = stage;
+      return acc;
+    }, {});
+  }, [stages]);
 
-  const statusConfig = {
-    todo: { color: 'default', text: 'К выполнению' },
-    in_progress: { color: 'blue', text: 'В работе' },
-    completed: { color: 'green', text: 'Выполнено' },
-    cancelled: { color: 'red', text: 'Отменено' },
+  const userNameById = useMemo(() => {
+    return users.reduce((acc, user) => {
+      acc[user.id] = user.username || user.email || `#${user.id}`;
+      return acc;
+    }, {});
+  }, [users]);
+
+  const doneStage = stages.find((stage) => stage.done);
+  const inProgressStage = stages.find((stage) => stage.in_progress) || stages.find((stage) => stage.default);
+
+  const handleToggleComplete = async (task) => {
+    if (!doneStage || !inProgressStage) {
+      message.warning('Этапы задач не настроены');
+      return;
+    }
+    const isDone = task.stage === doneStage.id;
+    const newStage = isDone ? inProgressStage.id : doneStage.id;
+    try {
+      await updateTask(task.id, { stage: newStage });
+      message.success('Статус задачи обновлен');
+      fetchTasks(pagination.current, searchText);
+    } catch (error) {
+      message.error('Ошибка обновления статуса задачи');
+    }
   };
 
   const priorityConfig = {
-    low: { color: 'green', text: 'Низкий' },
-    medium: { color: 'orange', text: 'Средний' },
-    high: { color: 'red', text: 'Высокий' },
-    urgent: { color: 'magenta', text: 'Срочно' },
+    1: { color: 'green', text: 'Низкий' },
+    2: { color: 'orange', text: 'Средний' },
+    3: { color: 'red', text: 'Высокий' },
   };
 
   const columns = [
@@ -144,7 +149,7 @@ function TasksList() {
       width: 50,
       render: (_, record) => (
         <Checkbox
-          checked={record.status === 'completed'}
+          checked={doneStage ? record.stage === doneStage.id : false}
           onChange={() => handleToggleComplete(record)}
         />
       ),
@@ -154,7 +159,7 @@ function TasksList() {
       key: 'task',
       render: (_, record) => (
         <div>
-          <div style={{ fontWeight: 500 }}>{record.title}</div>
+          <div style={{ fontWeight: 500 }}>{record.name}</div>
           {record.description && (
             <Text type="secondary" style={{ fontSize: 12 }}>
               {record.description}
@@ -162,71 +167,52 @@ function TasksList() {
           )}
         </div>
       ),
-      sorter: (a, b) => a.title.localeCompare(b.title),
+      sorter: (a, b) => (a.name || '').localeCompare(b.name || ''),
     },
     {
-      title: 'Статус',
-      dataIndex: 'status',
-      key: 'status',
-      render: (status) => {
-        const config = statusConfig[status] || statusConfig.todo;
-        return <Tag color={config.color}>{config.text}</Tag>;
+      title: 'Этап',
+      dataIndex: 'stage',
+      key: 'stage',
+      render: (stageId) => {
+        const stage = stagesById[stageId];
+        return stage ? <Tag color={stage.done ? 'green' : stage.in_progress ? 'blue' : 'default'}>{stage.name}</Tag> : '-';
       },
-      filters: Object.keys(statusConfig).map((key) => ({
-        text: statusConfig[key].text,
-        value: key,
-      })),
-      onFilter: (value, record) => record.status === value,
     },
     {
       title: 'Приоритет',
       dataIndex: 'priority',
       key: 'priority',
       render: (priority) => {
-        const config = priorityConfig[priority] || priorityConfig.medium;
+        const config = priorityConfig[priority] || { color: 'default', text: '-' };
         return <Tag color={config.color}>{config.text}</Tag>;
       },
-      filters: Object.keys(priorityConfig).map((key) => ({
-        text: priorityConfig[key].text,
-        value: key,
-      })),
-      onFilter: (value, record) => record.priority === value,
     },
     {
-      title: 'Прогресс',
-      dataIndex: 'progress',
-      key: 'progress',
-      render: (progress) => (
-        <div style={{ width: 100 }}>
-          <Progress
-            percent={progress}
-            size="small"
-            status={progress === 100 ? 'success' : 'active'}
-          />
-        </div>
-      ),
-      sorter: (a, b) => a.progress - b.progress,
-    },
-    {
-      title: 'Ответственный',
-      dataIndex: 'assignee',
-      key: 'assignee',
-      render: (assignee) => (
-        <Space>
-          <Avatar size="small" icon={<UserOutlined />} />
-          <Text>{assignee}</Text>
-        </Space>
-      ),
+      title: 'Ответственные',
+      dataIndex: 'responsible',
+      key: 'responsible',
+      render: (responsible, record) => {
+        const ids = Array.isArray(responsible) ? responsible : [];
+        const names = ids.map((id) => userNameById[id]).filter(Boolean);
+        const ownerLabel = record.owner ? userNameById[record.owner] || `#${record.owner}` : null;
+        const display = names.length ? names.join(', ') : ownerLabel;
+        return (
+          <Space>
+            <Avatar size="small" icon={<UserOutlined />} />
+            <Text>{display || '-'}</Text>
+          </Space>
+        );
+      },
     },
     {
       title: 'Срок',
       dataIndex: 'due_date',
       key: 'due_date',
       render: (date) => {
+        if (!date) return '-';
         const dueDate = new Date(date);
         const today = new Date();
         const daysLeft = Math.ceil((dueDate - today) / (1000 * 60 * 60 * 24));
-        
         return (
           <Space direction="vertical" size="small">
             <Space size="small">
@@ -246,12 +232,7 @@ function TasksList() {
           </Space>
         );
       },
-      sorter: (a, b) => new Date(a.due_date) - new Date(b.due_date),
-    },
-    {
-      title: 'Связано с',
-      dataIndex: 'related_to',
-      key: 'related_to',
+      sorter: (a, b) => new Date(a.due_date || 0) - new Date(b.due_date || 0),
     },
     {
       title: 'Действия',
@@ -312,7 +293,7 @@ function TasksList() {
         onChange={handleTableChange}
         scroll={{ x: 1400 }}
         rowClassName={(record) =>
-          record.status === 'completed' ? 'row-completed' : ''
+          doneStage && record.stage === doneStage.id ? 'row-completed' : ''
         }
         showTotal={true}
         showSizeChanger={true}

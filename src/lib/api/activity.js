@@ -13,75 +13,44 @@ import { api } from './client';
  * @returns {Promise<Object>}
  */
 export async function getActivityLog(params = {}) {
-  try {
-    // Use dashboard activity endpoint from API.yaml (line 1568)
-    return await api.get('/api/dashboard/activity/', { params });
-  } catch (error) {
-    console.warn('Activity log not available');
-    return {
-      results: [],
-      count: 0,
-    };
-  }
+  return api.get('/api/dashboard/activity/', { params });
 }
 
 /**
  * Get activity log for specific entity
- * Note: This endpoint doesn't exist in API.yaml, using mock data
+ * Filters dashboard activity feed by content type and object ID
  * @param {string} contentType - Entity type (lead, deal, contact, etc.)
  * @param {number} objectId - Entity ID
  * @param {Object} [params] - Additional query params
  * @returns {Promise<Object>}
  */
 export async function getEntityActivity(contentType, objectId, params = {}) {
-  // This endpoint doesn't exist in Django-CRM API.yaml
-  // Using mock data until backend implements it
-  console.warn('Entity activity endpoint not available in API, using mock data');
-  return {
-    results: generateMockActivity(contentType, objectId),
-    count: 5,
-  };
-}
+  const data = await getActivityLog(params);
+  const results = Array.isArray(data?.results) ? data.results : Array.isArray(data) ? data : [];
 
-/**
- * Generate mock activity data for development
- */
-function generateMockActivity(contentType, objectId) {
-  const actions = ['created', 'updated', 'status_changed', 'assigned', 'commented'];
-  const users = ['john.doe', 'jane.smith', 'admin'];
-  
-  return Array.from({ length: 5 }, (_, i) => ({
-    id: i + 1,
-    action: actions[i % actions.length],
-    user: {
-      id: i + 1,
-      username: users[i % users.length],
-      email: `${users[i % users.length]}@example.com`,
-    },
-    content_type: contentType,
-    object_id: objectId,
-    changes: {
-      status: { old: 'new', new: 'in_progress' },
-      amount: { old: 1000, new: 1500 },
-    },
-    description: `${actions[i % actions.length].replace('_', ' ')} the ${contentType}`,
-    timestamp: new Date(Date.now() - i * 3600000).toISOString(),
-  }));
+  const normalizedType = typeof contentType === 'string' ? contentType.toLowerCase() : contentType;
+  const filtered = results.filter((item) => {
+    const itemType = (item.content_type_name || item.content_type || item.entity_type || '').toString().toLowerCase();
+    const itemObjectId = item.object_id || item.entity_id || item.objectId || item.id;
+
+    const typeMatches = normalizedType ? itemType.includes(normalizedType) : true;
+    const idMatches = objectId ? Number(itemObjectId) === Number(objectId) : true;
+
+    return typeMatches && idMatches;
+  });
+
+  return {
+    results: filtered,
+    count: filtered.length,
+  };
 }
 
 /**
  * Get activity statistics
- * Note: This endpoint doesn't exist in API.yaml, returns mock data
+ * Uses dashboard analytics endpoint for aggregate metrics
  * @param {Object} params
  * @returns {Promise<Object>}
  */
 export async function getActivityStats(params = {}) {
-  // This endpoint doesn't exist in Django-CRM API.yaml
-  // Consider using /api/dashboard/analytics/ instead
-  console.warn('Activity stats endpoint not available in API');
-  return {
-    total: 0,
-    by_action: {},
-    by_user: {},
-  };
+  return api.get('/api/dashboard/analytics/', { params });
 }

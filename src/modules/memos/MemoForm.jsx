@@ -1,8 +1,12 @@
-import { useState, useEffect } from 'react';
-import { Form, Input, Button, Card, Space, message, Spin, Select, Switch } from 'antd';
-import { SaveOutlined, ArrowLeftOutlined } from '@ant-design/icons';
+import { useEffect, useState } from 'react';
+import { Form, Input, Button, Card, Space, message, Spin, Select, Switch, DatePicker, InputNumber } from 'antd';
+import { SaveOutlined, ArrowLeftOutlined, FileTextOutlined } from '@ant-design/icons';
 import { getMemo, createMemo, updateMemo } from '../../lib/api/memos';
 import { navigate } from '../../router';
+import dayjs from 'dayjs';
+import EntitySelect from '../../components/EntitySelect.jsx';
+import ReferenceSelect from '../../components/ui-ReferenceSelect';
+import { getUsers, getUser, getDeal, getDeals, getProject, getProjects, getTask, getTasks } from '../../lib/api/client.js';
 
 const { TextArea } = Input;
 
@@ -22,9 +26,12 @@ export default function MemoForm({ id }) {
     setLoading(true);
     try {
       const res = await getMemo(id);
-      form.setFieldsValue(res);
+      form.setFieldsValue({
+        ...res,
+        review_date: res.review_date ? dayjs(res.review_date) : null,
+      });
     } catch (error) {
-      message.error('Failed to fetch memo');
+      message.error('Не удалось загрузить мемо');
       console.error(error);
     } finally {
       setLoading(false);
@@ -34,16 +41,20 @@ export default function MemoForm({ id }) {
   const onFinish = async (values) => {
     setSaving(true);
     try {
+      const payload = {
+        ...values,
+        review_date: values.review_date ? values.review_date.format('YYYY-MM-DD') : null,
+      };
       if (isEdit) {
-        await updateMemo(id, values);
-        message.success('Memo updated successfully');
+        await updateMemo(id, payload);
+        message.success('Мемо обновлено');
       } else {
-        await createMemo(values);
-        message.success('Memo created successfully');
+        await createMemo(payload);
+        message.success('Мемо создано');
       }
       navigate('/memos');
     } catch (error) {
-      message.error(`Failed to ${isEdit ? 'update' : 'create'} memo`);
+      message.error(`Не удалось ${isEdit ? 'обновить' : 'создать'} мемо`);
       console.error(error);
     } finally {
       setSaving(false);
@@ -63,97 +74,117 @@ export default function MemoForm({ id }) {
   return (
     <div>
       <Space style={{ marginBottom: 16 }}>
-        <Button
-          icon={<ArrowLeftOutlined />}
-          onClick={() => navigate('/memos')}
-        >
-          Back
+        <Button icon={<ArrowLeftOutlined />} onClick={() => navigate('/memos')}>
+          Назад
         </Button>
       </Space>
 
-      <Card title={isEdit ? 'Edit Memo' : 'Create New Memo'}>
+      <Card title={isEdit ? 'Редактирование мемо' : 'Новое мемо'}>
         <Form
           form={form}
           layout="vertical"
           onFinish={onFinish}
           initialValues={{
-            draft: true,
-            archived: false,
+            draft: false,
+            notified: false,
+            stage: 'pen',
           }}
         >
           <Form.Item
-            label="Title"
-            name="title"
-            rules={[{ required: true, message: 'Please enter a title' }]}
+            label="Название"
+            name="name"
+            rules={[{ required: true, message: 'Введите название' }]}
           >
-            <Input placeholder="Enter memo title" />
+            <Input prefix={<FileTextOutlined />} placeholder="Например: Итоги встречи" />
           </Form.Item>
 
+          <Form.Item label="Описание" name="description">
+            <TextArea rows={3} placeholder="Краткое описание" />
+          </Form.Item>
+
+          <Form.Item label="Заключение" name="note">
+            <TextArea rows={4} placeholder="Ключевые выводы и договоренности" />
+          </Form.Item>
+
+          <Space size="large" style={{ marginBottom: 16 }}>
+            <Form.Item label="Черновик" name="draft" valuePropName="checked">
+              <Switch />
+            </Form.Item>
+            <Form.Item label="Уведомить получателей" name="notified" valuePropName="checked">
+              <Switch />
+            </Form.Item>
+          </Space>
+
+          <Space size="large" style={{ width: '100%', marginBottom: 16 }}>
+            <Form.Item label="Стадия" name="stage" style={{ flex: 1 }}>
+              <Select allowClear placeholder="Выберите стадию">
+                <Select.Option value="pen">В ожидании</Select.Option>
+                <Select.Option value="pos">Отложено</Select.Option>
+                <Select.Option value="rev">Рассмотрено</Select.Option>
+              </Select>
+            </Form.Item>
+            <Form.Item label="Дата обзора" name="review_date" style={{ flex: 1 }}>
+              <DatePicker format="YYYY-MM-DD" style={{ width: '100%' }} />
+            </Form.Item>
+          </Space>
+
           <Form.Item
-            label="Content"
-            name="content"
-            rules={[{ required: true, message: 'Please enter content' }]}
+            label="Получатель"
+            name="to"
+            rules={[{ required: true, message: 'Выберите получателя' }]}
           >
-            <TextArea
-              rows={10}
-              placeholder="Enter memo content"
+            <EntitySelect
+              placeholder="Выберите пользователя"
+              fetchList={getUsers}
+              fetchById={getUser}
+              allowClear
             />
           </Form.Item>
 
-          <Form.Item
-            label="Category"
-            name="category"
-          >
-            <Input placeholder="Category (optional)" />
-          </Form.Item>
+          <Space size="large" style={{ width: '100%', marginBottom: 16 }}>
+            <Form.Item label="Сделка" name="deal" style={{ flex: 1 }}>
+              <EntitySelect
+                placeholder="Выберите сделку"
+                fetchList={getDeals}
+                fetchById={getDeal}
+                allowClear
+              />
+            </Form.Item>
+            <Form.Item label="Проект" name="project" style={{ flex: 1 }}>
+              <EntitySelect
+                placeholder="Выберите проект"
+                fetchList={getProjects}
+                fetchById={getProject}
+                allowClear
+              />
+            </Form.Item>
+          </Space>
 
-          <Form.Item
-            label="Related Entity"
-            name="content_type"
-          >
-            <Select placeholder="Select related entity type" allowClear>
-              <Select.Option value="deal">Deal</Select.Option>
-              <Select.Option value="project">Project</Select.Option>
-              <Select.Option value="contact">Contact</Select.Option>
-            </Select>
-          </Form.Item>
+          <Space size="large" style={{ width: '100%', marginBottom: 16 }}>
+            <Form.Item label="Задача" name="task" style={{ flex: 1 }}>
+              <EntitySelect
+                placeholder="Выберите задачу"
+                fetchList={getTasks}
+                fetchById={getTask}
+                allowClear
+              />
+            </Form.Item>
+            <Form.Item label="Resolution ID" name="resolution" style={{ flex: 1 }}>
+              <InputNumber min={1} style={{ width: '100%' }} placeholder="ID связанного объекта" />
+            </Form.Item>
+          </Space>
 
-          <Form.Item
-            label="Related Entity ID"
-            name="object_id"
-            dependencies={['content_type']}
-          >
-            <Input placeholder="Enter entity ID" />
-          </Form.Item>
-
-          <Form.Item
-            label="Draft"
-            name="draft"
-            valuePropName="checked"
-          >
-            <Switch />
-          </Form.Item>
-
-          <Form.Item
-            label="Archived"
-            name="archived"
-            valuePropName="checked"
-          >
-            <Switch />
+          <Form.Item label="Теги" name="tags">
+            <ReferenceSelect type="crm-tags" mode="multiple" allowClear placeholder="Выберите теги" />
           </Form.Item>
 
           <Form.Item>
             <Space>
-              <Button
-                type="primary"
-                htmlType="submit"
-                icon={<SaveOutlined />}
-                loading={saving}
-              >
-                {isEdit ? 'Update' : 'Create'}
+              <Button type="primary" htmlType="submit" icon={<SaveOutlined />} loading={saving}>
+                {isEdit ? 'Сохранить' : 'Создать'}
               </Button>
               <Button onClick={() => navigate('/memos')}>
-                Cancel
+                Отмена
               </Button>
             </Space>
           </Form.Item>

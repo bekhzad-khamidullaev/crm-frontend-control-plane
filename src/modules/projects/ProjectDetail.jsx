@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import {
   Card,
   Descriptions,
@@ -8,37 +8,41 @@ import {
   Spin,
   message,
   Tabs,
-  Timeline,
   Typography,
-  Progress,
-  Row,
-  Col,
-  Statistic,
-  List,
-  Avatar,
+  Modal,
+  Form,
 } from 'antd';
 import {
   ArrowLeftOutlined,
   EditOutlined,
   DeleteOutlined,
   CalendarOutlined,
-  TeamOutlined,
-  DollarOutlined,
-  FolderOutlined,
-  CheckSquareOutlined,
-  ClockCircleOutlined,
+  UserOutlined,
+  CheckCircleOutlined,
+  RedoOutlined,
 } from '@ant-design/icons';
 import { navigate } from '../../router';
-import { getProject, deleteProject } from '../../lib/api/client';
+import { getProject, deleteProject, getUsers, getUser, projectsApi } from '../../lib/api/client';
+import { getProjectStages, getCrmTags } from '../../lib/api/reference';
+import ActivityLog from '../../components/ActivityLog';
+import EntitySelect from '../../components/EntitySelect.jsx';
+import dayjs from 'dayjs';
 
 const { Title, Text } = Typography;
 
 function ProjectDetail({ id }) {
   const [project, setProject] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [stages, setStages] = useState([]);
+  const [tags, setTags] = useState([]);
+  const [users, setUsers] = useState([]);
+  const [assignModalOpen, setAssignModalOpen] = useState(false);
+  const [assigning, setAssigning] = useState(false);
+  const [assignForm] = Form.useForm();
 
   useEffect(() => {
     loadProject();
+    loadReferences();
   }, [id]);
 
   const loadProject = async () => {
@@ -48,25 +52,26 @@ function ProjectDetail({ id }) {
       setProject(data);
     } catch (error) {
       message.error('Ошибка загрузки данных проекта');
-      // Mock data for demo
-      setProject({
-        id,
-        name: 'Внедрение CRM системы',
-        description: 'Полное внедрение CRM системы для автоматизации бизнес-процессов компании. Включает анализ, разработку, внедрение и обучение персонала.',
-        status: 'in_progress',
-        progress: 45,
-        start_date: '2024-01-15',
-        end_date: '2024-04-30',
-        budget: 2500000,
-        spent: 1125000,
-        client: { id: 1, name: 'ООО "ТехноПром"' },
-        manager: { id: 1, name: 'Алексей Иванов' },
-        team_size: 5,
-        created_at: '2024-01-10T10:30:00Z',
-        updated_at: '2024-01-22T15:45:00Z',
-      });
     } finally {
       setLoading(false);
+    }
+  };
+
+  const loadReferences = async () => {
+    try {
+      const [stagesResponse, tagsResponse, usersResponse] = await Promise.all([
+        getProjectStages({ page_size: 200 }),
+        getCrmTags({ page_size: 200 }),
+        getUsers({ page_size: 200 }),
+      ]);
+      setStages(stagesResponse.results || stagesResponse || []);
+      setTags(tagsResponse.results || tagsResponse || []);
+      setUsers(usersResponse.results || usersResponse || []);
+    } catch (error) {
+      console.error('Error loading project references:', error);
+      setStages([]);
+      setTags([]);
+      setUsers([]);
     }
   };
 
@@ -80,13 +85,78 @@ function ProjectDetail({ id }) {
     }
   };
 
-  const statusConfig = {
-    planning: { color: 'default', text: 'Планирование' },
-    in_progress: { color: 'blue', text: 'В работе' },
-    on_hold: { color: 'orange', text: 'Приостановлен' },
-    completed: { color: 'green', text: 'Завершен' },
-    cancelled: { color: 'red', text: 'Отменен' },
+  const handleComplete = async () => {
+    try {
+      await projectsApi.complete(id);
+      message.success('Проект завершен');
+      loadProject();
+    } catch (error) {
+      message.error('Ошибка завершения проекта');
+    }
   };
+
+  const handleReopen = async () => {
+    try {
+      await projectsApi.reopen(id);
+      message.success('Проект возобновлен');
+      loadProject();
+    } catch (error) {
+      message.error('Ошибка возобновления проекта');
+    }
+  };
+
+  const openAssignModal = () => {
+    assignForm.setFieldsValue({
+      owner: project?.owner || null,
+      co_owner: project?.co_owner || null,
+      responsible: project?.responsible || [],
+      subscribers: project?.subscribers || [],
+    });
+    setAssignModalOpen(true);
+  };
+
+  const handleAssign = async () => {
+    try {
+      const values = await assignForm.validateFields();
+      setAssigning(true);
+      await projectsApi.assign(id, values);
+      message.success('Назначения обновлены');
+      setAssignModalOpen(false);
+      assignForm.resetFields();
+      loadProject();
+    } catch (error) {
+      if (error?.errorFields) return;
+      message.error('Ошибка назначения');
+    } finally {
+      setAssigning(false);
+    }
+  };
+
+  const handleAssignCancel = () => {
+    setAssignModalOpen(false);
+    assignForm.resetFields();
+  };
+
+  const stageMap = useMemo(() => {
+    return stages.reduce((acc, stage) => {
+      acc[stage.id] = stage;
+      return acc;
+    }, {});
+  }, [stages]);
+
+  const userMap = useMemo(() => {
+    return users.reduce((acc, user) => {
+      acc[user.id] = user.username || user.email || `#${user.id}`;
+      return acc;
+    }, {});
+  }, [users]);
+
+  const tagMap = useMemo(() => {
+    return tags.reduce((acc, tag) => {
+      acc[tag.id] = tag.name;
+      return acc;
+    }, {});
+  }, [tags]);
 
   if (loading) {
     return (
@@ -100,20 +170,17 @@ function ProjectDetail({ id }) {
     return <div>Проект не найден</div>;
   }
 
-  const statusStyle = statusConfig[project.status] || statusConfig.planning;
-  const startDate = new Date(project.start_date);
-  const endDate = new Date(project.end_date);
-  const today = new Date();
-  const totalDays = Math.ceil((endDate - startDate) / (1000 * 60 * 60 * 24));
-  const daysLeft = Math.ceil((endDate - today) / (1000 * 60 * 60 * 24));
-  const budgetUsed = ((project.spent / project.budget) * 100).toFixed(0);
-
-  const mockTasks = [
-    { id: 1, title: 'Анализ бизнес-процессов', status: 'completed', assignee: 'Алексей Иванов' },
-    { id: 2, title: 'Разработка ТЗ', status: 'completed', assignee: 'Елена Смирнова' },
-    { id: 3, title: 'Настройка системы', status: 'in_progress', assignee: 'Дмитрий Козлов' },
-    { id: 4, title: 'Обучение персонала', status: 'todo', assignee: 'Алексей Иванов' },
-  ];
+  const stage = stageMap[project.stage];
+  const responsibleNames = Array.isArray(project.responsible)
+    ? project.responsible.map((id) => userMap[id]).filter(Boolean)
+    : [];
+  const subscriberNames = Array.isArray(project.subscribers)
+    ? project.subscribers.map((id) => userMap[id]).filter(Boolean)
+    : [];
+  const tagNames = Array.isArray(project.tags)
+    ? project.tags.map((id) => tagMap[id]).filter(Boolean)
+    : [];
+  const isCompleted = stage?.done || project.active === false;
 
   const tabItems = [
     {
@@ -123,187 +190,97 @@ function ProjectDetail({ id }) {
         <>
           <Descriptions bordered column={2} style={{ marginBottom: 24 }}>
             <Descriptions.Item label="Название" span={2}>
+              <Text strong style={{ fontSize: 16 }}>
+                {project.name}
+              </Text>
+            </Descriptions.Item>
+            <Descriptions.Item label="Этап">
+              {stage ? (
+                <Tag color={stage.done ? 'green' : stage.in_progress ? 'blue' : 'default'}>
+                  {stage.name}
+                </Tag>
+              ) : (
+                '-'
+              )}
+            </Descriptions.Item>
+            <Descriptions.Item label="Приоритет">
+              {project.priority ? `Приоритет ${project.priority}` : '-'}
+            </Descriptions.Item>
+            <Descriptions.Item label="Дата начала">
+              {project.start_date ? (
+                <Space>
+                  <CalendarOutlined />
+                  {dayjs(project.start_date).format('DD.MM.YYYY')}
+                </Space>
+              ) : (
+                '-'
+              )}
+            </Descriptions.Item>
+            <Descriptions.Item label="Срок завершения">
+              {project.due_date ? (
+                <Space>
+                  <CalendarOutlined />
+                  {dayjs(project.due_date).format('DD.MM.YYYY')}
+                </Space>
+              ) : (
+                '-'
+              )}
+            </Descriptions.Item>
+            <Descriptions.Item label="Дата закрытия">
+              {project.closing_date ? dayjs(project.closing_date).format('DD.MM.YYYY') : '-'}
+            </Descriptions.Item>
+            <Descriptions.Item label="Следующий шаг">{project.next_step || '-'}</Descriptions.Item>
+            <Descriptions.Item label="Дата следующего шага">
+              {project.next_step_date ? dayjs(project.next_step_date).format('DD.MM.YYYY') : '-'}
+            </Descriptions.Item>
+            <Descriptions.Item label="Активен">
+              <Tag color={project.active ? 'green' : 'default'}>{project.active ? 'Да' : 'Нет'}</Tag>
+            </Descriptions.Item>
+            <Descriptions.Item label="Напоминать">
+              <Tag color={project.remind_me ? 'blue' : 'default'}>{project.remind_me ? 'Да' : 'Нет'}</Tag>
+            </Descriptions.Item>
+            <Descriptions.Item label="Владелец">
               <Space>
-                <FolderOutlined style={{ fontSize: 20, color: '#1890ff' }} />
-                <Text strong style={{ fontSize: 16 }}>
-                  {project.name}
-                </Text>
+                <UserOutlined />
+                {project.owner ? userMap[project.owner] || `#${project.owner}` : '-'}
               </Space>
             </Descriptions.Item>
-            <Descriptions.Item label="Статус">
-              <Tag color={statusStyle.color}>{statusStyle.text}</Tag>
+            <Descriptions.Item label="Со-владелец">
+              {project.co_owner ? userMap[project.co_owner] || `#${project.co_owner}` : '-'}
             </Descriptions.Item>
-            <Descriptions.Item label="Прогресс">
-              <Progress percent={project.progress} status="active" />
+            <Descriptions.Item label="Ответственные" span={2}>
+              {responsibleNames.length ? responsibleNames.join(', ') : '-'}
             </Descriptions.Item>
-            <Descriptions.Item label="Клиент">
-              <a onClick={() => navigate(`/companies/${project.client.id}`)}>
-                {project.client.name}
-              </a>
+            <Descriptions.Item label="Подписчики" span={2}>
+              {subscriberNames.length ? subscriberNames.join(', ') : '-'}
             </Descriptions.Item>
-            <Descriptions.Item label="Менеджер проекта">
-              {project.manager.name}
-            </Descriptions.Item>
-            <Descriptions.Item label="Период выполнения" span={2}>
-              <Space>
-                <CalendarOutlined />
-                {startDate.toLocaleDateString('ru-RU')} - {endDate.toLocaleDateString('ru-RU')}
-              </Space>
-              <div style={{ marginTop: 4 }}>
-                <Text type="secondary" style={{ fontSize: 12 }}>
-                  {totalDays} дней, осталось {daysLeft > 0 ? daysLeft : 0} дней
-                </Text>
-              </div>
-            </Descriptions.Item>
-            <Descriptions.Item label="Бюджет">
-              {project.budget.toLocaleString('ru-RU')} ₽
-            </Descriptions.Item>
-            <Descriptions.Item label="Потрачено">
-              {project.spent.toLocaleString('ru-RU')} ₽ ({budgetUsed}%)
-            </Descriptions.Item>
-            <Descriptions.Item label="Размер команды">
-              <Space>
-                <TeamOutlined />
-                {project.team_size} человек
-              </Space>
+            <Descriptions.Item label="Теги" span={2}>
+              {tagNames.length ? tagNames.map((tag) => <Tag key={tag}>{tag}</Tag>) : '-'}
             </Descriptions.Item>
             <Descriptions.Item label="Дата создания">
-              {new Date(project.created_at).toLocaleString('ru-RU')}
+              {project.creation_date ? dayjs(project.creation_date).format('DD.MM.YYYY HH:mm') : '-'}
+            </Descriptions.Item>
+            <Descriptions.Item label="Последнее обновление">
+              {project.update_date ? dayjs(project.update_date).format('DD.MM.YYYY HH:mm') : '-'}
             </Descriptions.Item>
             {project.description && (
               <Descriptions.Item label="Описание" span={2}>
                 {project.description}
               </Descriptions.Item>
             )}
+            {project.note && (
+              <Descriptions.Item label="Заметка" span={2}>
+                {project.note}
+              </Descriptions.Item>
+            )}
           </Descriptions>
-
-          <Row gutter={16}>
-            <Col xs={24} md={6}>
-              <Card>
-                <Statistic
-                  title="Прогресс"
-                  value={project.progress}
-                  suffix="%"
-                  valueStyle={{ color: '#3f8600' }}
-                />
-              </Card>
-            </Col>
-            <Col xs={24} md={6}>
-              <Card>
-                <Statistic
-                  title="Дней осталось"
-                  value={daysLeft > 0 ? daysLeft : 0}
-                  prefix={<ClockCircleOutlined />}
-                  valueStyle={{ color: daysLeft > 0 ? '#1890ff' : '#cf1322' }}
-                />
-              </Card>
-            </Col>
-            <Col xs={24} md={6}>
-              <Card>
-                <Statistic
-                  title="Бюджет использован"
-                  value={budgetUsed}
-                  suffix="%"
-                  prefix={<DollarOutlined />}
-                  valueStyle={{ color: budgetUsed > 80 ? '#cf1322' : '#52c41a' }}
-                />
-              </Card>
-            </Col>
-            <Col xs={24} md={6}>
-              <Card>
-                <Statistic
-                  title="Команда"
-                  value={project.team_size}
-                  suffix="чел"
-                  prefix={<TeamOutlined />}
-                />
-              </Card>
-            </Col>
-          </Row>
         </>
-      ),
-    },
-    {
-      key: 'tasks',
-      label: 'Задачи',
-      children: (
-        <List
-          dataSource={mockTasks}
-          renderItem={(task) => (
-            <List.Item
-              actions={[
-                <Button type="link" onClick={() => navigate(`/tasks/${task.id}`)}>
-                  Просмотр
-                </Button>,
-              ]}
-            >
-              <List.Item.Meta
-                avatar={<Avatar icon={<CheckSquareOutlined />} />}
-                title={task.title}
-                description={
-                  <Space>
-                    <Tag color={task.status === 'completed' ? 'green' : task.status === 'in_progress' ? 'blue' : 'default'}>
-                      {task.status === 'completed' ? 'Выполнено' : task.status === 'in_progress' ? 'В работе' : 'К выполнению'}
-                    </Tag>
-                    <Text type="secondary">{task.assignee}</Text>
-                  </Space>
-                }
-              />
-            </List.Item>
-          )}
-        />
       ),
     },
     {
       key: 'activity',
       label: 'История активности',
-      children: (
-        <Timeline
-          items={[
-            {
-              color: 'green',
-              children: (
-                <>
-                  <Text strong>Проект создан</Text>
-                  <br />
-                  <Text type="secondary">
-                    {new Date(project.created_at).toLocaleString('ru-RU')}
-                  </Text>
-                </>
-              ),
-            },
-            {
-              color: 'blue',
-              children: (
-                <>
-                  <Text strong>Статус изменен на "{statusStyle.text}"</Text>
-                  <br />
-                  <Text type="secondary">
-                    {new Date(project.updated_at).toLocaleString('ru-RU')}
-                  </Text>
-                </>
-              ),
-            },
-            {
-              color: 'orange',
-              children: (
-                <>
-                  <Text strong>Прогресс обновлен до {project.progress}%</Text>
-                  <br />
-                  <Text type="secondary">
-                    {new Date(project.updated_at).toLocaleString('ru-RU')}
-                  </Text>
-                </>
-              ),
-            },
-          ]}
-        />
-      ),
-    },
-    {
-      key: 'team',
-      label: 'Команда',
-      children: <div>Список участников команды появится здесь</div>,
+      children: <ActivityLog entityType="project" entityId={project.id} />,
     },
   ];
 
@@ -311,7 +288,7 @@ function ProjectDetail({ id }) {
     <div>
       <Space style={{ marginBottom: 16 }}>
         <Button icon={<ArrowLeftOutlined />} onClick={() => navigate('/projects')}>
-          Назад к списку
+          Назад
         </Button>
         <Button
           type="primary"
@@ -320,6 +297,18 @@ function ProjectDetail({ id }) {
         >
           Редактировать
         </Button>
+        <Button icon={<UserOutlined />} onClick={openAssignModal}>
+          Назначить
+        </Button>
+        {isCompleted ? (
+          <Button icon={<RedoOutlined />} onClick={handleReopen}>
+            Возобновить
+          </Button>
+        ) : (
+          <Button icon={<CheckCircleOutlined />} onClick={handleComplete}>
+            Завершить
+          </Button>
+        )}
         <Button danger icon={<DeleteOutlined />} onClick={handleDelete}>
           Удалить
         </Button>
@@ -330,6 +319,49 @@ function ProjectDetail({ id }) {
       <Card>
         <Tabs items={tabItems} />
       </Card>
+
+      <Modal
+        title="Назначения проекта"
+        open={assignModalOpen}
+        onCancel={handleAssignCancel}
+        onOk={handleAssign}
+        okText="Сохранить"
+        cancelText="Отмена"
+        confirmLoading={assigning}
+      >
+        <Form form={assignForm} layout="vertical">
+          <Form.Item name="owner" label="Владелец">
+            <EntitySelect
+              fetchOptions={getUsers}
+              fetchById={getUser}
+              placeholder="Выберите владельца"
+            />
+          </Form.Item>
+          <Form.Item name="co_owner" label="Со-владелец">
+            <EntitySelect
+              fetchOptions={getUsers}
+              fetchById={getUser}
+              placeholder="Выберите со-владельца"
+            />
+          </Form.Item>
+          <Form.Item name="responsible" label="Ответственные">
+            <EntitySelect
+              fetchOptions={getUsers}
+              fetchById={getUser}
+              mode="multiple"
+              placeholder="Выберите ответственных"
+            />
+          </Form.Item>
+          <Form.Item name="subscribers" label="Подписчики">
+            <EntitySelect
+              fetchOptions={getUsers}
+              fetchById={getUser}
+              mode="multiple"
+              placeholder="Выберите подписчиков"
+            />
+          </Form.Item>
+        </Form>
+      </Modal>
     </div>
   );
 }

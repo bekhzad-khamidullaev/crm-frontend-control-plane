@@ -1,6 +1,6 @@
 /**
  * ChatMessageComposer Component
- * Advanced message composer with attachments, emoji, and mentions
+ * Message composer with emoji support and reply context
  */
 
 import React, { useState, useRef, useEffect } from 'react';
@@ -8,18 +8,14 @@ import {
   Input,
   Button,
   Space,
-  Upload,
   Tooltip,
-  Tag,
   message as antMessage,
   Popover,
 } from 'antd';
 import {
   SendOutlined,
-  PaperClipOutlined,
   SmileOutlined,
   CloseOutlined,
-  FileImageOutlined,
 } from '@ant-design/icons';
 
 const { TextArea } = Input;
@@ -41,8 +37,6 @@ function ChatMessageComposer({
   onCancelReply,
 }) {
   const [message, setMessage] = useState('');
-  const [attachments, setAttachments] = useState([]);
-  const [isUploading, setIsUploading] = useState(false);
   const [emojiVisible, setEmojiVisible] = useState(false);
   const textAreaRef = useRef(null);
   const typingTimeoutRef = useRef(null);
@@ -75,22 +69,20 @@ function ChatMessageComposer({
   };
 
   const handleSend = () => {
-    if (!message.trim() && attachments.length === 0) {
-      antMessage.warning('Введите сообщение или прикрепите файл');
+    if (!message.trim()) {
+      antMessage.warning('Введите сообщение');
       return;
     }
 
     const messageData = {
-      message: message.trim(),
-      attachments: attachments.map(file => file.response?.id || file.uid),
-      parent: replyTo?.id,
+      content: message.trim(),
+      answer_to: replyTo?.id,
       entityType,
       entityId,
     };
 
     onSend(messageData);
     setMessage('');
-    setAttachments([]);
     
     // Stop typing indicator
     if (onTyping) {
@@ -108,23 +100,6 @@ function ChatMessageComposer({
       e.preventDefault();
       handleSend();
     }
-  };
-
-  const handleUploadChange = ({ fileList }) => {
-    setAttachments(fileList);
-  };
-
-  const handleBeforeUpload = (file) => {
-    const isLt10M = file.size / 1024 / 1024 < 10;
-    if (!isLt10M) {
-      antMessage.error('Файл должен быть меньше 10MB!');
-      return false;
-    }
-    return false; // Prevent auto upload, we'll handle it manually
-  };
-
-  const handleRemoveAttachment = (file) => {
-    setAttachments(attachments.filter(f => f.uid !== file.uid));
   };
 
   const handleEmojiSelect = (emoji) => {
@@ -180,33 +155,15 @@ function ChatMessageComposer({
           <div style={{ flex: 1 }}>
             <div style={{ fontSize: 12, color: '#999' }}>Ответ на сообщение:</div>
             <div style={{ fontSize: 14, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-              {replyTo.message}
-            </div>
+            {replyTo.content}
           </div>
+        </div>
           <Button
             type="text"
             size="small"
             icon={<CloseOutlined />}
             onClick={onCancelReply}
           />
-        </div>
-      )}
-
-      {/* Attachments preview */}
-      {attachments.length > 0 && (
-        <div style={{ marginBottom: 8 }}>
-          <Space wrap>
-            {attachments.map(file => (
-              <Tag
-                key={file.uid}
-                closable
-                onClose={() => handleRemoveAttachment(file)}
-                icon={<FileImageOutlined />}
-              >
-                {file.name}
-              </Tag>
-            ))}
-          </Space>
         </div>
       )}
 
@@ -223,21 +180,6 @@ function ChatMessageComposer({
         />
         
         <Space.Compact>
-          <Upload
-            fileList={attachments}
-            onChange={handleUploadChange}
-            beforeUpload={handleBeforeUpload}
-            showUploadList={false}
-            multiple
-          >
-            <Tooltip title="Прикрепить файл">
-              <Button
-                icon={<PaperClipOutlined />}
-                loading={isUploading}
-              />
-            </Tooltip>
-          </Upload>
-
           <Popover
             content={emojiPicker}
             trigger="click"
@@ -255,7 +197,7 @@ function ChatMessageComposer({
               type="primary"
               icon={<SendOutlined />}
               onClick={handleSend}
-              disabled={!message.trim() && attachments.length === 0}
+              disabled={!message.trim()}
             />
           </Tooltip>
         </Space.Compact>

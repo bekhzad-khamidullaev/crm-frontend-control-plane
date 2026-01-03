@@ -158,6 +158,25 @@ function Dashboard() {
   }, [loadingAnalytics, analytics]);
 
   const buildCharts = () => {
+    const normalizeBuckets = (data) => {
+      if (!data) return [];
+      if (Array.isArray(data)) {
+        return data
+          .map((item) => ({
+            label: item.label || item.name || item.source || item.status || item.key || '',
+            value: item.value ?? item.count ?? item.total ?? 0,
+          }))
+          .filter((item) => item.label);
+      }
+      if (typeof data === 'object') {
+        return Object.entries(data).map(([label, value]) => ({
+          label,
+          value: typeof value === 'number' ? value : Number(value) || 0,
+        }));
+      }
+      return [];
+    };
+
     // Monthly Growth Chart (Revenue)
     if (chartRefs.revenue.current && analytics?.monthly_growth) {
       const ctx = chartRefs.revenue.current.getContext('2d');
@@ -250,13 +269,11 @@ function Dashboard() {
     }
 
     // Lead Sources Chart
-    if (chartRefs.leadSource.current && analytics) {
-      const leadSources = [
-        { label: 'Реклама', value: 120 },
-        { label: 'Рекомендации', value: 85 },
-        { label: 'Email/Холодные', value: 62 },
-        { label: 'Вебинар', value: 30 },
-      ];
+    const leadSources = normalizeBuckets(
+      analytics?.lead_sources || analytics?.leads_by_source || analytics?.sources
+    );
+
+    if (chartRefs.leadSource.current && leadSources.length) {
 
       const ctx = chartRefs.leadSource.current.getContext('2d');
       chartInstances.current.leadSource = new Chart(ctx, {
@@ -286,13 +303,11 @@ function Dashboard() {
     }
 
     // Lead Status Chart
-    if (chartRefs.leadStatus.current && analytics) {
-      const leadStatus = [
-        { label: 'Новые', value: 68 },
-        { label: 'В работе', value: 92 },
-        { label: 'Дисквалифицированы', value: 23 },
-        { label: 'Конвертированы', value: 62 },
-      ];
+    const leadStatus = normalizeBuckets(
+      analytics?.lead_statuses || analytics?.leads_by_status || analytics?.statuses
+    );
+
+    if (chartRefs.leadStatus.current && leadStatus.length) {
 
       const ctx = chartRefs.leadStatus.current.getContext('2d');
       chartInstances.current.leadStatus = new Chart(ctx, {

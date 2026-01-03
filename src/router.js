@@ -44,10 +44,25 @@ export const routeMeta = {
  'campaigns-new': { auth: true, title: 'New Campaign' },
  'campaigns-detail': { auth: true, title: 'Campaign' },
  'campaigns-edit': { auth: true, title: 'Edit Campaign' },
+ 'marketing-segments': { auth: true, title: 'Segments' },
+ 'marketing-templates': { auth: true, title: 'Templates' },
  'memos-list': { auth: true, title: 'Memos' },
  'memos-new': { auth: true, title: 'New Memo' },
  'memos-detail': { auth: true, title: 'Memo' },
  'memos-edit': { auth: true, title: 'Edit Memo' },
+ 'products-list': { auth: true, title: 'Products' },
+ 'products-new': { auth: true, title: 'New Product' },
+ 'products-detail': { auth: true, title: 'Product' },
+ 'products-edit': { auth: true, title: 'Edit Product' },
+ 'crm-emails': { auth: true, title: 'CRM Emails' },
+ 'massmail': { auth: true, title: 'Massmail' },
+ 'operations': { auth: true, title: 'Operations' },
+ 'reference-data': { auth: true, title: 'Reference Data' },
+ 'help-center': { auth: true, title: 'Help Center' },
+ 'analytics': { auth: true, title: 'Analytics' },
+ 'sms-center': { auth: true, title: 'SMS Center' },
+ 'telephony': { auth: true, title: 'Telephony' },
+ 'users': { auth: true, title: 'Users' },
  'profile': { auth: true, title: 'Profile' },
  'settings': { auth: true, title: 'Settings' },
  'integrations': { auth: true, title: 'Integrations' },
@@ -142,6 +157,10 @@ export function parseHash() {
     if (segments[2] === 'edit') return { name: 'campaigns-edit', params: { id } };
     return { name: 'campaigns-detail', params: { id } };
   }
+  if (segments[0] === 'marketing') {
+    if (segments[1] === 'segments') return { name: 'marketing-segments', params: {} };
+    if (segments[1] === 'templates') return { name: 'marketing-templates', params: {} };
+  }
   if (segments[0] === 'memos') {
     if (!segments[1]) return { name: 'memos-list', params: {} };
     if (segments[1] === 'new') return { name: 'memos-new', params: {} };
@@ -149,6 +168,22 @@ export function parseHash() {
     if (segments[2] === 'edit') return { name: 'memos-edit', params: { id } };
     return { name: 'memos-detail', params: { id } };
   }
+  if (segments[0] === 'products') {
+    if (!segments[1]) return { name: 'products-list', params: {} };
+    if (segments[1] === 'new') return { name: 'products-new', params: {} };
+    const id = segments[1];
+    if (segments[2] === 'edit') return { name: 'products-edit', params: { id } };
+    return { name: 'products-detail', params: { id } };
+  }
+  if (segments[0] === 'crm-emails') return { name: 'crm-emails', params: {} };
+  if (segments[0] === 'massmail') return { name: 'massmail', params: {} };
+  if (segments[0] === 'operations') return { name: 'operations', params: {} };
+  if (segments[0] === 'reference-data') return { name: 'reference-data', params: {} };
+  if (segments[0] === 'help') return { name: 'help-center', params: {} };
+  if (segments[0] === 'analytics') return { name: 'analytics', params: {} };
+  if (segments[0] === 'sms') return { name: 'sms-center', params: {} };
+  if (segments[0] === 'telephony') return { name: 'telephony', params: {} };
+  if (segments[0] === 'users') return { name: 'users', params: {} };
   if (segments[0] === 'profile') return { name: 'profile', params: {} };
   if (segments[0] === 'settings') return { name: 'settings', params: {} };
   if (segments[0] === 'integrations') return { name: 'integrations', params: {} };
