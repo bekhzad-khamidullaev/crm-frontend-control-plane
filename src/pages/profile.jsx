@@ -414,6 +414,7 @@ function ProfilePage() {
           Настройки
         </span>
       ),
+      forceRender: true,
       children: (
         <div style={{ maxWidth: 600 }}>
           <Form

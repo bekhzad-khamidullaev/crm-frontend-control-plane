@@ -5,7 +5,7 @@ import {
   Button,
   Card,
   Space,
-  message,
+  App,
   Typography,
   Spin,
   Row,
@@ -22,12 +22,14 @@ import { getRequest } from '../../lib/api/requests';
 import { getRequests } from '../../lib/api/requests';
 import ReferenceSelect from '../../components/ui-ReferenceSelect';
 import EntitySelect from '../../components/EntitySelect';
+import { normalizePayload } from '../../lib/utils/payload';
 
 const { Title } = Typography;
 const { TextArea } = Input;
 
 function DealForm({ id }) {
   const [form] = Form.useForm();
+  const { message } = App.useApp();
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
   const isEdit = !!id;
@@ -57,11 +59,14 @@ function DealForm({ id }) {
   const onFinish = async (values) => {
     setSaving(true);
     try {
-      const payload = {
+      const payload = normalizePayload({
         ...values,
+        amount: values.amount !== undefined && values.amount !== null && values.amount !== ''
+          ? String(values.amount)
+          : null,
         closing_date: values.closing_date ? values.closing_date.format('YYYY-MM-DD') : null,
         next_step_date: values.next_step_date ? values.next_step_date.format('YYYY-MM-DD') : null,
-      };
+      }, { preserveEmptyArrays: ['tags'] });
 
       if (isEdit) {
         await updateDeal(id, payload);
@@ -72,7 +77,18 @@ function DealForm({ id }) {
       }
       navigate('/deals');
     } catch (error) {
-      message.error(`Ошибка ${isEdit ? 'обновления' : 'создания'} сделки`);
+      const details = error?.details;
+      if (details && typeof details === 'object') {
+        const fieldErrors = Object.entries(details)
+          .filter(([, value]) => Array.isArray(value))
+          .map(([name, errors]) => ({ name, errors: errors.map(String) }));
+        if (fieldErrors.length) {
+          form.setFields(fieldErrors);
+          setSaving(false);
+          return;
+        }
+      }
+      message.error(details?.detail || `Ошибка ${isEdit ? 'обновления' : 'создания'} сделки`);
     } finally {
       setSaving(false);
     }
@@ -157,12 +173,20 @@ function DealForm({ id }) {
 
           <Row gutter={16}>
             <Col xs={24} md={12}>
-              <Form.Item label="Следующий шаг" name="next_step">
+              <Form.Item
+                label="Следующий шаг"
+                name="next_step"
+                rules={[{ required: true, message: 'Введите следующий шаг' }]}
+              >
                 <Input placeholder="Согласовать коммерческое предложение" />
               </Form.Item>
             </Col>
             <Col xs={24} md={12}>
-              <Form.Item label="Дата следующего шага" name="next_step_date">
+              <Form.Item
+                label="Дата следующего шага"
+                name="next_step_date"
+                rules={[{ required: true, message: 'Выберите дату следующего шага' }]}
+              >
                 <DatePicker style={{ width: '100%' }} format="DD.MM.YYYY" />
               </Form.Item>
             </Col>

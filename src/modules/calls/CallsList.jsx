@@ -657,7 +657,7 @@ function CallsList() {
           { key: 'voip', label: 'VoIP', children: voipTabContent },
           { key: 'crm', label: 'CRM логи', children: crmTabContent },
         ]}
-        destroyInactiveTabPane={false}
+        destroyOnHidden={false}
       />
 
       <Modal

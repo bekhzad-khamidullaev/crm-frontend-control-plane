@@ -391,7 +391,7 @@ function ProjectsList() {
         </Form.Item>
       </Modal>
 
-      <style jsx>{`
+      <style>{`
         .row-completed {
           opacity: 0.6;
           text-decoration: line-through;

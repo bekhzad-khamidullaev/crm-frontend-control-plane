@@ -27,6 +27,7 @@ function EntitySelect({
   disabled = false,
   style,
   fetchOptions,
+  fetchList,
   fetchById,
   labelKey = 'name',
   valueKey = 'id',
@@ -34,6 +35,7 @@ function EntitySelect({
   debounceMs = 300,
   ...restProps
 }) {
+  const resolvedFetchOptions = fetchOptions || fetchList;
   const [options, setOptions] = useState([]);
   const [loading, setLoading] = useState(false);
   const [search, setSearch] = useState('');
@@ -45,11 +47,11 @@ function EntitySelect({
   }, [labelKey, optionLabel]);
 
   const loadOptions = async (query = '') => {
-    if (typeof fetchOptions !== 'function') return;
+    if (typeof resolvedFetchOptions !== 'function') return;
     const currentRequestId = ++requestIdRef.current;
     setLoading(true);
     try {
-      const response = await fetchOptions({
+      const response = await resolvedFetchOptions({
         search: query || undefined,
         page: 1,
         page_size: 50,

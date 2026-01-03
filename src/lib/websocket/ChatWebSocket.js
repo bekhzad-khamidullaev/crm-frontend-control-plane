@@ -11,6 +11,7 @@ class ChatWebSocket {
     this.reconnectDelay = 2000;
     this.isConnected = false;
     this.shouldReconnect = true;
+    this.token = null;
     this.typingTimers = new Map(); // Track typing indicators
     
     // Event listeners
@@ -36,17 +37,29 @@ class ChatWebSocket {
       return;
     }
 
-    // Check if WebSocket server URL is configured
-    const wsUrl = import.meta.env.VITE_CHAT_WS_URL;
-    if (!wsUrl) {
-      console.warn('[ChatWebSocket] WebSocket URL not configured. Skipping connection.');
+    if (token) {
+      this.token = token;
+    }
+    const authToken = token || this.token;
+    if (!authToken) {
+      console.warn('[ChatWebSocket] Missing auth token. Skipping connection.');
       return;
     }
 
     try {
-      const url = `${wsUrl}?token=${token}`;
-      
-      console.log('[ChatWebSocket] Connecting to:', wsUrl);
+      const baseUrl = resolveWebSocketUrl(
+        import.meta.env.VITE_CHAT_WS_URL || import.meta.env.VITE_WS_URL,
+        '/ws/chat/'
+      );
+      if (!baseUrl) {
+        console.warn('[ChatWebSocket] WebSocket URL not configured. Skipping connection.');
+        return;
+      }
+
+      const separator = baseUrl.includes('?') ? '&' : '?';
+      const url = `${baseUrl}${separator}token=${encodeURIComponent(authToken)}`;
+
+      console.log('[ChatWebSocket] Connecting to:', stripSensitiveParams(url));
       this.ws = new WebSocket(url);
 
       this.ws.onopen = this.handleOpen.bind(this);
@@ -65,6 +78,7 @@ class ChatWebSocket {
    */
   disconnect() {
     this.shouldReconnect = false;
+    this.token = null;
     if (this.ws) {
       this.ws.close();
       this.ws = null;
@@ -283,7 +297,7 @@ class ChatWebSocket {
 
     setTimeout(() => {
       if (this.shouldReconnect) {
-        this.connect(token);
+        this.connect(token || this.token);
       }
     }, delay);
   }
@@ -335,3 +349,4 @@ class ChatWebSocket {
 // Singleton instance
 export const chatWebSocket = new ChatWebSocket();
 export default chatWebSocket;
+import { resolveWebSocketUrl, stripSensitiveParams } from './resolveWsUrl.js';

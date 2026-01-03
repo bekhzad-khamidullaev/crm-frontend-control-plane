@@ -5,7 +5,7 @@ import {
   Button,
   Card,
   Space,
-  message,
+  App,
   Typography,
   Spin,
   Row,
@@ -26,12 +26,14 @@ import {
 } from '../../lib/api/client';
 import ReferenceSelect from '../../components/ui-ReferenceSelect';
 import EntitySelect from '../../components/EntitySelect';
+import { normalizePayload } from '../../lib/utils/payload';
 
 const { Title } = Typography;
 const { TextArea } = Input;
 
 function ProjectForm({ id }) {
   const [form] = Form.useForm();
+  const { message } = App.useApp();
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
   const isEdit = !!id;
@@ -63,13 +65,13 @@ function ProjectForm({ id }) {
   const onFinish = async (values) => {
     setSaving(true);
     try {
-      const payload = {
+      const payload = normalizePayload({
         ...values,
         start_date: values.start_date ? values.start_date.format('YYYY-MM-DD') : null,
         due_date: values.due_date ? values.due_date.format('YYYY-MM-DD') : null,
         closing_date: values.closing_date ? values.closing_date.format('YYYY-MM-DD') : null,
         next_step_date: values.next_step_date ? values.next_step_date.format('YYYY-MM-DD') : null,
-      };
+      }, { preserveEmptyArrays: ['responsible', 'subscribers', 'tags'] });
 
       if (isEdit) {
         await updateProject(id, payload);
@@ -80,7 +82,18 @@ function ProjectForm({ id }) {
       }
       navigate('/projects');
     } catch (error) {
-      message.error(`Ошибка ${isEdit ? 'обновления' : 'создания'} проекта`);
+      const details = error?.details;
+      if (details && typeof details === 'object') {
+        const fieldErrors = Object.entries(details)
+          .filter(([, value]) => Array.isArray(value))
+          .map(([name, errors]) => ({ name, errors: errors.map(String) }));
+        if (fieldErrors.length) {
+          form.setFields(fieldErrors);
+          setSaving(false);
+          return;
+        }
+      }
+      message.error(details?.detail || `Ошибка ${isEdit ? 'обновления' : 'создания'} проекта`);
     } finally {
       setSaving(false);
     }
@@ -159,7 +172,11 @@ function ProjectForm({ id }) {
               </Form.Item>
             </Col>
             <Col xs={24} md={12}>
-              <Form.Item label="Следующий шаг" name="next_step">
+              <Form.Item
+                label="Следующий шаг"
+                name="next_step"
+                rules={[{ required: true, message: 'Введите следующий шаг' }]}
+              >
                 <Input placeholder="Определить цели" />
               </Form.Item>
             </Col>
@@ -167,7 +184,11 @@ function ProjectForm({ id }) {
 
           <Row gutter={16}>
             <Col xs={24} md={12}>
-              <Form.Item label="Дата следующего шага" name="next_step_date">
+              <Form.Item
+                label="Дата следующего шага"
+                name="next_step_date"
+                rules={[{ required: true, message: 'Выберите дату следующего шага' }]}
+              >
                 <DatePicker style={{ width: '100%' }} format="DD.MM.YYYY" />
               </Form.Item>
             </Col>

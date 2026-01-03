@@ -1,5 +1,5 @@
-import React, { useEffect, useState } from 'react';
-import { Tabs, Card, Button, Form, Input, InputNumber, Switch, Table, message, Space, Modal, Spin } from 'antd';
+import React, { useEffect, useMemo, useState } from 'react';
+import { Tabs, Card, Button, Form, Input, InputNumber, Switch, Table, App, Space, Modal, Spin, Row, Col, Statistic, Descriptions, Tag } from 'antd';
 import CrudPage from '../components/CrudPage.jsx';
 import {
   getVoIPConnections,
@@ -27,15 +27,49 @@ const typeOptions = [
   { label: 'VoIP', value: 'voip' },
 ];
 
+const formatLabel = (value) =>
+  value
+    .replace(/_/g, ' ')
+    .replace(/([a-z])([A-Z])/g, '$1 $2')
+    .replace(/\b\w/g, (char) => char.toUpperCase());
+
+const formatDetailValue = (value) => {
+  if (value === null || value === undefined || value === '') return '-';
+  if (Array.isArray(value)) return value.length ? value.join(', ') : '-';
+  if (typeof value === 'object') return JSON.stringify(value);
+  return String(value);
+};
+
+const renderStatusTag = (status) => {
+  if (!status) return '-';
+  const normalized = String(status).toLowerCase();
+  let color = 'default';
+  if (['waiting', 'queued', 'pending'].some((key) => normalized.includes(key))) color = 'warning';
+  if (['active', 'in_progress', 'connected'].some((key) => normalized.includes(key))) color = 'processing';
+  if (['completed', 'done', 'answered'].some((key) => normalized.includes(key))) color = 'success';
+  if (['failed', 'missed', 'error', 'canceled'].some((key) => normalized.includes(key))) color = 'error';
+  return <Tag color={color}>{status}</Tag>;
+};
+
 function CallQueueTab() {
-  const [data, setData] = useState(null);
+  const { message } = App.useApp();
+  const [data, setData] = useState([]);
+  const [summary, setSummary] = useState(null);
   const [loading, setLoading] = useState(false);
+  const [detailModal, setDetailModal] = useState({ open: false, record: null });
 
   const load = async () => {
     setLoading(true);
     try {
       const res = await getCallQueue();
-      setData(res);
+      const items =
+        Array.isArray(res) ? res : res?.results || res?.queue || res?.items || res?.calls || [];
+      setData(items);
+      setSummary(Array.isArray(res) ? null : res);
+    } catch (error) {
+      message.error('Не удалось загрузить очередь звонков');
+      setData([]);
+      setSummary(null);
     } finally {
       setLoading(false);
     }
@@ -45,14 +79,124 @@ function CallQueueTab() {
     load();
   }, []);
 
+  const stats = useMemo(() => {
+    if (!summary || typeof summary !== 'object') return null;
+    return {
+      total: summary.total || summary.count || data.length,
+      waiting: summary.waiting || summary.waiting_calls || summary.pending,
+      active: summary.active || summary.active_calls,
+      failed: summary.failed || summary.failed_calls || summary.errors,
+    };
+  }, [summary, data.length]);
+
+  const columns = useMemo(
+    () => [
+      {
+        title: 'Номер',
+        key: 'phone',
+        width: 160,
+        render: (_, record) =>
+          record.phone_number || record.to_number || record.number || record.caller_id || '-',
+      },
+      {
+        title: 'Клиент',
+        key: 'client',
+        render: (_, record) =>
+          record.client_name || record.contact_name || record.lead_name || record.name || '-',
+      },
+      {
+        title: 'Статус',
+        key: 'status',
+        width: 140,
+        render: (_, record) => renderStatusTag(record.status || record.state || record.queue_status),
+      },
+      {
+        title: 'Приоритет',
+        dataIndex: 'priority',
+        key: 'priority',
+        width: 110,
+        render: (value) => (value === null || value === undefined ? '-' : value),
+      },
+      {
+        title: 'Оператор',
+        key: 'agent',
+        render: (_, record) =>
+          record.user_name || record.owner_name || record.agent_name || record.assignee || '-',
+      },
+      {
+        title: 'Создано',
+        key: 'created_at',
+        width: 180,
+        render: (_, record) =>
+          record.created_at || record.created || record.created_date || record.timestamp || '-',
+      },
+      {
+        title: 'Действия',
+        key: 'actions',
+        width: 120,
+        render: (_, record) => (
+          <Button type="link" onClick={() => setDetailModal({ open: true, record })}>
+            Детали
+          </Button>
+        ),
+      },
+    ],
+    []
+  );
+
   return (
     <Card title="Очередь звонков" extra={<Button onClick={load}>Обновить</Button>}>
-      {loading ? 'Загрузка...' : <pre style={{ whiteSpace: 'pre-wrap' }}>{JSON.stringify(data, null, 2)}</pre>}
+      {stats && (
+        <Row gutter={16} style={{ marginBottom: 16 }}>
+          <Col xs={24} sm={12} md={6}>
+            <Statistic title="Всего" value={stats.total ?? data.length} />
+          </Col>
+          <Col xs={24} sm={12} md={6}>
+            <Statistic title="Ожидание" value={stats.waiting ?? 0} />
+          </Col>
+          <Col xs={24} sm={12} md={6}>
+            <Statistic title="В работе" value={stats.active ?? 0} />
+          </Col>
+          <Col xs={24} sm={12} md={6}>
+            <Statistic title="Ошибки" value={stats.failed ?? 0} />
+          </Col>
+        </Row>
+      )}
+
+      <Table
+        dataSource={data}
+        rowKey={(record, index) =>
+          record.id || record.call_id || record.uuid || `${record.phone_number || 'call'}-${index}`
+        }
+        loading={loading}
+        columns={columns}
+        pagination={{ pageSize: 10 }}
+      />
+
+      <Modal
+        title="Детали очереди"
+        open={detailModal.open}
+        onCancel={() => setDetailModal({ open: false, record: null })}
+        footer={null}
+      >
+        {detailModal.record ? (
+          <Descriptions size="small" column={1}>
+            {Object.entries(detailModal.record).map(([key, value]) => (
+              <Descriptions.Item key={key} label={formatLabel(key)}>
+                {formatDetailValue(value)}
+              </Descriptions.Item>
+            ))}
+          </Descriptions>
+        ) : (
+          <Spin />
+        )}
+      </Modal>
     </Card>
   );
 }
 
 function IncomingCallsTab() {
+  const { message } = App.useApp();
   const [data, setData] = useState([]);
   const [loading, setLoading] = useState(false);
   const [detailModal, setDetailModal] = useState({ open: false, loading: false, data: null });
@@ -117,9 +261,17 @@ function IncomingCallsTab() {
         {detailModal.loading ? (
           <Spin />
         ) : (
-          <pre style={{ whiteSpace: 'pre-wrap' }}>
-            {detailModal.data ? JSON.stringify(detailModal.data, null, 2) : 'Нет данных'}
-          </pre>
+          detailModal.data ? (
+            <Descriptions size="small" column={1}>
+              {Object.entries(detailModal.data).map(([key, value]) => (
+                <Descriptions.Item key={key} label={formatLabel(key)}>
+                  {formatDetailValue(value)}
+                </Descriptions.Item>
+              ))}
+            </Descriptions>
+          ) : (
+            'Нет данных'
+          )
         )}
       </Modal>
     </Card>
@@ -127,6 +279,7 @@ function IncomingCallsTab() {
 }
 
 function ColdCallTab() {
+  const { message } = App.useApp();
   const [form] = Form.useForm();
   const [scheduleForm] = Form.useForm();
   const [bulkForm] = Form.useForm();

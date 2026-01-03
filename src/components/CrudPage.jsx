@@ -313,7 +313,7 @@ export default function CrudPage({
         onCancel={() => setModalOpen(false)}
         okText="Сохранить"
         cancelText="Отмена"
-        destroyOnClose
+        destroyOnHidden
       >
         <Form form={form} layout="vertical" initialValues={initialValues}>
           {fields.map((field) => (

@@ -43,7 +43,7 @@ function SecurityTab() {
       <Card title="Сессии" extra={<Button danger onClick={handleRevoke}>Отозвать все</Button>}>
         <Table
           dataSource={sessions}
-          rowKey={(record) => record.id || record.key || Math.random()}
+          rowKey={(record) => record.id || record.session_key || `${record.ip_address || 'ip'}-${record.created_at || record.user_agent || 'session'}`}
           columns={[
             { title: 'IP', dataIndex: 'ip_address', key: 'ip_address' },
             { title: 'User Agent', dataIndex: 'user_agent', key: 'user_agent' },

@@ -11,6 +11,7 @@ class CallsWebSocket {
     this.reconnectDelay = 2000;
     this.isConnected = false;
     this.shouldReconnect = true;
+    this.token = null;
     
     // Event listeners
     this.listeners = {
@@ -33,17 +34,26 @@ class CallsWebSocket {
       return;
     }
 
-    // Check if WebSocket server URL is configured
-    const wsUrl = import.meta.env.VITE_WS_URL;
-    if (!wsUrl) {
-      console.warn('[CallsWebSocket] WebSocket URL not configured. Skipping connection.');
+    if (token) {
+      this.token = token;
+    }
+    const authToken = token || this.token;
+    if (!authToken) {
+      console.warn('[CallsWebSocket] Missing auth token. Skipping connection.');
       return;
     }
 
     try {
-      const url = `${wsUrl}?token=${token}`;
-      
-      console.log('[CallsWebSocket] Connecting to:', wsUrl);
+      const baseUrl = resolveWebSocketUrl(import.meta.env.VITE_WS_URL, '/ws/calls/');
+      if (!baseUrl) {
+        console.warn('[CallsWebSocket] WebSocket URL not configured. Skipping connection.');
+        return;
+      }
+
+      const separator = baseUrl.includes('?') ? '&' : '?';
+      const url = `${baseUrl}${separator}token=${encodeURIComponent(authToken)}`;
+
+      console.log('[CallsWebSocket] Connecting to:', stripSensitiveParams(url));
       this.ws = new WebSocket(url);
 
       this.ws.onopen = this.handleOpen.bind(this);
@@ -62,6 +72,7 @@ class CallsWebSocket {
    */
   disconnect() {
     this.shouldReconnect = false;
+    this.token = null;
     if (this.ws) {
       this.ws.close();
       this.ws = null;
@@ -215,7 +226,7 @@ class CallsWebSocket {
 
     setTimeout(() => {
       if (this.shouldReconnect) {
-        this.connect(token);
+        this.connect(token || this.token);
       }
     }, delay);
   }
@@ -256,3 +267,4 @@ class CallsWebSocket {
 // Singleton instance
 export const callsWebSocket = new CallsWebSocket();
 export default callsWebSocket;
+import { resolveWebSocketUrl, stripSensitiveParams } from './resolveWsUrl.js';

@@ -3,7 +3,7 @@ import {
   Alert,
   Button,
   Space,
-  message,
+  App,
   Avatar,
   Modal,
   Form,
@@ -23,6 +23,7 @@ import EditableCell from '../../components/ui-EditableCell';
 import { exportToCSV, exportToExcel } from '../../lib/utils/export';
 
 function ContactsList() {
+  const { message } = App.useApp();
   const [contacts, setContacts] = useState([]);
   const [companies, setCompanies] = useState([]);
   const [loading, setLoading] = useState(false);
@@ -70,12 +71,13 @@ function ContactsList() {
 
       if (!isMountedRef.current) return;
 
-      setContacts(response.results || []);
+      const results = response?.results || response || [];
+      setContacts(results);
       setPagination((prev) => ({
         ...prev,
         current: page,
         pageSize,
-        total: response.count || 0,
+        total: response?.count || results.length,
       }));
     } catch (error) {
       console.error('Error fetching contacts:', error);

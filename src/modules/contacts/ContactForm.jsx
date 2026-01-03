@@ -6,7 +6,7 @@ import {
   Button,
   Card,
   Space,
-  message,
+  App,
   Typography,
   Spin,
   Row,
@@ -20,12 +20,14 @@ import { navigate } from '../../router';
 import { getContact, createContact, updateContact, getCompanies, getCompany, getUsers, getUser } from '../../lib/api/client';
 import ReferenceSelect from '../../components/ui-ReferenceSelect';
 import EntitySelect from '../../components/EntitySelect';
+import { normalizePayload } from '../../lib/utils/payload';
 
 const { Title } = Typography;
 const { TextArea } = Input;
 
 function ContactForm({ id }) {
   const [form] = Form.useForm();
+  const { message } = App.useApp();
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
   const isEdit = !!id;
@@ -55,11 +57,11 @@ function ContactForm({ id }) {
   const onFinish = async (values) => {
     setSaving(true);
     try {
-      const payload = {
+      const payload = normalizePayload({
         ...values,
         birth_date: values.birth_date ? values.birth_date.format('YYYY-MM-DD') : null,
         was_in_touch: values.was_in_touch ? values.was_in_touch.format('YYYY-MM-DD') : null,
-      };
+      }, { preserveEmptyArrays: ['tags'] });
       if (isEdit) {
         await updateContact(id, payload);
         message.success('Контакт обновлен');
@@ -69,7 +71,18 @@ function ContactForm({ id }) {
       }
       navigate('/contacts');
     } catch (error) {
-      message.error(`Ошибка ${isEdit ? 'обновления' : 'создания'} контакта`);
+      const details = error?.details;
+      if (details && typeof details === 'object') {
+        const fieldErrors = Object.entries(details)
+          .filter(([, value]) => Array.isArray(value))
+          .map(([name, errors]) => ({ name, errors: errors.map(String) }));
+        if (fieldErrors.length) {
+          form.setFields(fieldErrors);
+          setSaving(false);
+          return;
+        }
+      }
+      message.error(details?.detail || `Ошибка ${isEdit ? 'обновления' : 'создания'} контакта`);
     } finally {
       setSaving(false);
     }
@@ -117,7 +130,6 @@ function ContactForm({ id }) {
               <Form.Item
                 label="Фамилия"
                 name="last_name"
-                rules={[{ required: true, message: 'Введите фамилию' }]}
               >
                 <Input placeholder="Смирнова" />
               </Form.Item>
@@ -177,7 +189,6 @@ function ContactForm({ id }) {
               <Form.Item
                 label="Телефон"
                 name="phone"
-                rules={[{ required: true, message: 'Введите телефон' }]}
               >
                 <Input placeholder="+7 999 111-22-33" />
               </Form.Item>
