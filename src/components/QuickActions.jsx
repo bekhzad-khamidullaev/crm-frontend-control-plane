@@ -1,4 +1,4 @@
-import { Dropdown, message, Modal, Button, Tooltip } from 'antd';
+import { Dropdown, Modal, Button, Tooltip } from 'antd';
 import {
   MoreOutlined,
   EditOutlined,
@@ -14,6 +14,7 @@ import {
   SwapOutlined,
   LockOutlined,
 } from '@ant-design/icons';
+import { useMessage } from '../lib/hooks/useMessage';
 
 /**
  * QuickActions component - Dropdown menu for common row actions
@@ -60,6 +61,7 @@ export default function QuickActions({
   type = 'text',
   ...props
 }) {
+  const message = useMessage();
   const handleDelete = () => {
     Modal.confirm({
       title: 'Confirm Delete',

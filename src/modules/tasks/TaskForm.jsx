@@ -21,12 +21,9 @@ import {
   getTask,
   createTask,
   updateTask,
-  getProjects,
-  getProject,
-  getTasks,
   getUsers,
-  getUser,
-} from '../../lib/api/client';
+  getTaskStages,
+} from '../../lib/api';
 import ReferenceSelect from '../../components/ui-ReferenceSelect';
 import EntitySelect from '../../components/EntitySelect';
 import { normalizePayload } from '../../lib/utils/payload';

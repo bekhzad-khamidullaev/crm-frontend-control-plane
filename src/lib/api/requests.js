@@ -51,7 +51,7 @@ export async function getRequest(id) {
  * @returns {Promise<Object>}
  */
 export async function createRequest(data) {
-  return api.post('/api/requests/', data);
+  return api.post('/api/requests/', { body: data });
 }
 
 /**
@@ -61,7 +61,7 @@ export async function createRequest(data) {
  * @returns {Promise<Object>}
  */
 export async function updateRequest(id, data) {
-  return api.put(`/api/requests/${id}/`, data);
+  return api.put(`/api/requests/${id}/`, { body: data });
 }
 
 /**
@@ -71,7 +71,7 @@ export async function updateRequest(id, data) {
  * @returns {Promise<Object>}
  */
 export async function patchRequest(id, data) {
-  return api.patch(`/api/requests/${id}/`, data);
+  return api.patch(`/api/requests/${id}/`, { body: data });
 }
 
 /**

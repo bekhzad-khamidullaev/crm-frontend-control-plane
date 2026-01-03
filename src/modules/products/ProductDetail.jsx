@@ -1,10 +1,11 @@
 import { useState, useEffect } from 'react';
-import { Card, Descriptions, Button, Space, Tag, message, Modal, Spin } from 'antd';
+import { App, Card, Descriptions, Button, Space, Tag, Modal, Spin } from 'antd';
 import { EditOutlined, DeleteOutlined, ArrowLeftOutlined, ShopOutlined } from '@ant-design/icons';
 import { getProduct, deleteProduct } from '../../lib/api/products';
 import { navigate } from '../../router';
 
 export default function ProductDetail({ id }) {
+  const { message } = App.useApp();
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
 

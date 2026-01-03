@@ -48,7 +48,7 @@ export async function getCampaign(id) {
  * @returns {Promise<Object>}
  */
 export async function createCampaign(data) {
-  return api.post('/api/marketing/campaigns/', data);
+  return api.post('/api/marketing/campaigns/', { body: data });
 }
 
 /**
@@ -58,7 +58,7 @@ export async function createCampaign(data) {
  * @returns {Promise<Object>}
  */
 export async function updateCampaign(id, data) {
-  return api.put(`/api/marketing/campaigns/${id}/`, data);
+  return api.put(`/api/marketing/campaigns/${id}/`, { body: data });
 }
 
 /**
@@ -68,7 +68,7 @@ export async function updateCampaign(id, data) {
  * @returns {Promise<Object>}
  */
 export async function patchCampaign(id, data) {
-  return api.patch(`/api/marketing/campaigns/${id}/`, data);
+  return api.patch(`/api/marketing/campaigns/${id}/`, { body: data });
 }
 
 /**
@@ -116,7 +116,7 @@ export async function getSegment(id) {
  * @returns {Promise<Object>}
  */
 export async function createSegment(data) {
-  return api.post('/api/marketing/segments/', data);
+  return api.post('/api/marketing/segments/', { body: data });
 }
 
 /**
@@ -126,7 +126,7 @@ export async function createSegment(data) {
  * @returns {Promise<Object>}
  */
 export async function updateSegment(id, data) {
-  return api.put(`/api/marketing/segments/${id}/`, data);
+  return api.put(`/api/marketing/segments/${id}/`, { body: data });
 }
 
 /**
@@ -136,7 +136,7 @@ export async function updateSegment(id, data) {
  * @returns {Promise<Object>}
  */
 export async function patchSegment(id, data) {
-  return api.patch(`/api/marketing/segments/${id}/`, data);
+  return api.patch(`/api/marketing/segments/${id}/`, { body: data });
 }
 
 /**
@@ -186,7 +186,7 @@ export async function getTemplate(id) {
  * @returns {Promise<Object>}
  */
 export async function createTemplate(data) {
-  return api.post('/api/marketing/templates/', data);
+  return api.post('/api/marketing/templates/', { body: data });
 }
 
 /**
@@ -196,7 +196,7 @@ export async function createTemplate(data) {
  * @returns {Promise<Object>}
  */
 export async function updateTemplate(id, data) {
-  return api.put(`/api/marketing/templates/${id}/`, data);
+  return api.put(`/api/marketing/templates/${id}/`, { body: data });
 }
 
 /**
@@ -206,7 +206,7 @@ export async function updateTemplate(id, data) {
  * @returns {Promise<Object>}
  */
 export async function patchTemplate(id, data) {
-  return api.patch(`/api/marketing/templates/${id}/`, data);
+  return api.patch(`/api/marketing/templates/${id}/`, { body: data });
 }
 
 /**

@@ -49,7 +49,7 @@ export async function getReminder(id) {
  * @returns {Promise<Object>}
  */
 export async function createReminder(data) {
-  return api.post('/api/reminders/', data);
+  return api.post('/api/reminders/', { body: data });
 }
 
 /**
@@ -59,7 +59,7 @@ export async function createReminder(data) {
  * @returns {Promise<Object>}
  */
 export async function updateReminder(id, data) {
-  return api.put(`/api/reminders/${id}/`, data);
+  return api.put(`/api/reminders/${id}/`, { body: data });
 }
 
 /**
@@ -69,7 +69,7 @@ export async function updateReminder(id, data) {
  * @returns {Promise<Object>}
  */
 export async function patchReminder(id, data) {
-  return api.patch(`/api/reminders/${id}/`, data);
+  return api.patch(`/api/reminders/${id}/`, { body: data });
 }
 
 /**

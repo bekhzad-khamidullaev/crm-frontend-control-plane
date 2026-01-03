@@ -4,14 +4,15 @@
  */
 
 import React, { useState } from 'react';
-import { Form, Input, Button, Space, Alert, Typography, Steps, Card } from 'antd';
+import { Form, Input, Button, Space, Alert, Typography, Steps, Card, App } from 'antd';
 import { InstagramOutlined, CheckCircleOutlined } from '@ant-design/icons';
 import { connectInstagram } from '../lib/api/integrations/instagram';
 
-const { Text, Link, Paragraph } = Typography;
+const { Link, Paragraph } = Typography;
 const { Step } = Steps;
 
 export default function InstagramConnect({ onSuccess, onCancel }) {
+  const { message } = App.useApp();
   const [form] = Form.useForm();
   const [loading, setLoading] = useState(false);
   const [currentStep, setCurrentStep] = useState(0);
@@ -20,9 +21,11 @@ export default function InstagramConnect({ onSuccess, onCancel }) {
     setLoading(true);
     try {
       const result = await connectInstagram(values);
+      message.success('Instagram подключен');
       onSuccess?.(result);
     } catch (error) {
       console.error('Error connecting Instagram:', error);
+      message.error(error?.message || 'Ошибка подключения Instagram');
     } finally {
       setLoading(false);
     }
@@ -120,7 +123,7 @@ export default function InstagramConnect({ onSuccess, onCancel }) {
 
           <Form.Item
             label="Instagram Business Account ID"
-            name="instagram_business_account_id"
+            name="instagram_user_id"
             rules={[
               { required: true, message: 'Введите ID аккаунта' },
               { pattern: /^\d+$/, message: 'ID должен содержать только цифры' },
@@ -130,6 +133,17 @@ export default function InstagramConnect({ onSuccess, onCancel }) {
             <Input
               placeholder="17841400008460056"
             />
+          </Form.Item>
+
+          <Form.Item
+            label="Username"
+            name="username"
+            rules={[
+              { required: true, message: 'Введите username' },
+            ]}
+            extra="Username Instagram Business аккаунта"
+          >
+            <Input placeholder="your_business" />
           </Form.Item>
 
           <Alert

@@ -22,8 +22,8 @@ import {
   createProject,
   updateProject,
   getUsers,
-  getUser,
-} from '../../lib/api/client';
+  getProjectStages,
+} from '../../lib/api';
 import ReferenceSelect from '../../components/ui-ReferenceSelect';
 import EntitySelect from '../../components/EntitySelect';
 import { normalizePayload } from '../../lib/utils/payload';

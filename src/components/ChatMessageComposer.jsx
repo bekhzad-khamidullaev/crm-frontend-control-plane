@@ -9,7 +9,6 @@ import {
   Button,
   Space,
   Tooltip,
-  message as antMessage,
   Popover,
 } from 'antd';
 import {
@@ -17,6 +16,7 @@ import {
   SmileOutlined,
   CloseOutlined,
 } from '@ant-design/icons';
+import { useMessage } from '../lib/hooks/useMessage';
 
 const { TextArea } = Input;
 
@@ -36,6 +36,7 @@ function ChatMessageComposer({
   replyTo = null,
   onCancelReply,
 }) {
+  const messageApi = useMessage();
   const [message, setMessage] = useState('');
   const [emojiVisible, setEmojiVisible] = useState(false);
   const textAreaRef = useRef(null);
@@ -70,7 +71,7 @@ function ChatMessageComposer({
 
   const handleSend = () => {
     if (!message.trim()) {
-      antMessage.warning('Введите сообщение');
+      messageApi.warning('Введите сообщение');
       return;
     }
 

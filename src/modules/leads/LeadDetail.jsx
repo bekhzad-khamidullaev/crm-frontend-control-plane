@@ -6,7 +6,7 @@ import {
   Space,
   Tag,
   Spin,
-  message,
+  App,
   Tabs,
   Timeline,
   Typography,
@@ -34,6 +34,7 @@ import { getEntityCallLogs } from '../../lib/api/calls';
 import CallButton from '../../components/CallButton';
 import EntitySelect from '../../components/EntitySelect.jsx';
 import ChatWidget from '../../modules/chat/ChatWidget';
+import { buildLeadPayload, deriveLeadStatus, getLeadSourceLabel } from '../../lib/utils/leads';
 // Temporarily commented out to debug
 // import { ActivityLog } from '../../components';
 import dayjs from 'dayjs';
@@ -41,6 +42,7 @@ import dayjs from 'dayjs';
 const { Title, Text } = Typography;
 
 function LeadDetail({ id }) {
+  const { message } = App.useApp();
   const [lead, setLead] = useState(null);
   const [loading, setLoading] = useState(true);
   const [callLogs, setCallLogs] = useState([]);
@@ -126,22 +128,14 @@ function LeadDetail({ id }) {
   const handleConvert = async () => {
     try {
       // Проверяем, не конвертирован ли уже лид
-      if (lead.status === 'converted') {
+      if (deriveLeadStatus(lead) === 'converted') {
         message.warning('Этот лид уже конвертирован в сделку');
         return;
       }
       
       // Подготавливаем данные лида с правильным форматированием дат
       // Backend требует, чтобы все date поля были строками в ISO формате
-      const leadData = {
-        first_name: lead.first_name,
-        last_name: lead.last_name,
-        email: lead.email,
-        phone: lead.phone || '',
-        // Форматируем date поля в ISO строки, если они существуют
-        birth_date: lead.birth_date || null,
-        was_in_touch: lead.was_in_touch || null,
-      };
+      const leadData = buildLeadPayload(lead);
       
       await leadsApi.convert(id, leadData);
       message.success('Лид успешно конвертирован в сделку');
@@ -175,22 +169,14 @@ function LeadDetail({ id }) {
   const handleDisqualify = async () => {
     try {
       // Проверяем статус лида
-      if (lead.status === 'lost') {
+      if (deriveLeadStatus(lead) === 'lost') {
         message.warning('Этот лид уже дисквалифицирован');
         return;
       }
       
       // Подготавливаем данные лида с правильным форматированием дат
       // Backend требует, чтобы все date поля были строками в ISO формате
-      const leadData = {
-        first_name: lead.first_name,
-        last_name: lead.last_name,
-        email: lead.email,
-        phone: lead.phone || '',
-        // Форматируем date поля в ISO строки, если они существуют
-        birth_date: lead.birth_date || null,
-        was_in_touch: lead.was_in_touch || null,
-      };
+      const leadData = buildLeadPayload(lead);
       
       await leadsApi.disqualify(id, leadData);
       message.success('Лид успешно дисквалифицирован');
@@ -225,20 +211,8 @@ function LeadDetail({ id }) {
 
   const statusConfig = {
     new: { color: 'blue', text: 'Новый' },
-    contacted: { color: 'orange', text: 'Связались' },
-    qualified: { color: 'green', text: 'Квалифицирован' },
     converted: { color: 'cyan', text: 'Конвертирован' },
     lost: { color: 'red', text: 'Потерян' },
-  };
-
-  const sourceConfig = {
-    website: 'Веб-сайт',
-    referral: 'Реферал',
-    email: 'Email',
-    phone: 'Телефон',
-    social: 'Соцсети',
-    advertisement: 'Реклама',
-    other: 'Другое',
   };
 
   if (loading) {
@@ -253,7 +227,11 @@ function LeadDetail({ id }) {
     return <div>Лид не найден</div>;
   }
 
-  const statusStyle = statusConfig[lead.status] || statusConfig.new;
+  const leadStatus = deriveLeadStatus(lead);
+  const statusStyle = statusConfig[leadStatus] || statusConfig.new;
+  const leadSourceLabel = getLeadSourceLabel(lead);
+  const createdAt = lead.creation_date || lead.created_at;
+  const updatedAt = lead.update_date || lead.updated_at;
 
   const tabItems = [
     {
@@ -265,30 +243,79 @@ function LeadDetail({ id }) {
             {lead.first_name} {lead.last_name}
           </Descriptions.Item>
           <Descriptions.Item label="Email">
-            <Space>
-              <MailOutlined />
-              <a href={`mailto:${lead.email}`}>{lead.email}</a>
-            </Space>
+            {lead.email ? (
+              <Space>
+                <MailOutlined />
+                <a href={`mailto:${lead.email}`}>{lead.email}</a>
+              </Space>
+            ) : (
+              '-'
+            )}
           </Descriptions.Item>
+          <Descriptions.Item label="Доп. Email">{lead.secondary_email || '-'}</Descriptions.Item>
           <Descriptions.Item label="Телефон">
-            <Space>
-              <PhoneOutlined />
-              <a href={`tel:${lead.phone}`}>{lead.phone}</a>
-            </Space>
+            {lead.phone ? (
+              <Space>
+                <PhoneOutlined />
+                <a href={`tel:${lead.phone}`}>{lead.phone}</a>
+              </Space>
+            ) : (
+              '-'
+            )}
           </Descriptions.Item>
-          <Descriptions.Item label="Компания">{lead.company || '-'}</Descriptions.Item>
-          <Descriptions.Item label="Должность">{lead.position || '-'}</Descriptions.Item>
+          <Descriptions.Item label="Доп. телефон">{lead.other_phone || '-'}</Descriptions.Item>
+          <Descriptions.Item label="Мобильный">{lead.mobile || '-'}</Descriptions.Item>
+          <Descriptions.Item label="Компания">
+            {lead.company_name || (lead.company ? `#${lead.company}` : '-')}
+          </Descriptions.Item>
+          <Descriptions.Item label="Должность">{lead.title || '-'}</Descriptions.Item>
+          <Descriptions.Item label="Источник">{leadSourceLabel}</Descriptions.Item>
           <Descriptions.Item label="Статус">
             <Tag color={statusStyle.color}>{statusStyle.text}</Tag>
           </Descriptions.Item>
-          <Descriptions.Item label="Источник">
-            {sourceConfig[lead.source] || lead.source}
+          <Descriptions.Item label="Ответственный">
+            {lead.owner_name || lead.owner || '-'}
           </Descriptions.Item>
+          <Descriptions.Item label="Отдел">
+            {lead.department_name || lead.department || '-'}
+          </Descriptions.Item>
+          <Descriptions.Item label="Контакт">
+            {lead.contact_name || lead.contact || '-'}
+          </Descriptions.Item>
+          <Descriptions.Item label="Сайт">{lead.website || '-'}</Descriptions.Item>
+          <Descriptions.Item label="Телефон компании">{lead.company_phone || '-'}</Descriptions.Item>
+          <Descriptions.Item label="Email компании">{lead.company_email || '-'}</Descriptions.Item>
+          <Descriptions.Item label="Адрес компании">{lead.company_address || '-'}</Descriptions.Item>
+          <Descriptions.Item label="Страна">
+            {lead.country_name || lead.country || '-'}
+          </Descriptions.Item>
+          <Descriptions.Item label="Город">
+            {lead.city_name || lead.city || '-'}
+          </Descriptions.Item>
+          <Descriptions.Item label="Регион">{lead.region || '-'}</Descriptions.Item>
+          <Descriptions.Item label="Район">{lead.district || '-'}</Descriptions.Item>
+          <Descriptions.Item label="Адрес">{lead.address || '-'}</Descriptions.Item>
+          <Descriptions.Item label="Отрасли">
+            {lead.industry && lead.industry.length ? lead.industry.join(', ') : '-'}
+          </Descriptions.Item>
+          <Descriptions.Item label="Теги">
+            {lead.tags && lead.tags.length ? lead.tags.join(', ') : '-'}
+          </Descriptions.Item>
+          <Descriptions.Item label="Массовая рассылка">
+            {lead.massmail ? 'Да' : 'Нет'}
+          </Descriptions.Item>
+          <Descriptions.Item label="Дисквалифицирован">
+            {lead.disqualified ? 'Да' : 'Нет'}
+          </Descriptions.Item>
+          <Descriptions.Item label="Последний контакт">
+            {lead.was_in_touch ? dayjs(lead.was_in_touch).format('DD.MM.YYYY') : '-'}
+          </Descriptions.Item>
+          <Descriptions.Item label="Токен">{lead.token || '-'}</Descriptions.Item>
           <Descriptions.Item label="Дата создания">
-            {new Date(lead.created_at).toLocaleString('ru-RU')}
+            {createdAt ? dayjs(createdAt).format('DD.MM.YYYY HH:mm') : '-'}
           </Descriptions.Item>
           <Descriptions.Item label="Последнее обновление">
-            {new Date(lead.updated_at).toLocaleString('ru-RU')}
+            {updatedAt ? dayjs(updatedAt).format('DD.MM.YYYY HH:mm') : '-'}
           </Descriptions.Item>
           <Descriptions.Item label="Описание" span={2}>
             {lead.description || '-'}
@@ -309,7 +336,7 @@ function LeadDetail({ id }) {
                   <Text strong>Лид создан</Text>
                   <br />
                   <Text type="secondary">
-                    {new Date(lead.created_at).toLocaleString('ru-RU')}
+                    {createdAt ? dayjs(createdAt).format('DD.MM.YYYY HH:mm') : '-'}
                   </Text>
                 </>
               ),
@@ -321,7 +348,7 @@ function LeadDetail({ id }) {
                   <Text strong>Статус изменен на "{statusStyle.text}"</Text>
                   <br />
                   <Text type="secondary">
-                    {new Date(lead.updated_at).toLocaleString('ru-RU')}
+                    {updatedAt ? dayjs(updatedAt).format('DD.MM.YYYY HH:mm') : '-'}
                   </Text>
                 </>
               ),
@@ -464,16 +491,16 @@ function LeadDetail({ id }) {
           onConfirm={handleConvert}
           okText="Да"
           cancelText="Нет"
-          disabled={lead.status === 'converted'}
+          disabled={leadStatus === 'converted'}
         >
           <Button 
             type="primary" 
             icon={<CheckCircleOutlined />}
             style={{ backgroundColor: '#52c41a', borderColor: '#52c41a' }}
-            disabled={lead.status === 'converted'}
-            title={lead.status === 'converted' ? 'Лид уже конвертирован' : ''}
+            disabled={leadStatus === 'converted'}
+            title={leadStatus === 'converted' ? 'Лид уже конвертирован' : ''}
           >
-            {lead.status === 'converted' ? 'Уже конвертирован' : 'Конвертировать'}
+            {leadStatus === 'converted' ? 'Уже конвертирован' : 'Конвертировать'}
           </Button>
         </Popconfirm>
         <Popconfirm
@@ -482,14 +509,14 @@ function LeadDetail({ id }) {
           onConfirm={handleDisqualify}
           okText="Да"
           cancelText="Нет"
-          disabled={lead.status === 'lost' || lead.status === 'converted'}
+          disabled={leadStatus === 'lost' || leadStatus === 'converted'}
         >
           <Button 
             icon={<CloseCircleOutlined />}
-            disabled={lead.status === 'lost' || lead.status === 'converted'}
-            title={lead.status === 'lost' ? 'Лид уже дисквалифицирован' : lead.status === 'converted' ? 'Нельзя дисквалифицировать конвертированный лид' : ''}
+            disabled={leadStatus === 'lost' || leadStatus === 'converted'}
+            title={leadStatus === 'lost' ? 'Лид уже дисквалифицирован' : leadStatus === 'converted' ? 'Нельзя дисквалифицировать конвертированный лид' : ''}
           >
-            {lead.status === 'lost' ? 'Уже дисквалифицирован' : 'Дисквалифицировать'}
+            {leadStatus === 'lost' ? 'Уже дисквалифицирован' : 'Дисквалифицировать'}
           </Button>
         </Popconfirm>
         <Popconfirm

@@ -17,11 +17,13 @@ import { api } from './client';
  */
 export async function initiateCall(data) {
   return api.post('/api/voip/cold-call/initiate/', {
-    to_number: data.to_number || data.phone_number || data.phone,
-    from_number: data.from_number,
-    lead_id: data.lead_id,
-    contact_id: data.contact_id,
-    campaign_id: data.campaign_id,
+    body: {
+      to_number: data.to_number || data.phone_number || data.phone,
+      from_number: data.from_number,
+      lead_id: data.lead_id,
+      contact_id: data.contact_id,
+      campaign_id: data.campaign_id,
+    },
   });
 }
 
@@ -55,7 +57,7 @@ export async function getCallHistory(params = {}) {
  * @returns {Promise<Object>}
  */
 export async function addCallNote(logId, note) {
-  return api.post(`/api/voip/call-logs/${logId}/add-note/`, { note });
+  return api.post(`/api/voip/call-logs/${logId}/add-note/`, { body: { note } });
 }
 
 /**
@@ -87,7 +89,7 @@ export async function getSIPConfig() {
  * @returns {Promise<Object>}
  */
 export async function saveSIPConfig(data) {
-  return api.post('/api/voip/connections/', data);
+  return api.post('/api/voip/connections/', { body: data });
 }
 
 /**
@@ -97,7 +99,7 @@ export async function saveSIPConfig(data) {
  * @returns {Promise<Object>}
  */
 export async function updateSIPConfig(id, data) {
-  return api.patch(`/api/voip/connections/${id}/`, data);
+  return api.patch(`/api/voip/connections/${id}/`, { body: data });
 }
 
 /**
@@ -136,9 +138,9 @@ export async function updateTelephonySettings(settings) {
   const activeConnection = connections.results?.find(c => c.active);
 
   if (activeConnection) {
-    return api.patch(`/api/voip/connections/${activeConnection.id}/`, settings);
+    return api.patch(`/api/voip/connections/${activeConnection.id}/`, { body: settings });
   }
-  return api.post('/api/voip/connections/', { ...settings, active: true });
+  return api.post('/api/voip/connections/', { body: { ...settings, active: true } });
 }
 
 /**
@@ -233,7 +235,7 @@ export async function getVoIPConnection(id) {
  * @returns {Promise<Object>}
  */
 export async function createVoIPConnection(data) {
-  return api.post('/api/voip/connections/', data);
+  return api.post('/api/voip/connections/', { body: data });
 }
 
 /**
@@ -243,7 +245,7 @@ export async function createVoIPConnection(data) {
  * @returns {Promise<Object>}
  */
 export async function updateVoIPConnection(id, data) {
-  return api.put(`/api/voip/connections/${id}/`, data);
+  return api.put(`/api/voip/connections/${id}/`, { body: data });
 }
 
 /**
@@ -253,7 +255,7 @@ export async function updateVoIPConnection(id, data) {
  * @returns {Promise<Object>}
  */
 export async function patchVoIPConnection(id, data) {
-  return api.patch(`/api/voip/connections/${id}/`, data);
+  return api.patch(`/api/voip/connections/${id}/`, { body: data });
 }
 
 /**

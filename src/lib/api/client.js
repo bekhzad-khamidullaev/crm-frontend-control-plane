@@ -468,6 +468,7 @@ export const getContacts = (params) => contactsApi.list(params);
 export const getContact = (id) => contactsApi.retrieve(id);
 export const createContact = (payload) => contactsApi.create(payload);
 export const updateContact = (id, payload) => contactsApi.update(id, payload);
+export const patchContact = (id, payload) => contactsApi.patch(id, payload);
 export const deleteContact = (id) => contactsApi.remove(id);
 
 export const getCompanies = (params) => companiesApi.list(params);

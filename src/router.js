@@ -76,7 +76,8 @@ export function getRouteMeta(name) {
 
 export function parseHash() {
   const raw = (location.hash || '').replace(/^#/, '');
-  const path = raw || '/leads';
+  // Require authentication - redirect to login if no hash
+  const path = raw || (isAuthenticated() ? '/dashboard' : '/login');
   const segments = path.split('/').filter(Boolean);
   // routes: /login, /dashboard, /leads, /leads/new, /leads/:id, /leads/:id/edit
   if (segments[0] === 'login') return { name: 'login', params: {} };
@@ -187,7 +188,8 @@ export function parseHash() {
   if (segments[0] === 'profile') return { name: 'profile', params: {} };
   if (segments[0] === 'settings') return { name: 'settings', params: {} };
   if (segments[0] === 'integrations') return { name: 'integrations', params: {} };
-  return { name: 'leads-list', params: {} };
+  // Default: require login if not authenticated
+  return isAuthenticated() ? { name: 'dashboard', params: {} } : { name: 'login', params: {} };
 }
 
 export function navigate(path, { replace = false } = {}) {

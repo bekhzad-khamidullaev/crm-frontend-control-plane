@@ -23,7 +23,7 @@ import {
   Typography,
   Space,
   Button,
-  message,
+  App,
   Spin,
 } from 'antd';
 import {
@@ -36,14 +36,13 @@ import {
 import { navigate } from '../../router';
 import { getLeads } from '../../lib/api/client';
 import { leadsApi } from '../../lib/api/client';
+import { buildLeadPayload, deriveLeadStatus } from '../../lib/utils/leads';
 import './LeadsKanban.css';
 
 const { Text } = Typography;
 
 const statusColumns = {
   new: { title: 'Новые', color: '#1890ff' },
-  contacted: { title: 'Связались', color: '#faad14' },
-  qualified: { title: 'Квалифицированы', color: '#52c41a' },
   converted: { title: 'Конвертированы', color: '#13c2c2' },
   lost: { title: 'Потеряны', color: '#ff4d4f' },
 };
@@ -120,12 +119,12 @@ function SortableLeadCard({ lead, config }) {
             </Text>
           </Space>
 
-          {lead.company && (
+          {(lead.company_name || lead.company) && (
             <Text
               type="secondary"
               style={{ fontSize: 12 }}
             >
-              {lead.company}
+              {lead.company_name || `#${lead.company}`}
             </Text>
           )}
 
@@ -210,10 +209,9 @@ function DroppableColumn({ status, config, children, count, onAddNew }) {
 }
 
 function LeadsKanban() {
+  const { message } = App.useApp();
   const [columns, setColumns] = useState({
     new: [],
-    contacted: [],
-    qualified: [],
     converted: [],
     lost: [],
   });
@@ -244,15 +242,14 @@ function LeadsKanban() {
       // Group leads by status
       const grouped = {
         new: [],
-        contacted: [],
-        qualified: [],
         converted: [],
         lost: [],
       };
 
       leads.forEach((lead) => {
-        if (grouped[lead.status]) {
-          grouped[lead.status].push(lead);
+        const status = deriveLeadStatus(lead);
+        if (grouped[status]) {
+          grouped[status].push(lead);
         } else {
           grouped.new.push(lead);
         }
@@ -264,8 +261,6 @@ function LeadsKanban() {
       console.error('Error loading leads:', error);
       setColumns({
         new: [],
-        contacted: [],
-        qualified: [],
         converted: [],
         lost: [],
       });
@@ -314,7 +309,7 @@ function LeadsKanban() {
         newIndex = overIndex >= 0 ? overIndex : 0;
       }
 
-      const updatedLead = { ...activeItems[activeIndex], status: overContainer };
+      const updatedLead = { ...activeItems[activeIndex], __status: overContainer };
 
       return {
         ...prev,
@@ -356,35 +351,29 @@ function LeadsKanban() {
     }
 
     if (activeContainer !== overContainer) {
-      // Updating lead status via API using PATCH (partial update)
       try {
-        await leadsApi.patch(activeLead.id, { status: overContainer });
-        // Lead status updated successfully
+        if (overContainer === 'lost') {
+          await leadsApi.disqualify(activeLead.id, buildLeadPayload(activeLead));
+        } else if (overContainer === 'converted') {
+          await leadsApi.convert(activeLead.id, buildLeadPayload(activeLead));
+        } else if (overContainer === 'new') {
+          await leadsApi.patch(activeLead.id, { disqualified: false });
+        }
         message.success(
-          `Лид "${activeLead.first_name} ${activeLead.last_name}" перемещен в "${statusColumns[overContainer].title}"`,
+          `Лид \"${activeLead.first_name} ${activeLead.last_name}\" перемещен в \"${statusColumns[overContainer].title}\"`,
           3
         );
-        // UI already updated via handleDragOver, no need to refetch unless needed
-        // Optional: uncomment to force server sync
-        // await fetchLeads();
       } catch (error) {
         console.error('Error updating lead status:', error);
-        
-        // Extract error message
+
         let errorMessage = 'Ошибка обновления статуса лида';
         if (error?.details?.detail) {
           errorMessage = error.details.detail;
-        } else if (error?.details?.status) {
-          errorMessage = Array.isArray(error.details.status) 
-            ? error.details.status[0] 
-            : error.details.status;
         } else if (error?.message) {
           errorMessage = error.message;
         }
-        
+
         message.error(errorMessage, 5);
-        
-        // Revert changes on error - reload from server
         await fetchLeads();
       }
     }

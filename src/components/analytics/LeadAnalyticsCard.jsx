@@ -10,6 +10,7 @@ import {
 } from '@ant-design/icons';
 import AnimatedChart from './AnimatedChart';
 import DrillDownModal from './DrillDownModal';
+import { deriveLeadStatus } from '../../lib/utils/leads';
 import {
   Chart as ChartJS,
   ArcElement,
@@ -60,38 +61,43 @@ function LeadAnalyticsCard({
   const [drillDownData, setDrillDownData] = useState([]);
   const [drillDownTitle, setDrillDownTitle] = useState('');
   const [drillDownSegment, setDrillDownSegment] = useState('');
-  // Calculate statistics
-  const stats = {
-    total: leads.length,
-    new: leads.filter(l => l.status === 'new').length,
-    contacted: leads.filter(l => l.status === 'contacted').length,
-    qualified: leads.filter(l => l.status === 'qualified').length,
-    converted: leads.filter(l => l.status === 'converted').length,
-    lost: leads.filter(l => l.status === 'lost').length,
+  const statusOrder = ['new', 'converted', 'lost'];
+  const statusLabels = {
+    new: 'Новые',
+    converted: 'Конвертированы',
+    lost: 'Потеряны',
   };
 
-  const conversionRate = stats.total > 0 
+  const statusCounts = leads.reduce((acc, lead) => {
+    const status = deriveLeadStatus(lead);
+    acc[status] = (acc[status] || 0) + 1;
+    return acc;
+  }, {});
+
+  const stats = {
+    total: leads.length,
+    new: statusCounts.new || 0,
+    converted: statusCounts.converted || 0,
+    lost: statusCounts.lost || 0,
+  };
+
+  const conversionRate = stats.total > 0
     ? ((stats.converted / stats.total) * 100).toFixed(1)
     : 0;
 
-  // Status distribution data
   const statusData = {
-    labels: ['Новые', 'Связались', 'Квалифицированы', 'Конвертированы', 'Потеряны'],
+    labels: statusOrder.map((key) => statusLabels[key] || key),
     datasets: [
       {
         label: 'Количество лидов',
-        data: [stats.new, stats.contacted, stats.qualified, stats.converted, stats.lost],
+        data: statusOrder.map((key) => statusCounts[key] || 0),
         backgroundColor: [
           'rgba(24, 144, 255, 0.8)',
-          'rgba(250, 173, 20, 0.8)',
-          'rgba(82, 196, 26, 0.8)',
           'rgba(19, 194, 194, 0.8)',
           'rgba(255, 77, 79, 0.8)',
         ],
         borderColor: [
           'rgba(24, 144, 255, 1)',
-          'rgba(250, 173, 20, 1)',
-          'rgba(82, 196, 26, 1)',
           'rgba(19, 194, 194, 1)',
           'rgba(255, 77, 79, 1)',
         ],
@@ -102,8 +108,9 @@ function LeadAnalyticsCard({
 
   // Source distribution
   const sourceCount = leads.reduce((acc, lead) => {
-    const source = lead.source || 'other';
-    acc[source] = (acc[source] || 0) + 1;
+    const rawSource = lead.lead_source_name || lead.lead_source || 'other';
+    const sourceKey = String(rawSource);
+    acc[sourceKey] = (acc[sourceKey] || 0) + 1;
     return acc;
   }, {});
 
@@ -117,8 +124,14 @@ function LeadAnalyticsCard({
     other: 'Другое',
   };
 
+  const resolveSourceLabel = (key) => {
+    if (sourceLabels[key]) return sourceLabels[key];
+    if (/^\\d+$/.test(key)) return `#${key}`;
+    return key;
+  };
+
   const sourceData = {
-    labels: Object.keys(sourceCount).map(key => sourceLabels[key] || key),
+    labels: Object.keys(sourceCount).map((key) => resolveSourceLabel(key)),
     datasets: [
       {
         label: 'Лиды по источникам',
@@ -148,11 +161,11 @@ function LeadAnalyticsCard({
 
   // Funnel data - conversion through stages
   const funnelData = {
-    labels: ['Новые', 'Связались', 'Квалифицированы', 'Конвертированы'],
+    labels: statusOrder.map((key) => statusLabels[key] || key),
     datasets: [
       {
         label: 'Воронка конверсии',
-        data: [stats.new, stats.contacted, stats.qualified, stats.converted],
+        data: statusOrder.map((key) => statusCounts[key] || 0),
         backgroundColor: 'rgba(24, 144, 255, 0.6)',
         borderColor: 'rgba(24, 144, 255, 1)',
         borderWidth: 2,
@@ -170,9 +183,8 @@ function LeadAnalyticsCard({
 
     switch (chartType) {
       case 'status':
-        const statusMap = ['new', 'contacted', 'qualified', 'converted', 'lost'];
-        const status = statusMap[dataIndex];
-        filteredLeads = leads.filter(l => l.status === status);
+        const status = statusOrder[dataIndex];
+        filteredLeads = leads.filter((l) => deriveLeadStatus(l) === status);
         title = 'Лиды по статусу';
         segment = label;
         break;
@@ -180,15 +192,14 @@ function LeadAnalyticsCard({
       case 'source':
         const sourceKeys = Object.keys(sourceCount);
         const sourceKey = sourceKeys[dataIndex];
-        filteredLeads = leads.filter(l => (l.source || 'other') === sourceKey);
+        filteredLeads = leads.filter((l) => String(l.lead_source_name || l.lead_source || 'other') === sourceKey);
         title = 'Лиды по источнику';
         segment = label;
         break;
       
       case 'funnel':
-        const funnelMap = ['new', 'contacted', 'qualified', 'converted'];
-        const funnelStatus = funnelMap[dataIndex];
-        filteredLeads = leads.filter(l => l.status === funnelStatus);
+        const funnelStatus = statusOrder[dataIndex];
+        filteredLeads = leads.filter((l) => deriveLeadStatus(l) === funnelStatus);
         title = 'Воронка конверсии';
         segment = label;
         break;
@@ -292,29 +303,38 @@ function LeadAnalyticsCard({
     },
     {
       title: 'Статус',
-      dataIndex: 'status',
       key: 'status',
-      render: (status) => {
+      render: (_, record) => {
+        const status = deriveLeadStatus(record);
         const statusColors = {
           new: 'blue',
-          contacted: 'orange',
-          qualified: 'green',
           converted: 'cyan',
           lost: 'red',
         };
-        return <span style={{ color: statusColors[status] || 'default' }}>{status}</span>;
+        const statusNames = {
+          new: 'Новый',
+          converted: 'Конвертирован',
+          lost: 'Потерян',
+        };
+        return (
+          <span style={{ color: statusColors[status] || 'default' }}>
+            {statusNames[status] || status}
+          </span>
+        );
       },
     },
     {
       title: 'Источник',
-      dataIndex: 'source',
       key: 'source',
+      render: (_, record) => record.lead_source_name || record.lead_source || '-',
     },
     {
       title: 'Дата создания',
-      dataIndex: 'created_at',
       key: 'created_at',
-      render: (date) => date ? new Date(date).toLocaleDateString('ru-RU') : '-',
+      render: (_, record) => {
+        const date = record.creation_date || record.created_at;
+        return date ? new Date(date).toLocaleDateString('ru-RU') : '-';
+      },
     },
   ];
 

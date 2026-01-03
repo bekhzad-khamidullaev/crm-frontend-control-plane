@@ -5,7 +5,7 @@ import {
   Button,
   Card,
   Space,
-  message,
+  App,
   Typography,
   Spin,
   Row,
@@ -19,6 +19,7 @@ import { navigate } from '../../router';
 import { getProduct, createProduct, updateProduct, getProductCategories, getProductCategory } from '../../lib/api/products';
 import ReferenceSelect from '../../components/ui-ReferenceSelect';
 import EntitySelect from '../../components/EntitySelect';
+import { normalizePayload } from '../../lib/utils/payload';
 
 const { Title } = Typography;
 const { TextArea } = Input;
@@ -30,6 +31,7 @@ const typeOptions = [
 
 function ProductForm({ id }) {
   const [form] = Form.useForm();
+  const { message } = App.useApp();
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
   const isEdit = !!id;
@@ -55,11 +57,18 @@ function ProductForm({ id }) {
   const onFinish = async (values) => {
     setSaving(true);
     try {
+      const payload = normalizePayload({
+        ...values,
+        price:
+          values.price !== undefined && values.price !== null && values.price !== ''
+            ? String(values.price)
+            : null,
+      });
       if (isEdit) {
-        await updateProduct(id, values);
+        await updateProduct(id, payload);
         message.success('Продукт обновлен');
       } else {
-        await createProduct(values);
+        await createProduct(payload);
         message.success('Продукт создан');
       }
       navigate('/products');

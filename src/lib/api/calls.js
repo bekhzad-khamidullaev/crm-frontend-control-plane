@@ -68,7 +68,7 @@ function normalizeCallLogPayload(data = {}) {
  * @returns {Promise<Object>}
  */
 export async function createCallLog(data) {
-  return apiClient.post('/api/call-logs/', normalizeCallLogPayload(data));
+  return apiClient.post('/api/call-logs/', { body: normalizeCallLogPayload(data) });
 }
 
 /**
@@ -78,7 +78,7 @@ export async function createCallLog(data) {
  * @returns {Promise<Object>}
  */
 export async function updateCallLog(logId, data) {
-  return apiClient.patch(`/api/call-logs/${logId}/`, normalizeCallLogPayload(data));
+  return apiClient.patch(`/api/call-logs/${logId}/`, { body: normalizeCallLogPayload(data) });
 }
 
 /**
@@ -98,7 +98,7 @@ export async function deleteCallLog(logId) {
  * @returns {Promise<Object>}
  */
 export async function addCallNote(logId, data) {
-  return apiClient.post(`/api/voip/call-logs/${logId}/add-note/`, data);
+  return apiClient.post(`/api/voip/call-logs/${logId}/add-note/`, { body: data });
 }
 
 /**

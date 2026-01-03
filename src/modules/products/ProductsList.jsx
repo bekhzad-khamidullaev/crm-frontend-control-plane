@@ -6,7 +6,7 @@ import {
   Space,
   Tag,
   Card,
-  message,
+  App,
   Popconfirm,
   Typography,
   Select,
@@ -25,6 +25,7 @@ const { Search } = Input;
 const { Option } = Select;
 
 function ProductsList() {
+  const { message } = App.useApp();
   const [products, setProducts] = useState([]);
   const [categories, setCategories] = useState([]);
   const [loading, setLoading] = useState(false);
@@ -56,8 +57,11 @@ function ProductsList() {
     try {
       const params = {
         page,
-        page_size: pagination.pageSize,
       };
+
+      if (pagination.pageSize) {
+        params.page_size = pagination.pageSize;
+      }
 
       if (search) {
         params.search = search;
@@ -69,11 +73,11 @@ function ProductsList() {
 
       const response = await getProducts(params);
 
-      setProducts(response.results || []);
+      setProducts(response.results || response || []);
       setPagination({
         ...pagination,
         current: page,
-        total: response.count || 0,
+        total: response.count || response.length || 0,
       });
     } catch (error) {
       message.error('Ошибка загрузки продуктов');

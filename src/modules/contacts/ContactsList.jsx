@@ -10,7 +10,7 @@ import {
 } from 'antd';
 import { UserOutlined, MailOutlined } from '@ant-design/icons';
 import { navigate } from '../../router';
-import { getContacts, deleteContact, contactsApi, getCompanies } from '../../lib/api/client';
+import { getContacts, deleteContact, getCompanies, updateContact, patchContact } from '../../lib/api';
 import CallButton from '../../components/CallButton';
 import ClickToCall from '../../components/ui-ClickToCall.jsx';
 import BulkActions from '../../components/ui-BulkActions.jsx';
@@ -193,7 +193,7 @@ function ContactsList() {
 
   const handleCellSave = async (id, field, value) => {
     try {
-      await contactsApi.patch(id, { [field]: value });
+      await patchContact(id, { [field]: value });
       message.success('Изменения сохранены');
       setContacts((prev) =>
         prev.map((contact) =>
@@ -219,7 +219,7 @@ function ContactsList() {
 
     try {
       await Promise.all(
-        selectedRowKeys.map((contactId) => contactsApi.patch(contactId, { tags: selectedTags }))
+        selectedRowKeys.map((contactId) => patchContact(contactId, { tags: selectedTags }))
       );
       message.success(`Теги применены к ${selectedRowKeys.length} контактам`);
       setSelectedRowKeys([]);

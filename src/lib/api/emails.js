@@ -57,7 +57,7 @@ export async function getCrmEmail(id) {
  * @returns {Promise<Object>}
  */
 export async function createCrmEmail(data) {
-  return api.post('/api/crm-emails/', data);
+  return api.post('/api/crm-emails/', { body: data });
 }
 
 /**
@@ -67,7 +67,7 @@ export async function createCrmEmail(data) {
  * @returns {Promise<Object>}
  */
 export async function updateCrmEmail(id, data) {
-  return api.put(`/api/crm-emails/${id}/`, data);
+  return api.put(`/api/crm-emails/${id}/`, { body: data });
 }
 
 /**
@@ -77,7 +77,7 @@ export async function updateCrmEmail(id, data) {
  * @returns {Promise<Object>}
  */
 export async function patchCrmEmail(id, data) {
-  return api.patch(`/api/crm-emails/${id}/`, data);
+  return api.patch(`/api/crm-emails/${id}/`, { body: data });
 }
 
 /**

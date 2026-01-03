@@ -4,13 +4,14 @@
  */
 
 import React, { useState } from 'react';
-import { Form, Input, Button, Space, Alert, Typography, Card, Select } from 'antd';
+import { Form, Input, Button, Space, Alert, Typography, Card, App } from 'antd';
 import { FacebookOutlined } from '@ant-design/icons';
 import { connectFacebook } from '../lib/api/integrations/facebook';
 
-const { Text, Link, Paragraph } = Typography;
+const { Link, Paragraph } = Typography;
 
 export default function FacebookConnect({ onSuccess, onCancel }) {
+  const { message } = App.useApp();
   const [form] = Form.useForm();
   const [loading, setLoading] = useState(false);
 
@@ -18,9 +19,11 @@ export default function FacebookConnect({ onSuccess, onCancel }) {
     setLoading(true);
     try {
       const result = await connectFacebook(values);
+      message.success('Facebook Messenger подключен');
       onSuccess?.(result);
     } catch (error) {
       console.error('Error connecting Facebook:', error);
+      message.error(error?.message || 'Ошибка подключения Facebook Messenger');
     } finally {
       setLoading(false);
     }
@@ -101,7 +104,7 @@ export default function FacebookConnect({ onSuccess, onCancel }) {
 
         <Form.Item
           label="Facebook Page ID"
-          name="page_id"
+          name="facebook_page_id"
           rules={[
             { required: true, message: 'Введите ID страницы' },
           ]}
@@ -110,6 +113,17 @@ export default function FacebookConnect({ onSuccess, onCancel }) {
           <Input
             placeholder="123456789012345"
           />
+        </Form.Item>
+
+        <Form.Item
+          label="Название страницы"
+          name="page_name"
+          rules={[
+            { required: true, message: 'Введите название страницы' },
+          ]}
+          extra="Название страницы, которое отображается в Facebook"
+        >
+          <Input placeholder="CRM Support" />
         </Form.Item>
 
         <Alert

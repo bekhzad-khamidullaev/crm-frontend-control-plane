@@ -32,7 +32,7 @@ export async function getProfile() {
  * @returns {Promise<Object>}
  */
 export async function updateProfile(data) {
-  return api.patch('/api/profiles/me/', data);
+  return api.patch('/api/profiles/me/', { body: data });
 }
 
 /**
@@ -67,7 +67,7 @@ export async function deleteAvatar() {
  * @returns {Promise<Object>}
  */
 export async function changePassword(data) {
-  return api.post('/api/users/me/change-password/', data);
+  return api.post('/api/users/me/change-password/', { body: data });
 }
 
 /**
@@ -96,7 +96,7 @@ export async function getPreferences() {
  * @returns {Promise<Object>}
  */
 export async function updatePreferences(preferences) {
-  return api.patch('/api/profiles/me/', preferences);
+  return api.patch('/api/profiles/me/', { body: preferences });
 }
 
 /**

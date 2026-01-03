@@ -13,12 +13,12 @@ import {
   Space,
   Switch,
   Table,
-  message,
 } from 'antd';
 import { PlusOutlined, EyeOutlined, EditOutlined, DeleteOutlined } from '@ant-design/icons';
 import dayjs from 'dayjs';
 import EntitySelect from './EntitySelect.jsx';
 import ReferenceSelect from './ui-ReferenceSelect';
+import { useMessage } from '../lib/hooks/useMessage';
 
 const { Search } = Input;
 const { TextArea } = Input;
@@ -156,6 +156,7 @@ export default function CrudPage({
   initialValues = {},
   readOnly = false,
 }) {
+  const message = useMessage();
   const [data, setData] = useState([]);
   const [loading, setLoading] = useState(false);
   const [pagination, setPagination] = useState({ current: 1, pageSize: 10, total: 0 });

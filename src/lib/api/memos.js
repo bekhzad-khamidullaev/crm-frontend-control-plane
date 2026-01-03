@@ -44,7 +44,7 @@ export async function getMemo(id) {
  * @returns {Promise<Object>}
  */
 export async function createMemo(data) {
-  return api.post('/api/memos/', data);
+  return api.post('/api/memos/', { body: data });
 }
 
 /**
@@ -54,7 +54,7 @@ export async function createMemo(data) {
  * @returns {Promise<Object>}
  */
 export async function updateMemo(id, data) {
-  return api.put(`/api/memos/${id}/`, data);
+  return api.put(`/api/memos/${id}/`, { body: data });
 }
 
 /**
@@ -64,7 +64,7 @@ export async function updateMemo(id, data) {
  * @returns {Promise<Object>}
  */
 export async function patchMemo(id, data) {
-  return api.patch(`/api/memos/${id}/`, data);
+  return api.patch(`/api/memos/${id}/`, { body: data });
 }
 
 /**
@@ -87,7 +87,7 @@ export async function deleteMemo(id) {
  * @returns {Promise<Object>}
  */
 export async function markMemoPostponed(id, data = {}) {
-  return api.post(`/api/memos/${id}/mark_postponed/`, data);
+  return api.post(`/api/memos/${id}/mark_postponed/`, { body: data });
 }
 
 /**
@@ -97,7 +97,7 @@ export async function markMemoPostponed(id, data = {}) {
  * @returns {Promise<Object>}
  */
 export async function markMemoReviewed(id, data = {}) {
-  return api.post(`/api/memos/${id}/mark_reviewed/`, data);
+  return api.post(`/api/memos/${id}/mark_reviewed/`, { body: data });
 }
 
 // ============================================================================

@@ -16,7 +16,7 @@ import { api } from './client.js';
  * @param {number} params.page - Page number
  * @param {number} params.page_size - Items per page
  * @param {string} params.search - Search query
- * @param {number} params.category - Filter by category ID
+ * @param {number} params.product_category - Filter by product category ID
  * @param {string} params.ordering - Sort field (e.g., 'name', '-price')
  * @returns {Promise<Object>}
  */
@@ -41,14 +41,14 @@ export async function getProduct(id) {
  * @param {string} data.description - Product description
  * @param {number} data.price - Price (required)
  * @param {string} data.currency - Currency code
- * @param {number} data.category - Category ID
+ * @param {number} data.product_category - Product category ID
  * @param {number} data.stock_quantity - Stock quantity
  * @param {string} data.unit - Unit of measure
  * @param {boolean} data.is_active - Is product active
  * @returns {Promise<Object>}
  */
 export async function createProduct(data) {
-  return api.post('/api/products/', data);
+  return api.post('/api/products/', { body: data });
 }
 
 /**
@@ -58,7 +58,7 @@ export async function createProduct(data) {
  * @returns {Promise<Object>}
  */
 export async function updateProduct(id, data) {
-  return api.put(`/api/products/${id}/`, data);
+  return api.put(`/api/products/${id}/`, { body: data });
 }
 
 /**
@@ -68,7 +68,7 @@ export async function updateProduct(id, data) {
  * @returns {Promise<Object>}
  */
 export async function patchProduct(id, data) {
-  return api.patch(`/api/products/${id}/`, data);
+  return api.patch(`/api/products/${id}/`, { body: data });
 }
 
 /**
@@ -113,7 +113,7 @@ export async function getProductCategory(id) {
  * @returns {Promise<Object>}
  */
 export async function getProductsByCategory(categoryId, params = {}) {
-  return getProducts({ ...params, category: categoryId });
+  return getProducts({ ...params, product_category: categoryId });
 }
 
 /**
@@ -132,7 +132,7 @@ export async function searchProducts(query, params = {}) {
  * @returns {Promise<Object>}
  */
 export async function getActiveProducts(params = {}) {
-  return getProducts({ ...params, is_active: true });
+  return getProducts({ ...params, on_sale: true });
 }
 
 /**
@@ -148,9 +148,9 @@ export async function updateProductStock(id, quantity) {
 /**
  * Toggle product active status
  * @param {number} id - Product ID
- * @param {boolean} isActive - Active status
+ * @param {boolean} onSale - On sale status
  * @returns {Promise<Object>}
  */
-export async function toggleProductStatus(id, isActive) {
-  return patchProduct(id, { is_active: isActive });
+export async function toggleProductStatus(id, onSale) {
+  return patchProduct(id, { on_sale: onSale });
 }

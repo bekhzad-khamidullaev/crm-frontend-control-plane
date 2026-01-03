@@ -753,7 +753,7 @@ function App() {
                 )}
                 
                 <Avatar icon={<UserOutlined />} />
-                <Text>{user?.name || 'Guest'}</Text>
+                <Text>{user?.name || user?.username || 'User'}</Text>
               </Space>
             </Dropdown>
           </Space>

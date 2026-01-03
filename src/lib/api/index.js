@@ -35,39 +35,67 @@ export {
   createContact,
   updateContact,
   deleteContact,
+  patchContact,
 } from './client.js';
 
+// From companies.js
 export {
   getCompanies,
   getCompany,
   createCompany,
   updateCompany,
+  patchCompany,
   deleteCompany,
-} from './client.js';
+  assignCompany,
+  addTagToCompany,
+  bulkTagCompanies,
+} from './companies.js';
 
+// From deals.js
 export {
   getDeals,
   getDeal,
   createDeal,
   updateDeal,
+  patchDeal,
   deleteDeal,
-} from './client.js';
+  getDealStages,
+  bulkTagDeals,
+  moveDealToStage,
+  assignDeal,
+  closeDealAsWon,
+  closeDealAsLost,
+} from './deals.js';
 
+// From tasks.js
 export {
   getTasks,
   getTask,
   createTask,
   updateTask,
+  patchTask,
   deleteTask,
-} from './client.js';
+  completeTask,
+  reassignTask,
+  changeTaskPriority,
+  moveTaskToStage,
+  bulkTagTasks,
+} from './tasks.js';
 
+// From projects.js
 export {
   getProjects,
   getProject,
   createProject,
   updateProject,
+  patchProject,
   deleteProject,
-} from './client.js';
+  assignProject,
+  completeProject,
+  reopenProject,
+  bulkTagProjects,
+  exportProjects,
+} from './projects.js';
 
 export {
   getUsers,

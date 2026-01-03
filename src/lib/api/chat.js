@@ -46,7 +46,7 @@ export async function createChatMessage(data) {
     content: data.content ?? data.message,
   };
   delete payload.message;
-  return apiClient.post('/api/chat-messages/', payload);
+  return apiClient.post('/api/chat-messages/', { body: payload });
 }
 
 /**
@@ -61,7 +61,7 @@ export async function updateChatMessage(id, data) {
     content: data.content ?? data.message,
   };
   delete payload.message;
-  return apiClient.patch(`/api/chat-messages/${id}/`, payload);
+  return apiClient.patch(`/api/chat-messages/${id}/`, { body: payload });
 }
 
 /**

@@ -53,7 +53,7 @@ export async function getPayment(id) {
  * @returns {Promise<Object>}
  */
 export async function createPayment(data) {
-  return api.post('/api/payments/', data);
+  return api.post('/api/payments/', { body: data });
 }
 
 /**
@@ -63,7 +63,7 @@ export async function createPayment(data) {
  * @returns {Promise<Object>}
  */
 export async function updatePayment(id, data) {
-  return api.put(`/api/payments/${id}/`, data);
+  return api.put(`/api/payments/${id}/`, { body: data });
 }
 
 /**
@@ -73,7 +73,7 @@ export async function updatePayment(id, data) {
  * @returns {Promise<Object>}
  */
 export async function patchPayment(id, data) {
-  return api.patch(`/api/payments/${id}/`, data);
+  return api.patch(`/api/payments/${id}/`, { body: data });
 }
 
 /**

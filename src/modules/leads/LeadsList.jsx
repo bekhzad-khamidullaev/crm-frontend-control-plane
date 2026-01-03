@@ -1,9 +1,9 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import {
   Button,
   Space,
   Tag,
-  message,
+  App,
   Modal,
   Select,
   Form,
@@ -11,7 +11,6 @@ import {
   Alert,
 } from 'antd';
 import {
-  SwapOutlined,
   StopOutlined,
   UserOutlined,
   MailOutlined,
@@ -20,8 +19,10 @@ import {
   ReloadOutlined,
   WarningOutlined,
 } from '@ant-design/icons';
+import dayjs from 'dayjs';
 import { navigate } from '../../router';
 import { getLeads, deleteLead, leadsApi } from '../../lib/api/client';
+import { getLeadSources } from '../../lib/api/reference';
 import LeadsKanban from './LeadsKanban.jsx';
 import CallButton from '../../components/CallButton';
 import ClickToCall from '../../components/ui-ClickToCall.jsx';
@@ -32,17 +33,12 @@ import EnhancedTable from '../../components/ui-EnhancedTable.jsx';
 import TableToolbar from '../../components/ui-TableToolbar.jsx';
 import QuickActions from '../../components/QuickActions.jsx';
 import { exportToCSV, exportToExcel } from '../../lib/utils/export';
-import {
-  createTwoLineColumn,
-  createTagColumn,
-  createDateColumn,
-  createEmailColumn,
-  createPhoneColumn,
-  createCompanyColumn,
-} from '../../lib/utils/table-columns.jsx';
+import { buildLeadPayload, deriveLeadStatus, getLeadSourceLabel } from '../../lib/utils/leads';
 
 function LeadsList() {
+  const { message } = App.useApp();
   const [leads, setLeads] = useState([]);
+  const [leadSources, setLeadSources] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const [retryCount, setRetryCount] = useState(0);
@@ -59,6 +55,13 @@ function LeadsList() {
   const [bulkStatus, setBulkStatus] = useState('');
   const [bulkTagModalVisible, setBulkTagModalVisible] = useState(false);
   const [selectedTags, setSelectedTags] = useState([]);
+
+  const leadSourceMap = useMemo(() => {
+    return leadSources.reduce((acc, source) => {
+      acc[source.id] = source.name;
+      return acc;
+    }, {});
+  }, [leadSources]);
 
   // Max retries to prevent infinite loops
   const MAX_RETRIES = 3;
@@ -117,12 +120,23 @@ function LeadsList() {
     }
   };
 
+  const loadLeadSources = async () => {
+    try {
+      const response = await getLeadSources({ page_size: 200 });
+      setLeadSources(response?.results || response || []);
+    } catch (error) {
+      console.error('Error loading lead sources:', error);
+      setLeadSources([]);
+    }
+  };
+
   useEffect(() => {
     let mounted = true;
     
     const loadData = async () => {
       if (mounted) {
         await fetchLeads(1, searchText, false);
+        loadLeadSources();
       }
     };
     
@@ -188,6 +202,21 @@ function LeadsList() {
     setStatusChangeModalVisible(true);
   };
 
+  const updateLeadStatus = async (lead, status) => {
+    if (!lead) return;
+    if (status === 'lost') {
+      await leadsApi.disqualify(lead.id, buildLeadPayload(lead));
+      return;
+    }
+    if (status === 'converted') {
+      await leadsApi.convert(lead.id, buildLeadPayload(lead));
+      return;
+    }
+    if (status === 'new') {
+      await leadsApi.patch(lead.id, { disqualified: false });
+    }
+  };
+
   const handleStatusChangeConfirm = async () => {
     if (!bulkStatus) {
       message.error('Выберите статус');
@@ -196,9 +225,10 @@ function LeadsList() {
 
     try {
       await Promise.all(
-        selectedRowKeys.map(id =>
-          leadsApi.patch(id, { status: bulkStatus })
-        )
+        selectedRowKeys.map((id) => {
+          const lead = leads.find((item) => item.id === id);
+          return updateLeadStatus(lead, bulkStatus);
+        })
       );
       message.success(`Статус изменен для ${selectedRowKeys.length} лидов`);
       setSelectedRowKeys([]);
@@ -242,13 +272,18 @@ function LeadsList() {
     { key: 'email', label: 'Email' },
     { key: 'phone', label: 'Телефон' },
     { key: 'company_name', label: 'Компания' },
+    { key: 'lead_source_label', label: 'Источник' },
     { key: 'status', label: 'Статус' },
     { key: 'owner_name', label: 'Ответственный' },
   ];
 
   const buildExportRows = (ids = []) => {
     const source = ids.length ? leads.filter((lead) => ids.includes(lead.id)) : leads;
-    return source;
+    return source.map((lead) => ({
+      ...lead,
+      status: deriveLeadStatus(lead),
+      lead_source_label: getLeadSourceLabel(lead, leadSourceMap),
+    }));
   };
 
   const performExport = (format, ids = []) => {
@@ -299,8 +334,6 @@ function LeadsList() {
 
   const statusConfig = {
     new: { color: 'blue', text: 'Новый' },
-    contacted: { color: 'orange', text: 'Связались' },
-    qualified: { color: 'green', text: 'Квалифицирован' },
     converted: { color: 'cyan', text: 'Конвертирован' },
     lost: { color: 'red', text: 'Потерян' },
   };
@@ -308,7 +341,7 @@ function LeadsList() {
   // Обработчики для QuickActions
   const handleConvert = async (record) => {
     try {
-      await leadsApi.convert(record.id);
+      await leadsApi.convert(record.id, buildLeadPayload(record));
       message.success('Лид успешно конвертирован в сделку');
       fetchLeads(pagination.current, searchText);
     } catch (error) {
@@ -318,7 +351,7 @@ function LeadsList() {
 
   const handleDisqualify = async (record) => {
     try {
-      await leadsApi.disqualify(record.id);
+      await leadsApi.disqualify(record.id, buildLeadPayload(record));
       message.success('Лид дисквалифицирован');
       fetchLeads(pagination.current, searchText);
     } catch (error) {
@@ -347,9 +380,9 @@ function LeadsList() {
             <div style={{ fontWeight: 500, fontSize: 13 }}>
               {record.first_name} {record.last_name}
             </div>
-            {record.company && (
+            {(record.company_name || record.company) && (
               <div style={{ fontSize: 11, color: '#999' }}>
-                <ShopOutlined /> {record.company}
+                <ShopOutlined /> {record.company_name || `#${record.company}`}
               </div>
             )}
           </div>
@@ -393,31 +426,41 @@ function LeadsList() {
         );
       },
     },
-    createTagColumn({
+    {
+      title: 'Источник',
+      key: 'lead_source',
+      width: 160,
+      render: (_, record) => getLeadSourceLabel(record, leadSourceMap),
+    },
+    {
       title: 'Статус',
-      dataIndex: 'status',
+      key: 'status',
       width: 140,
-      colorMap: {
-        new: 'blue',
-        contacted: 'orange',
-        qualified: 'green',
-        converted: 'cyan',
-        lost: 'red',
+      filters: Object.keys(statusConfig).map((key) => ({
+        text: statusConfig[key].text,
+        value: key,
+      })),
+      onFilter: (value, record) => deriveLeadStatus(record) === value,
+      render: (_, record) => {
+        const status = deriveLeadStatus(record);
+        const config = statusConfig[status] || statusConfig.new;
+        return <Tag color={config.color}>{config.text}</Tag>;
       },
-      textMap: {
-        new: 'Новый',
-        contacted: 'Связались',
-        qualified: 'Квалифицирован',
-        converted: 'Конвертирован',
-        lost: 'Потерян',
-      },
-    }),
-    createDateColumn({
+    },
+    {
       title: 'Дата создания',
-      dataIndex: 'created_at',
-      width: 120,
-      format: 'DD.MM.YYYY',
-    }),
+      key: 'creation_date',
+      width: 140,
+      render: (_, record) => {
+        const value = record.creation_date || record.created_at;
+        return value ? dayjs(value).format('DD.MM.YYYY') : '-';
+      },
+      sorter: (a, b) => {
+        const aVal = new Date(a.creation_date || a.created_at || 0).getTime();
+        const bVal = new Date(b.creation_date || b.created_at || 0).getTime();
+        return aVal - bVal;
+      },
+    },
     {
       title: 'Действия',
       key: 'actions',
