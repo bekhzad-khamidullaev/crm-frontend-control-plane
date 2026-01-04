@@ -184,26 +184,40 @@ async function refreshAccessToken(refreshToken) {
     throw new ApiError('No refresh token available', { status: 401 });
   }
 
-  const url = buildUrl('/api/token/refresh/');
-  const response = await fetch(url, {
-    method: 'POST',
-    headers: {
-      Accept: 'application/json',
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify({ refresh: refreshToken }),
-    mode: 'cors',
-    credentials: resolveCredentials(),
-  });
+  try {
+    const url = buildUrl('/api/token/refresh/');
+    const response = await fetch(url, {
+      method: 'POST',
+      headers: {
+        Accept: 'application/json',
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ refresh: refreshToken }),
+      mode: 'cors',
+      credentials: resolveCredentials(),
+    });
 
-  const payload = await parseResponseBody(response);
-  if (!response.ok || !payload?.access) {
+    const payload = await parseResponseBody(response);
+    if (!response.ok) {
+      clearToken();
+      // If refresh fails with 401, try re-login
+      if (response.status === 401 || response.status === 500) {
+        throw new ApiError('Session expired. Please login again', { status: 401 });
+      }
+      throw normalizeError(response, payload, url);
+    }
+
+    if (!payload?.access) {
+      clearToken();
+      throw new ApiError('Invalid refresh response', { status: 400 });
+    }
+
+    setToken(payload.access, payload.refresh || refreshToken);
+    return payload.access;
+  } catch (error) {
     clearToken();
-    throw normalizeError(response, payload, url);
+    throw error;
   }
-
-  setToken(payload.access, payload.refresh || refreshToken);
-  return payload.access;
 }
 
 async function ensureFreshAccessToken(authMode = AUTH_MODE) {
@@ -212,17 +226,16 @@ async function ensureFreshAccessToken(authMode = AUTH_MODE) {
   }
 
   const access = getToken();
-  const refresh = getRefreshToken();
-  if (!refresh) return access;
-  if (access && !isTokenExpired(access)) return access;
-
-  if (!refreshPromise) {
-    refreshPromise = refreshAccessToken(refresh).finally(() => {
-      refreshPromise = null;
-    });
+  
+  // If no token or token expired, return it anyway and let the request handle 401
+  // The API will return 401, which triggers clearToken() and forces re-login
+  if (!access) {
+    return null;
   }
 
-  return refreshPromise;
+  // Return token regardless of expiration - let the server validate it
+  // If expired, we'll get 401 and will need to re-login
+  return access;
 }
 
 async function attachAuth(headers, authMode) {
@@ -272,16 +285,11 @@ async function request(method, path, options = {}) {
     const response = await withTimeout(fetchPromise, API_TIMEOUT, controller);
     const payload = await parseResponseBody(response, options.responseType, !response.ok);
 
-    if (response.status === 401 && authAllowed && authMode === 'jwt' && getRefreshToken() && !options._retriedWithRefresh) {
-      try {
-        await refreshAccessToken(getRefreshToken());
-        return request(method, path, { ...options, _retriedWithRefresh: true });
-      } catch (refreshError) {
-        clearToken();
-        throw refreshError instanceof ApiError
-          ? refreshError
-          : new ApiError(refreshError.message || 'Failed to refresh token', { url });
-      }
+    // On 401, always clear tokens and require re-login
+    // (automatic refresh can cause issues if backend doesn't support it properly)
+    if (response.status === 401 && authAllowed) {
+      clearToken();
+      throw normalizeError(response, payload, url);
     }
 
     if (response.status === 403 && authAllowed) {
