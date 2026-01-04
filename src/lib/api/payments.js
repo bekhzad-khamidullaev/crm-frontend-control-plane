@@ -16,12 +16,9 @@ import { api } from './client.js';
  * @param {number} params.page - Page number
  * @param {number} params.page_size - Items per page
  * @param {string} params.search - Search query
+ * @param {number} params.currency - Filter by currency ID
  * @param {number} params.deal - Filter by deal ID
- * @param {number} params.contact - Filter by contact ID
  * @param {string} params.status - Filter by status
- * @param {string} params.payment_method - Filter by payment method
- * @param {string} params.date_from - Filter from date (YYYY-MM-DD)
- * @param {string} params.date_to - Filter to date (YYYY-MM-DD)
  * @param {string} params.ordering - Sort field
  * @returns {Promise<Object>}
  */

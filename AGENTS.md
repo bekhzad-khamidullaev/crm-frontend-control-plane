@@ -1,6 +1,6 @@
-# AGENTS.md — Frontend на основе `React + Ant Design 5.x` + подключение к API по схеме `Django-CRM API.yaml`
+# AGENTS.md — Frontend на основе `React + Ant Design 5.x` + подключение к API по схеме `Contora API.yaml`
 
-Коротко, по делу. Документ описывает автономных агентов Codex CLI (или CI-агентов) и рабочий процесс для разработки фронтенда CRM на базе `React 18 + Ant Design 5.x` с интеграцией по API-схеме `Django-CRM API.yaml`. Принцип: модульная разработка → начать с `leads` и довести до 100% функционала, затем следующий модуль. Код — senior-level: читаемый, тестируемый, масштабируемый.
+Коротко, по делу. Документ описывает автономных агентов Codex CLI (или CI-агентов) и рабочий процесс для разработки фронтенда CRM на базе `React 18 + Ant Design 5.x` с интеграцией по API-схеме `Contora API.yaml`. Принцип: модульная разработка → начать с `leads` и довести до 100% функционала, затем следующий модуль. Код — senior-level: читаемый, тестируемый, масштабируемый.
 
 ---
 
@@ -10,7 +10,7 @@
 * Иконки: `@ant-design/icons`
 * Визуализация: `chart.js` (интеграция с Ant Design Charts опциональна)
 * Дата/время: `dayjs` (используется Ant Design)
-* API-схема: `Django-CRM API.yaml` (источник правды для всех запросов)
+* API-схема: `Contora API.yaml` (источник правды для всех запросов)
 * Build tool: `Vite` с `@vitejs/plugin-react`
 * Package manager: `npm` (или `pnpm` при желании)
 
@@ -32,7 +32,7 @@ frontend/
 │  ├─ styles/
 │  │  └─ custom-theme.css      # кастомизация Ant Design темы
 │  ├─ lib/
-│  │  └─ api/                   # wrapper для запросов по Django-CRM API.yaml
+│  │  └─ api/                   # wrapper для запросов по Contora API.yaml
 │  │     └─ client.js
 │  ├─ components/                # переиспользуемые React-компоненты
 │  │  └─ common/                 # общие UI-компоненты
@@ -117,7 +117,7 @@ API_TIMEOUT=15000
 
 ### 4) API Integration Agent — TODO
 
-* [ ] Преобразовать `Django-CRM API.yaml` в понятные вызовы (client wrapper).
+* [ ] Преобразовать `Contora API.yaml` в понятные вызовы (client wrapper).
 * [ ] Генерировать типы/схемы ответов (если TypeScript — интерфейсы).
 * [ ] Центральная обработка ошибок и retry/backoff.
 
@@ -158,7 +158,7 @@ API_TIMEOUT=15000
 
 ## API-интеграция — правила и best-practices
 
-* Источник правды — `Django-CRM API.yaml`. Любые изменения API — фиксируются в YAML и синхронизируются в client-wrapper.
+* Источник правды — `Contora API.yaml`. Любые изменения API — фиксируются в YAML и синхронизируются в client-wrapper.
 * Все запросы проходят через `src/lib/api/client.js`. Этот слой:
 
   * Обрабатывает base URL из `.env`.
@@ -193,7 +193,7 @@ API_TIMEOUT=15000
 ## Подводные камни
 
 * Ant Design 5.x использует CSS-in-JS — меньше конфликтов стилей, но нужно учитывать в production build
-* Если backend меняет API — обновить `Django-CRM API.yaml` и синхронизировать в `client.js`
+* Если backend меняет API — обновить `Contora API.yaml` и синхронизировать в `client.js`
 * Vite HMR (Hot Module Replacement) работает быстро в dev, но нужен правильный build config для production
 * Размер бандла: Ant Design + React + Icons ~300KB gzipped; использовать tree-shaking
 * Требование 100% функционального покрытия для модуля увеличивает время — запланировать тесты и CI

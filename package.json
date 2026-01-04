@@ -1,6 +1,7 @@
 {
-  "name": "crm-frontend",
-  "version": "0.1.0",
+  "name": "contora",
+  "version": "1.0.0",
+  "description": "Contora - Modern CRM System",
   "private": true,
   "type": "module",
   "scripts": {

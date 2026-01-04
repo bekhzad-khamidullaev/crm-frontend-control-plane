@@ -16,12 +16,11 @@ import { api } from './client.js';
  * @param {number} params.page - Page number
  * @param {number} params.page_size - Items per page
  * @param {string} params.search - Search query
+ * @param {boolean} params.active - Filter by active status
+ * @param {number} params.co_owner - Filter by co-owner ID
+ * @param {number} params.owner - Filter by owner ID (assigned user)
+ * @param {number} params.project - Filter by project ID
  * @param {number} params.stage - Filter by stage ID
- * @param {number} params.assigned_to - Filter by assigned user ID
- * @param {string} params.status - Filter by status
- * @param {string} params.priority - Filter by priority
- * @param {string} params.due_date_from - Filter from date (YYYY-MM-DD)
- * @param {string} params.due_date_to - Filter to date (YYYY-MM-DD)
  * @param {string} params.ordering - Sort field
  * @returns {Promise<Object>}
  */

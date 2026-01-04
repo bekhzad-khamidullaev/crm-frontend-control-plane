@@ -26,7 +26,7 @@ import {
   updateReminder,
 } from '../../lib/api/reminders';
 import EntitySelect from '../../components/EntitySelect.jsx';
-import { getUsers, getUser } from '../../lib/api/client.js';
+import { getUsers, getUser } from '../../lib/api';
 
 const { Title } = Typography;
 const { TextArea } = Input;

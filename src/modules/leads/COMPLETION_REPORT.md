@@ -420,7 +420,7 @@ import { leadsApi } from './lib/api/client';
 
 Реализованы все запланированные функции согласно AGENTS.md:
 - ✅ 100% функциональное покрытие
-- ✅ Полная интеграция с Django-CRM API
+- ✅ Полная интеграция с Contora API
 - ✅ Тесты (unit + E2E)
 - ✅ Документация
 - ✅ Senior-level код

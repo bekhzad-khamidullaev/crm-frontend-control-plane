@@ -16,9 +16,9 @@ import { api } from './client.js';
  * @param {number} params.page - Page number
  * @param {number} params.page_size - Items per page
  * @param {string} params.search - Search query
- * @param {string} params.status - Filter by status
- * @param {string} params.type - Filter by type
- * @param {string} params.ordering - Sort field
+ * @param {boolean} params.is_active - Filter by active status
+ * @param {number} params.segment - Filter by segment ID
+ * @param {number} params.template - Filter by template ID
  * @returns {Promise<Object>}
  */
 export async function getCampaigns(params = {}) {

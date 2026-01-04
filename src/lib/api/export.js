@@ -7,7 +7,7 @@ import { api } from './client';
 
 /**
  * Export data to CSV
- * @param {string} entityType - Entity type (only `projects` supported by Django-CRM API.yaml)
+ * @param {string} entityType - Entity type (only `projects` supported by Contora API.yaml)
  * @param {Object} params - Export parameters
  * @param {Array<string>} params.fields - Fields to export
  * @param {Object} params.filters - Filters to apply
@@ -17,7 +17,7 @@ import { api } from './client';
 export async function exportData(entityType, params = {}) {
   if (entityType !== 'projects') {
     throw new Error(
-      `Export for "${entityType}" is not available in Django-CRM API.yaml. Only /api/projects/export/ is defined.`
+      `Export for "${entityType}" is not available in Contora API.yaml. Only /api/projects/export/ is defined.`
     );
   }
 
@@ -37,7 +37,7 @@ export async function exportData(entityType, params = {}) {
 
 /**
  * Export projects
- * Note: According to Django-CRM API.yaml, only /api/projects/export/ exists
+ * Note: According to Contora API.yaml, only /api/projects/export/ exists
  */
 export async function exportProjects(params = {}) {
   return exportData('projects', params);

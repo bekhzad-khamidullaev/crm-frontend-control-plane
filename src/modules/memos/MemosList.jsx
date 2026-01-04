@@ -13,7 +13,7 @@ import { getMemos, deleteMemo, markMemoReviewed, markMemoPostponed } from '../..
 import { navigate } from '../../router';
 import dayjs from 'dayjs';
 import EntitySelect from '../../components/EntitySelect.jsx';
-import { getUsers, getUser } from '../../lib/api/client.js';
+import { getUsers, getUser } from '../../lib/api';
 
 const { Search } = Input;
 const { RangePicker } = DatePicker;

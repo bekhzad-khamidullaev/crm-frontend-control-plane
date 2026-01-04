@@ -7,7 +7,7 @@ import React, { useState, useEffect } from 'react';
 import { Modal, Button, Space, Typography, Avatar, Tag, Spin, Alert, Descriptions } from 'antd';
 import { PhoneOutlined, CloseOutlined, UserOutlined, PhoneFilled, MailOutlined } from '@ant-design/icons';
 import sipClient from '../../lib/telephony/SIPClient.js';
-import { api as apiClient } from '../../lib/api/client.js';
+import { api } from '../../lib/api/client.js';
 
 const { Title, Text } = Typography;
 
@@ -25,7 +25,7 @@ function IncomingCallModal({ visible, callData, onAnswer, onReject }) {
     setSearchingContact(true);
     try {
       // Search in contacts
-      const response = await apiClient.get('/api/contacts/', {
+      const response = await api.get('/api/contacts/', {
         params: { search: phoneNumber }
       });
 
@@ -38,7 +38,7 @@ function IncomingCallModal({ visible, callData, onAnswer, onReject }) {
       }
 
       // Search in leads
-      const leadsResponse = await apiClient.get('/api/leads/', {
+      const leadsResponse = await api.get('/api/leads/', {
         params: { search: phoneNumber }
       });
 

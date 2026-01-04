@@ -346,12 +346,12 @@ export const del = api.delete;
 function crudResource(basePath) {
   const base = basePath.endsWith('/') ? basePath : `${basePath}/`;
   return {
-    list: (params) => api.get(base, { params }),
-    retrieve: (id) => api.get(`${base}${id}/`),
-    create: (payload) => api.post(base, { body: payload }),
-    update: (id, payload) => api.put(`${base}${id}/`, { body: payload }),
-    patch: (id, payload) => api.patch(`${base}${id}/`, { body: payload }),
-    remove: (id) => api.delete(`${base}${id}/`),
+    list: (params, opts = {}) => api.get(base, { ...opts, params }),
+    retrieve: (id, opts = {}) => api.get(`${base}${id}/`, { ...opts }),
+    create: (payload, opts = {}) => api.post(base, { ...opts, body: payload }),
+    update: (id, payload, opts = {}) => api.put(`${base}${id}/`, { ...opts, body: payload }),
+    patch: (id, payload, opts = {}) => api.patch(`${base}${id}/`, { ...opts, body: payload }),
+    remove: (id, opts = {}) => api.delete(`${base}${id}/`, { ...opts }),
   };
 }
 
@@ -363,24 +363,10 @@ function readonlyResource(basePath) {
   };
 }
 
-// Authentication (JWT + Token) — per Django-CRM API.yaml
+// Authentication (JWT + Token) — per Contora API.yaml
 async function loginWithFallback(credentials) {
-  const candidates = ['/api/token/', '/api/auth/token/', '/auth/login/', '/login/', '/auth/token/'];
-  let lastError = null;
-
-  for (const endpoint of candidates) {
-    try {
-      return await api.post(endpoint, { body: credentials, skipAuth: true });
-    } catch (err) {
-      lastError = err;
-      const status = err instanceof ApiError ? err.status : null;
-      if (!status || ![404, 405, 500, 502, 503, 504].includes(status)) {
-        throw err;
-      }
-    }
-  }
-
-  throw lastError || new ApiError('Authentication endpoint not found');
+  // Use only the correct endpoint: /api/token/
+  return await api.post('/api/token/', { body: credentials, skipAuth: true });
 }
 
 export const authApi = {

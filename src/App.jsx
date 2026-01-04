@@ -110,7 +110,7 @@ const MarketingSegmentsPage = lazy(() => import('./pages/marketing-segments.jsx'
 const MarketingTemplatesPage = lazy(() => import('./pages/marketing-templates.jsx'));
 
 // Admin/system pages
-const CrmEmailsPage = lazy(() => import('./pages/crm-emails.jsx'));
+const ContoraEmailsPage = lazy(() => import('./pages/crm-emails.jsx'));
 const MassmailPage = lazy(() => import('./pages/massmail.jsx'));
 const OperationsPage = lazy(() => import('./pages/operations.jsx'));
 const ReferenceDataPage = lazy(() => import('./pages/reference-data.jsx'));
@@ -138,7 +138,7 @@ function App() {
 
   useEffect(() => {
     // Initialize locale on mount
-    const savedLocale = localStorage.getItem('crm_locale') || 'ru';
+    const savedLocale = localStorage.getItem('contora_locale') || 'ru';
     handleLocaleChange(savedLocale);
     
     // Check auth on mount
@@ -259,7 +259,7 @@ function App() {
   const handleLocaleChange = async (lang) => {
     await setLocale(lang);
     setLocaleState(lang);
-    localStorage.setItem('crm_locale', lang);
+    localStorage.setItem('contora_locale', lang);
     
     // Update Ant Design locale
     const localeMap = {
@@ -439,7 +439,7 @@ function App() {
       children: [
         {
           key: 'crm-emails',
-          label: 'CRM Emails',
+          label: 'Emails',
           onClick: () => navigate('/crm-emails'),
         },
         {
@@ -627,7 +627,7 @@ function App() {
       case 'marketing-templates':
         return <MarketingTemplatesPage />;
       case 'crm-emails':
-        return <CrmEmailsPage />;
+        return <ContoraEmailsPage />;
       case 'massmail':
         return <MassmailPage />;
       case 'operations':
@@ -694,7 +694,7 @@ function App() {
             fontWeight: 'bold',
           }}
         >
-          {collapsed ? 'CRM' : 'Enterprise CRM'}
+          {collapsed ? 'Contora' : 'Contora CRM'}
         </div>
         <Menu
           theme="dark"

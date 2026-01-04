@@ -192,18 +192,29 @@ export function parseHash() {
   return isAuthenticated() ? { name: 'dashboard', params: {} } : { name: 'login', params: {} };
 }
 
+function scheduleNotify() {
+  // Defer notify to avoid React 18 error:
+  // "A component suspended while responding to synchronous input"
+  // (happens when route update triggers a lazy() boundary)
+  if (typeof queueMicrotask === 'function') {
+    queueMicrotask(() => notify());
+  } else {
+    Promise.resolve().then(() => notify());
+  }
+}
+
 export function navigate(path, { replace = false } = {}) {
   if (!path.startsWith('#')) path = '#' + path;
-  
+
   if (replace && typeof history !== 'undefined' && history.replaceState) {
     // Use history API to replace instead of adding to history
     const url = new URL(window.location);
     url.hash = path;
     history.replaceState(null, '', url);
-    notify();
+    scheduleNotify();
   } else if (location.hash === path) {
     // force notify
-    notify();
+    scheduleNotify();
   } else {
     location.hash = path;
   }

@@ -49,7 +49,7 @@ import {
   deleteCallLog,
   addCallNote,
 } from '../../lib/api/calls.js';
-import { getContacts, getContact } from '../../lib/api/client.js';
+import { getContacts, getContact } from '../../lib/api';
 import CallButton from '../../components/CallButton.jsx';
 import AudioPlayer from '../../components/AudioPlayer.jsx';
 import CrudPage from '../../components/CrudPage.jsx';

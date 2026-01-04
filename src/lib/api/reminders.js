@@ -1,7 +1,7 @@
 /**
  * Reminders API
  *
- * CRUD for reminders aligned with Django-CRM API.yaml.
+ * CRUD for reminders aligned with Contora API.yaml.
  */
 
 import { api } from './client.js';

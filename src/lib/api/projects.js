@@ -16,9 +16,10 @@ import { api } from './client.js';
  * @param {number} params.page - Page number
  * @param {number} params.page_size - Items per page
  * @param {string} params.search - Search query
- * @param {number} params.company - Filter by company ID
+ * @param {boolean} params.active - Filter by active status
+ * @param {number} params.co_owner - Filter by co-owner ID
  * @param {number} params.owner - Filter by owner user ID
- * @param {string} params.status - Filter by status
+ * @param {number} params.stage - Filter by stage ID
  * @param {string} params.ordering - Sort field
  * @returns {Promise<Object>}
  */

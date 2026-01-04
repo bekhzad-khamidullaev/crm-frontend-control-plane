@@ -6,7 +6,7 @@ import { navigate } from '../../router';
 import dayjs from 'dayjs';
 import EntitySelect from '../../components/EntitySelect.jsx';
 import ReferenceSelect from '../../components/ui-ReferenceSelect';
-import { getUsers, getUser, getDeal, getDeals, getProject, getProjects, getTask, getTasks } from '../../lib/api/client.js';
+import { getUsers, getUser, getDeal, getDeals, getProject, getProjects, getTask, getTasks } from '../../lib/api';
 
 const { TextArea } = Input;
 

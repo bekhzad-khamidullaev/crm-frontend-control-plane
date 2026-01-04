@@ -10,7 +10,7 @@ import {
 } from 'antd';
 import { UserOutlined, MailOutlined } from '@ant-design/icons';
 import { navigate } from '../../router';
-import { getContacts, deleteContact, getCompanies, updateContact, patchContact } from '../../lib/api';
+import { getContacts, deleteContact, getCompanies, patchContact } from '../../lib/api';
 import CallButton from '../../components/CallButton';
 import ClickToCall from '../../components/ui-ClickToCall.jsx';
 import BulkActions from '../../components/ui-BulkActions.jsx';
@@ -38,36 +38,63 @@ function ContactsList() {
   const [bulkSMSModalVisible, setBulkSMSModalVisible] = useState(false);
   const [bulkTagModalVisible, setBulkTagModalVisible] = useState(false);
   const [selectedTags, setSelectedTags] = useState([]);
-  const isMountedRef = useRef(true);
+  const isMountedRef = useRef(false);
+  const activeContactsRequestRef = useRef(null);
+  const activeCompaniesRequestRef = useRef(null);
 
   useEffect(() => {
-    fetchContacts(1, searchText, pagination.pageSize);
-    loadCompanies();
+    // React 18 StrictMode runs effects twice (setup -> cleanup -> setup)
+    // so we must reset the mounted flag on each setup.
+    isMountedRef.current = true;
+
+    const contactsAbort = new AbortController();
+    const companiesAbort = new AbortController();
+
+    // Abort any in-flight requests from previous effect runs
+    activeContactsRequestRef.current?.abort?.();
+    activeCompaniesRequestRef.current?.abort?.();
+    activeContactsRequestRef.current = contactsAbort;
+    activeCompaniesRequestRef.current = companiesAbort;
+
+    fetchContacts(1, searchText, pagination.pageSize, contactsAbort.signal);
+    loadCompanies(companiesAbort.signal);
+
     return () => {
       isMountedRef.current = false;
+      contactsAbort.abort();
+      companiesAbort.abort();
     };
   }, []);
 
-  const loadCompanies = async () => {
+  const loadCompanies = async (signal) => {
     try {
-      const response = await getCompanies({ page_size: 200 });
-      setCompanies(response.results || response || []);
+      const response = await getCompanies({ page_size: 200 }, signal ? { signal } : undefined);
+      if (!isMountedRef.current) return;
+      setCompanies(response?.results || response || []);
     } catch (error) {
+      // Abort is expected when navigating away / StrictMode cleanup
+      if (error?.name === 'AbortError') return;
       console.error('Error loading companies:', error);
+      if (!isMountedRef.current) return;
       setCompanies([]);
     }
   };
 
-  const fetchContacts = async (page = 1, search = '', pageSize = pagination.pageSize) => {
+  const fetchContacts = async (page = 1, search = '', pageSize = pagination.pageSize, signal) => {
     if (!isMountedRef.current) return;
+
     setLoading(true);
     setError(null);
+
     try {
-      const response = await getContacts({
-        page,
-        page_size: pageSize,
-        search: search || undefined,
-      });
+      const response = await getContacts(
+        {
+          page,
+          page_size: pageSize,
+          search: search || undefined,
+        },
+        signal ? { signal } : undefined
+      );
 
       if (!isMountedRef.current) return;
 
@@ -80,7 +107,8 @@ function ContactsList() {
         total: response?.count || results.length,
       }));
     } catch (error) {
-      console.error('Error fetching contacts:', error);
+      // Abort is expected when navigating away / StrictMode cleanup
+      if (error?.name === 'AbortError') return;
       if (!isMountedRef.current) return;
 
       setContacts([]);
@@ -91,10 +119,11 @@ function ContactsList() {
       }));
       const errorMessage = error?.details?.detail || error?.message || 'Не удалось загрузить контакты';
       setError(errorMessage);
-      message.error('Не удалось загрузить контакты. Проверьте подключение или авторизацию.');
+      message.error('Не удалось загрузить контакты');
     } finally {
-      if (!isMountedRef.current) return;
-      setLoading(false);
+      if (isMountedRef.current) {
+        setLoading(false);
+      }
     }
   };
 
@@ -107,14 +136,21 @@ function ContactsList() {
 
   const handleSearch = (value) => {
     setSearchText(value);
-    fetchContacts(1, value, pagination.pageSize);
+    const abort = new AbortController();
+    activeContactsRequestRef.current?.abort?.();
+    activeContactsRequestRef.current = abort;
+    fetchContacts(1, value, pagination.pageSize, abort.signal);
   };
 
   const handleDelete = async (id) => {
     try {
       await deleteContact(id);
       message.success('Контакт удален');
-      fetchContacts(pagination.current, searchText, pagination.pageSize);
+
+      const abort = new AbortController();
+      activeContactsRequestRef.current?.abort?.();
+      activeContactsRequestRef.current = abort;
+      fetchContacts(pagination.current, searchText, pagination.pageSize, abort.signal);
     } catch (error) {
       message.error('Ошибка удаления контакта');
     }
@@ -126,7 +162,10 @@ function ContactsList() {
       current: newPagination.current,
       pageSize: newPagination.pageSize,
     }));
-    fetchContacts(newPagination.current, searchText, newPagination.pageSize);
+    const abort = new AbortController();
+    activeContactsRequestRef.current?.abort?.();
+    activeContactsRequestRef.current = abort;
+    fetchContacts(newPagination.current, searchText, newPagination.pageSize, abort.signal);
   };
 
   const handleBulkDelete = async (ids) => {
@@ -134,7 +173,11 @@ function ContactsList() {
       await Promise.all(ids.map((contactId) => deleteContact(contactId)));
       message.success(`Удалено ${ids.length} контактов`);
       setSelectedRowKeys([]);
-      fetchContacts(pagination.current, searchText, pagination.pageSize);
+
+      const abort = new AbortController();
+      activeContactsRequestRef.current?.abort?.();
+      activeContactsRequestRef.current = abort;
+      fetchContacts(pagination.current, searchText, pagination.pageSize, abort.signal);
     } catch (error) {
       message.error('Ошибка массового удаления');
     }
@@ -225,7 +268,11 @@ function ContactsList() {
       setSelectedRowKeys([]);
       setBulkTagModalVisible(false);
       setSelectedTags([]);
-      fetchContacts(pagination.current, searchText, pagination.pageSize);
+
+      const abort = new AbortController();
+      activeContactsRequestRef.current?.abort?.();
+      activeContactsRequestRef.current = abort;
+      fetchContacts(pagination.current, searchText, pagination.pageSize, abort.signal);
     } catch (error) {
       const errorMessage = error?.details?.detail || error?.message || 'Ошибка применения тегов';
       message.error(errorMessage);
@@ -390,7 +437,12 @@ function ContactsList() {
         onSearch={handleSearch}
         onCreate={() => navigate('/contacts/new')}
         onExport={handleExport}
-        onRefresh={() => fetchContacts(pagination.current, searchText, pagination.pageSize)}
+        onRefresh={() => {
+          const abort = new AbortController();
+          activeContactsRequestRef.current?.abort?.();
+          activeContactsRequestRef.current = abort;
+          fetchContacts(pagination.current, searchText, pagination.pageSize, abort.signal);
+        }}
         createButtonText="Создать контакт"
         showViewModeSwitch={false}
       />
