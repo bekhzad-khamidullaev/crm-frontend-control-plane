@@ -74,17 +74,27 @@ function CompaniesList() {
   };
 
   const loadReferenceData = async () => {
-    try {
-      const [industriesResponse, clientTypesResponse] = await Promise.all([
-        getIndustries({ page_size: 200 }),
-        getClientTypes({ page_size: 200 }),
-      ]);
-      setIndustries(industriesResponse.results || industriesResponse || []);
-      setClientTypes(clientTypesResponse.results || clientTypesResponse || []);
-    } catch (error) {
-      console.error('Error loading company reference data:', error);
+    const [industriesRes, clientTypesRes] = await Promise.allSettled([
+      getIndustries({ page_size: 200 }),
+      getClientTypes({ page_size: 200 }),
+    ]);
+
+    if (industriesRes.status === 'fulfilled') {
+      const data = industriesRes.value;
+      setIndustries(data?.results || data || []);
+    } else {
+      console.error('Error loading industries:', industriesRes.reason);
       setIndustries([]);
+      message.warning('Не удалось загрузить справочник индустрий. Фильтры будут ограничены.');
+    }
+
+    if (clientTypesRes.status === 'fulfilled') {
+      const data = clientTypesRes.value;
+      setClientTypes(data?.results || data || []);
+    } else {
+      console.error('Error loading client types:', clientTypesRes.reason);
       setClientTypes([]);
+      message.warning('Не удалось загрузить справочник типов клиентов. Фильтры будут ограничены.');
     }
   };
 

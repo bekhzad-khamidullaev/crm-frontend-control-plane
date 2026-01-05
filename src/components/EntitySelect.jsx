@@ -1,5 +1,13 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
-import { Select, Spin } from 'antd';
+import { Select, Spin, message } from 'antd';
+
+const warnedKeys = new Set();
+const warnOnce = (key, text) => {
+  if (!key) return;
+  if (warnedKeys.has(key)) return;
+  warnedKeys.add(key);
+  message.warning(text);
+};
 
 const normalizeItems = (response) => {
   if (!response) return [];
@@ -68,7 +76,13 @@ function EntitySelect({
       if (requestIdRef.current !== currentRequestId) return;
       setOptions([]);
       console.error('EntitySelect load error:', error);
-    } finally {
+      if (error?.name !== 'AbortError') {
+        warnOnce(
+          `entityselect:${labelKey}:${valueKey}`,
+          'Не удалось загрузить справочник для выбора. Проверьте доступ к API.'
+        );
+      }
+    } finally { 
       if (requestIdRef.current === currentRequestId) {
         setLoading(false);
       }

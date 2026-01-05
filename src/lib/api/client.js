@@ -31,6 +31,29 @@ const AUTH_ENDPOINTS = ['/api/token/', '/api/token/refresh/', '/api/token/verify
 const RETRYABLE_STATUS = [502, 503, 504];
 const MAX_RETRY_DELAY = 4000;
 
+// When backend/proxy is misconfigured it may cause redirect loops (ERR_TOO_MANY_REDIRECTS)
+// which surface in browsers as a network failure (TypeError: Failed to fetch).
+// For reference endpoints we can safely degrade by returning an empty page instead of blocking the UI.
+const REFERENCE_ENDPOINT_REGEX =
+  /^\/api\/(users|industries|client-types|lead-sources|countries|cities|departments|currencies|crm-tags|task-stages|project-stages|stages|product-categories|task-tags)\//;
+const referenceWarned = new Set();
+const EMPTY_PAGE = Object.freeze({ count: 0, next: null, previous: null, results: [] });
+
+function isNetworkFailure(err) {
+  // fetch failures in browsers are usually TypeError("Failed to fetch")
+  if (err instanceof TypeError) return true;
+  if (err instanceof ApiError && (err.status === 0 || !err.status)) return true;
+  return false;
+}
+
+function warnReferenceOnce(path, err) {
+  const key = path;
+  if (referenceWarned.has(key)) return;
+  referenceWarned.add(key);
+  // Intentionally only console.warn here (no antd message in API layer).
+  console.warn(`[API] Reference endpoint failed, falling back to empty list: ${path}`, err);
+}
+
 export class ApiError extends Error {
   constructor(message, { status = 0, statusText = '', url = '', details = null } = {}) {
     super(message);
@@ -309,6 +332,13 @@ async function request(method, path, options = {}) {
 
     return payload;
   } catch (err) {
+    // Centralized graceful fallback for reference endpoints when backend causes redirect loops
+    // (ERR_TOO_MANY_REDIRECTS -> fetch throws TypeError: Failed to fetch).
+    if (method === 'GET' && REFERENCE_ENDPOINT_REGEX.test(path) && isNetworkFailure(err)) {
+      warnReferenceOnce(path, err);
+      return EMPTY_PAGE;
+    }
+
     const apiError = err instanceof ApiError ? err : new ApiError(err.message || 'Network error', { url });
     if (shouldRetry(apiError, retry, method)) {
       const attempt = (options._attempt || 0) + 1;

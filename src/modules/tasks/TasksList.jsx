@@ -18,8 +18,7 @@ import {
   DeleteOutlined,
 } from '@ant-design/icons';
 import { navigate } from '../../router';
-import { getTasks, deleteTask, updateTask, getUsers } from '../../lib/api/client';
-import { getTaskStages } from '../../lib/api/reference';
+import { getTasks, deleteTask, updateTask, getUsers, getTaskStages } from '../../lib/api';
 import EnhancedTable from '../../components/ui-EnhancedTable.jsx';
 import TableToolbar from '../../components/ui-TableToolbar.jsx';
 
@@ -43,17 +42,27 @@ function TasksList() {
   }, []);
 
   const loadReferences = async () => {
-    try {
-      const [stagesResponse, usersResponse] = await Promise.all([
-        getTaskStages({ page_size: 200 }),
-        getUsers({ page_size: 200 }),
-      ]);
-      setStages(stagesResponse.results || stagesResponse || []);
-      setUsers(usersResponse.results || usersResponse || []);
-    } catch (error) {
-      console.error('Error loading task references:', error);
+    const [stagesRes, usersRes] = await Promise.allSettled([
+      getTaskStages({ page_size: 200 }),
+      getUsers({ page_size: 200 }),
+    ]);
+
+    if (stagesRes.status === 'fulfilled') {
+      const data = stagesRes.value;
+      setStages(data?.results || data || []);
+    } else {
+      console.error('Error loading task stages:', stagesRes.reason);
       setStages([]);
+      message.warning('Не удалось загрузить стадии задач. Фильтры будут ограничены.');
+    }
+
+    if (usersRes.status === 'fulfilled') {
+      const data = usersRes.value;
+      setUsers(data?.results || data || []);
+    } else {
+      console.error('Error loading users:', usersRes.reason);
       setUsers([]);
+      message.warning('Не удалось загрузить пользователей. Фильтры будут ограничены.');
     }
   };
 

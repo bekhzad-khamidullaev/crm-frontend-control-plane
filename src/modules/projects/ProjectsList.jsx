@@ -20,8 +20,15 @@ import {
   DeleteOutlined,
 } from '@ant-design/icons';
 import { navigate } from '../../router';
-import { getProjects, deleteProject, getUsers, projectsApi } from '../../lib/api/client';
-import { getProjectStages } from '../../lib/api/reference';
+import {
+  getProjects,
+  deleteProject,
+  getUsers,
+  getProjectStages,
+  bulkTagProjects,
+  reopenProject,
+  completeProject,
+} from '../../lib/api';
 import EnhancedTable from '../../components/ui-EnhancedTable.jsx';
 import TableToolbar from '../../components/ui-TableToolbar.jsx';
 import BulkActions from '../../components/ui-BulkActions.jsx';
@@ -51,17 +58,28 @@ function ProjectsList() {
   }, []);
 
   const loadReferences = async () => {
-    try {
-      const [stagesResponse, usersResponse] = await Promise.all([
-        getProjectStages({ page_size: 200 }),
-        getUsers({ page_size: 200 }),
-      ]);
-      setStages(stagesResponse.results || stagesResponse || []);
-      setUsers(usersResponse.results || usersResponse || []);
-    } catch (error) {
-      console.error('Error loading project references:', error);
+    const [stagesRes, usersRes] = await Promise.allSettled([
+      getProjectStages({ page_size: 200 }),
+      getUsers({ page_size: 200 }),
+    ]);
+
+    if (stagesRes.status === 'fulfilled') {
+      const data = stagesRes.value;
+      setStages(data?.results || data || []);
+    } else {
+      console.error('Error loading project stages:', stagesRes.reason);
       setStages([]);
+    }
+
+    if (usersRes.status === 'fulfilled') {
+      const data = usersRes.value;
+      setUsers(data?.results || data || []);
+    } else {
+      console.error('Error loading users:', usersRes.reason);
       setUsers([]);
+      message.warning(
+        'Не удалось загрузить пользователей (справочник). Страница работает, но выбор владельца/со-владельца может быть ограничен.'
+      );
     }
   };
 
@@ -144,7 +162,7 @@ function ProjectsList() {
     }
 
     try {
-      await projectsApi.bulkTag({
+      await bulkTagProjects({
         project_ids: selectedRowKeys,
         tag_ids: selectedTags,
       });
@@ -179,10 +197,10 @@ function ProjectsList() {
     const isDone = doneStage ? project.stage === doneStage.id : project.active === false;
     try {
       if (isDone) {
-        await projectsApi.reopen(project.id);
+        await reopenProject(project.id);
         message.success('Проект возобновлен');
       } else {
-        await projectsApi.complete(project.id);
+        await completeProject(project.id);
         message.success('Проект завершен');
       }
       fetchProjects(pagination.current, searchText);

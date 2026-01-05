@@ -22,6 +22,7 @@ import {
   createProject,
   updateProject,
   getUsers,
+  getUser,
   getProjectStages,
 } from '../../lib/api';
 import ReferenceSelect from '../../components/ui-ReferenceSelect';
