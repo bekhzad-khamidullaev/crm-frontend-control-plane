@@ -21,13 +21,18 @@
 // export * as user from './user.js';
 
 // CRM Core Entities - only export functions that actually exist in client.js
-export { 
-  getLeads, 
-  getLead, 
-  createLead, 
-  updateLead, 
+export {
+  getLeads,
+  getLead,
+  createLead,
+  updateLead,
+  patchLead,
   deleteLead,
-} from './client.js';
+  assignLead,
+  convertLead,
+  disqualifyLead,
+  bulkTagLeads,
+} from './leads.js';
 
 export {
   getContacts,
@@ -36,7 +41,7 @@ export {
   updateContact,
   deleteContact,
   patchContact,
-} from './client.js';
+} from './contacts.js';
 
 // From companies.js
 export {
