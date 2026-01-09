@@ -1,34 +1,25 @@
-import client from './client';
+import { api as client } from './client';
 
-const getContacts = (params) => {
+export const getContacts = (params) => {
   return client.get('/contacts/', { params });
 };
 
-const createContact = (data) => {
+export const createContact = (data) => {
   return client.post('/contacts/', data);
 };
 
-const getContact = (id) => {
+export const getContact = (id) => {
   return client.get(`/contacts/${id}/`);
 };
 
-const updateContact = (id, data) => {
+export const updateContact = (id, data) => {
   return client.put(`/contacts/${id}/`, data);
 };
 
-const patchContact = (id, data) => {
+export const patchContact = (id, data) => {
   return client.patch(`/contacts/${id}/`, data);
 };
 
-const deleteContact = (id) => {
+export const deleteContact = (id) => {
   return client.delete(`/contacts/${id}/`);
-};
-
-export default {
-  getContacts,
-  createContact,
-  getContact,
-  updateContact,
-  patchContact,
-  deleteContact,
 };
