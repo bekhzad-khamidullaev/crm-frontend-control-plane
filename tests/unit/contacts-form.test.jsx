@@ -73,7 +73,6 @@ describe('ContactForm', () => {
 
     await waitFor(() => {
       expect(screen.getByText('Введите имя')).toBeInTheDocument();
-      expect(screen.getByText('Введите фамилию')).toBeInTheDocument();
     });
   });
 

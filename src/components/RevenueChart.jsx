@@ -48,9 +48,15 @@ export default function RevenueChart() {
       if (series?.labels && Array.isArray(series?.revenue)) {
         labels = series.labels;
         values = series.revenue;
+      } else if (series?.labels && Array.isArray(series?.values)) {
+        labels = series.labels;
+        values = series.values;
       } else if (Array.isArray(series)) {
         labels = series.map((item) => item.label || item.date || item.name || '');
-        values = series.map((item) => item.value || item.amount || item.total || 0);
+        values = series.map((item) => item.value ?? item.amount ?? item.total ?? 0);
+      } else if (analytics?.periods && analytics?.totals) {
+        labels = analytics.periods;
+        values = analytics.totals;
       }
 
       if (!labels.length) {

@@ -1,38 +1,131 @@
 import React, { useEffect, useState } from 'react';
-import {
-  Form,
-  Input,
-  Button,
-  Card,
-  Space,
-  App,
-  Typography,
-  Spin,
-  Row,
-  Col,
-  InputNumber,
-  DatePicker,
-  Switch,
-} from 'antd';
-import { SaveOutlined, ArrowLeftOutlined } from '@ant-design/icons';
+import { useForm } from 'react-hook-form';
+import { z } from 'zod';
+import { zodResolver } from '@hookform/resolvers/zod';
 import dayjs from 'dayjs';
+import { ArrowLeft, Save } from 'lucide-react';
+
 import { navigate } from '../../router';
-import { getDeal, createDeal, updateDeal, getLead, getLeads, getContact, getContacts, getCompany, getCompanies, getUser, getUsers } from '../../lib/api/client';
-import { getRequest } from '../../lib/api/requests';
-import { getRequests } from '../../lib/api/requests';
+import {
+  getDeal,
+  createDeal,
+  updateDeal,
+  getLead,
+  getLeads,
+  getContact,
+  getContacts,
+  getCompany,
+  getCompanies,
+  getUser,
+  getUsers,
+} from '../../lib/api/client';
+import { getRequest, getRequests } from '../../lib/api/requests';
 import ReferenceSelect from '../../components/ui-ReferenceSelect';
 import EntitySelect from '../../components/EntitySelect';
 import { normalizePayload } from '../../lib/utils/payload';
+import { Card } from '../../components/ui/card.jsx';
+import { Button } from '../../components/ui/button.jsx';
+import { Input } from '../../components/ui/input.jsx';
+import { Textarea } from '../../components/ui/textarea.jsx';
+import { Label } from '../../components/ui/label.jsx';
+import { Switch } from '../../components/ui/switch.jsx';
+import { DatePicker } from '../../components/ui-DatePicker.jsx';
+import { toast } from '../../components/ui/use-toast.js';
 
-const { Title } = Typography;
-const { TextArea } = Input;
+const schema = z.object({
+  name: z.string().min(1, 'Введите название'),
+  amount: z.any().optional(),
+  currency: z.any().optional(),
+  stage: z.any().optional(),
+  probability: z.any().optional(),
+  closing_date: z.any().optional(),
+  closing_reason: z.any().optional(),
+  next_step: z.string().min(1, 'Введите следующий шаг'),
+  next_step_date: z.any().optional(),
+  company: z.any().optional(),
+  contact: z.any().optional(),
+  lead: z.any().optional(),
+  request: z.any().optional(),
+  partner_contact: z.any().optional(),
+  tags: z.any().optional(),
+  country: z.any().optional(),
+  city: z.any().optional(),
+  owner: z.any().optional(),
+  co_owner: z.any().optional(),
+  department: z.any().optional(),
+  active: z.boolean().optional(),
+  relevant: z.boolean().optional(),
+  important: z.boolean().optional(),
+  is_new: z.boolean().optional(),
+  remind_me: z.boolean().optional(),
+  description: z.string().optional(),
+});
 
 function DealForm({ id }) {
-  const [form] = Form.useForm();
-  const { message } = App.useApp();
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
   const isEdit = !!id;
+
+  const {
+    register,
+    handleSubmit,
+    setValue,
+    reset,
+    watch,
+    formState: { errors },
+  } = useForm({
+    resolver: zodResolver(schema),
+    defaultValues: {
+      name: '',
+      amount: '',
+      currency: '',
+      stage: '',
+      probability: '',
+      closing_date: null,
+      closing_reason: '',
+      next_step: '',
+      next_step_date: null,
+      company: '',
+      contact: '',
+      lead: '',
+      request: '',
+      partner_contact: '',
+      tags: [],
+      country: '',
+      city: '',
+      owner: '',
+      co_owner: '',
+      department: '',
+      active: true,
+      relevant: true,
+      important: false,
+      is_new: true,
+      remind_me: false,
+      description: '',
+    },
+  });
+
+  const closingDate = watch('closing_date');
+  const nextStepDate = watch('next_step_date');
+  const currencyValue = watch('currency');
+  const stageValue = watch('stage');
+  const closingReasonValue = watch('closing_reason');
+  const companyValue = watch('company');
+  const contactValue = watch('contact');
+  const leadValue = watch('lead');
+  const requestValue = watch('request');
+  const partnerContactValue = watch('partner_contact');
+  const tagsValue = watch('tags');
+  const countryValue = watch('country');
+  const cityValue = watch('city');
+  const ownerValue = watch('owner');
+  const coOwnerValue = watch('co_owner');
+  const departmentValue = watch('department');
+  const activeValue = watch('active');
+  const relevantValue = watch('relevant');
+  const importantValue = watch('important');
+  const isNewValue = watch('is_new');
+  const remindMeValue = watch('remind_me');
 
   useEffect(() => {
     if (isEdit) {
@@ -44,315 +137,330 @@ function DealForm({ id }) {
     setLoading(true);
     try {
       const deal = await getDeal(id);
-      form.setFieldsValue({
+      reset({
         ...deal,
+        amount: deal.amount ?? '',
         closing_date: deal.closing_date ? dayjs(deal.closing_date) : null,
         next_step_date: deal.next_step_date ? dayjs(deal.next_step_date) : null,
       });
     } catch (error) {
-      message.error('Ошибка загрузки данных сделки');
+      toast({ title: 'Ошибка', description: 'Ошибка загрузки данных сделки', variant: 'destructive' });
     } finally {
       setLoading(false);
     }
   };
 
-  const onFinish = async (values) => {
+  const onSubmit = async (values) => {
     setSaving(true);
     try {
-      const payload = normalizePayload({
-        ...values,
-        amount: values.amount !== undefined && values.amount !== null && values.amount !== ''
-          ? String(values.amount)
-          : null,
-        closing_date: values.closing_date ? values.closing_date.format('YYYY-MM-DD') : null,
-        next_step_date: values.next_step_date ? values.next_step_date.format('YYYY-MM-DD') : null,
-      }, { preserveEmptyArrays: ['tags'] });
+      const payload = normalizePayload(
+        {
+          ...values,
+          amount:
+            values.amount !== undefined && values.amount !== null && values.amount !== ''
+              ? String(values.amount)
+              : null,
+          closing_date: values.closing_date ? values.closing_date.format('YYYY-MM-DD') : null,
+          next_step_date: values.next_step_date ? values.next_step_date.format('YYYY-MM-DD') : null,
+        },
+        { preserveEmptyArrays: ['tags'] }
+      );
 
       if (isEdit) {
         await updateDeal(id, payload);
-        message.success('Сделка обновлена');
+        toast({ title: 'Сделка обновлена', description: 'Сделка обновлена' });
       } else {
         await createDeal(payload);
-        message.success('Сделка создана');
+        toast({ title: 'Сделка создана', description: 'Сделка создана' });
       }
       navigate('/deals');
     } catch (error) {
       const details = error?.details;
-      if (details && typeof details === 'object') {
-        const fieldErrors = Object.entries(details)
-          .filter(([, value]) => Array.isArray(value))
-          .map(([name, errors]) => ({ name, errors: errors.map(String) }));
-        if (fieldErrors.length) {
-          form.setFields(fieldErrors);
-          setSaving(false);
-          return;
-        }
-      }
-      message.error(details?.detail || `Ошибка ${isEdit ? 'обновления' : 'создания'} сделки`);
+      toast({
+        title: 'Ошибка',
+        description: details?.detail || `Ошибка ${isEdit ? 'обновления' : 'создания'} сделки`,
+        variant: 'destructive',
+      });
     } finally {
       setSaving(false);
     }
   };
 
   if (loading) {
-    return (
-      <div style={{ textAlign: 'center', padding: '50px' }}>
-        <Spin size="large" />
-      </div>
-    );
+    return <div className="py-12 text-center text-sm text-muted-foreground">Загрузка...</div>;
   }
 
   return (
-    <div>
-      <Space style={{ marginBottom: 16 }}>
-        <Button icon={<ArrowLeftOutlined />} onClick={() => navigate('/deals')}>
-          Назад
-        </Button>
-      </Space>
+    <div className="space-y-4">
+      <Button variant="outline" onClick={() => navigate('/deals')}>
+        <ArrowLeft className="mr-2 h-4 w-4" />
+        Назад
+      </Button>
 
-      <Title level={2}>
+      <h2 className="text-2xl font-semibold">
         {isEdit ? 'Редактировать сделку' : 'Создать новую сделку'}
-      </Title>
+      </h2>
 
-      <Card>
-        <Form form={form} layout="vertical" onFinish={onFinish} autoComplete="off">
-          <Title level={4}>Основная информация</Title>
-          <Row gutter={16}>
-            <Col xs={24} md={12}>
-              <Form.Item
-                label="Название сделки"
-                name="name"
-                rules={[{ required: true, message: 'Введите название' }]}
-              >
-                <Input placeholder="Поставка оборудования" />
-              </Form.Item>
-            </Col>
-            <Col xs={24} md={12}>
-              <Form.Item label="Сумма сделки" name="amount">
-                <InputNumber
-                  min={0}
-                  style={{ width: '100%' }}
-                  placeholder="1500000"
-                  formatter={(value) => `${value}`.replace(/\B(?=(\d{3})+(?!\d))/g, ' ')}
-                  parser={(value) => value.replace(/\s/g, '')}
+      <Card className="p-6">
+        <form className="space-y-6" onSubmit={handleSubmit(onSubmit)}>
+          <section className="space-y-3">
+            <h3 className="text-lg font-semibold">Основная информация</h3>
+            <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+              <div>
+                <Label htmlFor="name">Название сделки *</Label>
+                <Input id="name" placeholder="Поставка оборудования" {...register('name')} />
+                {errors.name && <p className="text-xs text-destructive">{errors.name.message}</p>}
+              </div>
+              <div>
+                <Label htmlFor="amount">Сумма сделки</Label>
+                <Input id="amount" type="number" placeholder="1500000" {...register('amount')} />
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
+              <div>
+                <Label>Валюта</Label>
+                <ReferenceSelect
+                  type="currencies"
+                  placeholder="Выберите валюту"
+                  allowClear
+                  value={currencyValue || ''}
+                  onChange={(val) => setValue('currency', val)}
                 />
-              </Form.Item>
-            </Col>
-          </Row>
+              </div>
+              <div>
+                <Label>Стадия</Label>
+                <ReferenceSelect
+                  type="stages"
+                  placeholder="Выберите стадию"
+                  allowClear
+                  value={stageValue || ''}
+                  onChange={(val) => setValue('stage', val)}
+                />
+              </div>
+              <div>
+                <Label htmlFor="probability">Вероятность (%)</Label>
+                <Input id="probability" type="number" min={0} max={100} {...register('probability')} />
+              </div>
+            </div>
 
-          <Row gutter={16}>
-            <Col xs={24} md={8}>
-              <Form.Item label="Валюта" name="currency">
-                <ReferenceSelect type="currencies" placeholder="Выберите валюту" allowClear />
-              </Form.Item>
-            </Col>
-            <Col xs={24} md={8}>
-              <Form.Item label="Стадия" name="stage">
-                <ReferenceSelect type="stages" placeholder="Выберите стадию" allowClear />
-              </Form.Item>
-            </Col>
-            <Col xs={24} md={8}>
-              <Form.Item label="Вероятность (%)" name="probability">
-                <InputNumber min={0} max={100} style={{ width: '100%' }} />
-              </Form.Item>
-            </Col>
-          </Row>
+            <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+              <div>
+                <Label>Дата закрытия</Label>
+                <DatePicker id="closing_date" value={closingDate || null} onChange={(val) => setValue('closing_date', val)} format="DD.MM.YYYY" />
+              </div>
+              <div>
+                <Label>Причина закрытия</Label>
+                <ReferenceSelect
+                  type="closing-reasons"
+                  placeholder="Выберите причину"
+                  allowClear
+                  value={closingReasonValue || ''}
+                  onChange={(val) => setValue('closing_reason', val)}
+                />
+              </div>
+            </div>
 
-          <Row gutter={16}>
-            <Col xs={24} md={12}>
-              <Form.Item label="Дата закрытия" name="closing_date">
-                <DatePicker style={{ width: '100%' }} format="DD.MM.YYYY" />
-              </Form.Item>
-            </Col>
-            <Col xs={24} md={12}>
-              <Form.Item label="Причина закрытия" name="closing_reason">
-                <ReferenceSelect type="closing-reasons" placeholder="Выберите причину" allowClear />
-              </Form.Item>
-            </Col>
-          </Row>
+            <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+              <div>
+                <Label htmlFor="next_step">Следующий шаг *</Label>
+                <Input id="next_step" placeholder="Согласовать КП" {...register('next_step')} />
+                {errors.next_step && <p className="text-xs text-destructive">{errors.next_step.message}</p>}
+              </div>
+              <div>
+                <Label>Дата следующего шага *</Label>
+                <DatePicker id="next_step_date" value={nextStepDate || null} onChange={(val) => setValue('next_step_date', val)} format="DD.MM.YYYY" />
+                {errors.next_step_date && <p className="text-xs text-destructive">{errors.next_step_date.message}</p>}
+              </div>
+            </div>
+          </section>
 
-          <Row gutter={16}>
-            <Col xs={24} md={12}>
-              <Form.Item
-                label="Следующий шаг"
-                name="next_step"
-                rules={[{ required: true, message: 'Введите следующий шаг' }]}
-              >
-                <Input placeholder="Согласовать коммерческое предложение" />
-              </Form.Item>
-            </Col>
-            <Col xs={24} md={12}>
-              <Form.Item
-                label="Дата следующего шага"
-                name="next_step_date"
-                rules={[{ required: true, message: 'Выберите дату следующего шага' }]}
-              >
-                <DatePicker style={{ width: '100%' }} format="DD.MM.YYYY" />
-              </Form.Item>
-            </Col>
-          </Row>
-
-          <Title level={4} style={{ marginTop: 24 }}>
-            Связанные записи
-          </Title>
-          <Row gutter={16}>
-            <Col xs={24} md={12}>
-              <Form.Item label="Компания" name="company">
+          <section className="space-y-3">
+            <h3 className="text-lg font-semibold">Связанные записи</h3>
+            <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+              <div>
+                <Label>Компания</Label>
                 <EntitySelect
+                  value={companyValue || ''}
                   placeholder="Выберите компанию"
                   fetchOptions={getCompanies}
                   fetchById={getCompany}
+                  onChange={(val) => setValue('company', val)}
                 />
-              </Form.Item>
-            </Col>
-            <Col xs={24} md={12}>
-              <Form.Item label="Контакт" name="contact">
+              </div>
+              <div>
+                <Label>Контакт</Label>
                 <EntitySelect
+                  value={contactValue || ''}
                   placeholder="Выберите контакт"
                   fetchOptions={getContacts}
                   fetchById={getContact}
                   optionLabel={(item) => item?.full_name || `${item?.first_name || ''} ${item?.last_name || ''}`.trim()}
+                  onChange={(val) => setValue('contact', val)}
                 />
-              </Form.Item>
-            </Col>
-          </Row>
+              </div>
+            </div>
 
-          <Row gutter={16}>
-            <Col xs={24} md={12}>
-              <Form.Item label="Лид" name="lead">
+            <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+              <div>
+                <Label>Лид</Label>
                 <EntitySelect
+                  value={leadValue || ''}
                   placeholder="Выберите лид"
                   fetchOptions={getLeads}
                   fetchById={getLead}
                   optionLabel={(item) => item?.full_name || `${item?.first_name || ''} ${item?.last_name || ''}`.trim()}
+                  onChange={(val) => setValue('lead', val)}
                 />
-              </Form.Item>
-            </Col>
-            <Col xs={24} md={12}>
-              <Form.Item label="Запрос" name="request">
+              </div>
+              <div>
+                <Label>Запрос</Label>
                 <EntitySelect
+                  value={requestValue || ''}
                   placeholder="Выберите запрос"
                   fetchOptions={getRequests}
                   fetchById={getRequest}
                   optionLabel={(item) => item?.ticket || item?.description || `#${item?.id}`}
+                  onChange={(val) => setValue('request', val)}
                 />
-              </Form.Item>
-            </Col>
-          </Row>
+              </div>
+            </div>
 
-          <Row gutter={16}>
-            <Col xs={24} md={12}>
-              <Form.Item label="Контакт партнера" name="partner_contact">
+            <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+              <div>
+                <Label>Контакт партнера</Label>
                 <EntitySelect
+                  value={partnerContactValue || ''}
                   placeholder="Выберите контакт партнера"
                   fetchOptions={getContacts}
                   fetchById={getContact}
                   optionLabel={(item) => item?.full_name || `${item?.first_name || ''} ${item?.last_name || ''}`.trim()}
+                  onChange={(val) => setValue('partner_contact', val)}
                 />
-              </Form.Item>
-            </Col>
-            <Col xs={24} md={12}>
-              <Form.Item label="Теги" name="tags">
-                <ReferenceSelect type="crm-tags" placeholder="Выберите теги" mode="multiple" allowClear />
-              </Form.Item>
-            </Col>
-          </Row>
+              </div>
+              <div>
+                <Label>Теги</Label>
+                <ReferenceSelect
+                  type="crm-tags"
+                  placeholder="Выберите теги"
+                  mode="multiple"
+                  allowClear
+                  value={tagsValue || []}
+                  onChange={(val) => setValue('tags', val)}
+                />
+              </div>
+            </div>
+          </section>
 
-          <Title level={4} style={{ marginTop: 24 }}>
-            География и ответственные
-          </Title>
-          <Row gutter={16}>
-            <Col xs={24} md={12}>
-              <Form.Item label="Страна" name="country">
-                <ReferenceSelect type="countries" placeholder="Выберите страну" allowClear />
-              </Form.Item>
-            </Col>
-            <Col xs={24} md={12}>
-              <Form.Item label="Город" name="city">
-                <ReferenceSelect type="cities" placeholder="Выберите город" allowClear />
-              </Form.Item>
-            </Col>
-          </Row>
+          <section className="space-y-3">
+            <h3 className="text-lg font-semibold">География и ответственные</h3>
+            <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+              <div>
+                <Label>Страна</Label>
+                <ReferenceSelect
+                  type="countries"
+                  placeholder="Выберите страну"
+                  allowClear
+                  value={countryValue || ''}
+                  onChange={(val) => setValue('country', val)}
+                />
+              </div>
+              <div>
+                <Label>Город</Label>
+                <ReferenceSelect
+                  type="cities"
+                  placeholder="Выберите город"
+                  allowClear
+                  value={cityValue || ''}
+                  onChange={(val) => setValue('city', val)}
+                />
+              </div>
+            </div>
 
-          <Row gutter={16}>
-            <Col xs={24} md={12}>
-              <Form.Item label="Ответственный" name="owner">
+            <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+              <div>
+                <Label>Ответственный</Label>
                 <EntitySelect
+                  value={ownerValue || ''}
                   placeholder="Выберите пользователя"
                   fetchOptions={getUsers}
                   fetchById={getUser}
+                  onChange={(val) => setValue('owner', val)}
                 />
-              </Form.Item>
-            </Col>
-            <Col xs={24} md={12}>
-              <Form.Item label="Со-ответственный" name="co_owner">
+              </div>
+              <div>
+                <Label>Со-ответственный</Label>
                 <EntitySelect
+                  value={coOwnerValue || ''}
                   placeholder="Выберите пользователя"
                   fetchOptions={getUsers}
                   fetchById={getUser}
+                  onChange={(val) => setValue('co_owner', val)}
                 />
-              </Form.Item>
-            </Col>
-          </Row>
+              </div>
+            </div>
 
-          <Row gutter={16}>
-            <Col xs={24} md={12}>
-              <Form.Item label="Отдел" name="department">
-                <ReferenceSelect type="departments" placeholder="Выберите отдел" allowClear />
-              </Form.Item>
-            </Col>
-          </Row>
+            <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+              <div>
+                <Label>Отдел</Label>
+                <ReferenceSelect
+                  type="departments"
+                  placeholder="Выберите отдел"
+                  allowClear
+                  value={departmentValue || ''}
+                  onChange={(val) => setValue('department', val)}
+                />
+              </div>
+            </div>
+          </section>
 
-          <Title level={4} style={{ marginTop: 24 }}>
-            Статус
-          </Title>
-          <Row gutter={16}>
-            <Col xs={24} md={8}>
-              <Form.Item label="Активна" name="active" valuePropName="checked">
-                <Switch />
-              </Form.Item>
-            </Col>
-            <Col xs={24} md={8}>
-              <Form.Item label="Актуальна" name="relevant" valuePropName="checked">
-                <Switch />
-              </Form.Item>
-            </Col>
-            <Col xs={24} md={8}>
-              <Form.Item label="Важная" name="important" valuePropName="checked">
-                <Switch />
-              </Form.Item>
-            </Col>
-          </Row>
+          <section className="space-y-3">
+            <h3 className="text-lg font-semibold">Статус</h3>
+            <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
+              <div className="flex items-center gap-2">
+                <Switch checked={!!activeValue} onCheckedChange={(val) => setValue('active', val)} />
+                <Label>Активна</Label>
+              </div>
+              <div className="flex items-center gap-2">
+                <Switch checked={!!relevantValue} onCheckedChange={(val) => setValue('relevant', val)} />
+                <Label>Актуальна</Label>
+              </div>
+              <div className="flex items-center gap-2">
+                <Switch checked={!!importantValue} onCheckedChange={(val) => setValue('important', val)} />
+                <Label>Важная</Label>
+              </div>
+            </div>
 
-          <Row gutter={16}>
-            <Col xs={24} md={8}>
-              <Form.Item label="Новая" name="is_new" valuePropName="checked">
-                <Switch />
-              </Form.Item>
-            </Col>
-            <Col xs={24} md={8}>
-              <Form.Item label="Напоминать" name="remind_me" valuePropName="checked">
-                <Switch />
-              </Form.Item>
-            </Col>
-          </Row>
+            <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+              <div className="flex items-center gap-2">
+                <Switch checked={!!isNewValue} onCheckedChange={(val) => setValue('is_new', val)} />
+                <Label>Новая</Label>
+              </div>
+              <div className="flex items-center gap-2">
+                <Switch checked={!!remindMeValue} onCheckedChange={(val) => setValue('remind_me', val)} />
+                <Label>Напоминать</Label>
+              </div>
+            </div>
+          </section>
 
-          <Title level={4} style={{ marginTop: 24 }}>
-            Дополнительная информация
-          </Title>
-          <Form.Item label="Описание" name="description">
-            <TextArea rows={4} placeholder="Детальное описание сделки" />
-          </Form.Item>
+          <section className="space-y-3">
+            <h3 className="text-lg font-semibold">Дополнительная информация</h3>
+            <div>
+              <Label htmlFor="description">Описание</Label>
+              <Textarea id="description" rows={4} placeholder="Детальное описание сделки" {...register('description')} />
+            </div>
+          </section>
 
-          <Form.Item>
-            <Space>
-              <Button type="primary" htmlType="submit" icon={<SaveOutlined />} loading={saving}>
-                {isEdit ? 'Обновить' : 'Создать'}
-              </Button>
-              <Button onClick={() => navigate('/deals')}>Отмена</Button>
-            </Space>
-          </Form.Item>
-        </Form>
+          <div className="flex flex-wrap gap-2">
+            <Button type="submit" loading={saving}>
+              <Save className="mr-2 h-4 w-4" />
+              {isEdit ? 'Обновить' : 'Создать'}
+            </Button>
+            <Button variant="outline" onClick={() => navigate('/deals')}>
+              Отмена
+            </Button>
+          </div>
+        </form>
       </Card>
     </div>
   );

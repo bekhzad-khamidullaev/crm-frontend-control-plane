@@ -1,352 +1,415 @@
-import React, { useEffect, useMemo, useState } from 'react';
-import {
-  Button,
-  Card,
-  Descriptions,
-  Drawer,
-  Form,
-  Input,
-  InputNumber,
-  DatePicker,
-  Modal,
-  Select,
-  Space,
-  Switch,
-  Table,
-} from 'antd';
-import { PlusOutlined, EyeOutlined, EditOutlined, DeleteOutlined } from '@ant-design/icons';
+/**
+ * CrudPage Component - Rewritten for Ant Design 5.x
+ * Universal CRUD page with table, form, and modal
+ */
+
+import React, { useEffect, useState } from 'react';
+import { Form, Modal, Button, Table, Card, Space, Input, InputNumber, Switch, DatePicker, Select, App } from 'antd';
+import { PlusOutlined, EditOutlined, DeleteOutlined, EyeOutlined } from '@ant-design/icons';
 import dayjs from 'dayjs';
 import EntitySelect from './EntitySelect.jsx';
-import ReferenceSelect from './ui-ReferenceSelect';
-import { useMessage } from '../lib/hooks/useMessage';
+import EnhancedTable from './ui-EnhancedTable.jsx';
 
-const { Search } = Input;
 const { TextArea } = Input;
-
-function renderValue(value) {
-  if (value === null || value === undefined || value === '') return '-';
-  if (Array.isArray(value)) return value.join(', ');
-  if (typeof value === 'object') return JSON.stringify(value);
-  return value;
-}
-
-function parseDateValue(value, type) {
-  if (!value) return null;
-  return type === 'date' ? dayjs(value) : dayjs(value);
-}
-
-function serializeDateValue(value, type) {
-  if (!value) return null;
-  return type === 'date' ? value.format('YYYY-MM-DD') : value.toISOString();
-}
-
-function buildRules(field) {
-  const rules = [];
-  if (field.required) {
-    rules.push({ required: true, message: field.requiredMessage || 'Поле обязательно' });
-  }
-  if (field.type === 'json') {
-    rules.push({
-      validator: (_, value) => {
-        if (!value) return Promise.resolve();
-        try {
-          JSON.parse(value);
-          return Promise.resolve();
-        } catch (err) {
-          return Promise.reject(new Error('Некорректный JSON'));
-        }
-      },
-    });
-  }
-  return rules;
-}
-
-function renderField(field) {
-  const commonProps = field.props || {};
-
-  switch (field.type) {
-    case 'textarea':
-      return <TextArea rows={field.rows || 4} placeholder={field.placeholder} {...commonProps} />;
-    case 'number':
-      return <InputNumber min={field.min} max={field.max} style={{ width: '100%' }} placeholder={field.placeholder} {...commonProps} />;
-    case 'select':
-      return (
-        <Select
-          placeholder={field.placeholder}
-          mode={field.multiple ? 'multiple' : undefined}
-          options={field.options || []}
-          allowClear={field.allowClear}
-          {...commonProps}
-        />
-      );
-    case 'switch':
-      return <Switch />;
-    case 'date':
-      return <DatePicker style={{ width: '100%' }} format="YYYY-MM-DD" {...commonProps} />;
-    case 'datetime':
-      return <DatePicker style={{ width: '100%' }} showTime format="YYYY-MM-DD HH:mm" {...commonProps} />;
-    case 'entity':
-      return (
-        <EntitySelect
-          placeholder={field.placeholder}
-          fetchOptions={field.fetchOptions || field.fetchList}
-          fetchById={field.fetchById}
-          allowClear
-          {...commonProps}
-        />
-      );
-    case 'reference':
-      return (
-        <ReferenceSelect
-          type={field.referenceType}
-          placeholder={field.placeholder}
-          mode={field.multiple ? 'multiple' : undefined}
-          allowClear
-          {...commonProps}
-        />
-      );
-    case 'json':
-      return <TextArea rows={field.rows || 6} placeholder={field.placeholder || '{ }'} {...commonProps} />;
-    default:
-      return <Input placeholder={field.placeholder} {...commonProps} />;
-  }
-}
-
-function deserializeRecord(record, fields) {
-  const next = { ...record };
-  fields.forEach((field) => {
-    if (field.type === 'date' || field.type === 'datetime') {
-      next[field.name] = parseDateValue(record[field.name], field.type);
-    }
-    if (field.type === 'json' && record[field.name] !== undefined) {
-      try {
-        next[field.name] = JSON.stringify(record[field.name] ?? {}, null, 2);
-      } catch (err) {
-        next[field.name] = '';
-      }
-    }
-  });
-  return next;
-}
-
-function serializeValues(values, fields) {
-  const payload = { ...values };
-  fields.forEach((field) => {
-    if (field.type === 'date' || field.type === 'datetime') {
-      payload[field.name] = serializeDateValue(values[field.name], field.type);
-    }
-    if (field.type === 'json') {
-      if (values[field.name]) {
-        payload[field.name] = JSON.parse(values[field.name]);
-      }
-    }
-  });
-  return payload;
-}
+const { Option } = Select;
 
 export default function CrudPage({
-  title,
-  description,
+  title = 'CRUD',
   api,
-  columns,
-  fields,
-  rowKey = 'id',
-  searchable = true,
-  searchPlaceholder = 'Поиск',
-  initialValues = {},
+  columns = [],
+  fields = [],
   readOnly = false,
+  initialValues = {},
+  pageSize = 20,
 }) {
-  const message = useMessage();
+  const { message, modal } = App.useApp();
+  const [form] = Form.useForm();
+  
   const [data, setData] = useState([]);
   const [loading, setLoading] = useState(false);
-  const [pagination, setPagination] = useState({ current: 1, pageSize: 10, total: 0 });
-  const [searchText, setSearchText] = useState('');
+  const [pagination, setPagination] = useState({ current: 1, pageSize, total: 0 });
   const [modalOpen, setModalOpen] = useState(false);
-  const [drawerOpen, setDrawerOpen] = useState(false);
-  const [editing, setEditing] = useState(null);
+  const [editing, setEditing] = useState(false);
+  const [currentId, setCurrentId] = useState(null);
   const [viewRecord, setViewRecord] = useState(null);
-  const [form] = Form.useForm();
 
-  const mergedColumns = useMemo(() => {
-    const actions = {
-      title: 'Действия',
-      key: 'actions',
-      width: 160,
-      render: (_, record) => (
-        <Space>
-          <Button type="link" size="small" icon={<EyeOutlined />} onClick={() => handleView(record)} />
-          {!readOnly && (
-            <Button type="link" size="small" icon={<EditOutlined />} onClick={() => handleEdit(record)} />
-          )}
-          {!readOnly && (
-            <Button type="link" size="small" danger icon={<DeleteOutlined />} onClick={() => handleDelete(record)} />
-          )}
-        </Space>
-      ),
-    };
-    return [...columns, actions];
-  }, [columns, readOnly]);
-
-  useEffect(() => {
-    fetchData();
-  }, [pagination.current, pagination.pageSize, searchText]);
-
-  const fetchData = async () => {
+  const fetchList = async () => {
+    if (!api?.list) return;
     setLoading(true);
     try {
-      const params = {
-        page: pagination.current,
-        page_size: pagination.pageSize,
-      };
-      if (searchable && searchText) {
-        params.search = searchText;
-      }
-      const response = await api.list(params);
-      const results = response?.results || response || [];
+      const res = await api.list({ page: pagination.current, page_size: pagination.pageSize });
+      const results = Array.isArray(res) ? res : res?.results || [];
+      const total = res?.count ?? results.length;
       setData(results);
-      setPagination((prev) => ({ ...prev, total: response?.count || results.length }));
-    } catch (error) {
+      setPagination((p) => ({ ...p, total }));
+    } catch (e) {
+      console.error('List load error', e);
       message.error('Не удалось загрузить данные');
-      console.error(error);
     } finally {
       setLoading(false);
     }
   };
 
-  const handleAdd = () => {
-    setEditing(null);
+  useEffect(() => {
+    fetchList();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [pagination.current, pagination.pageSize]);
+
+  const openCreate = () => {
+    setEditing(false);
+    setCurrentId(null);
     form.resetFields();
-    form.setFieldsValue(initialValues);
+    form.setFieldsValue(getInitialValues(fields, initialValues));
     setModalOpen(true);
   };
 
-  const handleEdit = async (record) => {
-    setEditing(record);
+  const openEdit = async (record) => {
+    setEditing(true);
+    setCurrentId(record?.id);
     try {
-      const detail = api.retrieve ? await api.retrieve(record[rowKey]) : record;
-      form.setFieldsValue(deserializeRecord(detail, fields));
+      if (api?.retrieve && record?.id) {
+        const full = await api.retrieve(record.id);
+        form.setFieldsValue(prepareFormValues(fields, full));
+      } else {
+        form.setFieldsValue(prepareFormValues(fields, record));
+      }
       setModalOpen(true);
-    } catch (error) {
-      message.error('Не удалось загрузить данные');
+    } catch (e) {
+      console.error('Edit load error', e);
+      message.error('Не удалось загрузить запись');
     }
   };
 
-  const handleView = async (record) => {
+  const openView = async (record) => {
     try {
-      const detail = api.retrieve ? await api.retrieve(record[rowKey]) : record;
-      setViewRecord(detail);
-      setDrawerOpen(true);
-    } catch (error) {
-      message.error('Не удалось загрузить данные');
+      if (api?.retrieve && record?.id) {
+        const full = await api.retrieve(record.id);
+        setViewRecord(full);
+      } else {
+        setViewRecord(record);
+      }
+    } catch (e) {
+      console.error('View load error', e);
+      message.error('Не удалось загрузить запись');
     }
   };
 
   const handleDelete = (record) => {
-    Modal.confirm({
+    modal.confirm({
       title: 'Удалить запись?',
-      content: 'Действие нельзя отменить.',
+      content: 'Это действие нельзя отменить',
       okText: 'Удалить',
       okType: 'danger',
+      cancelText: 'Отмена',
       onOk: async () => {
+        if (!api?.delete) return;
         try {
-          await api.remove(record[rowKey]);
+          await api.delete(record.id);
           message.success('Запись удалена');
-          fetchData();
-        } catch (error) {
+          fetchList();
+        } catch (e) {
+          console.error('Delete error', e);
           message.error('Не удалось удалить запись');
         }
       },
     });
   };
 
-  const handleSave = async () => {
+  const handleSubmit = async () => {
     try {
       const values = await form.validateFields();
-      const payload = serializeValues(values, fields);
+      const payload = preparePayload(fields, values);
 
-      if (editing) {
-        await api.update(editing[rowKey], payload);
-        message.success('Изменения сохранены');
+      if (editing && currentId) {
+        if (!api?.update) {
+          message.error('Update API не определён');
+          return;
+        }
+        await api.update(currentId, payload);
+        message.success('Запись обновлена');
       } else {
+        if (!api?.create) {
+          message.error('Create API не определён');
+          return;
+        }
         await api.create(payload);
         message.success('Запись создана');
       }
+
       setModalOpen(false);
-      fetchData();
-    } catch (error) {
-      if (error?.errorFields) return;
-      message.error('Ошибка сохранения');
-      console.error(error);
+      form.resetFields();
+      fetchList();
+    } catch (e) {
+      if (e.errorFields) {
+        // Validation error - Ant Design handles it
+        return;
+      }
+      console.error('Submit error', e);
+      message.error(editing ? 'Ошибка обновления' : 'Ошибка создания');
     }
   };
 
-  return (
-    <Card title={title} extra={!readOnly && (
-      <Button type="primary" icon={<PlusOutlined />} onClick={handleAdd}>
-        Добавить
-      </Button>
-    )}>
-      {description && <p style={{ marginBottom: 16 }}>{description}</p>}
-      <Space direction="vertical" style={{ width: '100%' }} size="middle">
-        {searchable && (
-          <Search
-            placeholder={searchPlaceholder}
-            allowClear
-            style={{ maxWidth: 320 }}
-            onSearch={setSearchText}
-          />
-        )}
-        <Table
-          columns={mergedColumns}
-          dataSource={data}
-          rowKey={rowKey}
-          loading={loading}
-          pagination={pagination}
-          onChange={(pagination) => setPagination(pagination)}
-          scroll={{ x: 1000 }}
-        />
-      </Space>
+  const handleTableChange = (pagination) => {
+    setPagination({ ...pagination });
+  };
 
+  const actionColumn = {
+    title: 'Действия',
+    key: 'actions',
+    fixed: 'right',
+    width: 150,
+    render: (_, record) => (
+      <Space size="small">
+        <Button
+          type="link"
+          size="small"
+          icon={<EyeOutlined />}
+          onClick={() => openView(record)}
+        />
+        {!readOnly && (
+          <>
+            <Button
+              type="link"
+              size="small"
+              icon={<EditOutlined />}
+              onClick={() => openEdit(record)}
+            />
+            <Button
+              type="link"
+              size="small"
+              danger
+              icon={<DeleteOutlined />}
+              onClick={() => handleDelete(record)}
+            />
+          </>
+        )}
+      </Space>
+    ),
+  };
+
+  const tableColumns = [...columns, actionColumn];
+
+  return (
+    <Card
+      title={title}
+      extra={
+        !readOnly && (
+          <Button type="primary" icon={<PlusOutlined />} onClick={openCreate}>
+            Создать
+          </Button>
+        )
+      }
+    >
+      <EnhancedTable
+        columns={tableColumns}
+        dataSource={data}
+        loading={loading}
+        pagination={pagination}
+        onChange={handleTableChange}
+        rowKey="id"
+      />
+
+      {/* Create/Edit Modal */}
       <Modal
-        title={editing ? 'Редактирование' : 'Создание'}
+        title={editing ? 'Редактировать' : 'Создать'}
         open={modalOpen}
-        onOk={handleSave}
-        onCancel={() => setModalOpen(false)}
-        okText="Сохранить"
+        onOk={handleSubmit}
+        onCancel={() => {
+          setModalOpen(false);
+          form.resetFields();
+        }}
+        width={800}
+        okText={editing ? 'Сохранить' : 'Создать'}
         cancelText="Отмена"
-        destroyOnHidden
       >
-        <Form form={form} layout="vertical" initialValues={initialValues}>
-          {fields.map((field) => (
-            <Form.Item
-              key={field.name}
-              label={field.label}
-              name={field.name}
-              rules={buildRules(field)}
-              valuePropName={field.type === 'switch' ? 'checked' : 'value'}
-            >
-              {renderField(field)}
-            </Form.Item>
-          ))}
+        <Form
+          form={form}
+          layout="vertical"
+          initialValues={getInitialValues(fields, initialValues)}
+        >
+          {fields.map((field) => renderField(field))}
         </Form>
       </Modal>
 
-      <Drawer
-        title="Детали"
-        open={drawerOpen}
-        onClose={() => setDrawerOpen(false)}
-        width={520}
+      {/* View Modal */}
+      <Modal
+        title="Просмотр"
+        open={!!viewRecord}
+        onCancel={() => setViewRecord(null)}
+        footer={[
+          <Button key="close" onClick={() => setViewRecord(null)}>
+            Закрыть
+          </Button>,
+        ]}
+        width={800}
       >
         {viewRecord && (
-          <Descriptions column={1} bordered>
-            {Object.entries(viewRecord).map(([key, value]) => (
-              <Descriptions.Item key={key} label={key}>
-                {renderValue(value)}
-              </Descriptions.Item>
+          <div>
+            {fields.map((field) => (
+              <div key={field.name} style={{ marginBottom: 16 }}>
+                <div style={{ fontWeight: 500, marginBottom: 4 }}>{field.label}:</div>
+                <div>{formatValue(field, viewRecord[field.name])}</div>
+              </div>
             ))}
-          </Descriptions>
+          </div>
         )}
-      </Drawer>
+      </Modal>
     </Card>
+  );
+}
+
+// Helper functions
+function getInitialValues(fields, defaults = {}) {
+  const values = {};
+  fields.forEach((field) => {
+    if (defaults[field.name] !== undefined) {
+      values[field.name] = defaults[field.name];
+    } else if (field.defaultValue !== undefined) {
+      values[field.name] = field.defaultValue;
+    } else {
+      values[field.name] = getFieldDefaultValue(field);
+    }
+  });
+  return values;
+}
+
+function getFieldDefaultValue(field) {
+  switch (field.type) {
+    case 'boolean':
+      return false;
+    case 'number':
+      return 0;
+    case 'array':
+      return [];
+    default:
+      return '';
+  }
+}
+
+function prepareFormValues(fields, record) {
+  const values = {};
+  fields.forEach((field) => {
+    const value = record[field.name];
+    if (field.type === 'date' && value) {
+      values[field.name] = dayjs(value);
+    } else if (field.type === 'daterange' && Array.isArray(value) && value.length === 2) {
+      values[field.name] = [dayjs(value[0]), dayjs(value[1])];
+    } else {
+      values[field.name] = value;
+    }
+  });
+  return values;
+}
+
+function preparePayload(fields, values) {
+  const payload = {};
+  fields.forEach((field) => {
+    const value = values[field.name];
+    if (field.type === 'date' && value) {
+      payload[field.name] = dayjs(value).format('YYYY-MM-DD');
+    } else if (field.type === 'daterange' && Array.isArray(value) && value.length === 2) {
+      payload[field.name] = [
+        dayjs(value[0]).format('YYYY-MM-DD'),
+        dayjs(value[1]).format('YYYY-MM-DD'),
+      ];
+    } else {
+      payload[field.name] = value;
+    }
+  });
+  return payload;
+}
+
+function formatValue(field, value) {
+  if (value === null || value === undefined) return '-';
+  
+  switch (field.type) {
+    case 'boolean':
+      return value ? 'Да' : 'Нет';
+    case 'date':
+      return dayjs(value).format('DD.MM.YYYY');
+    case 'daterange':
+      if (Array.isArray(value) && value.length === 2) {
+        return `${dayjs(value[0]).format('DD.MM.YYYY')} - ${dayjs(value[1]).format('DD.MM.YYYY')}`;
+      }
+      return '-';
+    case 'array':
+      return Array.isArray(value) ? value.join(', ') : '-';
+    default:
+      return String(value);
+  }
+}
+
+function renderField(field) {
+  const rules = [];
+  if (field.required) {
+    rules.push({ required: true, message: `${field.label} обязательно` });
+  }
+
+  const commonProps = {
+    placeholder: field.placeholder || `Введите ${field.label}`,
+    disabled: field.disabled,
+  };
+
+  let input;
+
+  switch (field.type) {
+    case 'textarea':
+      input = <TextArea rows={4} {...commonProps} />;
+      break;
+
+    case 'number':
+      input = <InputNumber style={{ width: '100%' }} {...commonProps} />;
+      break;
+
+    case 'boolean':
+      input = <Switch />;
+      break;
+
+    case 'date':
+      input = <DatePicker style={{ width: '100%' }} format="DD.MM.YYYY" {...commonProps} />;
+      break;
+
+    case 'daterange':
+      input = <DatePicker.RangePicker style={{ width: '100%' }} format="DD.MM.YYYY" {...commonProps} />;
+      break;
+
+    case 'select':
+      input = (
+        <Select {...commonProps} allowClear>
+          {field.options?.map((opt) => (
+            <Option key={opt.value} value={opt.value}>
+              {opt.label}
+            </Option>
+          ))}
+        </Select>
+      );
+      break;
+
+    case 'entity':
+      input = (
+        <EntitySelect
+          {...commonProps}
+          fetchOptions={field.fetchOptions}
+          fetchList={field.fetchList}
+          labelKey={field.labelKey}
+          valueKey={field.valueKey}
+        />
+      );
+      break;
+
+    default:
+      input = <Input {...commonProps} />;
+  }
+
+  return (
+    <Form.Item
+      key={field.name}
+      name={field.name}
+      label={field.label}
+      rules={rules}
+      valuePropName={field.type === 'boolean' ? 'checked' : 'value'}
+    >
+      {input}
+    </Form.Item>
   );
 }

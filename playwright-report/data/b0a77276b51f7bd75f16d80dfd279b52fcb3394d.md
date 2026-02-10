@@ -1,0 +1,255 @@
+# Page snapshot
+
+```yaml
+- generic [ref=e4]:
+  - complementary [ref=e5]:
+    - generic [ref=e6]:
+      - generic [ref=e7]:
+        - generic [ref=e8]:
+          - generic [ref=e11]: C
+          - strong [ref=e14]: Contora CRM
+        - button "menu-fold" [ref=e15] [cursor=pointer]:
+          - img "menu-fold" [ref=e17]:
+            - img [ref=e18]
+      - menu [ref=e20]:
+        - menuitem "dashboard Дашборд" [ref=e21] [cursor=pointer]:
+          - img "dashboard" [ref=e22]:
+            - img [ref=e23]
+          - generic [ref=e25]: Дашборд
+        - menuitem "team Лиды" [ref=e26] [cursor=pointer]:
+          - img "team" [ref=e27]:
+            - img [ref=e28]
+          - generic [ref=e30]: Лиды
+        - menuitem "user Контакты" [ref=e31] [cursor=pointer]:
+          - img "user" [ref=e32]:
+            - img [ref=e33]
+          - generic [ref=e35]: Контакты
+        - menuitem "bank Компании" [ref=e36] [cursor=pointer]:
+          - img "bank" [ref=e37]:
+            - img [ref=e38]
+          - generic [ref=e40]: Компании
+        - menuitem "dollar Сделки" [ref=e41] [cursor=pointer]:
+          - img "dollar" [ref=e42]:
+            - img [ref=e43]
+          - generic [ref=e45]: Сделки
+        - menuitem "check-square Задачи" [ref=e46] [cursor=pointer]:
+          - img "check-square" [ref=e47]:
+            - img [ref=e48]
+          - generic [ref=e51]: Задачи
+        - menuitem "folder Проекты" [ref=e52] [cursor=pointer]:
+          - img "folder" [ref=e53]:
+            - img [ref=e54]
+          - generic [ref=e56]: Проекты
+        - menuitem "appstore Продукты" [ref=e57] [cursor=pointer]:
+          - img "appstore" [ref=e58]:
+            - img [ref=e59]
+          - generic [ref=e61]: Продукты
+        - menuitem "message Чаты" [ref=e62] [cursor=pointer]:
+          - img "message" [ref=e63]:
+            - img [ref=e64]
+          - generic [ref=e66]: Чаты
+        - menuitem "phone Звонки" [ref=e67] [cursor=pointer]:
+          - img "phone" [ref=e68]:
+            - img [ref=e69]
+          - generic [ref=e71]: Звонки
+        - menuitem "dollar Платежи" [ref=e72] [cursor=pointer]:
+          - img "dollar" [ref=e73]:
+            - img [ref=e74]
+          - generic [ref=e76]: Платежи
+        - menuitem "clock-circle Напоминания" [ref=e77] [cursor=pointer]:
+          - img "clock-circle" [ref=e78]:
+            - img [ref=e79]
+          - generic [ref=e82]: Напоминания
+        - menuitem "customer-service Кампании" [ref=e83] [cursor=pointer]:
+          - img "customer-service" [ref=e84]:
+            - img [ref=e85]
+          - generic [ref=e87]: Кампании
+        - menuitem "team Сегменты" [ref=e88] [cursor=pointer]:
+          - img "team" [ref=e89]:
+            - img [ref=e90]
+          - generic [ref=e92]: Сегменты
+        - menuitem "file-text Шаблоны" [ref=e93] [cursor=pointer]:
+          - img "file-text" [ref=e94]:
+            - img [ref=e95]
+          - generic [ref=e97]: Шаблоны
+        - menuitem "file-text Заметки" [ref=e98] [cursor=pointer]:
+          - img "file-text" [ref=e99]:
+            - img [ref=e100]
+          - generic [ref=e102]: Заметки
+        - menuitem "mail Emails" [ref=e103] [cursor=pointer]:
+          - img "mail" [ref=e104]:
+            - img [ref=e105]
+          - generic [ref=e107]: Emails
+        - menuitem "mail Massmail" [ref=e108] [cursor=pointer]:
+          - img "mail" [ref=e109]:
+            - img [ref=e110]
+          - generic [ref=e112]: Massmail
+        - menuitem "message SMS" [ref=e113] [cursor=pointer]:
+          - img "message" [ref=e114]:
+            - img [ref=e115]
+          - generic [ref=e117]: SMS
+        - menuitem "tool Операции" [ref=e118] [cursor=pointer]:
+          - img "tool" [ref=e119]:
+            - img [ref=e120]
+          - generic [ref=e122]: Операции
+        - menuitem "database Справочники" [ref=e123] [cursor=pointer]:
+          - img "database" [ref=e124]:
+            - img [ref=e125]
+          - generic [ref=e127]: Справочники
+        - menuitem "bar-chart Аналитика" [ref=e128] [cursor=pointer]:
+          - img "bar-chart" [ref=e129]:
+            - img [ref=e130]
+          - generic [ref=e132]: Аналитика
+        - menuitem "question-circle Справка" [ref=e133] [cursor=pointer]:
+          - img "question-circle" [ref=e134]:
+            - img [ref=e135]
+          - generic [ref=e138]: Справка
+        - menuitem "customer-service Телефония" [ref=e139] [cursor=pointer]:
+          - img "customer-service" [ref=e140]:
+            - img [ref=e141]
+          - generic [ref=e143]: Телефония
+        - menuitem "team Пользователи" [ref=e144] [cursor=pointer]:
+          - img "team" [ref=e145]:
+            - img [ref=e146]
+          - generic [ref=e148]: Пользователи
+        - menuitem "setting Интеграции" [ref=e149] [cursor=pointer]:
+          - img "setting" [ref=e150]:
+            - img [ref=e151]
+          - generic [ref=e153]: Интеграции
+  - generic [ref=e154]:
+    - banner [ref=e155]:
+      - generic [ref=e157]: Дашборд
+      - generic [ref=e158]:
+        - generic [ref=e160]:
+          - img "sun" [ref=e162]:
+            - img [ref=e163]
+          - switch [ref=e166] [cursor=pointer]
+          - img "moon" [ref=e170]:
+            - img [ref=e171]
+        - button "RU" [ref=e174] [cursor=pointer]:
+          - generic [ref=e175]: RU
+        - generic [ref=e177] [cursor=pointer]:
+          - img "disconnect" [ref=e180]:
+            - img [ref=e181]
+          - generic [ref=e185]: A
+          - generic [ref=e186]: admin
+    - main [ref=e187]:
+      - generic [ref=e188]:
+        - button "arrow-left Назад" [ref=e191] [cursor=pointer]:
+          - img "arrow-left" [ref=e193]:
+            - img [ref=e194]
+          - generic [ref=e196]: Назад
+        - heading "Создать новый контакт" [level=2] [ref=e197]
+        - generic [ref=e200]:
+          - heading "Личные данные" [level=4] [ref=e201]
+          - generic [ref=e202]:
+            - generic [ref=e205]:
+              - generic "Имя" [ref=e207]: "* Имя"
+              - textbox "* Имя" [ref=e211]:
+                - /placeholder: Иван
+            - generic [ref=e214]:
+              - generic "Отчество" [ref=e216]
+              - textbox "Отчество" [ref=e220]:
+                - /placeholder: Иванович
+            - generic [ref=e223]:
+              - generic "Фамилия" [ref=e225]
+              - textbox "Фамилия" [ref=e229]:
+                - /placeholder: Петров
+          - generic [ref=e230]:
+            - generic [ref=e233]:
+              - generic "Email" [ref=e235]: "* Email"
+              - textbox "* Email" [ref=e239]:
+                - /placeholder: ivan@example.com
+            - generic [ref=e242]:
+              - generic "Телефон" [ref=e244]
+              - textbox "Телефон" [ref=e248]:
+                - /placeholder: +7 999 123-45-67
+          - generic [ref=e249]:
+            - generic [ref=e252]:
+              - generic "Компания" [ref=e254]
+              - generic [ref=e258] [cursor=pointer]:
+                - generic [ref=e260]:
+                  - combobox "Компания" [ref=e262]
+                  - generic: Выберите компанию
+                - img [ref=e263]:
+                  - img [ref=e264]
+            - generic [ref=e268]:
+              - generic "Должность" [ref=e270]
+              - textbox "Должность" [ref=e274]:
+                - /placeholder: Менеджер
+          - generic [ref=e275]:
+            - generic [ref=e278]:
+              - generic "Источник" [ref=e280]
+              - generic [ref=e284] [cursor=pointer]:
+                - generic [ref=e286]:
+                  - combobox "Источник" [ref=e288]
+                  - generic: Выберите источник
+                - img [ref=e289]:
+                  - img [ref=e290]
+            - generic [ref=e294]:
+              - generic "Теги" [ref=e296]
+              - generic [ref=e300] [cursor=pointer]:
+                - generic [ref=e302]:
+                  - combobox "Теги" [ref=e306]
+                  - generic: Выберите теги
+                - img [ref=e307]:
+                  - img [ref=e308]
+          - heading "Локация" [level=4] [ref=e310]
+          - generic [ref=e311]:
+            - generic [ref=e314]:
+              - generic "Страна" [ref=e316]
+              - generic [ref=e320] [cursor=pointer]:
+                - generic [ref=e322]:
+                  - combobox "Страна" [ref=e324]
+                  - generic: Выберите страну
+                - img [ref=e325]:
+                  - img [ref=e326]
+            - generic [ref=e330]:
+              - generic "Город" [ref=e332]
+              - generic [ref=e336] [cursor=pointer]:
+                - generic [ref=e338]:
+                  - combobox "Город" [disabled] [ref=e340]
+                  - generic: Сначала выберите страну
+                - generic:
+                  - img:
+                    - img
+          - generic [ref=e344]:
+            - generic "Адрес" [ref=e346]
+            - textbox "Адрес" [ref=e350]:
+              - /placeholder: Улица, дом, офис
+          - heading "Настройки" [level=4] [ref=e351]
+          - generic [ref=e352]:
+            - generic [ref=e355]:
+              - generic "Ответственный" [ref=e357]
+              - generic [ref=e361] [cursor=pointer]:
+                - generic [ref=e363]:
+                  - combobox "Ответственный" [ref=e365]
+                  - generic: Выберите пользователя
+                - img [ref=e366]:
+                  - img [ref=e367]
+            - generic [ref=e371]:
+              - generic "Отдел" [ref=e373]
+              - generic [ref=e377] [cursor=pointer]:
+                - generic [ref=e379]:
+                  - combobox "Отдел" [ref=e381]
+                  - generic: Выберите отдел
+                - img [ref=e382]:
+                  - img [ref=e383]
+          - generic [ref=e385]:
+            - generic [ref=e388]:
+              - generic "Активен" [ref=e390]
+              - switch "Активен" [ref=e394] [cursor=pointer]
+            - generic [ref=e399]:
+              - generic "Массовая рассылка" [ref=e401]
+              - switch "Массовая рассылка" [ref=e405] [cursor=pointer]
+          - generic [ref=e409]:
+            - generic "Описание" [ref=e411]
+            - textbox "Описание" [ref=e415]
+          - generic [ref=e421]:
+            - button "save Создать" [ref=e423] [cursor=pointer]:
+              - img "save" [ref=e425]:
+                - img [ref=e426]
+              - generic [ref=e428]: Создать
+            - button "Отмена" [ref=e430] [cursor=pointer]:
+              - generic [ref=e431]: Отмена
+```

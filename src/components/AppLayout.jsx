@@ -1,0 +1,283 @@
+import React from 'react';
+import { Layout, Menu, Button, Dropdown, Avatar, Badge, Switch, Space, Typography } from 'antd';
+import {
+  DashboardOutlined,
+  UserOutlined,
+  TeamOutlined,
+  BankOutlined,
+  DollarOutlined,
+  CheckSquareOutlined,
+  FolderOutlined,
+  MessageOutlined,
+  PhoneOutlined,
+  AppstoreOutlined,
+  ClockCircleOutlined,
+  FileTextOutlined,
+  MailOutlined,
+  ToolOutlined,
+  DatabaseOutlined,
+  BarChartOutlined,
+  QuestionCircleOutlined,
+  CustomerServiceOutlined,
+  SettingOutlined,
+  LogoutOutlined,
+  WifiOutlined,
+  DisconnectOutlined,
+  MenuFoldOutlined,
+  MenuUnfoldOutlined,
+  SunOutlined,
+  MoonOutlined,
+} from '@ant-design/icons';
+import { t } from '../lib/i18n/index.js';
+import { navigate } from '../router.js';
+import { useTheme } from '../lib/hooks/useTheme.js';
+
+const { Header, Sider, Content } = Layout;
+const { Text } = Typography;
+
+const baseNav = [
+  { key: 'dashboard', label: t('nav.dashboard') || 'Dashboard', icon: <DashboardOutlined />, path: '/dashboard' },
+  { key: 'leads', label: t('nav.leads') || 'Leads', icon: <TeamOutlined />, path: '/leads' },
+  { key: 'contacts', label: t('nav.contacts') || 'Контакты', icon: <UserOutlined />, path: '/contacts' },
+  { key: 'companies', label: t('nav.companies') || 'Компании', icon: <BankOutlined />, path: '/companies' },
+  { key: 'deals', label: t('nav.deals') || 'Сделки', icon: <DollarOutlined />, path: '/deals' },
+  { key: 'tasks', label: t('nav.tasks') || 'Задачи', icon: <CheckSquareOutlined />, path: '/tasks' },
+  { key: 'projects', label: t('nav.projects') || 'Проекты', icon: <FolderOutlined />, path: '/projects' },
+  { key: 'products', label: 'Продукты', icon: <AppstoreOutlined />, path: '/products' },
+  { key: 'chat', label: t('nav.chat') || 'Чат', icon: <MessageOutlined />, path: '/chat' },
+  { key: 'calls', label: t('nav.calls') || 'Звонки', icon: <PhoneOutlined />, path: '/calls' },
+  { key: 'payments', label: t('nav.payments') || 'Платежи', icon: <DollarOutlined />, path: '/payments' },
+  { key: 'reminders', label: t('nav.reminders') || 'Напоминания', icon: <ClockCircleOutlined />, path: '/reminders' },
+  { key: 'campaigns', label: t('nav.campaigns') || 'Кампании', icon: <CustomerServiceOutlined />, path: '/campaigns' },
+  { key: 'segments', label: 'Сегменты', icon: <TeamOutlined />, path: '/marketing/segments' },
+  { key: 'templates', label: 'Шаблоны', icon: <FileTextOutlined />, path: '/marketing/templates' },
+  { key: 'memos', label: t('nav.memos') || 'Заметки', icon: <FileTextOutlined />, path: '/memos' },
+  { key: 'crm-emails', label: 'Emails', icon: <MailOutlined />, path: '/crm-emails' },
+  { key: 'massmail', label: 'Massmail', icon: <MailOutlined />, path: '/massmail' },
+  { key: 'sms-center', label: 'SMS', icon: <MessageOutlined />, path: '/sms' },
+  { key: 'operations', label: 'Операции', icon: <ToolOutlined />, path: '/operations' },
+  { key: 'reference-data', label: 'Справочники', icon: <DatabaseOutlined />, path: '/reference-data' },
+  { key: 'analytics', label: 'Аналитика', icon: <BarChartOutlined />, path: '/analytics' },
+  { key: 'help-center', label: 'Справка', icon: <QuestionCircleOutlined />, path: '/help' },
+  { key: 'telephony', label: 'Телефония', icon: <CustomerServiceOutlined />, path: '/telephony' },
+  { key: 'users', label: 'Пользователи', icon: <TeamOutlined />, path: '/users' },
+  { key: 'integrations', label: t('nav.integrations') || 'Интеграции', icon: <SettingOutlined />, path: '/integrations' },
+];
+
+export function AppLayout({
+  collapsed,
+  onToggleCollapsed,
+  locale,
+  onLocaleChange,
+  selectedKey,
+  user,
+  wsConnected,
+  incomingCallsCount,
+  unreadCount,
+  onLogout,
+  children,
+}) {
+  const { theme, toggleTheme } = useTheme();
+
+  const baseNav = [
+    { key: 'dashboard', label: t('nav.dashboard') || 'Dashboard', icon: <DashboardOutlined />, path: '/dashboard' },
+    { key: 'leads', label: t('nav.leads') || 'Leads', icon: <TeamOutlined />, path: '/leads' },
+    { key: 'contacts', label: t('nav.contacts') || 'Контакты', icon: <UserOutlined />, path: '/contacts' },
+    { key: 'companies', label: t('nav.companies') || 'Компании', icon: <BankOutlined />, path: '/companies' },
+    { key: 'deals', label: t('nav.deals') || 'Сделки', icon: <DollarOutlined />, path: '/deals' },
+    { key: 'tasks', label: t('nav.tasks') || 'Задачи', icon: <CheckSquareOutlined />, path: '/tasks' },
+    { key: 'projects', label: t('nav.projects') || 'Проекты', icon: <FolderOutlined />, path: '/projects' },
+    { key: 'products', label: 'Продукты', icon: <AppstoreOutlined />, path: '/products' },
+    { key: 'chat', label: t('nav.chat') || 'Чат', icon: <MessageOutlined />, path: '/chat' },
+    { key: 'calls', label: t('nav.calls') || 'Звонки', icon: <PhoneOutlined />, path: '/calls' },
+    { key: 'payments', label: t('nav.payments') || 'Платежи', icon: <DollarOutlined />, path: '/payments' },
+    { key: 'reminders', label: t('nav.reminders') || 'Напоминания', icon: <ClockCircleOutlined />, path: '/reminders' },
+    { key: 'campaigns', label: t('nav.campaigns') || 'Кампании', icon: <CustomerServiceOutlined />, path: '/campaigns' },
+    { key: 'segments', label: 'Сегменты', icon: <TeamOutlined />, path: '/marketing/segments' },
+    { key: 'templates', label: 'Шаблоны', icon: <FileTextOutlined />, path: '/marketing/templates' },
+    { key: 'memos', label: t('nav.memos') || 'Заметки', icon: <FileTextOutlined />, path: '/memos' },
+    { key: 'crm-emails', label: 'Emails', icon: <MailOutlined />, path: '/crm-emails' },
+    { key: 'massmail', label: 'Massmail', icon: <MailOutlined />, path: '/massmail' },
+    { key: 'sms-center', label: 'SMS', icon: <MessageOutlined />, path: '/sms' },
+    { key: 'operations', label: 'Операции', icon: <ToolOutlined />, path: '/operations' },
+    { key: 'reference-data', label: 'Справочники', icon: <DatabaseOutlined />, path: '/reference-data' },
+    { key: 'analytics', label: 'Аналитика', icon: <BarChartOutlined />, path: '/analytics' },
+    { key: 'help-center', label: 'Справка', icon: <QuestionCircleOutlined />, path: '/help' },
+    { key: 'telephony', label: 'Телефония', icon: <CustomerServiceOutlined />, path: '/telephony' },
+    { key: 'users', label: 'Пользователи', icon: <TeamOutlined />, path: '/users' },
+    { key: 'integrations', label: t('nav.integrations') || 'Интеграции', icon: <SettingOutlined />, path: '/integrations' },
+  ];
+
+  // Convert baseNav to Ant Design Menu items
+  const menuItems = baseNav.map((item) => ({
+    key: item.key,
+    icon: item.icon,
+    label: item.label,
+    onClick: () => navigate(item.path),
+  }));
+
+  // User dropdown menu items
+  const userMenuItems = [
+    {
+      key: 'profile',
+      icon: <UserOutlined />,
+      label: 'Профиль',
+      onClick: () => navigate('/profile'),
+    },
+    {
+      key: 'settings',
+      icon: <SettingOutlined />,
+      label: 'Настройки',
+      onClick: () => navigate('/settings'),
+    },
+    {
+      type: 'divider',
+    },
+    {
+      key: 'logout',
+      icon: <LogoutOutlined />,
+      label: 'Выход',
+      onClick: onLogout,
+    },
+  ];
+
+  // Locale dropdown menu items
+  const localeMenuItems = [
+    {
+      key: 'en',
+      label: 'English',
+      onClick: () => onLocaleChange('en'),
+    },
+    {
+      key: 'ru',
+      label: 'Русский',
+      onClick: () => onLocaleChange('ru'),
+    },
+    {
+      key: 'uz',
+      label: "O'zbekcha",
+      onClick: () => onLocaleChange('uz'),
+    },
+  ];
+
+  return (
+    <Layout style={{ minHeight: '100vh' }}>
+      <Sider
+        collapsible
+        collapsed={collapsed}
+        onCollapse={onToggleCollapsed}
+        trigger={null}
+        width={256}
+        style={{
+          overflow: 'auto',
+          height: '100vh',
+          position: 'fixed',
+          left: 0,
+          top: 0,
+          bottom: 0,
+        }}
+      >
+        <div
+          style={{
+            height: 64,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: collapsed ? 'center' : 'space-between',
+            padding: collapsed ? '0' : '0 16px',
+          }}
+        >
+          <Space>
+            <Avatar
+              style={{
+                backgroundColor: '#1890ff',
+                verticalAlign: 'middle',
+              }}
+              size="large"
+            >
+              C
+            </Avatar>
+            {!collapsed && (
+              <Text strong style={{ color: '#fff', fontSize: 16 }}>
+                Contora CRM
+              </Text>
+            )}
+          </Space>
+          {!collapsed && (
+            <Button
+              type="text"
+              icon={<MenuFoldOutlined style={{ color: '#fff' }} />}
+              onClick={onToggleCollapsed}
+            />
+          )}
+        </div>
+
+        <Menu
+          theme="dark"
+          mode="inline"
+          selectedKeys={[selectedKey]}
+          items={menuItems}
+          style={{ borderRight: 0 }}
+        />
+      </Sider>
+
+      <Layout style={{ marginLeft: collapsed ? 80 : 256, transition: 'all 0.2s' }}>
+        <Header
+          style={{
+            padding: '0 24px',
+            background: '#fff',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            position: 'sticky',
+            top: 0,
+            zIndex: 1,
+            boxShadow: '0 1px 4px rgba(0,21,41,.08)',
+          }}
+        >
+          <Space>
+            {collapsed && (
+              <Button
+                type="text"
+                icon={<MenuUnfoldOutlined />}
+                onClick={onToggleCollapsed}
+              />
+            )}
+            <Text type="secondary">{t('nav.dashboard') || 'Dashboard'}</Text>
+          </Space>
+
+          <Space size="middle">
+            {/* Theme Toggle */}
+            <Space>
+              <SunOutlined style={{ color: theme === 'light' ? '#1890ff' : '#999' }} />
+              <Switch checked={theme === 'dark'} onChange={toggleTheme} size="small" />
+              <MoonOutlined style={{ color: theme === 'dark' ? '#1890ff' : '#999' }} />
+            </Space>
+
+            {/* Locale Selector */}
+            <Dropdown menu={{ items: localeMenuItems }} placement="bottomRight">
+              <Button>{locale.toUpperCase()}</Button>
+            </Dropdown>
+
+            {/* User Menu */}
+            <Dropdown menu={{ items: userMenuItems }} placement="bottomRight">
+              <Space style={{ cursor: 'pointer' }}>
+                <Badge dot={wsConnected} color={wsConnected ? 'green' : 'red'}>
+                  {wsConnected ? <WifiOutlined /> : <DisconnectOutlined />}
+                </Badge>
+                {incomingCallsCount > 0 && (
+                  <Badge count={incomingCallsCount}>
+                    <PhoneOutlined />
+                  </Badge>
+                )}
+                <Avatar size="small">{(user?.name || user?.username || 'U').charAt(0).toUpperCase()}</Avatar>
+                <Text>{user?.name || user?.username || 'User'}</Text>
+              </Space>
+            </Dropdown>
+          </Space>
+        </Header>
+
+        <Content style={{ margin: '24px', minHeight: 280 }}>{children}</Content>
+      </Layout>
+    </Layout>
+  );
+}

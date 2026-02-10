@@ -1,12 +1,6 @@
 import React from 'react';
 import { ContactAnalyticsCard } from '../../components/analytics';
-import { Card, Row, Col, Statistic, Space } from 'antd';
-import {
-  UserOutlined,
-  TeamOutlined,
-  GlobalOutlined,
-  PhoneOutlined,
-} from '@ant-design/icons';
+import { User, Users, Globe, Phone } from 'lucide-react';
 import {
   Chart as ChartJS,
   ArcElement,
@@ -19,7 +13,9 @@ import {
   Tooltip,
   Legend,
 } from 'chart.js';
-import { Doughnut, Bar, Line } from 'react-chartjs-2';
+import { Doughnut, Bar } from 'react-chartjs-2';
+
+import { Card } from '../../components/ui/card.jsx';
 
 ChartJS.register(
   ArcElement,
@@ -34,16 +30,14 @@ ChartJS.register(
 );
 
 function ContactsKPI({ contacts = [] }) {
-  // Calculate statistics
   const stats = {
     total: contacts.length,
-    client: contacts.filter(c => c.type === 'client').length,
-    partner: contacts.filter(c => c.type === 'partner').length,
-    supplier: contacts.filter(c => c.type === 'supplier').length,
-    employee: contacts.filter(c => c.type === 'employee').length,
+    client: contacts.filter((c) => c.type === 'client').length,
+    partner: contacts.filter((c) => c.type === 'partner').length,
+    supplier: contacts.filter((c) => c.type === 'supplier').length,
+    employee: contacts.filter((c) => c.type === 'employee').length,
   };
 
-  // Count contacts by company
   const companyCounts = contacts.reduce((acc, contact) => {
     if (contact.company) {
       acc[contact.company] = (acc[contact.company] || 0) + 1;
@@ -51,12 +45,10 @@ function ContactsKPI({ contacts = [] }) {
     return acc;
   }, {});
 
-  // Get top 10 companies
   const topCompanies = Object.entries(companyCounts)
     .sort((a, b) => b[1] - a[1])
     .slice(0, 10);
 
-  // Type distribution data
   const typeData = {
     labels: ['Клиенты', 'Партнеры', 'Поставщики', 'Сотрудники'],
     datasets: [
@@ -80,7 +72,6 @@ function ContactsKPI({ contacts = [] }) {
     ],
   };
 
-  // Top companies data
   const companiesData = {
     labels: topCompanies.map(([company]) => company),
     datasets: [
@@ -94,14 +85,12 @@ function ContactsKPI({ contacts = [] }) {
     ],
   };
 
-  // Count contacts by country
   const countryCounts = contacts.reduce((acc, contact) => {
     const country = contact.country || 'Не указано';
     acc[country] = (acc[country] || 0) + 1;
     return acc;
   }, {});
 
-  // Country distribution data
   const countryData = {
     labels: Object.keys(countryCounts),
     datasets: [
@@ -129,12 +118,9 @@ function ContactsKPI({ contacts = [] }) {
     ],
   };
 
-  // Contacts with phones
-  const withPhone = contacts.filter(c => c.phone).length;
-  const withEmail = contacts.filter(c => c.email).length;
-  const completeness = stats.total > 0 
-    ? (((withPhone + withEmail) / (stats.total * 2)) * 100).toFixed(1)
-    : 0;
+  const withPhone = contacts.filter((c) => c.phone).length;
+  const withEmail = contacts.filter((c) => c.email).length;
+  const completeness = stats.total > 0 ? (((withPhone + withEmail) / (stats.total * 2)) * 100).toFixed(1) : 0;
 
   const chartOptions = {
     responsive: true,
@@ -160,89 +146,81 @@ function ContactsKPI({ contacts = [] }) {
   };
 
   return (
-    <Space direction="vertical" size="large" style={{ width: '100%', marginBottom: 24 }}>
-      {/* Statistics Cards */}
-      <Row gutter={16}>
-        <Col xs={24} sm={12} md={6}>
-          <Card>
-            <Statistic
-              title="Всего контактов"
-              value={stats.total}
-              prefix={<UserOutlined />}
-              valueStyle={{ color: '#1890ff' }}
-            />
-          </Card>
-        </Col>
-        <Col xs={24} sm={12} md={6}>
-          <Card>
-            <Statistic
-              title="Клиенты"
-              value={stats.client}
-              prefix={<TeamOutlined />}
-              valueStyle={{ color: '#52c41a' }}
-            />
-          </Card>
-        </Col>
-        <Col xs={24} sm={12} md={6}>
-          <Card>
-            <Statistic
-              title="С телефонами"
-              value={withPhone}
-              prefix={<PhoneOutlined />}
-              valueStyle={{ color: '#faad14' }}
-            />
-          </Card>
-        </Col>
-        <Col xs={24} sm={12} md={6}>
-          <Card>
-            <Statistic
-              title="Полнота данных"
-              value={completeness}
-              suffix="%"
-              prefix={<GlobalOutlined />}
-              valueStyle={{ color: '#13c2c2' }}
-            />
-          </Card>
-        </Col>
-      </Row>
+    <div className="space-y-6">
+      <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-4">
+        <Card className="p-4">
+          <div className="flex items-center gap-3">
+            <div className="rounded-md bg-primary/10 p-2 text-primary">
+              <User className="h-4 w-4" />
+            </div>
+            <div>
+              <div className="text-xs text-muted-foreground">Всего контактов</div>
+              <div className="text-lg font-semibold">{stats.total}</div>
+            </div>
+          </div>
+        </Card>
+        <Card className="p-4">
+          <div className="flex items-center gap-3">
+            <div className="rounded-md bg-emerald-100 p-2 text-emerald-700">
+              <Users className="h-4 w-4" />
+            </div>
+            <div>
+              <div className="text-xs text-muted-foreground">Клиенты</div>
+              <div className="text-lg font-semibold">{stats.client}</div>
+            </div>
+          </div>
+        </Card>
+        <Card className="p-4">
+          <div className="flex items-center gap-3">
+            <div className="rounded-md bg-amber-100 p-2 text-amber-700">
+              <Phone className="h-4 w-4" />
+            </div>
+            <div>
+              <div className="text-xs text-muted-foreground">С телефонами</div>
+              <div className="text-lg font-semibold">{withPhone}</div>
+            </div>
+          </div>
+        </Card>
+        <Card className="p-4">
+          <div className="flex items-center gap-3">
+            <div className="rounded-md bg-sky-100 p-2 text-sky-700">
+              <Globe className="h-4 w-4" />
+            </div>
+            <div>
+              <div className="text-xs text-muted-foreground">Полнота данных</div>
+              <div className="text-lg font-semibold">{completeness}%</div>
+            </div>
+          </div>
+        </Card>
+      </div>
 
-      {/* Charts */}
-      <Row gutter={16}>
-        <Col xs={24} lg={8}>
-          <Card title="Распределение по типам" size="small">
-            <div style={{ height: 300, display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
-              <Doughnut data={typeData} options={chartOptions} />
-            </div>
-          </Card>
-        </Col>
-        <Col xs={24} lg={8}>
-          <Card title="Распределение по странам" size="small">
-            <div style={{ height: 300, display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
-              <Doughnut data={countryData} options={chartOptions} />
-            </div>
-          </Card>
-        </Col>
-        <Col xs={24} lg={8}>
-          <Card title="Топ 10 компаний" size="small">
-            <div style={{ height: 300 }}>
-              {topCompanies.length > 0 ? (
-                <Bar data={companiesData} options={barOptions} />
-              ) : (
-                <div style={{ 
-                  height: '100%', 
-                  display: 'flex', 
-                  alignItems: 'center', 
-                  justifyContent: 'center',
-                  color: '#999'
-                }}>
-                  Нет данных о компаниях
-                </div>
-              )}
-            </div>
-          </Card>
-        </Col>
-      </Row>
-    </Space>
+      <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
+        <Card className="p-4">
+          <div className="text-sm font-semibold">Распределение по типам</div>
+          <div className="mt-3 flex h-[300px] items-center justify-center">
+            <Doughnut data={typeData} options={chartOptions} />
+          </div>
+        </Card>
+        <Card className="p-4">
+          <div className="text-sm font-semibold">Распределение по странам</div>
+          <div className="mt-3 flex h-[300px] items-center justify-center">
+            <Doughnut data={countryData} options={chartOptions} />
+          </div>
+        </Card>
+        <Card className="p-4">
+          <div className="text-sm font-semibold">Топ 10 компаний</div>
+          <div className="mt-3 h-[300px]">
+            {topCompanies.length > 0 ? (
+              <Bar data={companiesData} options={barOptions} />
+            ) : (
+              <div className="flex h-full items-center justify-center text-sm text-muted-foreground">
+                Нет данных о компаниях
+              </div>
+            )}
+          </div>
+        </Card>
+      </div>
+    </div>
   );
 }
 

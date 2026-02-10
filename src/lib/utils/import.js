@@ -8,7 +8,7 @@
  * @returns {Array} Parsed rows
  */
 export function parseCSV(content) {
-  const lines = content.split(/\r?\n/);
+  const _lines = content.split(/\r?\n/);
   const result = [];
   let currentRow = [];
   let currentField = '';
@@ -159,7 +159,7 @@ export function validateImportData(data, rules = []) {
             break;
 
           case 'phone':
-            if (!/^[\d\s\-\+\(\)]+$/.test(value)) {
+            if (!/^[\d\s\-+()]+$/.test(value)) {
               warnings.push({
                 row: rowNum,
                 field: rule.field,

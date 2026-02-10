@@ -1,24 +1,6 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import {
-  Button,
-  Space,
-  Tag,
-  message,
-  Avatar,
-  Checkbox,
-  Typography,
-  Popconfirm,
-  Modal,
-  Form,
-} from 'antd';
-import {
-  FolderOutlined,
-  CalendarOutlined,
-  ClockCircleOutlined,
-  EyeOutlined,
-  EditOutlined,
-  DeleteOutlined,
-} from '@ant-design/icons';
+import { Folder, Calendar, Clock, Eye, Edit, Trash2 } from 'lucide-react';
+
 import { navigate } from '../../router';
 import {
   getProjects,
@@ -34,11 +16,13 @@ import TableToolbar from '../../components/ui-TableToolbar.jsx';
 import BulkActions from '../../components/ui-BulkActions.jsx';
 import ReferenceSelect from '../../components/ui-ReferenceSelect.jsx';
 import { exportAndDownload } from '../../lib/api/export.js';
-
-const { Text } = Typography;
+import { toast } from '../../components/ui/use-toast.js';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '../../components/ui/dialog.jsx';
+import { Button } from '../../components/ui/button.jsx';
 
 function ProjectsList() {
   const [projects, setProjects] = useState([]);
+  const [allProjectsCache, setAllProjectsCache] = useState(null);
   const [loading, setLoading] = useState(false);
   const [searchText, setSearchText] = useState('');
   const [pagination, setPagination] = useState({
@@ -77,28 +61,43 @@ function ProjectsList() {
     } else {
       console.error('Error loading users:', usersRes.reason);
       setUsers([]);
-      message.warning(
-        'Не удалось загрузить пользователей (справочник). Страница работает, но выбор владельца/со-владельца может быть ограничен.'
-      );
+      toast({
+        title: 'Внимание',
+        description:
+          'Не удалось загрузить пользователей (справочник). Страница работает, но выбор владельца/со-владельца может быть ограничен.',
+      });
     }
   };
 
-  const fetchProjects = async (page = 1, search = '') => {
+  const fetchProjects = async (page = 1, search = '', pageSize = pagination.pageSize) => {
     setLoading(true);
     try {
       const response = await getProjects({
         page,
-        page_size: pagination.pageSize,
+        page_size: pageSize,
         search: search || undefined,
       });
-      setProjects(response.results || []);
+      const results = response.results || [];
+      const totalCount = response.count || 0;
+      
+      if (results.length > pageSize && results.length === totalCount) {
+        console.warn('⚠️ ProjectsList: Caching all data');
+        setAllProjectsCache(results);
+        const startIndex = (page - 1) * pageSize;
+        setProjects(results.slice(startIndex, startIndex + pageSize));
+      } else {
+        setAllProjectsCache(null);
+        setProjects(results);
+      }
+      
       setPagination((prev) => ({
         ...prev,
         current: page,
-        total: response.count || 0,
+        pageSize: pageSize,
+        total: totalCount,
       }));
     } catch (error) {
-      message.error('Ошибка загрузки проектов');
+      toast({ title: 'Ошибка', description: 'Ошибка загрузки проектов', variant: 'destructive' });
       setProjects([]);
       setPagination((prev) => ({
         ...prev,
@@ -118,15 +117,31 @@ function ProjectsList() {
   const handleDelete = async (id) => {
     try {
       await deleteProject(id);
-      message.success('Проект удален');
+      toast({ title: 'Проект удален', description: 'Проект удален' });
       fetchProjects(pagination.current, searchText);
     } catch (error) {
-      message.error('Ошибка удаления проекта');
+      toast({ title: 'Ошибка', description: 'Ошибка удаления проекта', variant: 'destructive' });
     }
   };
 
   const handleTableChange = (newPagination) => {
-    fetchProjects(newPagination.current, searchText);
+    const nextPage = newPagination?.current || 1;
+    const nextPageSize = newPagination?.pageSize || pagination.pageSize;
+    
+    if (nextPageSize !== pagination.pageSize) {
+      setPagination((p) => ({ ...p, pageSize: nextPageSize }));
+      setAllProjectsCache(null);
+      fetchProjects(nextPage, searchText, nextPageSize);
+      return;
+    }
+    
+    if (allProjectsCache && allProjectsCache.length > 0) {
+      const startIndex = (nextPage - 1) * nextPageSize;
+      setProjects(allProjectsCache.slice(startIndex, startIndex + nextPageSize));
+      setPagination((p) => ({ ...p, current: nextPage }));
+    } else {
+      fetchProjects(nextPage, searchText, nextPageSize);
+    }
   };
 
   const handleExport = async (format) => {
@@ -134,20 +149,20 @@ function ProjectsList() {
       await exportAndDownload('projects', {
         format: format === 'excel' ? 'xlsx' : 'csv',
       });
-      message.success('Проекты экспортированы');
+      toast({ title: 'Экспорт', description: 'Проекты экспортированы' });
     } catch (error) {
-      message.error('Ошибка экспорта проектов');
+      toast({ title: 'Ошибка', description: 'Ошибка экспорта проектов', variant: 'destructive' });
     }
   };
 
   const handleBulkDelete = async (ids) => {
     try {
       await Promise.all(ids.map((id) => deleteProject(id)));
-      message.success(`Удалено ${ids.length} проектов`);
+      toast({ title: 'Удалено', description: `Удалено ${ids.length} проектов` });
       setSelectedRowKeys([]);
       fetchProjects(pagination.current, searchText);
     } catch (error) {
-      message.error('Ошибка массового удаления');
+      toast({ title: 'Ошибка', description: 'Ошибка массового удаления', variant: 'destructive' });
     }
   };
 
@@ -157,7 +172,7 @@ function ProjectsList() {
 
   const handleBulkTagConfirm = async () => {
     if (!selectedTags.length) {
-      message.error('Выберите хотя бы один тег');
+      toast({ title: 'Ошибка', description: 'Выберите хотя бы один тег', variant: 'destructive' });
       return;
     }
 
@@ -166,14 +181,14 @@ function ProjectsList() {
         project_ids: selectedRowKeys,
         tag_ids: selectedTags,
       });
-      message.success(`Теги применены к ${selectedRowKeys.length} проектам`);
+      toast({ title: 'Теги применены', description: `Теги применены к ${selectedRowKeys.length} проектам` });
       setSelectedRowKeys([]);
       setBulkTagModalVisible(false);
       setSelectedTags([]);
       fetchProjects(pagination.current, searchText);
     } catch (error) {
       const errorMessage = error?.details?.detail || error?.message || 'Ошибка применения тегов';
-      message.error(errorMessage);
+      toast({ title: 'Ошибка', description: errorMessage, variant: 'destructive' });
     }
   };
 
@@ -198,21 +213,21 @@ function ProjectsList() {
     try {
       if (isDone) {
         await reopenProject(project.id);
-        message.success('Проект возобновлен');
+        toast({ title: 'Проект возобновлен', description: 'Проект возобновлен' });
       } else {
         await completeProject(project.id);
-        message.success('Проект завершен');
+        toast({ title: 'Проект завершен', description: 'Проект завершен' });
       }
       fetchProjects(pagination.current, searchText);
     } catch (error) {
-      message.error('Ошибка обновления статуса проекта');
+      toast({ title: 'Ошибка', description: 'Ошибка обновления статуса проекта', variant: 'destructive' });
     }
   };
 
   const priorityConfig = {
-    1: { color: 'green', text: 'Низкий' },
-    2: { color: 'orange', text: 'Средний' },
-    3: { color: 'red', text: 'Высокий' },
+    1: { color: 'bg-emerald-100 text-emerald-700', text: 'Низкий' },
+    2: { color: 'bg-amber-100 text-amber-700', text: 'Средний' },
+    3: { color: 'bg-rose-100 text-rose-700', text: 'Высокий' },
   };
 
   const columns = [
@@ -221,7 +236,9 @@ function ProjectsList() {
       key: 'checkbox',
       width: 50,
       render: (_, record) => (
-        <Checkbox
+        <input
+          type="checkbox"
+          className="h-4 w-4 accent-primary"
           checked={doneStage ? record.stage === doneStage.id : false}
           onChange={() => handleToggleComplete(record)}
         />
@@ -231,17 +248,17 @@ function ProjectsList() {
       title: 'Проект',
       key: 'project',
       render: (_, record) => (
-        <Space>
-          <Avatar icon={<FolderOutlined />} style={{ backgroundColor: '#1890ff' }} />
+        <div className="flex items-start gap-3">
+          <div className="flex h-9 w-9 items-center justify-center rounded-full bg-primary/10 text-primary">
+            <Folder className="h-4 w-4" />
+          </div>
           <div>
-            <div style={{ fontWeight: 500 }}>{record.name}</div>
+            <div className="font-medium">{record.name}</div>
             {record.description && (
-              <Text type="secondary" style={{ fontSize: 12 }}>
-                {record.description}
-              </Text>
+              <div className="text-xs text-muted-foreground">{record.description}</div>
             )}
           </div>
-        </Space>
+        </div>
       ),
       sorter: (a, b) => (a.name || '').localeCompare(b.name || ''),
     },
@@ -251,7 +268,21 @@ function ProjectsList() {
       key: 'stage',
       render: (stageId) => {
         const stage = stagesById[stageId];
-        return stage ? <Tag color={stage.done ? 'green' : stage.in_progress ? 'blue' : 'default'}>{stage.name}</Tag> : '-';
+        return stage ? (
+          <span
+            className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs ${
+              stage.done
+                ? 'bg-emerald-100 text-emerald-700'
+                : stage.in_progress
+                ? 'bg-sky-100 text-sky-700'
+                : 'bg-muted text-muted-foreground'
+            }`}
+          >
+            {stage.name}
+          </span>
+        ) : (
+          '-'
+        );
       },
     },
     {
@@ -259,8 +290,8 @@ function ProjectsList() {
       dataIndex: 'priority',
       key: 'priority',
       render: (priority) => {
-        const config = priorityConfig[priority] || { color: 'default', text: '-' };
-        return <Tag color={config.color}>{config.text}</Tag>;
+        const config = priorityConfig[priority] || { color: 'bg-muted text-muted-foreground', text: '-' };
+        return <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs ${config.color}`}>{config.text}</span>;
       },
     },
     {
@@ -271,7 +302,7 @@ function ProjectsList() {
         const ids = Array.isArray(responsible) ? responsible : [];
         const names = ids.map((id) => userNameById[id]).filter(Boolean);
         const ownerLabel = record.owner ? userNameById[record.owner] || `#${record.owner}` : null;
-        return <Text>{names.length ? names.join(', ') : ownerLabel || '-'}</Text>;
+        return <span className="text-sm">{names.length ? names.join(', ') : ownerLabel || '-'}</span>;
       },
     },
     {
@@ -284,22 +315,22 @@ function ProjectsList() {
         const today = new Date();
         const daysLeft = Math.ceil((dueDate - today) / (1000 * 60 * 60 * 24));
         return (
-          <Space direction="vertical" size="small">
-            <Space size="small">
-              <CalendarOutlined />
+          <div className="space-y-1">
+            <div className="flex items-center gap-2 text-sm">
+              <Calendar className="h-4 w-4 text-muted-foreground" />
               {dueDate.toLocaleDateString('ru-RU')}
-            </Space>
+            </div>
             {daysLeft > 0 && daysLeft <= 3 && (
-              <Text type="warning" style={{ fontSize: 12 }}>
-                <ClockCircleOutlined /> {daysLeft} дн.
-              </Text>
+              <div className="text-xs text-amber-600">
+                <Clock className="inline h-3 w-3" /> {daysLeft} дн.
+              </div>
             )}
             {daysLeft < 0 && (
-              <Text type="danger" style={{ fontSize: 12 }}>
-                <ClockCircleOutlined /> просрочено
-              </Text>
+              <div className="text-xs text-rose-600">
+                <Clock className="inline h-3 w-3" /> просрочено
+              </div>
             )}
-          </Space>
+          </div>
         );
       },
       sorter: (a, b) => new Date(a.due_date || 0) - new Date(b.due_date || 0),
@@ -309,33 +340,20 @@ function ProjectsList() {
       key: 'actions',
       width: 200,
       render: (_, record) => (
-        <Space size="small">
-          <Button
-            type="link"
-            icon={<EyeOutlined />}
-            onClick={() => navigate(`/projects/${record.id}`)}
-          >
+        <div className="flex flex-wrap items-center gap-2">
+          <Button variant="ghost" size="sm" onClick={() => navigate(`/projects/${record.id}`)}>
+            <Eye className="mr-1 h-4 w-4" />
             Просмотр
           </Button>
-          <Button
-            type="link"
-            icon={<EditOutlined />}
-            onClick={() => navigate(`/projects/${record.id}/edit`)}
-          >
+          <Button variant="ghost" size="sm" onClick={() => navigate(`/projects/${record.id}/edit`)}>
+            <Edit className="mr-1 h-4 w-4" />
             Редактировать
           </Button>
-          <Popconfirm
-            title="Удалить этот проект?"
-            description="Это действие нельзя отменить"
-            onConfirm={() => handleDelete(record.id)}
-            okText="Да"
-            cancelText="Нет"
-          >
-            <Button type="link" danger icon={<DeleteOutlined />}>
-              Удалить
-            </Button>
-          </Popconfirm>
-        </Space>
+          <Button variant="ghost" size="sm" className="text-destructive" onClick={() => handleDelete(record.id)}>
+            <Trash2 className="mr-1 h-4 w-4" />
+            Удалить
+          </Button>
+        </div>
       ),
     },
   ];
@@ -368,7 +386,6 @@ function ProjectsList() {
         pagination={pagination}
         onChange={handleTableChange}
         rowSelection={rowSelection}
-        scroll={{ x: 1400 }}
         rowClassName={(record) =>
           doneStage && record.stage === doneStage.id ? 'row-completed' : ''
         }
@@ -386,28 +403,35 @@ function ProjectsList() {
         entityName="проектов"
       />
 
-      <Modal
-        title="Добавить теги к проектам"
-        open={bulkTagModalVisible}
-        onCancel={() => {
-          setBulkTagModalVisible(false);
-          setSelectedTags([]);
-        }}
-        onOk={handleBulkTagConfirm}
-        okText="Применить"
-        cancelText="Отмена"
-      >
-        <p>Добавить теги к {selectedRowKeys.length} выбранным проектам</p>
-        <Form.Item label="Теги">
-          <ReferenceSelect
-            type="crm-tags"
-            mode="multiple"
-            placeholder="Выберите теги"
-            value={selectedTags}
-            onChange={setSelectedTags}
-          />
-        </Form.Item>
-      </Modal>
+      <Dialog open={bulkTagModalVisible} onOpenChange={setBulkTagModalVisible}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Добавить теги к проектам</DialogTitle>
+          </DialogHeader>
+          <p className="text-sm text-muted-foreground">
+            Добавить теги к {selectedRowKeys.length} выбранным проектам
+          </p>
+          <div className="mt-3">
+            <label className="text-sm font-medium">Теги</label>
+            <ReferenceSelect
+              type="crm-tags"
+              mode="multiple"
+              placeholder="Выберите теги"
+              value={selectedTags}
+              onChange={setSelectedTags}
+            />
+          </div>
+          <div className="mt-4 flex justify-end gap-2">
+            <Button variant="outline" onClick={() => {
+              setBulkTagModalVisible(false);
+              setSelectedTags([]);
+            }}>
+              Отмена
+            </Button>
+            <Button onClick={handleBulkTagConfirm}>Применить</Button>
+          </div>
+        </DialogContent>
+      </Dialog>
 
       <style>{`
         .row-completed {

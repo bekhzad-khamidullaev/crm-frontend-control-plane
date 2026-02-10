@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import store, { getState, setAuth, clearAuth, setLocale, select } from '../../src/lib/store/index.js';
+import { getState, setAuth, clearAuth, setLocale, select } from '../../src/lib/store/index.js';
 
 describe('store', () => {
   it('sets and clears auth', () => {

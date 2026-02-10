@@ -1,18 +1,19 @@
 /**
  * BulkActions Component
  * Universal bulk actions component for tables with selection
+ * Rewritten to use Ant Design only
  */
 
 import React from 'react';
-import { Space, Button, Dropdown, Badge, Popconfirm, App } from 'antd';
+import { Button, Badge, Dropdown, Modal, Space, App } from 'antd';
 import {
-  DeleteOutlined,
   EditOutlined,
-  ExportOutlined,
+  DownloadOutlined,
   MailOutlined,
   MessageOutlined,
+  TagsOutlined,
+  DeleteOutlined,
   MoreOutlined,
-  TagOutlined,
 } from '@ant-design/icons';
 
 export default function BulkActions({
@@ -27,7 +28,7 @@ export default function BulkActions({
   customActions = [],
   entityName = 'записей',
 }) {
-  const { message } = App.useApp();
+  const { message, modal } = App.useApp();
   const count = selectedRowKeys.length;
 
   if (count === 0) {
@@ -35,13 +36,22 @@ export default function BulkActions({
   }
 
   const handleDelete = async () => {
-    try {
-      await onDelete(selectedRowKeys);
-      message.success(`Удалено ${count} ${entityName}`);
-      onClearSelection();
-    } catch (error) {
-      message.error('Ошибка удаления');
-    }
+    modal.confirm({
+      title: `Удалить ${count} ${entityName}?`,
+      content: 'Это действие нельзя отменить',
+      okText: 'Удалить',
+      okType: 'danger',
+      cancelText: 'Отмена',
+      onOk: async () => {
+        try {
+          await onDelete(selectedRowKeys);
+          message.success(`Удалено ${count} ${entityName}`);
+          onClearSelection();
+        } catch (error) {
+          message.error('Ошибка удаления');
+        }
+      },
+    });
   };
 
   const menuItems = [
@@ -53,7 +63,7 @@ export default function BulkActions({
     },
     onExport && {
       key: 'export',
-      icon: <ExportOutlined />,
+      icon: <DownloadOutlined />,
       label: 'Экспортировать',
       onClick: () => onExport(selectedRowKeys),
     },
@@ -71,7 +81,7 @@ export default function BulkActions({
     },
     onBulkTag && {
       key: 'tags',
-      icon: <TagOutlined />,
+      icon: <TagsOutlined />,
       label: 'Добавить теги',
       onClick: () => onBulkTag(selectedRowKeys),
     },
@@ -91,50 +101,42 @@ export default function BulkActions({
         left: '50%',
         transform: 'translateX(-50%)',
         zIndex: 1000,
+        maxWidth: 600,
+        width: '90%',
+        padding: '12px 16px',
         background: '#fff',
-        padding: '12px 24px',
         borderRadius: 8,
-        boxShadow: '0 4px 12px rgba(0, 0, 0, 0.15)',
+        boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
         border: '1px solid #d9d9d9',
       }}
     >
-      <Space size="middle">
-        <Badge count={count} showZero={false}>
-          <span style={{ fontWeight: 500 }}>
+      <Space style={{ width: '100%', justifyContent: 'space-between' }} wrap>
+        <Space>
+          <Badge count={count} style={{ backgroundColor: '#1890ff' }} />
+          <span style={{ fontSize: 14, fontWeight: 500 }}>
             Выбрано: {count} {entityName}
           </span>
-        </Badge>
+        </Space>
 
-        <Button size="small" onClick={onClearSelection}>
-          Отменить
-        </Button>
+        <Space wrap>
+          <Button size="small" onClick={onClearSelection}>
+            Отменить
+          </Button>
 
-        {onDelete && (
-          <Popconfirm
-            title={`Удалить ${count} ${entityName}?`}
-            description="Это действие нельзя отменить"
-            onConfirm={handleDelete}
-            okText="Удалить"
-            cancelText="Отмена"
-            okButtonProps={{ danger: true }}
-          >
-            <Button danger icon={<DeleteOutlined />} size="small">
+          {onDelete && (
+            <Button size="small" danger icon={<DeleteOutlined />} onClick={handleDelete}>
               Удалить
             </Button>
-          </Popconfirm>
-        )}
+          )}
 
-        {menuItems.length > 0 && (
-          <Dropdown
-            menu={{ items: menuItems }}
-            placement="topRight"
-            trigger={['click']}
-          >
-            <Button icon={<MoreOutlined />} size="small">
-              Действия
-            </Button>
-          </Dropdown>
-        )}
+          {menuItems.length > 0 && (
+            <Dropdown menu={{ items: menuItems }} placement="topRight">
+              <Button size="small" icon={<MoreOutlined />}>
+                Действия
+              </Button>
+            </Dropdown>
+          )}
+        </Space>
       </Space>
     </div>
   );

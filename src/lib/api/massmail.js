@@ -351,7 +351,7 @@ export async function getMailingsByStatus(status, params = {}) {
  */
 export async function cloneSignature(id, newName) {
   const signature = await getSignature(id);
-  const { id: _, created_at, updated_at, is_default, ...signatureData } = signature;
+  const { id: _, created_at: _created_at, updated_at: _updated_at, is_default: _is_default, ...signatureData } = signature;
   
   return createSignature({
     ...signatureData,

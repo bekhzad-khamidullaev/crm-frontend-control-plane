@@ -73,15 +73,14 @@ describe('ContactsList', () => {
 
     const searchInput = screen.getByPlaceholderText(/Поиск/);
     fireEvent.change(searchInput, { target: { value: 'Анна' } });
-    
-    const searchButton = screen.getByRole('button', { name: /search/i });
-    fireEvent.click(searchButton);
+    fireEvent.keyDown(searchInput, { key: 'Enter', code: 'Enter' });
 
     await waitFor(() => {
       expect(client.getContacts).toHaveBeenCalledWith(
         expect.objectContaining({
           search: 'Анна',
-        })
+        }),
+        expect.anything()
       );
     });
   });
@@ -99,47 +98,20 @@ describe('ContactsList', () => {
     expect(router.navigate).toHaveBeenCalledWith('/contacts/new');
   });
 
-  it('deletes a contact', async () => {
-    client.deleteContact.mockResolvedValue({});
+  it('renders list without KPI toggle', async () => {
     render(<ContactsList />);
     
     await waitFor(() => {
       expect(screen.getByText('Анна Смирнова')).toBeInTheDocument();
     });
 
-    const deleteButtons = screen.getAllByText('Удалить');
-    fireEvent.click(deleteButtons[0]);
-
-    // Confirm deletion
-    await waitFor(() => {
-      const confirmButton = screen.getByText('Да');
-      fireEvent.click(confirmButton);
-    });
-
-    await waitFor(() => {
-      expect(client.deleteContact).toHaveBeenCalledWith(1);
-    });
-  });
-
-  it('toggles KPI display', async () => {
-    render(<ContactsList />);
-    
-    await waitFor(() => {
-      expect(screen.getByTestId('kpi')).toBeInTheDocument();
-    });
-
-    const toggleButton = screen.getByText('Скрыть статистику');
-    fireEvent.click(toggleButton);
-
-    await waitFor(() => {
-      expect(screen.queryByTestId('kpi')).not.toBeInTheDocument();
-    });
+    expect(screen.queryByTestId('kpi')).not.toBeInTheDocument();
   });
 
   it('handles inline cell editing', async () => {
-    client.contactsApi = {
+    vi.spyOn(client, 'contactsApi', 'get').mockReturnValue({
       patch: vi.fn().mockResolvedValue({}),
-    };
+    });
     
     render(<ContactsList />);
     

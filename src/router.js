@@ -4,10 +4,10 @@ let listeners = [];
 export const routeMeta = {
  'login': { auth: false, title: 'Login', breadcrumbs: [{ label: 'Login' }] },
  'dashboard': { auth: true, title: 'Dashboard', breadcrumbs: [{ label: 'Dashboard', href: '#/dashboard' }] },
- 'leads-list': { auth: true, title: 'Leads', breadcrumbs: [{ label: 'Leads', href: '#/leads' }] },
- 'leads-new': { auth: true, title: 'New Lead', breadcrumbs: [{ label: 'Leads', href: '#/leads' }, { label: 'New' }] },
- 'leads-detail': { auth: true, title: 'Lead', breadcrumbs: [{ label: 'Leads', href: '#/leads' }, { label: 'Detail' }] },
- 'leads-edit': { auth: true, title: 'Edit Lead', breadcrumbs: [{ label: 'Leads', href: '#/leads' }, { label: 'Edit' }] },
+ 'leads-list': { auth: true, roles: ['admin','manager'], title: 'Leads', breadcrumbs: [{ label: 'Leads', href: '#/leads' }] },
+ 'leads-new': { auth: true, roles: ['admin','manager'], title: 'New Lead', breadcrumbs: [{ label: 'Leads', href: '#/leads' }, { label: 'New' }] },
+ 'leads-detail': { auth: true, roles: ['admin','manager','sales'], title: 'Lead', breadcrumbs: [{ label: 'Leads', href: '#/leads' }, { label: 'Detail' }] },
+ 'leads-edit': { auth: true, roles: ['admin','manager'], title: 'Edit Lead', breadcrumbs: [{ label: 'Leads', href: '#/leads' }, { label: 'Edit' }] },
  'contacts-list': { auth: true, title: 'Contacts' },
  'contacts-new': { auth: true, title: 'New Contact' },
  'contacts-detail': { auth: true, title: 'Contact' },
@@ -222,25 +222,14 @@ export function navigate(path, { replace = false } = {}) {
 
 function notify() {
   const route = parseHash();
-  
-  // Check auth guard before notifying listeners
+  // Check auth + roles guard before notifying listeners
   const meta = getRouteMeta(route.name);
-  if (meta.auth !== false) {
-    // Route requires authentication
-    try {
-      if (!isAuthenticated()) {
-        console.warn('[Router] Unauthorized access, redirecting to login');
-        // Prevent infinite loop by checking if already on login
-        if (route.name !== 'login') {
-          location.hash = '#/login';
-          return; // Don't notify listeners
-        }
-      }
-    } catch (err) {
-      console.error('[Router] Auth check failed:', err);
-    }
+  try {
+    const ok = authGuardMiddleware(route, meta);
+    if (!ok) return; // guard handled navigation
+  } catch (err) {
+    console.error('[Router] Guard failed:', err);
   }
-  
   listeners.forEach((cb) => cb(route));
 }
 
@@ -254,3 +243,4 @@ window.addEventListener('hashchange', notify);
 // initial tick for consumers who import after DOM ready
 setTimeout(() => notify(), 0);
 import { isAuthenticated } from './lib/api/auth.js';
+import { authGuardMiddleware } from './lib/auth-guard.js';

@@ -82,7 +82,7 @@ export async function deleteChatMessage(id) {
 export async function getMessageThread(parentId, params = {}) {
   try {
     return await apiClient.get(`/api/chat-messages/${parentId}/thread/`, { params });
-  } catch (error) {
+  } catch {
     return getChatMessages({ ...params, answer_to: parentId, ordering: 'creation_date' });
   }
 }
@@ -96,7 +96,7 @@ export async function getMessageThread(parentId, params = {}) {
 export async function getMessageReplies(parentId, params = {}) {
   try {
     return await apiClient.get(`/api/chat-messages/${parentId}/replies/`, { params });
-  } catch (error) {
+  } catch {
     return getChatMessages({ ...params, answer_to: parentId, ordering: 'creation_date' });
   }
 }

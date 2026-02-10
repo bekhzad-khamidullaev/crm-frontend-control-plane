@@ -29,7 +29,7 @@ export const testFacebookPage = (id, payload = {}) =>
 export const disconnectFacebook = async (id) => {
   try {
     return await api.post(`/api/settings/facebook/pages/${id}/disconnect/`, { body: {} });
-  } catch (error) {
+  } catch {
     return api.delete(`/api/settings/facebook/pages/${id}/`);
   }
 };

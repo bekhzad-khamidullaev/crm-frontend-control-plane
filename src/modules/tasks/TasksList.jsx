@@ -1,31 +1,19 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import {
-  Button,
-  Space,
-  Tag,
-  message,
-  Avatar,
-  Checkbox,
-  Typography,
-  Popconfirm,
-} from 'antd';
-import {
-  UserOutlined,
-  CalendarOutlined,
-  ClockCircleOutlined,
-  EyeOutlined,
-  EditOutlined,
-  DeleteOutlined,
-} from '@ant-design/icons';
+import { User, Calendar, Clock, Eye, Edit, Trash2 } from 'lucide-react';
+
 import { navigate } from '../../router';
 import { getTasks, deleteTask, updateTask, getUsers, getTaskStages } from '../../lib/api';
 import EnhancedTable from '../../components/ui-EnhancedTable.jsx';
 import TableToolbar from '../../components/ui-TableToolbar.jsx';
-
-const { Text } = Typography;
+import { Badge } from '../../components/ui/badge.jsx';
+import { toast } from '../../components/ui/use-toast.js';
+import { Avatar, AvatarFallback } from '../../components/ui/avatar.jsx';
+import { Button } from '../../components/ui/button.jsx';
+import { AlertDialog, AlertDialogContent, AlertDialogHeader, AlertDialogTitle } from '../../components/ui/alert-dialog.jsx';
 
 function TasksList() {
   const [tasks, setTasks] = useState([]);
+  const [allTasksCache, setAllTasksCache] = useState(null);
   const [loading, setLoading] = useState(false);
   const [searchText, setSearchText] = useState('');
   const [pagination, setPagination] = useState({
@@ -35,6 +23,7 @@ function TasksList() {
   });
   const [stages, setStages] = useState([]);
   const [users, setUsers] = useState([]);
+  const [deleteTarget, setDeleteTarget] = useState(null);
 
   useEffect(() => {
     fetchTasks(1, searchText);
@@ -53,7 +42,10 @@ function TasksList() {
     } else {
       console.error('Error loading task stages:', stagesRes.reason);
       setStages([]);
-      message.warning('Не удалось загрузить стадии задач. Фильтры будут ограничены.');
+      toast({
+        title: 'Внимание',
+        description: 'Не удалось загрузить стадии задач. Фильтры будут ограничены.',
+      });
     }
 
     if (usersRes.status === 'fulfilled') {
@@ -62,26 +54,42 @@ function TasksList() {
     } else {
       console.error('Error loading users:', usersRes.reason);
       setUsers([]);
-      message.warning('Не удалось загрузить пользователей. Фильтры будут ограничены.');
+      toast({
+        title: 'Внимание',
+        description: 'Не удалось загрузить пользователей. Фильтры будут ограничены.',
+      });
     }
   };
 
-  const fetchTasks = async (page = 1, search = '') => {
+  const fetchTasks = async (page = 1, search = '', pageSize = pagination.pageSize) => {
     setLoading(true);
     try {
       const response = await getTasks({
         page,
-        page_size: pagination.pageSize,
+        page_size: pageSize,
         search: search || undefined,
       });
-      setTasks(response.results || []);
+      const results = response.results || [];
+      const totalCount = response.count || 0;
+      
+      if (results.length > pageSize && results.length === totalCount) {
+        console.warn('⚠️ TasksList: Caching all data');
+        setAllTasksCache(results);
+        const startIndex = (page - 1) * pageSize;
+        setTasks(results.slice(startIndex, startIndex + pageSize));
+      } else {
+        setAllTasksCache(null);
+        setTasks(results);
+      }
+      
       setPagination((prev) => ({
         ...prev,
         current: page,
-        total: response.count || 0,
+        pageSize: pageSize,
+        total: totalCount,
       }));
     } catch (error) {
-      message.error('Ошибка загрузки задач');
+      toast({ title: 'Ошибка', description: 'Ошибка загрузки задач', variant: 'destructive' });
       setTasks([]);
       setPagination((prev) => ({
         ...prev,
@@ -101,15 +109,31 @@ function TasksList() {
   const handleDelete = async (id) => {
     try {
       await deleteTask(id);
-      message.success('Задача удалена');
+      toast({ title: 'Задача удалена', description: 'Задача удалена' });
       fetchTasks(pagination.current, searchText);
     } catch (error) {
-      message.error('Ошибка удаления задачи');
+      toast({ title: 'Ошибка', description: 'Ошибка удаления задачи', variant: 'destructive' });
     }
   };
 
   const handleTableChange = (newPagination) => {
-    fetchTasks(newPagination.current, searchText);
+    const nextPage = newPagination?.current || 1;
+    const nextPageSize = newPagination?.pageSize || pagination.pageSize;
+    
+    if (nextPageSize !== pagination.pageSize) {
+      setPagination((p) => ({ ...p, pageSize: nextPageSize }));
+      setAllTasksCache(null);
+      fetchTasks(nextPage, searchText, nextPageSize);
+      return;
+    }
+    
+    if (allTasksCache && allTasksCache.length > 0) {
+      const startIndex = (nextPage - 1) * nextPageSize;
+      setTasks(allTasksCache.slice(startIndex, startIndex + nextPageSize));
+      setPagination((p) => ({ ...p, current: nextPage }));
+    } else {
+      fetchTasks(nextPage, searchText, nextPageSize);
+    }
   };
 
   const stagesById = useMemo(() => {
@@ -131,24 +155,24 @@ function TasksList() {
 
   const handleToggleComplete = async (task) => {
     if (!doneStage || !inProgressStage) {
-      message.warning('Этапы задач не настроены');
+      toast({ title: 'Внимание', description: 'Этапы задач не настроены' });
       return;
     }
     const isDone = task.stage === doneStage.id;
     const newStage = isDone ? inProgressStage.id : doneStage.id;
     try {
       await updateTask(task.id, { stage: newStage });
-      message.success('Статус задачи обновлен');
+      toast({ title: 'Статус задачи обновлен', description: 'Статус задачи обновлен' });
       fetchTasks(pagination.current, searchText);
     } catch (error) {
-      message.error('Ошибка обновления статуса задачи');
+      toast({ title: 'Ошибка', description: 'Ошибка обновления статуса задачи', variant: 'destructive' });
     }
   };
 
   const priorityConfig = {
-    1: { color: 'green', text: 'Низкий' },
-    2: { color: 'orange', text: 'Средний' },
-    3: { color: 'red', text: 'Высокий' },
+    1: { color: 'bg-emerald-100 text-emerald-700', text: 'Низкий' },
+    2: { color: 'bg-amber-100 text-amber-700', text: 'Средний' },
+    3: { color: 'bg-rose-100 text-rose-700', text: 'Высокий' },
   };
 
   const columns = [
@@ -157,7 +181,9 @@ function TasksList() {
       key: 'checkbox',
       width: 50,
       render: (_, record) => (
-        <Checkbox
+        <input
+          type="checkbox"
+          className="h-4 w-4 accent-primary"
           checked={doneStage ? record.stage === doneStage.id : false}
           onChange={() => handleToggleComplete(record)}
         />
@@ -168,11 +194,9 @@ function TasksList() {
       key: 'task',
       render: (_, record) => (
         <div>
-          <div style={{ fontWeight: 500 }}>{record.name}</div>
+          <div className="font-medium">{record.name}</div>
           {record.description && (
-            <Text type="secondary" style={{ fontSize: 12 }}>
-              {record.description}
-            </Text>
+            <div className="text-xs text-muted-foreground">{record.description}</div>
           )}
         </div>
       ),
@@ -184,7 +208,13 @@ function TasksList() {
       key: 'stage',
       render: (stageId) => {
         const stage = stagesById[stageId];
-        return stage ? <Tag color={stage.done ? 'green' : stage.in_progress ? 'blue' : 'default'}>{stage.name}</Tag> : '-';
+        return stage ? (
+          <Badge variant="secondary" className={stage.done ? 'bg-emerald-100 text-emerald-700' : stage.in_progress ? 'bg-sky-100 text-sky-700' : ''}>
+            {stage.name}
+          </Badge>
+        ) : (
+          '-'
+        );
       },
     },
     {
@@ -192,8 +222,8 @@ function TasksList() {
       dataIndex: 'priority',
       key: 'priority',
       render: (priority) => {
-        const config = priorityConfig[priority] || { color: 'default', text: '-' };
-        return <Tag color={config.color}>{config.text}</Tag>;
+        const config = priorityConfig[priority] || { color: 'bg-muted text-muted-foreground', text: '-' };
+        return <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs ${config.color}`}>{config.text}</span>;
       },
     },
     {
@@ -206,10 +236,14 @@ function TasksList() {
         const ownerLabel = record.owner ? userNameById[record.owner] || `#${record.owner}` : null;
         const display = names.length ? names.join(', ') : ownerLabel;
         return (
-          <Space>
-            <Avatar size="small" icon={<UserOutlined />} />
-            <Text>{display || '-'}</Text>
-          </Space>
+          <div className="flex items-center gap-2">
+            <Avatar className="h-6 w-6">
+              <AvatarFallback>
+                <User className="h-3 w-3" />
+              </AvatarFallback>
+            </Avatar>
+            <span className="text-sm">{display || '-'}</span>
+          </div>
         );
       },
     },
@@ -223,22 +257,22 @@ function TasksList() {
         const today = new Date();
         const daysLeft = Math.ceil((dueDate - today) / (1000 * 60 * 60 * 24));
         return (
-          <Space direction="vertical" size="small">
-            <Space size="small">
-              <CalendarOutlined />
+          <div className="space-y-1">
+            <div className="flex items-center gap-2 text-sm">
+              <Calendar className="h-4 w-4 text-muted-foreground" />
               {dueDate.toLocaleDateString('ru-RU')}
-            </Space>
+            </div>
             {daysLeft > 0 && daysLeft <= 3 && (
-              <Text type="warning" style={{ fontSize: 12 }}>
-                <ClockCircleOutlined /> {daysLeft} дн.
-              </Text>
+              <div className="text-xs text-amber-600">
+                <Clock className="inline h-3 w-3" /> {daysLeft} дн.
+              </div>
             )}
             {daysLeft < 0 && (
-              <Text type="danger" style={{ fontSize: 12 }}>
-                <ClockCircleOutlined /> просрочено
-              </Text>
+              <div className="text-xs text-rose-600">
+                <Clock className="inline h-3 w-3" /> просрочено
+              </div>
             )}
-          </Space>
+          </div>
         );
       },
       sorter: (a, b) => new Date(a.due_date || 0) - new Date(b.due_date || 0),
@@ -248,33 +282,20 @@ function TasksList() {
       key: 'actions',
       width: 200,
       render: (_, record) => (
-        <Space size="small">
-          <Button
-            type="link"
-            icon={<EyeOutlined />}
-            onClick={() => navigate(`/tasks/${record.id}`)}
-          >
+        <div className="flex flex-wrap items-center gap-2">
+          <Button variant="ghost" size="sm" onClick={() => navigate(`/tasks/${record.id}`)}>
+            <Eye className="mr-1 h-4 w-4" />
             Просмотр
           </Button>
-          <Button
-            type="link"
-            icon={<EditOutlined />}
-            onClick={() => navigate(`/tasks/${record.id}/edit`)}
-          >
+          <Button variant="ghost" size="sm" onClick={() => navigate(`/tasks/${record.id}/edit`)}>
+            <Edit className="mr-1 h-4 w-4" />
             Редактировать
           </Button>
-          <Popconfirm
-            title="Удалить эту задачу?"
-            description="Это действие нельзя отменить"
-            onConfirm={() => handleDelete(record.id)}
-            okText="Да"
-            cancelText="Нет"
-          >
-            <Button type="link" danger icon={<DeleteOutlined />}>
-              Удалить
-            </Button>
-          </Popconfirm>
-        </Space>
+          <Button variant="ghost" size="sm" className="text-destructive" onClick={() => setDeleteTarget(record)}>
+            <Trash2 className="mr-1 h-4 w-4" />
+            Удалить
+          </Button>
+        </div>
       ),
     },
   ];
@@ -300,10 +321,7 @@ function TasksList() {
         loading={loading}
         pagination={pagination}
         onChange={handleTableChange}
-        scroll={{ x: 1400 }}
-        rowClassName={(record) =>
-          doneStage && record.stage === doneStage.id ? 'row-completed' : ''
-        }
+        rowClassName={(record) => (doneStage && record.stage === doneStage.id ? 'row-completed' : '')}
         showTotal={true}
         showSizeChanger={true}
         emptyText="Нет задач"
@@ -316,6 +334,30 @@ function TasksList() {
           text-decoration: line-through;
         }
       `}</style>
+
+      <AlertDialog open={!!deleteTarget} onOpenChange={(open) => !open && setDeleteTarget(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Удалить эту задачу?</AlertDialogTitle>
+          </AlertDialogHeader>
+          <p className="text-sm text-muted-foreground">Это действие нельзя отменить</p>
+          <div className="mt-4 flex justify-end gap-2">
+            <Button variant="outline" onClick={() => setDeleteTarget(null)}>
+              Нет
+            </Button>
+            <Button
+              variant="destructive"
+              onClick={() => {
+                if (!deleteTarget) return;
+                handleDelete(deleteTarget.id);
+                setDeleteTarget(null);
+              }}
+            >
+              Да
+            </Button>
+          </div>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

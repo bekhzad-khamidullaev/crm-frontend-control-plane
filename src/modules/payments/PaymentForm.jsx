@@ -1,29 +1,21 @@
 import React, { useEffect, useState } from 'react';
-import {
-  Form,
-  Input,
-  InputNumber,
-  Button,
-  Card,
-  Space,
-  message,
-  Typography,
-  Spin,
-  DatePicker,
-  Row,
-  Col,
-  Select,
-} from 'antd';
-import { SaveOutlined, ArrowLeftOutlined, DollarOutlined } from '@ant-design/icons';
+import { useForm } from 'react-hook-form';
+import { z } from 'zod';
+import { zodResolver } from '@hookform/resolvers/zod';
 import dayjs from 'dayjs';
+import { ArrowLeft, Save } from 'lucide-react';
+
 import { navigate } from '../../router';
 import { getPayment, createPayment, updatePayment } from '../../lib/api/payments';
-import { getDeal } from '../../lib/api/client';
-import { getDeals } from '../../lib/api/client';
+import { getDeal, getDeals } from '../../lib/api/client';
 import ReferenceSelect from '../../components/ui-ReferenceSelect';
 import EntitySelect from '../../components/EntitySelect';
-
-const { Title } = Typography;
+import { Card } from '../../components/ui/card.jsx';
+import { Button } from '../../components/ui/button.jsx';
+import { Input } from '../../components/ui/input.jsx';
+import { Label } from '../../components/ui/label.jsx';
+import { DatePicker } from '../../components/ui-DatePicker.jsx';
+import { toast } from '../../components/ui/use-toast.js';
 
 const statusOptions = [
   { value: 'r', label: 'Получен' },
@@ -32,11 +24,47 @@ const statusOptions = [
   { value: 'l', label: 'Низкая вероятность' },
 ];
 
+const schema = z.object({
+  amount: z.number({ invalid_type_error: 'Введите сумму' }).min(0, 'Сумма должна быть больше 0'),
+  currency: z.any().optional(),
+  status: z.string().min(1, 'Выберите статус'),
+  payment_date: z.any().optional(),
+  deal: z.any().refine((val) => val !== undefined && val !== null && val !== '', { message: 'Выберите сделку' }),
+  contract_number: z.string().optional(),
+  invoice_number: z.string().optional(),
+  order_number: z.string().optional(),
+});
+
 function PaymentForm({ id }) {
-  const [form] = Form.useForm();
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
   const isEdit = !!id;
+
+  const {
+    register,
+    handleSubmit,
+    setValue,
+    reset,
+    watch,
+    formState: { errors },
+  } = useForm({
+    resolver: zodResolver(schema),
+    defaultValues: {
+      amount: 0,
+      currency: '',
+      status: 'r',
+      payment_date: dayjs(),
+      deal: '',
+      contract_number: '',
+      invoice_number: '',
+      order_number: '',
+    },
+  });
+
+  const paymentDate = watch('payment_date');
+  const statusValue = watch('status');
+  const currencyValue = watch('currency');
+  const dealValue = watch('deal');
 
   useEffect(() => {
     if (isEdit) {
@@ -48,19 +76,18 @@ function PaymentForm({ id }) {
     setLoading(true);
     try {
       const data = await getPayment(id);
-      form.setFieldsValue({
+      reset({
         ...data,
         payment_date: data.payment_date ? dayjs(data.payment_date) : null,
       });
     } catch (error) {
-      message.error('Ошибка загрузки платежа');
-      console.error('Error loading payment:', error);
+      toast({ title: 'Ошибка', description: 'Ошибка загрузки платежа', variant: 'destructive' });
     } finally {
       setLoading(false);
     }
   };
 
-  const handleSubmit = async (values) => {
+  const onSubmit = async (values) => {
     setSaving(true);
     try {
       const payload = {
@@ -70,141 +97,109 @@ function PaymentForm({ id }) {
 
       if (isEdit) {
         await updatePayment(id, payload);
-        message.success('Платеж обновлен');
+        toast({ title: 'Платеж обновлен', description: 'Платеж обновлен' });
       } else {
         await createPayment(payload);
-        message.success('Платеж создан');
+        toast({ title: 'Платеж создан', description: 'Платеж создан' });
       }
       navigate('/payments');
     } catch (error) {
-      message.error(isEdit ? 'Ошибка обновления платежа' : 'Ошибка создания платежа');
-      console.error('Error saving payment:', error);
+      toast({ title: 'Ошибка', description: isEdit ? 'Ошибка обновления платежа' : 'Ошибка создания платежа', variant: 'destructive' });
     } finally {
       setSaving(false);
     }
   };
 
-  const handleBack = () => {
-    navigate('/payments');
-  };
-
   if (loading) {
-    return (
-      <div style={{ textAlign: 'center', padding: '50px' }}>
-        <Spin size="large" tip="Загрузка данных..." spinning={true}>
-          <div style={{ minHeight: '200px' }}></div>
-        </Spin>
-      </div>
-    );
+    return <div className="py-12 text-center text-sm text-muted-foreground">Загрузка...</div>;
   }
 
   return (
-    <div>
-      <div style={{ marginBottom: 16 }}>
-        <Space>
-          <Button icon={<ArrowLeftOutlined />} onClick={handleBack}>
-            Назад
-          </Button>
-          <Title level={2} style={{ margin: 0 }}>
-            {isEdit ? 'Редактирование платежа' : 'Новый платеж'}
-          </Title>
-        </Space>
-      </div>
+    <div className="space-y-4">
+      <Button variant="outline" onClick={() => navigate('/payments')}>
+        <ArrowLeft className="mr-2 h-4 w-4" />
+        Назад
+      </Button>
 
-      <Card>
-        <Form
-          form={form}
-          layout="vertical"
-          onFinish={handleSubmit}
-          initialValues={{
-            status: 'r',
-            payment_date: dayjs(),
-          }}
-        >
-          <Row gutter={16}>
-            <Col span={12}>
-              <Form.Item
-                label="Сумма"
-                name="amount"
-                rules={[{ required: true, message: 'Введите сумму' }]}
+      <h2 className="text-2xl font-semibold">
+        {isEdit ? 'Редактирование платежа' : 'Новый платеж'}
+      </h2>
+
+      <Card className="p-6">
+        <form className="space-y-6" onSubmit={handleSubmit(onSubmit)}>
+          <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+            <div>
+              <Label htmlFor="amount">Сумма *</Label>
+              <Input id="amount" type="number" step="0.01" placeholder="0.00" {...register('amount', { valueAsNumber: true })} />
+              {errors.amount && <p className="text-xs text-destructive">{errors.amount.message}</p>}
+            </div>
+            <div>
+              <Label>Валюта</Label>
+              <ReferenceSelect type="currencies" placeholder="Выберите валюту" value={currencyValue || ''} onChange={(val) => setValue('currency', val)} />
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+            <div>
+              <Label>Статус *</Label>
+              <select
+                className="h-9 w-full rounded-md border border-border bg-background px-2 text-sm"
+                value={statusValue || ''}
+                onChange={(e) => setValue('status', e.target.value)}
               >
-                <InputNumber
-                  style={{ width: '100%' }}
-                  min={0}
-                  precision={2}
-                  prefix={<DollarOutlined />}
-                  placeholder="0.00"
-                />
-              </Form.Item>
-            </Col>
-            <Col span={12}>
-              <Form.Item label="Валюта" name="currency">
-                <ReferenceSelect type="currencies" placeholder="Выберите валюту" />
-              </Form.Item>
-            </Col>
-          </Row>
+                <option value="">Выберите статус</option>
+                {statusOptions.map((option) => (
+                  <option key={option.value} value={option.value}>
+                    {option.label}
+                  </option>
+                ))}
+              </select>
+              {errors.status && <p className="text-xs text-destructive">{errors.status.message}</p>}
+            </div>
+            <div>
+              <Label>Дата платежа</Label>
+              <DatePicker value={paymentDate || null} onChange={(val) => setValue('payment_date', val)} format="YYYY-MM-DD" />
+            </div>
+          </div>
 
-          <Row gutter={16}>
-            <Col span={12}>
-              <Form.Item
-                label="Статус"
-                name="status"
-                rules={[{ required: true, message: 'Выберите статус' }]}
-              >
-                <Select placeholder="Выберите статус" options={statusOptions} />
-              </Form.Item>
-            </Col>
-            <Col span={12}>
-              <Form.Item label="Дата платежа" name="payment_date">
-                <DatePicker format="YYYY-MM-DD" style={{ width: '100%' }} placeholder="Выберите дату" />
-              </Form.Item>
-            </Col>
-          </Row>
+          <div>
+            <Label>Сделка *</Label>
+            <EntitySelect
+              placeholder="Выберите сделку"
+              value={dealValue || ''}
+              fetchOptions={getDeals}
+              fetchById={getDeal}
+              optionLabel={(item) => item?.name || `#${item?.id}`}
+              onChange={(val) => setValue('deal', val)}
+            />
+            {errors.deal && <p className="text-xs text-destructive">{errors.deal.message}</p>}
+          </div>
 
-          <Row gutter={16}>
-            <Col span={12}>
-              <Form.Item
-                label="Сделка"
-                name="deal"
-                rules={[{ required: true, message: 'Выберите сделку' }]}
-              >
-                <EntitySelect
-                  placeholder="Выберите сделку"
-                  fetchOptions={getDeals}
-                  fetchById={getDeal}
-                  optionLabel={(item) => item?.name || `#${item?.id}`}
-                />
-              </Form.Item>
-            </Col>
-          </Row>
+          <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
+            <div>
+              <Label htmlFor="contract_number">Номер договора</Label>
+              <Input id="contract_number" placeholder="Договор №" {...register('contract_number')} />
+            </div>
+            <div>
+              <Label htmlFor="invoice_number">Номер счета</Label>
+              <Input id="invoice_number" placeholder="Счет №" {...register('invoice_number')} />
+            </div>
+            <div>
+              <Label htmlFor="order_number">Номер заказа</Label>
+              <Input id="order_number" placeholder="Заказ №" {...register('order_number')} />
+            </div>
+          </div>
 
-          <Row gutter={16}>
-            <Col span={8}>
-              <Form.Item label="Номер договора" name="contract_number">
-                <Input placeholder="Договор №" />
-              </Form.Item>
-            </Col>
-            <Col span={8}>
-              <Form.Item label="Номер счета" name="invoice_number">
-                <Input placeholder="Счет №" />
-              </Form.Item>
-            </Col>
-            <Col span={8}>
-              <Form.Item label="Номер заказа" name="order_number">
-                <Input placeholder="Заказ №" />
-              </Form.Item>
-            </Col>
-          </Row>
-
-          <Form.Item>
-            <Space>
-              <Button type="primary" htmlType="submit" icon={<SaveOutlined />} loading={saving}>
-                {isEdit ? 'Сохранить' : 'Создать'}
-              </Button>
-              <Button onClick={handleBack}>Отмена</Button>
-            </Space>
-          </Form.Item>
-        </Form>
+          <div className="flex flex-wrap gap-2">
+            <Button type="submit" loading={saving}>
+              <Save className="mr-2 h-4 w-4" />
+              {isEdit ? 'Сохранить' : 'Создать'}
+            </Button>
+            <Button variant="outline" onClick={() => navigate('/payments')}>
+              Отмена
+            </Button>
+          </div>
+        </form>
       </Card>
     </div>
   );

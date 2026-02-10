@@ -71,7 +71,7 @@ describe('ContactsList', () => {
     const { contactsApi } = await import('../../src/lib/api/client.js');
     contactsApi.list.mockResolvedValue({ results: [], count: 0 });
     const { list } = render();
-    const search = list.querySelector('input[type=\"search\"]');
+    const search = list.querySelector('input[type="search"]');
     search.value = 'hopper';
     search.dispatchEvent(new Event('input'));
     expect(contactsApi.list).not.toHaveBeenCalledWith(expect.objectContaining({ search: 'hopper' }));

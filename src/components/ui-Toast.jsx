@@ -1,39 +1,42 @@
-import { message } from 'antd';
+/**
+ * Toast notification utilities for Ant Design
+ * Use App.useApp() hook to get message API in functional components
+ */
+
+import { App } from 'antd';
 
 /**
- * Toast notification wrapper around Ant Design message
- * Provides a simple API for showing notifications
+ * Hook to get message API
+ * Must be used inside App component wrapper
  */
-export function showToast({ message: msg, type = 'info', timeout = 4000 } = {}) {
-  const duration = timeout / 1000; // Convert to seconds
+export function useToast() {
+  const { message } = App.useApp();
   
-  switch (type) {
-    case 'success':
-      message.success(msg, duration);
-      break;
-    case 'error':
-      message.error(msg, duration);
-      break;
-    case 'warning':
-      message.warning(msg, duration);
-      break;
-    case 'info':
-    default:
-      message.info(msg, duration);
-      break;
-  }
-  
-  // Return a function to close the message
-  return () => {
-    message.destroy();
+  return {
+    success: (content) => message.success(content),
+    error: (content) => message.error(content),
+    info: (content) => message.info(content),
+    warning: (content) => message.warning(content),
+    loading: (content) => message.loading(content),
   };
 }
 
-export const Toast = {
-  info: (msg, timeout) => showToast({ message: msg, type: 'info', timeout }),
-  success: (msg, timeout) => showToast({ message: msg, type: 'success', timeout }),
-  error: (msg, timeout) => showToast({ message: msg, type: 'error', timeout }),
-  warning: (msg, timeout) => showToast({ message: msg, type: 'warning', timeout }),
-};
+/**
+ * Legacy toast function for backward compatibility
+ * @deprecated Use App.useApp() message API directly
+ */
+export function toast({ title, description, variant }) {
+  console.warn('toast() is deprecated. Use App.useApp() message API instead');
+  
+  const msg = description || title || 'Notification';
+  const type = variant === 'destructive' ? 'error' : 'info';
+  
+  // This won't work without App context
+  if (typeof window !== 'undefined' && window.__antd_message__) {
+    window.__antd_message__[type](msg);
+  } else {
+    console.log(`[Toast ${type}]:`, msg);
+  }
+}
 
-export default Toast;
+export default useToast;

@@ -4,7 +4,7 @@
  * Используется для защиты роутов от неавторизованного доступа
  */
 
-import { isAuthenticated, isTokenExpired, getToken, clearToken } from './api/auth';
+import { isAuthenticated, isTokenExpired, getToken, clearToken, parseJWT } from './api/auth';
 import { navigate } from '../router';
 
 /**
@@ -13,27 +13,65 @@ import { navigate } from '../router';
  * @param {boolean} requireAuth - Требуется ли авторизация для роута
  * @returns {boolean} true если доступ разрешен, false если нет
  */
-export function checkAuth(route, requireAuth = true) {
-  // Публичные роуты (login, etc.) не требуют проверки
+function getRolesFromToken(token) {
+  try {
+    const payload = parseJWT(token);
+    const roles = payload?.roles || payload?.role || payload?.permissions || payload?.scopes || [];
+    if (Array.isArray(roles)) return roles.map(String);
+    if (typeof roles === 'string') return roles.split(/[\s,]+/).filter(Boolean);
+    return [];
+  } catch {
+    return [];
+  }
+}
+
+function getStoredRoles() {
+  try {
+    const raw = sessionStorage.getItem('contora_roles') || localStorage.getItem('contora_roles');
+    if (!raw) return [];
+    const parsed = JSON.parse(raw);
+    if (Array.isArray(parsed)) return parsed.map(String);
+    if (parsed && Array.isArray(parsed.roles)) return parsed.roles.map(String);
+    return [];
+  } catch {
+    return [];
+  }
+}
+
+export function checkAuth(route, requireAuth = true, requiredRoles = []) {
   if (!requireAuth) {
     return true;
   }
 
   const authenticated = isAuthenticated();
-  
   if (!authenticated) {
-    console.warn(`[AuthGuard] Unauthorized access attempt to ${route.name}`);
+    if (route.name !== 'login') {
+      navigate('/login');
+    }
+    return false;
+  }
+
+  const token = getToken();
+  if (token && isTokenExpired(token)) {
+    clearToken();
     navigate('/login');
     return false;
   }
 
-  // Проверяем, не истек ли токен
-  const token = getToken();
-  if (token && isTokenExpired(token)) {
-    console.warn('[AuthGuard] Token expired, redirecting to login');
-    clearToken();
-    navigate('/login');
-    return false;
+  if (requiredRoles && requiredRoles.length) {
+    let roles = getRolesFromToken(token);
+    if (!roles || roles.length === 0) {
+      roles = getStoredRoles();
+    }
+    if (!roles || roles.length === 0) {
+      console.warn('[AuthGuard] No roles available from API/token; allowing access to avoid false 403');
+      return true;
+    }
+    const ok = roles.some((r) => requiredRoles.includes(r));
+    if (!ok) {
+      navigate('/forbidden');
+      return false;
+    }
   }
 
   return true;
@@ -47,10 +85,11 @@ export function checkAuth(route, requireAuth = true) {
  */
 export function authGuardMiddleware(route, routeMeta = {}) {
   const requireAuth = routeMeta.auth !== false;
+  const requiredRoles = Array.isArray(routeMeta.roles) ? routeMeta.roles : [];
   
   // Если роут требует авторизацию, проверяем
   if (requireAuth) {
-    return checkAuth(route, true);
+    return checkAuth(route, true, requiredRoles);
   }
   
   // Если пользователь авторизован и пытается попасть на login, редиректим на dashboard

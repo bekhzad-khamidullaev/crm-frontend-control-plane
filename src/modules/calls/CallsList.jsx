@@ -4,40 +4,19 @@
  */
 
 import React, { useState, useEffect } from 'react';
-import {
-  Card,
-  Table,
-  Space,
-  Tag,
-  Button,
-  Input,
-  DatePicker,
-  Select,
-  Form,
-  Typography,
-  message,
-  Tooltip,
-  Statistic,
-  Row,
-  Col,
-  Empty,
-  Modal,
-  Tabs,
-} from 'antd';
-import {
-  PhoneOutlined,
-  SearchOutlined,
-  PhoneFilled,
-  ClockCircleOutlined,
-  ReloadOutlined,
-  PhoneTwoTone,
-  CheckCircleOutlined,
-  CloseCircleOutlined,
-  PlayCircleOutlined,
-  AudioOutlined,
-  FormOutlined,
-  InfoCircleOutlined,
-} from '@ant-design/icons';
+import dayjs from 'dayjs';
+import { Phone, Search, PhoneCall, Clock, RefreshCcw, Play, Headphones, FileText, Info } from 'lucide-react';
+
+import { Card } from '../../components/ui/card.jsx';
+import { Button } from '../../components/ui/button.jsx';
+import { Input } from '../../components/ui/input.jsx';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '../../components/ui/tabs.jsx';
+import { DatePicker } from '../../components/ui-DatePicker.jsx';
+import { Badge } from '../../components/ui/badge.jsx';
+import EnhancedTable from '../../components/ui-EnhancedTable.jsx';
+import { toast } from '../../components/ui/use-toast.js';
+import { Form } from 'antd';
+// replaced Ant Design icons with lucide-react above
 import {
   getVoipCallLogs,
   getVoipCallLog,
@@ -53,11 +32,11 @@ import { getContacts, getContact } from '../../lib/api';
 import CallButton from '../../components/CallButton.jsx';
 import AudioPlayer from '../../components/AudioPlayer.jsx';
 import CrudPage from '../../components/CrudPage.jsx';
-import dayjs from 'dayjs';
-
-const { Title, Text } = Typography;
-const { RangePicker } = DatePicker;
-const { Option } = Select;
+const Title = ({ children }) => <h2 className="text-xl font-semibold">{children}</h2>;
+const Text = ({ children, secondary }) => (
+  <span className={secondary ? 'text-muted-foreground' : undefined}>{children}</span>
+);
+const RangePicker = DatePicker.RangePicker;
 
 function CallsList() {
   const [calls, setCalls] = useState([]);
@@ -104,20 +83,20 @@ function CallsList() {
         : results;
 
       setCalls(filtered);
-      setPagination({
-        ...pagination,
+      setPagination((prev) => ({
+        ...prev,
         current: 1,
         total: filtered.length,
-      });
+      }));
     } catch (error) {
       console.error('Error fetching calls:', error);
-      message.error('Ошибка загрузки истории звонков');
+      toast({ title: 'Ошибка', description: 'Ошибка загрузки истории звонков', variant: 'destructive' });
       setCalls([]);
-      setPagination({
-        ...pagination,
+      setPagination((prev) => ({
+        ...prev,
         current: 1,
         total: 0,
-      });
+      }));
     } finally {
       setLoading(false);
     }
@@ -162,7 +141,11 @@ function CallsList() {
   };
 
   const handleTableChange = (newPagination) => {
-    setPagination((prev) => ({ ...prev, current: newPagination.current }));
+    setPagination((prev) => ({ 
+      ...prev, 
+      current: newPagination.current,
+      pageSize: newPagination.pageSize 
+    }));
   };
 
   const handleSearch = (value) => {
@@ -191,14 +174,14 @@ function CallsList() {
       const values = await noteForm.validateFields();
       setNoteSaving(true);
       await addCallNote(noteTarget.id, { note: values.note });
-      message.success('Заметка добавлена');
+      toast({ title: 'Заметка добавлена', description: 'Сохранено' });
       setNoteModalOpen(false);
       setNoteTarget(null);
       noteForm.resetFields();
       fetchCalls();
     } catch (error) {
       if (error?.errorFields) return;
-      message.error('Ошибка добавления заметки');
+      toast({ title: 'Ошибка', description: 'Ошибка добавления заметки', variant: 'destructive' });
     } finally {
       setNoteSaving(false);
     }
@@ -217,7 +200,7 @@ function CallsList() {
       setDetailModal({ open: true, loading: false, data });
     } catch (error) {
       console.error('Error loading call details:', error);
-      message.error('Ошибка загрузки деталей звонка');
+      toast({ title: 'Ошибка', description: 'Ошибка загрузки деталей звонка', variant: 'destructive' });
       setDetailModal({ open: true, loading: false, data: null });
     }
   };
@@ -479,157 +462,140 @@ function CallsList() {
 
       {/* Statistics Cards */}
       {statistics && (
-        <Row gutter={16} style={{ marginBottom: 16 }}>
-          <Col xs={24} sm={12} lg={6}>
-            <Card>
-              <Statistic
-                title="Всего звонков"
-                value={statistics.total ?? statistics.total_calls ?? 0}
-                prefix={<PhoneOutlined />}
-              />
-            </Card>
-          </Col>
-          <Col xs={24} sm={12} lg={6}>
-            <Card>
-              <Statistic
-                title="Входящие"
-                value={statistics.inbound ?? statistics.incoming ?? statistics.incoming_calls ?? 0}
-                prefix={<PhoneTwoTone twoToneColor="#52c41a" />}
-                valueStyle={{ color: '#52c41a' }}
-              />
-            </Card>
-          </Col>
-          <Col xs={24} sm={12} lg={6}>
-            <Card>
-              <Statistic
-                title="Исходящие"
-                value={statistics.outbound ?? statistics.outgoing ?? statistics.outgoing_calls ?? 0}
-                prefix={<PhoneTwoTone twoToneColor="#1890ff" />}
-                valueStyle={{ color: '#1890ff' }}
-              />
-            </Card>
-          </Col>
-          <Col xs={24} sm={12} lg={6}>
-            <Card>
-              <Statistic
-                title="Средняя длительность"
-                value={formatDuration(Math.round(statistics.averageDuration || statistics.average_duration || 0))}
-                prefix={<ClockCircleOutlined />}
-              />
-            </Card>
-          </Col>
-        </Row>
+        <div className="mb-4 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+          <Card className="p-4">
+            <div className="flex items-center gap-3 text-sm">
+              <div className="rounded-md bg-muted p-2"><Phone className="h-4 w-4" /></div>
+              <div>
+                <div className="text-xs text-muted-foreground">Всего звонков</div>
+                <div className="text-lg font-semibold">{statistics.total ?? statistics.total_calls ?? 0}</div>
+              </div>
+            </div>
+          </Card>
+          <Card className="p-4">
+            <div className="flex items-center gap-3 text-sm">
+              <div className="rounded-md bg-emerald-100 p-2 text-emerald-700"><PhoneCall className="h-4 w-4" /></div>
+              <div>
+                <div className="text-xs text-muted-foreground">Входящие</div>
+                <div className="text-lg font-semibold">{statistics.inbound ?? statistics.incoming ?? statistics.incoming_calls ?? 0}</div>
+              </div>
+            </div>
+          </Card>
+          <Card className="p-4">
+            <div className="flex items-center gap-3 text-sm">
+              <div className="rounded-md bg-sky-100 p-2 text-sky-700"><PhoneCall className="h-4 w-4" /></div>
+              <div>
+                <div className="text-xs text-muted-foreground">Исходящие</div>
+                <div className="text-lg font-semibold">{statistics.outbound ?? statistics.outgoing ?? statistics.outgoing_calls ?? 0}</div>
+              </div>
+            </div>
+          </Card>
+          <Card className="p-4">
+            <div className="flex items-center gap-3 text-sm">
+              <div className="rounded-md bg-muted p-2"><Clock className="h-4 w-4" /></div>
+              <div>
+                <div className="text-xs text-muted-foreground">Средняя длительность</div>
+                <div className="text-lg font-semibold">{formatDuration(Math.round(statistics.averageDuration || statistics.average_duration || 0))}</div>
+              </div>
+            </div>
+          </Card>
+        </div>
       )}
 
       {/* Filters */}
-      <Card style={{ marginBottom: 16 }}>
-        <Space wrap style={{ width: '100%' }}>
-          <Input.Search
-            placeholder="Поиск по номеру телефона..."
-            allowClear
-            style={{ width: 300 }}
-            onSearch={handleSearch}
-            enterButton={<SearchOutlined />}
-          />
-          <Select
-            placeholder="Направление"
-            allowClear
-            style={{ width: 150 }}
-            value={filters.direction}
-            onChange={(value) => handleFilterChange('direction', value)}
+      <Card className="mb-4 p-4">
+        <div className="flex w-full flex-wrap items-center gap-3">
+          <div className="relative w-full max-w-xs">
+            <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+            <Input
+              placeholder="Поиск по номеру телефона..."
+              onKeyDown={(e) => e.key === 'Enter' && handleSearch(e.currentTarget.value)}
+              className="pl-9"
+            />
+          </div>
+          <select
+            className="h-9 w-[150px] rounded-md border border-border bg-background px-2 text-sm"
+            value={filters.direction || ''}
+            onChange={(e) => handleFilterChange('direction', e.target.value || null)}
           >
-            <Option value="inbound">Входящие</Option>
-            <Option value="outbound">Исходящие</Option>
-          </Select>
-          <Select
-            placeholder="Статус"
-            allowClear
-            style={{ width: 150 }}
-            value={filters.status}
-            onChange={(value) => handleFilterChange('status', value)}
+            <option value="">Направление</option>
+            <option value="inbound">Входящие</option>
+            <option value="outbound">Исходящие</option>
+          </select>
+          <select
+            className="h-9 w-[150px] rounded-md border border-border bg-background px-2 text-sm"
+            value={filters.status || ''}
+            onChange={(e) => handleFilterChange('status', e.target.value || null)}
           >
-            <Option value="answered">Отвечен</Option>
-            <Option value="ringing">Звонит</Option>
-            <Option value="busy">Занято</Option>
-            <Option value="no_answer">Нет ответа</Option>
-            <Option value="failed">Ошибка</Option>
-          </Select>
+            <option value="">Статус</option>
+            <option value="answered">Отвечен</option>
+            <option value="ringing">Звонит</option>
+            <option value="busy">Занято</option>
+            <option value="no_answer">Нет ответа</option>
+            <option value="failed">Ошибка</option>
+          </select>
           <RangePicker
-            style={{ width: 280 }}
             value={filters.dateRange}
             onChange={(dates) => handleFilterChange('dateRange', dates)}
             format="DD.MM.YYYY"
-            placeholder={['Дата от', 'Дата до']}
           />
           {(filters.direction || filters.status || filters.dateRange || searchText) && (
-            <Button onClick={handleClearFilters}>
+            <Button variant="outline" onClick={handleClearFilters}>
               Сбросить фильтры
             </Button>
           )}
-        </Space>
+          <Button variant="outline" onClick={() => { fetchCalls(); fetchStatistics(); }}>
+            <RefreshCcw className="mr-2 h-4 w-4" />
+            Обновить
+          </Button>
+        </div>
       </Card>
 
       {/* Calls Table */}
-      <Card>
-        <Table
+      <Card className="p-0">
+        <EnhancedTable
           columns={columns}
           dataSource={calls}
-          rowKey="id"
           loading={loading}
           pagination={pagination}
           onChange={handleTableChange}
-          scroll={{ x: 1200 }}
-          locale={{
-            emptyText: (
-              <Empty
-                description="Звонков не найдено"
-                image={Empty.PRESENTED_IMAGE_SIMPLE}
-              />
-            ),
-          }}
+          emptyText="Звонков не найдено"
         />
       </Card>
 
       {/* Recording Player Modal */}
-      <Modal
-        title={
-          <Space>
-            <AudioOutlined />
-            Запись звонка
-          </Space>
-        }
-        open={recordingModalVisible}
-        onCancel={handleCloseRecordingModal}
-        footer={null}
-        width={700}
-      >
-        {selectedRecording && (
-          <div>
-            <div style={{ marginBottom: 16 }}>
-              <Space direction="vertical" size="small">
-                <Text strong>Номер телефона:</Text>
-                <Text>{selectedRecording.phone_number || selectedRecording.number}</Text>
-                <Text strong>Дата и время:</Text>
-                <Text>
-                  {dayjs(selectedRecording.started_at || selectedRecording.timestamp).format('DD.MM.YYYY HH:mm:ss')}
-                </Text>
-                <Text strong>Длительность:</Text>
-                <Text>{formatDuration(selectedRecording.duration)}</Text>
-                {selectedRecording.notes && (
-                  <>
-                    <Text strong>Заметки:</Text>
-                    <Text>{selectedRecording.notes}</Text>
-                  </>
-                )}
-              </Space>
+      {recordingModalVisible && selectedRecording && (
+        <div className="mt-4 space-y-3 rounded-md border border-border p-4">
+          <div className="text-sm font-semibold">Запись звонка</div>
+          <div className="grid grid-cols-1 gap-2 text-sm sm:grid-cols-2">
+            <div>
+              <div className="text-muted-foreground">Номер телефона</div>
+              <div>{selectedRecording.phone_number || selectedRecording.number}</div>
             </div>
-            <AudioPlayer
-              src={selectedRecording.recording_url}
-              filename={`call_${selectedRecording.id}_${selectedRecording.phone_number || selectedRecording.number}.webm`}
-            />
+            <div>
+              <div className="text-muted-foreground">Дата и время</div>
+              <div>{dayjs(selectedRecording.started_at || selectedRecording.timestamp).format('DD.MM.YYYY HH:mm:ss')}</div>
+            </div>
+            <div>
+              <div className="text-muted-foreground">Длительность</div>
+              <div>{formatDuration(selectedRecording.duration)}</div>
+            </div>
+            {selectedRecording.notes && (
+              <div className="sm:col-span-2">
+                <div className="text-muted-foreground">Заметки</div>
+                <div>{selectedRecording.notes}</div>
+              </div>
+            )}
           </div>
-        )}
-      </Modal>
+          <AudioPlayer
+            src={selectedRecording.recording_url}
+            filename={`call_${selectedRecording.id}_${selectedRecording.phone_number || selectedRecording.number}.webm`}
+          />
+          <div className="text-right">
+            <Button variant="outline" onClick={handleCloseRecordingModal}>Закрыть</Button>
+          </div>
+        </div>
+      )}
     </div>
   );
 
@@ -650,51 +616,47 @@ function CallsList() {
 
   return (
     <>
-      <Tabs
-        activeKey={activeTab}
-        onChange={setActiveTab}
-        items={[
-          { key: 'voip', label: 'VoIP', children: voipTabContent },
-          { key: 'crm', label: 'CRM логи', children: crmTabContent },
-        ]}
-        destroyOnHidden={false}
-      />
+      <Tabs value={activeTab} onValueChange={setActiveTab}>
+        <TabsList>
+          <TabsTrigger value="voip">VoIP</TabsTrigger>
+          <TabsTrigger value="crm">CRM логи</TabsTrigger>
+        </TabsList>
+        <TabsContent value="voip">{voipTabContent}</TabsContent>
+        <TabsContent value="crm">{crmTabContent}</TabsContent>
+      </Tabs>
 
-      <Modal
-        title="Добавить заметку"
-        open={noteModalOpen}
-        onCancel={handleCloseNoteModal}
-        onOk={handleSaveNote}
-        okText="Сохранить"
-        cancelText="Отмена"
-        confirmLoading={noteSaving}
-      >
-        <Form form={noteForm} layout="vertical">
-          <Form.Item
-            name="note"
-            label="Заметка"
-            rules={[{ required: true, message: 'Введите заметку' }]}
-          >
-            <Input.TextArea rows={4} placeholder="Описание звонка" />
-          </Form.Item>
-        </Form>
-      </Modal>
+      {noteModalOpen && (
+        <div className="mt-4 rounded-md border border-border p-4">
+          <div className="text-sm font-semibold">Добавить заметку</div>
+          <textarea
+            className="mt-2 w-full rounded-md border border-border p-2 text-sm"
+            rows={4}
+            placeholder="Описание звонка"
+            defaultValue={noteForm.getFieldValue('note')}
+            onChange={(e) => noteForm.setFieldsValue({ note: e.target.value })}
+          />
+          <div className="mt-3 flex justify-end gap-2">
+            <Button variant="outline" onClick={handleCloseNoteModal}>Отмена</Button>
+            <Button onClick={handleSaveNote} loading={noteSaving}>Сохранить</Button>
+          </div>
+        </div>
+      )}
 
-      <Modal
-        title="Детали звонка"
-        open={detailModal.open}
-        onCancel={handleCloseDetailModal}
-        footer={null}
-        width={640}
-      >
-        {detailModal.loading ? (
-          <div>Загрузка...</div>
-        ) : (
-          <pre style={{ whiteSpace: 'pre-wrap' }}>
-            {detailModal.data ? JSON.stringify(detailModal.data, null, 2) : 'Нет данных'}
-          </pre>
-        )}
-      </Modal>
+      {detailModal.open && (
+        <div className="mt-4 rounded-md border border-border p-4">
+          <div className="text-sm font-semibold">Детали звонка</div>
+          {detailModal.loading ? (
+            <div>Загрузка...</div>
+          ) : (
+            <pre className="whitespace-pre-wrap">
+              {detailModal.data ? JSON.stringify(detailModal.data, null, 2) : 'Нет данных'}
+            </pre>
+          )}
+          <div className="text-right">
+            <Button variant="outline" onClick={handleCloseDetailModal}>Закрыть</Button>
+          </div>
+        </div>
+      )}
     </>
   );
 }

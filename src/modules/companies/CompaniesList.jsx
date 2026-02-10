@@ -31,6 +31,7 @@ const { Title } = Typography;
 
 function CompaniesList() {
   const [companies, setCompanies] = useState([]);
+  const [allCompaniesCache, setAllCompaniesCache] = useState(null);
   const [loading, setLoading] = useState(false);
   const [searchText, setSearchText] = useState('');
   const [industries, setIndustries] = useState([]);
@@ -46,19 +47,32 @@ function CompaniesList() {
     loadReferenceData();
   }, []);
 
-  const fetchCompanies = async (page = 1, search = '') => {
+  const fetchCompanies = async (page = 1, search = '', pageSize = pagination.pageSize) => {
     setLoading(true);
     try {
       const response = await getCompanies({
         page,
-        page_size: pagination.pageSize,
+        page_size: pageSize,
         search,
       });
-      setCompanies(response.results || []);
+      const results = response.results || [];
+      const totalCount = response.count || 0;
+      
+      if (results.length > pageSize && results.length === totalCount) {
+        console.warn('⚠️ CompaniesList: Caching all data');
+        setAllCompaniesCache(results);
+        const startIndex = (page - 1) * pageSize;
+        setCompanies(results.slice(startIndex, startIndex + pageSize));
+      } else {
+        setAllCompaniesCache(null);
+        setCompanies(results);
+      }
+      
       setPagination((prev) => ({
         ...prev,
         current: page,
-        total: response.count || 0,
+        pageSize: pageSize,
+        total: totalCount,
       }));
     } catch (error) {
       message.error('Ошибка загрузки компаний');
@@ -114,7 +128,23 @@ function CompaniesList() {
   };
 
   const handleTableChange = (newPagination) => {
-    fetchCompanies(newPagination.current, searchText);
+    const nextPage = newPagination?.current || 1;
+    const nextPageSize = newPagination?.pageSize || pagination.pageSize;
+    
+    if (nextPageSize !== pagination.pageSize) {
+      setPagination((p) => ({ ...p, pageSize: nextPageSize }));
+      setAllCompaniesCache(null);
+      fetchCompanies(nextPage, searchText, nextPageSize);
+      return;
+    }
+    
+    if (allCompaniesCache && allCompaniesCache.length > 0) {
+      const startIndex = (nextPage - 1) * nextPageSize;
+      setCompanies(allCompaniesCache.slice(startIndex, startIndex + nextPageSize));
+      setPagination((p) => ({ ...p, current: nextPage }));
+    } else {
+      fetchCompanies(nextPage, searchText, nextPageSize);
+    }
   };
 
   const industryMap = useMemo(() => {

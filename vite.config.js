@@ -5,10 +5,8 @@ import { visualizer } from 'rollup-plugin-visualizer';
 export default defineConfig(({ mode }) => {
   // Load env file based on `mode` in the current working directory.
   const env = loadEnv(mode, process.cwd(), '');
-  
+
   const isProduction = mode === 'production';
-  const isStaging = mode === 'staging';
-  const isDevelopment = mode === 'development';
 
   return {
     plugins: [
@@ -23,45 +21,45 @@ export default defineConfig(({ mode }) => {
         brotliSize: true,
       }),
     ].filter(Boolean),
-    
+
     server: {
       port: 3000,
       host: true,
       proxy: {
         // Прокси для API, чтобы обойти CORS в dev
         '/api': {
-          target: env.VITE_API_BASE_URL || 'http://127.0.0.1:8000',
+          target: env.VITE_PROXY_TARGET || env.VITE_API_BASE_URL || 'http://127.0.0.1:8000',
           changeOrigin: true,
           secure: false,
-          configure: (proxy, options) => {
-            proxy.on('error', (err, req, res) => {
+          configure: (proxy, _options) => {
+            proxy.on('error', (_err, _req, _res) => {
               console.log('🔗 Backend not available - using mock data mode');
             });
-            proxy.on('proxyReq', (proxyReq, req, res) => {
+            proxy.on('proxyReq', (proxyReq, req, _res) => {
               console.log('📡 API Request:', req.method, req.url);
             });
           },
         },
         // Медиа/статика с backend
         '/media': {
-          target: env.VITE_API_BASE_URL || 'http://127.0.0.1:8000',
+          target: env.VITE_PROXY_TARGET || env.VITE_API_BASE_URL || 'http://127.0.0.1:8000',
           changeOrigin: true,
           secure: false,
         },
         '/static': {
-          target: env.VITE_API_BASE_URL || 'http://127.0.0.1:8000',
+          target: env.VITE_PROXY_TARGET || env.VITE_API_BASE_URL || 'http://127.0.0.1:8000',
           changeOrigin: true,
           secure: false,
         },
       },
     },
-    
+
     build: {
       outDir: 'dist',
       sourcemap: isProduction ? false : true, // No sourcemaps in production for security
       minify: isProduction ? 'esbuild' : false,
       cssMinify: true,
-      
+
       rollupOptions: {
         output: {
           // Optimize chunk splitting
@@ -72,37 +70,27 @@ export default defineConfig(({ mode }) => {
               if (id.includes('react') || id.includes('react-dom')) {
                 return 'react-vendor';
               }
-              
-              // Ant Design core
-              if (id.includes('antd') && !id.includes('@ant-design/icons')) {
-                return 'antd-core';
-              }
-              
-              // Ant Design icons
-              if (id.includes('@ant-design/icons')) {
-                return 'antd-icons';
-              }
-              
+
               // Chart.js
               if (id.includes('chart.js') || id.includes('react-chartjs-2')) {
                 return 'charts';
               }
-              
+
               // PDF export (lazy loaded)
               if (id.includes('jspdf') || id.includes('html2canvas')) {
                 return 'pdf-export';
               }
-              
+
               // Drag and drop
               if (id.includes('@dnd-kit')) {
                 return 'dnd';
               }
-              
+
               // Other node_modules
               return 'vendor';
             }
           },
-          
+
           // Asset naming
           chunkFileNames: isProduction
             ? 'assets/js/[name]-[hash].js'
@@ -124,31 +112,41 @@ export default defineConfig(({ mode }) => {
           },
         },
       },
-      
+
       // Chunk size warnings
       chunkSizeWarningLimit: 1000,
-      
+
       // Compression
       reportCompressedSize: true,
     },
-    
+
     esbuild: {
       jsx: 'automatic',
       // Drop console and debugger in production
       drop: isProduction ? ['console', 'debugger'] : [],
     },
-    
+
     // Optimize deps
+    resolve: {
+      alias: {
+        '@': '/src',
+        '@/shared': '/src/shared',
+        '@/entities': '/src/entities',
+        '@/features': '/src/features',
+        '@/widgets': '/src/widgets',
+        '@/pages': '/src/pages',
+        '@/app': '/src/app',
+      },
+    },
     optimizeDeps: {
-      include: [
-        'react',
-        'react-dom',
-        'antd',
-        '@ant-design/icons',
-        'dayjs',
-        'chart.js',
-        'react-chartjs-2',
-      ],
+      entries: ['index.html'],
+      include: ['react', 'react-dom', 'dayjs', 'chart.js', 'react-chartjs-2'],
+      exclude: ['@playwright/test', 'playwright', 'playwright-core', 'fsevents', 'chromium-bidi'],
+      esbuildOptions: {
+        loader: {
+          '.js': 'jsx',
+        },
+      },
     },
   };
 });

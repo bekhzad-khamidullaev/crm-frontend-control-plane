@@ -9,8 +9,66 @@ import { api } from './client.js';
  * Get overview analytics for dashboard
  * @returns {Promise} Analytics overview data
  */
+const toNumber = (value) => {
+  if (value === null || value === undefined) return 0;
+  if (typeof value === 'number' && Number.isFinite(value)) return value;
+  if (typeof value === 'string') {
+    const normalized = value.replace(/[^\d.-]/g, '');
+    const parsed = Number(normalized);
+    return Number.isFinite(parsed) ? parsed : 0;
+  }
+  if (Array.isArray(value)) {
+    return value.length;
+  }
+  if (typeof value === 'object') {
+    const candidate =
+      value.count ??
+      value.total ??
+      value.value ??
+      value.amount ??
+      value.sum ??
+      value.result ??
+      value.results ??
+      value.items ??
+      value.data ??
+      value.leads ??
+      value.contacts ??
+      value.deals ??
+      value.revenue;
+    return candidate !== undefined ? toNumber(candidate) : 0;
+  }
+  return 0;
+};
+
+export function normalizeOverview(data = {}) {
+  if (!data || typeof data !== 'object') return {};
+  return {
+    total_leads: toNumber(data.total_leads ?? data.leads_count ?? data.leads ?? data.totalLeads),
+    total_contacts: toNumber(data.total_contacts ?? data.contacts_count ?? data.contacts ?? data.totalContacts),
+    total_deals: toNumber(data.total_deals ?? data.deals_count ?? data.deals ?? data.totalDeals),
+    total_revenue: toNumber(data.total_revenue ?? data.revenue_total ?? data.revenue ?? data.totalRevenue),
+    leads_growth: toNumber(data.leads_growth ?? data.leads_growth_percent ?? data.leadsGrowth),
+    deals_growth: toNumber(data.deals_growth ?? data.deals_growth_percent ?? data.dealsGrowth),
+    revenue_growth: toNumber(data.revenue_growth ?? data.revenue_growth_percent ?? data.revenueGrowth),
+    conversion_rate: toNumber(data.conversion_rate ?? data.conversion ?? data.conversionRate),
+  };
+}
+
+export function normalizeDashboardAnalytics(data = {}) {
+  if (!data || typeof data !== 'object') return {};
+  return {
+    ...data,
+    monthly_growth: data.monthly_growth || data.monthlyGrowth || data.revenue_series || data.revenueSeries,
+    lead_sources: data.lead_sources || data.leads_by_source || data.sources || data.leadSources,
+    lead_statuses: data.lead_statuses || data.leads_by_status || data.statuses || data.leadStatuses,
+    prediction: data.prediction || data.forecast || data.revenue_prediction,
+    tasks_by_status: data.tasks_by_status || data.tasksByStatus,
+  };
+}
+
 export async function getOverview() {
-  return api.get('/api/analytics/overview/');
+  const res = await api.get('/api/analytics/overview/');
+  return normalizeOverview(res);
 }
 
 /**
@@ -22,7 +80,8 @@ export async function getOverview() {
  * @returns {Promise} Dashboard analytics data
  */
 export async function getDashboardAnalytics(params = {}) {
-  return api.get('/api/dashboard/analytics/', { params });
+  const res = await api.get('/api/dashboard/analytics/', { params });
+  return normalizeDashboardAnalytics(res);
 }
 
 /**

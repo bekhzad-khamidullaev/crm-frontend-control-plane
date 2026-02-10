@@ -1,8 +1,8 @@
 import {
   clearToken,
-  getRefreshToken,
+  getRefreshToken as _getRefreshToken,
   getToken,
-  isTokenExpired,
+  isTokenExpired as _isTokenExpired,
   isTokenTooLarge,
   MAX_HEADER_SAFE_LENGTH,
   setToken,
@@ -25,7 +25,7 @@ const SEND_COOKIES =
   (import.meta.env.VITE_API_SEND_COOKIES || runtimeConfig.apiSendCookies || '').toString() === 'true' ||
   AUTH_MODE === 'session';
 const resolveCredentials = (mode = AUTH_MODE) => (SEND_COOKIES || mode === 'session' ? 'include' : 'omit');
-const MAX_AUTH_HEADER_LENGTH = MAX_HEADER_SAFE_LENGTH;
+const _MAX_AUTH_HEADER_LENGTH = MAX_HEADER_SAFE_LENGTH;
 
 const AUTH_ENDPOINTS = ['/api/token/', '/api/token/refresh/', '/api/token/verify/', '/api/auth/token/'];
 const RETRYABLE_STATUS = [502, 503, 504];
@@ -124,7 +124,7 @@ async function parseResponseBody(response, responseType = 'json', forError = fal
     if (contentType.includes('application/json')) {
       try {
         return await response.json();
-      } catch (_) {
+      } catch {
         return {};
       }
     }
@@ -144,7 +144,7 @@ async function parseResponseBody(response, responseType = 'json', forError = fal
   if (contentType.includes('application/json')) {
     try {
       return await response.json();
-    } catch (_) {
+    } catch {
       return {};
     }
   }
@@ -200,9 +200,9 @@ function normalizeError(response, payload, url) {
   });
 }
 
-let refreshPromise = null;
+let _refreshPromise = null;
 
-async function refreshAccessToken(refreshToken) {
+async function _refreshAccessToken(refreshToken) {
   if (!refreshToken) {
     throw new ApiError('No refresh token available', { status: 401 });
   }
@@ -512,6 +512,7 @@ export const getTask = (id) => tasksApi.retrieve(id);
 export const createTask = (payload) => tasksApi.create(payload);
 export const updateTask = (id, payload) => tasksApi.update(id, payload);
 export const deleteTask = (id) => tasksApi.remove(id);
+export const getTaskStages = (params) => api.get('/api/task-stages/', { params });
 
 export const getProjects = (params) => projectsApi.list(params);
 export const getProject = (id) => projectsApi.retrieve(id);

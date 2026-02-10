@@ -17,37 +17,31 @@ import {
 import { useDroppable } from '@dnd-kit/core';
 import { CSS } from '@dnd-kit/utilities';
 import {
-  Card,
-  Avatar,
-  Tag,
-  Typography,
-  Space,
-  Button,
-  App,
-  Spin,
-} from 'antd';
-import {
-  UserOutlined,
-  MailOutlined,
-  PhoneOutlined,
-  PlusOutlined,
-  DragOutlined,
-} from '@ant-design/icons';
+  User,
+  Mail,
+  Phone,
+  Plus,
+  GripVertical,
+  Briefcase
+} from 'lucide-react';
 import { navigate } from '../../router';
-import { getLeads } from '../../lib/api/client';
-import { leadsApi } from '../../lib/api/client';
+import { getLeads, leadsApi } from '../../lib/api/client';
 import { buildLeadPayload, deriveLeadStatus } from '../../lib/utils/leads';
-import './LeadsKanban.css';
 
-const { Text } = Typography;
+// Shadcn Components
+import { Card, CardContent, CardHeader } from "../../components/ui/card";
+import { Avatar, AvatarFallback, AvatarImage } from "../../components/ui/avatar";
+import { Badge } from "../../components/ui/badge";
+import { Button } from "../../components/ui/button";
+import { ScrollArea } from "../../components/ui/scroll-area";
+import { useToast } from "../../components/ui/use-toast";
 
 const statusColumns = {
-  new: { title: 'Новые', color: '#1890ff' },
-  converted: { title: 'Конвертированы', color: '#13c2c2' },
-  lost: { title: 'Потеряны', color: '#ff4d4f' },
+  new: { title: 'Новые', color: 'bg-blue-100 text-blue-700', borderColor: 'border-blue-200' },
+  converted: { title: 'Конвертированы', color: 'bg-teal-100 text-teal-700', borderColor: 'border-teal-200' },
+  lost: { title: 'Потеряны', color: 'bg-red-100 text-red-700', borderColor: 'border-red-200' },
 };
 
-// Sortable Card Component
 function SortableLeadCard({ lead, config }) {
   const {
     attributes,
@@ -65,168 +59,99 @@ function SortableLeadCard({ lead, config }) {
   };
 
   const handleCardClick = (e) => {
-    // Don't navigate if clicking on drag handle
-    if (e.target.closest('.drag-handle')) {
-      return;
-    }
+    if (e.target.closest('.drag-handle')) return;
     navigate(`/leads/${lead.id}`);
   };
 
+  const getInitials = (first, last) => `${first?.[0]||''}${last?.[0]||''}`.toUpperCase();
+
   return (
-    <div
-      ref={setNodeRef}
-      style={style}
-      {...attributes}
-      className={`kanban-card ${isDragging ? 'dragging' : ''}`}
-    >
+    <div ref={setNodeRef} style={style} {...attributes} className="mb-3">
       <Card
-        size="small"
-        hoverable
-        style={{
-          marginBottom: 8,
-          cursor: 'pointer',
-        }}
+        className={`cursor-pointer hover:shadow-md transition-all ${isDragging ? 'ring-2 ring-primary rotate-2' : ''}`}
         onClick={handleCardClick}
       >
-        <div 
-          {...listeners} 
-          className="drag-handle"
-          style={{ 
-            position: 'absolute', 
-            top: 8, 
-            right: 8, 
-            cursor: 'grab',
-            padding: '4px',
-            zIndex: 10,
-          }}
-        >
-          <DragOutlined style={{ color: '#999', fontSize: 16 }} />
-        </div>
-        
-        <Space
-          direction="vertical"
-          size="small"
-          style={{ width: '100%' }}
-        >
-          <Space>
-            <Avatar
-              icon={<UserOutlined />}
-              size="small"
-              style={{ backgroundColor: config.color }}
-            />
-            <Text strong>
-              {lead.first_name} {lead.last_name}
-            </Text>
-          </Space>
-
-          {(lead.company_name || lead.company) && (
-            <Text
-              type="secondary"
-              style={{ fontSize: 12 }}
+        <CardContent className="p-3">
+          <div className="flex justify-between items-start mb-2">
+            <div className="flex items-center gap-2">
+              <Avatar className="h-6 w-6">
+                <AvatarFallback className="text-[10px]">
+                  {getInitials(lead.first_name, lead.last_name)}
+                </AvatarFallback>
+              </Avatar>
+              <div className="text-sm font-medium leading-none">
+                {lead.first_name} {lead.last_name}
+              </div>
+            </div>
+            <div
+              {...listeners}
+              className="drag-handle cursor-grab text-muted-foreground hover:text-foreground p-1"
             >
-              {lead.company_name || `#${lead.company}`}
-            </Text>
-          )}
+               <GripVertical className="h-4 w-4" />
+            </div>
+          </div>
 
-          <Space
-            direction="vertical"
-            size={2}
-            style={{ width: '100%' }}
-          >
-            {lead.email && (
-              <Space size={4}>
-                <MailOutlined
-                  style={{
-                    fontSize: 12,
-                    color: '#999',
-                  }}
-                />
-                <Text
-                  style={{ fontSize: 12 }}
-                  ellipsis
-                >
-                  {lead.email}
-                </Text>
-              </Space>
-            )}
-            {lead.phone && (
-              <Space size={4}>
-                <PhoneOutlined
-                  style={{
-                    fontSize: 12,
-                    color: '#999',
-                  }}
-                />
-                <Text style={{ fontSize: 12 }}>
-                  {lead.phone}
-                </Text>
-              </Space>
-            )}
-          </Space>
-        </Space>
+          <div className="space-y-1">
+             {lead.company_name && (
+               <div className="text-xs text-muted-foreground flex items-center gap-1">
+                  <Briefcase className="h-3 w-3" /> {lead.company_name}
+               </div>
+             )}
+             {lead.email && (
+               <div className="text-xs text-muted-foreground flex items-center gap-1 overflow-hidden text-ellipsis">
+                  <Mail className="h-3 w-3" /> {lead.email}
+               </div>
+             )}
+             {lead.phone && (
+               <div className="text-xs text-muted-foreground flex items-center gap-1">
+                  <Phone className="h-3 w-3" /> {lead.phone}
+               </div>
+             )}
+          </div>
+        </CardContent>
       </Card>
     </div>
   );
 }
 
-// Droppable Column Component
 function DroppableColumn({ status, config, children, count, onAddNew }) {
-  const { setNodeRef, isOver } = useDroppable({
-    id: status,
-  });
+  const { setNodeRef, isOver } = useDroppable({ id: status });
 
   return (
-    <div 
+    <div
       ref={setNodeRef}
-      className="kanban-column"
-      style={{
-        backgroundColor: isOver ? 'rgba(24, 144, 255, 0.05)' : 'transparent',
-        transition: 'background-color 0.2s',
-      }}
+      className={`flex flex-col h-full rounded-lg bg-muted/40 p-2 min-w-[280px] w-full ${isOver ? 'bg-muted/60 ring-2 ring-primary/20' : ''}`}
     >
-      <div
-        className="kanban-column-header"
-        style={{ borderTopColor: config.color }}
-      >
-        <Space>
-          <div
-            className="kanban-column-indicator"
-            style={{ backgroundColor: config.color }}
-          />
-          <Text strong>{config.title}</Text>
-          <Tag color={config.color}>{count}</Tag>
-        </Space>
-        <Button
-          type="text"
-          icon={<PlusOutlined />}
-          size="small"
-          onClick={onAddNew}
-        />
+      <div className={`flex items-center justify-between p-2 mb-2 border-b-2 ${config.borderColor}`}>
+        <div className="flex items-center gap-2">
+          <Badge variant="secondary" className={config.color}>
+             {count}
+          </Badge>
+          <span className="font-medium">{config.title}</span>
+        </div>
+        <Button variant="ghost" size="icon" className="h-6 w-6" onClick={onAddNew}>
+          <Plus className="h-4 w-4" />
+        </Button>
       </div>
-      {children}
+
+      <ScrollArea className="flex-1 pr-2">
+        <div className="min-h-[100px]">
+           {children}
+        </div>
+      </ScrollArea>
     </div>
   );
 }
 
 function LeadsKanban() {
-  const { message } = App.useApp();
-  const [columns, setColumns] = useState({
-    new: [],
-    converted: [],
-    lost: [],
-  });
+  const { toast } = useToast();
+  const [columns, setColumns] = useState({ new: [], converted: [], lost: [] });
   const [loading, setLoading] = useState(false);
   const [activeId, setActiveId] = useState(null);
 
   const sensors = useSensors(
-    useSensor(PointerSensor, {
-      activationConstraint: {
-        distance: 8, // Требуется переместить на 8px перед началом drag
-      },
-    }),
-    useSensor(KeyboardSensor, {
-      coordinateGetter: sortableKeyboardCoordinates,
-    })
+    useSensor(PointerSensor, { activationConstraint: { distance: 8 } }),
+    useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates })
   );
 
   useEffect(() => {
@@ -238,82 +163,52 @@ function LeadsKanban() {
     try {
       const response = await getLeads({ page_size: 100 });
       const leads = response.results || [];
-      
-      // Group leads by status
-      const grouped = {
-        new: [],
-        converted: [],
-        lost: [],
-      };
 
+      const grouped = { new: [], converted: [], lost: [] };
       leads.forEach((lead) => {
         const status = deriveLeadStatus(lead);
-        if (grouped[status]) {
-          grouped[status].push(lead);
-        } else {
-          grouped.new.push(lead);
-        }
+        if (grouped[status]) grouped[status].push(lead);
+        else grouped.new.push(lead);
       });
-
       setColumns(grouped);
     } catch (error) {
-      message.error('Ошибка загрузки лидов');
-      console.error('Error loading leads:', error);
-      setColumns({
-        new: [],
-        converted: [],
-        lost: [],
-      });
+      toast({ variant: "destructive", title: "Ошибка", description: "Не удалось загрузить лиды" });
     } finally {
       setLoading(false);
     }
   };
 
   const findContainer = (id) => {
-    if (id in columns) {
-      return id;
-    }
-
-    return Object.keys(columns).find((key) =>
-      columns[key].some((lead) => lead.id === id)
-    );
+    if (id in columns) return id;
+    return Object.keys(columns).find((key) => columns[key].some((l) => l.id === id));
   };
 
-  const handleDragStart = (event) => {
-    setActiveId(event.active.id);
-  };
+  const handleDragStart = (event) => setActiveId(event.active.id);
 
   const handleDragOver = (event) => {
     const { active, over } = event;
-
     if (!over) return;
 
     const activeContainer = findContainer(active.id);
     const overContainer = findContainer(over.id) || over.id;
 
-    if (!activeContainer || !overContainer || activeContainer === overContainer) {
-      return;
-    }
+    if (!activeContainer || !overContainer || activeContainer === overContainer) return;
 
     setColumns((prev) => {
       const activeItems = prev[activeContainer];
       const overItems = prev[overContainer];
-
-      const activeIndex = activeItems.findIndex((item) => item.id === active.id);
-      const overIndex = overItems.findIndex((item) => item.id === over.id);
+      const activeIndex = activeItems.findIndex((i) => i.id === active.id);
+      const overIndex = overItems.findIndex((i) => i.id === over.id);
 
       let newIndex;
-      if (over.id in prev) {
-        newIndex = overItems.length;
-      } else {
-        newIndex = overIndex >= 0 ? overIndex : 0;
-      }
+      if (over.id in prev) newIndex = overItems.length;
+      else newIndex = overIndex >= 0 ? overIndex : 0;
 
       const updatedLead = { ...activeItems[activeIndex], __status: overContainer };
 
       return {
         ...prev,
-        [activeContainer]: activeItems.filter((item) => item.id !== active.id),
+        [activeContainer]: activeItems.filter((i) => i.id !== active.id),
         [overContainer]: [
           ...overItems.slice(0, newIndex),
           updatedLead,
@@ -325,76 +220,74 @@ function LeadsKanban() {
 
   const handleDragEnd = async (event) => {
     const { active, over } = event;
-
     setActiveId(null);
 
-    if (!over) {
-      // No over target - drag cancelled
-      return;
-    }
+    if (!over) return;
 
     const activeContainer = findContainer(active.id);
     const overContainer = findContainer(over.id) || over.id;
 
-    // Drag end - processing status change
+    if (!activeContainer || !overContainer || activeContainer === overContainer) return;
 
-    if (!activeContainer || !overContainer) {
-      // Container not found - invalid drag target
-      return;
+    const activeLead = columns[activeContainer]?.find((l) => l.id === active.id); // Note: might be in overContainer in state already due to optimisic DragOver
+
+    // Actually, due to DragOver logic, the item is ALREADY moved in state 'columns'.
+    // but without API call confirming it.
+    // Wait, DragOver manages the visual move. DragEnd should finalize payload.
+    // In current implementation DragOver modifies state. So activeLead is now in overContainer?
+    // Let's check where it is.
+
+    // Safety check:
+    let lead = activeLead;
+    let fromStatus = activeContainer;
+
+    // Check if it's already in overContainer (it should be due to dragOver)
+    if (!lead) {
+       lead = columns[overContainer].find(l => l.id === active.id);
+       fromStatus = overContainer; // It's logically here now.
     }
 
-    const activeLead = columns[activeContainer].find((l) => l.id === active.id);
+    if (!lead) return;
 
-    if (!activeLead) {
-      console.error('Active lead not found');
-      return;
-    }
+    try {
+        // Optimistic update already happened in dragOver.
+        // We just api call now.
+        // Identify target status
+        const targetStatus = overContainer;
 
-    if (activeContainer !== overContainer) {
-      try {
-        if (overContainer === 'lost') {
-          await leadsApi.disqualify(activeLead.id, buildLeadPayload(activeLead));
-        } else if (overContainer === 'converted') {
-          await leadsApi.convert(activeLead.id, buildLeadPayload(activeLead));
-        } else if (overContainer === 'new') {
-          await leadsApi.patch(activeLead.id, { disqualified: false });
-        }
-        message.success(
-          `Лид \"${activeLead.first_name} ${activeLead.last_name}\" перемещен в \"${statusColumns[overContainer].title}\"`,
-          3
-        );
-      } catch (error) {
-        console.error('Error updating lead status:', error);
+        // We only care if status CHANGED from what it was in DB?
+        // But we don't know DB state efficiently. We assume if container changed, we update.
+        // BUT dragOver logic already moved it. So activeContainer === overContainer at this point?
+        // findContainer will return overContainer.
 
-        let errorMessage = 'Ошибка обновления статуса лида';
-        if (error?.details?.detail) {
-          errorMessage = error.details.detail;
-        } else if (error?.message) {
-          errorMessage = error.message;
-        }
+        // So we need to detect cross-container move.
+        // standard dnd-kit logic: dragOver handles sorting between containers.
+        // effectively we just need to update the status of the item based on where it landed.
 
-        message.error(errorMessage, 5);
-        await fetchLeads();
-      }
+        const finalContainer = findContainer(active.id);
+
+        // Update API
+        if (finalContainer === 'lost') await leadsApi.disqualify(lead.id, buildLeadPayload(lead));
+        else if (finalContainer === 'converted') await leadsApi.convert(lead.id, buildLeadPayload(lead));
+        else if (finalContainer === 'new') await leadsApi.patch(lead.id, { disqualified: false });
+
+        toast({ title: "Статус обновлен", description: `Лид перемещен в ${statusColumns[finalContainer].title}` });
+    } catch (error) {
+       toast({ variant: "destructive", title: "Ошибка", description: "Не удалось обновить статус" });
+       fetchLeads(); // Revert
     }
   };
 
-  if (loading) {
-    return (
-      <div style={{ textAlign: 'center', padding: '50px' }}>
-        <Spin size="large" />
-      </div>
-    );
-  }
-
   const activeLead = activeId
-    ? Object.values(columns)
-        .flat()
-        .find((lead) => lead.id === activeId)
+    ? Object.values(columns).flat().find((lead) => lead.id === activeId)
     : null;
 
+  if (loading && !Object.values(columns).flat().length) {
+    return <div className="p-10 text-center">Загрузка...</div>;
+  }
+
   return (
-    <div className="kanban-board">
+    <div className="kanban-board h-full">
       <DndContext
         sensors={sensors}
         collisionDetection={closestCorners}
@@ -402,7 +295,7 @@ function LeadsKanban() {
         onDragOver={handleDragOver}
         onDragEnd={handleDragEnd}
       >
-        <div className="kanban-columns">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 h-full items-start">
           {Object.entries(statusColumns).map(([status, config]) => (
             <DroppableColumn
               key={status}
@@ -413,10 +306,10 @@ function LeadsKanban() {
             >
               <SortableContext
                 id={status}
-                items={columns[status].map((lead) => lead.id)}
+                items={columns[status].map((l) => l.id)}
                 strategy={verticalListSortingStrategy}
               >
-                <div className="kanban-column-content">
+                <div className="space-y-3 min-h-[50px]">
                   {columns[status].map((lead) => (
                     <SortableLeadCard
                       key={lead.id}
@@ -424,14 +317,6 @@ function LeadsKanban() {
                       config={config}
                     />
                   ))}
-
-                  {columns[status].length === 0 && (
-                    <div className="kanban-column-empty">
-                      <Text type="secondary" style={{ fontSize: 12 }}>
-                        Перетащите лиды сюда
-                      </Text>
-                    </div>
-                  )}
                 </div>
               </SortableContext>
             </DroppableColumn>
@@ -439,23 +324,16 @@ function LeadsKanban() {
         </div>
 
         <DragOverlay>
-          {activeLead ? (
-            <Card size="small" style={{ width: 280, cursor: 'grabbing' }}>
-              <Space direction="vertical" size="small" style={{ width: '100%' }}>
-                <Space>
-                  <Avatar icon={<UserOutlined />} size="small" />
-                  <Text strong>
-                    {activeLead.first_name} {activeLead.last_name}
-                  </Text>
-                </Space>
-                {activeLead.company && (
-                  <Text type="secondary" style={{ fontSize: 12 }}>
-                    {activeLead.company}
-                  </Text>
-                )}
-              </Space>
-            </Card>
-          ) : null}
+           {activeLead ? (
+              <Card className="w-[280px] shadow-xl rotate-2 cursor-grabbing">
+                 <CardContent className="p-3">
+                    <div className="flex items-center gap-2 mb-2">
+                       <Avatar className="h-6 w-6"><AvatarFallback>AB</AvatarFallback></Avatar>
+                       <span className="font-medium">{activeLead.first_name}</span>
+                    </div>
+                 </CardContent>
+              </Card>
+           ) : null}
         </DragOverlay>
       </DndContext>
     </div>

@@ -71,10 +71,10 @@ export function exportToExcel(data, columns, filename = 'export.csv') {
  * @param {Array} data - Array of objects to export
  * @param {Array} columns - Column configuration
  * @param {string} filename - Output filename
- * @param {Object} options - PDF options (title, orientation)
+ * @param {Object} options - PDF options (title, _orientation)
  */
-export function exportToPDF(data, columns, filename = 'export.pdf', options = {}) {
-  const { title = 'Export', orientation = 'portrait' } = options;
+export function exportToPDF(data, columns, _filename = 'export.pdf', options = {}) {
+  const { title = 'Export', orientation: _orientation = 'portrait' } = options;
   
   // Create HTML table
   let html = `

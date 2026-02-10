@@ -121,6 +121,10 @@ class ChatWebSocket {
         case 'typing_stopped':
           this.handleTypingStopped(data.payload);
           break;
+        case 'connection_established':
+          // Optional server handshake message
+          this.emit('connected', { handshake: true, payload: data.payload });
+          break;
         case 'ping':
           // Respond to ping to keep connection alive
           this.send({ type: 'pong' });

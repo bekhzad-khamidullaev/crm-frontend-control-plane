@@ -27,6 +27,7 @@ const { Option } = Select;
 function ProductsList() {
   const { message } = App.useApp();
   const [products, setProducts] = useState([]);
+  const [allProductsCache, setAllProductsCache] = useState(null);
   const [categories, setCategories] = useState([]);
   const [loading, setLoading] = useState(false);
   const [searchText, setSearchText] = useState('');
@@ -52,15 +53,15 @@ function ProductsList() {
     }
   };
 
-  const loadProducts = async (page = 1, search = searchText, category = selectedCategory) => {
+  const loadProducts = async (page = 1, search = searchText, category = selectedCategory, pageSize = pagination.pageSize) => {
     setLoading(true);
     try {
       const params = {
         page,
       };
 
-      if (pagination.pageSize) {
-        params.page_size = pagination.pageSize;
+      if (pageSize) {
+        params.page_size = pageSize;
       }
 
       if (search) {
@@ -73,12 +74,24 @@ function ProductsList() {
 
       const response = await getProducts(params);
 
-      setProducts(response.results || response || []);
-      setPagination({
-        ...pagination,
+      const results = response?.results || response || [];
+      const total = typeof response?.count === 'number' ? response.count : results.length;
+      if (results.length > pageSize && results.length === total) {
+        console.warn('⚠️ ProductsList: Caching all data');
+        setAllProductsCache(results);
+        const startIndex = (page - 1) * pageSize;
+        setProducts(results.slice(startIndex, startIndex + pageSize));
+      } else {
+        setAllProductsCache(null);
+        setProducts(results);
+      }
+      
+      setPagination((prev) => ({
+        ...prev,
         current: page,
-        total: response.count || response.length || 0,
-      });
+        pageSize: pageSize,
+        total,
+      }));
     } catch (error) {
       message.error('Ошибка загрузки продуктов');
       console.error('Error loading products:', error);
@@ -98,7 +111,26 @@ function ProductsList() {
   };
 
   const handleTableChange = (newPagination) => {
-    loadProducts(newPagination.current);
+    const nextPage = newPagination?.current || 1;
+    const nextPageSize = newPagination?.pageSize || pagination.pageSize;
+    const totalCount = typeof pagination.total === 'number' ? pagination.total : 0;
+    const maxPage = totalCount > 0 ? Math.max(1, Math.ceil(totalCount / nextPageSize)) : 1;
+    const safePage = Math.min(nextPage, maxPage);
+    
+    if (nextPageSize !== pagination.pageSize) {
+      setPagination((prev) => ({ ...prev, pageSize: nextPageSize }));
+      setAllProductsCache(null);
+      loadProducts(safePage, searchText, selectedCategory, nextPageSize);
+      return;
+    }
+    
+    if (allProductsCache && allProductsCache.length > 0) {
+      const startIndex = (safePage - 1) * nextPageSize;
+      setProducts(allProductsCache.slice(startIndex, startIndex + nextPageSize));
+      setPagination((prev) => ({ ...prev, current: safePage }));
+    } else {
+      loadProducts(safePage, searchText, selectedCategory, nextPageSize);
+    }
   };
 
   const handleDelete = async (id) => {

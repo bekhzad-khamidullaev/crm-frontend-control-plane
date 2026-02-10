@@ -192,7 +192,7 @@ function CompanyForm({ id }) {
                 name="country"
                 rules={[{ required: true, message: 'Выберите страну' }]}
               >
-                <ReferenceSelect type="countries" placeholder="Выберите страну" allowClear />
+                <ReferenceSelect id="country" type="countries" placeholder="Выберите страну" allowClear />
               </Form.Item>
             </Col>
             <Col xs={24} md={12}>

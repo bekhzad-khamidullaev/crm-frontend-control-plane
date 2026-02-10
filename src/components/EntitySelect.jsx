@@ -1,12 +1,14 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
-import { Select, Spin, message } from 'antd';
+import { Select, App } from 'antd';
+
+const { Option } = Select;
 
 const warnedKeys = new Set();
-const warnOnce = (key, text) => {
+const warnOnce = (key, text, message) => {
   if (!key) return;
   if (warnedKeys.has(key)) return;
   warnedKeys.add(key);
-  message.warning(text);
+  message.error(text);
 };
 
 const normalizeItems = (response) => {
@@ -43,6 +45,7 @@ function EntitySelect({
   debounceMs = 300,
   ...restProps
 }) {
+  const { message } = App.useApp();
   const resolvedFetchOptions = fetchOptions || fetchList;
   const [options, setOptions] = useState([]);
   const [loading, setLoading] = useState(false);
@@ -79,10 +82,11 @@ function EntitySelect({
       if (error?.name !== 'AbortError') {
         warnOnce(
           `entityselect:${labelKey}:${valueKey}`,
-          'Не удалось загрузить справочник для выбора. Проверьте доступ к API.'
+          'Не удалось загрузить справочник для выбора. Проверьте доступ к API.',
+          message
         );
       }
-    } finally { 
+    } finally {
       if (requestIdRef.current === currentRequestId) {
         setLoading(false);
       }
@@ -126,32 +130,40 @@ function EntitySelect({
 
   useEffect(() => {
     const timer = setTimeout(() => {
-      loadOptions(search);
+      if (showSearch) {
+        loadOptions(search);
+      }
     }, debounceMs);
     return () => clearTimeout(timer);
-  }, [search, debounceMs]);
+  }, [search, debounceMs, showSearch]);
 
   useEffect(() => {
     ensureSelectedOptions();
   }, [value]);
 
+  const isDisabled = disabled || (showSearch && !resolvedFetchOptions);
+
   return (
     <Select
       value={value}
       onChange={onChange}
-      mode={mode}
       placeholder={placeholder}
+      mode={mode}
       allowClear={allowClear}
       showSearch={showSearch}
-      disabled={disabled}
-      style={style}
+      disabled={isDisabled}
       loading={loading}
+      style={style}
+      onSearch={showSearch ? setSearch : undefined}
       filterOption={false}
-      onSearch={setSearch}
-      notFoundContent={loading ? <Spin size="small" /> : 'Нет данных'}
-      options={options}
       {...restProps}
-    />
+    >
+      {options.map((option) => (
+        <Option key={option.value} value={option.value}>
+          {option.label}
+        </Option>
+      ))}
+    </Select>
   );
 }
 

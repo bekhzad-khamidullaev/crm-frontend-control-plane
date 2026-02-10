@@ -49,7 +49,7 @@ export const updateInstagramAccount = (id, data) =>
 export const disconnectInstagram = async (id) => {
   try {
     return await api.post(`/api/settings/instagram/accounts/${id}/disconnect/`, { body: {} });
-  } catch (error) {
+  } catch {
     return api.delete(`/api/settings/instagram/accounts/${id}/`);
   }
 };

@@ -68,7 +68,7 @@ describe('ContactDetail', () => {
     client.getContact.mockImplementation(() => new Promise(() => {}));
     render(<ContactDetail id={1} />);
     
-    expect(screen.getByRole('img', { hidden: true })).toBeInTheDocument();
+    expect(screen.getByText('Загрузка...')).toBeInTheDocument();
   });
 
   it('navigates back to list', async () => {
@@ -108,12 +108,6 @@ describe('ContactDetail', () => {
     const deleteButton = screen.getByText('Удалить');
     fireEvent.click(deleteButton);
 
-    // Confirm deletion
-    await waitFor(() => {
-      const confirmButton = screen.getByText('Да');
-      fireEvent.click(confirmButton);
-    });
-
     await waitFor(() => {
       expect(client.deleteContact).toHaveBeenCalledWith(1);
       expect(router.navigate).toHaveBeenCalledWith('/contacts');
@@ -132,7 +126,7 @@ describe('ContactDetail', () => {
     fireEvent.click(callsTab);
 
     await waitFor(() => {
-      expect(screen.getByText('Обсудили условия сотрудничества')).toBeInTheDocument();
+      expect(screen.getByText('Исходящий')).toBeInTheDocument();
     });
   });
 

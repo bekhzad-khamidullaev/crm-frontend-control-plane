@@ -1,29 +1,16 @@
 import React, { useState, useEffect } from 'react';
+import dayjs from 'dayjs';
 import {
-  Card,
-  Descriptions,
-  Button,
-  Space,
-  Tag,
-  Spin,
-  message,
-  Tabs,
-  Typography,
-  Progress,
-  Steps,
-  Table,
-  Empty,
-} from 'antd';
-import {
-  ArrowLeftOutlined,
-  EditOutlined,
-  DeleteOutlined,
-  DollarOutlined,
-  CalendarOutlined,
-  ShopOutlined,
-  ClockCircleOutlined,
-  PhoneTwoTone,
-} from '@ant-design/icons';
+  ArrowLeft,
+  Edit,
+  Trash2,
+  DollarSign,
+  Calendar,
+  Building2,
+  Clock,
+  Phone,
+} from 'lucide-react';
+
 import { navigate } from '../../router';
 import { getDeal, deleteDeal, getCompany, getContact } from '../../lib/api/client';
 import { getDealCallLogs } from '../../lib/api/calls';
@@ -31,9 +18,12 @@ import { getStages } from '../../lib/api/reference';
 import ActivityLog from '../../components/ActivityLog';
 import CallButton from '../../components/CallButton';
 import ChatWidget from '../../modules/chat/ChatWidget';
-import dayjs from 'dayjs';
-
-const { Title, Text } = Typography;
+import { Card } from '../../components/ui/card.jsx';
+import { Button } from '../../components/ui/button.jsx';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '../../components/ui/tabs.jsx';
+import { Badge } from '../../components/ui/badge.jsx';
+import { toast } from '../../components/ui/use-toast.js';
+import EnhancedTable from '../../components/ui-EnhancedTable.jsx';
 
 function DealDetail({ id }) {
   const [deal, setDeal] = useState(null);
@@ -69,7 +59,7 @@ function DealDetail({ id }) {
       const data = await getDeal(id);
       setDeal(data);
     } catch (error) {
-      message.error('Ошибка загрузки данных сделки');
+      toast({ title: 'Ошибка', description: 'Ошибка загрузки данных сделки', variant: 'destructive' });
     } finally {
       setLoading(false);
     }
@@ -121,10 +111,10 @@ function DealDetail({ id }) {
   const handleDelete = async () => {
     try {
       await deleteDeal(id);
-      message.success('Сделка удалена');
+      toast({ title: 'Сделка удалена', description: 'Сделка удалена' });
       navigate('/deals');
     } catch (error) {
-      message.error('Ошибка удаления сделки');
+      toast({ title: 'Ошибка', description: 'Ошибка удаления сделки', variant: 'destructive' });
     }
   };
 
@@ -135,13 +125,8 @@ function DealDetail({ id }) {
     return `${mins}:${secs.toString().padStart(2, '0')}`;
   };
 
-
   if (loading) {
-    return (
-      <div style={{ textAlign: 'center', padding: '50px' }}>
-        <Spin size="large" />
-      </div>
-    );
+    return <div className="py-12 text-center text-sm text-muted-foreground">Загрузка...</div>;
   }
 
   if (!deal) {
@@ -158,224 +143,60 @@ function DealDetail({ id }) {
   const today = new Date();
   const daysLeft = closeDate ? Math.ceil((closeDate - today) / (1000 * 60 * 60 * 24)) : null;
 
-  const tabItems = [
+  const callColumns = [
     {
-      key: 'details',
-      label: 'Детали',
-      children: (
-        <>
-          <Card style={{ marginBottom: 16 }}>
-            {sortedStages.length > 0 ? (
-              <Steps
-                current={currentStageIndex >= 0 ? currentStageIndex : 0}
-                items={sortedStages.map((stage) => ({ title: stage.name }))}
-              />
-            ) : (
-              <Text type="secondary">Этапы не найдены</Text>
-            )}
-          </Card>
-
-          <Descriptions bordered column={2} style={{ marginBottom: 24 }}>
-            <Descriptions.Item label="Название сделки" span={2}>
-              <Text strong style={{ fontSize: 16 }}>
-                {deal.name}
-              </Text>
-            </Descriptions.Item>
-            <Descriptions.Item label="Сумма">
-              <Space>
-                <DollarOutlined style={{ color: '#52c41a' }} />
-                <Text strong style={{ fontSize: 16 }}>
-                  {Number(deal.amount || 0).toLocaleString('ru-RU')} {deal.currency_name || '₽'}
-                </Text>
-              </Space>
-            </Descriptions.Item>
-            <Descriptions.Item label="Стадия">
-              {deal.stage ? <Tag color="blue">{stageLabel}</Tag> : '-'}
-            </Descriptions.Item>
-            <Descriptions.Item label="Вероятность">
-              <Progress
-                percent={Number(deal.probability || 0)}
-                size="small"
-                status={
-                  Number(deal.probability || 0) >= 70
-                    ? 'success'
-                    : Number(deal.probability || 0) >= 40
-                    ? 'normal'
-                    : 'exception'
-                }
-              />
-            </Descriptions.Item>
-            <Descriptions.Item label="Дата закрытия">
-              {closeDate ? (
-                <Space direction="vertical" size="small">
-                  <Space>
-                    <CalendarOutlined />
-                    {closeDate.toLocaleDateString('ru-RU')}
-                  </Space>
-                  {daysLeft > 0 && (
-                    <Text type="secondary" style={{ fontSize: 12 }}>
-                      через {daysLeft} дней
-                    </Text>
-                  )}
-                  {daysLeft < 0 && (
-                    <Text type="danger" style={{ fontSize: 12 }}>
-                      просрочено на {Math.abs(daysLeft)} дней
-                    </Text>
-                  )}
-                </Space>
-              ) : (
-                '-'
-              )}
-            </Descriptions.Item>
-            <Descriptions.Item label="Компания">
-              {company ? (
-                <Space>
-                  <ShopOutlined />
-                  <a onClick={() => navigate(`/companies/${company.id}`)}>
-                    {company.full_name || company.name || `#${company.id}`}
-                  </a>
-                </Space>
-              ) : deal.company ? (
-                `#${deal.company}`
-              ) : (
-                '-'
-              )}
-            </Descriptions.Item>
-            <Descriptions.Item label="Контактное лицо">
-              {contact ? (
-                <Space direction="vertical" size="small">
-                  <a onClick={() => navigate(`/contacts/${contact.id}`)}>
-                    {contact.full_name || `${contact.first_name || ''} ${contact.last_name || ''}`.trim() || `#${contact.id}`}
-                  </a>
-                  {contact.title && (
-                    <Text type="secondary" style={{ fontSize: 12 }}>
-                      {contact.title}
-                    </Text>
-                  )}
-                </Space>
-              ) : deal.contact ? (
-                `#${deal.contact}`
-              ) : (
-                '-'
-              )}
-            </Descriptions.Item>
-            <Descriptions.Item label="Ответственный">
-              {deal.owner_name || deal.owner || '-'}
-            </Descriptions.Item>
-            <Descriptions.Item label="Дата создания">
-              {deal.creation_date ? new Date(deal.creation_date).toLocaleString('ru-RU') : '-'}
-            </Descriptions.Item>
-            <Descriptions.Item label="Последнее обновление">
-              {deal.update_date ? new Date(deal.update_date).toLocaleString('ru-RU') : '-'}
-            </Descriptions.Item>
-            {deal.description && (
-              <Descriptions.Item label="Описание" span={2}>
-                {deal.description}
-              </Descriptions.Item>
-            )}
-          </Descriptions>
-
-        </>
+      title: 'Направление',
+      dataIndex: 'direction',
+      key: 'direction',
+      render: (direction) => (
+        <div className="flex items-center gap-2">
+          <Phone className="h-4 w-4 text-muted-foreground" />
+          {direction === 'inbound' ? 'Входящий' : 'Исходящий'}
+        </div>
       ),
     },
     {
-      key: 'activity',
-      label: 'История активности',
-      children: <ActivityLog entityType="deal" entityId={deal.id} />,
+      title: 'Дата и время',
+      dataIndex: 'timestamp',
+      key: 'timestamp',
+      render: (date, record) => dayjs(date || record.started_at).format('DD.MM.YYYY HH:mm'),
     },
     {
-      key: 'messages',
-      label: 'Сообщения',
-      children: (
-        <ChatWidget
+      title: 'Длительность',
+      dataIndex: 'duration',
+      key: 'duration',
+      render: (duration) => (
+        <div className="flex items-center gap-2">
+          <Clock className="h-4 w-4 text-muted-foreground" />
+          {formatDuration(duration)}
+        </div>
+      ),
+    },
+    {
+      title: 'Действия',
+      key: 'actions',
+      render: (_, record) => (
+        <CallButton
+          phone={record.phone_number || record.number}
+          name={contact?.full_name || deal.name}
           entityType="deal"
           entityId={deal.id}
-          entityName={`Сделка #${deal.id}`}
-          entityPhone={contact?.phone}
-        />
-      ),
-    },
-    {
-      key: 'calls',
-      label: `История звонков (${callLogs.length})`,
-      children: (
-        <Table
-          dataSource={callLogs}
-          loading={callLogsLoading}
-          rowKey="id"
-          pagination={{ pageSize: 10 }}
-          locale={{
-            emptyText: (
-              <Empty
-                description="Звонков по этой сделке пока не было"
-                image={Empty.PRESENTED_IMAGE_SIMPLE}
-              />
-            ),
-          }}
-          columns={[
-            {
-              title: 'Направление',
-              dataIndex: 'direction',
-              key: 'direction',
-              width: 120,
-              render: (direction) => (
-                <Space>
-                  <PhoneTwoTone twoToneColor={direction === 'inbound' ? '#52c41a' : '#1890ff'} />
-                  {direction === 'inbound' ? 'Входящий' : 'Исходящий'}
-                </Space>
-              ),
-            },
-            {
-              title: 'Дата и время',
-              dataIndex: 'timestamp',
-              key: 'timestamp',
-              width: 180,
-              render: (date, record) => dayjs(date || record.started_at).format('DD.MM.YYYY HH:mm'),
-            },
-            {
-              title: 'Длительность',
-              dataIndex: 'duration',
-              key: 'duration',
-              width: 120,
-              render: (duration) => (
-                <Space>
-                  <ClockCircleOutlined />
-                  {formatDuration(duration)}
-                </Space>
-              ),
-            },
-            {
-              title: 'Действия',
-              key: 'actions',
-              width: 120,
-              render: (_, record) => (
-                <CallButton
-                  phone={record.phone_number || record.number}
-                  name={contact?.full_name || deal.name}
-                  entityType="deal"
-                  entityId={deal.id}
-                  size="small"
-                  type="link"
-                />
-              ),
-            },
-          ]}
+          size="small"
+          type="link"
         />
       ),
     },
   ];
 
   return (
-    <div>
-      <Space style={{ marginBottom: 16 }}>
-        <Button icon={<ArrowLeftOutlined />} onClick={() => navigate('/deals')}>
+    <div className="space-y-4">
+      <div className="flex flex-wrap items-center gap-2">
+        <Button variant="outline" onClick={() => navigate('/deals')}>
+          <ArrowLeft className="mr-2 h-4 w-4" />
           Назад к списку
         </Button>
-        <Button
-          type="primary"
-          icon={<EditOutlined />}
-          onClick={() => navigate(`/deals/${id}/edit`)}
-        >
+        <Button onClick={() => navigate(`/deals/${id}/edit`)}>
+          <Edit className="mr-2 h-4 w-4" />
           Редактировать
         </Button>
         {contact?.phone && (
@@ -386,19 +207,180 @@ function DealDetail({ id }) {
             entityId={deal.id}
             size="middle"
             type="default"
-            icon={true}
+            icon
           />
         )}
-        <Button danger icon={<DeleteOutlined />} onClick={handleDelete}>
+        <Button variant="destructive" onClick={handleDelete}>
+          <Trash2 className="mr-2 h-4 w-4" />
           Удалить
         </Button>
-      </Space>
+      </div>
 
-      <Title level={2}>{deal.name}</Title>
+      <h2 className="text-2xl font-semibold">{deal.name}</h2>
 
-      <Card>
-        <Tabs items={tabItems} />
+      <Card className="p-4">
+        <Tabs defaultValue="details">
+          <TabsList>
+            <TabsTrigger value="details">Детали</TabsTrigger>
+            <TabsTrigger value="activity">История активности</TabsTrigger>
+            <TabsTrigger value="messages">Сообщения</TabsTrigger>
+            <TabsTrigger value="calls">История звонков ({callLogs.length})</TabsTrigger>
+          </TabsList>
+
+          <TabsContent value="details">
+            <Card className="mb-4 p-4">
+              {sortedStages.length > 0 ? (
+                <div className="grid gap-2 sm:grid-cols-4">
+                  {sortedStages.map((stage, index) => (
+                    <div
+                      key={stage.id}
+                      className={`rounded-md border px-3 py-2 text-sm ${
+                        index === currentStageIndex
+                          ? 'border-primary bg-primary/10 text-primary'
+                          : 'border-border text-muted-foreground'
+                      }`}
+                    >
+                      {stage.name}
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="text-sm text-muted-foreground">Этапы не найдены</div>
+              )}
+            </Card>
+
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+              <DetailRow label="Название сделки" value={<span className="text-base font-semibold">{deal.name}</span>} span />
+              <DetailRow
+                label="Сумма"
+                value={
+                  <div className="flex items-center gap-2">
+                    <DollarSign className="h-4 w-4 text-emerald-600" />
+                    <span className="font-semibold">
+                      {Number(deal.amount || 0).toLocaleString('ru-RU')} {deal.currency_name || '₽'}
+                    </span>
+                  </div>
+                }
+              />
+              <DetailRow
+                label="Стадия"
+                value={deal.stage ? (
+                  <Badge variant="secondary">{stageLabel}</Badge>
+                ) : (
+                  '-'
+                )}
+              />
+              <DetailRow
+                label="Вероятность"
+                value={
+                  <div>
+                    <div className="h-2 w-full rounded-full bg-muted">
+                      <div
+                        className={`h-2 rounded-full ${
+                          Number(deal.probability || 0) >= 70
+                            ? 'bg-emerald-500'
+                            : Number(deal.probability || 0) >= 40
+                            ? 'bg-sky-500'
+                            : 'bg-rose-500'
+                        }`}
+                        style={{ width: `${Number(deal.probability || 0)}%` }}
+                      />
+                    </div>
+                    <div className="mt-1 text-xs text-muted-foreground">{Number(deal.probability || 0)}%</div>
+                  </div>
+                }
+              />
+              <DetailRow
+                label="Дата закрытия"
+                value={
+                  closeDate ? (
+                    <div className="space-y-1">
+                      <div className="flex items-center gap-2">
+                        <Calendar className="h-4 w-4" />
+                        {closeDate.toLocaleDateString('ru-RU')}
+                      </div>
+                      {daysLeft > 0 && <div className="text-xs text-muted-foreground">через {daysLeft} дней</div>}
+                      {daysLeft < 0 && <div className="text-xs text-rose-600">просрочено на {Math.abs(daysLeft)} дней</div>}
+                    </div>
+                  ) : (
+                    '-'
+                  )
+                }
+              />
+              <DetailRow
+                label="Компания"
+                value={
+                  company ? (
+                    <button className="flex items-center gap-2 text-left text-primary" onClick={() => navigate(`/companies/${company.id}`)}>
+                      <Building2 className="h-4 w-4" />
+                      {company.full_name || company.name || `#${company.id}`}
+                    </button>
+                  ) : deal.company ? (
+                    `#${deal.company}`
+                  ) : (
+                    '-'
+                  )
+                }
+              />
+              <DetailRow
+                label="Контактное лицо"
+                value={
+                  contact ? (
+                    <div className="space-y-1">
+                      <button className="text-left text-primary" onClick={() => navigate(`/contacts/${contact.id}`)}>
+                        {contact.full_name || `${contact.first_name || ''} ${contact.last_name || ''}`.trim() || `#${contact.id}`}
+                      </button>
+                      {contact.title && <div className="text-xs text-muted-foreground">{contact.title}</div>}
+                    </div>
+                  ) : deal.contact ? (
+                    `#${deal.contact}`
+                  ) : (
+                    '-'
+                  )
+                }
+              />
+              <DetailRow label="Ответственный" value={deal.owner_name || deal.owner || '-'} />
+              <DetailRow label="Дата создания" value={deal.creation_date ? new Date(deal.creation_date).toLocaleString('ru-RU') : '-'} />
+              <DetailRow label="Последнее обновление" value={deal.update_date ? new Date(deal.update_date).toLocaleString('ru-RU') : '-'} />
+              {deal.description && <DetailRow label="Описание" value={deal.description} span />}
+            </div>
+          </TabsContent>
+
+          <TabsContent value="activity">
+            <ActivityLog entityType="deal" entityId={deal.id} />
+          </TabsContent>
+
+          <TabsContent value="messages">
+            <ChatWidget
+              entityType="deal"
+              entityId={deal.id}
+              entityName={`Сделка #${deal.id}`}
+              entityPhone={contact?.phone}
+            />
+          </TabsContent>
+
+          <TabsContent value="calls">
+            <EnhancedTable
+              columns={callColumns}
+              dataSource={callLogs}
+              loading={callLogsLoading}
+              pagination={{ pageSize: 10, current: 1, total: callLogs.length }}
+              onChange={() => {}}
+              emptyText="Звонков по этой сделке пока не было"
+              emptyDescription=""
+            />
+          </TabsContent>
+        </Tabs>
       </Card>
+    </div>
+  );
+}
+
+function DetailRow({ label, value, span = false }) {
+  return (
+    <div className={span ? 'sm:col-span-2' : ''}>
+      <div className="text-xs text-muted-foreground">{label}</div>
+      <div className="mt-1 text-sm">{value}</div>
     </div>
   );
 }

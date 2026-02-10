@@ -1,19 +1,6 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import {
-  Button,
-  Space,
-  Tag,
-  message,
-  Progress,
-  Avatar,
-  Modal,
-  Select,
-} from 'antd';
-import {
-  DollarOutlined,
-  UserOutlined,
-  ShopOutlined,
-} from '@ant-design/icons';
+import { DollarSign, User, Building2 } from 'lucide-react';
+
 import { navigate } from '../../router';
 import { getDeals, deleteDeal, dealsApi } from '../../lib/api/client';
 import { getStages } from '../../lib/api/reference';
@@ -23,9 +10,14 @@ import BulkActions from '../../components/ui-BulkActions';
 import EnhancedTable from '../../components/ui-EnhancedTable.jsx';
 import TableToolbar from '../../components/ui-TableToolbar.jsx';
 import { exportToCSV, exportToExcel } from '../../lib/utils/export';
+import { toast } from '../../components/ui/use-toast.js';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '../../components/ui/dialog.jsx';
+import { Button } from '../../components/ui/button.jsx';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../../components/ui/select.jsx';
 
 function DealsList() {
   const [deals, setDeals] = useState([]);
+  const [allDealsCache, setAllDealsCache] = useState(null);
   const [loading, setLoading] = useState(false);
   const [searchText, setSearchText] = useState('');
   const [pagination, setPagination] = useState({
@@ -38,24 +30,40 @@ function DealsList() {
   const [bulkStage, setBulkStage] = useState('');
   const [stages, setStages] = useState([]);
   const [stageFilter, setStageFilter] = useState(null);
+  const [quickStageModal, setQuickStageModal] = useState({ open: false, record: null, stage: '' });
 
-  const fetchDeals = async (page = 1, search = '', stage = stageFilter) => {
+  const fetchDeals = async (page = 1, search = '', stage = stageFilter, pageSize = pagination.pageSize) => {
     setLoading(true);
     try {
       const response = await getDeals({
         page,
-        page_size: pagination.pageSize,
+        page_size: pageSize,
         search,
         stage: stage || undefined,
       });
-      setDeals(response.results || []);
-      setPagination({
-        ...pagination,
+      const results = response.results || [];
+      const totalCount = response.count || 0;
+      
+      // Check if backend pagination is working
+      if (results.length > pageSize && results.length === totalCount) {
+        console.warn('⚠️ DealsList: Caching all data and using client-side pagination');
+        setAllDealsCache(results);
+        const startIndex = (page - 1) * pageSize;
+        const endIndex = startIndex + pageSize;
+        setDeals(results.slice(startIndex, endIndex));
+      } else {
+        setAllDealsCache(null);
+        setDeals(results);
+      }
+      
+      setPagination((prev) => ({
+        ...prev,
         current: page,
-        total: response.count || 0,
-      });
+        pageSize: pageSize,
+        total: totalCount,
+      }));
     } catch (error) {
-      message.error('Ошибка загрузки сделок');
+      toast({ title: 'Ошибка', description: 'Ошибка загрузки сделок', variant: 'destructive' });
       setDeals([]);
       setPagination((prev) => ({
         ...prev,
@@ -90,26 +98,44 @@ function DealsList() {
   const handleDelete = async (id) => {
     try {
       await deleteDeal(id);
-      message.success('Сделка удалена');
+      toast({ title: 'Сделка удалена', description: 'Сделка удалена' });
       fetchDeals(pagination.current, searchText, stageFilter);
     } catch (error) {
-      message.error('Ошибка удаления сделки');
+      toast({ title: 'Ошибка', description: 'Ошибка удаления сделки', variant: 'destructive' });
     }
   };
 
-  const handleTableChange = (newPagination, filters, sorter) => {
-    fetchDeals(newPagination.current, searchText, stageFilter);
+  const handleTableChange = (newPagination) => {
+    const nextPage = newPagination?.current || 1;
+    const nextPageSize = newPagination?.pageSize || pagination.pageSize;
+    
+    // If pageSize changed, clear cache
+    if (nextPageSize !== pagination.pageSize) {
+      setPagination((p) => ({ ...p, pageSize: nextPageSize }));
+      setAllDealsCache(null);
+      fetchDeals(nextPage, searchText, stageFilter, nextPageSize);
+      return;
+    }
+    
+    // If we have cached data, use it
+    if (allDealsCache && allDealsCache.length > 0) {
+      const startIndex = (nextPage - 1) * nextPageSize;
+      const endIndex = startIndex + nextPageSize;
+      setDeals(allDealsCache.slice(startIndex, endIndex));
+      setPagination((p) => ({ ...p, current: nextPage }));
+    } else {
+      fetchDeals(nextPage, searchText, stageFilter, nextPageSize);
+    }
   };
 
-  // Bulk actions handlers
   const handleBulkDelete = async (ids) => {
     try {
-      await Promise.all(ids.map(id => deleteDeal(id)));
-      message.success(`Удалено ${ids.length} сделок`);
+      await Promise.all(ids.map((id) => deleteDeal(id)));
+      toast({ title: 'Удалено', description: `Удалено ${ids.length} сделок` });
       setSelectedRowKeys([]);
       fetchDeals(pagination.current, searchText, stageFilter);
     } catch (error) {
-      message.error('Ошибка массового удаления');
+      toast({ title: 'Ошибка', description: 'Ошибка массового удаления', variant: 'destructive' });
     }
   };
 
@@ -119,23 +145,21 @@ function DealsList() {
 
   const handleStageChangeConfirm = async () => {
     if (!bulkStage) {
-      message.error('Выберите стадию');
+      toast({ title: 'Ошибка', description: 'Выберите стадию', variant: 'destructive' });
       return;
     }
 
     try {
       await Promise.all(
-        selectedRowKeys.map(id =>
-          dealsApi.patch(id, { stage: Number(bulkStage) })
-        )
+        selectedRowKeys.map((id) => dealsApi.patch(id, { stage: Number(bulkStage) }))
       );
-      message.success(`Стадия изменена для ${selectedRowKeys.length} сделок`);
+      toast({ title: 'Стадия изменена', description: `Стадия изменена для ${selectedRowKeys.length} сделок` });
       setSelectedRowKeys([]);
       setStageChangeModalVisible(false);
       setBulkStage('');
       fetchDeals(pagination.current, searchText, stageFilter);
     } catch (error) {
-      message.error('Ошибка изменения стадии');
+      toast({ title: 'Ошибка', description: 'Ошибка изменения стадии', variant: 'destructive' });
     }
   };
 
@@ -157,7 +181,7 @@ function DealsList() {
   const performExport = (format, ids = []) => {
     const rows = buildExportRows(ids);
     if (!rows.length) {
-      message.warning('Нет данных для экспорта');
+      toast({ title: 'Нет данных', description: 'Нет данных для экспорта', variant: 'destructive' });
       return;
     }
     const ext = format === 'excel' ? 'xlsx' : 'csv';
@@ -167,7 +191,7 @@ function DealsList() {
     } else {
       exportToCSV(rows, exportColumns, filename);
     }
-    message.success('Данные экспортированы');
+    toast({ title: 'Экспорт', description: 'Данные экспортированы' });
   };
 
   const handleBulkExport = (ids) => {
@@ -192,10 +216,10 @@ function DealsList() {
         name: `${baseName} (копия)`,
       };
       await dealsApi.create(newDeal);
-      message.success('Сделка дублирована');
+      toast({ title: 'Сделка дублирована', description: 'Сделка дублирована' });
       fetchDeals(pagination.current, searchText, stageFilter);
     } catch (error) {
-      message.error('Ошибка дублирования сделки');
+      toast({ title: 'Ошибка', description: 'Ошибка дублирования сделки', variant: 'destructive' });
     }
   };
 
@@ -218,24 +242,23 @@ function DealsList() {
     value: stage.id,
   }));
 
-  // Обработчики для QuickActions
   const handleChangeStage = async (record, newStage) => {
     try {
       await dealsApi.patch(record.id, { stage: Number(newStage) });
-      message.success('Стадия сделки изменена');
+      toast({ title: 'Стадия сделки изменена', description: 'Стадия сделки изменена' });
       fetchDeals(pagination.current, searchText, stageFilter);
     } catch (error) {
-      message.error('Ошибка изменения стадии');
+      toast({ title: 'Ошибка', description: 'Ошибка изменения стадии', variant: 'destructive' });
     }
   };
 
   const handleArchive = async (record) => {
     try {
       await dealsApi.patch(record.id, { active: false });
-      message.success('Сделка архивирована');
+      toast({ title: 'Сделка архивирована', description: 'Сделка архивирована' });
       fetchDeals(pagination.current, searchText, stageFilter);
     } catch (error) {
-      message.error('Ошибка архивирования');
+      toast({ title: 'Ошибка', description: 'Ошибка архивирования', variant: 'destructive' });
     }
   };
 
@@ -247,10 +270,10 @@ function DealsList() {
       width: 200,
       render: (name, record) => (
         <div>
-          <div style={{ fontWeight: 500 }}>{name}</div>
+          <div className="font-medium">{name}</div>
           {(record.company_name || record.company) && (
-            <div style={{ fontSize: 12, color: '#999' }}>
-              <ShopOutlined /> {record.company_name || record.company}
+            <div className="text-xs text-muted-foreground">
+              <Building2 className="mr-1 inline h-3 w-3" /> {record.company_name || record.company}
             </div>
           )}
         </div>
@@ -268,12 +291,12 @@ function DealsList() {
           ? numeric.toLocaleString('ru-RU')
           : amount || '0';
         return (
-          <Space>
-            <DollarOutlined style={{ color: '#52c41a' }} />
-            <span style={{ fontWeight: 500 }}>
+          <div className="flex items-center gap-2">
+            <DollarSign className="h-4 w-4 text-emerald-600" />
+            <span className="font-medium">
               {formatted} {record.currency_name || '₽'}
             </span>
-          </Space>
+          </div>
         );
       },
       sorter: (a, b) => Number(a.amount || 0) - Number(b.amount || 0),
@@ -286,10 +309,14 @@ function DealsList() {
       render: (stage, record) => {
         const label = record.stage_name || stageMap[stage];
         const display = label || (stage ? `Этап #${stage}` : '-');
-        return stage ? <Tag color="blue">{display}</Tag> : '-';
+        return stage ? (
+          <span className="inline-flex items-center rounded-full bg-sky-100 px-2 py-0.5 text-xs text-sky-700">
+            {display}
+          </span>
+        ) : (
+          '-'
+        );
       },
-      filters: stageOptions,
-      onFilter: (value, record) => record.stage === value,
     },
     {
       title: 'Вероятность',
@@ -299,11 +326,17 @@ function DealsList() {
       render: (probability) => {
         const value = Number(probability || 0);
         return (
-          <Progress
-            percent={value}
-            size="small"
-            status={value >= 70 ? 'success' : value >= 40 ? 'normal' : 'exception'}
-          />
+          <div className="w-full">
+            <div className="h-2 w-full rounded-full bg-muted">
+              <div
+                className={`h-2 rounded-full ${
+                  value >= 70 ? 'bg-emerald-500' : value >= 40 ? 'bg-sky-500' : 'bg-rose-500'
+                }`}
+                style={{ width: `${value}%` }}
+              />
+            </div>
+            <div className="mt-1 text-xs text-muted-foreground">{value}%</div>
+          </div>
         );
       },
       sorter: (a, b) => Number(a.probability || 0) - Number(b.probability || 0),
@@ -313,17 +346,19 @@ function DealsList() {
       key: 'contact',
       width: 180,
       render: (_, record) => (
-        <Space>
-          <Avatar size="small" icon={<UserOutlined />} />
+        <div className="flex items-center gap-2">
+          <div className="flex h-6 w-6 items-center justify-center rounded-full bg-muted">
+            <User className="h-3 w-3" />
+          </div>
           <div>
-            <div style={{ fontSize: 13 }}>
+            <div className="text-sm">
               {record.contact_name || record.contact_full_name || (record.contact ? `#${record.contact}` : '-')}
             </div>
             {record.contact_phone && (
-              <div style={{ fontSize: 11, color: '#999' }}>{record.contact_phone}</div>
+              <div className="text-xs text-muted-foreground">{record.contact_phone}</div>
             )}
           </div>
-        </Space>
+        </div>
       ),
     },
     {
@@ -332,7 +367,10 @@ function DealsList() {
       key: 'owner',
       width: 140,
       render: (owner, record) => record.owner_name || owner || '-',
-      sorter: (a, b) => (a.owner_name || a.owner || '').toString().localeCompare((b.owner_name || b.owner || '').toString()),
+      sorter: (a, b) =>
+        (a.owner_name || a.owner || '')
+          .toString()
+          .localeCompare((b.owner_name || b.owner || '').toString()),
     },
     {
       title: 'Закрытие',
@@ -344,15 +382,15 @@ function DealsList() {
         const closeDate = new Date(date);
         const today = new Date();
         const daysLeft = Math.ceil((closeDate - today) / (1000 * 60 * 60 * 24));
-        
+
         return (
           <div>
-            <div style={{ fontSize: 13 }}>{closeDate.toLocaleDateString('ru-RU')}</div>
+            <div className="text-sm">{closeDate.toLocaleDateString('ru-RU')}</div>
             {daysLeft > 0 && daysLeft <= 7 && (
-              <div style={{ fontSize: 11, color: '#faad14' }}>через {daysLeft} дн.</div>
+              <div className="text-xs text-amber-600">через {daysLeft} дн.</div>
             )}
             {daysLeft < 0 && (
-              <div style={{ fontSize: 11, color: '#ff4d4f' }}>просрочено</div>
+              <div className="text-xs text-rose-600">просрочено</div>
             )}
           </div>
         );
@@ -362,11 +400,10 @@ function DealsList() {
     {
       title: 'Действия',
       key: 'actions',
-      width: 100,
-      fixed: 'right',
+      width: 120,
       align: 'center',
       render: (_, record) => (
-        <Space size="small">
+        <div className="flex items-center gap-2">
           {record.contact_phone && (
             <CallButton
               phone={record.contact_phone}
@@ -383,26 +420,10 @@ function DealsList() {
             onDelete={(r) => handleDelete(r.id)}
             onDuplicate={handleDuplicate}
             onCall={record.contact_phone ? (r) => window.open(`tel:${r.contact_phone}`) : null}
-            onChangeStatus={(r) => {
-              Modal.confirm({
-                title: 'Изменить стадию',
-                content: (
-                  <Select
-                    id="stage-select"
-                    style={{ width: '100%', marginTop: 16 }}
-                    placeholder="Выберите стадию"
-                    options={stageOptions}
-                  />
-                ),
-                onOk: () => {
-                  const newStage = document.getElementById('stage-select')?.value;
-                  if (newStage) handleChangeStage(r, newStage);
-                },
-              });
-            }}
+            onChangeStatus={(r) => setQuickStageModal({ open: true, record: r, stage: '' })}
             onArchive={handleArchive}
           />
-        </Space>
+        </div>
       ),
     },
   ];
@@ -411,11 +432,10 @@ function DealsList() {
     performExport(format, selectedRowKeys);
   };
 
-  // Фильтры для toolbar
   const stageFilters = stageOptions;
 
   return (
-    <div>
+    <div className="space-y-4">
       <TableToolbar
         title="Сделки"
         total={pagination.total}
@@ -450,10 +470,9 @@ function DealsList() {
         pagination={pagination}
         onChange={handleTableChange}
         rowSelection={rowSelection}
-        scroll={{ x: 1500 }}
-        showTotal={true}
-        showSizeChanger={true}
-        showQuickJumper={true}
+        showTotal
+        showSizeChanger
+        showQuickJumper
         emptyText="Нет сделок"
         emptyDescription="Создайте первую сделку или измените параметры поиска"
       />
@@ -467,28 +486,73 @@ function DealsList() {
         entityName="сделок"
       />
 
-      <Modal
-        title="Изменить стадию сделок"
-        open={stageChangeModalVisible}
-        onCancel={() => setStageChangeModalVisible(false)}
-        onOk={handleStageChangeConfirm}
-        okText="Применить"
-        cancelText="Отмена"
-      >
-        <p>Изменить стадию для {selectedRowKeys.length} выбранных сделок</p>
-        <Select
-          style={{ width: '100%' }}
-          placeholder="Выберите стадию"
-          value={bulkStage}
-          onChange={setBulkStage}
-        >
-          {stageOptions.map((option) => (
-            <Select.Option key={option.value} value={option.value}>
-              {option.label}
-            </Select.Option>
-          ))}
-        </Select>
-      </Modal>
+      <Dialog open={stageChangeModalVisible} onOpenChange={setStageChangeModalVisible}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Изменить стадию сделок</DialogTitle>
+          </DialogHeader>
+          <p className="text-sm text-muted-foreground">
+            Изменить стадию для {selectedRowKeys.length} выбранных сделок
+          </p>
+          <div className="mt-3">
+            <Select value={bulkStage} onValueChange={setBulkStage}>
+              <SelectTrigger>
+                <SelectValue placeholder="Выберите стадию" />
+              </SelectTrigger>
+              <SelectContent>
+                {stageOptions.map((option) => (
+                  <SelectItem key={option.value} value={String(option.value)}>
+                    {option.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+          <div className="mt-4 flex justify-end gap-2">
+            <Button variant="outline" onClick={() => setStageChangeModalVisible(false)}>Отмена</Button>
+            <Button onClick={handleStageChangeConfirm}>Применить</Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={quickStageModal.open} onOpenChange={(open) => setQuickStageModal((prev) => ({ ...prev, open }))}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Изменить стадию</DialogTitle>
+          </DialogHeader>
+          <div className="mt-3">
+            <Select
+              value={quickStageModal.stage}
+              onValueChange={(val) => setQuickStageModal((prev) => ({ ...prev, stage: val }))}
+            >
+              <SelectTrigger>
+                <SelectValue placeholder="Выберите стадию" />
+              </SelectTrigger>
+              <SelectContent>
+                {stageOptions.map((option) => (
+                  <SelectItem key={option.value} value={String(option.value)}>
+                    {option.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+          <div className="mt-4 flex justify-end gap-2">
+            <Button variant="outline" onClick={() => setQuickStageModal({ open: false, record: null, stage: '' })}>
+              Отмена
+            </Button>
+            <Button
+              onClick={() => {
+                if (!quickStageModal.stage || !quickStageModal.record) return;
+                handleChangeStage(quickStageModal.record, quickStageModal.stage);
+                setQuickStageModal({ open: false, record: null, stage: '' });
+              }}
+            >
+              Сохранить
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

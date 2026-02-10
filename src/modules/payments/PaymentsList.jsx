@@ -1,14 +1,16 @@
 import { useEffect, useState } from 'react';
-import { Button, Space, Tag, Select, message, Modal } from 'antd';
-import { DollarOutlined } from '@ant-design/icons';
-import { getPayments, deletePayment, updatePayment } from '../../lib/api/payments';
+import { DollarSign, Eye, Edit, Trash2 } from 'lucide-react';
+
 import { navigate } from '../../router';
-import dayjs from 'dayjs';
-import BulkActions from '../../components/ui-BulkActions.jsx';
+import {
+  getPayments,
+  deletePayment,
+} from '../../lib/api/payments';
+import { exportToCSV, exportToExcel } from '../../lib/utils/export';
 import EnhancedTable from '../../components/ui-EnhancedTable.jsx';
 import TableToolbar from '../../components/ui-TableToolbar.jsx';
-import QuickActions from '../../components/QuickActions.jsx';
-import { exportToCSV, exportToExcel } from '../../lib/utils/export';
+import { toast } from '../../components/ui/use-toast.js';
+import { Button } from '../../components/ui/button.jsx';
 
 const statusOptions = [
   { value: 'r', label: 'Получен' },
@@ -18,214 +20,165 @@ const statusOptions = [
 ];
 
 const statusColors = {
-  r: 'green',
-  g: 'blue',
-  h: 'orange',
-  l: 'default',
+  r: 'bg-emerald-100 text-emerald-700',
+  g: 'bg-sky-100 text-sky-700',
+  h: 'bg-amber-100 text-amber-700',
+  l: 'bg-muted text-muted-foreground',
 };
 
-export default function PaymentsList() {
-  const [data, setData] = useState([]);
+function PaymentsList() {
+  const [payments, setPayments] = useState([]);
+  const [allPaymentsCache, setAllPaymentsCache] = useState(null);
   const [loading, setLoading] = useState(false);
   const [pagination, setPagination] = useState({ current: 1, pageSize: 10, total: 0 });
   const [searchText, setSearchText] = useState('');
   const [statusFilter, setStatusFilter] = useState(null);
-  const [selectedRowKeys, setSelectedRowKeys] = useState([]);
 
   useEffect(() => {
-    fetchData();
-  }, [pagination.current, pagination.pageSize, searchText, statusFilter]);
+    fetchPayments(1, searchText, statusFilter);
+  }, []);
 
-  const fetchData = async () => {
+  const fetchPayments = async (page = 1, search = '', status = statusFilter, pageSize = pagination.pageSize) => {
     setLoading(true);
     try {
-      const params = {
-        page: pagination.current,
-        page_size: pagination.pageSize,
-        search: searchText || undefined,
-        status: statusFilter || undefined,
-      };
-      const res = await getPayments(params);
-      const results = res.results || [];
-      setData(results);
-      setPagination((prev) => ({ ...prev, total: res.count || results.length }));
+      const response = await getPayments({
+        page,
+        page_size: pageSize,
+        search: search || undefined,
+        status: status || undefined,
+      });
+      const results = response.results || [];
+      const totalCount = response.count || 0;
+      
+      if (results.length > pageSize && results.length === totalCount) {
+        console.warn('⚠️ PaymentsList: Caching all data');
+        setAllPaymentsCache(results);
+        const startIndex = (page - 1) * pageSize;
+        setPayments(results.slice(startIndex, startIndex + pageSize));
+      } else {
+        setAllPaymentsCache(null);
+        setPayments(results);
+      }
+      
+      setPagination((prev) => ({
+        ...prev,
+        current: page,
+        pageSize: pageSize,
+        total: totalCount,
+      }));
     } catch (error) {
-      message.error('Не удалось загрузить платежи');
-      console.error(error);
+      toast({ title: 'Ошибка', description: 'Ошибка загрузки платежей', variant: 'destructive' });
+      setPayments([]);
+      setPagination((prev) => ({ ...prev, current: 1, total: 0 }));
     } finally {
       setLoading(false);
     }
   };
 
-  const handleDelete = (id) => {
-    Modal.confirm({
-      title: 'Удалить платеж',
-      content: 'Это действие нельзя отменить',
-      okText: 'Удалить',
-      okType: 'danger',
-      onOk: async () => {
-        try {
-          await deletePayment(id);
-          message.success('Платеж удален');
-          fetchData();
-        } catch (error) {
-          message.error('Ошибка удаления платежа');
-        }
-      },
-    });
+  const handleSearch = (value) => {
+    setSearchText(value);
+    fetchPayments(1, value, statusFilter);
   };
 
   const handleTableChange = (newPagination) => {
-    setPagination(newPagination);
-  };
-
-  const handleBulkDelete = async (ids) => {
-    try {
-      await Promise.all(ids.map((paymentId) => deletePayment(paymentId)));
-      message.success(`Удалено ${ids.length} платежей`);
-      setSelectedRowKeys([]);
-      fetchData();
-    } catch (error) {
-      message.error('Ошибка массового удаления');
-      throw error;
-    }
-  };
-
-  const handleBulkStatusChange = (ids) => {
-    let newStatus = statusOptions[0]?.value;
-    Modal.confirm({
-      title: 'Изменить статус',
-      content: (
-        <Select
-          id="bulk-status-select"
-          style={{ width: '100%', marginTop: 16 }}
-          placeholder="Выберите статус"
-          defaultValue={newStatus}
-          options={statusOptions}
-          onChange={(value) => {
-            newStatus = value;
-          }}
-        />
-      ),
-      onOk: async () => {
-        if (!newStatus) {
-          message.warning('Выберите статус');
-          return;
-        }
-        try {
-          await Promise.all(ids.map((paymentId) => updatePayment(paymentId, { status: newStatus })));
-          message.success(`Обновлено ${ids.length} платежей`);
-          setSelectedRowKeys([]);
-          fetchData();
-        } catch (error) {
-          message.error('Ошибка обновления платежей');
-        }
-      },
-    });
-  };
-
-  const exportColumns = [
-    { key: 'amount', label: 'Сумма' },
-    { key: 'currency_name', label: 'Валюта' },
-    { key: 'status', label: 'Статус' },
-    { key: 'deal_name', label: 'Сделка' },
-    { key: 'payment_date', label: 'Дата платежа' },
-    { key: 'transaction_id', label: 'Транзакция' },
-  ];
-
-  const buildExportRows = (ids = []) => {
-    const source = ids.length ? data.filter((payment) => ids.includes(payment.id)) : data;
-    return source;
-  };
-
-  const performExport = (format, ids = []) => {
-    const rows = buildExportRows(ids);
-    if (!rows.length) {
-      message.warning('Нет данных для экспорта');
+    const nextPage = newPagination?.current || 1;
+    const nextPageSize = newPagination?.pageSize || pagination.pageSize;
+    
+    if (nextPageSize !== pagination.pageSize) {
+      setPagination((p) => ({ ...p, pageSize: nextPageSize }));
+      setAllPaymentsCache(null);
+      fetchPayments(nextPage, searchText, statusFilter, nextPageSize);
       return;
     }
-    const ext = format === 'excel' ? 'xlsx' : 'csv';
-    const filename = `payments_${new Date().toISOString().split('T')[0]}.${ext}`;
-    if (format === 'excel') {
-      exportToExcel(rows, exportColumns, filename);
+    
+    if (allPaymentsCache && allPaymentsCache.length > 0) {
+      const startIndex = (nextPage - 1) * nextPageSize;
+      setPayments(allPaymentsCache.slice(startIndex, startIndex + nextPageSize));
+      setPagination((p) => ({ ...p, current: nextPage }));
     } else {
-      exportToCSV(rows, exportColumns, filename);
+      fetchPayments(nextPage, searchText, statusFilter, nextPageSize);
     }
-    message.success('Данные экспортированы');
   };
 
-  const handleBulkExport = (ids) => {
-    performExport('csv', ids);
+  const handleDelete = async (id) => {
+    try {
+      await deletePayment(id);
+      toast({ title: 'Платеж удален', description: 'Платеж удален' });
+      fetchPayments(pagination.current, searchText, statusFilter);
+    } catch (error) {
+      toast({ title: 'Ошибка', description: 'Ошибка удаления платежа', variant: 'destructive' });
+    }
+  };
+
+  const handleExport = (format) => {
+    const filename = `payments_${new Date().toISOString().split('T')[0]}.${format === 'excel' ? 'xlsx' : 'csv'}`;
+    if (format === 'excel') {
+      exportToExcel(payments, [], filename);
+    } else {
+      exportToCSV(payments, [], filename);
+    }
+    toast({ title: 'Экспорт', description: 'Платежи экспортированы' });
   };
 
   const columns = [
     {
-      title: 'Сумма',
-      dataIndex: 'amount',
-      key: 'amount',
-      render: (amount, record) => (
-        <span style={{ fontWeight: 'bold' }}>
-          <DollarOutlined style={{ marginRight: 6 }} />
-          {Number(amount || 0).toLocaleString('ru-RU')} {record.currency_name || '₽'}
-        </span>
+      title: 'Платеж',
+      key: 'payment',
+      render: (_, record) => (
+        <div className="flex items-center gap-2">
+          <div className="flex h-8 w-8 items-center justify-center rounded-full bg-primary/10 text-primary">
+            <DollarSign className="h-4 w-4" />
+          </div>
+          <div>
+            <div className="font-medium">
+              {Number(record.amount || 0).toLocaleString('ru-RU')} {record.currency_name || '₽'}
+            </div>
+            <div className="text-xs text-muted-foreground">#{record.id}</div>
+          </div>
+        </div>
       ),
-      sorter: true,
-    },
-    {
-      title: 'Сделка',
-      dataIndex: 'deal_name',
-      key: 'deal_name',
-      render: (dealName, record) => dealName || (record.deal ? `#${record.deal}` : '-'),
     },
     {
       title: 'Статус',
       dataIndex: 'status',
       key: 'status',
       render: (status) => (
-        <Tag color={statusColors[status] || 'default'}>
-          {statusOptions.find((opt) => opt.value === status)?.label || status || '—'}
-        </Tag>
+        <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs ${statusColors[status] || 'bg-muted text-muted-foreground'}`}>
+          {statusOptions.find((opt) => opt.value === status)?.label || status || '-'}
+        </span>
       ),
     },
     {
       title: 'Дата платежа',
       dataIndex: 'payment_date',
       key: 'payment_date',
-      render: (date) => (date ? dayjs(date).format('DD MMM YYYY') : '-'),
-      sorter: true,
+      render: (date) => (date ? new Date(date).toLocaleDateString('ru-RU') : '-'),
     },
     {
-      title: 'Номер договора',
-      dataIndex: 'contract_number',
-      key: 'contract_number',
-      render: (value) => value || '-',
-    },
-    {
-      title: 'Номер счета',
-      dataIndex: 'invoice_number',
-      key: 'invoice_number',
-      render: (value) => value || '-',
-    },
-    {
-      title: 'Номер заказа',
-      dataIndex: 'order_number',
-      key: 'order_number',
-      render: (value) => value || '-',
+      title: 'Сделка',
+      dataIndex: 'deal_name',
+      key: 'deal_name',
+      render: (value, record) => value || (record.deal ? `#${record.deal}` : '-'),
     },
     {
       title: 'Действия',
       key: 'actions',
-      fixed: 'right',
-      width: 150,
+      width: 180,
       render: (_, record) => (
-        <Space size="small">
-          <QuickActions
-            record={record}
-            onView={(r) => navigate(`/payments/${r.id}`)}
-            onEdit={(r) => navigate(`/payments/${r.id}/edit`)}
-            onDelete={(r) => handleDelete(r.id)}
-          />
-        </Space>
+        <div className="flex flex-wrap items-center gap-2">
+          <Button variant="ghost" size="sm" onClick={() => navigate(`/payments/${record.id}`)}>
+            <Eye className="mr-1 h-4 w-4" />
+            Просмотр
+          </Button>
+          <Button variant="ghost" size="sm" onClick={() => navigate(`/payments/${record.id}/edit`)}>
+            <Edit className="mr-1 h-4 w-4" />
+            Редактировать
+          </Button>
+          <Button variant="ghost" size="sm" className="text-destructive" onClick={() => handleDelete(record.id)}>
+            <Trash2 className="mr-1 h-4 w-4" />
+            Удалить
+          </Button>
+        </div>
       ),
     },
   ];
@@ -236,53 +189,42 @@ export default function PaymentsList() {
         title="Платежи"
         total={pagination.total}
         loading={loading}
-        searchPlaceholder="Поиск по сделке, номеру счета..."
-        onSearch={(value) => setSearchText(value)}
+        searchPlaceholder="Поиск по платежам..."
+        onSearch={handleSearch}
         onCreate={() => navigate('/payments/new')}
-        onRefresh={fetchData}
-        createButtonText="Создать платеж"
-        showViewModeSwitch={false}
+        onExport={handleExport}
+        onRefresh={() => fetchPayments(pagination.current, searchText, statusFilter)}
         filters={[
           {
             key: 'status',
             placeholder: 'Статус',
             options: statusOptions,
-            width: 180,
+            width: 150,
           },
         ]}
         onFilterChange={(key, value) => {
           if (key === 'status') {
             setStatusFilter(value || null);
+            fetchPayments(1, searchText, value || null);
           }
         }}
+        createButtonText="Создать платеж"
+        showViewModeSwitch={false}
       />
 
       <EnhancedTable
         columns={columns}
-        dataSource={data}
+        dataSource={payments}
         loading={loading}
         pagination={pagination}
         onChange={handleTableChange}
-        rowSelection={{
-          selectedRowKeys,
-          onChange: setSelectedRowKeys,
-        }}
-        scroll={{ x: 1400 }}
         showTotal={true}
         showSizeChanger={true}
-        showQuickJumper={true}
         emptyText="Нет платежей"
         emptyDescription="Создайте первый платеж"
-      />
-
-      <BulkActions
-        selectedRowKeys={selectedRowKeys}
-        onClearSelection={() => setSelectedRowKeys([])}
-        onDelete={handleBulkDelete}
-        onStatusChange={handleBulkStatusChange}
-        onExport={handleBulkExport}
-        entityName="платежей"
       />
     </div>
   );
 }
+
+export default PaymentsList;

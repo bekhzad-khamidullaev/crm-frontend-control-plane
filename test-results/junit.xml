@@ -1,0 +1,533 @@
+<testsuites id="" name="" tests="16" failures="14" skipped="0" errors="0" time="339.277608">
+<testsuite name="api-integration.spec.js" timestamp="2026-02-04T07:29:00.391Z" hostname="chromium" tests="16" failures="14" skipped="0" time="641.327" errors="0">
+<testcase name="API Integration Tests › Leads API › should load leads from API" classname="api-integration.spec.js" time="61.604">
+<failure message="api-integration.spec.js:63:5 should load leads from API" type="FAILURE">
+<![CDATA[  [chromium] › api-integration.spec.js:63:5 › API Integration Tests › Leads API › should load leads from API 
+
+    Test timeout of 60000ms exceeded.
+
+    Error: page.waitForResponse: Test timeout of 60000ms exceeded.
+
+      63 |     test('should load leads from API', async ({ page }) => {
+      64 |       // Listen for API request
+    > 65 |       const responsePromise = page.waitForResponse(response =>
+         |                                    ^
+      66 |         response.url().includes('/api/leads') && response.status() === 200
+      67 |       );
+      68 |
+        at /Applications/Git/crm-frontend/tests/e2e/api-integration.spec.js:65:36
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    ../../test-results/api-integration-API-Integr-105d5--should-load-leads-from-API-chromium/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    attachment #2: video (video/webm) ──────────────────────────────────────────────────────────────
+    ../../test-results/api-integration-API-Integr-105d5--should-load-leads-from-API-chromium/video.webm
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+]]>
+</failure>
+<system-out>
+<![CDATA[
+[[ATTACHMENT|api-integration-API-Integr-105d5--should-load-leads-from-API-chromium/test-failed-1.png]]
+
+[[ATTACHMENT|api-integration-API-Integr-105d5--should-load-leads-from-API-chromium/video.webm]]
+]]>
+</system-out>
+</testcase>
+<testcase name="API Integration Tests › Leads API › should search leads via API" classname="api-integration.spec.js" time="61.606">
+<failure message="api-integration.spec.js:79:5 should search leads via API" type="FAILURE">
+<![CDATA[  [chromium] › api-integration.spec.js:79:5 › API Integration Tests › Leads API › should search leads via API 
+
+    Test timeout of 60000ms exceeded.
+
+    Error: page.waitForSelector: Test timeout of 60000ms exceeded.
+    Call log:
+      - waiting for locator('input[placeholder*="Поиск"]') to be visible
+
+
+      79 |     test('should search leads via API', async ({ page }) => {
+      80 |       await page.click('text=Лиды');
+    > 81 |       await page.waitForSelector('input[placeholder*="Поиск"]');
+         |                  ^
+      82 |       
+      83 |       const responsePromise = page.waitForResponse(response =>
+      84 |         response.url().includes('/api/leads') && 
+        at /Applications/Git/crm-frontend/tests/e2e/api-integration.spec.js:81:18
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    ../../test-results/api-integration-API-Integr-001e6-should-search-leads-via-API-chromium/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    attachment #2: video (video/webm) ──────────────────────────────────────────────────────────────
+    ../../test-results/api-integration-API-Integr-001e6-should-search-leads-via-API-chromium/video.webm
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+]]>
+</failure>
+<system-out>
+<![CDATA[
+[[ATTACHMENT|api-integration-API-Integr-001e6-should-search-leads-via-API-chromium/test-failed-1.png]]
+
+[[ATTACHMENT|api-integration-API-Integr-001e6-should-search-leads-via-API-chromium/video.webm]]
+]]>
+</system-out>
+</testcase>
+<testcase name="API Integration Tests › Leads API › should filter leads via API" classname="api-integration.spec.js" time="60.034">
+<failure message="api-integration.spec.js:100:5 should filter leads via API" type="FAILURE">
+<![CDATA[  [chromium] › api-integration.spec.js:100:5 › API Integration Tests › Leads API › should filter leads via API 
+
+    Test timeout of 60000ms exceeded.
+
+    Error: page.waitForResponse: Test timeout of 60000ms exceeded.
+
+      101 |       await page.click('text=Лиды');
+      102 |       
+    > 103 |       const responsePromise = page.waitForResponse(response =>
+          |                                    ^
+      104 |         response.url().includes('/api/leads') && 
+      105 |         response.url().includes('status') &&
+      106 |         response.status() === 200
+        at /Applications/Git/crm-frontend/tests/e2e/api-integration.spec.js:103:36
+
+    Error: locator.click: Test timeout of 60000ms exceeded.
+    Call log:
+      - waiting for locator('.ant-select').first()
+
+
+      108 |       
+      109 |       const filterSelect = page.locator('.ant-select').first();
+    > 110 |       await filterSelect.click();
+          |                          ^
+      111 |       await page.click('text=Новый');
+      112 |       
+      113 |       try {
+        at /Applications/Git/crm-frontend/tests/e2e/api-integration.spec.js:110:26
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    ../../test-results/api-integration-API-Integr-28b3c-should-filter-leads-via-API-chromium/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+]]>
+</failure>
+<system-out>
+<![CDATA[
+[[ATTACHMENT|api-integration-API-Integr-28b3c-should-filter-leads-via-API-chromium/test-failed-1.png]]
+]]>
+</system-out>
+</testcase>
+<testcase name="API Integration Tests › Leads API › should paginate leads via API" classname="api-integration.spec.js" time="61.623">
+<failure message="api-integration.spec.js:122:5 should paginate leads via API" type="FAILURE">
+<![CDATA[  [chromium] › api-integration.spec.js:122:5 › API Integration Tests › Leads API › should paginate leads via API 
+
+    Test timeout of 60000ms exceeded.
+
+    Error: page.waitForSelector: Test timeout of 60000ms exceeded.
+    Call log:
+      - waiting for locator('.ant-pagination') to be visible
+
+
+      122 |     test('should paginate leads via API', async ({ page }) => {
+      123 |       await page.click('text=Лиды');
+    > 124 |       await page.waitForSelector('.ant-pagination');
+          |                  ^
+      125 |       
+      126 |       const responsePromise = page.waitForResponse(response =>
+      127 |         response.url().includes('/api/leads') && 
+        at /Applications/Git/crm-frontend/tests/e2e/api-integration.spec.js:124:18
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    ../../test-results/api-integration-API-Integr-31232-ould-paginate-leads-via-API-chromium/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    attachment #2: video (video/webm) ──────────────────────────────────────────────────────────────
+    ../../test-results/api-integration-API-Integr-31232-ould-paginate-leads-via-API-chromium/video.webm
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+]]>
+</failure>
+<system-out>
+<![CDATA[
+[[ATTACHMENT|api-integration-API-Integr-31232-ould-paginate-leads-via-API-chromium/test-failed-1.png]]
+
+[[ATTACHMENT|api-integration-API-Integr-31232-ould-paginate-leads-via-API-chromium/video.webm]]
+]]>
+</system-out>
+</testcase>
+<testcase name="API Integration Tests › Leads API › should create lead via API" classname="api-integration.spec.js" time="61.013">
+<failure message="api-integration.spec.js:146:5 should create lead via API" type="FAILURE">
+<![CDATA[  [chromium] › api-integration.spec.js:146:5 › API Integration Tests › Leads API › should create lead via API 
+
+    Test timeout of 60000ms exceeded.
+
+    Error: page.click: Test timeout of 60000ms exceeded.
+    Call log:
+      - waiting for locator('button:has-text("Создать")')
+
+
+      146 |     test('should create lead via API', async ({ page }) => {
+      147 |       await page.click('text=Лиды');
+    > 148 |       await page.click('button:has-text("Создать")');
+          |                  ^
+      149 |       
+      150 |       const responsePromise = page.waitForResponse(response =>
+      151 |         response.url().includes('/api/leads') && 
+        at /Applications/Git/crm-frontend/tests/e2e/api-integration.spec.js:148:18
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    ../../test-results/api-integration-API-Integr-b323d--should-create-lead-via-API-chromium/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    attachment #2: video (video/webm) ──────────────────────────────────────────────────────────────
+    ../../test-results/api-integration-API-Integr-b323d--should-create-lead-via-API-chromium/video.webm
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+]]>
+</failure>
+<system-out>
+<![CDATA[
+[[ATTACHMENT|api-integration-API-Integr-b323d--should-create-lead-via-API-chromium/test-failed-1.png]]
+
+[[ATTACHMENT|api-integration-API-Integr-b323d--should-create-lead-via-API-chromium/video.webm]]
+]]>
+</system-out>
+</testcase>
+<testcase name="API Integration Tests › Leads API › should update lead via API" classname="api-integration.spec.js" time="61.102">
+<failure message="api-integration.spec.js:169:5 should update lead via API" type="FAILURE">
+<![CDATA[  [chromium] › api-integration.spec.js:169:5 › API Integration Tests › Leads API › should update lead via API 
+
+    Test timeout of 60000ms exceeded.
+
+    Error: page.click: Test timeout of 60000ms exceeded.
+    Call log:
+      - waiting for locator('.ant-table-row:first-child')
+
+
+      169 |     test('should update lead via API', async ({ page }) => {
+      170 |       await page.click('text=Лиды');
+    > 171 |       await page.click('.ant-table-row:first-child');
+          |                  ^
+      172 |       
+      173 |       const responsePromise = page.waitForResponse(response =>
+      174 |         response.url().includes('/api/leads') && 
+        at /Applications/Git/crm-frontend/tests/e2e/api-integration.spec.js:171:18
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    ../../test-results/api-integration-API-Integr-c2478--should-update-lead-via-API-chromium/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    attachment #2: video (video/webm) ──────────────────────────────────────────────────────────────
+    ../../test-results/api-integration-API-Integr-c2478--should-update-lead-via-API-chromium/video.webm
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+]]>
+</failure>
+<system-out>
+<![CDATA[
+[[ATTACHMENT|api-integration-API-Integr-c2478--should-update-lead-via-API-chromium/test-failed-1.png]]
+
+[[ATTACHMENT|api-integration-API-Integr-c2478--should-update-lead-via-API-chromium/video.webm]]
+]]>
+</system-out>
+</testcase>
+<testcase name="API Integration Tests › Leads API › should delete lead via API" classname="api-integration.spec.js" time="60.968">
+<failure message="api-integration.spec.js:189:5 should delete lead via API" type="FAILURE">
+<![CDATA[  [chromium] › api-integration.spec.js:189:5 › API Integration Tests › Leads API › should delete lead via API 
+
+    Test timeout of 60000ms exceeded.
+
+    Error: page.click: Test timeout of 60000ms exceeded.
+    Call log:
+      - waiting for locator('.ant-table-row:first-child')
+
+
+      189 |     test('should delete lead via API', async ({ page }) => {
+      190 |       await page.click('text=Лиды');
+    > 191 |       await page.click('.ant-table-row:first-child');
+          |                  ^
+      192 |       
+      193 |       const responsePromise = page.waitForResponse(response =>
+      194 |         response.url().includes('/api/leads') && 
+        at /Applications/Git/crm-frontend/tests/e2e/api-integration.spec.js:191:18
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    ../../test-results/api-integration-API-Integr-7235b--should-delete-lead-via-API-chromium/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    attachment #2: video (video/webm) ──────────────────────────────────────────────────────────────
+    ../../test-results/api-integration-API-Integr-7235b--should-delete-lead-via-API-chromium/video.webm
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+]]>
+</failure>
+<system-out>
+<![CDATA[
+[[ATTACHMENT|api-integration-API-Integr-7235b--should-delete-lead-via-API-chromium/test-failed-1.png]]
+
+[[ATTACHMENT|api-integration-API-Integr-7235b--should-delete-lead-via-API-chromium/video.webm]]
+]]>
+</system-out>
+</testcase>
+<testcase name="API Integration Tests › Contacts API › should load contacts from API" classname="api-integration.spec.js" time="0.577">
+<failure message="api-integration.spec.js:210:5 should load contacts from API" type="FAILURE">
+<![CDATA[  [chromium] › api-integration.spec.js:210:5 › API Integration Tests › Contacts API › should load contacts from API 
+
+    SyntaxError: Unexpected token 'i', "import { a"... is not valid JSON
+
+      216 |       const response = await responsePromise;
+      217 |       
+    > 218 |       const json = await response.json();
+          |                    ^
+      219 |       expect(json).toHaveProperty('results');
+      220 |       expect(Array.isArray(json.results)).toBeTruthy();
+      221 |     });
+        at /Applications/Git/crm-frontend/tests/e2e/api-integration.spec.js:218:20
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    ../../test-results/api-integration-API-Integr-09f63-ould-load-contacts-from-API-chromium/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    attachment #2: video (video/webm) ──────────────────────────────────────────────────────────────
+    ../../test-results/api-integration-API-Integr-09f63-ould-load-contacts-from-API-chromium/video.webm
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: ../../test-results/api-integration-API-Integr-09f63-ould-load-contacts-from-API-chromium/error-context.md
+]]>
+</failure>
+<system-out>
+<![CDATA[
+[[ATTACHMENT|api-integration-API-Integr-09f63-ould-load-contacts-from-API-chromium/test-failed-1.png]]
+
+[[ATTACHMENT|api-integration-API-Integr-09f63-ould-load-contacts-from-API-chromium/video.webm]]
+
+[[ATTACHMENT|api-integration-API-Integr-09f63-ould-load-contacts-from-API-chromium/error-context.md]]
+]]>
+</system-out>
+</testcase>
+<testcase name="API Integration Tests › Contacts API › should create contact via API" classname="api-integration.spec.js" time="60.048">
+<failure message="api-integration.spec.js:223:5 should create contact via API" type="FAILURE">
+<![CDATA[  [chromium] › api-integration.spec.js:223:5 › API Integration Tests › Contacts API › should create contact via API 
+
+    Test timeout of 60000ms exceeded.
+
+    Error: page.waitForResponse: Test timeout of 60000ms exceeded.
+
+      225 |       await page.click('button:has-text("Создать")');
+      226 |       
+    > 227 |       const responsePromise = page.waitForResponse(response =>
+          |                                    ^
+      228 |         response.url().includes('/api/contacts') && 
+      229 |         response.status() === 201
+      230 |       );
+        at /Applications/Git/crm-frontend/tests/e2e/api-integration.spec.js:227:36
+
+    Error: page.fill: Test timeout of 60000ms exceeded.
+    Call log:
+      - waiting for locator('input[placeholder*="Имя"]')
+
+
+      230 |       );
+      231 |       
+    > 232 |       await page.fill('input[placeholder*="Имя"]', `Contact ${Date.now()}`);
+          |                  ^
+      233 |       await page.fill('input[placeholder*="Email"]', `contact${Date.now()}@test.com`);
+      234 |       await page.click('button:has-text("Сохранить")');
+      235 |       
+        at /Applications/Git/crm-frontend/tests/e2e/api-integration.spec.js:232:18
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    ../../test-results/api-integration-API-Integr-a5825-ould-create-contact-via-API-chromium/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: ../../test-results/api-integration-API-Integr-a5825-ould-create-contact-via-API-chromium/error-context.md
+]]>
+</failure>
+<system-out>
+<![CDATA[
+[[ATTACHMENT|api-integration-API-Integr-a5825-ould-create-contact-via-API-chromium/test-failed-1.png]]
+
+[[ATTACHMENT|api-integration-API-Integr-a5825-ould-create-contact-via-API-chromium/error-context.md]]
+]]>
+</system-out>
+</testcase>
+<testcase name="API Integration Tests › Deals API › should load deals from API" classname="api-integration.spec.js" time="23.034">
+</testcase>
+<testcase name="API Integration Tests › Deals API › should create deal via API" classname="api-integration.spec.js" time="60.995">
+<failure message="api-integration.spec.js:259:5 should create deal via API" type="FAILURE">
+<![CDATA[  [chromium] › api-integration.spec.js:259:5 › API Integration Tests › Deals API › should create deal via API 
+
+    Test timeout of 60000ms exceeded.
+
+    Error: page.click: Test timeout of 60000ms exceeded.
+    Call log:
+      - waiting for locator('button:has-text("Создать")')
+
+
+      259 |     test('should create deal via API', async ({ page }) => {
+      260 |       await page.click('text=Сделки');
+    > 261 |       await page.click('button:has-text("Создать")');
+          |                  ^
+      262 |       
+      263 |       const responsePromise = page.waitForResponse(response =>
+      264 |         response.url().includes('/api/deals') && 
+        at /Applications/Git/crm-frontend/tests/e2e/api-integration.spec.js:261:18
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    ../../test-results/api-integration-API-Integr-c756f--should-create-deal-via-API-chromium/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    attachment #2: video (video/webm) ──────────────────────────────────────────────────────────────
+    ../../test-results/api-integration-API-Integr-c756f--should-create-deal-via-API-chromium/video.webm
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+]]>
+</failure>
+<system-out>
+<![CDATA[
+[[ATTACHMENT|api-integration-API-Integr-c756f--should-create-deal-via-API-chromium/test-failed-1.png]]
+
+[[ATTACHMENT|api-integration-API-Integr-c756f--should-create-deal-via-API-chromium/video.webm]]
+]]>
+</system-out>
+</testcase>
+<testcase name="API Integration Tests › Tasks API › should load tasks from API" classname="api-integration.spec.js" time="0.523">
+<failure message="api-integration.spec.js:282:5 should load tasks from API" type="FAILURE">
+<![CDATA[  [chromium] › api-integration.spec.js:282:5 › API Integration Tests › Tasks API › should load tasks from API 
+
+    SyntaxError: Unexpected token '/', "/**
+     * Tas"... is not valid JSON
+
+      288 |       const response = await responsePromise;
+      289 |       
+    > 290 |       const json = await response.json();
+          |                    ^
+      291 |       expect(json).toHaveProperty('results');
+      292 |       expect(Array.isArray(json.results)).toBeTruthy();
+      293 |     });
+        at /Applications/Git/crm-frontend/tests/e2e/api-integration.spec.js:290:20
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    ../../test-results/api-integration-API-Integr-1df9b--should-load-tasks-from-API-chromium/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    attachment #2: video (video/webm) ──────────────────────────────────────────────────────────────
+    ../../test-results/api-integration-API-Integr-1df9b--should-load-tasks-from-API-chromium/video.webm
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: ../../test-results/api-integration-API-Integr-1df9b--should-load-tasks-from-API-chromium/error-context.md
+]]>
+</failure>
+<system-out>
+<![CDATA[
+[[ATTACHMENT|api-integration-API-Integr-1df9b--should-load-tasks-from-API-chromium/test-failed-1.png]]
+
+[[ATTACHMENT|api-integration-API-Integr-1df9b--should-load-tasks-from-API-chromium/video.webm]]
+
+[[ATTACHMENT|api-integration-API-Integr-1df9b--should-load-tasks-from-API-chromium/error-context.md]]
+]]>
+</system-out>
+</testcase>
+<testcase name="API Integration Tests › API Error Handling › should handle 401 unauthorized" classname="api-integration.spec.js" time="5.503">
+<failure message="api-integration.spec.js:297:5 should handle 401 unauthorized" type="FAILURE">
+<![CDATA[  [chromium] › api-integration.spec.js:297:5 › API Integration Tests › API Error Handling › should handle 401 unauthorized 
+
+    TimeoutError: page.waitForURL: Timeout 5000ms exceeded.
+    =========================== logs ===========================
+    waiting for navigation to "**/login" until "load"
+    ============================================================
+
+      302 |       
+      303 |       // Should redirect to login
+    > 304 |       await page.waitForURL('**/login', { timeout: 5000 });
+          |                  ^
+      305 |     });
+      306 |
+      307 |     test('should handle network errors gracefully', async ({ page }) => {
+        at /Applications/Git/crm-frontend/tests/e2e/api-integration.spec.js:304:18
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    ../../test-results/api-integration-API-Integr-e9935-uld-handle-401-unauthorized-chromium/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    attachment #2: video (video/webm) ──────────────────────────────────────────────────────────────
+    ../../test-results/api-integration-API-Integr-e9935-uld-handle-401-unauthorized-chromium/video.webm
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+]]>
+</failure>
+<system-out>
+<![CDATA[
+[[ATTACHMENT|api-integration-API-Integr-e9935-uld-handle-401-unauthorized-chromium/test-failed-1.png]]
+
+[[ATTACHMENT|api-integration-API-Integr-e9935-uld-handle-401-unauthorized-chromium/video.webm]]
+]]>
+</system-out>
+</testcase>
+<testcase name="API Integration Tests › API Error Handling › should handle network errors gracefully" classname="api-integration.spec.js" time="60.949">
+<failure message="api-integration.spec.js:307:5 should handle network errors gracefully" type="FAILURE">
+<![CDATA[  [chromium] › api-integration.spec.js:307:5 › API Integration Tests › API Error Handling › should handle network errors gracefully 
+
+    Test timeout of 60000ms exceeded.
+
+    Error: page.fill: Test timeout of 60000ms exceeded.
+    Call log:
+      - waiting for locator('input[placeholder*="Поиск"]')
+
+
+      311 |       await page.context().setOffline(true);
+      312 |       
+    > 313 |       await page.fill('input[placeholder*="Поиск"]', 'test');
+          |                  ^
+      314 |       
+      315 |       // Should show error message
+      316 |       await expect(page.locator('.ant-message-error, .ant-notification-error')).toBeVisible({ timeout: 5000 });
+        at /Applications/Git/crm-frontend/tests/e2e/api-integration.spec.js:313:18
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    ../../test-results/api-integration-API-Integr-7d788-e-network-errors-gracefully-chromium/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    attachment #2: video (video/webm) ──────────────────────────────────────────────────────────────
+    ../../test-results/api-integration-API-Integr-7d788-e-network-errors-gracefully-chromium/video.webm
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+]]>
+</failure>
+<system-out>
+<![CDATA[
+[[ATTACHMENT|api-integration-API-Integr-7d788-e-network-errors-gracefully-chromium/test-failed-1.png]]
+
+[[ATTACHMENT|api-integration-API-Integr-7d788-e-network-errors-gracefully-chromium/video.webm]]
+]]>
+</system-out>
+</testcase>
+<testcase name="API Integration Tests › API Response Validation › should validate leads response structure" classname="api-integration.spec.js" time="1.235">
+</testcase>
+<testcase name="API Integration Tests › API Response Validation › should validate contacts response structure" classname="api-integration.spec.js" time="0.513">
+<failure message="api-integration.spec.js:348:5 should validate contacts response structure" type="FAILURE">
+<![CDATA[  [chromium] › api-integration.spec.js:348:5 › API Integration Tests › API Response Validation › should validate contacts response structure 
+
+    SyntaxError: Unexpected token 'i', "import { a"... is not valid JSON
+
+      354 |       const response = await responsePromise;
+      355 |       
+    > 356 |       const json = await response.json();
+          |                    ^
+      357 |       
+      358 |       expect(json).toHaveProperty('results');
+      359 |       expect(Array.isArray(json.results)).toBeTruthy();
+        at /Applications/Git/crm-frontend/tests/e2e/api-integration.spec.js:356:20
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    ../../test-results/api-integration-API-Integr-1468b-contacts-response-structure-chromium/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    attachment #2: video (video/webm) ──────────────────────────────────────────────────────────────
+    ../../test-results/api-integration-API-Integr-1468b-contacts-response-structure-chromium/video.webm
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: ../../test-results/api-integration-API-Integr-1468b-contacts-response-structure-chromium/error-context.md
+]]>
+</failure>
+<system-out>
+<![CDATA[
+[[ATTACHMENT|api-integration-API-Integr-1468b-contacts-response-structure-chromium/test-failed-1.png]]
+
+[[ATTACHMENT|api-integration-API-Integr-1468b-contacts-response-structure-chromium/video.webm]]
+
+[[ATTACHMENT|api-integration-API-Integr-1468b-contacts-response-structure-chromium/error-context.md]]
+]]>
+</system-out>
+</testcase>
+</testsuite>
+</testsuites>

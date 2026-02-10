@@ -12,7 +12,7 @@ function buildOrigin(baseUrl) {
     const parsed = new URL(baseUrl);
     const wsProtocol = toWsProtocol(parsed.protocol);
     return `${wsProtocol}//${parsed.host}`;
-  } catch (_) {
+  } catch {
     return '';
   }
 }
@@ -42,7 +42,7 @@ export function resolveWebSocketUrl(explicitUrl, path, fallbackOrigin) {
         const pathToUse = parsed.pathname && parsed.pathname !== '/' ? parsed.pathname : normalizedPath;
         return `${wsProtocol}//${parsed.host}${pathToUse}${parsed.search}`;
       }
-    } catch (_) {
+    } catch {
       const origin = fallbackOrigin || buildOrigin(apiConfig.baseUrl);
       return origin ? joinPath(origin, normalizedPath) : '';
     }
@@ -63,7 +63,7 @@ export function stripSensitiveParams(url) {
       parsed.searchParams.set('token', '***');
     }
     return parsed.toString();
-  } catch (_) {
+  } catch {
     return url;
   }
 }

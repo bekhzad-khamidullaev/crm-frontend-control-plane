@@ -1,9 +1,14 @@
 import { useState, useEffect } from 'react';
-import { Card, Descriptions, Button, Space, Tag, message, Modal, Spin } from 'antd';
-import { EditOutlined, DeleteOutlined, ArrowLeftOutlined, DollarOutlined } from '@ant-design/icons';
+import { ArrowLeft, Edit, Trash2, DollarSign } from 'lucide-react';
+import dayjs from 'dayjs';
+
 import { getPayment, deletePayment } from '../../lib/api/payments';
 import { navigate } from '../../router';
-import dayjs from 'dayjs';
+import { Card } from '../../components/ui/card.jsx';
+import { Button } from '../../components/ui/button.jsx';
+import { Badge } from '../../components/ui/badge.jsx';
+import { toast } from '../../components/ui/use-toast.js';
+import { AlertDialog, AlertDialogContent, AlertDialogHeader, AlertDialogTitle } from '../../components/ui/alert-dialog.jsx';
 
 const statusOptions = {
   r: 'Получен',
@@ -13,15 +18,16 @@ const statusOptions = {
 };
 
 const statusColors = {
-  r: 'green',
-  g: 'blue',
-  h: 'orange',
-  l: 'default',
+  r: 'bg-emerald-100 text-emerald-700',
+  g: 'bg-sky-100 text-sky-700',
+  h: 'bg-amber-100 text-amber-700',
+  l: 'bg-muted text-muted-foreground',
 };
 
 export default function PaymentDetail({ id }) {
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [confirmOpen, setConfirmOpen] = useState(false);
 
   useEffect(() => {
     fetchData();
@@ -33,106 +39,113 @@ export default function PaymentDetail({ id }) {
       const res = await getPayment(id);
       setData(res);
     } catch (error) {
-      message.error('Не удалось загрузить платеж');
-      console.error(error);
+      toast({ title: 'Ошибка', description: 'Не удалось загрузить платеж', variant: 'destructive' });
     } finally {
       setLoading(false);
     }
   };
 
-  const handleDelete = () => {
-    Modal.confirm({
-      title: 'Удалить платеж',
-      content: 'Это действие нельзя отменить',
-      okText: 'Удалить',
-      okType: 'danger',
-      onOk: async () => {
-        try {
-          await deletePayment(id);
-          message.success('Платеж удален');
-          navigate('/payments');
-        } catch (error) {
-          message.error('Ошибка удаления платежа');
-        }
-      },
-    });
+  const handleDelete = async () => {
+    try {
+      await deletePayment(id);
+      toast({ title: 'Платеж удален', description: 'Платеж удален' });
+      navigate('/payments');
+    } catch (error) {
+      toast({ title: 'Ошибка', description: 'Ошибка удаления платежа', variant: 'destructive' });
+    }
   };
 
   if (loading) {
     return (
-      <Card>
-        <div style={{ textAlign: 'center', padding: '50px' }}>
-          <Spin size="large" />
-        </div>
+      <Card className="p-6">
+        <div className="text-center text-sm text-muted-foreground">Загрузка...</div>
       </Card>
     );
   }
 
   if (!data) {
     return (
-      <Card>
-        <div style={{ textAlign: 'center', padding: '50px' }}>
-          Платеж не найден
-        </div>
+      <Card className="p-6">
+        <div className="text-center text-sm text-muted-foreground">Платеж не найден</div>
       </Card>
     );
   }
 
   return (
-    <Card
-      title={
-        <Space>
-          <DollarOutlined />
-          <span>Платеж</span>
-        </Space>
-      }
-      extra={
-        <Space>
-          <Button icon={<ArrowLeftOutlined />} onClick={() => navigate('/payments')}>
+    <Card className="p-6">
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        <div className="flex items-center gap-2">
+          <DollarSign className="h-5 w-5 text-primary" />
+          <h2 className="text-xl font-semibold">Платеж</h2>
+        </div>
+        <div className="flex flex-wrap items-center gap-2">
+          <Button variant="outline" onClick={() => navigate('/payments')}>
+            <ArrowLeft className="mr-2 h-4 w-4" />
             Назад
           </Button>
-          <Button type="primary" icon={<EditOutlined />} onClick={() => navigate(`/payments/${id}/edit`)}>
+          <Button onClick={() => navigate(`/payments/${id}/edit`)}>
+            <Edit className="mr-2 h-4 w-4" />
             Редактировать
           </Button>
-          <Button danger icon={<DeleteOutlined />} onClick={handleDelete}>
+          <Button variant="destructive" onClick={() => setConfirmOpen(true)}>
+            <Trash2 className="mr-2 h-4 w-4" />
             Удалить
           </Button>
-        </Space>
-      }
-    >
-      <Descriptions bordered column={2}>
-        <Descriptions.Item label="Сумма" span={2}>
-          <span style={{ fontSize: '20px', fontWeight: 'bold' }}>
+        </div>
+      </div>
+
+      <div className="mt-6 grid grid-cols-1 gap-4 sm:grid-cols-2">
+        <div className="sm:col-span-2 rounded-md border border-border p-4">
+          <div className="text-xs text-muted-foreground">Сумма</div>
+          <div className="text-2xl font-semibold">
             {Number(data.amount || 0).toLocaleString('ru-RU')} {data.currency_name || '₽'}
-          </span>
-        </Descriptions.Item>
+          </div>
+        </div>
 
-        <Descriptions.Item label="Статус">
-          <Tag color={statusColors[data.status] || 'default'}>
+        <DetailRow label="Статус">
+          <Badge className={statusColors[data.status] || 'bg-muted text-muted-foreground'}>
             {statusOptions[data.status] || data.status || '—'}
-          </Tag>
-        </Descriptions.Item>
+          </Badge>
+        </DetailRow>
 
-        <Descriptions.Item label="Дата платежа">
+        <DetailRow label="Дата платежа">
           {data.payment_date ? dayjs(data.payment_date).format('DD MMM YYYY') : '-'}
-        </Descriptions.Item>
+        </DetailRow>
 
-        <Descriptions.Item label="Сделка">
+        <DetailRow label="Сделка">
           {data.deal_name || (data.deal ? `#${data.deal}` : '-')}
-        </Descriptions.Item>
+        </DetailRow>
 
-        <Descriptions.Item label="Номер договора">
-          {data.contract_number || '-'}
-        </Descriptions.Item>
+        <DetailRow label="Номер договора">{data.contract_number || '-'}</DetailRow>
+        <DetailRow label="Номер счета">{data.invoice_number || '-'}</DetailRow>
+        <DetailRow label="Номер заказа">{data.order_number || '-'}</DetailRow>
+      </div>
 
-        <Descriptions.Item label="Номер счета">
-          {data.invoice_number || '-'}
-        </Descriptions.Item>
-
-        <Descriptions.Item label="Номер заказа">
-          {data.order_number || '-'}
-        </Descriptions.Item>
-      </Descriptions>
+      <AlertDialog open={confirmOpen} onOpenChange={setConfirmOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Удалить платеж?</AlertDialogTitle>
+          </AlertDialogHeader>
+          <p className="text-sm text-muted-foreground">Это действие нельзя отменить</p>
+          <div className="mt-4 flex justify-end gap-2">
+            <Button variant="outline" onClick={() => setConfirmOpen(false)}>
+              Отмена
+            </Button>
+            <Button variant="destructive" onClick={handleDelete}>
+              Удалить
+            </Button>
+          </div>
+        </AlertDialogContent>
+      </AlertDialog>
     </Card>
+  );
+}
+
+function DetailRow({ label, children }) {
+  return (
+    <div className="rounded-md border border-border p-4">
+      <div className="text-xs text-muted-foreground">{label}</div>
+      <div className="mt-1 text-sm">{children}</div>
+    </div>
   );
 }

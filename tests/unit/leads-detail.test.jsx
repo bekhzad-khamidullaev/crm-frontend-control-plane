@@ -48,10 +48,10 @@ describe('LeadDetail', () => {
     vi.clearAllMocks();
     client.getLead.mockResolvedValue(mockLead);
     callsApi.getEntityCallLogs.mockResolvedValue({ results: mockCallLogs });
-    client.leadsApi = {
+    vi.spyOn(client, 'leadsApi', 'get').mockReturnValue({
       convert: vi.fn().mockResolvedValue({}),
       disqualify: vi.fn().mockResolvedValue({}),
-    };
+    });
   });
 
   it('renders lead details', async () => {

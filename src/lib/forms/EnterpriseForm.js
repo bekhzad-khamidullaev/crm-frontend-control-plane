@@ -225,7 +225,7 @@ export class EnterpriseForm {
   }
   
   // Apply optimistic update
-  applyOptimisticUpdate(data) {
+  applyOptimisticUpdate(_data) {
     // Store current data for rollback
     this._optimisticData = this.getFormData();
     

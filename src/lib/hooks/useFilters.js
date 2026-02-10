@@ -22,7 +22,7 @@ export default function useFilters(storageKey, initialFilters = {}) {
     try {
       const saved = localStorage.getItem(`${storageKey}_presets`);
       return saved ? JSON.parse(saved) : [];
-    } catch (error) {
+    } catch {
       return [];
     }
   });

@@ -4,23 +4,22 @@
  * This hook ensures proper theme context consumption
  */
 
-import { App } from 'antd';
+import { toast } from '../../components/ui/use-toast.js';
+
+const messageApi = {
+  info: (msg) => toast({ title: 'Info', description: msg }),
+  success: (msg) => toast({ title: 'Success', description: msg }),
+  warning: (msg) => toast({ title: 'Warning', description: msg }),
+  error: (msg) => toast({ title: 'Error', description: msg, variant: 'destructive' }),
+  loading: (msg) => toast({ title: 'Loading', description: msg }),
+};
 
 /**
- * Hook to access message API with theme context
+ * Hook to access toast API with shadcn/ui
  * @returns {Object} Message API object with success, error, warning, info, loading methods
  */
 export function useMessage() {
-  const { message } = App.useApp();
-  return message;
-}
-
-/**
- * Hook to access all Ant Design static methods (message, modal, notification)
- * @returns {Object} Object containing message, modal, and notification APIs
- */
-export function useAntApp() {
-  return App.useApp();
+  return messageApi;
 }
 
 export default useMessage;

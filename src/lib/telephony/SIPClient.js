@@ -329,7 +329,7 @@ class SIPClient {
         break;
       case 'i_new_message':
         // Handle incoming SIP message
-        this.emit('message', e);
+        this.emit('message', event);
         break;
     }
   }

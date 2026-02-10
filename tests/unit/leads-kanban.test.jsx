@@ -2,7 +2,7 @@ import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { render, screen, waitFor } from '@testing-library/react';
 import LeadsKanban from '../../src/modules/leads/LeadsKanban';
 import * as client from '../../src/lib/api/client';
-import * as router from '../../src/router';
+// import * as router from '../../src/router';
 
 // Mock dependencies
 vi.mock('../../src/lib/api/client');

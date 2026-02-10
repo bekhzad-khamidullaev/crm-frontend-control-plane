@@ -8,6 +8,7 @@ import QuickActions from '../../components/QuickActions.jsx';
 
 function CampaignsList() {
   const [campaigns, setCampaigns] = useState([]);
+  const [allCampaignsCache, setAllCampaignsCache] = useState(null);
   const [loading, setLoading] = useState(false);
   const [searchText, setSearchText] = useState('');
   const [pagination, setPagination] = useState({
@@ -20,19 +21,32 @@ function CampaignsList() {
     fetchCampaigns(1, searchText);
   }, []);
 
-  const fetchCampaigns = async (page = 1, search = '') => {
+  const fetchCampaigns = async (page = 1, search = '', pageSize = pagination.pageSize) => {
     setLoading(true);
     try {
       const response = await getCampaigns({
         page,
-        page_size: pagination.pageSize,
+        page_size: pageSize,
         search,
       });
-      setCampaigns(response.results || []);
+      const results = response.results || [];
+      const totalCount = response.count || 0;
+      
+      if (results.length > pageSize && results.length === totalCount) {
+        console.warn('⚠️ CampaignsList: Caching all data');
+        setAllCampaignsCache(results);
+        const startIndex = (page - 1) * pageSize;
+        setCampaigns(results.slice(startIndex, startIndex + pageSize));
+      } else {
+        setAllCampaignsCache(null);
+        setCampaigns(results);
+      }
+      
       setPagination((prev) => ({
         ...prev,
         current: page,
-        total: response.count || 0,
+        pageSize: pageSize,
+        total: totalCount,
       }));
     } catch (error) {
       message.error('Ошибка загрузки кампаний');
@@ -69,7 +83,23 @@ function CampaignsList() {
   };
 
   const handleTableChange = (newPagination) => {
-    fetchCampaigns(newPagination.current, searchText);
+    const nextPage = newPagination?.current || 1;
+    const nextPageSize = newPagination?.pageSize || pagination.pageSize;
+    
+    if (nextPageSize !== pagination.pageSize) {
+      setPagination((p) => ({ ...p, pageSize: nextPageSize }));
+      setAllCampaignsCache(null);
+      fetchCampaigns(nextPage, searchText, nextPageSize);
+      return;
+    }
+    
+    if (allCampaignsCache && allCampaignsCache.length > 0) {
+      const startIndex = (nextPage - 1) * nextPageSize;
+      setCampaigns(allCampaignsCache.slice(startIndex, startIndex + nextPageSize));
+      setPagination((p) => ({ ...p, current: nextPage }));
+    } else {
+      fetchCampaigns(nextPage, searchText, nextPageSize);
+    }
   };
 
   const columns = [

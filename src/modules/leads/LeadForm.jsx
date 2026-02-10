@@ -81,7 +81,7 @@ function LeadForm({ id }) {
         await createLead(payload);
         message.success('Лид создан');
       }
-      navigate('/leads');
+      navigate('/leads', { replace: true });
     } catch (error) {
       const details = error?.details;
       if (details && typeof details === 'object') {
@@ -124,17 +124,17 @@ function LeadForm({ id }) {
           <Row gutter={16}>
             <Col xs={24} md={8}>
               <Form.Item label="Имя" name="first_name" rules={[{ required: true, message: 'Введите имя' }]}>
-                <Input placeholder="Иван" />
+                <Input id="first_name" placeholder="Иван" />
               </Form.Item>
             </Col>
             <Col xs={24} md={8}>
               <Form.Item label="Отчество" name="middle_name">
-                <Input placeholder="Иванович" />
+                <Input id="middle_name" placeholder="Иванович" />
               </Form.Item>
             </Col>
             <Col xs={24} md={8}>
               <Form.Item label="Фамилия" name="last_name">
-                <Input placeholder="Иванов" />
+                <Input id="last_name" placeholder="Иванов" />
               </Form.Item>
             </Col>
           </Row>
@@ -177,7 +177,7 @@ function LeadForm({ id }) {
                   { type: 'email', message: 'Некорректный email' },
                 ]}
               >
-                <Input placeholder="ivan@example.com" />
+                <Input id="email" placeholder="ivan@example.com" />
               </Form.Item>
             </Col>
             <Col xs={24} md={12}>
@@ -190,7 +190,7 @@ function LeadForm({ id }) {
           <Row gutter={16}>
             <Col xs={24} md={8}>
               <Form.Item label="Телефон" name="phone">
-                <Input placeholder="+7 999 123-45-67" />
+                <Input id="phone" placeholder="+7 999 123-45-67" />
               </Form.Item>
             </Col>
             <Col xs={24} md={8}>
@@ -220,7 +220,7 @@ function LeadForm({ id }) {
             </Col>
             <Col xs={24} md={12}>
               <Form.Item label="Название компании" name="company_name">
-                <Input placeholder="ООО «Технологии»" />
+                <Input id="company_name" placeholder="ООО «Технологии»" />
               </Form.Item>
             </Col>
           </Row>
@@ -311,14 +311,19 @@ function LeadForm({ id }) {
             Управление
           </Title>
           <Row gutter={16}>
-            <Col xs={24} md={12}>
-              <Form.Item label="Источник" name="lead_source">
-                <ReferenceSelect type="lead-sources" placeholder="Выберите источник" allowClear />
+            <Col xs={24} md={8}>
+              <Form.Item label="Статус" name="status">
+                <ReferenceSelect type="lead-statuses" placeholder="Выберите статус" allowClear id="status" />
               </Form.Item>
             </Col>
-            <Col xs={24} md={12}>
+            <Col xs={24} md={8}>
+              <Form.Item label="Источник" name="lead_source">
+                <ReferenceSelect type="lead-sources" placeholder="Выберите источник" allowClear id="lead_source" />
+              </Form.Item>
+            </Col>
+            <Col xs={24} md={8}>
               <Form.Item label="Теги" name="tags">
-                <ReferenceSelect type="crm-tags" placeholder="Выберите теги" mode="multiple" allowClear />
+                <ReferenceSelect type="crm-tags" placeholder="Выберите теги" mode="multiple" allowClear id="tags" />
               </Form.Item>
             </Col>
           </Row>
@@ -387,7 +392,7 @@ function LeadForm({ id }) {
               <Button type="primary" htmlType="submit" icon={<SaveOutlined />} loading={saving}>
                 {isEdit ? 'Обновить' : 'Создать'}
               </Button>
-              <Button onClick={() => navigate('/leads')}>Отмена</Button>
+              <Button onClick={() => navigate('/leads', { replace: true })}>Отмена</Button>
             </Space>
           </Form.Item>
         </Form>

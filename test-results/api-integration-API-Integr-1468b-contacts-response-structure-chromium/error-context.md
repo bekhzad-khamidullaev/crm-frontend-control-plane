@@ -1,0 +1,171 @@
+# Page snapshot
+
+```yaml
+- generic [ref=e4]:
+  - complementary [ref=e5]:
+    - generic [ref=e6]:
+      - generic [ref=e7]:
+        - generic [ref=e8]:
+          - generic [ref=e11]: C
+          - strong [ref=e14]: Contora CRM
+        - button "menu-fold" [ref=e15] [cursor=pointer]:
+          - img "menu-fold" [ref=e17]:
+            - img [ref=e18]
+      - menu [ref=e20]:
+        - menuitem "dashboard Дашборд" [ref=e21] [cursor=pointer]:
+          - img "dashboard" [ref=e22]:
+            - img [ref=e23]
+          - generic [ref=e25]: Дашборд
+        - menuitem "team Лиды" [ref=e26] [cursor=pointer]:
+          - img "team" [ref=e27]:
+            - img [ref=e28]
+          - generic [ref=e30]: Лиды
+        - menuitem "user Контакты" [active] [ref=e31] [cursor=pointer]:
+          - img "user" [ref=e32]:
+            - img [ref=e33]
+          - generic [ref=e35]: Контакты
+        - menuitem "bank Компании" [ref=e36] [cursor=pointer]:
+          - img "bank" [ref=e37]:
+            - img [ref=e38]
+          - generic [ref=e40]: Компании
+        - menuitem "dollar Сделки" [ref=e41] [cursor=pointer]:
+          - img "dollar" [ref=e42]:
+            - img [ref=e43]
+          - generic [ref=e45]: Сделки
+        - menuitem "check-square Задачи" [ref=e46] [cursor=pointer]:
+          - img "check-square" [ref=e47]:
+            - img [ref=e48]
+          - generic [ref=e51]: Задачи
+        - menuitem "folder Проекты" [ref=e52] [cursor=pointer]:
+          - img "folder" [ref=e53]:
+            - img [ref=e54]
+          - generic [ref=e56]: Проекты
+        - menuitem "appstore Продукты" [ref=e57] [cursor=pointer]:
+          - img "appstore" [ref=e58]:
+            - img [ref=e59]
+          - generic [ref=e61]: Продукты
+        - menuitem "message Чаты" [ref=e62] [cursor=pointer]:
+          - img "message" [ref=e63]:
+            - img [ref=e64]
+          - generic [ref=e66]: Чаты
+        - menuitem "phone Звонки" [ref=e67] [cursor=pointer]:
+          - img "phone" [ref=e68]:
+            - img [ref=e69]
+          - generic [ref=e71]: Звонки
+        - menuitem "dollar Платежи" [ref=e72] [cursor=pointer]:
+          - img "dollar" [ref=e73]:
+            - img [ref=e74]
+          - generic [ref=e76]: Платежи
+        - menuitem "clock-circle Напоминания" [ref=e77] [cursor=pointer]:
+          - img "clock-circle" [ref=e78]:
+            - img [ref=e79]
+          - generic [ref=e82]: Напоминания
+        - menuitem "customer-service Кампании" [ref=e83] [cursor=pointer]:
+          - img "customer-service" [ref=e84]:
+            - img [ref=e85]
+          - generic [ref=e87]: Кампании
+        - menuitem "team Сегменты" [ref=e88] [cursor=pointer]:
+          - img "team" [ref=e89]:
+            - img [ref=e90]
+          - generic [ref=e92]: Сегменты
+        - menuitem "file-text Шаблоны" [ref=e93] [cursor=pointer]:
+          - img "file-text" [ref=e94]:
+            - img [ref=e95]
+          - generic [ref=e97]: Шаблоны
+        - menuitem "file-text Заметки" [ref=e98] [cursor=pointer]:
+          - img "file-text" [ref=e99]:
+            - img [ref=e100]
+          - generic [ref=e102]: Заметки
+        - menuitem "mail Emails" [ref=e103] [cursor=pointer]:
+          - img "mail" [ref=e104]:
+            - img [ref=e105]
+          - generic [ref=e107]: Emails
+        - menuitem "mail Massmail" [ref=e108] [cursor=pointer]:
+          - img "mail" [ref=e109]:
+            - img [ref=e110]
+          - generic [ref=e112]: Massmail
+        - menuitem "message SMS" [ref=e113] [cursor=pointer]:
+          - img "message" [ref=e114]:
+            - img [ref=e115]
+          - generic [ref=e117]: SMS
+        - menuitem "tool Операции" [ref=e118] [cursor=pointer]:
+          - img "tool" [ref=e119]:
+            - img [ref=e120]
+          - generic [ref=e122]: Операции
+        - menuitem "database Справочники" [ref=e123] [cursor=pointer]:
+          - img "database" [ref=e124]:
+            - img [ref=e125]
+          - generic [ref=e127]: Справочники
+        - menuitem "bar-chart Аналитика" [ref=e128] [cursor=pointer]:
+          - img "bar-chart" [ref=e129]:
+            - img [ref=e130]
+          - generic [ref=e132]: Аналитика
+        - menuitem "question-circle Справка" [ref=e133] [cursor=pointer]:
+          - img "question-circle" [ref=e134]:
+            - img [ref=e135]
+          - generic [ref=e138]: Справка
+        - menuitem "customer-service Телефония" [ref=e139] [cursor=pointer]:
+          - img "customer-service" [ref=e140]:
+            - img [ref=e141]
+          - generic [ref=e143]: Телефония
+        - menuitem "team Пользователи" [ref=e144] [cursor=pointer]:
+          - img "team" [ref=e145]:
+            - img [ref=e146]
+          - generic [ref=e148]: Пользователи
+        - menuitem "setting Интеграции" [ref=e149] [cursor=pointer]:
+          - img "setting" [ref=e150]:
+            - img [ref=e151]
+          - generic [ref=e153]: Интеграции
+  - generic [ref=e154]:
+    - banner [ref=e155]:
+      - generic [ref=e157]: Дашборд
+      - generic [ref=e158]:
+        - generic [ref=e160]:
+          - img "sun" [ref=e162]:
+            - img [ref=e163]
+          - switch [ref=e166] [cursor=pointer]
+          - img "moon" [ref=e170]:
+            - img [ref=e171]
+        - button "RU" [ref=e174] [cursor=pointer]:
+          - generic [ref=e175]: RU
+        - generic [ref=e177] [cursor=pointer]:
+          - img "disconnect" [ref=e180]:
+            - img [ref=e181]
+          - generic [ref=e185]: A
+          - generic [ref=e186]: admin
+    - main [ref=e187]:
+      - generic [ref=e188]:
+        - generic [ref=e189]:
+          - generic [ref=e190]:
+            - heading "Контакты" [level=2] [ref=e191]
+            - paragraph [ref=e192]: Управляйте контактами и их данными
+          - generic [ref=e193]:
+            - button "Обновить" [ref=e194] [cursor=pointer]
+            - button "Создать контакт" [ref=e195] [cursor=pointer]:
+              - img [ref=e196]
+              - text: Создать контакт
+        - generic [ref=e199]:
+          - img [ref=e200]
+          - textbox "Search" [ref=e203]:
+            - /placeholder: Поиск по имени, email...
+        - table [ref=e206]:
+          - rowgroup [ref=e207]:
+            - row "Select all Контакт Компания Email Телефон Действия" [ref=e208]:
+              - columnheader "Select all" [ref=e209]:
+                - checkbox "Select all" [ref=e210]
+              - columnheader "Контакт" [ref=e211]
+              - columnheader "Компания" [ref=e212]
+              - columnheader "Email" [ref=e213]
+              - columnheader "Телефон" [ref=e214]
+              - columnheader "Действия" [ref=e215]
+          - rowgroup [ref=e216]:
+            - row "Загрузка..." [ref=e217]:
+              - cell "Загрузка..." [ref=e218]:
+                - img [ref=e219]
+                - text: Загрузка...
+        - generic [ref=e221]:
+          - generic [ref=e222]: "Строк: 0 (Стр. 1)"
+          - generic [ref=e223]:
+            - button "Назад" [disabled]
+            - button "Вперед" [disabled]
+```

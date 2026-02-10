@@ -3,10 +3,12 @@
  * 
  * Универсальный компонент для работы со справочными данными
  * Поддерживает автоматическую загрузку данных из API
+ * Rewritten to use only Ant Design components
  */
 
 import React, { useState, useEffect } from 'react';
 import { Select, Spin } from 'antd';
+import { api } from '../lib/api/client';
 import * as referenceApi from '../lib/api/reference';
 
 const { Option } = Select;
@@ -20,6 +22,12 @@ const ReferenceSelect = ({
   showSearch = true,
   disabled = false,
   style,
+  endpoint, // optional override: '/api/cities/'
+  valueKey = 'id',
+  labelKey = 'name',
+  params = {},
+  paginated = true,
+  mode, // for multi-select support
   ...restProps
 }) => {
   const [data, setData] = useState([]);
@@ -27,7 +35,7 @@ const ReferenceSelect = ({
 
   useEffect(() => {
     loadData();
-  }, [type]);
+  }, [type, endpoint, JSON.stringify(params)]);
 
   const loadData = async () => {
     setLoading(true);
@@ -35,7 +43,9 @@ const ReferenceSelect = ({
       let response;
       
       // Выбираем нужный API метод на основе типа
-      switch (type) {
+      if (endpoint) {
+        response = await api.get(endpoint, { params });
+      } else switch (type) {
         case 'stages':
           response = await referenceApi.getStages();
           break;
@@ -80,7 +90,7 @@ const ReferenceSelect = ({
           return;
       }
 
-      const items = response.results || response || [];
+      const items = Array.isArray(response) ? response : (response?.results || []);
       setData(items);
     } catch (error) {
       console.error(`Error loading ${type}:`, error);
@@ -96,19 +106,18 @@ const ReferenceSelect = ({
       placeholder={placeholder || `Выберите ${getTypeName(type)}`}
       allowClear={allowClear}
       showSearch={showSearch}
-      disabled={disabled || loading}
-      style={style}
+      disabled={disabled}
       loading={loading}
-      notFoundContent={loading ? <Spin size="small" /> : 'Нет данных'}
-      optionFilterProp="children"
+      style={style}
+      mode={mode}
       filterOption={(input, option) =>
-        option.children.toLowerCase().includes(input.toLowerCase())
+        (option?.children ?? '').toLowerCase().includes(input.toLowerCase())
       }
       {...restProps}
     >
       {data.map((item) => (
-        <Option key={item.id} value={item.id}>
-          {item.name}
+        <Option key={item[valueKey]} value={item[valueKey]}>
+          {item[labelKey] ?? item.name ?? item.title ?? item.slug ?? item.id}
         </Option>
       ))}
     </Select>

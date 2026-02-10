@@ -294,7 +294,7 @@ export async function completeCampaign(id) {
  */
 export async function cloneCampaign(id, newName) {
   const campaign = await getCampaign(id);
-  const { id: _, created_at, updated_at, ...campaignData } = campaign;
+  const { id: _, created_at: _created_at, updated_at: _updated_at, ...campaignData } = campaign;
   
   return createCampaign({
     ...campaignData,
@@ -311,7 +311,7 @@ export async function cloneCampaign(id, newName) {
  */
 export async function cloneTemplate(id, newName) {
   const template = await getTemplate(id);
-  const { id: _, created_at, updated_at, ...templateData } = template;
+  const { id: _, created_at: _created_at, updated_at: _updated_at, ...templateData } = template;
   
   return createTemplate({
     ...templateData,

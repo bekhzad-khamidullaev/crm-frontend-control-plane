@@ -237,7 +237,7 @@ export class FormValidator {
   
   // Helper: validate phone
   isValidPhone(phone) {
-    const re = /^[\d\s\-\+\(\)]+$/;
+    const re = /^[\d\s\-+()]+$/;
     return re.test(phone) && phone.replace(/\D/g, '').length >= 10;
   }
   

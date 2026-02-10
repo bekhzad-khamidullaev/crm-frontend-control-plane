@@ -1,41 +1,64 @@
-/**
- * Reminder Form
- * Создание и редактирование напоминаний (API schema-aligned)
- */
-
 import React, { useEffect, useState } from 'react';
-import {
-  Form,
-  Input,
-  Button,
-  Card,
-  Space,
-  message,
-  Typography,
-  Spin,
-  DatePicker,
-  Switch,
-  InputNumber,
-} from 'antd';
-import { SaveOutlined, ArrowLeftOutlined, BellOutlined } from '@ant-design/icons';
+import { useForm } from 'react-hook-form';
+import { z } from 'zod';
+import { zodResolver } from '@hookform/resolvers/zod';
 import dayjs from 'dayjs';
+import { ArrowLeft, Save, Bell } from 'lucide-react';
+
 import { navigate } from '../../router';
-import {
-  getReminder,
-  createReminder,
-  updateReminder,
-} from '../../lib/api/reminders';
+import { getReminder, createReminder, updateReminder } from '../../lib/api/reminders';
 import EntitySelect from '../../components/EntitySelect.jsx';
 import { getUsers, getUser } from '../../lib/api';
+import { Card } from '../../components/ui/card.jsx';
+import { Button } from '../../components/ui/button.jsx';
+import { Input } from '../../components/ui/input.jsx';
+import { Textarea } from '../../components/ui/textarea.jsx';
+import { Label } from '../../components/ui/label.jsx';
+import { Switch } from '../../components/ui/switch.jsx';
+import { DatePicker } from '../../components/ui-DatePicker.jsx';
+import { toast } from '../../components/ui/use-toast.js';
 
-const { Title } = Typography;
-const { TextArea } = Input;
+const schema = z.object({
+  subject: z.string().min(1, 'Введите тему напоминания'),
+  description: z.string().optional(),
+  reminder_date: z.any().refine((val) => val, { message: 'Выберите дату и время' }),
+  active: z.boolean().optional(),
+  send_notification_email: z.boolean().optional(),
+  owner: z.any().optional(),
+  content_type: z.number({ invalid_type_error: 'Укажите content type ID' }).min(1, 'Укажите content type ID'),
+  object_id: z.number({ invalid_type_error: 'Укажите object ID' }).min(1, 'Укажите object ID'),
+});
 
 function ReminderForm({ id }) {
-  const [form] = Form.useForm();
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
   const isEdit = !!id;
+
+  const {
+    register,
+    handleSubmit,
+    setValue,
+    reset,
+    watch,
+    formState: { errors },
+  } = useForm({
+    resolver: zodResolver(schema),
+    defaultValues: {
+      subject: '',
+      description: '',
+      reminder_date: null,
+      active: true,
+      send_notification_email: false,
+      owner: '',
+      content_type: 0,
+      object_id: 0,
+    },
+  });
+
+  const reminderDate = watch('reminder_date');
+  const activeValue = watch('active');
+  const emailValue = watch('send_notification_email');
+  const ownerValue = watch('owner');
 
   useEffect(() => {
     if (isEdit) {
@@ -47,19 +70,19 @@ function ReminderForm({ id }) {
     setLoading(true);
     try {
       const data = await getReminder(id);
-      form.setFieldsValue({
+      reset({
         ...data,
         reminder_date: data.reminder_date ? dayjs(data.reminder_date) : null,
       });
     } catch (error) {
-      message.error('Ошибка загрузки напоминания');
+      toast({ title: 'Ошибка', description: 'Ошибка загрузки напоминания', variant: 'destructive' });
       console.error('Error loading reminder:', error);
     } finally {
       setLoading(false);
     }
   };
 
-  const handleSubmit = async (values) => {
+  const handleSubmitForm = async (values) => {
     setSaving(true);
     try {
       const payload = {
@@ -69,14 +92,14 @@ function ReminderForm({ id }) {
 
       if (isEdit) {
         await updateReminder(id, payload);
-        message.success('Напоминание обновлено');
+        toast({ title: 'Напоминание обновлено', description: 'Напоминание обновлено' });
       } else {
         await createReminder(payload);
-        message.success('Напоминание создано');
+        toast({ title: 'Напоминание создано', description: 'Напоминание создано' });
       }
       navigate('/reminders');
     } catch (error) {
-      message.error(isEdit ? 'Ошибка обновления напоминания' : 'Ошибка создания напоминания');
+      toast({ title: 'Ошибка', description: isEdit ? 'Ошибка обновления напоминания' : 'Ошибка создания напоминания', variant: 'destructive' });
       console.error('Error saving reminder:', error);
     } finally {
       setSaving(false);
@@ -85,124 +108,101 @@ function ReminderForm({ id }) {
 
   if (loading) {
     return (
-      <div style={{ textAlign: 'center', padding: '50px' }}>
-        <Spin size="large" tip="Загрузка данных..." spinning={true}>
-          <div style={{ minHeight: '200px' }}></div>
-        </Spin>
-      </div>
+      <div className="py-12 text-center text-sm text-muted-foreground">Загрузка...</div>
     );
   }
 
   return (
-    <div>
-      <div style={{ marginBottom: 16 }}>
-        <Space>
-          <Button icon={<ArrowLeftOutlined />} onClick={() => navigate('/reminders')}>
-            Назад
-          </Button>
-          <Title level={2} style={{ margin: 0 }}>
-            {isEdit ? 'Редактирование напоминания' : 'Новое напоминание'}
-          </Title>
-        </Space>
+    <div className="space-y-4">
+      <Button variant="outline" onClick={() => navigate('/reminders')}>
+        <ArrowLeft className="mr-2 h-4 w-4" />
+        Назад
+      </Button>
+
+      <div className="flex items-center gap-3">
+        <Bell className="h-6 w-6 text-primary" />
+        <h2 className="text-2xl font-semibold">
+          {isEdit ? 'Редактирование напоминания' : 'Новое напоминание'}
+        </h2>
       </div>
 
-      <Card>
-        <Form
-          form={form}
-          layout="vertical"
-          onFinish={handleSubmit}
-          initialValues={{
-            active: true,
-            send_notification_email: false,
-          }}
-        >
-          <Form.Item
-            label="Тема"
-            name="subject"
-            rules={[{ required: true, message: 'Введите тему напоминания' }]}
-          >
-            <Input prefix={<BellOutlined />} placeholder="Например: Связаться с клиентом" />
-          </Form.Item>
+      <Card className="p-6">
+        <form className="space-y-6" onSubmit={handleSubmit(handleSubmitForm)}>
+          <div>
+            <Label htmlFor="subject">Тема *</Label>
+            <Input id="subject" placeholder="Например: Связаться с клиентом" {...register('subject')} />
+            {errors.subject && <p className="text-xs text-destructive">{errors.subject.message}</p>}
+          </div>
 
-          <Form.Item
-            label="Описание"
-            name="description"
-          >
-            <TextArea rows={4} placeholder="Дополнительная информация" />
-          </Form.Item>
+          <div>
+            <Label htmlFor="description">Описание</Label>
+            <Textarea id="description" rows={4} placeholder="Дополнительная информация" {...register('description')} />
+          </div>
 
-          <Form.Item
-            label="Дата и время напоминания"
-            name="reminder_date"
-            rules={[{ required: true, message: 'Выберите дату и время' }]}
-          >
-            <DatePicker
-              showTime
-              format="YYYY-MM-DD HH:mm"
-              style={{ width: '100%' }}
-              placeholder="Выберите дату и время"
-            />
-          </Form.Item>
+          <div>
+            <Label>Дата и время напоминания *</Label>
+            <DatePicker value={reminderDate || null} onChange={(val) => setValue('reminder_date', val)} format="YYYY-MM-DD" />
+            {errors.reminder_date && <p className="text-xs text-destructive">{errors.reminder_date.message}</p>}
+          </div>
 
-          <Space size="large" style={{ marginBottom: 16 }}>
-            <Form.Item
-              label="Активно"
-              name="active"
-              valuePropName="checked"
-            >
-              <Switch />
-            </Form.Item>
-            <Form.Item
-              label="Email уведомление"
-              name="send_notification_email"
-              valuePropName="checked"
-            >
-              <Switch />
-            </Form.Item>
-          </Space>
+          <div className="flex flex-wrap gap-6">
+            <div className="flex items-center gap-2">
+              <Switch checked={!!activeValue} onCheckedChange={(val) => setValue('active', val)} />
+              <Label>Активно</Label>
+            </div>
+            <div className="flex items-center gap-2">
+              <Switch checked={!!emailValue} onCheckedChange={(val) => setValue('send_notification_email', val)} />
+              <Label>Email уведомление</Label>
+            </div>
+          </div>
 
-          <Form.Item
-            label="Владелец"
-            name="owner"
-          >
+          <div>
+            <Label>Владелец</Label>
             <EntitySelect
               placeholder="Выберите пользователя"
               fetchList={getUsers}
               fetchById={getUser}
               allowClear
+              value={ownerValue || ''}
+              onChange={(val) => setValue('owner', val)}
             />
-          </Form.Item>
+          </div>
 
-          <Space size="large" style={{ width: '100%', marginBottom: 16 }}>
-            <Form.Item
-              label="Content type ID"
-              name="content_type"
-              rules={[{ required: true, message: 'Укажите content type ID' }]}
-              style={{ flex: 1 }}
-            >
-              <InputNumber min={1} style={{ width: '100%' }} placeholder="Например: 12" />
-            </Form.Item>
-            <Form.Item
-              label="Object ID"
-              name="object_id"
-              rules={[{ required: true, message: 'Укажите object ID' }]}
-              style={{ flex: 1 }}
-            >
-              <InputNumber min={1} style={{ width: '100%' }} placeholder="ID связанного объекта" />
-            </Form.Item>
-          </Space>
+          <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+            <div>
+              <Label htmlFor="content_type">Content type ID *</Label>
+              <Input
+                id="content_type"
+                type="number"
+                min={1}
+                placeholder="Например: 12"
+                {...register('content_type', { valueAsNumber: true })}
+              />
+              {errors.content_type && <p className="text-xs text-destructive">{errors.content_type.message}</p>}
+            </div>
+            <div>
+              <Label htmlFor="object_id">Object ID *</Label>
+              <Input
+                id="object_id"
+                type="number"
+                min={1}
+                placeholder="ID связанного объекта"
+                {...register('object_id', { valueAsNumber: true })}
+              />
+              {errors.object_id && <p className="text-xs text-destructive">{errors.object_id.message}</p>}
+            </div>
+          </div>
 
-          <Form.Item>
-            <Space>
-              <Button type="primary" htmlType="submit" icon={<SaveOutlined />} loading={saving}>
-                {isEdit ? 'Сохранить' : 'Создать'}
-              </Button>
-              <Button onClick={() => navigate('/reminders')}>
-                Отмена
-              </Button>
-            </Space>
-          </Form.Item>
-        </Form>
+          <div className="flex flex-wrap gap-2">
+            <Button type="submit" loading={saving}>
+              <Save className="mr-2 h-4 w-4" />
+              {isEdit ? 'Сохранить' : 'Создать'}
+            </Button>
+            <Button variant="outline" onClick={() => navigate('/reminders')}>
+              Отмена
+            </Button>
+          </div>
+        </form>
       </Card>
     </div>
   );

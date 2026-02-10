@@ -49,7 +49,7 @@ export function setToken(token, refreshToken = null, { persist = true } = {}) {
       } else {
         localStorage.removeItem(REFRESH_KEY);
       }
-    } catch (_) { /* ignore */ }
+    } catch { /* ignore */ }
   }
 }
 
@@ -66,7 +66,7 @@ export function getToken() {
       _accessToken = normalizeToken(saved);
       return _accessToken;
     }
-  } catch (_) { /* ignore */ }
+  } catch { /* ignore */ }
   
   return null;
 }
@@ -84,7 +84,7 @@ export function getRefreshToken() {
       _refreshToken = normalizeToken(saved);
       return _refreshToken;
     }
-  } catch (_) { /* ignore */ }
+  } catch { /* ignore */ }
   
   return null;
 }
@@ -100,7 +100,7 @@ export function clearToken() {
     localStorage.removeItem(ACCESS_KEY);
     localStorage.removeItem(REFRESH_KEY);
     localStorage.removeItem('authToken'); // legacy
-  } catch (_) { /* ignore */ }
+  } catch { /* ignore */ }
 }
 
 /**

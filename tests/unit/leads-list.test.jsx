@@ -177,9 +177,9 @@ describe('LeadsList', () => {
   });
 
   it('handles inline cell editing', async () => {
-    client.leadsApi = {
+    vi.spyOn(client, 'leadsApi', 'get').mockReturnValue({
       patch: vi.fn().mockResolvedValue({}),
-    };
+    });
     
     render(<LeadsList />);
     
