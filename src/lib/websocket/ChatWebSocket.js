@@ -2,6 +2,7 @@
  * ChatWebSocket - WebSocket client for real-time chat updates
  * Handles new messages, typing indicators, and message updates
  */
+import { resolveWebSocketUrl, stripSensitiveParams } from './resolveWsUrl.js';
 
 class ChatWebSocket {
   constructor() {
@@ -353,4 +354,3 @@ class ChatWebSocket {
 // Singleton instance
 export const chatWebSocket = new ChatWebSocket();
 export default chatWebSocket;
-import { resolveWebSocketUrl, stripSensitiveParams } from './resolveWsUrl.js';

@@ -9,9 +9,11 @@ class SIPClient {
       this.isInitialized = false;
       this.isRegistered = false;
       this.emit = () => {};
+      this.configure = () => {};
       this.init = async () => Promise.resolve();
       this.register = async () => Promise.resolve();
       this.call = async () => { throw new Error('SIP disabled in demo/offline mode'); };
+      this.stop = () => {};
       return;
     }
     this.stack = null;
@@ -67,6 +69,17 @@ class SIPClient {
   }
 
   /**
+   * Update SIP runtime configuration before register().
+   */
+  configure(partialConfig = {}) {
+    if (!partialConfig || typeof partialConfig !== 'object') return;
+    this.config = {
+      ...this.config,
+      ...partialConfig,
+    };
+  }
+
+  /**
    * Initialize SIPml5 engine
    */
   async init() {
@@ -118,12 +131,11 @@ class SIPClient {
           this.session = this.stack.newSession('register', {
             events_listener: { events: '*', listener: this.handleSessionEvent.bind(this) }
           });
-          
-          this.session.register();
-          
+
           // Resolve will be called by event handler
           this._registerResolve = resolve;
           this._registerReject = reject;
+          this.session.register();
         }, 500);
       } catch (error) {
         console.error('[SIPClient] Registration error:', error);

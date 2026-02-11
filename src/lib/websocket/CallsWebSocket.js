@@ -2,6 +2,7 @@
  * CallsWebSocket - WebSocket client for real-time call notifications
  * Handles incoming call notifications and call status updates
  */
+import { resolveWebSocketUrl, stripSensitiveParams } from './resolveWsUrl.js';
 
 class CallsWebSocket {
   constructor() {
@@ -267,4 +268,3 @@ class CallsWebSocket {
 // Singleton instance
 export const callsWebSocket = new CallsWebSocket();
 export default callsWebSocket;
-import { resolveWebSocketUrl, stripSensitiveParams } from './resolveWsUrl.js';
