@@ -159,10 +159,21 @@ export function getUserFromToken() {
   const payload = parseJWT(token);
   if (!payload) return null;
   
+  const username =
+    payload.username ||
+    payload.preferred_username ||
+    payload.user ||
+    payload.login ||
+    null;
+
   return {
-    id: payload.user_id,
-    username: payload.username,
-    email: payload.email,
+    id: payload.user_id ?? payload.id ?? null,
+    user_id: payload.user_id ?? payload.id ?? null,
+    username,
+    email: payload.email ?? null,
+    first_name: payload.first_name ?? null,
+    last_name: payload.last_name ?? null,
+    full_name: payload.full_name ?? null,
     exp: payload.exp,
     iat: payload.iat,
   };

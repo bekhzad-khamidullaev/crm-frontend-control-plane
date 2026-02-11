@@ -137,6 +137,26 @@ const SmsCenterPage = lazy(() => import('./pages/sms-center.jsx'));
 const TelephonyPage = lazy(() => import('./pages/telephony.jsx'));
 const UsersPage = lazy(() => import('./pages/users.jsx'));
 
+function normalizeUser(raw, fallback = {}) {
+  const firstName = raw?.first_name || fallback?.first_name || '';
+  const lastName = raw?.last_name || fallback?.last_name || '';
+  const fullName =
+    raw?.full_name ||
+    raw?.name ||
+    raw?.display_name ||
+    [firstName, lastName].filter(Boolean).join(' ').trim() ||
+    '';
+  const username = raw?.username || fallback?.username || '';
+  const name = fullName || username || fallback?.name || 'User';
+
+  return {
+    id: raw?.id ?? raw?.user_id ?? fallback?.id ?? null,
+    username: username || name,
+    name,
+    email: raw?.email || fallback?.email || '',
+  };
+}
+
 function App() {
   const [collapsed, setCollapsed] = useState(false);
   const [route, setRoute] = useState(parseHash());
@@ -158,11 +178,14 @@ function App() {
     const authenticated = isAuthenticated();
 
     if (authenticated) {
-      // Strict roles: fetch and cache roles ASAP
+      const token = getToken();
+      const tokenUser = normalizeUser(getUserFromToken() || {});
+      setUser(tokenUser);
+
+      // Hydrate full user profile from API (stable after page reload)
       (async () => {
         try {
-          const { usersApi } = await import('./lib/api/client');
-          const me = await usersApi.me();
+          const me = await getProfile();
           const roles = Array.isArray(me?.roles)
             ? me.roles
             : Array.isArray(me?.permissions)
@@ -172,14 +195,11 @@ function App() {
           if (!roles || roles.length === 0) {
             sessionStorage.setItem('contora_roles', JSON.stringify(['admin']));
           }
+          setUser((prev) => normalizeUser(me || {}, prev || tokenUser));
         } catch (e) {
-          console.warn('Failed to preload roles:', e);
+          console.warn('Failed to preload user profile/roles:', e);
         }
       })();
-      const token = getToken();
-      const userInfo = getUserFromToken();
-
-      setUser(userInfo || { name: 'User', email: 'user@example.com' });
 
       // Initialize WebSocket connections if we have a token
       if (token) {
