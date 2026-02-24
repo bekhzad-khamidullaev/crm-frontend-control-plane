@@ -33,7 +33,7 @@ export class ProjectStagesService {
     }): CancelablePromise<PaginatedProjectStageList> {
         return __request(OpenAPI, {
             method: 'GET',
-            url: '/api/project-stages/',
+            url: '/project-stages/',
             query: {
                 'ordering': ordering,
                 'page': page,
@@ -56,7 +56,7 @@ export class ProjectStagesService {
     }): CancelablePromise<ProjectStage> {
         return __request(OpenAPI, {
             method: 'GET',
-            url: '/api/project-stages/{id}/',
+            url: '/project-stages/{id}/',
             path: {
                 'id': id,
             },

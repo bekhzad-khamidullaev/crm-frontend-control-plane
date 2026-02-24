@@ -46,7 +46,7 @@ export class PaymentsService {
     }): CancelablePromise<PaginatedPaymentList> {
         return __request(OpenAPI, {
             method: 'GET',
-            url: '/api/payments/',
+            url: '/payments/',
             query: {
                 'currency': currency,
                 'deal': deal,
@@ -69,7 +69,7 @@ export class PaymentsService {
     }): CancelablePromise<Payment> {
         return __request(OpenAPI, {
             method: 'POST',
-            url: '/api/payments/',
+            url: '/payments/',
             body: requestBody,
             mediaType: 'application/json',
         });
@@ -89,7 +89,7 @@ export class PaymentsService {
     }): CancelablePromise<Payment> {
         return __request(OpenAPI, {
             method: 'GET',
-            url: '/api/payments/{id}/',
+            url: '/payments/{id}/',
             path: {
                 'id': id,
             },
@@ -112,7 +112,7 @@ export class PaymentsService {
     }): CancelablePromise<Payment> {
         return __request(OpenAPI, {
             method: 'PUT',
-            url: '/api/payments/{id}/',
+            url: '/payments/{id}/',
             path: {
                 'id': id,
             },
@@ -137,7 +137,7 @@ export class PaymentsService {
     }): CancelablePromise<Payment> {
         return __request(OpenAPI, {
             method: 'PATCH',
-            url: '/api/payments/{id}/',
+            url: '/payments/{id}/',
             path: {
                 'id': id,
             },
@@ -160,7 +160,7 @@ export class PaymentsService {
     }): CancelablePromise<void> {
         return __request(OpenAPI, {
             method: 'DELETE',
-            url: '/api/payments/{id}/',
+            url: '/payments/{id}/',
             path: {
                 'id': id,
             },
@@ -171,10 +171,10 @@ export class PaymentsService {
      * @returns Payment
      * @throws ApiError
      */
-    public static paymentsSummaryRetrieve(): CancelablePromise<Payment> {
+    public static paymentssummaryRetrieve(): CancelablePromise<Payment> {
         return __request(OpenAPI, {
             method: 'GET',
-            url: '/api/payments/summary/',
+            url: '/payments/summary/',
         });
     }
 }

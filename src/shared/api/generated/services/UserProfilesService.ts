@@ -31,7 +31,7 @@ export class UserProfilesService {
     }): CancelablePromise<PaginatedUserProfileList> {
         return __request(OpenAPI, {
             method: 'GET',
-            url: '/api/profiles/',
+            url: '/profiles/',
             query: {
                 'page': page,
                 'search': search,
@@ -51,7 +51,7 @@ export class UserProfilesService {
     }): CancelablePromise<UserProfile> {
         return __request(OpenAPI, {
             method: 'POST',
-            url: '/api/profiles/',
+            url: '/profiles/',
             body: requestBody,
             mediaType: 'application/json',
         });
@@ -71,7 +71,7 @@ export class UserProfilesService {
     }): CancelablePromise<UserProfile> {
         return __request(OpenAPI, {
             method: 'GET',
-            url: '/api/profiles/{user}/',
+            url: '/profiles/{user}/',
             path: {
                 'user': user,
             },
@@ -94,7 +94,7 @@ export class UserProfilesService {
     }): CancelablePromise<UserProfile> {
         return __request(OpenAPI, {
             method: 'PUT',
-            url: '/api/profiles/{user}/',
+            url: '/profiles/{user}/',
             path: {
                 'user': user,
             },
@@ -119,7 +119,7 @@ export class UserProfilesService {
     }): CancelablePromise<UserProfile> {
         return __request(OpenAPI, {
             method: 'PATCH',
-            url: '/api/profiles/{user}/',
+            url: '/profiles/{user}/',
             path: {
                 'user': user,
             },
@@ -142,7 +142,7 @@ export class UserProfilesService {
     }): CancelablePromise<void> {
         return __request(OpenAPI, {
             method: 'DELETE',
-            url: '/api/profiles/{user}/',
+            url: '/profiles/{user}/',
             path: {
                 'user': user,
             },
@@ -153,10 +153,10 @@ export class UserProfilesService {
      * @returns UserProfile
      * @throws ApiError
      */
-    public static profilesMeRetrieve(): CancelablePromise<UserProfile> {
+    public static profilesmeRetrieve(): CancelablePromise<UserProfile> {
         return __request(OpenAPI, {
             method: 'GET',
-            url: '/api/profiles/me/',
+            url: '/profiles/me/',
         });
     }
     /**
@@ -164,14 +164,14 @@ export class UserProfilesService {
      * @returns UserProfile
      * @throws ApiError
      */
-    public static profilesMeUpdate({
+    public static profilesmeUpdate({
         requestBody,
     }: {
         requestBody?: UserProfile,
     }): CancelablePromise<UserProfile> {
         return __request(OpenAPI, {
             method: 'PUT',
-            url: '/api/profiles/me/',
+            url: '/profiles/me/',
             body: requestBody,
             mediaType: 'application/json',
         });
@@ -181,14 +181,14 @@ export class UserProfilesService {
      * @returns UserProfile
      * @throws ApiError
      */
-    public static profilesMePartialUpdate({
+    public static profilesmePartialUpdate({
         requestBody,
     }: {
         requestBody?: PatchedUserProfile,
     }): CancelablePromise<UserProfile> {
         return __request(OpenAPI, {
             method: 'PATCH',
-            url: '/api/profiles/me/',
+            url: '/profiles/me/',
             body: requestBody,
             mediaType: 'application/json',
         });
@@ -198,14 +198,14 @@ export class UserProfilesService {
      * @returns UserProfile
      * @throws ApiError
      */
-    public static profilesMeAvatarCreate({
+    public static profilesmeavatarCreate({
         requestBody,
     }: {
         requestBody?: UserProfile,
     }): CancelablePromise<UserProfile> {
         return __request(OpenAPI, {
             method: 'POST',
-            url: '/api/profiles/me/avatar/',
+            url: '/profiles/me/avatar/',
             body: requestBody,
             mediaType: 'application/json',
         });
@@ -215,10 +215,10 @@ export class UserProfilesService {
      * @returns void
      * @throws ApiError
      */
-    public static profilesMeAvatarDestroy(): CancelablePromise<void> {
+    public static profilesmeavatarDestroy(): CancelablePromise<void> {
         return __request(OpenAPI, {
             method: 'DELETE',
-            url: '/api/profiles/me/avatar/',
+            url: '/profiles/me/avatar/',
         });
     }
 }

@@ -48,7 +48,7 @@ export class CrmEmailsService {
     }): CancelablePromise<PaginatedCrmEmailList> {
         return __request(OpenAPI, {
             method: 'GET',
-            url: '/api/crm-emails/',
+            url: '/crm-emails/',
             query: {
                 'company': company,
                 'contact': contact,
@@ -75,7 +75,7 @@ export class CrmEmailsService {
     }): CancelablePromise<CrmEmail> {
         return __request(OpenAPI, {
             method: 'POST',
-            url: '/api/crm-emails/',
+            url: '/crm-emails/',
             body: requestBody,
             mediaType: 'application/json',
         });
@@ -89,13 +89,13 @@ export class CrmEmailsService {
         id,
     }: {
         /**
-         * A unique integer value identifying this Адрес электронной почты.
+         * A unique integer value identifying this Email.
          */
         id: number,
     }): CancelablePromise<CrmEmail> {
         return __request(OpenAPI, {
             method: 'GET',
-            url: '/api/crm-emails/{id}/',
+            url: '/crm-emails/{id}/',
             path: {
                 'id': id,
             },
@@ -111,14 +111,14 @@ export class CrmEmailsService {
         requestBody,
     }: {
         /**
-         * A unique integer value identifying this Адрес электронной почты.
+         * A unique integer value identifying this Email.
          */
         id: number,
         requestBody: CrmEmail,
     }): CancelablePromise<CrmEmail> {
         return __request(OpenAPI, {
             method: 'PUT',
-            url: '/api/crm-emails/{id}/',
+            url: '/crm-emails/{id}/',
             path: {
                 'id': id,
             },
@@ -136,14 +136,14 @@ export class CrmEmailsService {
         requestBody,
     }: {
         /**
-         * A unique integer value identifying this Адрес электронной почты.
+         * A unique integer value identifying this Email.
          */
         id: number,
         requestBody?: PatchedCrmEmail,
     }): CancelablePromise<CrmEmail> {
         return __request(OpenAPI, {
             method: 'PATCH',
-            url: '/api/crm-emails/{id}/',
+            url: '/crm-emails/{id}/',
             path: {
                 'id': id,
             },
@@ -160,13 +160,13 @@ export class CrmEmailsService {
         id,
     }: {
         /**
-         * A unique integer value identifying this Адрес электронной почты.
+         * A unique integer value identifying this Email.
          */
         id: number,
     }): CancelablePromise<void> {
         return __request(OpenAPI, {
             method: 'DELETE',
-            url: '/api/crm-emails/{id}/',
+            url: '/crm-emails/{id}/',
             path: {
                 'id': id,
             },

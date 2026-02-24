@@ -40,7 +40,7 @@ export class RemindersService {
     }): CancelablePromise<PaginatedReminderList> {
         return __request(OpenAPI, {
             method: 'GET',
-            url: '/api/reminders/',
+            url: '/reminders/',
             query: {
                 'active': active,
                 'content_type': contentType,
@@ -63,7 +63,7 @@ export class RemindersService {
     }): CancelablePromise<Reminder> {
         return __request(OpenAPI, {
             method: 'POST',
-            url: '/api/reminders/',
+            url: '/reminders/',
             body: requestBody,
             mediaType: 'application/json',
         });
@@ -83,7 +83,7 @@ export class RemindersService {
     }): CancelablePromise<Reminder> {
         return __request(OpenAPI, {
             method: 'GET',
-            url: '/api/reminders/{id}/',
+            url: '/reminders/{id}/',
             path: {
                 'id': id,
             },
@@ -106,7 +106,7 @@ export class RemindersService {
     }): CancelablePromise<Reminder> {
         return __request(OpenAPI, {
             method: 'PUT',
-            url: '/api/reminders/{id}/',
+            url: '/reminders/{id}/',
             path: {
                 'id': id,
             },
@@ -131,7 +131,7 @@ export class RemindersService {
     }): CancelablePromise<Reminder> {
         return __request(OpenAPI, {
             method: 'PATCH',
-            url: '/api/reminders/{id}/',
+            url: '/reminders/{id}/',
             path: {
                 'id': id,
             },
@@ -154,7 +154,7 @@ export class RemindersService {
     }): CancelablePromise<void> {
         return __request(OpenAPI, {
             method: 'DELETE',
-            url: '/api/reminders/{id}/',
+            url: '/reminders/{id}/',
             path: {
                 'id': id,
             },
@@ -165,10 +165,10 @@ export class RemindersService {
      * @returns Reminder
      * @throws ApiError
      */
-    public static remindersUpcomingRetrieve(): CancelablePromise<Reminder> {
+    public static remindersupcomingRetrieve(): CancelablePromise<Reminder> {
         return __request(OpenAPI, {
             method: 'GET',
-            url: '/api/reminders/upcoming/',
+            url: '/reminders/upcoming/',
         });
     }
 }

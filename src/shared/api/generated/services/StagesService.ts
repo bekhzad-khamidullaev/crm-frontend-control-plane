@@ -43,7 +43,7 @@ export class StagesService {
     }): CancelablePromise<PaginatedStageList> {
         return __request(OpenAPI, {
             method: 'GET',
-            url: '/api/stages/',
+            url: '/stages/',
             query: {
                 'conditional_success_stage': conditionalSuccessStage,
                 'default': _default,
@@ -71,7 +71,7 @@ export class StagesService {
     }): CancelablePromise<Stage> {
         return __request(OpenAPI, {
             method: 'GET',
-            url: '/api/stages/{id}/',
+            url: '/stages/{id}/',
             path: {
                 'id': id,
             },

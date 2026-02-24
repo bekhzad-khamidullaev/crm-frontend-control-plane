@@ -42,7 +42,7 @@ export class ProjectsService {
     }): CancelablePromise<PaginatedProjectList> {
         return __request(OpenAPI, {
             method: 'GET',
-            url: '/api/projects/',
+            url: '/projects/',
             query: {
                 'active': active,
                 'co_owner': coOwner,
@@ -66,7 +66,7 @@ export class ProjectsService {
     }): CancelablePromise<Project> {
         return __request(OpenAPI, {
             method: 'POST',
-            url: '/api/projects/',
+            url: '/projects/',
             body: requestBody,
             mediaType: 'application/json',
         });
@@ -86,7 +86,7 @@ export class ProjectsService {
     }): CancelablePromise<Project> {
         return __request(OpenAPI, {
             method: 'GET',
-            url: '/api/projects/{id}/',
+            url: '/projects/{id}/',
             path: {
                 'id': id,
             },
@@ -109,7 +109,7 @@ export class ProjectsService {
     }): CancelablePromise<Project> {
         return __request(OpenAPI, {
             method: 'PUT',
-            url: '/api/projects/{id}/',
+            url: '/projects/{id}/',
             path: {
                 'id': id,
             },
@@ -134,7 +134,7 @@ export class ProjectsService {
     }): CancelablePromise<Project> {
         return __request(OpenAPI, {
             method: 'PATCH',
-            url: '/api/projects/{id}/',
+            url: '/projects/{id}/',
             path: {
                 'id': id,
             },
@@ -157,7 +157,7 @@ export class ProjectsService {
     }): CancelablePromise<void> {
         return __request(OpenAPI, {
             method: 'DELETE',
-            url: '/api/projects/{id}/',
+            url: '/projects/{id}/',
             path: {
                 'id': id,
             },
@@ -168,7 +168,7 @@ export class ProjectsService {
      * @returns Project
      * @throws ApiError
      */
-    public static projectsAssignCreate({
+    public static projectsassignCreate({
         id,
         requestBody,
     }: {
@@ -180,7 +180,7 @@ export class ProjectsService {
     }): CancelablePromise<Project> {
         return __request(OpenAPI, {
             method: 'POST',
-            url: '/api/projects/{id}/assign/',
+            url: '/projects/{id}/assign/',
             path: {
                 'id': id,
             },
@@ -193,7 +193,7 @@ export class ProjectsService {
      * @returns Project
      * @throws ApiError
      */
-    public static projectsCompleteCreate({
+    public static projectscompleteCreate({
         id,
         requestBody,
     }: {
@@ -205,7 +205,7 @@ export class ProjectsService {
     }): CancelablePromise<Project> {
         return __request(OpenAPI, {
             method: 'POST',
-            url: '/api/projects/{id}/complete/',
+            url: '/projects/{id}/complete/',
             path: {
                 'id': id,
             },
@@ -218,7 +218,7 @@ export class ProjectsService {
      * @returns Project
      * @throws ApiError
      */
-    public static projectsReopenCreate({
+    public static projectsreopenCreate({
         id,
         requestBody,
     }: {
@@ -230,7 +230,7 @@ export class ProjectsService {
     }): CancelablePromise<Project> {
         return __request(OpenAPI, {
             method: 'POST',
-            url: '/api/projects/{id}/reopen/',
+            url: '/projects/{id}/reopen/',
             path: {
                 'id': id,
             },
@@ -243,14 +243,14 @@ export class ProjectsService {
      * @returns Project
      * @throws ApiError
      */
-    public static projectsBulkTagCreate({
+    public static projectsbulkTagCreate({
         requestBody,
     }: {
         requestBody: Project,
     }): CancelablePromise<Project> {
         return __request(OpenAPI, {
             method: 'POST',
-            url: '/api/projects/bulk_tag/',
+            url: '/projects/bulk_tag/',
             body: requestBody,
             mediaType: 'application/json',
         });
@@ -260,10 +260,10 @@ export class ProjectsService {
      * @returns Project
      * @throws ApiError
      */
-    public static projectsExportRetrieve(): CancelablePromise<Project> {
+    public static projectsexportRetrieve(): CancelablePromise<Project> {
         return __request(OpenAPI, {
             method: 'GET',
-            url: '/api/projects/export/',
+            url: '/projects/export/',
         });
     }
 }

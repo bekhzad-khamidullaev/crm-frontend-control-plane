@@ -48,7 +48,7 @@ export class LeadsService {
     }): CancelablePromise<PaginatedLeadList> {
         return __request(OpenAPI, {
             method: 'GET',
-            url: '/api/leads/',
+            url: '/leads/',
             query: {
                 'company': company,
                 'country': country,
@@ -75,7 +75,7 @@ export class LeadsService {
     }): CancelablePromise<Lead> {
         return __request(OpenAPI, {
             method: 'POST',
-            url: '/api/leads/',
+            url: '/leads/',
             body: requestBody,
             mediaType: 'application/json',
         });
@@ -95,7 +95,7 @@ export class LeadsService {
     }): CancelablePromise<Lead> {
         return __request(OpenAPI, {
             method: 'GET',
-            url: '/api/leads/{id}/',
+            url: '/leads/{id}/',
             path: {
                 'id': id,
             },
@@ -118,7 +118,7 @@ export class LeadsService {
     }): CancelablePromise<Lead> {
         return __request(OpenAPI, {
             method: 'PUT',
-            url: '/api/leads/{id}/',
+            url: '/leads/{id}/',
             path: {
                 'id': id,
             },
@@ -143,7 +143,7 @@ export class LeadsService {
     }): CancelablePromise<Lead> {
         return __request(OpenAPI, {
             method: 'PATCH',
-            url: '/api/leads/{id}/',
+            url: '/leads/{id}/',
             path: {
                 'id': id,
             },
@@ -166,7 +166,7 @@ export class LeadsService {
     }): CancelablePromise<void> {
         return __request(OpenAPI, {
             method: 'DELETE',
-            url: '/api/leads/{id}/',
+            url: '/leads/{id}/',
             path: {
                 'id': id,
             },
@@ -177,7 +177,7 @@ export class LeadsService {
      * @returns Lead
      * @throws ApiError
      */
-    public static leadsAssignCreate({
+    public static leadsassignCreate({
         id,
         requestBody,
     }: {
@@ -189,7 +189,7 @@ export class LeadsService {
     }): CancelablePromise<Lead> {
         return __request(OpenAPI, {
             method: 'POST',
-            url: '/api/leads/{id}/assign/',
+            url: '/leads/{id}/assign/',
             path: {
                 'id': id,
             },
@@ -202,7 +202,7 @@ export class LeadsService {
      * @returns Lead
      * @throws ApiError
      */
-    public static leadsConvertCreate({
+    public static leadsconvertCreate({
         id,
         requestBody,
     }: {
@@ -214,7 +214,7 @@ export class LeadsService {
     }): CancelablePromise<Lead> {
         return __request(OpenAPI, {
             method: 'POST',
-            url: '/api/leads/{id}/convert/',
+            url: '/leads/{id}/convert/',
             path: {
                 'id': id,
             },
@@ -227,7 +227,7 @@ export class LeadsService {
      * @returns Lead
      * @throws ApiError
      */
-    public static leadsDisqualifyCreate({
+    public static leadsdisqualifyCreate({
         id,
         requestBody,
     }: {
@@ -239,7 +239,7 @@ export class LeadsService {
     }): CancelablePromise<Lead> {
         return __request(OpenAPI, {
             method: 'POST',
-            url: '/api/leads/{id}/disqualify/',
+            url: '/leads/{id}/disqualify/',
             path: {
                 'id': id,
             },
@@ -252,14 +252,14 @@ export class LeadsService {
      * @returns Lead
      * @throws ApiError
      */
-    public static leadsBulkTagCreate({
+    public static leadsbulkTagCreate({
         requestBody,
     }: {
         requestBody: Lead,
     }): CancelablePromise<Lead> {
         return __request(OpenAPI, {
             method: 'POST',
-            url: '/api/leads/bulk_tag/',
+            url: '/leads/bulk_tag/',
             body: requestBody,
             mediaType: 'application/json',
         });

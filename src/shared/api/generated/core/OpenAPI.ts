@@ -20,8 +20,8 @@ export type OpenAPIConfig = {
 };
 
 export const OpenAPI: OpenAPIConfig = {
-    BASE: import.meta.env.VITE_API_BASE_URL || 'https://api.crm.windevs.uz',
-    VERSION: '1.0.0 (api)',
+    BASE: 'http://localhost:8000',
+    VERSION: '1.0.0',
     WITH_CREDENTIALS: false,
     CREDENTIALS: 'include',
     TOKEN: undefined,

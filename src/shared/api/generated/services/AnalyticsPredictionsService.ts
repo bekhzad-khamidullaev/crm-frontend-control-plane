@@ -11,10 +11,10 @@ export class AnalyticsPredictionsService {
      * @returns any No response body
      * @throws ApiError
      */
-    public static predictionsClientsForecastRetrieve(): CancelablePromise<any> {
+    public static predictionsclientsforecastRetrieve(): CancelablePromise<any> {
         return __request(OpenAPI, {
             method: 'GET',
-            url: '/api/predictions/clients/forecast/',
+            url: '/predictions/clients/forecast/',
         });
     }
     /**
@@ -22,10 +22,10 @@ export class AnalyticsPredictionsService {
      * @returns any No response body
      * @throws ApiError
      */
-    public static predictionsClientsPredictCreate(): CancelablePromise<any> {
+    public static predictionsclientspredictCreate(): CancelablePromise<any> {
         return __request(OpenAPI, {
             method: 'POST',
-            url: '/api/predictions/clients/predict/',
+            url: '/predictions/clients/predict/',
         });
     }
     /**
@@ -33,10 +33,10 @@ export class AnalyticsPredictionsService {
      * @returns any No response body
      * @throws ApiError
      */
-    public static predictionsLeadsForecastRetrieve(): CancelablePromise<any> {
+    public static predictionsleadsforecastRetrieve(): CancelablePromise<any> {
         return __request(OpenAPI, {
             method: 'GET',
-            url: '/api/predictions/leads/forecast/',
+            url: '/predictions/leads/forecast/',
         });
     }
     /**
@@ -44,10 +44,10 @@ export class AnalyticsPredictionsService {
      * @returns any No response body
      * @throws ApiError
      */
-    public static predictionsLeadsPredictCreate(): CancelablePromise<any> {
+    public static predictionsleadspredictCreate(): CancelablePromise<any> {
         return __request(OpenAPI, {
             method: 'POST',
-            url: '/api/predictions/leads/predict/',
+            url: '/predictions/leads/predict/',
         });
     }
     /**
@@ -55,10 +55,10 @@ export class AnalyticsPredictionsService {
      * @returns any No response body
      * @throws ApiError
      */
-    public static predictionsNextActionsClientsRetrieve(): CancelablePromise<any> {
+    public static predictionsnextActionsclientsRetrieve(): CancelablePromise<any> {
         return __request(OpenAPI, {
             method: 'GET',
-            url: '/api/predictions/next-actions/clients/',
+            url: '/predictions/next-actions/clients/',
         });
     }
     /**
@@ -66,10 +66,10 @@ export class AnalyticsPredictionsService {
      * @returns any No response body
      * @throws ApiError
      */
-    public static predictionsNextActionsClientsPredictCreate(): CancelablePromise<any> {
+    public static predictionsnextActionsclientspredictCreate(): CancelablePromise<any> {
         return __request(OpenAPI, {
             method: 'POST',
-            url: '/api/predictions/next-actions/clients/predict/',
+            url: '/predictions/next-actions/clients/predict/',
         });
     }
     /**
@@ -77,10 +77,10 @@ export class AnalyticsPredictionsService {
      * @returns any No response body
      * @throws ApiError
      */
-    public static predictionsNextActionsDealsRetrieve(): CancelablePromise<any> {
+    public static predictionsnextActionsdealsRetrieve(): CancelablePromise<any> {
         return __request(OpenAPI, {
             method: 'GET',
-            url: '/api/predictions/next-actions/deals/',
+            url: '/predictions/next-actions/deals/',
         });
     }
     /**
@@ -88,10 +88,10 @@ export class AnalyticsPredictionsService {
      * @returns any No response body
      * @throws ApiError
      */
-    public static predictionsNextActionsPredictCreate(): CancelablePromise<any> {
+    public static predictionsnextActionspredictCreate(): CancelablePromise<any> {
         return __request(OpenAPI, {
             method: 'POST',
-            url: '/api/predictions/next-actions/predict/',
+            url: '/predictions/next-actions/predict/',
         });
     }
     /**
@@ -99,10 +99,10 @@ export class AnalyticsPredictionsService {
      * @returns any No response body
      * @throws ApiError
      */
-    public static predictionsPredictAllCreate(): CancelablePromise<any> {
+    public static predictionspredictAllCreate(): CancelablePromise<any> {
         return __request(OpenAPI, {
             method: 'POST',
-            url: '/api/predictions/predict-all/',
+            url: '/predictions/predict-all/',
         });
     }
     /**
@@ -110,10 +110,10 @@ export class AnalyticsPredictionsService {
      * @returns any No response body
      * @throws ApiError
      */
-    public static predictionsRevenueForecastRetrieve(): CancelablePromise<any> {
+    public static predictionsrevenueforecastRetrieve(): CancelablePromise<any> {
         return __request(OpenAPI, {
             method: 'GET',
-            url: '/api/predictions/revenue/forecast/',
+            url: '/predictions/revenue/forecast/',
         });
     }
     /**
@@ -121,10 +121,10 @@ export class AnalyticsPredictionsService {
      * @returns any No response body
      * @throws ApiError
      */
-    public static predictionsRevenuePredictCreate(): CancelablePromise<any> {
+    public static predictionsrevenuepredictCreate(): CancelablePromise<any> {
         return __request(OpenAPI, {
             method: 'POST',
-            url: '/api/predictions/revenue/predict/',
+            url: '/predictions/revenue/predict/',
         });
     }
     /**
@@ -132,10 +132,10 @@ export class AnalyticsPredictionsService {
      * @returns any No response body
      * @throws ApiError
      */
-    public static predictionsStatusRetrieve(): CancelablePromise<any> {
+    public static predictionsstatusRetrieve(): CancelablePromise<any> {
         return __request(OpenAPI, {
             method: 'GET',
-            url: '/api/predictions/status/',
+            url: '/predictions/status/',
         });
     }
 }

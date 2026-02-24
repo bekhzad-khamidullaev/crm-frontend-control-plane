@@ -33,7 +33,7 @@ export class UsersService {
     }): CancelablePromise<PaginatedUserList> {
         return __request(OpenAPI, {
             method: 'GET',
-            url: '/api/users/',
+            url: '/users/',
             query: {
                 'ordering': ordering,
                 'page': page,
@@ -50,13 +50,13 @@ export class UsersService {
         id,
     }: {
         /**
-         * A unique integer value identifying this пользователь.
+         * A unique integer value identifying this user.
          */
         id: number,
     }): CancelablePromise<User> {
         return __request(OpenAPI, {
             method: 'GET',
-            url: '/api/users/{id}/',
+            url: '/users/{id}/',
             path: {
                 'id': id,
             },
@@ -67,10 +67,10 @@ export class UsersService {
      * @returns User
      * @throws ApiError
      */
-    public static usersMeRetrieve(): CancelablePromise<User> {
+    public static usersmeRetrieve(): CancelablePromise<User> {
         return __request(OpenAPI, {
             method: 'GET',
-            url: '/api/users/me/',
+            url: '/users/me/',
         });
     }
     /**
@@ -78,10 +78,10 @@ export class UsersService {
      * @returns User
      * @throws ApiError
      */
-    public static usersMe2FaStatusRetrieve(): CancelablePromise<User> {
+    public static usersme2FastatusRetrieve(): CancelablePromise<User> {
         return __request(OpenAPI, {
             method: 'GET',
-            url: '/api/users/me/2fa/status/',
+            url: '/users/me/2fa/status/',
         });
     }
     /**
@@ -89,14 +89,14 @@ export class UsersService {
      * @returns User
      * @throws ApiError
      */
-    public static usersMeChangePasswordCreate({
+    public static usersmechangePasswordCreate({
         requestBody,
     }: {
         requestBody: User,
     }): CancelablePromise<User> {
         return __request(OpenAPI, {
             method: 'POST',
-            url: '/api/users/me/change-password/',
+            url: '/users/me/change-password/',
             body: requestBody,
             mediaType: 'application/json',
         });
@@ -106,10 +106,10 @@ export class UsersService {
      * @returns User
      * @throws ApiError
      */
-    public static usersMeSessionsRetrieve(): CancelablePromise<User> {
+    public static usersmesessionsRetrieve(): CancelablePromise<User> {
         return __request(OpenAPI, {
             method: 'GET',
-            url: '/api/users/me/sessions/',
+            url: '/users/me/sessions/',
         });
     }
     /**
@@ -117,10 +117,10 @@ export class UsersService {
      * @returns void
      * @throws ApiError
      */
-    public static usersMeSessionsDestroy(): CancelablePromise<void> {
+    public static usersmesessionsDestroy(): CancelablePromise<void> {
         return __request(OpenAPI, {
             method: 'DELETE',
-            url: '/api/users/me/sessions/',
+            url: '/users/me/sessions/',
         });
     }
     /**
@@ -128,14 +128,14 @@ export class UsersService {
      * @returns User
      * @throws ApiError
      */
-    public static usersMeSessionsRevokeAllCreate({
+    public static usersmesessionsrevokeAllCreate({
         requestBody,
     }: {
         requestBody: User,
     }): CancelablePromise<User> {
         return __request(OpenAPI, {
             method: 'POST',
-            url: '/api/users/me/sessions/revoke-all/',
+            url: '/users/me/sessions/revoke-all/',
             body: requestBody,
             mediaType: 'application/json',
         });

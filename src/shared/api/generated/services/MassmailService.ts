@@ -21,7 +21,7 @@ export class MassmailService {
      * @returns PaginatedEmailAccountList
      * @throws ApiError
      */
-    public static massmailEmailAccountsList({
+    public static massmailemailAccountsList({
         doImport,
         main,
         massmail,
@@ -44,7 +44,7 @@ export class MassmailService {
     }): CancelablePromise<PaginatedEmailAccountList> {
         return __request(OpenAPI, {
             method: 'GET',
-            url: '/api/massmail/email-accounts/',
+            url: '/massmail/email-accounts/',
             query: {
                 'do_import': doImport,
                 'main': main,
@@ -59,14 +59,14 @@ export class MassmailService {
      * @returns EmailAccount
      * @throws ApiError
      */
-    public static massmailEmailAccountsCreate({
+    public static massmailemailAccountsCreate({
         requestBody,
     }: {
         requestBody: EmailAccount,
     }): CancelablePromise<EmailAccount> {
         return __request(OpenAPI, {
             method: 'POST',
-            url: '/api/massmail/email-accounts/',
+            url: '/massmail/email-accounts/',
             body: requestBody,
             mediaType: 'application/json',
         });
@@ -75,7 +75,7 @@ export class MassmailService {
      * @returns EmailAccount
      * @throws ApiError
      */
-    public static massmailEmailAccountsRetrieve({
+    public static massmailemailAccountsRetrieve({
         id,
     }: {
         /**
@@ -85,7 +85,7 @@ export class MassmailService {
     }): CancelablePromise<EmailAccount> {
         return __request(OpenAPI, {
             method: 'GET',
-            url: '/api/massmail/email-accounts/{id}/',
+            url: '/massmail/email-accounts/{id}/',
             path: {
                 'id': id,
             },
@@ -95,7 +95,7 @@ export class MassmailService {
      * @returns EmailAccount
      * @throws ApiError
      */
-    public static massmailEmailAccountsUpdate({
+    public static massmailemailAccountsUpdate({
         id,
         requestBody,
     }: {
@@ -107,7 +107,7 @@ export class MassmailService {
     }): CancelablePromise<EmailAccount> {
         return __request(OpenAPI, {
             method: 'PUT',
-            url: '/api/massmail/email-accounts/{id}/',
+            url: '/massmail/email-accounts/{id}/',
             path: {
                 'id': id,
             },
@@ -119,7 +119,7 @@ export class MassmailService {
      * @returns EmailAccount
      * @throws ApiError
      */
-    public static massmailEmailAccountsPartialUpdate({
+    public static massmailemailAccountsPartialUpdate({
         id,
         requestBody,
     }: {
@@ -131,7 +131,7 @@ export class MassmailService {
     }): CancelablePromise<EmailAccount> {
         return __request(OpenAPI, {
             method: 'PATCH',
-            url: '/api/massmail/email-accounts/{id}/',
+            url: '/massmail/email-accounts/{id}/',
             path: {
                 'id': id,
             },
@@ -143,7 +143,7 @@ export class MassmailService {
      * @returns void
      * @throws ApiError
      */
-    public static massmailEmailAccountsDestroy({
+    public static massmailemailAccountsDestroy({
         id,
     }: {
         /**
@@ -153,7 +153,7 @@ export class MassmailService {
     }): CancelablePromise<void> {
         return __request(OpenAPI, {
             method: 'DELETE',
-            url: '/api/massmail/email-accounts/{id}/',
+            url: '/massmail/email-accounts/{id}/',
             path: {
                 'id': id,
             },
@@ -163,7 +163,7 @@ export class MassmailService {
      * @returns PaginatedMailingOutList
      * @throws ApiError
      */
-    public static massmailMailingsList({
+    public static massmailmailingsList({
         owner,
         page,
         status,
@@ -184,7 +184,7 @@ export class MassmailService {
     }): CancelablePromise<PaginatedMailingOutList> {
         return __request(OpenAPI, {
             method: 'GET',
-            url: '/api/massmail/mailings/',
+            url: '/massmail/mailings/',
             query: {
                 'owner': owner,
                 'page': page,
@@ -196,7 +196,7 @@ export class MassmailService {
      * @returns MailingOut
      * @throws ApiError
      */
-    public static massmailMailingsRetrieve({
+    public static massmailmailingsRetrieve({
         id,
     }: {
         /**
@@ -206,7 +206,7 @@ export class MassmailService {
     }): CancelablePromise<MailingOut> {
         return __request(OpenAPI, {
             method: 'GET',
-            url: '/api/massmail/mailings/{id}/',
+            url: '/massmail/mailings/{id}/',
             path: {
                 'id': id,
             },
@@ -216,7 +216,7 @@ export class MassmailService {
      * @returns PaginatedEmlMessageList
      * @throws ApiError
      */
-    public static massmailMessagesList({
+    public static massmailmessagesList({
         owner,
         page,
         search,
@@ -233,7 +233,7 @@ export class MassmailService {
     }): CancelablePromise<PaginatedEmlMessageList> {
         return __request(OpenAPI, {
             method: 'GET',
-            url: '/api/massmail/messages/',
+            url: '/massmail/messages/',
             query: {
                 'owner': owner,
                 'page': page,
@@ -245,14 +245,14 @@ export class MassmailService {
      * @returns EmlMessage
      * @throws ApiError
      */
-    public static massmailMessagesCreate({
+    public static massmailmessagesCreate({
         requestBody,
     }: {
         requestBody: EmlMessage,
     }): CancelablePromise<EmlMessage> {
         return __request(OpenAPI, {
             method: 'POST',
-            url: '/api/massmail/messages/',
+            url: '/massmail/messages/',
             body: requestBody,
             mediaType: 'application/json',
         });
@@ -261,7 +261,7 @@ export class MassmailService {
      * @returns EmlMessage
      * @throws ApiError
      */
-    public static massmailMessagesRetrieve({
+    public static massmailmessagesRetrieve({
         id,
     }: {
         /**
@@ -271,7 +271,7 @@ export class MassmailService {
     }): CancelablePromise<EmlMessage> {
         return __request(OpenAPI, {
             method: 'GET',
-            url: '/api/massmail/messages/{id}/',
+            url: '/massmail/messages/{id}/',
             path: {
                 'id': id,
             },
@@ -281,7 +281,7 @@ export class MassmailService {
      * @returns EmlMessage
      * @throws ApiError
      */
-    public static massmailMessagesUpdate({
+    public static massmailmessagesUpdate({
         id,
         requestBody,
     }: {
@@ -293,7 +293,7 @@ export class MassmailService {
     }): CancelablePromise<EmlMessage> {
         return __request(OpenAPI, {
             method: 'PUT',
-            url: '/api/massmail/messages/{id}/',
+            url: '/massmail/messages/{id}/',
             path: {
                 'id': id,
             },
@@ -305,7 +305,7 @@ export class MassmailService {
      * @returns EmlMessage
      * @throws ApiError
      */
-    public static massmailMessagesPartialUpdate({
+    public static massmailmessagesPartialUpdate({
         id,
         requestBody,
     }: {
@@ -317,7 +317,7 @@ export class MassmailService {
     }): CancelablePromise<EmlMessage> {
         return __request(OpenAPI, {
             method: 'PATCH',
-            url: '/api/massmail/messages/{id}/',
+            url: '/massmail/messages/{id}/',
             path: {
                 'id': id,
             },
@@ -329,7 +329,7 @@ export class MassmailService {
      * @returns void
      * @throws ApiError
      */
-    public static massmailMessagesDestroy({
+    public static massmailmessagesDestroy({
         id,
     }: {
         /**
@@ -339,7 +339,7 @@ export class MassmailService {
     }): CancelablePromise<void> {
         return __request(OpenAPI, {
             method: 'DELETE',
-            url: '/api/massmail/messages/{id}/',
+            url: '/massmail/messages/{id}/',
             path: {
                 'id': id,
             },
@@ -349,7 +349,7 @@ export class MassmailService {
      * @returns PaginatedSignatureList
      * @throws ApiError
      */
-    public static massmailSignaturesList({
+    public static massmailsignaturesList({
         ordering,
         page,
         search,
@@ -369,7 +369,7 @@ export class MassmailService {
     }): CancelablePromise<PaginatedSignatureList> {
         return __request(OpenAPI, {
             method: 'GET',
-            url: '/api/massmail/signatures/',
+            url: '/massmail/signatures/',
             query: {
                 'ordering': ordering,
                 'page': page,
@@ -381,14 +381,14 @@ export class MassmailService {
      * @returns Signature
      * @throws ApiError
      */
-    public static massmailSignaturesCreate({
+    public static massmailsignaturesCreate({
         requestBody,
     }: {
         requestBody: Signature,
     }): CancelablePromise<Signature> {
         return __request(OpenAPI, {
             method: 'POST',
-            url: '/api/massmail/signatures/',
+            url: '/massmail/signatures/',
             body: requestBody,
             mediaType: 'application/json',
         });
@@ -397,7 +397,7 @@ export class MassmailService {
      * @returns Signature
      * @throws ApiError
      */
-    public static massmailSignaturesRetrieve({
+    public static massmailsignaturesRetrieve({
         id,
     }: {
         /**
@@ -407,7 +407,7 @@ export class MassmailService {
     }): CancelablePromise<Signature> {
         return __request(OpenAPI, {
             method: 'GET',
-            url: '/api/massmail/signatures/{id}/',
+            url: '/massmail/signatures/{id}/',
             path: {
                 'id': id,
             },
@@ -417,7 +417,7 @@ export class MassmailService {
      * @returns Signature
      * @throws ApiError
      */
-    public static massmailSignaturesUpdate({
+    public static massmailsignaturesUpdate({
         id,
         requestBody,
     }: {
@@ -429,7 +429,7 @@ export class MassmailService {
     }): CancelablePromise<Signature> {
         return __request(OpenAPI, {
             method: 'PUT',
-            url: '/api/massmail/signatures/{id}/',
+            url: '/massmail/signatures/{id}/',
             path: {
                 'id': id,
             },
@@ -441,7 +441,7 @@ export class MassmailService {
      * @returns Signature
      * @throws ApiError
      */
-    public static massmailSignaturesPartialUpdate({
+    public static massmailsignaturesPartialUpdate({
         id,
         requestBody,
     }: {
@@ -453,7 +453,7 @@ export class MassmailService {
     }): CancelablePromise<Signature> {
         return __request(OpenAPI, {
             method: 'PATCH',
-            url: '/api/massmail/signatures/{id}/',
+            url: '/massmail/signatures/{id}/',
             path: {
                 'id': id,
             },
@@ -465,7 +465,7 @@ export class MassmailService {
      * @returns void
      * @throws ApiError
      */
-    public static massmailSignaturesDestroy({
+    public static massmailsignaturesDestroy({
         id,
     }: {
         /**
@@ -475,7 +475,7 @@ export class MassmailService {
     }): CancelablePromise<void> {
         return __request(OpenAPI, {
             method: 'DELETE',
-            url: '/api/massmail/signatures/{id}/',
+            url: '/massmail/signatures/{id}/',
             path: {
                 'id': id,
             },

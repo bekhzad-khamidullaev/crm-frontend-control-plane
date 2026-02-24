@@ -19,7 +19,7 @@ export class MarketingService {
      * @returns PaginatedCampaignList
      * @throws ApiError
      */
-    public static marketingCampaignsList({
+    public static marketingcampaignsList({
         isActive,
         page,
         search,
@@ -40,7 +40,7 @@ export class MarketingService {
     }): CancelablePromise<PaginatedCampaignList> {
         return __request(OpenAPI, {
             method: 'GET',
-            url: '/api/marketing/campaigns/',
+            url: '/marketing/campaigns/',
             query: {
                 'is_active': isActive,
                 'page': page,
@@ -54,14 +54,14 @@ export class MarketingService {
      * @returns Campaign
      * @throws ApiError
      */
-    public static marketingCampaignsCreate({
+    public static marketingcampaignsCreate({
         requestBody,
     }: {
         requestBody: Campaign,
     }): CancelablePromise<Campaign> {
         return __request(OpenAPI, {
             method: 'POST',
-            url: '/api/marketing/campaigns/',
+            url: '/marketing/campaigns/',
             body: requestBody,
             mediaType: 'application/json',
         });
@@ -70,7 +70,7 @@ export class MarketingService {
      * @returns Campaign
      * @throws ApiError
      */
-    public static marketingCampaignsRetrieve({
+    public static marketingcampaignsRetrieve({
         id,
     }: {
         /**
@@ -80,7 +80,7 @@ export class MarketingService {
     }): CancelablePromise<Campaign> {
         return __request(OpenAPI, {
             method: 'GET',
-            url: '/api/marketing/campaigns/{id}/',
+            url: '/marketing/campaigns/{id}/',
             path: {
                 'id': id,
             },
@@ -90,7 +90,7 @@ export class MarketingService {
      * @returns Campaign
      * @throws ApiError
      */
-    public static marketingCampaignsUpdate({
+    public static marketingcampaignsUpdate({
         id,
         requestBody,
     }: {
@@ -102,7 +102,7 @@ export class MarketingService {
     }): CancelablePromise<Campaign> {
         return __request(OpenAPI, {
             method: 'PUT',
-            url: '/api/marketing/campaigns/{id}/',
+            url: '/marketing/campaigns/{id}/',
             path: {
                 'id': id,
             },
@@ -114,7 +114,7 @@ export class MarketingService {
      * @returns Campaign
      * @throws ApiError
      */
-    public static marketingCampaignsPartialUpdate({
+    public static marketingcampaignsPartialUpdate({
         id,
         requestBody,
     }: {
@@ -126,7 +126,7 @@ export class MarketingService {
     }): CancelablePromise<Campaign> {
         return __request(OpenAPI, {
             method: 'PATCH',
-            url: '/api/marketing/campaigns/{id}/',
+            url: '/marketing/campaigns/{id}/',
             path: {
                 'id': id,
             },
@@ -138,7 +138,7 @@ export class MarketingService {
      * @returns void
      * @throws ApiError
      */
-    public static marketingCampaignsDestroy({
+    public static marketingcampaignsDestroy({
         id,
     }: {
         /**
@@ -148,7 +148,7 @@ export class MarketingService {
     }): CancelablePromise<void> {
         return __request(OpenAPI, {
             method: 'DELETE',
-            url: '/api/marketing/campaigns/{id}/',
+            url: '/marketing/campaigns/{id}/',
             path: {
                 'id': id,
             },
@@ -158,7 +158,7 @@ export class MarketingService {
      * @returns PaginatedSegmentList
      * @throws ApiError
      */
-    public static marketingSegmentsList({
+    public static marketingsegmentsList({
         page,
         search,
     }: {
@@ -173,7 +173,7 @@ export class MarketingService {
     }): CancelablePromise<PaginatedSegmentList> {
         return __request(OpenAPI, {
             method: 'GET',
-            url: '/api/marketing/segments/',
+            url: '/marketing/segments/',
             query: {
                 'page': page,
                 'search': search,
@@ -184,14 +184,14 @@ export class MarketingService {
      * @returns Segment
      * @throws ApiError
      */
-    public static marketingSegmentsCreate({
+    public static marketingsegmentsCreate({
         requestBody,
     }: {
         requestBody: Segment,
     }): CancelablePromise<Segment> {
         return __request(OpenAPI, {
             method: 'POST',
-            url: '/api/marketing/segments/',
+            url: '/marketing/segments/',
             body: requestBody,
             mediaType: 'application/json',
         });
@@ -200,7 +200,7 @@ export class MarketingService {
      * @returns Segment
      * @throws ApiError
      */
-    public static marketingSegmentsRetrieve({
+    public static marketingsegmentsRetrieve({
         id,
     }: {
         /**
@@ -210,7 +210,7 @@ export class MarketingService {
     }): CancelablePromise<Segment> {
         return __request(OpenAPI, {
             method: 'GET',
-            url: '/api/marketing/segments/{id}/',
+            url: '/marketing/segments/{id}/',
             path: {
                 'id': id,
             },
@@ -220,7 +220,7 @@ export class MarketingService {
      * @returns Segment
      * @throws ApiError
      */
-    public static marketingSegmentsUpdate({
+    public static marketingsegmentsUpdate({
         id,
         requestBody,
     }: {
@@ -232,7 +232,7 @@ export class MarketingService {
     }): CancelablePromise<Segment> {
         return __request(OpenAPI, {
             method: 'PUT',
-            url: '/api/marketing/segments/{id}/',
+            url: '/marketing/segments/{id}/',
             path: {
                 'id': id,
             },
@@ -244,7 +244,7 @@ export class MarketingService {
      * @returns Segment
      * @throws ApiError
      */
-    public static marketingSegmentsPartialUpdate({
+    public static marketingsegmentsPartialUpdate({
         id,
         requestBody,
     }: {
@@ -256,7 +256,7 @@ export class MarketingService {
     }): CancelablePromise<Segment> {
         return __request(OpenAPI, {
             method: 'PATCH',
-            url: '/api/marketing/segments/{id}/',
+            url: '/marketing/segments/{id}/',
             path: {
                 'id': id,
             },
@@ -268,7 +268,7 @@ export class MarketingService {
      * @returns void
      * @throws ApiError
      */
-    public static marketingSegmentsDestroy({
+    public static marketingsegmentsDestroy({
         id,
     }: {
         /**
@@ -278,7 +278,7 @@ export class MarketingService {
     }): CancelablePromise<void> {
         return __request(OpenAPI, {
             method: 'DELETE',
-            url: '/api/marketing/segments/{id}/',
+            url: '/marketing/segments/{id}/',
             path: {
                 'id': id,
             },
@@ -288,7 +288,7 @@ export class MarketingService {
      * @returns PaginatedMessageTemplateList
      * @throws ApiError
      */
-    public static marketingTemplatesList({
+    public static marketingtemplatesList({
         channel,
         page,
         search,
@@ -311,7 +311,7 @@ export class MarketingService {
     }): CancelablePromise<PaginatedMessageTemplateList> {
         return __request(OpenAPI, {
             method: 'GET',
-            url: '/api/marketing/templates/',
+            url: '/marketing/templates/',
             query: {
                 'channel': channel,
                 'page': page,
@@ -323,14 +323,14 @@ export class MarketingService {
      * @returns MessageTemplate
      * @throws ApiError
      */
-    public static marketingTemplatesCreate({
+    public static marketingtemplatesCreate({
         requestBody,
     }: {
         requestBody: MessageTemplate,
     }): CancelablePromise<MessageTemplate> {
         return __request(OpenAPI, {
             method: 'POST',
-            url: '/api/marketing/templates/',
+            url: '/marketing/templates/',
             body: requestBody,
             mediaType: 'application/json',
         });
@@ -339,7 +339,7 @@ export class MarketingService {
      * @returns MessageTemplate
      * @throws ApiError
      */
-    public static marketingTemplatesRetrieve({
+    public static marketingtemplatesRetrieve({
         id,
     }: {
         /**
@@ -349,7 +349,7 @@ export class MarketingService {
     }): CancelablePromise<MessageTemplate> {
         return __request(OpenAPI, {
             method: 'GET',
-            url: '/api/marketing/templates/{id}/',
+            url: '/marketing/templates/{id}/',
             path: {
                 'id': id,
             },
@@ -359,7 +359,7 @@ export class MarketingService {
      * @returns MessageTemplate
      * @throws ApiError
      */
-    public static marketingTemplatesUpdate({
+    public static marketingtemplatesUpdate({
         id,
         requestBody,
     }: {
@@ -371,7 +371,7 @@ export class MarketingService {
     }): CancelablePromise<MessageTemplate> {
         return __request(OpenAPI, {
             method: 'PUT',
-            url: '/api/marketing/templates/{id}/',
+            url: '/marketing/templates/{id}/',
             path: {
                 'id': id,
             },
@@ -383,7 +383,7 @@ export class MarketingService {
      * @returns MessageTemplate
      * @throws ApiError
      */
-    public static marketingTemplatesPartialUpdate({
+    public static marketingtemplatesPartialUpdate({
         id,
         requestBody,
     }: {
@@ -395,7 +395,7 @@ export class MarketingService {
     }): CancelablePromise<MessageTemplate> {
         return __request(OpenAPI, {
             method: 'PATCH',
-            url: '/api/marketing/templates/{id}/',
+            url: '/marketing/templates/{id}/',
             path: {
                 'id': id,
             },
@@ -407,7 +407,7 @@ export class MarketingService {
      * @returns void
      * @throws ApiError
      */
-    public static marketingTemplatesDestroy({
+    public static marketingtemplatesDestroy({
         id,
     }: {
         /**
@@ -417,7 +417,7 @@ export class MarketingService {
     }): CancelablePromise<void> {
         return __request(OpenAPI, {
             method: 'DELETE',
-            url: '/api/marketing/templates/{id}/',
+            url: '/marketing/templates/{id}/',
             path: {
                 'id': id,
             },

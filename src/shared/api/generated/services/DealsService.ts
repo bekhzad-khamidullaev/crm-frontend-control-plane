@@ -52,7 +52,7 @@ export class DealsService {
     }): CancelablePromise<PaginatedDealList> {
         return __request(OpenAPI, {
             method: 'GET',
-            url: '/api/deals/',
+            url: '/deals/',
             query: {
                 'active': active,
                 'co_owner': coOwner,
@@ -81,7 +81,7 @@ export class DealsService {
     }): CancelablePromise<Deal> {
         return __request(OpenAPI, {
             method: 'POST',
-            url: '/api/deals/',
+            url: '/deals/',
             body: requestBody,
             mediaType: 'application/json',
         });
@@ -101,7 +101,7 @@ export class DealsService {
     }): CancelablePromise<Deal> {
         return __request(OpenAPI, {
             method: 'GET',
-            url: '/api/deals/{id}/',
+            url: '/deals/{id}/',
             path: {
                 'id': id,
             },
@@ -124,7 +124,7 @@ export class DealsService {
     }): CancelablePromise<Deal> {
         return __request(OpenAPI, {
             method: 'PUT',
-            url: '/api/deals/{id}/',
+            url: '/deals/{id}/',
             path: {
                 'id': id,
             },
@@ -149,7 +149,7 @@ export class DealsService {
     }): CancelablePromise<Deal> {
         return __request(OpenAPI, {
             method: 'PATCH',
-            url: '/api/deals/{id}/',
+            url: '/deals/{id}/',
             path: {
                 'id': id,
             },
@@ -172,7 +172,7 @@ export class DealsService {
     }): CancelablePromise<void> {
         return __request(OpenAPI, {
             method: 'DELETE',
-            url: '/api/deals/{id}/',
+            url: '/deals/{id}/',
             path: {
                 'id': id,
             },

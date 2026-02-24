@@ -17,6 +17,7 @@ import type { PaginatedCurrencyList } from '../models/PaginatedCurrencyList';
 import type { PaginatedIndustryList } from '../models/PaginatedIndustryList';
 import type { PaginatedLeadSourceList } from '../models/PaginatedLeadSourceList';
 import type { PaginatedProductCategoryList } from '../models/PaginatedProductCategoryList';
+import type { PaginatedRateList } from '../models/PaginatedRateList';
 import type { ProductCategory } from '../models/ProductCategory';
 import type { CancelablePromise } from '../core/CancelablePromise';
 import { OpenAPI } from '../core/OpenAPI';
@@ -49,7 +50,7 @@ export class CrmReferenceService {
     }): CancelablePromise<PaginatedCityList> {
         return __request(OpenAPI, {
             method: 'GET',
-            url: '/api/cities/',
+            url: '/cities/',
             query: {
                 'country': country,
                 'ordering': ordering,
@@ -73,7 +74,7 @@ export class CrmReferenceService {
     }): CancelablePromise<City> {
         return __request(OpenAPI, {
             method: 'GET',
-            url: '/api/cities/{id}/',
+            url: '/cities/{id}/',
             path: {
                 'id': id,
             },
@@ -99,7 +100,7 @@ export class CrmReferenceService {
     }): CancelablePromise<PaginatedClientTypeList> {
         return __request(OpenAPI, {
             method: 'GET',
-            url: '/api/client-types/',
+            url: '/client-types/',
             query: {
                 'page': page,
                 'search': search,
@@ -121,7 +122,7 @@ export class CrmReferenceService {
     }): CancelablePromise<ClientType> {
         return __request(OpenAPI, {
             method: 'GET',
-            url: '/api/client-types/{id}/',
+            url: '/client-types/{id}/',
             path: {
                 'id': id,
             },
@@ -147,7 +148,7 @@ export class CrmReferenceService {
     }): CancelablePromise<PaginatedClosingReasonList> {
         return __request(OpenAPI, {
             method: 'GET',
-            url: '/api/closing-reasons/',
+            url: '/closing-reasons/',
             query: {
                 'page': page,
                 'search': search,
@@ -169,7 +170,7 @@ export class CrmReferenceService {
     }): CancelablePromise<ClosingReason> {
         return __request(OpenAPI, {
             method: 'GET',
-            url: '/api/closing-reasons/{id}/',
+            url: '/closing-reasons/{id}/',
             path: {
                 'id': id,
             },
@@ -202,7 +203,7 @@ export class CrmReferenceService {
     }): CancelablePromise<PaginatedCountryList> {
         return __request(OpenAPI, {
             method: 'GET',
-            url: '/api/countries/',
+            url: '/countries/',
             query: {
                 'name': name,
                 'ordering': ordering,
@@ -226,7 +227,7 @@ export class CrmReferenceService {
     }): CancelablePromise<Country> {
         return __request(OpenAPI, {
             method: 'GET',
-            url: '/api/countries/{id}/',
+            url: '/countries/{id}/',
             path: {
                 'id': id,
             },
@@ -257,7 +258,7 @@ export class CrmReferenceService {
     }): CancelablePromise<PaginatedCurrencyList> {
         return __request(OpenAPI, {
             method: 'GET',
-            url: '/api/currencies/',
+            url: '/currencies/',
             query: {
                 'ordering': ordering,
                 'page': page,
@@ -280,7 +281,7 @@ export class CrmReferenceService {
     }): CancelablePromise<Currency> {
         return __request(OpenAPI, {
             method: 'GET',
-            url: '/api/currencies/{id}/',
+            url: '/currencies/{id}/',
             path: {
                 'id': id,
             },
@@ -288,22 +289,42 @@ export class CrmReferenceService {
     }
     /**
      * Get exchange rate history for a currency
-     * @returns Currency
+     * @returns PaginatedRateList
      * @throws ApiError
      */
-    public static currenciesRatesRetrieve({
+    public static currenciesratesList({
         id,
+        ordering,
+        page,
+        search,
     }: {
         /**
          * A unique integer value identifying this Currency.
          */
         id: number,
-    }): CancelablePromise<Currency> {
+        /**
+         * Which field to use when ordering the results.
+         */
+        ordering?: string,
+        /**
+         * A page number within the paginated result set.
+         */
+        page?: number,
+        /**
+         * A search term.
+         */
+        search?: string,
+    }): CancelablePromise<PaginatedRateList> {
         return __request(OpenAPI, {
             method: 'GET',
-            url: '/api/currencies/{id}/rates/',
+            url: '/currencies/{id}/rates/',
             path: {
                 'id': id,
+            },
+            query: {
+                'ordering': ordering,
+                'page': page,
+                'search': search,
             },
         });
     }
@@ -327,7 +348,7 @@ export class CrmReferenceService {
     }): CancelablePromise<PaginatedIndustryList> {
         return __request(OpenAPI, {
             method: 'GET',
-            url: '/api/industries/',
+            url: '/industries/',
             query: {
                 'page': page,
                 'search': search,
@@ -349,7 +370,7 @@ export class CrmReferenceService {
     }): CancelablePromise<Industry> {
         return __request(OpenAPI, {
             method: 'GET',
-            url: '/api/industries/{id}/',
+            url: '/industries/{id}/',
             path: {
                 'id': id,
             },
@@ -375,7 +396,7 @@ export class CrmReferenceService {
     }): CancelablePromise<PaginatedLeadSourceList> {
         return __request(OpenAPI, {
             method: 'GET',
-            url: '/api/lead-sources/',
+            url: '/lead-sources/',
             query: {
                 'page': page,
                 'search': search,
@@ -397,7 +418,7 @@ export class CrmReferenceService {
     }): CancelablePromise<LeadSource> {
         return __request(OpenAPI, {
             method: 'GET',
-            url: '/api/lead-sources/{id}/',
+            url: '/lead-sources/{id}/',
             path: {
                 'id': id,
             },
@@ -423,7 +444,7 @@ export class CrmReferenceService {
     }): CancelablePromise<PaginatedProductCategoryList> {
         return __request(OpenAPI, {
             method: 'GET',
-            url: '/api/product-categories/',
+            url: '/product-categories/',
             query: {
                 'page': page,
                 'search': search,
@@ -445,7 +466,7 @@ export class CrmReferenceService {
     }): CancelablePromise<ProductCategory> {
         return __request(OpenAPI, {
             method: 'GET',
-            url: '/api/product-categories/{id}/',
+            url: '/product-categories/{id}/',
             path: {
                 'id': id,
             },

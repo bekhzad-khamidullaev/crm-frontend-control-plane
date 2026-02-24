@@ -46,7 +46,7 @@ export class RequestsService {
     }): CancelablePromise<PaginatedRequestList> {
         return __request(OpenAPI, {
             method: 'GET',
-            url: '/api/requests/',
+            url: '/requests/',
             query: {
                 'company': company,
                 'contact': contact,
@@ -72,7 +72,7 @@ export class RequestsService {
     }): CancelablePromise<Request> {
         return __request(OpenAPI, {
             method: 'POST',
-            url: '/api/requests/',
+            url: '/requests/',
             body: requestBody,
             mediaType: 'application/json',
         });
@@ -92,7 +92,7 @@ export class RequestsService {
     }): CancelablePromise<Request> {
         return __request(OpenAPI, {
             method: 'GET',
-            url: '/api/requests/{id}/',
+            url: '/requests/{id}/',
             path: {
                 'id': id,
             },
@@ -115,7 +115,7 @@ export class RequestsService {
     }): CancelablePromise<Request> {
         return __request(OpenAPI, {
             method: 'PUT',
-            url: '/api/requests/{id}/',
+            url: '/requests/{id}/',
             path: {
                 'id': id,
             },
@@ -140,7 +140,7 @@ export class RequestsService {
     }): CancelablePromise<Request> {
         return __request(OpenAPI, {
             method: 'PATCH',
-            url: '/api/requests/{id}/',
+            url: '/requests/{id}/',
             path: {
                 'id': id,
             },
@@ -163,7 +163,7 @@ export class RequestsService {
     }): CancelablePromise<void> {
         return __request(OpenAPI, {
             method: 'DELETE',
-            url: '/api/requests/{id}/',
+            url: '/requests/{id}/',
             path: {
                 'id': id,
             },

@@ -44,7 +44,7 @@ export class TasksService {
     }): CancelablePromise<PaginatedTaskList> {
         return __request(OpenAPI, {
             method: 'GET',
-            url: '/api/tasks/',
+            url: '/tasks/',
             query: {
                 'active': active,
                 'co_owner': coOwner,
@@ -69,7 +69,7 @@ export class TasksService {
     }): CancelablePromise<Task> {
         return __request(OpenAPI, {
             method: 'POST',
-            url: '/api/tasks/',
+            url: '/tasks/',
             body: requestBody,
             mediaType: 'application/json',
         });
@@ -89,7 +89,7 @@ export class TasksService {
     }): CancelablePromise<Task> {
         return __request(OpenAPI, {
             method: 'GET',
-            url: '/api/tasks/{id}/',
+            url: '/tasks/{id}/',
             path: {
                 'id': id,
             },
@@ -112,7 +112,7 @@ export class TasksService {
     }): CancelablePromise<Task> {
         return __request(OpenAPI, {
             method: 'PUT',
-            url: '/api/tasks/{id}/',
+            url: '/tasks/{id}/',
             path: {
                 'id': id,
             },
@@ -137,7 +137,7 @@ export class TasksService {
     }): CancelablePromise<Task> {
         return __request(OpenAPI, {
             method: 'PATCH',
-            url: '/api/tasks/{id}/',
+            url: '/tasks/{id}/',
             path: {
                 'id': id,
             },
@@ -160,7 +160,7 @@ export class TasksService {
     }): CancelablePromise<void> {
         return __request(OpenAPI, {
             method: 'DELETE',
-            url: '/api/tasks/{id}/',
+            url: '/tasks/{id}/',
             path: {
                 'id': id,
             },

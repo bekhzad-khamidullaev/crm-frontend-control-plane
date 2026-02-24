@@ -5,7 +5,7 @@
 export type User = {
     readonly id: number;
     /**
-     * Обязательное поле. Не более 150 символов. Только буквы, цифры и символы @/./+/-/_.
+     * Required. 150 characters or fewer. Letters, digits and @/./+/-/_ only.
      */
     username: string;
     first_name?: string;

@@ -34,7 +34,7 @@ export class CallLogsService {
     }): CancelablePromise<PaginatedCallLogList> {
         return __request(OpenAPI, {
             method: 'GET',
-            url: '/api/call-logs/',
+            url: '/call-logs/',
             query: {
                 'ordering': ordering,
                 'page': page,
@@ -54,7 +54,7 @@ export class CallLogsService {
     }): CancelablePromise<CallLog> {
         return __request(OpenAPI, {
             method: 'POST',
-            url: '/api/call-logs/',
+            url: '/call-logs/',
             body: requestBody,
             mediaType: 'application/json',
         });
@@ -71,7 +71,7 @@ export class CallLogsService {
     }): CancelablePromise<CallLog> {
         return __request(OpenAPI, {
             method: 'GET',
-            url: '/api/call-logs/{id}/',
+            url: '/call-logs/{id}/',
             path: {
                 'id': id,
             },
@@ -91,7 +91,7 @@ export class CallLogsService {
     }): CancelablePromise<CallLog> {
         return __request(OpenAPI, {
             method: 'PUT',
-            url: '/api/call-logs/{id}/',
+            url: '/call-logs/{id}/',
             path: {
                 'id': id,
             },
@@ -113,7 +113,7 @@ export class CallLogsService {
     }): CancelablePromise<CallLog> {
         return __request(OpenAPI, {
             method: 'PATCH',
-            url: '/api/call-logs/{id}/',
+            url: '/call-logs/{id}/',
             path: {
                 'id': id,
             },
@@ -133,7 +133,7 @@ export class CallLogsService {
     }): CancelablePromise<void> {
         return __request(OpenAPI, {
             method: 'DELETE',
-            url: '/api/call-logs/{id}/',
+            url: '/call-logs/{id}/',
             path: {
                 'id': id,
             },

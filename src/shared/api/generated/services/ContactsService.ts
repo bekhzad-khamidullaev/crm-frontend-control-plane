@@ -44,7 +44,7 @@ export class ContactsService {
     }): CancelablePromise<PaginatedContactList> {
         return __request(OpenAPI, {
             method: 'GET',
-            url: '/api/contacts/',
+            url: '/contacts/',
             query: {
                 'company': company,
                 'country': country,
@@ -69,7 +69,7 @@ export class ContactsService {
     }): CancelablePromise<Contact> {
         return __request(OpenAPI, {
             method: 'POST',
-            url: '/api/contacts/',
+            url: '/contacts/',
             body: requestBody,
             mediaType: 'application/json',
         });
@@ -89,7 +89,7 @@ export class ContactsService {
     }): CancelablePromise<Contact> {
         return __request(OpenAPI, {
             method: 'GET',
-            url: '/api/contacts/{id}/',
+            url: '/contacts/{id}/',
             path: {
                 'id': id,
             },
@@ -112,7 +112,7 @@ export class ContactsService {
     }): CancelablePromise<Contact> {
         return __request(OpenAPI, {
             method: 'PUT',
-            url: '/api/contacts/{id}/',
+            url: '/contacts/{id}/',
             path: {
                 'id': id,
             },
@@ -137,7 +137,7 @@ export class ContactsService {
     }): CancelablePromise<Contact> {
         return __request(OpenAPI, {
             method: 'PATCH',
-            url: '/api/contacts/{id}/',
+            url: '/contacts/{id}/',
             path: {
                 'id': id,
             },
@@ -160,7 +160,7 @@ export class ContactsService {
     }): CancelablePromise<void> {
         return __request(OpenAPI, {
             method: 'DELETE',
-            url: '/api/contacts/{id}/',
+            url: '/contacts/{id}/',
             path: {
                 'id': id,
             },

@@ -11,10 +11,10 @@ export class AnalyticsService {
      * @returns any No response body
      * @throws ApiError
      */
-    public static analyticsOverviewRetrieve(): CancelablePromise<any> {
+    public static analyticsoverviewRetrieve(): CancelablePromise<any> {
         return __request(OpenAPI, {
             method: 'GET',
-            url: '/api/analytics/overview/',
+            url: '/analytics/overview/',
         });
     }
 }

@@ -40,7 +40,7 @@ export class ChatMessagesService {
     }): CancelablePromise<PaginatedChatMessageList> {
         return __request(OpenAPI, {
             method: 'GET',
-            url: '/api/chat-messages/',
+            url: '/chat-messages/',
             query: {
                 'content_type': contentType,
                 'object_id': objectId,
@@ -63,7 +63,7 @@ export class ChatMessagesService {
     }): CancelablePromise<ChatMessage> {
         return __request(OpenAPI, {
             method: 'POST',
-            url: '/api/chat-messages/',
+            url: '/chat-messages/',
             body: requestBody,
             mediaType: 'application/json',
         });
@@ -83,7 +83,7 @@ export class ChatMessagesService {
     }): CancelablePromise<ChatMessage> {
         return __request(OpenAPI, {
             method: 'GET',
-            url: '/api/chat-messages/{id}/',
+            url: '/chat-messages/{id}/',
             path: {
                 'id': id,
             },
@@ -106,7 +106,7 @@ export class ChatMessagesService {
     }): CancelablePromise<ChatMessage> {
         return __request(OpenAPI, {
             method: 'PUT',
-            url: '/api/chat-messages/{id}/',
+            url: '/chat-messages/{id}/',
             path: {
                 'id': id,
             },
@@ -131,7 +131,7 @@ export class ChatMessagesService {
     }): CancelablePromise<ChatMessage> {
         return __request(OpenAPI, {
             method: 'PATCH',
-            url: '/api/chat-messages/{id}/',
+            url: '/chat-messages/{id}/',
             path: {
                 'id': id,
             },
@@ -154,7 +154,7 @@ export class ChatMessagesService {
     }): CancelablePromise<void> {
         return __request(OpenAPI, {
             method: 'DELETE',
-            url: '/api/chat-messages/{id}/',
+            url: '/chat-messages/{id}/',
             path: {
                 'id': id,
             },
@@ -165,7 +165,7 @@ export class ChatMessagesService {
      * @returns ChatMessage
      * @throws ApiError
      */
-    public static chatMessagesRepliesRetrieve({
+    public static chatMessagesrepliesRetrieve({
         id,
     }: {
         /**
@@ -175,7 +175,7 @@ export class ChatMessagesService {
     }): CancelablePromise<ChatMessage> {
         return __request(OpenAPI, {
             method: 'GET',
-            url: '/api/chat-messages/{id}/replies/',
+            url: '/chat-messages/{id}/replies/',
             path: {
                 'id': id,
             },
@@ -186,7 +186,7 @@ export class ChatMessagesService {
      * @returns ChatMessage
      * @throws ApiError
      */
-    public static chatMessagesThreadRetrieve({
+    public static chatMessagesthreadRetrieve({
         id,
     }: {
         /**
@@ -196,7 +196,7 @@ export class ChatMessagesService {
     }): CancelablePromise<ChatMessage> {
         return __request(OpenAPI, {
             method: 'GET',
-            url: '/api/chat-messages/{id}/thread/',
+            url: '/chat-messages/{id}/thread/',
             path: {
                 'id': id,
             },

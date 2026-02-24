@@ -1,7 +1,7 @@
 openapi: 3.0.3
 info:
   title: Contora API
-  version: 1.0.0 (api)
+  version: 1.0.0
   description: Versioned API for frontend consumption
   contact:
     name: Contora API Team
@@ -11,9 +11,9 @@ info:
     name: MIT License
     url: https://opensource.org/licenses/MIT
 paths:
-  /api/analytics/overview/:
+  /analytics/overview/:
     get:
-      operationId: analytics_overview_retrieve
+      operationId: analyticsoverview_retrieve
       description: Get overview analytics for dashboard
       tags:
       - Analytics
@@ -25,7 +25,7 @@ paths:
       responses:
         '200':
           description: No response body
-  /api/auth-stats/:
+  /auth-stats/:
     get:
       operationId: auth_stats_retrieve
       description: Get authentication statistics (JWT vs legacy token usage)
@@ -44,14 +44,14 @@ paths:
                 type: object
                 additionalProperties: {}
           description: ''
-  /api/auth/status/:
+  /auth/status/:
     get:
-      operationId: auth_status_retrieve
-      description: |-
-        Returns current authentication status and JWT token information.
-        Useful for debugging frontend authentication issues.
+      operationId: authstatus_retrieve
+      description: 'Returns current authentication status and JWT token information.
+
+        Useful for debugging frontend authentication issues.'
       tags:
-      - auth
+      - authstatus
       security:
       - jwtAuth: []
       - tokenAuth: []
@@ -60,11 +60,11 @@ paths:
       responses:
         '200':
           description: No response body
-  /api/auth/token/:
+  /auth/token/:
     post:
-      operationId: auth_token_create
+      operationId: authtoken_create
       tags:
-      - auth
+      - authtoken
       requestBody:
         content:
           application/x-www-form-urlencoded:
@@ -89,7 +89,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/AuthToken'
           description: ''
-  /api/call-logs/:
+  /call-logs/:
     get:
       operationId: call_logs_list
       description: Create and list telephony call logs.
@@ -155,7 +155,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/CallLog'
           description: ''
-  /api/call-logs/{id}/:
+  /call-logs/{id}/:
     get:
       operationId: call_logs_retrieve
       description: Create and list telephony call logs.
@@ -267,7 +267,7 @@ paths:
       responses:
         '204':
           description: No response body
-  /api/chat-messages/:
+  /chat-messages/:
     get:
       operationId: chat_messages_list
       description: Create, list, and manage internal chat messages.
@@ -345,7 +345,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/ChatMessage'
           description: ''
-  /api/chat-messages/{id}/:
+  /chat-messages/{id}/:
     get:
       operationId: chat_messages_retrieve
       description: Create, list, and manage internal chat messages.
@@ -461,9 +461,9 @@ paths:
       responses:
         '204':
           description: No response body
-  /api/chat-messages/{id}/replies/:
+  /chat-messages/{id}/replies/:
     get:
-      operationId: chat_messages_replies_retrieve
+      operationId: chat_messagesreplies_retrieve
       description: Create, list, and manage internal chat messages.
       parameters:
       - in: path
@@ -486,9 +486,9 @@ paths:
               schema:
                 $ref: '#/components/schemas/ChatMessage'
           description: ''
-  /api/chat-messages/{id}/thread/:
+  /chat-messages/{id}/thread/:
     get:
-      operationId: chat_messages_thread_retrieve
+      operationId: chat_messagesthread_retrieve
       description: Create, list, and manage internal chat messages.
       parameters:
       - in: path
@@ -511,7 +511,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/ChatMessage'
           description: ''
-  /api/cities/:
+  /cities/:
     get:
       operationId: cities_list
       description: Read-only API for cities
@@ -552,7 +552,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/PaginatedCityList'
           description: ''
-  /api/cities/{id}/:
+  /cities/{id}/:
     get:
       operationId: cities_retrieve
       description: Read-only API for cities
@@ -577,7 +577,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/City'
           description: ''
-  /api/client-types/:
+  /client-types/:
     get:
       operationId: client_types_list
       description: Read-only API for client types
@@ -608,7 +608,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/PaginatedClientTypeList'
           description: ''
-  /api/client-types/{id}/:
+  /client-types/{id}/:
     get:
       operationId: client_types_retrieve
       description: Read-only API for client types
@@ -633,7 +633,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/ClientType'
           description: ''
-  /api/closing-reasons/:
+  /closing-reasons/:
     get:
       operationId: closing_reasons_list
       description: Read-only API for closing reasons
@@ -664,7 +664,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/PaginatedClosingReasonList'
           description: ''
-  /api/closing-reasons/{id}/:
+  /closing-reasons/{id}/:
     get:
       operationId: closing_reasons_retrieve
       description: Read-only API for closing reasons
@@ -689,7 +689,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/ClosingReason'
           description: ''
-  /api/companies/:
+  /companies/:
     get:
       operationId: companies_list
       description: CRUD for companies with search and filters.
@@ -779,7 +779,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/Company'
           description: ''
-  /api/companies/{id}/:
+  /companies/{id}/:
     get:
       operationId: companies_retrieve
       description: CRUD for companies with search and filters.
@@ -895,7 +895,7 @@ paths:
       responses:
         '204':
           description: No response body
-  /api/contacts/:
+  /contacts/:
     get:
       operationId: contacts_list
       description: CRUD for contacts with search and filters.
@@ -981,7 +981,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/Contact'
           description: ''
-  /api/contacts/{id}/:
+  /contacts/{id}/:
     get:
       operationId: contacts_retrieve
       description: CRUD for contacts with search and filters.
@@ -1097,7 +1097,7 @@ paths:
       responses:
         '204':
           description: No response body
-  /api/countries/:
+  /countries/:
     get:
       operationId: countries_list
       description: Read-only API for countries
@@ -1138,7 +1138,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/PaginatedCountryList'
           description: ''
-  /api/countries/{id}/:
+  /countries/{id}/:
     get:
       operationId: countries_retrieve
       description: Read-only API for countries
@@ -1163,7 +1163,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/Country'
           description: ''
-  /api/crm-emails/:
+  /crm-emails/:
     get:
       operationId: crm_emails_list
       description: CRUD API for CRM emails
@@ -1257,7 +1257,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/CrmEmail'
           description: ''
-  /api/crm-emails/{id}/:
+  /crm-emails/{id}/:
     get:
       operationId: crm_emails_retrieve
       description: CRUD API for CRM emails
@@ -1266,7 +1266,7 @@ paths:
         name: id
         schema:
           type: integer
-        description: A unique integer value identifying this Адрес электронной почты.
+        description: A unique integer value identifying this Email.
         required: true
       tags:
       - CRM Emails
@@ -1290,7 +1290,7 @@ paths:
         name: id
         schema:
           type: integer
-        description: A unique integer value identifying this Адрес электронной почты.
+        description: A unique integer value identifying this Email.
         required: true
       tags:
       - CRM Emails
@@ -1326,7 +1326,7 @@ paths:
         name: id
         schema:
           type: integer
-        description: A unique integer value identifying this Адрес электронной почты.
+        description: A unique integer value identifying this Email.
         required: true
       tags:
       - CRM Emails
@@ -1361,7 +1361,7 @@ paths:
         name: id
         schema:
           type: integer
-        description: A unique integer value identifying this Адрес электронной почты.
+        description: A unique integer value identifying this Email.
         required: true
       tags:
       - CRM Emails
@@ -1373,7 +1373,7 @@ paths:
       responses:
         '204':
           description: No response body
-  /api/crm-tags/:
+  /crm-tags/:
     get:
       operationId: crm_tags_list
       description: Reference list of CRM tags.
@@ -1418,7 +1418,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/PaginatedCrmTagList'
           description: ''
-  /api/crm-tags/{id}/:
+  /crm-tags/{id}/:
     get:
       operationId: crm_tags_retrieve
       description: Reference list of CRM tags.
@@ -1443,7 +1443,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/CrmTag'
           description: ''
-  /api/currencies/:
+  /currencies/:
     get:
       operationId: currencies_list
       description: Read-only API for currencies
@@ -1480,7 +1480,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/PaginatedCurrencyList'
           description: ''
-  /api/currencies/{id}/:
+  /currencies/{id}/:
     get:
       operationId: currencies_retrieve
       description: Read-only API for currencies
@@ -1505,9 +1505,9 @@ paths:
               schema:
                 $ref: '#/components/schemas/Currency'
           description: ''
-  /api/currencies/{id}/rates/:
+  /currencies/{id}/rates/:
     get:
-      operationId: currencies_rates_retrieve
+      operationId: currenciesrates_list
       description: Get exchange rate history for a currency
       parameters:
       - in: path
@@ -1516,6 +1516,24 @@ paths:
           type: integer
         description: A unique integer value identifying this Currency.
         required: true
+      - name: ordering
+        required: false
+        in: query
+        description: Which field to use when ordering the results.
+        schema:
+          type: string
+      - name: page
+        required: false
+        in: query
+        description: A page number within the paginated result set.
+        schema:
+          type: integer
+      - name: search
+        required: false
+        in: query
+        description: A search term.
+        schema:
+          type: string
       tags:
       - CRM Reference
       security:
@@ -1528,16 +1546,17 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Currency'
+                $ref: '#/components/schemas/PaginatedRateList'
           description: ''
-  /api/dashboard/activity/:
+  /dashboard/activity/:
     get:
-      operationId: dashboard_activity_retrieve
-      description: |-
-        Provides a real-time activity feed showing recent changes across the CRM.
-        Returns a list of activities sorted by timestamp.
+      operationId: dashboardactivity_retrieve
+      description: 'Provides a real-time activity feed showing recent changes across
+        the CRM.
+
+        Returns a list of activities sorted by timestamp.'
       tags:
-      - dashboard
+      - dashboardactivity
       security:
       - jwtAuth: []
       - tokenAuth: []
@@ -1546,15 +1565,17 @@ paths:
       responses:
         '200':
           description: No response body
-  /api/dashboard/analytics/:
+  /dashboard/analytics/:
     get:
-      operationId: dashboard_analytics_retrieve
-      description: |-
-        Provides analytics data for the dashboard including monthly growth stats
+      operationId: dashboardanalytics_retrieve
+      description: 'Provides analytics data for the dashboard including monthly growth
+        stats
+
         and task metrics.
-        Supports filters: period(7d|30d|90d), owner, department.
+
+        Supports filters: period(7d|30d|90d), owner, department.'
       tags:
-      - dashboard
+      - dashboardanalytics
       security:
       - jwtAuth: []
       - tokenAuth: []
@@ -1563,15 +1584,17 @@ paths:
       responses:
         '200':
           description: No response body
-  /api/dashboard/funnel/:
+  /dashboard/funnel/:
     get:
-      operationId: dashboard_funnel_retrieve
-      description: |-
-        Returns sales funnel data as a list of {label, value} by deal stage.
+      operationId: dashboardfunnel_retrieve
+      description: 'Returns sales funnel data as a list of {label, value} by deal
+        stage.
+
         Supports filters: period(7d|30d|90d), owner, department.
-        RBAC: non-staff users see only owned/co-owned deals.
+
+        RBAC: non-staff users see only owned/co-owned deals.'
       tags:
-      - dashboard
+      - dashboardfunnel
       security:
       - jwtAuth: []
       - tokenAuth: []
@@ -1580,7 +1603,7 @@ paths:
       responses:
         '200':
           description: No response body
-  /api/deals/:
+  /deals/:
     get:
       operationId: deals_list
       description: CRUD for CRM deals with ownership rules.
@@ -1682,7 +1705,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/Deal'
           description: ''
-  /api/deals/{id}/:
+  /deals/{id}/:
     get:
       operationId: deals_retrieve
       description: CRUD for CRM deals with ownership rules.
@@ -1798,7 +1821,7 @@ paths:
       responses:
         '204':
           description: No response body
-  /api/departments/:
+  /departments/:
     get:
       operationId: departments_list
       description: Read-only API for departments/groups
@@ -1829,7 +1852,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/PaginatedDepartmentList'
           description: ''
-  /api/departments/{id}/:
+  /departments/{id}/:
     get:
       operationId: departments_retrieve
       description: Read-only API for departments/groups
@@ -1854,9 +1877,9 @@ paths:
               schema:
                 $ref: '#/components/schemas/Department'
           description: ''
-  /api/departments/{id}/members/:
+  /departments/{id}/members/:
     get:
-      operationId: departments_members_retrieve
+      operationId: departmentsmembers_retrieve
       description: Get all members of a department
       parameters:
       - in: path
@@ -1879,15 +1902,16 @@ paths:
               schema:
                 $ref: '#/components/schemas/Department'
           description: ''
-  /api/help/pages/:
+  /help/pages/:
     get:
-      operationId: help_pages_list
+      operationId: helppages_list
       parameters:
       - in: query
         name: language_code
         schema:
           type: string
-          title: Язый
+          x-spec-enum-id: f3af286fb18e45bd
+          title: Language
           enum:
           - ar
           - cs
@@ -1912,30 +1936,51 @@ paths:
           - uz
           - vi
           - zh-hans
-        description: |-
-          * `ar` - Arabic
+        description: '* `ar` - Arabic
+
           * `cs` - Czech
+
           * `de` - German
+
           * `el` - Greek
+
           * `en` - English
+
           * `es` - Spanish
+
           * `fr` - French
+
           * `he` - Hebrew
+
           * `hi` - Hindi
+
           * `id` - Indonesian
+
           * `it` - Italian
+
           * `ja` - Japanese
+
           * `ko` - Korean
+
           * `nl` - Nederlands
+
           * `pl` - Polish
+
           * `pt-br` - Portuguese
+
           * `ro` - Romanian
+
           * `ru` - Russian
+
           * `tr` - Turkish
+
           * `uk` - Ukrainian
+
           * `vi` - Vietnamese
+
           * `zh-hans` - Chinese
-          * `uz` - Uzbek
+
+          * `uz` - Uzbek'
       - name: page
         required: false
         in: query
@@ -1962,9 +2007,9 @@ paths:
               schema:
                 $ref: '#/components/schemas/PaginatedPageList'
           description: ''
-  /api/help/pages/{id}/:
+  /help/pages/{id}/:
     get:
-      operationId: help_pages_retrieve
+      operationId: helppages_retrieve
       parameters:
       - in: path
         name: id
@@ -1986,9 +2031,9 @@ paths:
               schema:
                 $ref: '#/components/schemas/Page'
           description: ''
-  /api/help/paragraphs/:
+  /help/paragraphs/:
     get:
-      operationId: help_paragraphs_list
+      operationId: helpparagraphs_list
       parameters:
       - in: query
         name: document
@@ -1998,7 +2043,8 @@ paths:
         name: language_code
         schema:
           type: string
-          title: Язый
+          x-spec-enum-id: f3af286fb18e45bd
+          title: Language
           enum:
           - ar
           - cs
@@ -2023,30 +2069,51 @@ paths:
           - uz
           - vi
           - zh-hans
-        description: |-
-          * `ar` - Arabic
+        description: '* `ar` - Arabic
+
           * `cs` - Czech
+
           * `de` - German
+
           * `el` - Greek
+
           * `en` - English
+
           * `es` - Spanish
+
           * `fr` - French
+
           * `he` - Hebrew
+
           * `hi` - Hindi
+
           * `id` - Indonesian
+
           * `it` - Italian
+
           * `ja` - Japanese
+
           * `ko` - Korean
+
           * `nl` - Nederlands
+
           * `pl` - Polish
+
           * `pt-br` - Portuguese
+
           * `ro` - Romanian
+
           * `ru` - Russian
+
           * `tr` - Turkish
+
           * `uk` - Ukrainian
+
           * `vi` - Vietnamese
+
           * `zh-hans` - Chinese
-          * `uz` - Uzbek
+
+          * `uz` - Uzbek'
       - name: page
         required: false
         in: query
@@ -2067,9 +2134,9 @@ paths:
               schema:
                 $ref: '#/components/schemas/PaginatedParagraphList'
           description: ''
-  /api/help/paragraphs/{id}/:
+  /help/paragraphs/{id}/:
     get:
-      operationId: help_paragraphs_retrieve
+      operationId: helpparagraphs_retrieve
       parameters:
       - in: path
         name: id
@@ -2091,7 +2158,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/Paragraph'
           description: ''
-  /api/industries/:
+  /industries/:
     get:
       operationId: industries_list
       description: Read-only API for industries
@@ -2122,7 +2189,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/PaginatedIndustryList'
           description: ''
-  /api/industries/{id}/:
+  /industries/{id}/:
     get:
       operationId: industries_retrieve
       description: Read-only API for industries
@@ -2147,7 +2214,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/Industry'
           description: ''
-  /api/lead-sources/:
+  /lead-sources/:
     get:
       operationId: lead_sources_list
       description: Read-only API for lead sources
@@ -2178,7 +2245,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/PaginatedLeadSourceList'
           description: ''
-  /api/lead-sources/{id}/:
+  /lead-sources/{id}/:
     get:
       operationId: lead_sources_retrieve
       description: Read-only API for lead sources
@@ -2203,7 +2270,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/LeadSource'
           description: ''
-  /api/leads/:
+  /leads/:
     get:
       operationId: leads_list
       description: CRUD for CRM leads with filtering and conversion actions.
@@ -2298,7 +2365,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/Lead'
           description: ''
-  /api/leads/{id}/:
+  /leads/{id}/:
     get:
       operationId: leads_retrieve
       description: CRUD for CRM leads with filtering and conversion actions.
@@ -2414,9 +2481,9 @@ paths:
       responses:
         '204':
           description: No response body
-  /api/leads/{id}/assign/:
+  /leads/{id}/assign/:
     post:
-      operationId: leads_assign_create
+      operationId: leadsassign_create
       description: CRUD for CRM leads with filtering and conversion actions.
       parameters:
       - in: path
@@ -2451,9 +2518,9 @@ paths:
               schema:
                 $ref: '#/components/schemas/Lead'
           description: ''
-  /api/leads/{id}/convert/:
+  /leads/{id}/convert/:
     post:
-      operationId: leads_convert_create
+      operationId: leadsconvert_create
       description: CRUD for CRM leads with filtering and conversion actions.
       parameters:
       - in: path
@@ -2488,9 +2555,9 @@ paths:
               schema:
                 $ref: '#/components/schemas/Lead'
           description: ''
-  /api/leads/{id}/disqualify/:
+  /leads/{id}/disqualify/:
     post:
-      operationId: leads_disqualify_create
+      operationId: leadsdisqualify_create
       description: CRUD for CRM leads with filtering and conversion actions.
       parameters:
       - in: path
@@ -2525,9 +2592,9 @@ paths:
               schema:
                 $ref: '#/components/schemas/Lead'
           description: ''
-  /api/leads/bulk_tag/:
+  /leads/bulk_tag/:
     post:
-      operationId: leads_bulk_tag_create
+      operationId: leadsbulk_tag_create
       description: CRUD for CRM leads with filtering and conversion actions.
       tags:
       - Leads
@@ -2555,9 +2622,9 @@ paths:
               schema:
                 $ref: '#/components/schemas/Lead'
           description: ''
-  /api/marketing/campaigns/:
+  /marketing/campaigns/:
     get:
-      operationId: marketing_campaigns_list
+      operationId: marketingcampaigns_list
       parameters:
       - in: query
         name: is_active
@@ -2598,7 +2665,7 @@ paths:
                 $ref: '#/components/schemas/PaginatedCampaignList'
           description: ''
     post:
-      operationId: marketing_campaigns_create
+      operationId: marketingcampaigns_create
       tags:
       - Marketing
       requestBody:
@@ -2625,9 +2692,9 @@ paths:
               schema:
                 $ref: '#/components/schemas/Campaign'
           description: ''
-  /api/marketing/campaigns/{id}/:
+  /marketing/campaigns/{id}/:
     get:
-      operationId: marketing_campaigns_retrieve
+      operationId: marketingcampaigns_retrieve
       parameters:
       - in: path
         name: id
@@ -2650,7 +2717,7 @@ paths:
                 $ref: '#/components/schemas/Campaign'
           description: ''
     put:
-      operationId: marketing_campaigns_update
+      operationId: marketingcampaigns_update
       parameters:
       - in: path
         name: id
@@ -2685,7 +2752,7 @@ paths:
                 $ref: '#/components/schemas/Campaign'
           description: ''
     patch:
-      operationId: marketing_campaigns_partial_update
+      operationId: marketingcampaigns_partial_update
       parameters:
       - in: path
         name: id
@@ -2719,7 +2786,7 @@ paths:
                 $ref: '#/components/schemas/Campaign'
           description: ''
     delete:
-      operationId: marketing_campaigns_destroy
+      operationId: marketingcampaigns_destroy
       parameters:
       - in: path
         name: id
@@ -2737,9 +2804,9 @@ paths:
       responses:
         '204':
           description: No response body
-  /api/marketing/segments/:
+  /marketing/segments/:
     get:
-      operationId: marketing_segments_list
+      operationId: marketingsegments_list
       parameters:
       - name: page
         required: false
@@ -2768,7 +2835,7 @@ paths:
                 $ref: '#/components/schemas/PaginatedSegmentList'
           description: ''
     post:
-      operationId: marketing_segments_create
+      operationId: marketingsegments_create
       tags:
       - Marketing
       requestBody:
@@ -2795,9 +2862,9 @@ paths:
               schema:
                 $ref: '#/components/schemas/Segment'
           description: ''
-  /api/marketing/segments/{id}/:
+  /marketing/segments/{id}/:
     get:
-      operationId: marketing_segments_retrieve
+      operationId: marketingsegments_retrieve
       parameters:
       - in: path
         name: id
@@ -2820,7 +2887,7 @@ paths:
                 $ref: '#/components/schemas/Segment'
           description: ''
     put:
-      operationId: marketing_segments_update
+      operationId: marketingsegments_update
       parameters:
       - in: path
         name: id
@@ -2855,7 +2922,7 @@ paths:
                 $ref: '#/components/schemas/Segment'
           description: ''
     patch:
-      operationId: marketing_segments_partial_update
+      operationId: marketingsegments_partial_update
       parameters:
       - in: path
         name: id
@@ -2889,7 +2956,7 @@ paths:
                 $ref: '#/components/schemas/Segment'
           description: ''
     delete:
-      operationId: marketing_segments_destroy
+      operationId: marketingsegments_destroy
       parameters:
       - in: path
         name: id
@@ -2907,24 +2974,27 @@ paths:
       responses:
         '204':
           description: No response body
-  /api/marketing/templates/:
+  /marketing/templates/:
     get:
-      operationId: marketing_templates_list
+      operationId: marketingtemplates_list
       parameters:
       - in: query
         name: channel
         schema:
           type: string
+          x-spec-enum-id: 3ffbecb25b0c035a
           enum:
           - email
           - ig
           - sms
           - tg
-        description: |-
-          * `sms` - SMS
+        description: '* `sms` - SMS
+
           * `tg` - Telegram
+
           * `ig` - Instagram
-          * `email` - Email
+
+          * `email` - Email'
       - name: page
         required: false
         in: query
@@ -2952,7 +3022,7 @@ paths:
                 $ref: '#/components/schemas/PaginatedMessageTemplateList'
           description: ''
     post:
-      operationId: marketing_templates_create
+      operationId: marketingtemplates_create
       tags:
       - Marketing
       requestBody:
@@ -2979,9 +3049,9 @@ paths:
               schema:
                 $ref: '#/components/schemas/MessageTemplate'
           description: ''
-  /api/marketing/templates/{id}/:
+  /marketing/templates/{id}/:
     get:
-      operationId: marketing_templates_retrieve
+      operationId: marketingtemplates_retrieve
       parameters:
       - in: path
         name: id
@@ -3004,7 +3074,7 @@ paths:
                 $ref: '#/components/schemas/MessageTemplate'
           description: ''
     put:
-      operationId: marketing_templates_update
+      operationId: marketingtemplates_update
       parameters:
       - in: path
         name: id
@@ -3039,7 +3109,7 @@ paths:
                 $ref: '#/components/schemas/MessageTemplate'
           description: ''
     patch:
-      operationId: marketing_templates_partial_update
+      operationId: marketingtemplates_partial_update
       parameters:
       - in: path
         name: id
@@ -3073,7 +3143,7 @@ paths:
                 $ref: '#/components/schemas/MessageTemplate'
           description: ''
     delete:
-      operationId: marketing_templates_destroy
+      operationId: marketingtemplates_destroy
       parameters:
       - in: path
         name: id
@@ -3091,9 +3161,9 @@ paths:
       responses:
         '204':
           description: No response body
-  /api/massmail/email-accounts/:
+  /massmail/email-accounts/:
     get:
-      operationId: massmail_email_accounts_list
+      operationId: massmailemail_accounts_list
       parameters:
       - in: query
         name: do_import
@@ -3138,7 +3208,7 @@ paths:
                 $ref: '#/components/schemas/PaginatedEmailAccountList'
           description: ''
     post:
-      operationId: massmail_email_accounts_create
+      operationId: massmailemail_accounts_create
       tags:
       - Massmail
       requestBody:
@@ -3165,9 +3235,9 @@ paths:
               schema:
                 $ref: '#/components/schemas/EmailAccount'
           description: ''
-  /api/massmail/email-accounts/{id}/:
+  /massmail/email-accounts/{id}/:
     get:
-      operationId: massmail_email_accounts_retrieve
+      operationId: massmailemail_accounts_retrieve
       parameters:
       - in: path
         name: id
@@ -3190,7 +3260,7 @@ paths:
                 $ref: '#/components/schemas/EmailAccount'
           description: ''
     put:
-      operationId: massmail_email_accounts_update
+      operationId: massmailemail_accounts_update
       parameters:
       - in: path
         name: id
@@ -3225,7 +3295,7 @@ paths:
                 $ref: '#/components/schemas/EmailAccount'
           description: ''
     patch:
-      operationId: massmail_email_accounts_partial_update
+      operationId: massmailemail_accounts_partial_update
       parameters:
       - in: path
         name: id
@@ -3259,7 +3329,7 @@ paths:
                 $ref: '#/components/schemas/EmailAccount'
           description: ''
     delete:
-      operationId: massmail_email_accounts_destroy
+      operationId: massmailemail_accounts_destroy
       parameters:
       - in: path
         name: id
@@ -3277,9 +3347,9 @@ paths:
       responses:
         '204':
           description: No response body
-  /api/massmail/mailings/:
+  /massmail/mailings/:
     get:
-      operationId: massmail_mailings_list
+      operationId: massmailmailings_list
       parameters:
       - in: query
         name: owner
@@ -3295,18 +3365,22 @@ paths:
         name: status
         schema:
           type: string
+          x-spec-enum-id: 75d2e6ecb79b1f18
           enum:
           - A
           - D
           - E
           - I
           - P
-        description: |-
-          * `A` - Active
+        description: '* `A` - Active
+
           * `E` - Active but Error
+
           * `P` - Paused
+
           * `I` - Interrupted
-          * `D` - Done
+
+          * `D` - Done'
       tags:
       - Massmail
       security:
@@ -3321,9 +3395,9 @@ paths:
               schema:
                 $ref: '#/components/schemas/PaginatedMailingOutList'
           description: ''
-  /api/massmail/mailings/{id}/:
+  /massmail/mailings/{id}/:
     get:
-      operationId: massmail_mailings_retrieve
+      operationId: massmailmailings_retrieve
       parameters:
       - in: path
         name: id
@@ -3345,9 +3419,9 @@ paths:
               schema:
                 $ref: '#/components/schemas/MailingOut'
           description: ''
-  /api/massmail/messages/:
+  /massmail/messages/:
     get:
-      operationId: massmail_messages_list
+      operationId: massmailmessages_list
       parameters:
       - in: query
         name: owner
@@ -3380,7 +3454,7 @@ paths:
                 $ref: '#/components/schemas/PaginatedEmlMessageList'
           description: ''
     post:
-      operationId: massmail_messages_create
+      operationId: massmailmessages_create
       tags:
       - Massmail
       requestBody:
@@ -3407,9 +3481,9 @@ paths:
               schema:
                 $ref: '#/components/schemas/EmlMessage'
           description: ''
-  /api/massmail/messages/{id}/:
+  /massmail/messages/{id}/:
     get:
-      operationId: massmail_messages_retrieve
+      operationId: massmailmessages_retrieve
       parameters:
       - in: path
         name: id
@@ -3432,7 +3506,7 @@ paths:
                 $ref: '#/components/schemas/EmlMessage'
           description: ''
     put:
-      operationId: massmail_messages_update
+      operationId: massmailmessages_update
       parameters:
       - in: path
         name: id
@@ -3467,7 +3541,7 @@ paths:
                 $ref: '#/components/schemas/EmlMessage'
           description: ''
     patch:
-      operationId: massmail_messages_partial_update
+      operationId: massmailmessages_partial_update
       parameters:
       - in: path
         name: id
@@ -3501,7 +3575,7 @@ paths:
                 $ref: '#/components/schemas/EmlMessage'
           description: ''
     delete:
-      operationId: massmail_messages_destroy
+      operationId: massmailmessages_destroy
       parameters:
       - in: path
         name: id
@@ -3519,9 +3593,9 @@ paths:
       responses:
         '204':
           description: No response body
-  /api/massmail/signatures/:
+  /massmail/signatures/:
     get:
-      operationId: massmail_signatures_list
+      operationId: massmailsignatures_list
       parameters:
       - name: ordering
         required: false
@@ -3556,7 +3630,7 @@ paths:
                 $ref: '#/components/schemas/PaginatedSignatureList'
           description: ''
     post:
-      operationId: massmail_signatures_create
+      operationId: massmailsignatures_create
       tags:
       - Massmail
       requestBody:
@@ -3583,9 +3657,9 @@ paths:
               schema:
                 $ref: '#/components/schemas/Signature'
           description: ''
-  /api/massmail/signatures/{id}/:
+  /massmail/signatures/{id}/:
     get:
-      operationId: massmail_signatures_retrieve
+      operationId: massmailsignatures_retrieve
       parameters:
       - in: path
         name: id
@@ -3608,7 +3682,7 @@ paths:
                 $ref: '#/components/schemas/Signature'
           description: ''
     put:
-      operationId: massmail_signatures_update
+      operationId: massmailsignatures_update
       parameters:
       - in: path
         name: id
@@ -3643,7 +3717,7 @@ paths:
                 $ref: '#/components/schemas/Signature'
           description: ''
     patch:
-      operationId: massmail_signatures_partial_update
+      operationId: massmailsignatures_partial_update
       parameters:
       - in: path
         name: id
@@ -3677,7 +3751,7 @@ paths:
                 $ref: '#/components/schemas/Signature'
           description: ''
     delete:
-      operationId: massmail_signatures_destroy
+      operationId: massmailsignatures_destroy
       parameters:
       - in: path
         name: id
@@ -3695,7 +3769,7 @@ paths:
       responses:
         '204':
           description: No response body
-  /api/memos/:
+  /memos/:
     get:
       operationId: memos_list
       description: CRUD for memos; includes archive and postpone actions.
@@ -3734,14 +3808,16 @@ paths:
         name: stage
         schema:
           type: string
+          x-spec-enum-id: 589d8c5506279050
           enum:
           - pen
           - pos
           - rev
-        description: |-
-          * `pen` - pending
+        description: '* `pen` - pending
+
           * `pos` - postponed
-          * `rev` - reviewed
+
+          * `rev` - reviewed'
       - in: query
         name: task
         schema:
@@ -3793,7 +3869,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/Memo'
           description: ''
-  /api/memos/{id}/:
+  /memos/{id}/:
     get:
       operationId: memos_retrieve
       description: CRUD for memos; includes archive and postpone actions.
@@ -3802,7 +3878,7 @@ paths:
         name: id
         schema:
           type: integer
-        description: A unique integer value identifying this Заметка.
+        description: A unique integer value identifying this Memo.
         required: true
       tags:
       - Memos
@@ -3826,7 +3902,7 @@ paths:
         name: id
         schema:
           type: integer
-        description: A unique integer value identifying this Заметка.
+        description: A unique integer value identifying this Memo.
         required: true
       tags:
       - Memos
@@ -3862,7 +3938,7 @@ paths:
         name: id
         schema:
           type: integer
-        description: A unique integer value identifying this Заметка.
+        description: A unique integer value identifying this Memo.
         required: true
       tags:
       - Memos
@@ -3897,7 +3973,7 @@ paths:
         name: id
         schema:
           type: integer
-        description: A unique integer value identifying this Заметка.
+        description: A unique integer value identifying this Memo.
         required: true
       tags:
       - Memos
@@ -3909,16 +3985,16 @@ paths:
       responses:
         '204':
           description: No response body
-  /api/memos/{id}/mark_postponed/:
+  /memos/{id}/mark_postponed/:
     post:
-      operationId: memos_mark_postponed_create
+      operationId: memosmark_postponed_create
       description: CRUD for memos; includes archive and postpone actions.
       parameters:
       - in: path
         name: id
         schema:
           type: integer
-        description: A unique integer value identifying this Заметка.
+        description: A unique integer value identifying this Memo.
         required: true
       tags:
       - Memos
@@ -3946,16 +4022,16 @@ paths:
               schema:
                 $ref: '#/components/schemas/Memo'
           description: ''
-  /api/memos/{id}/mark_reviewed/:
+  /memos/{id}/mark_reviewed/:
     post:
-      operationId: memos_mark_reviewed_create
+      operationId: memosmark_reviewed_create
       description: CRUD for memos; includes archive and postpone actions.
       parameters:
       - in: path
         name: id
         schema:
           type: integer
-        description: A unique integer value identifying this Заметка.
+        description: A unique integer value identifying this Memo.
         required: true
       tags:
       - Memos
@@ -3983,7 +4059,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/Memo'
           description: ''
-  /api/outputs/:
+  /outputs/:
     get:
       operationId: outputs_list
       description: CRUD API for product outputs/shipments
@@ -4065,7 +4141,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/Output'
           description: ''
-  /api/outputs/{id}/:
+  /outputs/{id}/:
     get:
       operationId: outputs_retrieve
       description: CRUD API for product outputs/shipments
@@ -4181,7 +4257,7 @@ paths:
       responses:
         '204':
           description: No response body
-  /api/payments/:
+  /payments/:
     get:
       operationId: payments_list
       description: CRUD API for payments
@@ -4216,17 +4292,20 @@ paths:
         name: status
         schema:
           type: string
+          x-spec-enum-id: 6609a394ef69a006
           title: Payment status
           enum:
           - g
           - h
           - l
           - r
-        description: |-
-          * `r` - received
+        description: '* `r` - received
+
           * `g` - guaranteed
+
           * `h` - high probability
-          * `l` - low probability
+
+          * `l` - low probability'
       tags:
       - Payments
       security:
@@ -4270,7 +4349,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/Payment'
           description: ''
-  /api/payments/{id}/:
+  /payments/{id}/:
     get:
       operationId: payments_retrieve
       description: CRUD API for payments
@@ -4386,9 +4465,9 @@ paths:
       responses:
         '204':
           description: No response body
-  /api/payments/summary/:
+  /payments/summary/:
     get:
-      operationId: payments_summary_retrieve
+      operationId: paymentssummary_retrieve
       description: Get payment summary statistics
       tags:
       - Payments
@@ -4404,9 +4483,9 @@ paths:
               schema:
                 $ref: '#/components/schemas/Payment'
           description: ''
-  /api/predictions/clients/forecast/:
+  /predictions/clients/forecast/:
     get:
-      operationId: predictions_clients_forecast_retrieve
+      operationId: predictionsclientsforecast_retrieve
       description: Get clients forecast data
       tags:
       - Analytics & Predictions
@@ -4418,9 +4497,9 @@ paths:
       responses:
         '200':
           description: No response body
-  /api/predictions/clients/predict/:
+  /predictions/clients/predict/:
     post:
-      operationId: predictions_clients_predict_create
+      operationId: predictionsclientspredict_create
       description: Trigger clients prediction task
       tags:
       - Analytics & Predictions
@@ -4432,9 +4511,9 @@ paths:
       responses:
         '200':
           description: No response body
-  /api/predictions/leads/forecast/:
+  /predictions/leads/forecast/:
     get:
-      operationId: predictions_leads_forecast_retrieve
+      operationId: predictionsleadsforecast_retrieve
       description: Get leads forecast data
       tags:
       - Analytics & Predictions
@@ -4446,9 +4525,9 @@ paths:
       responses:
         '200':
           description: No response body
-  /api/predictions/leads/predict/:
+  /predictions/leads/predict/:
     post:
-      operationId: predictions_leads_predict_create
+      operationId: predictionsleadspredict_create
       description: Trigger leads prediction task
       tags:
       - Analytics & Predictions
@@ -4460,9 +4539,9 @@ paths:
       responses:
         '200':
           description: No response body
-  /api/predictions/next-actions/clients/:
+  /predictions/next-actions/clients/:
     get:
-      operationId: predictions_next_actions_clients_retrieve
+      operationId: predictionsnext_actionsclients_retrieve
       description: Get predicted next actions for clients
       tags:
       - Analytics & Predictions
@@ -4474,9 +4553,9 @@ paths:
       responses:
         '200':
           description: No response body
-  /api/predictions/next-actions/clients/predict/:
+  /predictions/next-actions/clients/predict/:
     post:
-      operationId: predictions_next_actions_clients_predict_create
+      operationId: predictionsnext_actionsclientspredict_create
       description: Trigger next actions prediction for clients
       tags:
       - Analytics & Predictions
@@ -4488,9 +4567,9 @@ paths:
       responses:
         '200':
           description: No response body
-  /api/predictions/next-actions/deals/:
+  /predictions/next-actions/deals/:
     get:
-      operationId: predictions_next_actions_deals_retrieve
+      operationId: predictionsnext_actionsdeals_retrieve
       description: Get predicted next actions for deals
       tags:
       - Analytics & Predictions
@@ -4502,9 +4581,9 @@ paths:
       responses:
         '200':
           description: No response body
-  /api/predictions/next-actions/predict/:
+  /predictions/next-actions/predict/:
     post:
-      operationId: predictions_next_actions_predict_create
+      operationId: predictionsnext_actionspredict_create
       description: Trigger next actions prediction for deals
       tags:
       - Analytics & Predictions
@@ -4516,9 +4595,9 @@ paths:
       responses:
         '200':
           description: No response body
-  /api/predictions/predict-all/:
+  /predictions/predict-all/:
     post:
-      operationId: predictions_predict_all_create
+      operationId: predictionspredict_all_create
       description: Trigger all prediction tasks
       tags:
       - Analytics & Predictions
@@ -4530,9 +4609,9 @@ paths:
       responses:
         '200':
           description: No response body
-  /api/predictions/revenue/forecast/:
+  /predictions/revenue/forecast/:
     get:
-      operationId: predictions_revenue_forecast_retrieve
+      operationId: predictionsrevenueforecast_retrieve
       description: Get revenue forecast data
       tags:
       - Analytics & Predictions
@@ -4544,9 +4623,9 @@ paths:
       responses:
         '200':
           description: No response body
-  /api/predictions/revenue/predict/:
+  /predictions/revenue/predict/:
     post:
-      operationId: predictions_revenue_predict_create
+      operationId: predictionsrevenuepredict_create
       description: Trigger revenue prediction task
       tags:
       - Analytics & Predictions
@@ -4558,9 +4637,9 @@ paths:
       responses:
         '200':
           description: No response body
-  /api/predictions/status/:
+  /predictions/status/:
     get:
-      operationId: predictions_status_retrieve
+      operationId: predictionsstatus_retrieve
       description: Get overall prediction status
       tags:
       - Analytics & Predictions
@@ -4572,7 +4651,7 @@ paths:
       responses:
         '200':
           description: No response body
-  /api/product-categories/:
+  /product-categories/:
     get:
       operationId: product_categories_list
       description: Read-only API for product categories
@@ -4603,7 +4682,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/PaginatedProductCategoryList'
           description: ''
-  /api/product-categories/{id}/:
+  /product-categories/{id}/:
     get:
       operationId: product_categories_retrieve
       description: Read-only API for product categories
@@ -4628,7 +4707,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/ProductCategory'
           description: ''
-  /api/products/:
+  /products/:
     get:
       operationId: products_list
       description: CRUD API for products/services
@@ -4667,13 +4746,14 @@ paths:
         name: type
         schema:
           type: string
+          x-spec-enum-id: 7d024fd308227a67
           nullable: true
           enum:
           - G
           - S
-        description: |-
-          * `G` - Goods
-          * `S` - Service
+        description: '* `G` - Goods
+
+          * `S` - Service'
       tags:
       - Products
       security:
@@ -4716,7 +4796,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/Product'
           description: ''
-  /api/products/{id}/:
+  /products/{id}/:
     get:
       operationId: products_retrieve
       description: CRUD API for products/services
@@ -4831,7 +4911,7 @@ paths:
       responses:
         '204':
           description: No response body
-  /api/profiles/:
+  /profiles/:
     get:
       operationId: profiles_list
       description: CRUD API for user profiles
@@ -4894,7 +4974,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/UserProfile'
           description: ''
-  /api/profiles/{user}/:
+  /profiles/{user}/:
     get:
       operationId: profiles_retrieve
       description: CRUD API for user profiles
@@ -5009,9 +5089,9 @@ paths:
       responses:
         '204':
           description: No response body
-  /api/profiles/me/:
+  /profiles/me/:
     get:
-      operationId: profiles_me_retrieve
+      operationId: profilesme_retrieve
       description: Get or update current user's profile
       tags:
       - User Profiles
@@ -5028,7 +5108,7 @@ paths:
                 $ref: '#/components/schemas/UserProfile'
           description: ''
     put:
-      operationId: profiles_me_update
+      operationId: profilesme_update
       description: Get or update current user's profile
       tags:
       - User Profiles
@@ -5056,7 +5136,7 @@ paths:
                 $ref: '#/components/schemas/UserProfile'
           description: ''
     patch:
-      operationId: profiles_me_partial_update
+      operationId: profilesme_partial_update
       description: Get or update current user's profile
       tags:
       - User Profiles
@@ -5083,9 +5163,9 @@ paths:
               schema:
                 $ref: '#/components/schemas/UserProfile'
           description: ''
-  /api/profiles/me/avatar/:
+  /profiles/me/avatar/:
     post:
-      operationId: profiles_me_avatar_create
+      operationId: profilesmeavatar_create
       description: Upload or delete user avatar
       tags:
       - User Profiles
@@ -5113,7 +5193,7 @@ paths:
                 $ref: '#/components/schemas/UserProfile'
           description: ''
     delete:
-      operationId: profiles_me_avatar_destroy
+      operationId: profilesmeavatar_destroy
       description: Upload or delete user avatar
       tags:
       - User Profiles
@@ -5125,7 +5205,7 @@ paths:
       responses:
         '204':
           description: No response body
-  /api/project-stages/:
+  /project-stages/:
     get:
       operationId: project_stages_list
       description: Reference list of project stages.
@@ -5162,7 +5242,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/PaginatedProjectStageList'
           description: ''
-  /api/project-stages/{id}/:
+  /project-stages/{id}/:
     get:
       operationId: project_stages_retrieve
       description: Reference list of project stages.
@@ -5187,7 +5267,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/ProjectStage'
           description: ''
-  /api/projects/:
+  /projects/:
     get:
       operationId: projects_list
       description: CRUD for projects and related filtering.
@@ -5269,7 +5349,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/Project'
           description: ''
-  /api/projects/{id}/:
+  /projects/{id}/:
     get:
       operationId: projects_retrieve
       description: CRUD for projects and related filtering.
@@ -5385,9 +5465,9 @@ paths:
       responses:
         '204':
           description: No response body
-  /api/projects/{id}/assign/:
+  /projects/{id}/assign/:
     post:
-      operationId: projects_assign_create
+      operationId: projectsassign_create
       description: CRUD for projects and related filtering.
       parameters:
       - in: path
@@ -5422,9 +5502,9 @@ paths:
               schema:
                 $ref: '#/components/schemas/Project'
           description: ''
-  /api/projects/{id}/complete/:
+  /projects/{id}/complete/:
     post:
-      operationId: projects_complete_create
+      operationId: projectscomplete_create
       description: CRUD for projects and related filtering.
       parameters:
       - in: path
@@ -5459,9 +5539,9 @@ paths:
               schema:
                 $ref: '#/components/schemas/Project'
           description: ''
-  /api/projects/{id}/reopen/:
+  /projects/{id}/reopen/:
     post:
-      operationId: projects_reopen_create
+      operationId: projectsreopen_create
       description: CRUD for projects and related filtering.
       parameters:
       - in: path
@@ -5496,9 +5576,9 @@ paths:
               schema:
                 $ref: '#/components/schemas/Project'
           description: ''
-  /api/projects/bulk_tag/:
+  /projects/bulk_tag/:
     post:
-      operationId: projects_bulk_tag_create
+      operationId: projectsbulk_tag_create
       description: CRUD for projects and related filtering.
       tags:
       - Projects
@@ -5526,9 +5606,9 @@ paths:
               schema:
                 $ref: '#/components/schemas/Project'
           description: ''
-  /api/projects/export/:
+  /projects/export/:
     get:
-      operationId: projects_export_retrieve
+      operationId: projectsexport_retrieve
       description: CRUD for projects and related filtering.
       tags:
       - Projects
@@ -5544,7 +5624,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/Project'
           description: ''
-  /api/reminders/:
+  /reminders/:
     get:
       operationId: reminders_list
       description: CRUD API for reminders
@@ -5622,7 +5702,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/Reminder'
           description: ''
-  /api/reminders/{id}/:
+  /reminders/{id}/:
     get:
       operationId: reminders_retrieve
       description: CRUD API for reminders
@@ -5738,9 +5818,9 @@ paths:
       responses:
         '204':
           description: No response body
-  /api/reminders/upcoming/:
+  /reminders/upcoming/:
     get:
-      operationId: reminders_upcoming_retrieve
+      operationId: remindersupcoming_retrieve
       description: Get upcoming active reminders (next 7 days)
       tags:
       - Reminders
@@ -5756,7 +5836,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/Reminder'
           description: ''
-  /api/requests/:
+  /requests/:
     get:
       operationId: requests_list
       description: CRUD API for customer requests/tickets
@@ -5846,7 +5926,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/Request'
           description: ''
-  /api/requests/{id}/:
+  /requests/{id}/:
     get:
       operationId: requests_retrieve
       description: CRUD API for customer requests/tickets
@@ -5962,19 +6042,25 @@ paths:
       responses:
         '204':
           description: No response body
-  /api/settings/api-keys/:
+  /settings/api-keys/:
     get:
-      operationId: settings_api_keys_list
-      description: |-
-        ViewSet for API key management.
+      operationId: settingsapi_keys_list
+      description: 'ViewSet for API key management.
+
 
         Endpoints:
+
         - GET /api/settings/api-keys/ - List all API keys
+
         - POST /api/settings/api-keys/ - Create new API key
+
         - GET /api/settings/api-keys/{id}/ - Get specific key
+
         - DELETE /api/settings/api-keys/{id}/ - Delete key
+
         - POST /api/settings/api-keys/{id}/revoke/ - Revoke key
-        - GET /api/settings/api-keys/{id}/usage/ - Get usage stats
+
+        - GET /api/settings/api-keys/{id}/usage/ - Get usage stats'
       parameters:
       - name: ordering
         required: false
@@ -5995,7 +6081,7 @@ paths:
         schema:
           type: string
       tags:
-      - settings
+      - settingsapi-keys
       security:
       - jwtAuth: []
       - tokenAuth: []
@@ -6009,10 +6095,10 @@ paths:
                 $ref: '#/components/schemas/PaginatedAPIKeyList'
           description: ''
     post:
-      operationId: settings_api_keys_create
+      operationId: settingsapi_keys_create
       description: Create a new API key with automatic key generation.
       tags:
-      - settings
+      - settingsapi-keys
       requestBody:
         content:
           application/json:
@@ -6037,19 +6123,25 @@ paths:
               schema:
                 $ref: '#/components/schemas/APIKeyCreate'
           description: ''
-  /api/settings/api-keys/{id}/:
+  /settings/api-keys/{id}/:
     get:
-      operationId: settings_api_keys_retrieve
-      description: |-
-        ViewSet for API key management.
+      operationId: settingsapi_keys_retrieve
+      description: 'ViewSet for API key management.
+
 
         Endpoints:
+
         - GET /api/settings/api-keys/ - List all API keys
+
         - POST /api/settings/api-keys/ - Create new API key
+
         - GET /api/settings/api-keys/{id}/ - Get specific key
+
         - DELETE /api/settings/api-keys/{id}/ - Delete key
+
         - POST /api/settings/api-keys/{id}/revoke/ - Revoke key
-        - GET /api/settings/api-keys/{id}/usage/ - Get usage stats
+
+        - GET /api/settings/api-keys/{id}/usage/ - Get usage stats'
       parameters:
       - in: path
         name: id
@@ -6059,7 +6151,7 @@ paths:
         description: A UUID string identifying this API Key.
         required: true
       tags:
-      - settings
+      - settingsapi-keys
       security:
       - jwtAuth: []
       - tokenAuth: []
@@ -6073,17 +6165,23 @@ paths:
                 $ref: '#/components/schemas/APIKey'
           description: ''
     put:
-      operationId: settings_api_keys_update
-      description: |-
-        ViewSet for API key management.
+      operationId: settingsapi_keys_update
+      description: 'ViewSet for API key management.
+
 
         Endpoints:
+
         - GET /api/settings/api-keys/ - List all API keys
+
         - POST /api/settings/api-keys/ - Create new API key
+
         - GET /api/settings/api-keys/{id}/ - Get specific key
+
         - DELETE /api/settings/api-keys/{id}/ - Delete key
+
         - POST /api/settings/api-keys/{id}/revoke/ - Revoke key
-        - GET /api/settings/api-keys/{id}/usage/ - Get usage stats
+
+        - GET /api/settings/api-keys/{id}/usage/ - Get usage stats'
       parameters:
       - in: path
         name: id
@@ -6093,7 +6191,7 @@ paths:
         description: A UUID string identifying this API Key.
         required: true
       tags:
-      - settings
+      - settingsapi-keys
       requestBody:
         content:
           application/json:
@@ -6119,17 +6217,23 @@ paths:
                 $ref: '#/components/schemas/APIKey'
           description: ''
     patch:
-      operationId: settings_api_keys_partial_update
-      description: |-
-        ViewSet for API key management.
+      operationId: settingsapi_keys_partial_update
+      description: 'ViewSet for API key management.
+
 
         Endpoints:
+
         - GET /api/settings/api-keys/ - List all API keys
+
         - POST /api/settings/api-keys/ - Create new API key
+
         - GET /api/settings/api-keys/{id}/ - Get specific key
+
         - DELETE /api/settings/api-keys/{id}/ - Delete key
+
         - POST /api/settings/api-keys/{id}/revoke/ - Revoke key
-        - GET /api/settings/api-keys/{id}/usage/ - Get usage stats
+
+        - GET /api/settings/api-keys/{id}/usage/ - Get usage stats'
       parameters:
       - in: path
         name: id
@@ -6139,7 +6243,7 @@ paths:
         description: A UUID string identifying this API Key.
         required: true
       tags:
-      - settings
+      - settingsapi-keys
       requestBody:
         content:
           application/json:
@@ -6164,17 +6268,23 @@ paths:
                 $ref: '#/components/schemas/APIKey'
           description: ''
     delete:
-      operationId: settings_api_keys_destroy
-      description: |-
-        ViewSet for API key management.
+      operationId: settingsapi_keys_destroy
+      description: 'ViewSet for API key management.
+
 
         Endpoints:
+
         - GET /api/settings/api-keys/ - List all API keys
+
         - POST /api/settings/api-keys/ - Create new API key
+
         - GET /api/settings/api-keys/{id}/ - Get specific key
+
         - DELETE /api/settings/api-keys/{id}/ - Delete key
+
         - POST /api/settings/api-keys/{id}/revoke/ - Revoke key
-        - GET /api/settings/api-keys/{id}/usage/ - Get usage stats
+
+        - GET /api/settings/api-keys/{id}/usage/ - Get usage stats'
       parameters:
       - in: path
         name: id
@@ -6184,7 +6294,7 @@ paths:
         description: A UUID string identifying this API Key.
         required: true
       tags:
-      - settings
+      - settingsapi-keys
       security:
       - jwtAuth: []
       - tokenAuth: []
@@ -6193,9 +6303,9 @@ paths:
       responses:
         '204':
           description: No response body
-  /api/settings/api-keys/{id}/revoke/:
+  /settings/api-keys/{id}/revoke/:
     post:
-      operationId: settings_api_keys_revoke_create
+      operationId: settingsapi_keysrevoke_create
       description: POST /api/settings/api-keys/{id}/revoke/ - Revoke an API key.
       parameters:
       - in: path
@@ -6206,7 +6316,7 @@ paths:
         description: A UUID string identifying this API Key.
         required: true
       tags:
-      - settings
+      - settingsapi-keysrevoke
       requestBody:
         content:
           application/json:
@@ -6231,9 +6341,9 @@ paths:
               schema:
                 $ref: '#/components/schemas/APIKey'
           description: ''
-  /api/settings/api-keys/{id}/usage/:
+  /settings/api-keys/{id}/usage/:
     get:
-      operationId: settings_api_keys_usage_retrieve
+      operationId: settingsapi_keysusage_retrieve
       description: GET /api/settings/api-keys/{id}/usage/ - Get usage statistics.
       parameters:
       - in: path
@@ -6244,7 +6354,7 @@ paths:
         description: A UUID string identifying this API Key.
         required: true
       tags:
-      - settings
+      - settingsapi-keysusage
       security:
       - jwtAuth: []
       - tokenAuth: []
@@ -6257,20 +6367,27 @@ paths:
               schema:
                 $ref: '#/components/schemas/APIKey'
           description: ''
-  /api/settings/facebook/pages/:
+  /settings/facebook/pages/:
     get:
-      operationId: settings_facebook_pages_list
-      description: |-
-        ViewSet for managing Facebook Page integrations.
+      operationId: settingsfacebookpages_list
+      description: 'ViewSet for managing Facebook Page integrations.
+
 
         Endpoints:
+
         - GET /api/settings/facebook/pages/ - List all connected pages
+
         - POST /api/settings/facebook/pages/ - Connect new Facebook page
+
         - GET /api/settings/facebook/pages/{id}/ - Get page details
+
         - PATCH /api/settings/facebook/pages/{id}/ - Update page settings
+
         - DELETE /api/settings/facebook/pages/{id}/ - Disconnect page
+
         - POST /api/settings/facebook/pages/{id}/test/ - Test connection
-        - POST /api/settings/facebook/pages/{id}/disconnect/ - Disconnect and cleanup
+
+        - POST /api/settings/facebook/pages/{id}/disconnect/ - Disconnect and cleanup'
       parameters:
       - name: ordering
         required: false
@@ -6291,7 +6408,7 @@ paths:
         schema:
           type: string
       tags:
-      - settings
+      - settingsfacebookpages
       security:
       - jwtAuth: []
       - tokenAuth: []
@@ -6305,20 +6422,27 @@ paths:
                 $ref: '#/components/schemas/PaginatedFacebookPageList'
           description: ''
     post:
-      operationId: settings_facebook_pages_create
-      description: |-
-        ViewSet for managing Facebook Page integrations.
+      operationId: settingsfacebookpages_create
+      description: 'ViewSet for managing Facebook Page integrations.
+
 
         Endpoints:
+
         - GET /api/settings/facebook/pages/ - List all connected pages
+
         - POST /api/settings/facebook/pages/ - Connect new Facebook page
+
         - GET /api/settings/facebook/pages/{id}/ - Get page details
+
         - PATCH /api/settings/facebook/pages/{id}/ - Update page settings
+
         - DELETE /api/settings/facebook/pages/{id}/ - Disconnect page
+
         - POST /api/settings/facebook/pages/{id}/test/ - Test connection
-        - POST /api/settings/facebook/pages/{id}/disconnect/ - Disconnect and cleanup
+
+        - POST /api/settings/facebook/pages/{id}/disconnect/ - Disconnect and cleanup'
       tags:
-      - settings
+      - settingsfacebookpages
       requestBody:
         content:
           application/json:
@@ -6343,20 +6467,27 @@ paths:
               schema:
                 $ref: '#/components/schemas/FacebookPageCreate'
           description: ''
-  /api/settings/facebook/pages/{id}/:
+  /settings/facebook/pages/{id}/:
     get:
-      operationId: settings_facebook_pages_retrieve
-      description: |-
-        ViewSet for managing Facebook Page integrations.
+      operationId: settingsfacebookpages_retrieve
+      description: 'ViewSet for managing Facebook Page integrations.
+
 
         Endpoints:
+
         - GET /api/settings/facebook/pages/ - List all connected pages
+
         - POST /api/settings/facebook/pages/ - Connect new Facebook page
+
         - GET /api/settings/facebook/pages/{id}/ - Get page details
+
         - PATCH /api/settings/facebook/pages/{id}/ - Update page settings
+
         - DELETE /api/settings/facebook/pages/{id}/ - Disconnect page
+
         - POST /api/settings/facebook/pages/{id}/test/ - Test connection
-        - POST /api/settings/facebook/pages/{id}/disconnect/ - Disconnect and cleanup
+
+        - POST /api/settings/facebook/pages/{id}/disconnect/ - Disconnect and cleanup'
       parameters:
       - in: path
         name: id
@@ -6364,7 +6495,7 @@ paths:
           type: string
         required: true
       tags:
-      - settings
+      - settingsfacebookpages
       security:
       - jwtAuth: []
       - tokenAuth: []
@@ -6378,18 +6509,25 @@ paths:
                 $ref: '#/components/schemas/FacebookPage'
           description: ''
     put:
-      operationId: settings_facebook_pages_update
-      description: |-
-        ViewSet for managing Facebook Page integrations.
+      operationId: settingsfacebookpages_update
+      description: 'ViewSet for managing Facebook Page integrations.
+
 
         Endpoints:
+
         - GET /api/settings/facebook/pages/ - List all connected pages
+
         - POST /api/settings/facebook/pages/ - Connect new Facebook page
+
         - GET /api/settings/facebook/pages/{id}/ - Get page details
+
         - PATCH /api/settings/facebook/pages/{id}/ - Update page settings
+
         - DELETE /api/settings/facebook/pages/{id}/ - Disconnect page
+
         - POST /api/settings/facebook/pages/{id}/test/ - Test connection
-        - POST /api/settings/facebook/pages/{id}/disconnect/ - Disconnect and cleanup
+
+        - POST /api/settings/facebook/pages/{id}/disconnect/ - Disconnect and cleanup'
       parameters:
       - in: path
         name: id
@@ -6397,7 +6535,7 @@ paths:
           type: string
         required: true
       tags:
-      - settings
+      - settingsfacebookpages
       requestBody:
         content:
           application/json:
@@ -6423,18 +6561,25 @@ paths:
                 $ref: '#/components/schemas/FacebookPage'
           description: ''
     patch:
-      operationId: settings_facebook_pages_partial_update
-      description: |-
-        ViewSet for managing Facebook Page integrations.
+      operationId: settingsfacebookpages_partial_update
+      description: 'ViewSet for managing Facebook Page integrations.
+
 
         Endpoints:
+
         - GET /api/settings/facebook/pages/ - List all connected pages
+
         - POST /api/settings/facebook/pages/ - Connect new Facebook page
+
         - GET /api/settings/facebook/pages/{id}/ - Get page details
+
         - PATCH /api/settings/facebook/pages/{id}/ - Update page settings
+
         - DELETE /api/settings/facebook/pages/{id}/ - Disconnect page
+
         - POST /api/settings/facebook/pages/{id}/test/ - Test connection
-        - POST /api/settings/facebook/pages/{id}/disconnect/ - Disconnect and cleanup
+
+        - POST /api/settings/facebook/pages/{id}/disconnect/ - Disconnect and cleanup'
       parameters:
       - in: path
         name: id
@@ -6442,7 +6587,7 @@ paths:
           type: string
         required: true
       tags:
-      - settings
+      - settingsfacebookpages
       requestBody:
         content:
           application/json:
@@ -6467,18 +6612,25 @@ paths:
                 $ref: '#/components/schemas/FacebookPage'
           description: ''
     delete:
-      operationId: settings_facebook_pages_destroy
-      description: |-
-        ViewSet for managing Facebook Page integrations.
+      operationId: settingsfacebookpages_destroy
+      description: 'ViewSet for managing Facebook Page integrations.
+
 
         Endpoints:
+
         - GET /api/settings/facebook/pages/ - List all connected pages
+
         - POST /api/settings/facebook/pages/ - Connect new Facebook page
+
         - GET /api/settings/facebook/pages/{id}/ - Get page details
+
         - PATCH /api/settings/facebook/pages/{id}/ - Update page settings
+
         - DELETE /api/settings/facebook/pages/{id}/ - Disconnect page
+
         - POST /api/settings/facebook/pages/{id}/test/ - Test connection
-        - POST /api/settings/facebook/pages/{id}/disconnect/ - Disconnect and cleanup
+
+        - POST /api/settings/facebook/pages/{id}/disconnect/ - Disconnect and cleanup'
       parameters:
       - in: path
         name: id
@@ -6486,7 +6638,7 @@ paths:
           type: string
         required: true
       tags:
-      - settings
+      - settingsfacebookpages
       security:
       - jwtAuth: []
       - tokenAuth: []
@@ -6495,13 +6647,13 @@ paths:
       responses:
         '204':
           description: No response body
-  /api/settings/facebook/pages/{id}/disconnect/:
+  /settings/facebook/pages/{id}/disconnect/:
     post:
-      operationId: settings_facebook_pages_disconnect_create
-      description: |-
-        Disconnect Facebook page.
+      operationId: settingsfacebookpagesdisconnect_create
+      description: 'Disconnect Facebook page.
 
-        Deactivates the page and removes webhook subscriptions.
+
+        Deactivates the page and removes webhook subscriptions.'
       parameters:
       - in: path
         name: id
@@ -6509,7 +6661,7 @@ paths:
           type: string
         required: true
       tags:
-      - settings
+      - settingsfacebookpagesdisconnect
       requestBody:
         content:
           application/json:
@@ -6534,13 +6686,13 @@ paths:
               schema:
                 $ref: '#/components/schemas/FacebookPage'
           description: ''
-  /api/settings/facebook/pages/{id}/test/:
+  /settings/facebook/pages/{id}/test/:
     post:
-      operationId: settings_facebook_pages_test_create
-      description: |-
-        Test Facebook page connection.
+      operationId: settingsfacebookpagestest_create
+      description: 'Test Facebook page connection.
 
-        Verifies that the access token is valid and can access Facebook API.
+
+        Verifies that the access token is valid and can access Facebook API.'
       parameters:
       - in: path
         name: id
@@ -6548,7 +6700,7 @@ paths:
           type: string
         required: true
       tags:
-      - settings
+      - settingsfacebookpagestest
       requestBody:
         content:
           application/json:
@@ -6573,12 +6725,12 @@ paths:
               schema:
                 $ref: '#/components/schemas/FacebookPage'
           description: ''
-  /api/settings/general/:
+  /settings/general/:
     get:
-      operationId: settings_general_retrieve
+      operationId: settingsgeneral_retrieve
       description: GET /api/settings/general/ - Retrieve general settings.
       tags:
-      - settings
+      - settingsgeneral
       security:
       - jwtAuth: []
       - tokenAuth: []
@@ -6587,9 +6739,9 @@ paths:
       responses:
         '200':
           description: No response body
-  /api/settings/general/{id}/:
+  /settings/general/{id}/:
     patch:
-      operationId: settings_general_partial_update
+      operationId: settingsgeneral_partial_update
       description: PATCH /api/settings/general/ - Update general settings.
       parameters:
       - in: path
@@ -6598,7 +6750,7 @@ paths:
           type: string
         required: true
       tags:
-      - settings
+      - settingsgeneral
       security:
       - jwtAuth: []
       - tokenAuth: []
@@ -6607,20 +6759,28 @@ paths:
       responses:
         '200':
           description: No response body
-  /api/settings/instagram/accounts/:
+  /settings/instagram/accounts/:
     get:
-      operationId: settings_instagram_accounts_list
-      description: |-
-        ViewSet for managing Instagram Business Account integrations.
+      operationId: settingsinstagramaccounts_list
+      description: 'ViewSet for managing Instagram Business Account integrations.
+
 
         Endpoints:
+
         - GET /api/settings/instagram/accounts/ - List all connected accounts
+
         - POST /api/settings/instagram/accounts/ - Connect new Instagram account
+
         - GET /api/settings/instagram/accounts/{id}/ - Get account details
+
         - PATCH /api/settings/instagram/accounts/{id}/ - Update account settings
+
         - DELETE /api/settings/instagram/accounts/{id}/ - Disconnect account
+
         - POST /api/settings/instagram/accounts/{id}/test/ - Test connection
-        - POST /api/settings/instagram/accounts/{id}/disconnect/ - Disconnect and cleanup
+
+        - POST /api/settings/instagram/accounts/{id}/disconnect/ - Disconnect and
+        cleanup'
       parameters:
       - name: ordering
         required: false
@@ -6641,7 +6801,7 @@ paths:
         schema:
           type: string
       tags:
-      - settings
+      - settingsinstagramaccounts
       security:
       - jwtAuth: []
       - tokenAuth: []
@@ -6655,20 +6815,28 @@ paths:
                 $ref: '#/components/schemas/PaginatedInstagramAccountList'
           description: ''
     post:
-      operationId: settings_instagram_accounts_create
-      description: |-
-        ViewSet for managing Instagram Business Account integrations.
+      operationId: settingsinstagramaccounts_create
+      description: 'ViewSet for managing Instagram Business Account integrations.
+
 
         Endpoints:
+
         - GET /api/settings/instagram/accounts/ - List all connected accounts
+
         - POST /api/settings/instagram/accounts/ - Connect new Instagram account
+
         - GET /api/settings/instagram/accounts/{id}/ - Get account details
+
         - PATCH /api/settings/instagram/accounts/{id}/ - Update account settings
+
         - DELETE /api/settings/instagram/accounts/{id}/ - Disconnect account
+
         - POST /api/settings/instagram/accounts/{id}/test/ - Test connection
-        - POST /api/settings/instagram/accounts/{id}/disconnect/ - Disconnect and cleanup
+
+        - POST /api/settings/instagram/accounts/{id}/disconnect/ - Disconnect and
+        cleanup'
       tags:
-      - settings
+      - settingsinstagramaccounts
       requestBody:
         content:
           application/json:
@@ -6693,20 +6861,28 @@ paths:
               schema:
                 $ref: '#/components/schemas/InstagramAccountCreate'
           description: ''
-  /api/settings/instagram/accounts/{id}/:
+  /settings/instagram/accounts/{id}/:
     get:
-      operationId: settings_instagram_accounts_retrieve
-      description: |-
-        ViewSet for managing Instagram Business Account integrations.
+      operationId: settingsinstagramaccounts_retrieve
+      description: 'ViewSet for managing Instagram Business Account integrations.
+
 
         Endpoints:
+
         - GET /api/settings/instagram/accounts/ - List all connected accounts
+
         - POST /api/settings/instagram/accounts/ - Connect new Instagram account
+
         - GET /api/settings/instagram/accounts/{id}/ - Get account details
+
         - PATCH /api/settings/instagram/accounts/{id}/ - Update account settings
+
         - DELETE /api/settings/instagram/accounts/{id}/ - Disconnect account
+
         - POST /api/settings/instagram/accounts/{id}/test/ - Test connection
-        - POST /api/settings/instagram/accounts/{id}/disconnect/ - Disconnect and cleanup
+
+        - POST /api/settings/instagram/accounts/{id}/disconnect/ - Disconnect and
+        cleanup'
       parameters:
       - in: path
         name: id
@@ -6714,7 +6890,7 @@ paths:
           type: string
         required: true
       tags:
-      - settings
+      - settingsinstagramaccounts
       security:
       - jwtAuth: []
       - tokenAuth: []
@@ -6728,18 +6904,26 @@ paths:
                 $ref: '#/components/schemas/InstagramAccount'
           description: ''
     put:
-      operationId: settings_instagram_accounts_update
-      description: |-
-        ViewSet for managing Instagram Business Account integrations.
+      operationId: settingsinstagramaccounts_update
+      description: 'ViewSet for managing Instagram Business Account integrations.
+
 
         Endpoints:
+
         - GET /api/settings/instagram/accounts/ - List all connected accounts
+
         - POST /api/settings/instagram/accounts/ - Connect new Instagram account
+
         - GET /api/settings/instagram/accounts/{id}/ - Get account details
+
         - PATCH /api/settings/instagram/accounts/{id}/ - Update account settings
+
         - DELETE /api/settings/instagram/accounts/{id}/ - Disconnect account
+
         - POST /api/settings/instagram/accounts/{id}/test/ - Test connection
-        - POST /api/settings/instagram/accounts/{id}/disconnect/ - Disconnect and cleanup
+
+        - POST /api/settings/instagram/accounts/{id}/disconnect/ - Disconnect and
+        cleanup'
       parameters:
       - in: path
         name: id
@@ -6747,7 +6931,7 @@ paths:
           type: string
         required: true
       tags:
-      - settings
+      - settingsinstagramaccounts
       requestBody:
         content:
           application/json:
@@ -6773,18 +6957,26 @@ paths:
                 $ref: '#/components/schemas/InstagramAccount'
           description: ''
     patch:
-      operationId: settings_instagram_accounts_partial_update
-      description: |-
-        ViewSet for managing Instagram Business Account integrations.
+      operationId: settingsinstagramaccounts_partial_update
+      description: 'ViewSet for managing Instagram Business Account integrations.
+
 
         Endpoints:
+
         - GET /api/settings/instagram/accounts/ - List all connected accounts
+
         - POST /api/settings/instagram/accounts/ - Connect new Instagram account
+
         - GET /api/settings/instagram/accounts/{id}/ - Get account details
+
         - PATCH /api/settings/instagram/accounts/{id}/ - Update account settings
+
         - DELETE /api/settings/instagram/accounts/{id}/ - Disconnect account
+
         - POST /api/settings/instagram/accounts/{id}/test/ - Test connection
-        - POST /api/settings/instagram/accounts/{id}/disconnect/ - Disconnect and cleanup
+
+        - POST /api/settings/instagram/accounts/{id}/disconnect/ - Disconnect and
+        cleanup'
       parameters:
       - in: path
         name: id
@@ -6792,7 +6984,7 @@ paths:
           type: string
         required: true
       tags:
-      - settings
+      - settingsinstagramaccounts
       requestBody:
         content:
           application/json:
@@ -6817,18 +7009,26 @@ paths:
                 $ref: '#/components/schemas/InstagramAccount'
           description: ''
     delete:
-      operationId: settings_instagram_accounts_destroy
-      description: |-
-        ViewSet for managing Instagram Business Account integrations.
+      operationId: settingsinstagramaccounts_destroy
+      description: 'ViewSet for managing Instagram Business Account integrations.
+
 
         Endpoints:
+
         - GET /api/settings/instagram/accounts/ - List all connected accounts
+
         - POST /api/settings/instagram/accounts/ - Connect new Instagram account
+
         - GET /api/settings/instagram/accounts/{id}/ - Get account details
+
         - PATCH /api/settings/instagram/accounts/{id}/ - Update account settings
+
         - DELETE /api/settings/instagram/accounts/{id}/ - Disconnect account
+
         - POST /api/settings/instagram/accounts/{id}/test/ - Test connection
-        - POST /api/settings/instagram/accounts/{id}/disconnect/ - Disconnect and cleanup
+
+        - POST /api/settings/instagram/accounts/{id}/disconnect/ - Disconnect and
+        cleanup'
       parameters:
       - in: path
         name: id
@@ -6836,7 +7036,7 @@ paths:
           type: string
         required: true
       tags:
-      - settings
+      - settingsinstagramaccounts
       security:
       - jwtAuth: []
       - tokenAuth: []
@@ -6845,13 +7045,13 @@ paths:
       responses:
         '204':
           description: No response body
-  /api/settings/instagram/accounts/{id}/disconnect/:
+  /settings/instagram/accounts/{id}/disconnect/:
     post:
-      operationId: settings_instagram_accounts_disconnect_create
-      description: |-
-        Disconnect Instagram account.
+      operationId: settingsinstagramaccountsdisconnect_create
+      description: 'Disconnect Instagram account.
 
-        Deactivates the account and removes webhook subscriptions.
+
+        Deactivates the account and removes webhook subscriptions.'
       parameters:
       - in: path
         name: id
@@ -6859,7 +7059,7 @@ paths:
           type: string
         required: true
       tags:
-      - settings
+      - settingsinstagramaccountsdisconnect
       requestBody:
         content:
           application/json:
@@ -6884,13 +7084,13 @@ paths:
               schema:
                 $ref: '#/components/schemas/InstagramAccount'
           description: ''
-  /api/settings/instagram/accounts/{id}/test/:
+  /settings/instagram/accounts/{id}/test/:
     post:
-      operationId: settings_instagram_accounts_test_create
-      description: |-
-        Test Instagram connection.
+      operationId: settingsinstagramaccountstest_create
+      description: 'Test Instagram connection.
 
-        Verifies that the access token is valid and can access Instagram API.
+
+        Verifies that the access token is valid and can access Instagram API.'
       parameters:
       - in: path
         name: id
@@ -6898,7 +7098,7 @@ paths:
           type: string
         required: true
       tags:
-      - settings
+      - settingsinstagramaccountstest
       requestBody:
         content:
           application/json:
@@ -6923,18 +7123,23 @@ paths:
               schema:
                 $ref: '#/components/schemas/InstagramAccount'
           description: ''
-  /api/settings/integration-logs/:
+  /settings/integration-logs/:
     get:
-      operationId: settings_integration_logs_list
-      description: |-
-        ViewSet for integration logs (read-only).
+      operationId: settingsintegration_logs_list
+      description: 'ViewSet for integration logs (read-only).
+
 
         Endpoints:
+
         - GET /api/settings/integration-logs/ - List logs
+
         - GET /api/settings/integration-logs/{id}/ - Get log detail
+
         - GET /api/settings/integration-logs/export/ - Export logs
+
         - DELETE /api/settings/integration-logs/cleanup/ - Cleanup old logs
-        - GET /api/settings/integration-logs/stats/ - Get statistics
+
+        - GET /api/settings/integration-logs/stats/ - Get statistics'
       parameters:
       - name: ordering
         required: false
@@ -6955,7 +7160,7 @@ paths:
         schema:
           type: string
       tags:
-      - settings
+      - settingsintegration-logs
       security:
       - jwtAuth: []
       - tokenAuth: []
@@ -6968,18 +7173,23 @@ paths:
               schema:
                 $ref: '#/components/schemas/PaginatedIntegrationLogList'
           description: ''
-  /api/settings/integration-logs/{id}/:
+  /settings/integration-logs/{id}/:
     get:
-      operationId: settings_integration_logs_retrieve
-      description: |-
-        ViewSet for integration logs (read-only).
+      operationId: settingsintegration_logs_retrieve
+      description: 'ViewSet for integration logs (read-only).
+
 
         Endpoints:
+
         - GET /api/settings/integration-logs/ - List logs
+
         - GET /api/settings/integration-logs/{id}/ - Get log detail
+
         - GET /api/settings/integration-logs/export/ - Export logs
+
         - DELETE /api/settings/integration-logs/cleanup/ - Cleanup old logs
-        - GET /api/settings/integration-logs/stats/ - Get statistics
+
+        - GET /api/settings/integration-logs/stats/ - Get statistics'
       parameters:
       - in: path
         name: id
@@ -6989,7 +7199,7 @@ paths:
         description: A UUID string identifying this Integration Log.
         required: true
       tags:
-      - settings
+      - settingsintegration-logs
       security:
       - jwtAuth: []
       - tokenAuth: []
@@ -7002,12 +7212,12 @@ paths:
               schema:
                 $ref: '#/components/schemas/IntegrationLog'
           description: ''
-  /api/settings/integration-logs/cleanup/:
+  /settings/integration-logs/cleanup/:
     delete:
-      operationId: settings_integration_logs_cleanup_destroy
+      operationId: settingsintegration_logscleanup_destroy
       description: DELETE /api/settings/integration-logs/cleanup/ - Delete old logs.
       tags:
-      - settings
+      - settingsintegration-logscleanup
       security:
       - jwtAuth: []
       - tokenAuth: []
@@ -7016,13 +7226,13 @@ paths:
       responses:
         '204':
           description: No response body
-  /api/settings/integration-logs/export/:
+  /settings/integration-logs/export/:
     get:
-      operationId: settings_integration_logs_export_retrieve
+      operationId: settingsintegration_logsexport_retrieve
       description: GET /api/settings/integration-logs/export/ - Export logs as CSV
         or JSON.
       tags:
-      - settings
+      - settingsintegration-logsexport
       security:
       - jwtAuth: []
       - tokenAuth: []
@@ -7035,12 +7245,12 @@ paths:
               schema:
                 $ref: '#/components/schemas/IntegrationLog'
           description: ''
-  /api/settings/integration-logs/stats/:
+  /settings/integration-logs/stats/:
     get:
-      operationId: settings_integration_logs_stats_retrieve
+      operationId: settingsintegration_logsstats_retrieve
       description: GET /api/settings/integration-logs/stats/ - Get integration statistics.
       tags:
-      - settings
+      - settingsintegration-logsstats
       security:
       - jwtAuth: []
       - tokenAuth: []
@@ -7053,9 +7263,9 @@ paths:
               schema:
                 $ref: '#/components/schemas/IntegrationLog'
           description: ''
-  /api/settings/massmail/:
+  /settings/massmail/:
     get:
-      operationId: settings_massmail_retrieve
+      operationId: settingsmassmail_retrieve
       description: Get or update massmail settings
       tags:
       - System Settings
@@ -7068,7 +7278,7 @@ paths:
         '200':
           description: No response body
     patch:
-      operationId: settings_massmail_partial_update
+      operationId: settingsmassmail_partial_update
       description: Get or update massmail settings
       tags:
       - System Settings
@@ -7080,12 +7290,12 @@ paths:
       responses:
         '200':
           description: No response body
-  /api/settings/notifications/:
+  /settings/notifications/:
     get:
-      operationId: settings_notifications_retrieve
+      operationId: settingsnotifications_retrieve
       description: GET /api/settings/notifications/ - Get global notification settings.
       tags:
-      - settings
+      - settingsnotifications
       security:
       - jwtAuth: []
       - tokenAuth: []
@@ -7094,9 +7304,9 @@ paths:
       responses:
         '200':
           description: No response body
-  /api/settings/notifications/{id}/:
+  /settings/notifications/{id}/:
     patch:
-      operationId: settings_notifications_partial_update
+      operationId: settingsnotifications_partial_update
       description: PATCH /api/settings/notifications/ - Update global settings.
       parameters:
       - in: path
@@ -7105,7 +7315,7 @@ paths:
           type: string
         required: true
       tags:
-      - settings
+      - settingsnotifications
       security:
       - jwtAuth: []
       - tokenAuth: []
@@ -7114,12 +7324,12 @@ paths:
       responses:
         '200':
           description: No response body
-  /api/settings/notifications/test/:
+  /settings/notifications/test/:
     post:
-      operationId: settings_notifications_test_create
+      operationId: settingsnotificationstest_create
       description: POST /api/settings/notifications/test/ - Send test notification.
       tags:
-      - settings
+      - settingsnotificationstest
       security:
       - jwtAuth: []
       - tokenAuth: []
@@ -7128,12 +7338,12 @@ paths:
       responses:
         '200':
           description: No response body
-  /api/settings/notifications/user/:
+  /settings/notifications/user/:
     get:
-      operationId: settings_notifications_user_retrieve
+      operationId: settingsnotificationsuser_retrieve
       description: GET/PATCH /api/settings/notifications/user/ - User-specific settings.
       tags:
-      - settings
+      - settingsnotificationsuser
       security:
       - jwtAuth: []
       - tokenAuth: []
@@ -7143,10 +7353,10 @@ paths:
         '200':
           description: No response body
     patch:
-      operationId: settings_notifications_user_partial_update
+      operationId: settingsnotificationsuser_partial_update
       description: GET/PATCH /api/settings/notifications/user/ - User-specific settings.
       tags:
-      - settings
+      - settingsnotificationsuser
       security:
       - jwtAuth: []
       - tokenAuth: []
@@ -7155,9 +7365,9 @@ paths:
       responses:
         '200':
           description: No response body
-  /api/settings/public_email_domains/:
+  /settings/public_email_domains/:
     get:
-      operationId: settings_public_email_domains_retrieve
+      operationId: settingspublic_email_domains_retrieve
       description: Get list of public email domains
       tags:
       - System Settings
@@ -7169,9 +7379,9 @@ paths:
       responses:
         '200':
           description: No response body
-  /api/settings/reminders/:
+  /settings/reminders/:
     get:
-      operationId: settings_reminders_retrieve
+      operationId: settingsreminders_retrieve
       description: Get or update reminder settings
       tags:
       - System Settings
@@ -7184,7 +7394,7 @@ paths:
         '200':
           description: No response body
     patch:
-      operationId: settings_reminders_partial_update
+      operationId: settingsreminders_partial_update
       description: Get or update reminder settings
       tags:
       - System Settings
@@ -7196,12 +7406,12 @@ paths:
       responses:
         '200':
           description: No response body
-  /api/settings/security/:
+  /settings/security/:
     get:
-      operationId: settings_security_retrieve
+      operationId: settingssecurity_retrieve
       description: GET /api/settings/security/ - Get security settings.
       tags:
-      - settings
+      - settingssecurity
       security:
       - jwtAuth: []
       - tokenAuth: []
@@ -7210,9 +7420,9 @@ paths:
       responses:
         '200':
           description: No response body
-  /api/settings/security/{id}/:
+  /settings/security/{id}/:
     patch:
-      operationId: settings_security_partial_update
+      operationId: settingssecurity_partial_update
       description: PATCH /api/settings/security/ - Update security settings.
       parameters:
       - in: path
@@ -7221,7 +7431,7 @@ paths:
           type: string
         required: true
       tags:
-      - settings
+      - settingssecurity
       security:
       - jwtAuth: []
       - tokenAuth: []
@@ -7230,12 +7440,12 @@ paths:
       responses:
         '200':
           description: No response body
-  /api/settings/security/audit-log/:
+  /settings/security/audit-log/:
     get:
-      operationId: settings_security_audit_log_retrieve
+      operationId: settingssecurityaudit_log_retrieve
       description: GET /api/settings/security/audit-log/ - Get security audit log.
       tags:
-      - settings
+      - settingssecurityaudit-log
       security:
       - jwtAuth: []
       - tokenAuth: []
@@ -7244,12 +7454,12 @@ paths:
       responses:
         '200':
           description: No response body
-  /api/settings/security/sessions/:
+  /settings/security/sessions/:
     get:
-      operationId: settings_security_sessions_retrieve
+      operationId: settingssecuritysessions_retrieve
       description: GET /api/settings/security/sessions/ - List active sessions.
       tags:
-      - settings
+      - settingssecuritysessions
       security:
       - jwtAuth: []
       - tokenAuth: []
@@ -7258,9 +7468,9 @@ paths:
       responses:
         '200':
           description: No response body
-  /api/settings/security/sessions/{session_id}/:
+  /settings/security/sessions/{session_id}/:
     delete:
-      operationId: settings_security_sessions_destroy
+      operationId: settingssecuritysessions_destroy
       description: DELETE /api/settings/security/sessions/{session_id}/ - Revoke specific
         session.
       parameters:
@@ -7270,7 +7480,7 @@ paths:
           type: string
         required: true
       tags:
-      - settings
+      - settingssecuritysessions
       security:
       - jwtAuth: []
       - tokenAuth: []
@@ -7279,13 +7489,13 @@ paths:
       responses:
         '204':
           description: No response body
-  /api/settings/security/sessions/revoke-all/:
+  /settings/security/sessions/revoke-all/:
     post:
-      operationId: settings_security_sessions_revoke_all_create
+      operationId: settingssecuritysessionsrevoke_all_create
       description: POST /api/settings/security/sessions/revoke-all/ - Revoke all sessions
         except current.
       tags:
-      - settings
+      - settingssecuritysessionsrevoke-all
       security:
       - jwtAuth: []
       - tokenAuth: []
@@ -7294,20 +7504,27 @@ paths:
       responses:
         '200':
           description: No response body
-  /api/settings/telegram/bots/:
+  /settings/telegram/bots/:
     get:
-      operationId: settings_telegram_bots_list
-      description: |-
-        ViewSet for managing Telegram Bot integrations.
+      operationId: settingstelegrambots_list
+      description: 'ViewSet for managing Telegram Bot integrations.
+
 
         Endpoints:
+
         - GET /api/settings/telegram/bots/ - List all connected bots
+
         - POST /api/settings/telegram/bots/ - Connect new Telegram bot
+
         - GET /api/settings/telegram/bots/{id}/ - Get bot details
+
         - PATCH /api/settings/telegram/bots/{id}/ - Update bot settings
+
         - DELETE /api/settings/telegram/bots/{id}/ - Remove bot
+
         - POST /api/settings/telegram/bots/{id}/test/ - Test bot connection
-        - POST /api/settings/telegram/bots/{id}/set_webhook/ - Setup webhook
+
+        - POST /api/settings/telegram/bots/{id}/set_webhook/ - Setup webhook'
       parameters:
       - name: ordering
         required: false
@@ -7328,7 +7545,7 @@ paths:
         schema:
           type: string
       tags:
-      - settings
+      - settingstelegrambots
       security:
       - jwtAuth: []
       - tokenAuth: []
@@ -7342,20 +7559,27 @@ paths:
                 $ref: '#/components/schemas/PaginatedTelegramBotList'
           description: ''
     post:
-      operationId: settings_telegram_bots_create
-      description: |-
-        ViewSet for managing Telegram Bot integrations.
+      operationId: settingstelegrambots_create
+      description: 'ViewSet for managing Telegram Bot integrations.
+
 
         Endpoints:
+
         - GET /api/settings/telegram/bots/ - List all connected bots
+
         - POST /api/settings/telegram/bots/ - Connect new Telegram bot
+
         - GET /api/settings/telegram/bots/{id}/ - Get bot details
+
         - PATCH /api/settings/telegram/bots/{id}/ - Update bot settings
+
         - DELETE /api/settings/telegram/bots/{id}/ - Remove bot
+
         - POST /api/settings/telegram/bots/{id}/test/ - Test bot connection
-        - POST /api/settings/telegram/bots/{id}/set_webhook/ - Setup webhook
+
+        - POST /api/settings/telegram/bots/{id}/set_webhook/ - Setup webhook'
       tags:
-      - settings
+      - settingstelegrambots
       requestBody:
         content:
           application/json:
@@ -7380,20 +7604,27 @@ paths:
               schema:
                 $ref: '#/components/schemas/TelegramBotCreate'
           description: ''
-  /api/settings/telegram/bots/{id}/:
+  /settings/telegram/bots/{id}/:
     get:
-      operationId: settings_telegram_bots_retrieve
-      description: |-
-        ViewSet for managing Telegram Bot integrations.
+      operationId: settingstelegrambots_retrieve
+      description: 'ViewSet for managing Telegram Bot integrations.
+
 
         Endpoints:
+
         - GET /api/settings/telegram/bots/ - List all connected bots
+
         - POST /api/settings/telegram/bots/ - Connect new Telegram bot
+
         - GET /api/settings/telegram/bots/{id}/ - Get bot details
+
         - PATCH /api/settings/telegram/bots/{id}/ - Update bot settings
+
         - DELETE /api/settings/telegram/bots/{id}/ - Remove bot
+
         - POST /api/settings/telegram/bots/{id}/test/ - Test bot connection
-        - POST /api/settings/telegram/bots/{id}/set_webhook/ - Setup webhook
+
+        - POST /api/settings/telegram/bots/{id}/set_webhook/ - Setup webhook'
       parameters:
       - in: path
         name: id
@@ -7401,7 +7632,7 @@ paths:
           type: string
         required: true
       tags:
-      - settings
+      - settingstelegrambots
       security:
       - jwtAuth: []
       - tokenAuth: []
@@ -7415,18 +7646,25 @@ paths:
                 $ref: '#/components/schemas/TelegramBot'
           description: ''
     put:
-      operationId: settings_telegram_bots_update
-      description: |-
-        ViewSet for managing Telegram Bot integrations.
+      operationId: settingstelegrambots_update
+      description: 'ViewSet for managing Telegram Bot integrations.
+
 
         Endpoints:
+
         - GET /api/settings/telegram/bots/ - List all connected bots
+
         - POST /api/settings/telegram/bots/ - Connect new Telegram bot
+
         - GET /api/settings/telegram/bots/{id}/ - Get bot details
+
         - PATCH /api/settings/telegram/bots/{id}/ - Update bot settings
+
         - DELETE /api/settings/telegram/bots/{id}/ - Remove bot
+
         - POST /api/settings/telegram/bots/{id}/test/ - Test bot connection
-        - POST /api/settings/telegram/bots/{id}/set_webhook/ - Setup webhook
+
+        - POST /api/settings/telegram/bots/{id}/set_webhook/ - Setup webhook'
       parameters:
       - in: path
         name: id
@@ -7434,7 +7672,7 @@ paths:
           type: string
         required: true
       tags:
-      - settings
+      - settingstelegrambots
       requestBody:
         content:
           application/json:
@@ -7459,18 +7697,25 @@ paths:
                 $ref: '#/components/schemas/TelegramBot'
           description: ''
     patch:
-      operationId: settings_telegram_bots_partial_update
-      description: |-
-        ViewSet for managing Telegram Bot integrations.
+      operationId: settingstelegrambots_partial_update
+      description: 'ViewSet for managing Telegram Bot integrations.
+
 
         Endpoints:
+
         - GET /api/settings/telegram/bots/ - List all connected bots
+
         - POST /api/settings/telegram/bots/ - Connect new Telegram bot
+
         - GET /api/settings/telegram/bots/{id}/ - Get bot details
+
         - PATCH /api/settings/telegram/bots/{id}/ - Update bot settings
+
         - DELETE /api/settings/telegram/bots/{id}/ - Remove bot
+
         - POST /api/settings/telegram/bots/{id}/test/ - Test bot connection
-        - POST /api/settings/telegram/bots/{id}/set_webhook/ - Setup webhook
+
+        - POST /api/settings/telegram/bots/{id}/set_webhook/ - Setup webhook'
       parameters:
       - in: path
         name: id
@@ -7478,7 +7723,7 @@ paths:
           type: string
         required: true
       tags:
-      - settings
+      - settingstelegrambots
       requestBody:
         content:
           application/json:
@@ -7503,18 +7748,25 @@ paths:
                 $ref: '#/components/schemas/TelegramBot'
           description: ''
     delete:
-      operationId: settings_telegram_bots_destroy
-      description: |-
-        ViewSet for managing Telegram Bot integrations.
+      operationId: settingstelegrambots_destroy
+      description: 'ViewSet for managing Telegram Bot integrations.
+
 
         Endpoints:
+
         - GET /api/settings/telegram/bots/ - List all connected bots
+
         - POST /api/settings/telegram/bots/ - Connect new Telegram bot
+
         - GET /api/settings/telegram/bots/{id}/ - Get bot details
+
         - PATCH /api/settings/telegram/bots/{id}/ - Update bot settings
+
         - DELETE /api/settings/telegram/bots/{id}/ - Remove bot
+
         - POST /api/settings/telegram/bots/{id}/test/ - Test bot connection
-        - POST /api/settings/telegram/bots/{id}/set_webhook/ - Setup webhook
+
+        - POST /api/settings/telegram/bots/{id}/set_webhook/ - Setup webhook'
       parameters:
       - in: path
         name: id
@@ -7522,7 +7774,7 @@ paths:
           type: string
         required: true
       tags:
-      - settings
+      - settingstelegrambots
       security:
       - jwtAuth: []
       - tokenAuth: []
@@ -7531,13 +7783,13 @@ paths:
       responses:
         '204':
           description: No response body
-  /api/settings/telegram/bots/{id}/set_webhook/:
+  /settings/telegram/bots/{id}/set_webhook/:
     post:
-      operationId: settings_telegram_bots_set_webhook_create
-      description: |-
-        Setup or update Telegram webhook.
+      operationId: settingstelegrambotsset_webhook_create
+      description: 'Setup or update Telegram webhook.
 
-        Configures the webhook URL for receiving updates from Telegram.
+
+        Configures the webhook URL for receiving updates from Telegram.'
       parameters:
       - in: path
         name: id
@@ -7545,7 +7797,7 @@ paths:
           type: string
         required: true
       tags:
-      - settings
+      - settingstelegrambotsset_webhook
       requestBody:
         content:
           application/json:
@@ -7569,13 +7821,13 @@ paths:
               schema:
                 $ref: '#/components/schemas/TelegramBot'
           description: ''
-  /api/settings/telegram/bots/{id}/test/:
+  /settings/telegram/bots/{id}/test/:
     post:
-      operationId: settings_telegram_bots_test_create
-      description: |-
-        Test Telegram bot connection.
+      operationId: settingstelegrambotstest_create
+      description: 'Test Telegram bot connection.
 
-        Calls Telegram API getMe to verify bot token is valid.
+
+        Calls Telegram API getMe to verify bot token is valid.'
       parameters:
       - in: path
         name: id
@@ -7583,7 +7835,7 @@ paths:
           type: string
         required: true
       tags:
-      - settings
+      - settingstelegrambotstest
       requestBody:
         content:
           application/json:
@@ -7607,21 +7859,29 @@ paths:
               schema:
                 $ref: '#/components/schemas/TelegramBot'
           description: ''
-  /api/settings/webhooks/:
+  /settings/webhooks/:
     get:
-      operationId: settings_webhooks_list
-      description: |-
-        ViewSet for webhook management.
+      operationId: settingswebhooks_list
+      description: 'ViewSet for webhook management.
+
 
         Endpoints:
+
         - GET /api/settings/webhooks/ - List all webhooks
+
         - POST /api/settings/webhooks/ - Create webhook
+
         - GET /api/settings/webhooks/{id}/ - Get webhook
+
         - PUT /api/settings/webhooks/{id}/ - Update webhook
+
         - PATCH /api/settings/webhooks/{id}/ - Partial update
+
         - DELETE /api/settings/webhooks/{id}/ - Delete webhook
+
         - GET /api/settings/webhooks/{id}/deliveries/ - Delivery history
-        - POST /api/settings/webhooks/{id}/test/ - Test webhook
+
+        - POST /api/settings/webhooks/{id}/test/ - Test webhook'
       parameters:
       - name: ordering
         required: false
@@ -7642,7 +7902,7 @@ paths:
         schema:
           type: string
       tags:
-      - settings
+      - settingswebhooks
       security:
       - jwtAuth: []
       - tokenAuth: []
@@ -7656,21 +7916,29 @@ paths:
                 $ref: '#/components/schemas/PaginatedWebhookList'
           description: ''
     post:
-      operationId: settings_webhooks_create
-      description: |-
-        ViewSet for webhook management.
+      operationId: settingswebhooks_create
+      description: 'ViewSet for webhook management.
+
 
         Endpoints:
+
         - GET /api/settings/webhooks/ - List all webhooks
+
         - POST /api/settings/webhooks/ - Create webhook
+
         - GET /api/settings/webhooks/{id}/ - Get webhook
+
         - PUT /api/settings/webhooks/{id}/ - Update webhook
+
         - PATCH /api/settings/webhooks/{id}/ - Partial update
+
         - DELETE /api/settings/webhooks/{id}/ - Delete webhook
+
         - GET /api/settings/webhooks/{id}/deliveries/ - Delivery history
-        - POST /api/settings/webhooks/{id}/test/ - Test webhook
+
+        - POST /api/settings/webhooks/{id}/test/ - Test webhook'
       tags:
-      - settings
+      - settingswebhooks
       requestBody:
         content:
           application/json:
@@ -7695,21 +7963,29 @@ paths:
               schema:
                 $ref: '#/components/schemas/WebhookCreate'
           description: ''
-  /api/settings/webhooks/{id}/:
+  /settings/webhooks/{id}/:
     get:
-      operationId: settings_webhooks_retrieve
-      description: |-
-        ViewSet for webhook management.
+      operationId: settingswebhooks_retrieve
+      description: 'ViewSet for webhook management.
+
 
         Endpoints:
+
         - GET /api/settings/webhooks/ - List all webhooks
+
         - POST /api/settings/webhooks/ - Create webhook
+
         - GET /api/settings/webhooks/{id}/ - Get webhook
+
         - PUT /api/settings/webhooks/{id}/ - Update webhook
+
         - PATCH /api/settings/webhooks/{id}/ - Partial update
+
         - DELETE /api/settings/webhooks/{id}/ - Delete webhook
+
         - GET /api/settings/webhooks/{id}/deliveries/ - Delivery history
-        - POST /api/settings/webhooks/{id}/test/ - Test webhook
+
+        - POST /api/settings/webhooks/{id}/test/ - Test webhook'
       parameters:
       - in: path
         name: id
@@ -7719,7 +7995,7 @@ paths:
         description: A UUID string identifying this Webhook.
         required: true
       tags:
-      - settings
+      - settingswebhooks
       security:
       - jwtAuth: []
       - tokenAuth: []
@@ -7733,19 +8009,27 @@ paths:
                 $ref: '#/components/schemas/Webhook'
           description: ''
     put:
-      operationId: settings_webhooks_update
-      description: |-
-        ViewSet for webhook management.
+      operationId: settingswebhooks_update
+      description: 'ViewSet for webhook management.
+
 
         Endpoints:
+
         - GET /api/settings/webhooks/ - List all webhooks
+
         - POST /api/settings/webhooks/ - Create webhook
+
         - GET /api/settings/webhooks/{id}/ - Get webhook
+
         - PUT /api/settings/webhooks/{id}/ - Update webhook
+
         - PATCH /api/settings/webhooks/{id}/ - Partial update
+
         - DELETE /api/settings/webhooks/{id}/ - Delete webhook
+
         - GET /api/settings/webhooks/{id}/deliveries/ - Delivery history
-        - POST /api/settings/webhooks/{id}/test/ - Test webhook
+
+        - POST /api/settings/webhooks/{id}/test/ - Test webhook'
       parameters:
       - in: path
         name: id
@@ -7755,7 +8039,7 @@ paths:
         description: A UUID string identifying this Webhook.
         required: true
       tags:
-      - settings
+      - settingswebhooks
       requestBody:
         content:
           application/json:
@@ -7781,19 +8065,27 @@ paths:
                 $ref: '#/components/schemas/Webhook'
           description: ''
     patch:
-      operationId: settings_webhooks_partial_update
-      description: |-
-        ViewSet for webhook management.
+      operationId: settingswebhooks_partial_update
+      description: 'ViewSet for webhook management.
+
 
         Endpoints:
+
         - GET /api/settings/webhooks/ - List all webhooks
+
         - POST /api/settings/webhooks/ - Create webhook
+
         - GET /api/settings/webhooks/{id}/ - Get webhook
+
         - PUT /api/settings/webhooks/{id}/ - Update webhook
+
         - PATCH /api/settings/webhooks/{id}/ - Partial update
+
         - DELETE /api/settings/webhooks/{id}/ - Delete webhook
+
         - GET /api/settings/webhooks/{id}/deliveries/ - Delivery history
-        - POST /api/settings/webhooks/{id}/test/ - Test webhook
+
+        - POST /api/settings/webhooks/{id}/test/ - Test webhook'
       parameters:
       - in: path
         name: id
@@ -7803,7 +8095,7 @@ paths:
         description: A UUID string identifying this Webhook.
         required: true
       tags:
-      - settings
+      - settingswebhooks
       requestBody:
         content:
           application/json:
@@ -7828,19 +8120,27 @@ paths:
                 $ref: '#/components/schemas/Webhook'
           description: ''
     delete:
-      operationId: settings_webhooks_destroy
-      description: |-
-        ViewSet for webhook management.
+      operationId: settingswebhooks_destroy
+      description: 'ViewSet for webhook management.
+
 
         Endpoints:
+
         - GET /api/settings/webhooks/ - List all webhooks
+
         - POST /api/settings/webhooks/ - Create webhook
+
         - GET /api/settings/webhooks/{id}/ - Get webhook
+
         - PUT /api/settings/webhooks/{id}/ - Update webhook
+
         - PATCH /api/settings/webhooks/{id}/ - Partial update
+
         - DELETE /api/settings/webhooks/{id}/ - Delete webhook
+
         - GET /api/settings/webhooks/{id}/deliveries/ - Delivery history
-        - POST /api/settings/webhooks/{id}/test/ - Test webhook
+
+        - POST /api/settings/webhooks/{id}/test/ - Test webhook'
       parameters:
       - in: path
         name: id
@@ -7850,7 +8150,7 @@ paths:
         description: A UUID string identifying this Webhook.
         required: true
       tags:
-      - settings
+      - settingswebhooks
       security:
       - jwtAuth: []
       - tokenAuth: []
@@ -7859,9 +8159,9 @@ paths:
       responses:
         '204':
           description: No response body
-  /api/settings/webhooks/{id}/deliveries/:
+  /settings/webhooks/{id}/deliveries/:
     get:
-      operationId: settings_webhooks_deliveries_retrieve
+      operationId: settingswebhooksdeliveries_retrieve
       description: GET /api/settings/webhooks/{id}/deliveries/ - Get delivery history.
       parameters:
       - in: path
@@ -7872,7 +8172,7 @@ paths:
         description: A UUID string identifying this Webhook.
         required: true
       tags:
-      - settings
+      - settingswebhooksdeliveries
       security:
       - jwtAuth: []
       - tokenAuth: []
@@ -7885,9 +8185,9 @@ paths:
               schema:
                 $ref: '#/components/schemas/Webhook'
           description: ''
-  /api/settings/webhooks/{id}/deliveries/{delivery_id}/retry/:
+  /settings/webhooks/{id}/deliveries/{delivery_id}/retry/:
     post:
-      operationId: settings_webhooks_deliveries_retry_create
+      operationId: settingswebhooksdeliveriesretry_create
       description: POST /api/settings/webhooks/{id}/deliveries/{delivery_id}/retry/
         - Retry failed delivery.
       parameters:
@@ -7904,7 +8204,7 @@ paths:
         description: A UUID string identifying this Webhook.
         required: true
       tags:
-      - settings
+      - settingswebhooksdeliveriesretry
       requestBody:
         content:
           application/json:
@@ -7929,9 +8229,9 @@ paths:
               schema:
                 $ref: '#/components/schemas/Webhook'
           description: ''
-  /api/settings/webhooks/{id}/test/:
+  /settings/webhooks/{id}/test/:
     post:
-      operationId: settings_webhooks_test_create
+      operationId: settingswebhookstest_create
       description: POST /api/settings/webhooks/{id}/test/ - Test webhook with sample
         data.
       parameters:
@@ -7943,7 +8243,7 @@ paths:
         description: A UUID string identifying this Webhook.
         required: true
       tags:
-      - settings
+      - settingswebhookstest
       requestBody:
         content:
           application/json:
@@ -7968,7 +8268,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/Webhook'
           description: ''
-  /api/shipments/:
+  /shipments/:
     get:
       operationId: shipments_list
       description: CRUD API for shipments (shipped outputs only)
@@ -8046,7 +8346,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/Shipment'
           description: ''
-  /api/shipments/{id}/:
+  /shipments/{id}/:
     get:
       operationId: shipments_retrieve
       description: CRUD API for shipments (shipped outputs only)
@@ -8162,15 +8462,17 @@ paths:
       responses:
         '204':
           description: No response body
-  /api/sms/history/:
+  /sms/history/:
     get:
-      operationId: sms_history_retrieve
-      description: |-
-        Get SMS history
+      operationId: smshistory_retrieve
+      description: 'Get SMS history
+
 
         Query params:
+
         - limit: Number of messages to return (default: 50)
-        - channel_id: Filter by channel
+
+        - channel_id: Filter by channel'
       tags:
       - SMS
       security:
@@ -8181,9 +8483,9 @@ paths:
       responses:
         '200':
           description: No response body
-  /api/sms/providers/:
+  /sms/providers/:
     get:
-      operationId: sms_providers_retrieve
+      operationId: smsproviders_retrieve
       description: List available SMS providers
       tags:
       - SMS
@@ -8195,17 +8497,21 @@ paths:
       responses:
         '200':
           description: No response body
-  /api/sms/send/:
+  /sms/send/:
     post:
-      operationId: sms_send_create
-      description: |-
-        Send single SMS
+      operationId: smssend_create
+      description: 'Send single SMS
+
 
         Required fields:
+
         - channel_id: ID of the SMS provider channel
+
         - to: Phone number
+
         - text: Message content
-        - async: (optional) Send asynchronously via Celery (default: true)
+
+        - async: (optional) Send asynchronously via Celery (default: true)'
       tags:
       - SMS
       security:
@@ -8216,16 +8522,19 @@ paths:
       responses:
         '200':
           description: No response body
-  /api/sms/send_bulk/:
+  /sms/send_bulk/:
     post:
-      operationId: sms_send_bulk_create
-      description: |-
-        Send SMS to multiple recipients
+      operationId: smssend_bulk_create
+      description: 'Send SMS to multiple recipients
+
 
         Required fields:
+
         - channel_id: ID of the SMS provider channel
+
         - phone_numbers: List of phone numbers
-        - text: Message content
+
+        - text: Message content'
       tags:
       - SMS
       security:
@@ -8236,9 +8545,9 @@ paths:
       responses:
         '200':
           description: No response body
-  /api/sms/status/:
+  /sms/status/:
     get:
-      operationId: sms_status_retrieve
+      operationId: smsstatus_retrieve
       description: Get SMS service status and statistics
       tags:
       - SMS
@@ -8250,7 +8559,7 @@ paths:
       responses:
         '200':
           description: No response body
-  /api/stages/:
+  /stages/:
     get:
       operationId: stages_list
       description: Reference list of CRM deal stages.
@@ -8307,7 +8616,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/PaginatedStageList'
           description: ''
-  /api/stages/{id}/:
+  /stages/{id}/:
     get:
       operationId: stages_retrieve
       description: Reference list of CRM deal stages.
@@ -8332,7 +8641,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/Stage'
           description: ''
-  /api/task-stages/:
+  /task-stages/:
     get:
       operationId: task_stages_list
       description: Reference list of task stages.
@@ -8369,7 +8678,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/PaginatedTaskStageList'
           description: ''
-  /api/task-stages/{id}/:
+  /task-stages/{id}/:
     get:
       operationId: task_stages_retrieve
       description: Reference list of task stages.
@@ -8394,7 +8703,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/TaskStage'
           description: ''
-  /api/task-tags/:
+  /task-tags/:
     get:
       operationId: task_tags_list
       description: Reference list of task tags.
@@ -8435,7 +8744,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/PaginatedTaskTagList'
           description: ''
-  /api/task-tags/{id}/:
+  /task-tags/{id}/:
     get:
       operationId: task_tags_retrieve
       description: Reference list of task tags.
@@ -8460,7 +8769,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/TaskTag'
           description: ''
-  /api/tasks/:
+  /tasks/:
     get:
       operationId: tasks_list
       description: CRUD for tasks with filtering and ordering.
@@ -8546,7 +8855,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/Task'
           description: ''
-  /api/tasks/{id}/:
+  /tasks/{id}/:
     get:
       operationId: tasks_retrieve
       description: CRUD for tasks with filtering and ordering.
@@ -8662,7 +8971,7 @@ paths:
       responses:
         '204':
           description: No response body
-  /api/token/:
+  /token/:
     post:
       operationId: token_create
       description: Custom JWT token view with enhanced claims
@@ -8690,14 +8999,15 @@ paths:
               schema:
                 $ref: '#/components/schemas/CustomTokenObtainPair'
           description: ''
-  /api/token/refresh/:
+  /token/refresh/:
     post:
-      operationId: token_refresh_create
-      description: |-
-        Takes a refresh type JSON web token and returns an access type JSON web
-        token if the refresh token is valid.
+      operationId: tokenrefresh_create
+      description: 'Takes a refresh type JSON web token and returns an access type
+        JSON web
+
+        token if the refresh token is valid.'
       tags:
-      - token
+      - tokenrefresh
       requestBody:
         content:
           application/json:
@@ -8720,14 +9030,15 @@ paths:
               schema:
                 $ref: '#/components/schemas/TokenRefresh'
           description: ''
-  /api/token/verify/:
+  /token/verify/:
     post:
-      operationId: token_verify_create
-      description: |-
-        Takes a token and indicates if it is valid.  This view provides no
-        information about a token's fitness for a particular use.
+      operationId: tokenverify_create
+      description: 'Takes a token and indicates if it is valid.  This view provides
+        no
+
+        information about a token''s fitness for a particular use.'
       tags:
-      - token
+      - tokenverify
       requestBody:
         content:
           application/json:
@@ -8750,7 +9061,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/TokenVerify'
           description: ''
-  /api/users/:
+  /users/:
     get:
       operationId: users_list
       description: Read-only user directory.
@@ -8787,7 +9098,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/PaginatedUserList'
           description: ''
-  /api/users/{id}/:
+  /users/{id}/:
     get:
       operationId: users_retrieve
       description: Read-only user directory.
@@ -8796,7 +9107,7 @@ paths:
         name: id
         schema:
           type: integer
-        description: A unique integer value identifying this пользователь.
+        description: A unique integer value identifying this user.
         required: true
       tags:
       - Users
@@ -8812,9 +9123,9 @@ paths:
               schema:
                 $ref: '#/components/schemas/User'
           description: ''
-  /api/users/me/:
+  /users/me/:
     get:
-      operationId: users_me_retrieve
+      operationId: usersme_retrieve
       description: Read-only user directory.
       tags:
       - Users
@@ -8830,9 +9141,9 @@ paths:
               schema:
                 $ref: '#/components/schemas/User'
           description: ''
-  /api/users/me/2fa/status/:
+  /users/me/2fa/status/:
     get:
-      operationId: users_me_2fa_status_retrieve
+      operationId: usersme2fastatus_retrieve
       description: Read-only user directory.
       tags:
       - Users
@@ -8848,9 +9159,9 @@ paths:
               schema:
                 $ref: '#/components/schemas/User'
           description: ''
-  /api/users/me/change-password/:
+  /users/me/change-password/:
     post:
-      operationId: users_me_change_password_create
+      operationId: usersmechange_password_create
       description: Read-only user directory.
       tags:
       - Users
@@ -8878,9 +9189,9 @@ paths:
               schema:
                 $ref: '#/components/schemas/User'
           description: ''
-  /api/users/me/sessions/:
+  /users/me/sessions/:
     get:
-      operationId: users_me_sessions_retrieve
+      operationId: usersmesessions_retrieve
       description: Read-only user directory.
       tags:
       - Users
@@ -8897,7 +9208,7 @@ paths:
                 $ref: '#/components/schemas/User'
           description: ''
     delete:
-      operationId: users_me_sessions_destroy
+      operationId: usersmesessions_destroy
       description: Read-only user directory.
       tags:
       - Users
@@ -8909,9 +9220,9 @@ paths:
       responses:
         '204':
           description: No response body
-  /api/users/me/sessions/revoke-all/:
+  /users/me/sessions/revoke-all/:
     post:
-      operationId: users_me_sessions_revoke_all_create
+      operationId: usersmesessionsrevoke_all_create
       description: Read-only user directory.
       tags:
       - Users
@@ -8939,18 +9250,23 @@ paths:
               schema:
                 $ref: '#/components/schemas/User'
           description: ''
-  /api/voip/call-logs/:
+  /voip/call-logs/:
     get:
-      operationId: voip_call_logs_retrieve
-      description: |-
-        Get call logs with filtering
+      operationId: voipcall_logs_retrieve
+      description: 'Get call logs with filtering
+
 
         Query params:
+
         - direction: inbound/outbound/internal
+
         - status: ringing/answered/busy/no_answer/failed
+
         - limit: Number of records (default: 50)
+
         - date_from: ISO datetime
-        - date_to: ISO datetime
+
+        - date_to: ISO datetime'
       tags:
       - VoIP & Cold Calls
       security:
@@ -8961,9 +9277,9 @@ paths:
       responses:
         '200':
           description: No response body
-  /api/voip/call-logs/{log_id}/:
+  /voip/call-logs/{log_id}/:
     get:
-      operationId: voip_call_logs_retrieve_2
+      operationId: voipcall_logs_retrieve
       description: Get detailed information about a specific call
       parameters:
       - in: path
@@ -8982,9 +9298,9 @@ paths:
       responses:
         '200':
           description: No response body
-  /api/voip/call-logs/{log_id}/add-note/:
+  /voip/call-logs/{log_id}/add-note/:
     post:
-      operationId: voip_call_logs_add_note_create
+      operationId: voipcall_logsadd_note_create
       description: Add a note to a call log
       parameters:
       - in: path
@@ -9003,9 +9319,9 @@ paths:
       responses:
         '200':
           description: No response body
-  /api/voip/call-queue/:
+  /voip/call-queue/:
     get:
-      operationId: voip_call_queue_retrieve
+      operationId: voipcall_queue_retrieve
       description: Get current call queue status
       tags:
       - VoIP & Cold Calls
@@ -9017,14 +9333,15 @@ paths:
       responses:
         '200':
           description: No response body
-  /api/voip/call-statistics/:
+  /voip/call-statistics/:
     get:
-      operationId: voip_call_statistics_retrieve
-      description: |-
-        Get call statistics for dashboard
+      operationId: voipcall_statistics_retrieve
+      description: 'Get call statistics for dashboard
+
 
         Query params:
-        - period: today/week/month (default: today)
+
+        - period: today/week/month (default: today)'
       tags:
       - VoIP & Cold Calls
       security:
@@ -9035,19 +9352,24 @@ paths:
       responses:
         '200':
           description: No response body
-  /api/voip/cold-call/bulk/:
+  /voip/cold-call/bulk/:
     post:
-      operationId: voip_cold_call_bulk_create
-      description: |-
-        Schedule multiple cold calls in bulk
+      operationId: voipcold_callbulk_create
+      description: 'Schedule multiple cold calls in bulk
+
 
         Required fields:
+
         - phone_numbers: List of phone numbers
 
+
         Optional fields:
+
         - from_number: Caller ID to use
+
         - campaign_id: Campaign ID
-        - delay_between_calls: Seconds between calls (default: 30)
+
+        - delay_between_calls: Seconds between calls (default: 30)'
       tags:
       - VoIP & Cold Calls
       security:
@@ -9058,18 +9380,23 @@ paths:
       responses:
         '200':
           description: No response body
-  /api/voip/cold-call/initiate/:
+  /voip/cold-call/initiate/:
     post:
-      operationId: voip_cold_call_initiate_create
-      description: |-
-        Initiate a cold call immediately
+      operationId: voipcold_callinitiate_create
+      description: 'Initiate a cold call immediately
+
 
         Required fields:
+
         - to_number: Phone number to call
+
         - from_number: (optional) Caller ID to use
+
         - lead_id: (optional) Lead ID
+
         - contact_id: (optional) Contact ID
-        - campaign_id: (optional) Campaign ID
+
+        - campaign_id: (optional) Campaign ID'
       tags:
       - VoIP & Cold Calls
       security:
@@ -9080,19 +9407,24 @@ paths:
       responses:
         '200':
           description: No response body
-  /api/voip/cold-call/schedule/:
+  /voip/cold-call/schedule/:
     post:
-      operationId: voip_cold_call_schedule_create
-      description: |-
-        Schedule a cold call for later
+      operationId: voipcold_callschedule_create
+      description: 'Schedule a cold call for later
+
 
         Required fields:
+
         - to_number OR lead_id OR contact_id
 
+
         Optional fields:
+
         - from_number: Caller ID to use
+
         - scheduled_time: ISO format datetime (e.g., "2024-01-15T14:30:00Z")
-        - campaign_id: Campaign ID
+
+        - campaign_id: Campaign ID'
       tags:
       - VoIP & Cold Calls
       security:
@@ -9103,9 +9435,9 @@ paths:
       responses:
         '200':
           description: No response body
-  /api/voip/connections/:
+  /voip/connections/:
     get:
-      operationId: voip_connections_list
+      operationId: voipconnections_list
       parameters:
       - in: query
         name: active
@@ -9121,16 +9453,19 @@ paths:
         name: provider
         schema:
           type: string
+          x-spec-enum-id: 4d78bc8b9ce6876c
           enum:
           - Asterisk
           - OnlinePBX
           - Zadarma
-        description: |-
-          Specify VoIP service provider
+        description: 'Specify VoIP service provider
+
 
           * `Zadarma` - Zadarma
+
           * `OnlinePBX` - OnlinePBX
-          * `Asterisk` - Asterisk
+
+          * `Asterisk` - Asterisk'
       tags:
       - VoIP
       security:
@@ -9146,7 +9481,7 @@ paths:
                 $ref: '#/components/schemas/PaginatedConnectionList'
           description: ''
     post:
-      operationId: voip_connections_create
+      operationId: voipconnections_create
       tags:
       - VoIP
       requestBody:
@@ -9173,9 +9508,9 @@ paths:
               schema:
                 $ref: '#/components/schemas/Connection'
           description: ''
-  /api/voip/connections/{id}/:
+  /voip/connections/{id}/:
     get:
-      operationId: voip_connections_retrieve
+      operationId: voipconnections_retrieve
       parameters:
       - in: path
         name: id
@@ -9198,7 +9533,7 @@ paths:
                 $ref: '#/components/schemas/Connection'
           description: ''
     put:
-      operationId: voip_connections_update
+      operationId: voipconnections_update
       parameters:
       - in: path
         name: id
@@ -9233,7 +9568,7 @@ paths:
                 $ref: '#/components/schemas/Connection'
           description: ''
     patch:
-      operationId: voip_connections_partial_update
+      operationId: voipconnections_partial_update
       parameters:
       - in: path
         name: id
@@ -9267,7 +9602,7 @@ paths:
                 $ref: '#/components/schemas/Connection'
           description: ''
     delete:
-      operationId: voip_connections_destroy
+      operationId: voipconnections_destroy
       parameters:
       - in: path
         name: id
@@ -9285,9 +9620,9 @@ paths:
       responses:
         '204':
           description: No response body
-  /api/voip/incoming-calls/:
+  /voip/incoming-calls/:
     get:
-      operationId: voip_incoming_calls_list
+      operationId: voipincoming_calls_list
       parameters:
       - in: query
         name: client_type
@@ -9327,9 +9662,9 @@ paths:
               schema:
                 $ref: '#/components/schemas/PaginatedIncomingCallList'
           description: ''
-  /api/voip/incoming-calls/{id}/:
+  /voip/incoming-calls/{id}/:
     get:
-      operationId: voip_incoming_calls_retrieve
+      operationId: voipincoming_calls_retrieve
       parameters:
       - in: path
         name: id
@@ -9363,14 +9698,12 @@ components:
           readOnly: true
         name:
           type: string
-          title: Название
           description: Descriptive name for this API key
           maxLength: 255
         key_preview:
           type: string
           readOnly: true
         permissions:
-          title: Права доступа
           description: List of permission scopes for this key
         is_active:
           type: boolean
@@ -9403,7 +9736,6 @@ components:
           readOnly: true
         name:
           type: string
-          title: Название
           description: Descriptive name for this API key
           maxLength: 255
         key:
@@ -9413,7 +9745,6 @@ components:
           type: string
           readOnly: true
         permissions:
-          title: Права доступа
           description: List of permission scopes for this key
         is_active:
           type: boolean
@@ -9433,15 +9764,12 @@ components:
         username:
           type: string
           writeOnly: true
-          title: Имя пользователя
         password:
           type: string
           writeOnly: true
-          title: Пароль
         token:
           type: string
           readOnly: true
-          title: Токен
       required:
       - password
       - token
@@ -9462,8 +9790,9 @@ components:
           maxLength: 50
         duration:
           type: integer
-          maximum: 2147483647
+          maximum: 9223372036854775807
           minimum: 0
+          format: int64
           description: Duration in seconds
         timestamp:
           type: string
@@ -9530,11 +9859,13 @@ components:
       - ig
       - email
       type: string
-      description: |-
-        * `sms` - SMS
+      description: '* `sms` - SMS
+
         * `tg` - Telegram
+
         * `ig` - Instagram
-        * `email` - Email
+
+        * `email` - Email'
     ChatMessage:
       type: object
       properties:
@@ -9575,8 +9906,9 @@ components:
           readOnly: true
         object_id:
           type: integer
-          maximum: 2147483647
+          maximum: 9223372036854775807
           minimum: 0
+          format: int64
         creation_date:
           type: string
           format: date-time
@@ -9599,7 +9931,6 @@ components:
           readOnly: true
         name:
           type: string
-          title: Название
           maxLength: 40
         country:
           type: integer
@@ -9641,8 +9972,9 @@ components:
           maxLength: 70
         index_number:
           type: integer
-          maximum: 32767
-          minimum: -32768
+          maximum: 9223372036854775807
+          minimum: -9223372036854775808
+          format: int64
           description: Reason rating.         The indices of other instances will
             be sorted automatically.
         success_reason:
@@ -9708,7 +10040,6 @@ components:
           maxLength: 100
         description:
           type: string
-          title: Описание
         disqualified:
           type: boolean
         email:
@@ -9765,12 +10096,14 @@ components:
         provider:
           allOf:
           - $ref: '#/components/schemas/ProviderEnum'
-          description: |-
-            Specify VoIP service provider
+          description: 'Specify VoIP service provider
+
 
             * `Zadarma` - Zadarma
+
             * `OnlinePBX` - OnlinePBX
-            * `Asterisk` - Asterisk
+
+            * `Asterisk` - Asterisk'
         type:
           $ref: '#/components/schemas/ConnectionTypeEnum'
         number:
@@ -9802,10 +10135,11 @@ components:
       - sip
       - voip
       type: string
-      description: |-
-        * `pbx` - PBX extension
+      description: '* `pbx` - PBX extension
+
         * `sip` - SIP connection
-        * `voip` - Virtual phone number
+
+        * `voip` - Virtual phone number'
     Contact:
       type: object
       description: Mixin to add validation helpers to serializers
@@ -9887,7 +10221,6 @@ components:
           maxLength: 100
         description:
           type: string
-          title: Описание
         disqualified:
           type: boolean
         lead_source:
@@ -9942,7 +10275,6 @@ components:
           readOnly: true
         name:
           type: string
-          title: Название
           maxLength: 40
         url_name:
           type: string
@@ -10111,7 +10443,6 @@ components:
           readOnly: true
         name:
           type: string
-          title: Название
           description: Deal name
           maxLength: 250
         next_step:
@@ -10125,7 +10456,6 @@ components:
           description: Date to which the next step should be taken.
         description:
           type: string
-          title: Описание
         workflow:
           type: string
           readOnly: true
@@ -10164,8 +10494,9 @@ components:
           nullable: true
         probability:
           type: integer
-          maximum: 32767
+          maximum: 9223372036854775807
           minimum: 0
+          format: int64
           nullable: true
           title: Probability (%)
         ticket:
@@ -10247,7 +10578,6 @@ components:
           readOnly: true
         name:
           type: string
-          title: Имя
           maxLength: 150
         member_count:
           type: string
@@ -10261,9 +10591,9 @@ components:
       - inbound
       - outbound
       type: string
-      description: |-
-        * `inbound` - Inbound
-        * `outbound` - Outbound
+      description: '* `inbound` - Inbound
+
+        * `outbound` - Outbound'
     EmailAccount:
       type: object
       properties:
@@ -10331,14 +10661,9 @@ components:
           maxLength: 250
         content:
           type: string
-          description: '
-
-            Use HTML. To specify the address of the embedded image, use {% cid_media
-            ‘path/to/pic.png'' %}.<br>
-
-            You can embed files uploaded to the CRM server in the ‘media/pics/’ folder.
-
-            '
+          description: "\nUse HTML. To specify the address of the embedded image,\
+            \ use {% cid_media \u2018path/to/pic.png' %}.<br>\nYou can embed files\
+            \ uploaded to the CRM server in the \u2018media/pics/\u2019 folder.\n"
         creation_date:
           type: string
           format: date-time
@@ -10486,7 +10811,6 @@ components:
           maxLength: 64
         user:
           type: integer
-          title: Пользователь
         user_name:
           type: string
           readOnly: true
@@ -10654,7 +10978,6 @@ components:
           maxLength: 100
         action:
           type: string
-          title: Действие
           description: Action performed (e.g., message_received, message_sent)
           maxLength: 255
         status:
@@ -10669,14 +10992,14 @@ components:
           type: string
         duration_ms:
           type: integer
-          maximum: 2147483647
+          maximum: 9223372036854775807
           minimum: 0
+          format: int64
           nullable: true
           title: Duration (ms)
         user:
           type: integer
           nullable: true
-          title: Пользователь
         user_email:
           type: string
           format: email
@@ -10697,9 +11020,9 @@ components:
       - success
       - error
       type: string
-      description: |-
-        * `success` - Success
-        * `error` - Error
+      description: '* `success` - Success
+
+        * `error` - Error'
     LanguageCodeEnum:
       enum:
       - ar
@@ -10726,30 +11049,51 @@ components:
       - zh-hans
       - uz
       type: string
-      description: |-
-        * `ar` - Arabic
+      description: '* `ar` - Arabic
+
         * `cs` - Czech
+
         * `de` - German
+
         * `el` - Greek
+
         * `en` - English
+
         * `es` - Spanish
+
         * `fr` - French
+
         * `he` - Hebrew
+
         * `hi` - Hindi
+
         * `id` - Indonesian
+
         * `it` - Italian
+
         * `ja` - Japanese
+
         * `ko` - Korean
+
         * `nl` - Nederlands
+
         * `pl` - Polish
+
         * `pt-br` - Portuguese
+
         * `ro` - Romanian
+
         * `ru` - Russian
+
         * `tr` - Turkish
+
         * `uk` - Ukrainian
+
         * `vi` - Vietnamese
+
         * `zh-hans` - Chinese
-        * `uz` - Uzbek
+
+        * `uz` - Uzbek'
     Lead:
       type: object
       description: Mixin to add validation helpers to serializers
@@ -10831,7 +11175,6 @@ components:
           maxLength: 100
         description:
           type: string
-          title: Описание
         disqualified:
           type: boolean
         lead_source:
@@ -10918,8 +11261,9 @@ components:
           maxLength: 70
         sla_hours:
           type: integer
-          maximum: 32767
+          maximum: 9223372036854775807
           minimum: 0
+          format: int64
           nullable: true
           description: Override default first-response SLA hours for this source.
       required:
@@ -10933,7 +11277,6 @@ components:
           readOnly: true
         name:
           type: string
-          title: Название
           description: The name of the message.
           maxLength: 100
         owner:
@@ -10956,8 +11299,9 @@ components:
           $ref: '#/components/schemas/MailingOutStatusEnum'
         recipients_number:
           type: integer
-          maximum: 2147483647
+          maximum: 9223372036854775807
           minimum: 0
+          format: int64
           title: Recipients
           description: Number of recipients
         creation_date:
@@ -10979,12 +11323,15 @@ components:
       - I
       - D
       type: string
-      description: |-
-        * `A` - Active
+      description: '* `A` - Active
+
         * `E` - Active but Error
+
         * `P` - Paused
+
         * `I` - Interrupted
-        * `D` - Done
+
+        * `D` - Done'
     Memo:
       type: object
       description: Mixin to add validation helpers to serializers
@@ -10994,14 +11341,12 @@ components:
           readOnly: true
         name:
           type: string
-          title: Название
           maxLength: 250
         description:
           type: string
-          title: Описание
         note:
           type: string
-          title: Сonclusion
+          title: "\u0421onclusion"
         draft:
           type: boolean
           description: Available only to the owner.
@@ -11136,8 +11481,9 @@ components:
           nullable: true
         quantity:
           type: integer
-          maximum: 32767
+          maximum: 9223372036854775807
           minimum: 0
+          format: int64
         amount:
           type: string
           format: decimal
@@ -11187,10 +11533,9 @@ components:
         title:
           type: string
           nullable: true
-          title: Заголовок
           maxLength: 250
         language_code:
-          title: Язый
+          title: Language
           oneOf:
           - $ref: '#/components/schemas/LanguageCodeEnum'
           - $ref: '#/components/schemas/BlankEnum'
@@ -12030,6 +12375,29 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/ProjectStage'
+    PaginatedRateList:
+      type: object
+      required:
+      - count
+      - results
+      properties:
+        count:
+          type: integer
+          example: 123
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=4
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=2
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/Rate'
     PaginatedReminderList:
       type: object
       required:
@@ -12338,20 +12706,20 @@ components:
         title:
           type: string
           nullable: true
-          title: Заголовок
           description: Title of paragraph.
           maxLength: 250
         content:
           type: string
         index_number:
           type: integer
-          maximum: 32767
-          minimum: -32768
+          maximum: 9223372036854775807
+          minimum: -9223372036854775808
+          format: int64
           description: The sequence number of the paragraph on the page.
         language_code:
           allOf:
           - $ref: '#/components/schemas/LanguageCodeEnum'
-          title: Язый
+          title: Language
       required:
       - id
       - language_code
@@ -12365,14 +12733,12 @@ components:
           readOnly: true
         name:
           type: string
-          title: Название
           description: Descriptive name for this API key
           maxLength: 255
         key_preview:
           type: string
           readOnly: true
         permissions:
-          title: Права доступа
           description: List of permission scopes for this key
         is_active:
           type: boolean
@@ -12401,8 +12767,9 @@ components:
           maxLength: 50
         duration:
           type: integer
-          maximum: 2147483647
+          maximum: 9223372036854775807
           minimum: 0
+          format: int64
           description: Duration in seconds
         timestamp:
           type: string
@@ -12490,8 +12857,9 @@ components:
           readOnly: true
         object_id:
           type: integer
-          maximum: 2147483647
+          maximum: 9223372036854775807
           minimum: 0
+          format: int64
         creation_date:
           type: string
           format: date-time
@@ -12553,7 +12921,6 @@ components:
           maxLength: 100
         description:
           type: string
-          title: Описание
         disqualified:
           type: boolean
         email:
@@ -12603,12 +12970,14 @@ components:
         provider:
           allOf:
           - $ref: '#/components/schemas/ProviderEnum'
-          description: |-
-            Specify VoIP service provider
+          description: 'Specify VoIP service provider
+
 
             * `Zadarma` - Zadarma
+
             * `OnlinePBX` - OnlinePBX
-            * `Asterisk` - Asterisk
+
+            * `Asterisk` - Asterisk'
         type:
           $ref: '#/components/schemas/ConnectionTypeEnum'
         number:
@@ -12709,7 +13078,6 @@ components:
           maxLength: 100
         description:
           type: string
-          title: Описание
         disqualified:
           type: boolean
         lead_source:
@@ -12826,7 +13194,6 @@ components:
           readOnly: true
         name:
           type: string
-          title: Название
           description: Deal name
           maxLength: 250
         next_step:
@@ -12840,7 +13207,6 @@ components:
           description: Date to which the next step should be taken.
         description:
           type: string
-          title: Описание
         workflow:
           type: string
           readOnly: true
@@ -12879,8 +13245,9 @@ components:
           nullable: true
         probability:
           type: integer
-          maximum: 32767
+          maximum: 9223372036854775807
           minimum: 0
+          format: int64
           nullable: true
           title: Probability (%)
         ticket:
@@ -13002,14 +13369,9 @@ components:
           maxLength: 250
         content:
           type: string
-          description: '
-
-            Use HTML. To specify the address of the embedded image, use {% cid_media
-            ‘path/to/pic.png'' %}.<br>
-
-            You can embed files uploaded to the CRM server in the ‘media/pics/’ folder.
-
-            '
+          description: "\nUse HTML. To specify the address of the embedded image,\
+            \ use {% cid_media \u2018path/to/pic.png' %}.<br>\nYou can embed files\
+            \ uploaded to the CRM server in the \u2018media/pics/\u2019 folder.\n"
         creation_date:
           type: string
           format: date-time
@@ -13242,7 +13604,6 @@ components:
           maxLength: 100
         description:
           type: string
-          title: Описание
         disqualified:
           type: boolean
         lead_source:
@@ -13319,14 +13680,12 @@ components:
           readOnly: true
         name:
           type: string
-          title: Название
           maxLength: 250
         description:
           type: string
-          title: Описание
         note:
           type: string
-          title: Сonclusion
+          title: "\u0421onclusion"
         draft:
           type: boolean
           description: Available only to the owner.
@@ -13439,8 +13798,9 @@ components:
           nullable: true
         quantity:
           type: integer
-          maximum: 32767
+          maximum: 9223372036854775807
           minimum: 0
+          format: int64
         amount:
           type: string
           format: decimal
@@ -13524,11 +13884,9 @@ components:
           readOnly: true
         name:
           type: string
-          title: Название
           maxLength: 70
         description:
           type: string
-          title: Описание
         product_category:
           type: integer
           nullable: true
@@ -13564,20 +13922,17 @@ components:
           readOnly: true
         name:
           type: string
-          title: Название
           description: Short title
           maxLength: 250
         description:
           type: string
-          title: Описание
         note:
           type: string
         priority:
           allOf:
           - $ref: '#/components/schemas/PriorityEnum'
-          title: Приоритет
-          minimum: -32768
-          maximum: 32767
+          minimum: -9223372036854775808
+          maximum: 9223372036854775807
         start_date:
           type: string
           format: date
@@ -13659,7 +14014,6 @@ components:
           maxLength: 250
         description:
           type: string
-          title: Описание
         reminder_date:
           type: string
           format: date-time
@@ -13675,8 +14029,9 @@ components:
           type: integer
         object_id:
           type: integer
-          maximum: 2147483647
+          maximum: 9223372036854775807
           minimum: 0
+          format: int64
     PatchedRequest:
       type: object
       description: Serializer for Request (tickets/inquiries) model
@@ -13689,7 +14044,6 @@ components:
           readOnly: true
         description:
           type: string
-          title: Описание
         owner:
           type: integer
           nullable: true
@@ -13792,8 +14146,9 @@ components:
           nullable: true
         quantity:
           type: integer
-          maximum: 32767
+          maximum: 9223372036854775807
           minimum: 0
+          format: int64
         amount:
           type: string
           format: decimal
@@ -13845,14 +14200,9 @@ components:
           maxLength: 100
         content:
           type: string
-          description: '
-
-            Use HTML. To specify the address of the embedded image, use {% cid_media
-            ‘path/to/pic.png'' %}.<br>
-
-            You can embed files uploaded to the CRM server in the ‘media/pics/’ folder.
-
-            '
+          description: "\nUse HTML. To specify the address of the embedded image,\
+            \ use {% cid_media \u2018path/to/pic.png' %}.<br>\nYou can embed files\
+            \ uploaded to the CRM server in the \u2018media/pics/\u2019 folder.\n"
     PatchedTask:
       type: object
       description: Mixin to add validation helpers to serializers
@@ -13862,20 +14212,17 @@ components:
           readOnly: true
         name:
           type: string
-          title: Название
           description: Short title
           maxLength: 250
         description:
           type: string
-          title: Описание
         note:
           type: string
         priority:
           allOf:
           - $ref: '#/components/schemas/PriorityEnum'
-          title: Приоритет
-          minimum: -32768
-          maximum: 32767
+          minimum: -9223372036854775808
+          maximum: 9223372036854775807
         start_date:
           type: string
           format: date
@@ -14069,7 +14416,6 @@ components:
         url:
           type: string
           format: uri
-          title: Ссылка
           description: The URL to send webhook POST requests to
           maxLength: 200
         events:
@@ -14147,21 +14493,24 @@ components:
       - h
       - l
       type: string
-      description: |-
-        * `r` - received
+      description: '* `r` - received
+
         * `g` - guaranteed
+
         * `h` - high probability
-        * `l` - low probability
+
+        * `l` - low probability'
     PriorityEnum:
       enum:
       - 1
       - 2
       - 3
       type: integer
-      description: |-
-        * `1` - Low
+      description: '* `1` - Low
+
         * `2` - Middle
-        * `3` - High
+
+        * `3` - High'
     Product:
       type: object
       description: Serializer for Product model
@@ -14171,11 +14520,9 @@ components:
           readOnly: true
         name:
           type: string
-          title: Название
           maxLength: 70
         description:
           type: string
-          title: Описание
         product_category:
           type: integer
           nullable: true
@@ -14215,7 +14562,6 @@ components:
           readOnly: true
         name:
           type: string
-          title: Название
           maxLength: 70
       required:
       - id
@@ -14224,9 +14570,9 @@ components:
       - G
       - S
       type: string
-      description: |-
-        * `G` - Goods
-        * `S` - Service
+      description: '* `G` - Goods
+
+        * `S` - Service'
     Project:
       type: object
       description: Mixin to add validation helpers to serializers
@@ -14236,20 +14582,17 @@ components:
           readOnly: true
         name:
           type: string
-          title: Название
           description: Short title
           maxLength: 250
         description:
           type: string
-          title: Описание
         note:
           type: string
         priority:
           allOf:
           - $ref: '#/components/schemas/PriorityEnum'
-          title: Приоритет
-          minimum: -32768
-          maximum: 32767
+          minimum: -9223372036854775808
+          maximum: 9223372036854775807
         start_date:
           type: string
           format: date
@@ -14331,7 +14674,6 @@ components:
           maxLength: 70
         default:
           type: boolean
-          title: По-умолчанию
           description: Will be selected by default when creating a new task
         done:
           type: boolean
@@ -14344,8 +14686,9 @@ components:
           description: Is the project active at this stage?
         index_number:
           type: integer
-          maximum: 32767
-          minimum: -32768
+          maximum: 9223372036854775807
+          minimum: -9223372036854775808
+          format: int64
           description: The sequence number of the stage.         The indices of other
             instances will be sorted automatically.
       required:
@@ -14357,10 +14700,56 @@ components:
       - OnlinePBX
       - Asterisk
       type: string
-      description: |-
-        * `Zadarma` - Zadarma
+      description: '* `Zadarma` - Zadarma
+
         * `OnlinePBX` - OnlinePBX
-        * `Asterisk` - Asterisk
+
+        * `Asterisk` - Asterisk'
+    Rate:
+      type: object
+      description: Serializer for Currency Rate model
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        currency:
+          type: integer
+        currency_name:
+          type: string
+          readOnly: true
+          nullable: true
+        payment_date:
+          type: string
+          format: date
+          title: Currency rate date
+        rate_to_state_currency:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,5}(?:\.\d{0,8})?$
+          description: Exchange rate against the state currency.
+        rate_to_marketing_currency:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,5}(?:\.\d{0,8})?$
+          description: Exchange rate against the state currency.
+        rate_type:
+          allOf:
+          - $ref: '#/components/schemas/RateTypeEnum'
+          title: Exchange rate type
+      required:
+      - currency
+      - currency_name
+      - id
+      - rate_to_marketing_currency
+      - rate_to_state_currency
+    RateTypeEnum:
+      enum:
+      - A
+      - O
+      type: string
+      description: '* `A` - approximate currency rate
+
+        * `O` - official currency rate'
     Reminder:
       type: object
       description: Serializer for Reminder model
@@ -14380,7 +14769,6 @@ components:
           maxLength: 250
         description:
           type: string
-          title: Описание
         reminder_date:
           type: string
           format: date-time
@@ -14396,8 +14784,9 @@ components:
           type: integer
         object_id:
           type: integer
-          maximum: 2147483647
+          maximum: 9223372036854775807
           minimum: 0
+          format: int64
       required:
       - content_type
       - creation_date
@@ -14418,7 +14807,6 @@ components:
           readOnly: true
         description:
           type: string
-          title: Описание
         owner:
           type: integer
           nullable: true
@@ -14521,10 +14909,11 @@ components:
       - F
       - O
       type: string
-      description: |-
-        * `M` - Male
+      description: '* `M` - Male
+
         * `F` - Female
-        * `O` - Other
+
+        * `O` - Other'
     Shipment:
       type: object
       description: Serializer for Shipment model (proxy of Output, only shipped items)
@@ -14546,8 +14935,9 @@ components:
           nullable: true
         quantity:
           type: integer
-          maximum: 32767
+          maximum: 9223372036854775807
           minimum: 0
+          format: int64
         amount:
           type: string
           format: decimal
@@ -14606,14 +14996,9 @@ components:
           maxLength: 100
         content:
           type: string
-          description: '
-
-            Use HTML. To specify the address of the embedded image, use {% cid_media
-            ‘path/to/pic.png'' %}.<br>
-
-            You can embed files uploaded to the CRM server in the ‘media/pics/’ folder.
-
-            '
+          description: "\nUse HTML. To specify the address of the embedded image,\
+            \ use {% cid_media \u2018path/to/pic.png' %}.<br>\nYou can embed files\
+            \ uploaded to the CRM server in the \u2018media/pics/\u2019 folder.\n"
       required:
       - content
       - id
@@ -14630,12 +15015,12 @@ components:
           maxLength: 70
         default:
           type: boolean
-          title: По-умолчанию
           description: Will be selected by default when creating a new task
         index_number:
           type: integer
-          maximum: 32767
-          minimum: -32768
+          maximum: 9223372036854775807
+          minimum: -9223372036854775808
+          format: int64
           description: The sequence number of the stage.         The indices of other
             instances will be sorted automatically.
         second_default:
@@ -14661,10 +15046,11 @@ components:
       - pos
       - rev
       type: string
-      description: |-
-        * `pen` - pending
+      description: '* `pen` - pending
+
         * `pos` - postponed
-        * `rev` - reviewed
+
+        * `rev` - reviewed'
     Task:
       type: object
       description: Mixin to add validation helpers to serializers
@@ -14674,20 +15060,17 @@ components:
           readOnly: true
         name:
           type: string
-          title: Название
           description: Short title
           maxLength: 250
         description:
           type: string
-          title: Описание
         note:
           type: string
         priority:
           allOf:
           - $ref: '#/components/schemas/PriorityEnum'
-          title: Приоритет
-          minimum: -32768
-          maximum: 32767
+          minimum: -9223372036854775808
+          maximum: 9223372036854775807
         start_date:
           type: string
           format: date
@@ -14778,7 +15161,6 @@ components:
           maxLength: 70
         default:
           type: boolean
-          title: По-умолчанию
           description: Will be selected by default when creating a new task
         done:
           type: boolean
@@ -14791,8 +15173,9 @@ components:
           description: Is the task active at this stage?
         index_number:
           type: integer
-          maximum: 32767
-          minimum: -32768
+          maximum: 9223372036854775807
+          minimum: -9223372036854775808
+          format: int64
           description: The sequence number of the stage.         The indices of other
             instances will be sorted automatically.
       required:
@@ -14939,23 +15322,20 @@ components:
           readOnly: true
         username:
           type: string
-          title: Имя пользователя
-          description: Обязательное поле. Не более 150 символов. Только буквы, цифры
-            и символы @/./+/-/_.
+          description: Required. 150 characters or fewer. Letters, digits and @/./+/-/_
+            only.
           pattern: ^[\w.@+-]+$
           maxLength: 150
         first_name:
           type: string
-          title: Имя
           maxLength: 150
         last_name:
           type: string
-          title: Фамилия
           maxLength: 150
         email:
           type: string
           format: email
-          title: Адрес электронной почты
+          title: Email address
           maxLength: 254
       required:
       - id
@@ -15056,45 +15436,81 @@ components:
       - Etc/GMT-13
       - Etc/GMT-14
       type: string
-      description: |-
-        * `Etc/GMT+12` - UTC-12:00
+      description: '* `Etc/GMT+12` - UTC-12:00
+
         * `Etc/GMT+11` - UTC-11:00
+
         * `Etc/GMT+10` - UTC-10:00
+
         * `Pacific/Marquesas` - UTC-09:30
+
         * `Etc/GMT+9` - UTC-09:00
+
         * `Etc/GMT+8` - UTC-08:00
+
         * `Etc/GMT+7` - UTC-07:00
+
         * `Etc/GMT+6` - UTC-06:00
+
         * `Etc/GMT+5` - UTC-05:00
+
         * `Etc/GMT+4` - UTC-04:00
+
         * `America/St_Johns` - UTC-03:30
+
         * `Etc/GMT+3` - UTC-03:00
+
         * `Etc/GMT+2` - UTC-02:00
+
         * `Etc/GMT+1` - UTC-01:00
+
         * `Etc/GMT0` - UTC 00:00
+
         * `Etc/GMT-1` - UTC+01:00
+
         * `Europe/Kiev` - UTC+02:00
+
         * `Etc/GMT-3` - UTC+03:00
+
         * `Asia/Tehran` - UTC+03:30
+
         * `Etc/GMT-4` - UTC+04:00
+
         * `Asia/Kabul` - UTC+04:30
+
         * `Etc/GMT-5` - UTC+05:00
+
         * `Asia/Kolkata` - UTC+05:30
+
         * `Asia/Kathmandu` - UTC+05:45
+
         * `Etc/GMT-6` - UTC+06:00
+
         * `Asia/Yangon` - UTC+06:30
+
         * `Etc/GMT-7` - UTC+07:00
+
         * `Etc/GMT-8` - UTC+08:00
+
         * `Australia/Eucla` - UTC+08:45
+
         * `Etc/GMT-9` - UTC+09:00
+
         * `Australia/Darwin` - UTC+09:30
+
         * `Etc/GMT-10` - UTC+10:00
+
         * `Australia/Lord_Howe` - UTC+10:30
+
         * `Etc/GMT-11` - UTC+11:00
+
         * `Etc/GMT-12` - UTC+12:00
+
         * `Pacific/Chatham` - UTC+12:45
+
         * `Etc/GMT-13` - UTC+13:00
-        * `Etc/GMT-14` - UTC+14:00
+
+        * `Etc/GMT-14` - UTC+14:00'
     Webhook:
       type: object
       description: Serializer for webhooks (list/retrieve - secret is masked).
@@ -15106,7 +15522,6 @@ components:
         url:
           type: string
           format: uri
-          title: Ссылка
           description: The URL to send webhook POST requests to
           maxLength: 200
         events:
@@ -15150,7 +15565,6 @@ components:
         url:
           type: string
           format: uri
-          title: Ссылка
           description: The URL to send webhook POST requests to
           maxLength: 200
         events:
@@ -15181,7 +15595,7 @@ components:
       name: Authorization
       description: Token-based authentication with required prefix "Token"
 servers:
-- url: http://localhost:8000
+- url: http://localhost:8000/api
   description: Local
 tags:
 - name: Authentication

@@ -51,7 +51,7 @@ export class MemosService {
     }): CancelablePromise<PaginatedMemoList> {
         return __request(OpenAPI, {
             method: 'GET',
-            url: '/api/memos/',
+            url: '/memos/',
             query: {
                 'deal': deal,
                 'draft': draft,
@@ -77,7 +77,7 @@ export class MemosService {
     }): CancelablePromise<Memo> {
         return __request(OpenAPI, {
             method: 'POST',
-            url: '/api/memos/',
+            url: '/memos/',
             body: requestBody,
             mediaType: 'application/json',
         });
@@ -91,13 +91,13 @@ export class MemosService {
         id,
     }: {
         /**
-         * A unique integer value identifying this Заметка.
+         * A unique integer value identifying this Memo.
          */
         id: number,
     }): CancelablePromise<Memo> {
         return __request(OpenAPI, {
             method: 'GET',
-            url: '/api/memos/{id}/',
+            url: '/memos/{id}/',
             path: {
                 'id': id,
             },
@@ -113,14 +113,14 @@ export class MemosService {
         requestBody,
     }: {
         /**
-         * A unique integer value identifying this Заметка.
+         * A unique integer value identifying this Memo.
          */
         id: number,
         requestBody: Memo,
     }): CancelablePromise<Memo> {
         return __request(OpenAPI, {
             method: 'PUT',
-            url: '/api/memos/{id}/',
+            url: '/memos/{id}/',
             path: {
                 'id': id,
             },
@@ -138,14 +138,14 @@ export class MemosService {
         requestBody,
     }: {
         /**
-         * A unique integer value identifying this Заметка.
+         * A unique integer value identifying this Memo.
          */
         id: number,
         requestBody?: PatchedMemo,
     }): CancelablePromise<Memo> {
         return __request(OpenAPI, {
             method: 'PATCH',
-            url: '/api/memos/{id}/',
+            url: '/memos/{id}/',
             path: {
                 'id': id,
             },
@@ -162,13 +162,13 @@ export class MemosService {
         id,
     }: {
         /**
-         * A unique integer value identifying this Заметка.
+         * A unique integer value identifying this Memo.
          */
         id: number,
     }): CancelablePromise<void> {
         return __request(OpenAPI, {
             method: 'DELETE',
-            url: '/api/memos/{id}/',
+            url: '/memos/{id}/',
             path: {
                 'id': id,
             },
@@ -179,19 +179,19 @@ export class MemosService {
      * @returns Memo
      * @throws ApiError
      */
-    public static memosMarkPostponedCreate({
+    public static memosmarkPostponedCreate({
         id,
         requestBody,
     }: {
         /**
-         * A unique integer value identifying this Заметка.
+         * A unique integer value identifying this Memo.
          */
         id: number,
         requestBody: Memo,
     }): CancelablePromise<Memo> {
         return __request(OpenAPI, {
             method: 'POST',
-            url: '/api/memos/{id}/mark_postponed/',
+            url: '/memos/{id}/mark_postponed/',
             path: {
                 'id': id,
             },
@@ -204,19 +204,19 @@ export class MemosService {
      * @returns Memo
      * @throws ApiError
      */
-    public static memosMarkReviewedCreate({
+    public static memosmarkReviewedCreate({
         id,
         requestBody,
     }: {
         /**
-         * A unique integer value identifying this Заметка.
+         * A unique integer value identifying this Memo.
          */
         id: number,
         requestBody: Memo,
     }): CancelablePromise<Memo> {
         return __request(OpenAPI, {
             method: 'POST',
-            url: '/api/memos/{id}/mark_reviewed/',
+            url: '/memos/{id}/mark_reviewed/',
             path: {
                 'id': id,
             },

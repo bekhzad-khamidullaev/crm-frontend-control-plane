@@ -18,10 +18,10 @@ export class VoIpColdCallsService {
      * @returns any No response body
      * @throws ApiError
      */
-    public static voipCallLogsRetrieve(): CancelablePromise<any> {
+    public static voipcallLogsRetrieve(): CancelablePromise<any> {
         return __request(OpenAPI, {
             method: 'GET',
-            url: '/api/voip/call-logs/',
+            url: '/voip/call-logs/',
         });
     }
     /**
@@ -29,14 +29,14 @@ export class VoIpColdCallsService {
      * @returns any No response body
      * @throws ApiError
      */
-    public static voipCallLogsRetrieve2({
+    public static voipcallLogsRetrieve1({
         logId,
     }: {
         logId: string,
     }): CancelablePromise<any> {
         return __request(OpenAPI, {
             method: 'GET',
-            url: '/api/voip/call-logs/{log_id}/',
+            url: '/voip/call-logs/{log_id}/',
             path: {
                 'log_id': logId,
             },
@@ -47,14 +47,14 @@ export class VoIpColdCallsService {
      * @returns any No response body
      * @throws ApiError
      */
-    public static voipCallLogsAddNoteCreate({
+    public static voipcallLogsaddNoteCreate({
         logId,
     }: {
         logId: string,
     }): CancelablePromise<any> {
         return __request(OpenAPI, {
             method: 'POST',
-            url: '/api/voip/call-logs/{log_id}/add-note/',
+            url: '/voip/call-logs/{log_id}/add-note/',
             path: {
                 'log_id': logId,
             },
@@ -65,10 +65,10 @@ export class VoIpColdCallsService {
      * @returns any No response body
      * @throws ApiError
      */
-    public static voipCallQueueRetrieve(): CancelablePromise<any> {
+    public static voipcallQueueRetrieve(): CancelablePromise<any> {
         return __request(OpenAPI, {
             method: 'GET',
-            url: '/api/voip/call-queue/',
+            url: '/voip/call-queue/',
         });
     }
     /**
@@ -79,10 +79,10 @@ export class VoIpColdCallsService {
      * @returns any No response body
      * @throws ApiError
      */
-    public static voipCallStatisticsRetrieve(): CancelablePromise<any> {
+    public static voipcallStatisticsRetrieve(): CancelablePromise<any> {
         return __request(OpenAPI, {
             method: 'GET',
-            url: '/api/voip/call-statistics/',
+            url: '/voip/call-statistics/',
         });
     }
     /**
@@ -98,10 +98,10 @@ export class VoIpColdCallsService {
      * @returns any No response body
      * @throws ApiError
      */
-    public static voipColdCallBulkCreate(): CancelablePromise<any> {
+    public static voipcoldCallbulkCreate(): CancelablePromise<any> {
         return __request(OpenAPI, {
             method: 'POST',
-            url: '/api/voip/cold-call/bulk/',
+            url: '/voip/cold-call/bulk/',
         });
     }
     /**
@@ -116,10 +116,10 @@ export class VoIpColdCallsService {
      * @returns any No response body
      * @throws ApiError
      */
-    public static voipColdCallInitiateCreate(): CancelablePromise<any> {
+    public static voipcoldCallinitiateCreate(): CancelablePromise<any> {
         return __request(OpenAPI, {
             method: 'POST',
-            url: '/api/voip/cold-call/initiate/',
+            url: '/voip/cold-call/initiate/',
         });
     }
     /**
@@ -135,10 +135,10 @@ export class VoIpColdCallsService {
      * @returns any No response body
      * @throws ApiError
      */
-    public static voipColdCallScheduleCreate(): CancelablePromise<any> {
+    public static voipcoldCallscheduleCreate(): CancelablePromise<any> {
         return __request(OpenAPI, {
             method: 'POST',
-            url: '/api/voip/cold-call/schedule/',
+            url: '/voip/cold-call/schedule/',
         });
     }
 }

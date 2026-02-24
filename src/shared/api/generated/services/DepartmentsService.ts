@@ -28,7 +28,7 @@ export class DepartmentsService {
     }): CancelablePromise<PaginatedDepartmentList> {
         return __request(OpenAPI, {
             method: 'GET',
-            url: '/api/departments/',
+            url: '/departments/',
             query: {
                 'page': page,
                 'search': search,
@@ -50,7 +50,7 @@ export class DepartmentsService {
     }): CancelablePromise<Department> {
         return __request(OpenAPI, {
             method: 'GET',
-            url: '/api/departments/{id}/',
+            url: '/departments/{id}/',
             path: {
                 'id': id,
             },
@@ -61,7 +61,7 @@ export class DepartmentsService {
      * @returns Department
      * @throws ApiError
      */
-    public static departmentsMembersRetrieve({
+    public static departmentsmembersRetrieve({
         id,
     }: {
         /**
@@ -71,7 +71,7 @@ export class DepartmentsService {
     }): CancelablePromise<Department> {
         return __request(OpenAPI, {
             method: 'GET',
-            url: '/api/departments/{id}/members/',
+            url: '/departments/{id}/members/',
             path: {
                 'id': id,
             },

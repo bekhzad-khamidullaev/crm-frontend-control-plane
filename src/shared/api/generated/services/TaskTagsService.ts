@@ -35,7 +35,7 @@ export class TaskTagsService {
     }): CancelablePromise<PaginatedTaskTagList> {
         return __request(OpenAPI, {
             method: 'GET',
-            url: '/api/task-tags/',
+            url: '/task-tags/',
             query: {
                 'for_content': forContent,
                 'ordering': ordering,
@@ -59,7 +59,7 @@ export class TaskTagsService {
     }): CancelablePromise<TaskTag> {
         return __request(OpenAPI, {
             method: 'GET',
-            url: '/api/task-tags/{id}/',
+            url: '/task-tags/{id}/',
             path: {
                 'id': id,
             },

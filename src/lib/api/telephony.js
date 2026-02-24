@@ -76,7 +76,7 @@ export async function getTelephonyStats(params = {}) {
  * @returns {Promise<Object>}
  */
 export async function getSIPConfig() {
-  return api.get('/api/voip/connections/');
+  return api.get('/api/voip/my-connections/');
 }
 
 /**
@@ -117,7 +117,7 @@ export async function deleteSIPConfig(id) {
  * @returns {Promise<Object>}
  */
 export async function getSIPStatus() {
-  const connections = await api.get('/api/voip/connections/');
+  const connections = await api.get('/api/voip/my-connections/');
   const activeConnection = connections.results?.find(c => c.active);
 
   return {
@@ -134,7 +134,7 @@ export async function getSIPStatus() {
  * @returns {Promise<Object>}
  */
 export async function updateTelephonySettings(settings) {
-  const connections = await api.get('/api/voip/connections/');
+  const connections = await api.get('/api/voip/my-connections/');
   const activeConnection = connections.results?.find(c => c.active);
 
   if (activeConnection) {
@@ -149,7 +149,7 @@ export async function updateTelephonySettings(settings) {
  * @returns {Promise<Object>}
  */
 export async function getTelephonySettings() {
-  const connections = await api.get('/api/voip/connections/');
+  const connections = await api.get('/api/voip/my-connections/');
   const activeConnection = connections.results?.find(c => c.active);
 
   return activeConnection || { active: false };
