@@ -46,7 +46,7 @@ export class ProductsService {
     }): CancelablePromise<PaginatedProductList> {
         return __request(OpenAPI, {
             method: 'GET',
-            url: '/products/',
+            url: '/api/products/',
             query: {
                 'currency': currency,
                 'on_sale': onSale,
@@ -70,7 +70,7 @@ export class ProductsService {
     }): CancelablePromise<Product> {
         return __request(OpenAPI, {
             method: 'POST',
-            url: '/products/',
+            url: '/api/products/',
             body: requestBody,
             mediaType: 'application/json',
         });
@@ -90,7 +90,7 @@ export class ProductsService {
     }): CancelablePromise<Product> {
         return __request(OpenAPI, {
             method: 'GET',
-            url: '/products/{id}/',
+            url: '/api/products/{id}/',
             path: {
                 'id': id,
             },
@@ -113,7 +113,7 @@ export class ProductsService {
     }): CancelablePromise<Product> {
         return __request(OpenAPI, {
             method: 'PUT',
-            url: '/products/{id}/',
+            url: '/api/products/{id}/',
             path: {
                 'id': id,
             },
@@ -138,7 +138,7 @@ export class ProductsService {
     }): CancelablePromise<Product> {
         return __request(OpenAPI, {
             method: 'PATCH',
-            url: '/products/{id}/',
+            url: '/api/products/{id}/',
             path: {
                 'id': id,
             },
@@ -161,7 +161,7 @@ export class ProductsService {
     }): CancelablePromise<void> {
         return __request(OpenAPI, {
             method: 'DELETE',
-            url: '/products/{id}/',
+            url: '/api/products/{id}/',
             path: {
                 'id': id,
             },

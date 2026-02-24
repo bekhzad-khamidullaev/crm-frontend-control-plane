@@ -11,10 +11,10 @@ export class SystemSettingsService {
      * @returns any No response body
      * @throws ApiError
      */
-    public static settingsmassmailRetrieve(): CancelablePromise<any> {
+    public static settingsMassmailRetrieve(): CancelablePromise<any> {
         return __request(OpenAPI, {
             method: 'GET',
-            url: '/settings/massmail/',
+            url: '/api/settings/massmail/',
         });
     }
     /**
@@ -22,10 +22,10 @@ export class SystemSettingsService {
      * @returns any No response body
      * @throws ApiError
      */
-    public static settingsmassmailPartialUpdate(): CancelablePromise<any> {
+    public static settingsMassmailPartialUpdate(): CancelablePromise<any> {
         return __request(OpenAPI, {
             method: 'PATCH',
-            url: '/settings/massmail/',
+            url: '/api/settings/massmail/',
         });
     }
     /**
@@ -33,10 +33,10 @@ export class SystemSettingsService {
      * @returns any No response body
      * @throws ApiError
      */
-    public static settingspublicEmailDomainsRetrieve(): CancelablePromise<any> {
+    public static settingsPublicEmailDomainsRetrieve(): CancelablePromise<any> {
         return __request(OpenAPI, {
             method: 'GET',
-            url: '/settings/public_email_domains/',
+            url: '/api/settings/public_email_domains/',
         });
     }
     /**
@@ -44,10 +44,10 @@ export class SystemSettingsService {
      * @returns any No response body
      * @throws ApiError
      */
-    public static settingsremindersRetrieve(): CancelablePromise<any> {
+    public static settingsRemindersRetrieve(): CancelablePromise<any> {
         return __request(OpenAPI, {
             method: 'GET',
-            url: '/settings/reminders/',
+            url: '/api/settings/reminders/',
         });
     }
     /**
@@ -55,10 +55,10 @@ export class SystemSettingsService {
      * @returns any No response body
      * @throws ApiError
      */
-    public static settingsremindersPartialUpdate(): CancelablePromise<any> {
+    public static settingsRemindersPartialUpdate(): CancelablePromise<any> {
         return __request(OpenAPI, {
             method: 'PATCH',
-            url: '/settings/reminders/',
+            url: '/api/settings/reminders/',
         });
     }
 }

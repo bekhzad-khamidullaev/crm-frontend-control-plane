@@ -42,7 +42,7 @@ export class OutputsService {
     }): CancelablePromise<PaginatedOutputList> {
         return __request(OpenAPI, {
             method: 'GET',
-            url: '/outputs/',
+            url: '/api/outputs/',
             query: {
                 'currency': currency,
                 'deal': deal,
@@ -66,7 +66,7 @@ export class OutputsService {
     }): CancelablePromise<Output> {
         return __request(OpenAPI, {
             method: 'POST',
-            url: '/outputs/',
+            url: '/api/outputs/',
             body: requestBody,
             mediaType: 'application/json',
         });
@@ -86,7 +86,7 @@ export class OutputsService {
     }): CancelablePromise<Output> {
         return __request(OpenAPI, {
             method: 'GET',
-            url: '/outputs/{id}/',
+            url: '/api/outputs/{id}/',
             path: {
                 'id': id,
             },
@@ -109,7 +109,7 @@ export class OutputsService {
     }): CancelablePromise<Output> {
         return __request(OpenAPI, {
             method: 'PUT',
-            url: '/outputs/{id}/',
+            url: '/api/outputs/{id}/',
             path: {
                 'id': id,
             },
@@ -134,7 +134,7 @@ export class OutputsService {
     }): CancelablePromise<Output> {
         return __request(OpenAPI, {
             method: 'PATCH',
-            url: '/outputs/{id}/',
+            url: '/api/outputs/{id}/',
             path: {
                 'id': id,
             },
@@ -157,7 +157,7 @@ export class OutputsService {
     }): CancelablePromise<void> {
         return __request(OpenAPI, {
             method: 'DELETE',
-            url: '/outputs/{id}/',
+            url: '/api/outputs/{id}/',
             path: {
                 'id': id,
             },

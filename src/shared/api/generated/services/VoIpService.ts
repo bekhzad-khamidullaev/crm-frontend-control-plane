@@ -15,7 +15,7 @@ export class VoIpService {
      * @returns PaginatedConnectionList
      * @throws ApiError
      */
-    public static voipconnectionsList({
+    public static voipConnectionsList({
         active,
         page,
         provider,
@@ -36,7 +36,7 @@ export class VoIpService {
     }): CancelablePromise<PaginatedConnectionList> {
         return __request(OpenAPI, {
             method: 'GET',
-            url: '/voip/connections/',
+            url: '/api/voip/connections/',
             query: {
                 'active': active,
                 'page': page,
@@ -48,14 +48,14 @@ export class VoIpService {
      * @returns Connection
      * @throws ApiError
      */
-    public static voipconnectionsCreate({
+    public static voipConnectionsCreate({
         requestBody,
     }: {
         requestBody: Connection,
     }): CancelablePromise<Connection> {
         return __request(OpenAPI, {
             method: 'POST',
-            url: '/voip/connections/',
+            url: '/api/voip/connections/',
             body: requestBody,
             mediaType: 'application/json',
         });
@@ -64,7 +64,7 @@ export class VoIpService {
      * @returns Connection
      * @throws ApiError
      */
-    public static voipconnectionsRetrieve({
+    public static voipConnectionsRetrieve({
         id,
     }: {
         /**
@@ -74,7 +74,7 @@ export class VoIpService {
     }): CancelablePromise<Connection> {
         return __request(OpenAPI, {
             method: 'GET',
-            url: '/voip/connections/{id}/',
+            url: '/api/voip/connections/{id}/',
             path: {
                 'id': id,
             },
@@ -84,7 +84,7 @@ export class VoIpService {
      * @returns Connection
      * @throws ApiError
      */
-    public static voipconnectionsUpdate({
+    public static voipConnectionsUpdate({
         id,
         requestBody,
     }: {
@@ -96,7 +96,7 @@ export class VoIpService {
     }): CancelablePromise<Connection> {
         return __request(OpenAPI, {
             method: 'PUT',
-            url: '/voip/connections/{id}/',
+            url: '/api/voip/connections/{id}/',
             path: {
                 'id': id,
             },
@@ -108,7 +108,7 @@ export class VoIpService {
      * @returns Connection
      * @throws ApiError
      */
-    public static voipconnectionsPartialUpdate({
+    public static voipConnectionsPartialUpdate({
         id,
         requestBody,
     }: {
@@ -120,7 +120,7 @@ export class VoIpService {
     }): CancelablePromise<Connection> {
         return __request(OpenAPI, {
             method: 'PATCH',
-            url: '/voip/connections/{id}/',
+            url: '/api/voip/connections/{id}/',
             path: {
                 'id': id,
             },
@@ -132,7 +132,7 @@ export class VoIpService {
      * @returns void
      * @throws ApiError
      */
-    public static voipconnectionsDestroy({
+    public static voipConnectionsDestroy({
         id,
     }: {
         /**
@@ -142,7 +142,7 @@ export class VoIpService {
     }): CancelablePromise<void> {
         return __request(OpenAPI, {
             method: 'DELETE',
-            url: '/voip/connections/{id}/',
+            url: '/api/voip/connections/{id}/',
             path: {
                 'id': id,
             },
@@ -152,7 +152,7 @@ export class VoIpService {
      * @returns PaginatedIncomingCallList
      * @throws ApiError
      */
-    public static voipincomingCallsList({
+    public static voipIncomingCallsList({
         clientType,
         isConsumed,
         page,
@@ -173,7 +173,7 @@ export class VoIpService {
     }): CancelablePromise<PaginatedIncomingCallList> {
         return __request(OpenAPI, {
             method: 'GET',
-            url: '/voip/incoming-calls/',
+            url: '/api/voip/incoming-calls/',
             query: {
                 'client_type': clientType,
                 'is_consumed': isConsumed,
@@ -187,7 +187,7 @@ export class VoIpService {
      * @returns IncomingCall
      * @throws ApiError
      */
-    public static voipincomingCallsRetrieve({
+    public static voipIncomingCallsRetrieve({
         id,
     }: {
         /**
@@ -197,7 +197,7 @@ export class VoIpService {
     }): CancelablePromise<IncomingCall> {
         return __request(OpenAPI, {
             method: 'GET',
-            url: '/voip/incoming-calls/{id}/',
+            url: '/api/voip/incoming-calls/{id}/',
             path: {
                 'id': id,
             },

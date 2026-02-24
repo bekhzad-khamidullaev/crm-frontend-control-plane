@@ -51,7 +51,7 @@ export class MemosService {
     }): CancelablePromise<PaginatedMemoList> {
         return __request(OpenAPI, {
             method: 'GET',
-            url: '/memos/',
+            url: '/api/memos/',
             query: {
                 'deal': deal,
                 'draft': draft,
@@ -77,7 +77,7 @@ export class MemosService {
     }): CancelablePromise<Memo> {
         return __request(OpenAPI, {
             method: 'POST',
-            url: '/memos/',
+            url: '/api/memos/',
             body: requestBody,
             mediaType: 'application/json',
         });
@@ -97,7 +97,7 @@ export class MemosService {
     }): CancelablePromise<Memo> {
         return __request(OpenAPI, {
             method: 'GET',
-            url: '/memos/{id}/',
+            url: '/api/memos/{id}/',
             path: {
                 'id': id,
             },
@@ -120,7 +120,7 @@ export class MemosService {
     }): CancelablePromise<Memo> {
         return __request(OpenAPI, {
             method: 'PUT',
-            url: '/memos/{id}/',
+            url: '/api/memos/{id}/',
             path: {
                 'id': id,
             },
@@ -145,7 +145,7 @@ export class MemosService {
     }): CancelablePromise<Memo> {
         return __request(OpenAPI, {
             method: 'PATCH',
-            url: '/memos/{id}/',
+            url: '/api/memos/{id}/',
             path: {
                 'id': id,
             },
@@ -168,7 +168,7 @@ export class MemosService {
     }): CancelablePromise<void> {
         return __request(OpenAPI, {
             method: 'DELETE',
-            url: '/memos/{id}/',
+            url: '/api/memos/{id}/',
             path: {
                 'id': id,
             },
@@ -179,7 +179,7 @@ export class MemosService {
      * @returns Memo
      * @throws ApiError
      */
-    public static memosmarkPostponedCreate({
+    public static memosMarkPostponedCreate({
         id,
         requestBody,
     }: {
@@ -191,7 +191,7 @@ export class MemosService {
     }): CancelablePromise<Memo> {
         return __request(OpenAPI, {
             method: 'POST',
-            url: '/memos/{id}/mark_postponed/',
+            url: '/api/memos/{id}/mark_postponed/',
             path: {
                 'id': id,
             },
@@ -204,7 +204,7 @@ export class MemosService {
      * @returns Memo
      * @throws ApiError
      */
-    public static memosmarkReviewedCreate({
+    public static memosMarkReviewedCreate({
         id,
         requestBody,
     }: {
@@ -216,7 +216,7 @@ export class MemosService {
     }): CancelablePromise<Memo> {
         return __request(OpenAPI, {
             method: 'POST',
-            url: '/memos/{id}/mark_reviewed/',
+            url: '/api/memos/{id}/mark_reviewed/',
             path: {
                 'id': id,
             },

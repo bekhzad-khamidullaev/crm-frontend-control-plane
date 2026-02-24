@@ -18,10 +18,10 @@ export class VoIpColdCallsService {
      * @returns any No response body
      * @throws ApiError
      */
-    public static voipcallLogsRetrieve(): CancelablePromise<any> {
+    public static voipCallLogsRetrieve(): CancelablePromise<any> {
         return __request(OpenAPI, {
             method: 'GET',
-            url: '/voip/call-logs/',
+            url: '/api/voip/call-logs/',
         });
     }
     /**
@@ -29,14 +29,14 @@ export class VoIpColdCallsService {
      * @returns any No response body
      * @throws ApiError
      */
-    public static voipcallLogsRetrieve1({
+    public static voipCallLogsRetrieve2({
         logId,
     }: {
         logId: string,
     }): CancelablePromise<any> {
         return __request(OpenAPI, {
             method: 'GET',
-            url: '/voip/call-logs/{log_id}/',
+            url: '/api/voip/call-logs/{log_id}/',
             path: {
                 'log_id': logId,
             },
@@ -47,14 +47,14 @@ export class VoIpColdCallsService {
      * @returns any No response body
      * @throws ApiError
      */
-    public static voipcallLogsaddNoteCreate({
+    public static voipCallLogsAddNoteCreate({
         logId,
     }: {
         logId: string,
     }): CancelablePromise<any> {
         return __request(OpenAPI, {
             method: 'POST',
-            url: '/voip/call-logs/{log_id}/add-note/',
+            url: '/api/voip/call-logs/{log_id}/add-note/',
             path: {
                 'log_id': logId,
             },
@@ -65,10 +65,10 @@ export class VoIpColdCallsService {
      * @returns any No response body
      * @throws ApiError
      */
-    public static voipcallQueueRetrieve(): CancelablePromise<any> {
+    public static voipCallQueueRetrieve(): CancelablePromise<any> {
         return __request(OpenAPI, {
             method: 'GET',
-            url: '/voip/call-queue/',
+            url: '/api/voip/call-queue/',
         });
     }
     /**
@@ -79,10 +79,10 @@ export class VoIpColdCallsService {
      * @returns any No response body
      * @throws ApiError
      */
-    public static voipcallStatisticsRetrieve(): CancelablePromise<any> {
+    public static voipCallStatisticsRetrieve(): CancelablePromise<any> {
         return __request(OpenAPI, {
             method: 'GET',
-            url: '/voip/call-statistics/',
+            url: '/api/voip/call-statistics/',
         });
     }
     /**
@@ -98,10 +98,10 @@ export class VoIpColdCallsService {
      * @returns any No response body
      * @throws ApiError
      */
-    public static voipcoldCallbulkCreate(): CancelablePromise<any> {
+    public static voipColdCallBulkCreate(): CancelablePromise<any> {
         return __request(OpenAPI, {
             method: 'POST',
-            url: '/voip/cold-call/bulk/',
+            url: '/api/voip/cold-call/bulk/',
         });
     }
     /**
@@ -116,10 +116,10 @@ export class VoIpColdCallsService {
      * @returns any No response body
      * @throws ApiError
      */
-    public static voipcoldCallinitiateCreate(): CancelablePromise<any> {
+    public static voipColdCallInitiateCreate(): CancelablePromise<any> {
         return __request(OpenAPI, {
             method: 'POST',
-            url: '/voip/cold-call/initiate/',
+            url: '/api/voip/cold-call/initiate/',
         });
     }
     /**
@@ -135,10 +135,21 @@ export class VoIpColdCallsService {
      * @returns any No response body
      * @throws ApiError
      */
-    public static voipcoldCallscheduleCreate(): CancelablePromise<any> {
+    public static voipColdCallScheduleCreate(): CancelablePromise<any> {
         return __request(OpenAPI, {
             method: 'POST',
-            url: '/voip/cold-call/schedule/',
+            url: '/api/voip/cold-call/schedule/',
+        });
+    }
+    /**
+     * Get VoIP connections for current user
+     * @returns any No response body
+     * @throws ApiError
+     */
+    public static voipMyConnectionsRetrieve(): CancelablePromise<any> {
+        return __request(OpenAPI, {
+            method: 'GET',
+            url: '/api/voip/my-connections/',
         });
     }
 }

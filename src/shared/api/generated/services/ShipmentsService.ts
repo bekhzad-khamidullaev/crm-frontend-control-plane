@@ -40,7 +40,7 @@ export class ShipmentsService {
     }): CancelablePromise<PaginatedShipmentList> {
         return __request(OpenAPI, {
             method: 'GET',
-            url: '/shipments/',
+            url: '/api/shipments/',
             query: {
                 'currency': currency,
                 'deal': deal,
@@ -63,7 +63,7 @@ export class ShipmentsService {
     }): CancelablePromise<Shipment> {
         return __request(OpenAPI, {
             method: 'POST',
-            url: '/shipments/',
+            url: '/api/shipments/',
             body: requestBody,
             mediaType: 'application/json',
         });
@@ -83,7 +83,7 @@ export class ShipmentsService {
     }): CancelablePromise<Shipment> {
         return __request(OpenAPI, {
             method: 'GET',
-            url: '/shipments/{id}/',
+            url: '/api/shipments/{id}/',
             path: {
                 'id': id,
             },
@@ -106,7 +106,7 @@ export class ShipmentsService {
     }): CancelablePromise<Shipment> {
         return __request(OpenAPI, {
             method: 'PUT',
-            url: '/shipments/{id}/',
+            url: '/api/shipments/{id}/',
             path: {
                 'id': id,
             },
@@ -131,7 +131,7 @@ export class ShipmentsService {
     }): CancelablePromise<Shipment> {
         return __request(OpenAPI, {
             method: 'PATCH',
-            url: '/shipments/{id}/',
+            url: '/api/shipments/{id}/',
             path: {
                 'id': id,
             },
@@ -154,7 +154,7 @@ export class ShipmentsService {
     }): CancelablePromise<void> {
         return __request(OpenAPI, {
             method: 'DELETE',
-            url: '/shipments/{id}/',
+            url: '/api/shipments/{id}/',
             path: {
                 'id': id,
             },

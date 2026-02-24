@@ -14,7 +14,7 @@ export class AuthenticationService {
     public static authStatsRetrieve(): CancelablePromise<Record<string, any>> {
         return __request(OpenAPI, {
             method: 'GET',
-            url: '/auth-stats/',
+            url: '/api/auth-stats/',
         });
     }
 }

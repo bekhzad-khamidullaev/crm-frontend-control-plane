@@ -37,7 +37,7 @@ export class CrmTagsService {
     }): CancelablePromise<PaginatedCrmTagList> {
         return __request(OpenAPI, {
             method: 'GET',
-            url: '/crm-tags/',
+            url: '/api/crm-tags/',
             query: {
                 'department': department,
                 'ordering': ordering,
@@ -62,7 +62,7 @@ export class CrmTagsService {
     }): CancelablePromise<CrmTag> {
         return __request(OpenAPI, {
             method: 'GET',
-            url: '/crm-tags/{id}/',
+            url: '/api/crm-tags/{id}/',
             path: {
                 'id': id,
             },

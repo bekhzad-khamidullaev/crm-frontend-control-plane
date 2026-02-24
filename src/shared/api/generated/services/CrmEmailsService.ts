@@ -48,7 +48,7 @@ export class CrmEmailsService {
     }): CancelablePromise<PaginatedCrmEmailList> {
         return __request(OpenAPI, {
             method: 'GET',
-            url: '/crm-emails/',
+            url: '/api/crm-emails/',
             query: {
                 'company': company,
                 'contact': contact,
@@ -75,7 +75,7 @@ export class CrmEmailsService {
     }): CancelablePromise<CrmEmail> {
         return __request(OpenAPI, {
             method: 'POST',
-            url: '/crm-emails/',
+            url: '/api/crm-emails/',
             body: requestBody,
             mediaType: 'application/json',
         });
@@ -95,7 +95,7 @@ export class CrmEmailsService {
     }): CancelablePromise<CrmEmail> {
         return __request(OpenAPI, {
             method: 'GET',
-            url: '/crm-emails/{id}/',
+            url: '/api/crm-emails/{id}/',
             path: {
                 'id': id,
             },
@@ -118,7 +118,7 @@ export class CrmEmailsService {
     }): CancelablePromise<CrmEmail> {
         return __request(OpenAPI, {
             method: 'PUT',
-            url: '/crm-emails/{id}/',
+            url: '/api/crm-emails/{id}/',
             path: {
                 'id': id,
             },
@@ -143,7 +143,7 @@ export class CrmEmailsService {
     }): CancelablePromise<CrmEmail> {
         return __request(OpenAPI, {
             method: 'PATCH',
-            url: '/crm-emails/{id}/',
+            url: '/api/crm-emails/{id}/',
             path: {
                 'id': id,
             },
@@ -166,7 +166,7 @@ export class CrmEmailsService {
     }): CancelablePromise<void> {
         return __request(OpenAPI, {
             method: 'DELETE',
-            url: '/crm-emails/{id}/',
+            url: '/api/crm-emails/{id}/',
             path: {
                 'id': id,
             },

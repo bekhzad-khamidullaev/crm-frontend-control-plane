@@ -15,10 +15,10 @@ export class SmsService {
      * @returns any No response body
      * @throws ApiError
      */
-    public static smshistoryRetrieve(): CancelablePromise<any> {
+    public static smsHistoryRetrieve(): CancelablePromise<any> {
         return __request(OpenAPI, {
             method: 'GET',
-            url: '/sms/history/',
+            url: '/api/sms/history/',
         });
     }
     /**
@@ -26,10 +26,10 @@ export class SmsService {
      * @returns any No response body
      * @throws ApiError
      */
-    public static smsprovidersRetrieve(): CancelablePromise<any> {
+    public static smsProvidersRetrieve(): CancelablePromise<any> {
         return __request(OpenAPI, {
             method: 'GET',
-            url: '/sms/providers/',
+            url: '/api/sms/providers/',
         });
     }
     /**
@@ -43,10 +43,10 @@ export class SmsService {
      * @returns any No response body
      * @throws ApiError
      */
-    public static smssendCreate(): CancelablePromise<any> {
+    public static smsSendCreate(): CancelablePromise<any> {
         return __request(OpenAPI, {
             method: 'POST',
-            url: '/sms/send/',
+            url: '/api/sms/send/',
         });
     }
     /**
@@ -59,10 +59,10 @@ export class SmsService {
      * @returns any No response body
      * @throws ApiError
      */
-    public static smssendBulkCreate(): CancelablePromise<any> {
+    public static smsSendBulkCreate(): CancelablePromise<any> {
         return __request(OpenAPI, {
             method: 'POST',
-            url: '/sms/send_bulk/',
+            url: '/api/sms/send_bulk/',
         });
     }
     /**
@@ -70,10 +70,10 @@ export class SmsService {
      * @returns any No response body
      * @throws ApiError
      */
-    public static smsstatusRetrieve(): CancelablePromise<any> {
+    public static smsStatusRetrieve(): CancelablePromise<any> {
         return __request(OpenAPI, {
             method: 'GET',
-            url: '/sms/status/',
+            url: '/api/sms/status/',
         });
     }
 }

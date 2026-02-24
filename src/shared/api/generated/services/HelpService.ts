@@ -14,7 +14,7 @@ export class HelpService {
      * @returns PaginatedPageList
      * @throws ApiError
      */
-    public static helppagesList({
+    public static helpPagesList({
         languageCode,
         page,
         search,
@@ -56,7 +56,7 @@ export class HelpService {
     }): CancelablePromise<PaginatedPageList> {
         return __request(OpenAPI, {
             method: 'GET',
-            url: '/help/pages/',
+            url: '/api/help/pages/',
             query: {
                 'language_code': languageCode,
                 'page': page,
@@ -68,7 +68,7 @@ export class HelpService {
      * @returns Page
      * @throws ApiError
      */
-    public static helppagesRetrieve({
+    public static helpPagesRetrieve({
         id,
     }: {
         /**
@@ -78,7 +78,7 @@ export class HelpService {
     }): CancelablePromise<Page> {
         return __request(OpenAPI, {
             method: 'GET',
-            url: '/help/pages/{id}/',
+            url: '/api/help/pages/{id}/',
             path: {
                 'id': id,
             },
@@ -88,7 +88,7 @@ export class HelpService {
      * @returns PaginatedParagraphList
      * @throws ApiError
      */
-    public static helpparagraphsList({
+    public static helpParagraphsList({
         document,
         languageCode,
         page,
@@ -127,7 +127,7 @@ export class HelpService {
     }): CancelablePromise<PaginatedParagraphList> {
         return __request(OpenAPI, {
             method: 'GET',
-            url: '/help/paragraphs/',
+            url: '/api/help/paragraphs/',
             query: {
                 'document': document,
                 'language_code': languageCode,
@@ -139,7 +139,7 @@ export class HelpService {
      * @returns Paragraph
      * @throws ApiError
      */
-    public static helpparagraphsRetrieve({
+    public static helpParagraphsRetrieve({
         id,
     }: {
         /**
@@ -149,7 +149,7 @@ export class HelpService {
     }): CancelablePromise<Paragraph> {
         return __request(OpenAPI, {
             method: 'GET',
-            url: '/help/paragraphs/{id}/',
+            url: '/api/help/paragraphs/{id}/',
             path: {
                 'id': id,
             },
