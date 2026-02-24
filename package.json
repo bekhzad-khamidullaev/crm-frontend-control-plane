@@ -30,7 +30,7 @@
     "test:e2e:leads": "playwright test leads.spec.js",
     "test:e2e:contacts": "playwright test contacts.spec.js",
     "test:e2e:integration": "playwright test integration.spec.js",
-    "codegen": "openapi-typescript-codegen --input './Contora API.yaml' --output src/shared/api/generated --client axios --useOptions --useUnionTypes",
+    "codegen": "openapi-typescript-codegen --input './openapi-schema.yml' --output src/shared/api/generated --client axios --useOptions --useUnionTypes",
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {

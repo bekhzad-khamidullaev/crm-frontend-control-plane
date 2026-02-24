@@ -1,17 +1,16 @@
-import React, { useState } from 'react';
-import { Form, Input, Button, Card, Typography, Space, App } from 'antd';
-import { UserOutlined, LockOutlined, LoginOutlined } from '@ant-design/icons';
+import { App, Button, Card, Form, Input, Space, Typography } from 'antd';
+import { useState } from 'react';
 import '../styles/login-page.css';
 
-import { navigate } from '../router';
-import { authApi } from '../lib/api/client';
 import {
-  setToken,
-  getUserFromToken,
-  isTokenTooLarge,
-  MAX_HEADER_SAFE_LENGTH,
-  clearToken,
+    clearToken,
+    getUserFromToken,
+    isTokenTooLarge,
+    MAX_HEADER_SAFE_LENGTH,
+    setToken,
 } from '../lib/api/auth';
+import { authApi } from '../lib/api/client';
+import { navigate } from '../router';
 
 const { Title, Text } = Typography;
 
@@ -76,14 +75,12 @@ function LoginPage({ onLogin }) {
 
   return (
     <div className="login-container">
-      <Card className="login-card">
+      <Card className="login-card" bordered={false}>
         <Space direction="vertical" size="large" style={{ width: '100%' }}>
           {/* Header */}
-          <div style={{ textAlign: 'center' }}>
-            <Title level={2} style={{ marginBottom: 8 }}>
-              Enterprise CRM
-            </Title>
-            <Text type="secondary">Войдите в систему</Text>
+          <div style={{ textAlign: 'center', marginBottom: '8px' }}>
+            <h1 className="login-title">Enterprise CRM</h1>
+            <p className="login-subtitle">Введите свои данные для входа в систему</p>
           </div>
 
           {/* Login Form */}
@@ -93,6 +90,7 @@ function LoginPage({ onLogin }) {
             onFinish={onSubmit}
             layout="vertical"
             size="large"
+            className="radix-form"
             initialValues={{
               username: 'admin',
               password: 'admin123',
@@ -110,8 +108,7 @@ function LoginPage({ onLogin }) {
             >
               <Input
                 id="login_username"
-                prefix={<UserOutlined />}
-                placeholder="Имя пользователя"
+                placeholder="admin"
                 autoComplete="username"
               />
             </Form.Item>
@@ -128,18 +125,17 @@ function LoginPage({ onLogin }) {
             >
               <Input.Password
                 id="login_password"
-                prefix={<LockOutlined />}
-                placeholder="Пароль"
+                placeholder="••••••••"
                 autoComplete="current-password"
               />
             </Form.Item>
 
-            <Form.Item style={{ marginBottom: 0 }}>
+            <Form.Item style={{ marginBottom: 0, marginTop: 8 }}>
               <Button
                 type="primary"
                 htmlType="submit"
                 loading={loading}
-                icon={<LoginOutlined />}
+                className="radix-btn"
                 block
               >
                 Войти

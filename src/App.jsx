@@ -1,26 +1,25 @@
-import React, { useState, useEffect, Suspense, lazy } from 'react';
-import { ConfigProvider, App as AntApp, theme as antdTheme } from 'antd';
+import { App as AntApp, ConfigProvider, Skeleton, theme as antdTheme } from 'antd';
 import ruRU from 'antd/locale/ru_RU';
-import { setLocale, t } from './lib/i18n/index.js';
-import { parseHash, navigate, onRouteChange } from './router.js';
+import { Suspense, lazy, useEffect, useState } from 'react';
+import { AppLayout } from './components/AppLayout.jsx';
+import { clearToken, getToken, getUserFromToken, isAuthenticated } from './lib/api/auth.js';
+import { getProfile } from './lib/api/user.js';
+import { useTheme } from './lib/hooks/useTheme.js';
+import { setLocale } from './lib/i18n/index.js';
 import {
-  subscribe,
-  setWsConnected,
-  setWsReconnecting,
-  addIncomingCall,
-  removeIncomingCall,
-  setChatWsConnected,
-  setChatWsReconnecting,
+    addIncomingCall,
+    removeIncomingCall,
+    setChatWsConnected,
+    setChatWsReconnecting,
+    setWsConnected,
+    setWsReconnecting,
+    subscribe,
 } from './lib/store/index.js';
-import { isAuthenticated, getToken, clearToken, getUserFromToken } from './lib/api/auth.js';
+import sipClient from './lib/telephony/SIPClient.js';
 import callsWebSocket from './lib/websocket/CallsWebSocket.js';
 import chatWebSocket from './lib/websocket/ChatWebSocket.js';
-import sipClient from './lib/telephony/SIPClient.js';
-import { getProfile } from './lib/api/user.js';
 import IncomingCallModal from './modules/calls/IncomingCallModal.jsx';
-import { AppLayout } from './components/AppLayout.jsx';
-import { Skeleton, Spin } from 'antd';
-import { useTheme } from './lib/hooks/useTheme.js';
+import { navigate, onRouteChange, parseHash } from './router.js';
 
 // Lazy load all page components for better code splitting
 const Dashboard = lazy(() => import('./pages/dashboard.jsx'));
@@ -589,13 +588,79 @@ function App() {
 function AppWithTheme() {
   const { theme } = useTheme();
 
-  // Ant Design theme configuration
+  // Ant Design theme configuration for Radix UI aesthetic
   const themeConfig = {
     algorithm: theme === 'dark' ? antdTheme.darkAlgorithm : antdTheme.defaultAlgorithm,
     token: {
-      colorPrimary: '#1890ff',
+      colorPrimary: theme === 'dark' ? '#fafafa' : '#18181b', // zinc-50 : zinc-900
+      colorInfo: theme === 'dark' ? '#fafafa' : '#18181b',
+      colorSuccess: theme === 'dark' ? '#4ade80' : '#16a34a', // green-400 : green-600
+      colorWarning: theme === 'dark' ? '#fbbf24' : '#d97706', // amber-400 : amber-600
+      colorError: theme === 'dark' ? '#f87171' : '#dc2626',   // red-400 : red-600
       borderRadius: 6,
+      colorBgContainer: theme === 'dark' ? '#09090b' : '#ffffff', // zinc-950 : white
+      colorBgElevated: theme === 'dark' ? '#18181b' : '#ffffff', // zinc-900 : white
+      colorBgLayout: theme === 'dark' ? '#09090b' : '#f8fafc', // zinc-950 : slate-50
+      colorBorderSecondary: theme === 'dark' ? '#27272a' : '#e4e4e7', // zinc-800 : zinc-200
+      colorBorder: theme === 'dark' ? '#27272a' : '#e4e4e7',
+      colorTextBase: theme === 'dark' ? '#fafafa' : '#09090b', // zinc-50 : zinc-950
+      colorTextSecondary: theme === 'dark' ? '#a1a1aa' : '#71717a', // zinc-400 : zinc-500
+      colorTextLightSolid: theme === 'dark' ? '#18181b' : '#fafafa', // inverted text for primary buttons
+      fontFamily: 'ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif',
+      boxShadow: theme === 'dark' ? '0 1px 2px 0 rgba(0, 0, 0, 0.5)' : '0 1px 2px 0 rgba(0, 0, 0, 0.05)',
+      boxShadowSecondary: theme === 'dark' ? '0 4px 6px -1px rgba(0, 0, 0, 0.5), 0 2px 4px -2px rgba(0, 0, 0, 0.5)' : '0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -2px rgba(0, 0, 0, 0.1)',
     },
+    components: {
+      Card: {
+        colorBgContainer: theme === 'dark' ? '#09090b' : '#ffffff',
+        colorBorderSecondary: theme === 'dark' ? '#27272a' : '#e4e4e7',
+      },
+      Button: {
+        colorPrimaryHover: theme === 'dark' ? '#d4d4d8' : '#27272a',
+        colorPrimaryActive: theme === 'dark' ? '#a1a1aa' : '#3f3f46',
+        colorBgTextHover: theme === 'dark' ? '#27272a' : '#f4f4f5',
+        colorBgTextActive: theme === 'dark' ? '#3f3f46' : '#e4e4e7',
+      },
+      Table: {
+        colorBgContainer: theme === 'dark' ? '#09090b' : '#ffffff',
+        headerBg: theme === 'dark' ? '#09090b' : '#f8fafc',
+        headerColor: theme === 'dark' ? '#a1a1aa' : '#71717a',
+        rowHoverBg: theme === 'dark' ? '#18181b' : '#f1f5f9',
+        borderColor: theme === 'dark' ? '#27272a' : '#e4e4e7',
+      },
+      Layout: {
+        siderBg: theme === 'dark' ? '#09090b' : '#ffffff',
+        headerBg: theme === 'dark' ? '#09090b' : '#ffffff',
+        bodyBg: theme === 'dark' ? '#09090b' : '#f8fafc',
+      },
+      Menu: {
+        itemBg: theme === 'dark' ? '#09090b' : '#ffffff',
+        activeBarBorderWidth: 0,
+        itemSelectedBg: theme === 'dark' ? '#27272a' : '#f1f5f9',
+        itemSelectedColor: theme === 'dark' ? '#fafafa' : '#18181b',
+        itemColor: theme === 'dark' ? '#a1a1aa' : '#71717a',
+        itemHoverColor: theme === 'dark' ? '#fafafa' : '#18181b',
+        itemHoverBg: theme === 'dark' ? '#18181b' : '#f8fafc',
+      },
+      Input: {
+        colorBgContainer: theme === 'dark' ? '#09090b' : '#ffffff',
+        colorBorder: theme === 'dark' ? '#27272a' : '#e4e4e7',
+        activeBorderColor: theme === 'dark' ? '#fafafa' : '#18181b',
+        hoverBorderColor: theme === 'dark' ? '#3f3f46' : '#d4d4d8',
+      },
+      Select: {
+        colorBgContainer: theme === 'dark' ? '#09090b' : '#ffffff',
+        colorBorder: theme === 'dark' ? '#27272a' : '#e4e4e7',
+        colorPrimaryHover: theme === 'dark' ? '#3f3f46' : '#d4d4d8',
+        colorPrimary: theme === 'dark' ? '#fafafa' : '#18181b',
+        optionSelectedBg: theme === 'dark' ? '#27272a' : '#f1f5f9',
+      },
+      Dropdown: {
+        colorBgElevated: theme === 'dark' ? '#18181b' : '#ffffff',
+        colorText: theme === 'dark' ? '#fafafa' : '#09090b',
+        controlItemBgHover: theme === 'dark' ? '#27272a' : '#f1f5f9',
+      }
+    }
   };
 
   return (

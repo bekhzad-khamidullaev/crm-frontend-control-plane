@@ -77,3 +77,35 @@ Object.defineProperty(window, 'localStorage', {
 Object.defineProperty(window, 'sessionStorage', {
   value: localStorageMock,
 });
+
+// Mock antd App to prevent message, notification, and modal errors
+vi.mock('antd', async () => {
+  const antd = await vi.importActual('antd');
+  return {
+    ...antd,
+    App: {
+      ...antd.App,
+      useApp: () => ({
+        message: {
+          success: vi.fn(),
+          error: vi.fn(),
+          warning: vi.fn(),
+          info: vi.fn(),
+        },
+        notification: {
+          success: vi.fn(),
+          error: vi.fn(),
+          warning: vi.fn(),
+          info: vi.fn(),
+        },
+        modal: {
+          confirm: vi.fn(),
+          info: vi.fn(),
+          success: vi.fn(),
+          error: vi.fn(),
+          warning: vi.fn(),
+        }
+      })
+    }
+  };
+});

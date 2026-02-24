@@ -1,36 +1,35 @@
-import React from 'react';
-import { Layout, Menu, Button, Dropdown, Avatar, Badge, Switch, Space, Typography } from 'antd';
 import {
-  DashboardOutlined,
-  UserOutlined,
-  TeamOutlined,
-  BankOutlined,
-  DollarOutlined,
-  CheckSquareOutlined,
-  FolderOutlined,
-  MessageOutlined,
-  PhoneOutlined,
-  AppstoreOutlined,
-  ClockCircleOutlined,
-  FileTextOutlined,
-  MailOutlined,
-  ToolOutlined,
-  DatabaseOutlined,
-  BarChartOutlined,
-  QuestionCircleOutlined,
-  CustomerServiceOutlined,
-  SettingOutlined,
-  LogoutOutlined,
-  WifiOutlined,
-  DisconnectOutlined,
-  MenuFoldOutlined,
-  MenuUnfoldOutlined,
-  SunOutlined,
-  MoonOutlined,
+    AppstoreOutlined,
+    BankOutlined,
+    BarChartOutlined,
+    CheckSquareOutlined,
+    ClockCircleOutlined,
+    CustomerServiceOutlined,
+    DashboardOutlined,
+    DatabaseOutlined,
+    DisconnectOutlined,
+    DollarOutlined,
+    FileTextOutlined,
+    FolderOutlined,
+    LogoutOutlined,
+    MailOutlined,
+    MenuFoldOutlined,
+    MenuUnfoldOutlined,
+    MessageOutlined,
+    MoonOutlined,
+    PhoneOutlined,
+    QuestionCircleOutlined,
+    SettingOutlined,
+    SunOutlined,
+    TeamOutlined,
+    ToolOutlined,
+    UserOutlined,
+    WifiOutlined,
 } from '@ant-design/icons';
+import { Avatar, Badge, Button, Dropdown, Layout, Menu, Space, Switch, Typography } from 'antd';
+import { useTheme } from '../lib/hooks/useTheme.js';
 import { t } from '../lib/i18n/index.js';
 import { navigate } from '../router.js';
-import { useTheme } from '../lib/hooks/useTheme.js';
 
 const { Header, Sider, Content } = Layout;
 const { Text } = Typography;
@@ -168,6 +167,7 @@ export function AppLayout({
         onCollapse={onToggleCollapsed}
         trigger={null}
         width={256}
+        theme={theme === 'dark' ? 'dark' : 'light'}
         style={{
           overflow: 'auto',
           height: '100vh',
@@ -175,6 +175,8 @@ export function AppLayout({
           left: 0,
           top: 0,
           bottom: 0,
+          borderRight: `1px solid ${theme === 'dark' ? '#27272a' : '#e4e4e7'}`,
+          background: theme === 'dark' ? '#09090b' : '#ffffff',
         }}
       >
         <div
@@ -184,39 +186,41 @@ export function AppLayout({
             alignItems: 'center',
             justifyContent: collapsed ? 'center' : 'space-between',
             padding: collapsed ? '0' : '0 16px',
+            borderBottom: `1px solid ${theme === 'dark' ? '#27272a' : '#e4e4e7'}`,
           }}
         >
           <Space>
             <Avatar
               style={{
-                backgroundColor: '#1890ff',
+                backgroundColor: theme === 'dark' ? '#27272a' : '#f1f5f9',
+                color: theme === 'dark' ? '#fafafa' : '#09090b',
                 verticalAlign: 'middle',
               }}
               size="large"
             >
-              C
+              E
             </Avatar>
             {!collapsed && (
-              <Text strong style={{ color: '#fff', fontSize: 16 }}>
-                Contora CRM
+              <Text strong style={{ color: theme === 'dark' ? '#fafafa' : '#09090b', fontSize: 16 }}>
+                Enterprise CRM
               </Text>
             )}
           </Space>
           {!collapsed && (
             <Button
               type="text"
-              icon={<MenuFoldOutlined style={{ color: '#fff' }} />}
+              icon={<MenuFoldOutlined style={{ color: theme === 'dark' ? '#fafafa' : '#09090b' }} />}
               onClick={onToggleCollapsed}
             />
           )}
         </div>
 
         <Menu
-          theme="dark"
+          theme={theme === 'dark' ? 'dark' : 'light'}
           mode="inline"
           selectedKeys={[selectedKey]}
           items={menuItems}
-          style={{ borderRight: 0 }}
+          style={{ borderRight: 0, background: theme === 'dark' ? '#09090b' : '#ffffff' }}
         />
       </Sider>
 
@@ -224,14 +228,15 @@ export function AppLayout({
         <Header
           style={{
             padding: '0 24px',
-            background: '#fff',
+            background: theme === 'dark' ? '#09090b' : '#ffffff',
+            borderBottom: `1px solid ${theme === 'dark' ? '#27272a' : '#e4e4e7'}`,
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'space-between',
             position: 'sticky',
             top: 0,
             zIndex: 1,
-            boxShadow: '0 1px 4px rgba(0,21,41,.08)',
+            boxShadow: theme === 'dark' ? '0 1px 4px rgba(0,0,0,.5)' : '0 1px 4px rgba(0,0,0,.08)',
           }}
         >
           <Space>

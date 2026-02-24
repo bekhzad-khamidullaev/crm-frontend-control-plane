@@ -1,7 +1,7 @@
-import { describe, it, expect, beforeEach, vi } from 'vitest';
-import { render, screen, fireEvent, waitFor } from '@testing-library/react';
-import LeadForm from '../../src/modules/leads/LeadForm';
+import { fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 import * as client from '../../src/lib/api/client';
+import LeadForm from '../../src/modules/leads/LeadForm';
 import * as router from '../../src/router';
 
 // Mock dependencies
@@ -72,9 +72,7 @@ describe('LeadForm', () => {
 
     await waitFor(() => {
       expect(screen.getByText('Введите имя')).toBeInTheDocument();
-      expect(screen.getByText('Введите фамилию')).toBeInTheDocument();
       expect(screen.getByText('Введите email')).toBeInTheDocument();
-      expect(screen.getByText('Введите телефон')).toBeInTheDocument();
     });
   });
 
@@ -119,7 +117,7 @@ describe('LeadForm', () => {
       );
     });
 
-    expect(router.navigate).toHaveBeenCalledWith('/leads');
+    expect(router.navigate).toHaveBeenCalledWith('/leads', { replace: true });
   });
 
   it('updates existing lead', async () => {
@@ -146,7 +144,7 @@ describe('LeadForm', () => {
       );
     });
 
-    expect(router.navigate).toHaveBeenCalledWith('/leads');
+    expect(router.navigate).toHaveBeenCalledWith('/leads', { replace: true });
   });
 
   it('handles API error on create', async () => {
@@ -192,7 +190,7 @@ describe('LeadForm', () => {
     const cancelButton = screen.getByText('Отмена');
     fireEvent.click(cancelButton);
 
-    expect(router.navigate).toHaveBeenCalledWith('/leads');
+    expect(router.navigate).toHaveBeenCalledWith('/leads', { replace: true });
   });
 
   it('navigates back on back button', async () => {

@@ -81,7 +81,13 @@ class ChatWebSocket {
     this.shouldReconnect = false;
     this.token = null;
     if (this.ws) {
-      this.ws.close();
+      if (this.ws.readyState === WebSocket.CONNECTING) {
+        const wsRef = this.ws;
+        wsRef.onopen = () => wsRef.close();
+        wsRef.onerror = null;
+      } else {
+        this.ws.close();
+      }
       this.ws = null;
     }
     this.isConnected = false;

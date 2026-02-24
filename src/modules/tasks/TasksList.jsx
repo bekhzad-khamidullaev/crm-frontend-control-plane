@@ -1,15 +1,15 @@
-import React, { useEffect, useMemo, useState } from 'react';
-import { User, Calendar, Clock, Eye, Edit, Trash2 } from 'lucide-react';
+import { Calendar, Clock, Edit, Eye, Trash2, User } from 'lucide-react';
+import { useEffect, useMemo, useState } from 'react';
 
-import { navigate } from '../../router';
-import { getTasks, deleteTask, updateTask, getUsers, getTaskStages } from '../../lib/api';
 import EnhancedTable from '../../components/ui-EnhancedTable.jsx';
 import TableToolbar from '../../components/ui-TableToolbar.jsx';
-import { Badge } from '../../components/ui/badge.jsx';
-import { toast } from '../../components/ui/use-toast.js';
-import { Avatar, AvatarFallback } from '../../components/ui/avatar.jsx';
-import { Button } from '../../components/ui/button.jsx';
 import { AlertDialog, AlertDialogContent, AlertDialogHeader, AlertDialogTitle } from '../../components/ui/alert-dialog.jsx';
+import { Avatar, AvatarFallback } from '../../components/ui/avatar.jsx';
+import { Badge } from '../../components/ui/badge.jsx';
+import { Button } from '../../components/ui/button.jsx';
+import { toast } from '../../components/ui/use-toast.js';
+import { deleteTask, getTasks, getTaskStages, getUsers, updateTask } from '../../lib/api';
+import { navigate } from '../../router';
 
 function TasksList() {
   const [tasks, setTasks] = useState([]);
@@ -26,6 +26,7 @@ function TasksList() {
   const [deleteTarget, setDeleteTarget] = useState(null);
 
   useEffect(() => {
+    console.log('TASKS_LIST_API', { getTasks: typeof getTasks, isMock: !!getTasks?.mock });
     fetchTasks(1, searchText);
     loadReferences();
   }, []);

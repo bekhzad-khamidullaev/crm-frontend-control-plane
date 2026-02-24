@@ -1,4 +1,3 @@
-import React from 'react';
 import ReactDOM from 'react-dom/client';
 import AppWithTheme from './App.jsx';
 import { setupGlobalErrorHandler } from './lib/api/interceptor';
@@ -16,9 +15,7 @@ const queryClient = new QueryClient();
 const root = ReactDOM.createRoot(document.getElementById('root'));
 
 root.render(
-  <React.StrictMode>
-    <QueryClientProvider client={queryClient}>
-      <AppWithTheme />
-    </QueryClientProvider>
-  </React.StrictMode>
+  <QueryClientProvider client={queryClient}>
+    <AppWithTheme />
+  </QueryClientProvider>
 );

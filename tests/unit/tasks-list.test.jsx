@@ -1,22 +1,36 @@
-import { describe, it, expect, beforeEach, vi } from 'vitest';
-import { render, screen, fireEvent, waitFor } from '@testing-library/react';
+import { fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
+import * as api from '../../src/lib/api';
 import TasksList from '../../src/modules/tasks/TasksList';
-import * as client from '../../src/lib/api/client';
 import * as router from '../../src/router';
 
 // Mock dependencies
-vi.mock('../../src/lib/api/client');
+vi.mock('../../src/lib/api/tasks', () => ({
+  getTasks: vi.fn(),
+  getTask: vi.fn(),
+  deleteTask: vi.fn(),
+  updateTask: vi.fn(),
+}));
+
+vi.mock('../../src/lib/api/client', () => ({
+  getUsers: vi.fn(),
+}));
+
+vi.mock('../../src/lib/api/reference', () => ({
+  getTaskStages: vi.fn(),
+  getTaskTags: vi.fn(),
+}));
 vi.mock('../../src/router');
 
 const mockTasks = [
   {
     id: 1,
-    title: 'Подготовить презентацию',
+    name: 'Подготовить презентацию',
     description: 'Презентация для клиента',
     status: 'open',
-    priority: 'high',
+    priority: 3,
     due_date: '2024-02-15',
-    assigned_to: 2,
+    responsible: [2],
     assigned_to_name: 'Иван Петров',
     stage: 1,
     stage_name: 'В работе',
@@ -24,12 +38,12 @@ const mockTasks = [
   },
   {
     id: 2,
-    title: 'Согласовать договор',
+    name: 'Согласовать договор',
     description: 'Договор с ООО Альфа',
     status: 'in_progress',
-    priority: 'normal',
+    priority: 2,
     due_date: '2024-02-20',
-    assigned_to: 3,
+    responsible: [3],
     assigned_to_name: 'Мария Смирнова',
     stage: 2,
     stage_name: 'На проверке',
@@ -37,12 +51,12 @@ const mockTasks = [
   },
   {
     id: 3,
-    title: 'Звонок клиенту',
+    name: 'Звонок клиенту',
     description: 'Обсудить условия сотрудничества',
     status: 'completed',
-    priority: 'urgent',
+    priority: 3,
     due_date: '2024-01-25',
-    assigned_to: 2,
+    responsible: [2],
     assigned_to_name: 'Иван Петров',
     stage: 3,
     stage_name: 'Завершено',
@@ -57,25 +71,25 @@ const mockStages = [
 ];
 
 const mockUsers = [
-  { id: 2, username: 'ivanov', email: 'ivanov@example.com' },
-  { id: 3, username: 'smirnova', email: 'smirnova@example.com' },
+  { id: 2, username: 'Иван Петров', email: 'ivanov@example.com' },
+  { id: 3, username: 'Мария Смирнова', email: 'smirnova@example.com' },
 ];
 
 describe('TasksList', () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    client.getTasks.mockResolvedValue({
+    api.getTasks.mockResolvedValue({
       results: mockTasks,
       count: 3,
     });
-    client.getTaskStages.mockResolvedValue({
+    api.getTaskStages.mockResolvedValue({
       results: mockStages,
     });
-    client.getUsers.mockResolvedValue({
+    api.getUsers.mockResolvedValue({
       results: mockUsers,
     });
-    client.deleteTask.mockResolvedValue({});
-    client.updateTask.mockResolvedValue({});
+    api.deleteTask.mockResolvedValue({});
+    api.updateTask.mockResolvedValue({});
   });
 
   it('renders tasks list with data', async () => {
@@ -91,7 +105,7 @@ describe('TasksList', () => {
   });
 
   it('shows loading state initially', () => {
-    client.getTasks.mockImplementation(() => new Promise(() => {}));
+    api.getTasks.mockImplementation(() => new Promise(() => {}));
     render(<TasksList />);
 
     expect(screen.getByRole('table')).toBeInTheDocument();
@@ -109,7 +123,7 @@ describe('TasksList', () => {
     fireEvent.keyDown(searchInput, { key: 'Enter', code: 'Enter' });
 
     await waitFor(() => {
-      expect(client.getTasks).toHaveBeenCalledWith(
+      expect(api.getTasks).toHaveBeenCalledWith(
         expect.objectContaining({
           search: 'презентацию',
         })
@@ -161,7 +175,7 @@ describe('TasksList', () => {
       expect(screen.getByText('Подготовить презентацию')).toBeInTheDocument();
     });
 
-    client.getTasks.mockResolvedValueOnce({
+    api.getTasks.mockResolvedValueOnce({
       results: mockTasks.slice(1),
       count: 2,
     });
@@ -194,7 +208,7 @@ describe('TasksList', () => {
       expect(screen.getByText('Подготовить презентацию')).toBeInTheDocument();
     });
 
-    expect(screen.getByText(/низкий|средний|высокий/i)).toBeInTheDocument();
+    expect(screen.getAllByText(/Низкий|Средний|Высокий/i).length).toBeGreaterThan(0);
   });
 
   it('displays task stage badges', async () => {
@@ -204,16 +218,16 @@ describe('TasksList', () => {
       expect(screen.getByText('Подготовить презентацию')).toBeInTheDocument();
     });
 
-    expect(screen.getByText(/В работе|На проверке|Завершено/i)).toBeInTheDocument();
+    expect(screen.getAllByText(/В работе|На проверке|Завершено/i).length).toBeGreaterThan(0);
   });
 
   it('handles error when fetching tasks', async () => {
-    client.getTasks.mockRejectedValue(new Error('API Error'));
+    api.getTasks.mockRejectedValue(new Error('API Error'));
 
     render(<TasksList />);
 
     await waitFor(() => {
-      expect(client.getTasks).toHaveBeenCalled();
+      expect(api.getTasks).toHaveBeenCalled();
     });
 
     // Should show empty state or error
@@ -223,12 +237,12 @@ describe('TasksList', () => {
   });
 
   it('handles error when loading stages', async () => {
-    client.getTaskStages.mockRejectedValue(new Error('API Error'));
+    api.getTaskStages.mockRejectedValue(new Error('API Error'));
 
     render(<TasksList />);
 
     await waitFor(() => {
-      expect(client.getTaskStages).toHaveBeenCalled();
+      expect(api.getTaskStages).toHaveBeenCalled();
     });
 
     // Tasks should still load even if stages fail
@@ -241,8 +255,8 @@ describe('TasksList', () => {
     render(<TasksList />);
 
     await waitFor(() => {
-      expect(client.getTaskStages).toHaveBeenCalledWith({ page_size: 200 });
-      expect(client.getUsers).toHaveBeenCalledWith({ page_size: 200 });
+      expect(api.getTaskStages).toHaveBeenCalledWith({ page_size: 200 });
+      expect(api.getUsers).toHaveBeenCalledWith({ page_size: 200 });
     });
   });
 
@@ -282,7 +296,7 @@ describe('TasksList', () => {
     });
 
     // Assigned user names should be visible
-    expect(screen.getByText('Иван Петров')).toBeInTheDocument();
-    expect(screen.getByText('Мария Смирнова')).toBeInTheDocument();
+    expect(screen.getAllByText('Иван Петров').length).toBeGreaterThan(0);
+    expect(screen.getAllByText('Мария Смирнова').length).toBeGreaterThan(0);
   });
 });
