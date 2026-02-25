@@ -1,22 +1,23 @@
-import React from 'react';
-import { Table, Space, Button, Popconfirm, Avatar } from 'antd';
-import {
-  EditOutlined,
-  DeleteOutlined,
-  EyeOutlined,
-  ShopOutlined,
-  MailOutlined,
-  PhoneOutlined,
-  GlobalOutlined
-} from '@ant-design/icons';
-import { useServerTable } from '@/shared/hooks';
-import { StatusTag } from '@/shared/ui';
-import { CompaniesService } from '@/shared/api/generated/services/CompaniesService';
 import { companyKeys } from '@/entities/company/api/keys';
 import { useDeleteCompany } from '@/entities/company/api/mutations';
-import { CompaniesTableFilters } from './ui/CompaniesTableFilters';
 import type { Company } from '@/entities/company/model/types';
+// @ts-ignore
+import { CompaniesService } from '@/shared/api/generated/services/CompaniesService';
+import { useServerTable } from '@/shared/hooks';
+import { StatusTag } from '@/shared/ui';
+import {
+    DeleteOutlined,
+    EditOutlined,
+    EyeOutlined,
+    GlobalOutlined,
+    MailOutlined,
+    PhoneOutlined,
+    ShopOutlined
+} from '@ant-design/icons';
+import { Avatar, Button, Popconfirm, Space, Table } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
+import React from 'react';
+import { CompaniesTableFilters } from './ui/CompaniesTableFilters';
 
 // Import existing CallButton (temporarily using any to bypass TS checks during migration)
 // @ts-ignore

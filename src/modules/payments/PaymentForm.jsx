@@ -1,21 +1,21 @@
-import React, { useEffect, useState } from 'react';
-import { useForm } from 'react-hook-form';
-import { z } from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
 import dayjs from 'dayjs';
 import { ArrowLeft, Save } from 'lucide-react';
+import { useEffect, useState } from 'react';
+import { useForm } from 'react-hook-form';
+import { z } from 'zod';
 
-import { navigate } from '../../router';
-import { getPayment, createPayment, updatePayment } from '../../lib/api/payments';
-import { getDeal, getDeals } from '../../lib/api/client';
-import ReferenceSelect from '../../components/ui-ReferenceSelect';
 import EntitySelect from '../../components/EntitySelect';
-import { Card } from '../../components/ui/card.jsx';
+import { DatePicker } from '../../components/ui-DatePicker.jsx';
+import ReferenceSelect from '../../components/ui-ReferenceSelect';
 import { Button } from '../../components/ui/button.jsx';
+import { Card } from '../../components/ui/card.jsx';
 import { Input } from '../../components/ui/input.jsx';
 import { Label } from '../../components/ui/label.jsx';
-import { DatePicker } from '../../components/ui-DatePicker.jsx';
 import { toast } from '../../components/ui/use-toast.js';
+import { getDeal, getDeals } from '../../lib/api/client';
+import { createPayment, getPayment, updatePayment } from '../../lib/api/payments';
+import { navigate } from '../../router';
 
 const statusOptions = [
   { value: 'r', label: 'Получен' },
@@ -134,15 +134,23 @@ function PaymentForm({ id }) {
               {errors.amount && <p className="text-xs text-destructive">{errors.amount.message}</p>}
             </div>
             <div>
-              <Label>Валюта</Label>
-              <ReferenceSelect type="currencies" placeholder="Выберите валюту" value={currencyValue || ''} onChange={(val) => setValue('currency', val)} />
+              <Label htmlFor="currency">Валюта</Label>
+              <ReferenceSelect
+                id="currency"
+                data-testid="currency-select"
+                type="currencies"
+                placeholder="Выберите валюту"
+                value={currencyValue || ''}
+                onChange={(val) => setValue('currency', val)}
+              />
             </div>
           </div>
 
           <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
             <div>
-              <Label>Статус *</Label>
+              <Label htmlFor="status">Статус *</Label>
               <select
+                id="status"
                 className="h-9 w-full rounded-md border border-border bg-background px-2 text-sm"
                 value={statusValue || ''}
                 onChange={(e) => setValue('status', e.target.value)}
@@ -157,14 +165,16 @@ function PaymentForm({ id }) {
               {errors.status && <p className="text-xs text-destructive">{errors.status.message}</p>}
             </div>
             <div>
-              <Label>Дата платежа</Label>
-              <DatePicker value={paymentDate || null} onChange={(val) => setValue('payment_date', val)} format="YYYY-MM-DD" />
+              <Label htmlFor="payment_date">Дата платежа</Label>
+              <DatePicker id="payment_date" value={paymentDate || null} onChange={(val) => setValue('payment_date', val)} format="YYYY-MM-DD" />
             </div>
           </div>
 
           <div>
-            <Label>Сделка *</Label>
+            <Label htmlFor="deal">Сделка *</Label>
             <EntitySelect
+              id="deal"
+              data-testid="deal-select"
               placeholder="Выберите сделку"
               value={dealValue || ''}
               fetchOptions={getDeals}

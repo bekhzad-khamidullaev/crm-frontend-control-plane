@@ -19,6 +19,7 @@ export class MemosService {
         draft,
         ordering,
         page,
+        pageSize,
         project,
         search,
         stage,
@@ -35,6 +36,10 @@ export class MemosService {
          * A page number within the paginated result set.
          */
         page?: number,
+        /**
+         * Number of results to return per page.
+         */
+        pageSize?: number,
         project?: number,
         /**
          * A search term.
@@ -57,6 +62,7 @@ export class MemosService {
                 'draft': draft,
                 'ordering': ordering,
                 'page': page,
+                'page_size': pageSize,
                 'project': project,
                 'search': search,
                 'stage': stage,

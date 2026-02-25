@@ -1,20 +1,22 @@
-import React from 'react';
-import { Table, Space, Button, Popconfirm, Badge, Tooltip } from 'antd';
-import {
-  EditOutlined,
-  DeleteOutlined,
-  EyeOutlined,
-  UserOutlined,
-  BankOutlined,
-} from '@ant-design/icons';
-import { useServerTable } from '@/shared/hooks';
-import { DealsService } from '@/shared/api/generated/services/DealsService';
+import { Deal } from '@/entities/deal';
 import { dealKeys } from '@/entities/deal/api/keys';
 import { useDeleteDeal } from '@/entities/deal/api/mutations';
-import { Deal } from '@/entities/deal';
+import { DealsService } from '@/shared/api/generated/services/DealsService';
+import { useServerTable } from '@/shared/hooks';
+import {
+    BankOutlined,
+    DeleteOutlined,
+    EditOutlined,
+    EyeOutlined,
+    UserOutlined,
+} from '@ant-design/icons';
+import { Badge, Button, Popconfirm, Space, Table, Tooltip } from 'antd';
+import React from 'react';
 import { DealsTableFilters } from './ui/DealsTableFilters';
 // @ts-ignore
 import { navigate } from '@/router.js';
+// @ts-ignore
+import { formatCurrency } from '@/lib/utils/format.js';
 
 export const DealsTable: React.FC = () => {
   const { data, isLoading, pagination, handleTableChange, params, handleFilterChange } =
@@ -44,10 +46,7 @@ export const DealsTable: React.FC = () => {
       dataIndex: 'amount',
       key: 'amount',
       render: (amount: string, record: Deal) => (
-        <span>
-          {amount ? Number(amount).toLocaleString('ru-RU') : '0'}{' '}
-          {(record as any).currency_name || ''}
-        </span>
+        <span>{formatCurrency(amount, (record as any).currency_name || 'RUB')}</span>
       ),
     },
     {

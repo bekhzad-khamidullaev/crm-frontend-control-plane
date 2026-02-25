@@ -20,6 +20,7 @@ export class ProjectsService {
         ordering,
         owner,
         page,
+        pageSize,
         search,
         stage,
     }: {
@@ -35,6 +36,10 @@ export class ProjectsService {
          */
         page?: number,
         /**
+         * Number of results to return per page.
+         */
+        pageSize?: number,
+        /**
          * A search term.
          */
         search?: string,
@@ -49,6 +54,7 @@ export class ProjectsService {
                 'ordering': ordering,
                 'owner': owner,
                 'page': page,
+                'page_size': pageSize,
                 'search': search,
                 'stage': stage,
             },

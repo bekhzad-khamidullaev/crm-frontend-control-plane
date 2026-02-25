@@ -1,9 +1,9 @@
-import React from 'react';
-import { Select, SelectProps } from 'antd';
 import { useCompanies } from '@/entities/company/api/queries';
+import { Select, SelectProps } from 'antd';
+import React from 'react';
 
 export const CompanySelect: React.FC<SelectProps<any>> = (props) => {
-  const { data, isLoading } = useCompanies({ page: 1, page_size: 100 });
+  const { data, isLoading } = useCompanies({ page: 1, pageSize: 100 });
 
   const options = data?.results?.map((item) => ({
     label: item.full_name || `Company #${item.id}`,

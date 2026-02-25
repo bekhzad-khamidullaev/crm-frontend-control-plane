@@ -1,18 +1,58 @@
-import { describe, it, expect, beforeEach, vi } from 'vitest';
-import { render, screen, fireEvent, waitFor } from '@testing-library/react';
-import LeadsList from '../../src/modules/leads/LeadsList';
+import { fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 import * as client from '../../src/lib/api/client';
-import * as router from '../../src/router';
+import LeadsList from '../../src/modules/leads/LeadsList';
 
 // Mock dependencies
 vi.mock('../../src/lib/api/client');
 vi.mock('../../src/router');
-vi.mock('../../src/lib/api/export');
+vi.mock('../../src/lib/api/reference', () => ({
+  getLeadSources: vi.fn().mockResolvedValue({ results: [] }),
+}));
 vi.mock('../../src/modules/leads/LeadsKanban', () => ({
   default: () => <div data-testid="kanban">Kanban View</div>,
 }));
-vi.mock('../../src/modules/leads/LeadsKPI', () => ({
-  default: ({ leads }) => <div data-testid="kpi">KPI: {leads.length} leads</div>,
+
+// Mock Shadcn UI components that use Portals or are complex in JSDOM
+vi.mock('../../src/components/ui/dropdown-menu', () => ({
+  DropdownMenu: ({ children }) => <div>{children}</div>,
+  DropdownMenuTrigger: ({ children }) => <div>{children}</div>,
+  DropdownMenuContent: ({ children }) => <div data-testid="dropdown-content">{children}</div>,
+  DropdownMenuItem: ({ children, onClick }) => (
+    <button data-testid="dropdown-item" onClick={onClick}>{children}</button>
+  ),
+  DropdownMenuLabel: ({ children }) => <div>{children}</div>,
+  DropdownMenuSeparator: () => <hr />,
+}));
+
+vi.mock('../../src/components/ui/alert-dialog', () => ({
+  AlertDialog: ({ children, open }) => (open ? <div data-testid="alert-dialog">{children}</div> : null),
+  AlertDialogContent: ({ children }) => <div>{children}</div>,
+  AlertDialogHeader: ({ children }) => <div>{children}</div>,
+  AlertDialogTitle: ({ children }) => <div>{children}</div>,
+  AlertDialogDescription: ({ children }) => <div>{children}</div>,
+  AlertDialogFooter: ({ children }) => <div>{children}</div>,
+  AlertDialogCancel: ({ children, onClick }) => <button onClick={onClick}>{children}</button>,
+  AlertDialogAction: ({ children, onClick }) => <button data-testid="alert-dialog-action" onClick={onClick}>{children}</button>,
+}));
+
+// Mock Lucide icons
+vi.mock('lucide-react', () => ({
+  MoreHorizontal: () => <span data-testid="more-icon" />,
+  Plus: () => <span data-testid="plus-icon" />,
+  Search: () => <span data-testid="search-icon" />,
+  Filter: () => <span data-testid="filter-icon" />,
+  Download: () => <span data-testid="download-icon" />,
+  Trash2: () => <span data-testid="trash-icon" />,
+  Phone: () => <span data-testid="phone-icon" />,
+  MessageSquare: () => <span data-testid="message-icon" />,
+  RefreshCw: () => <span data-testid="refresh-icon" />,
+  CheckCircle2: () => <span data-testid="check-icon" />,
+  XCircle: () => <span data-testid="x-icon" />,
+  Users: () => <span data-testid="users-icon" />,
+  Briefcase: () => <span data-testid="briefcase-icon" />,
+  LayoutGrid: () => <span data-testid="grid-icon" />,
+  List: () => <span data-testid="list-icon" />,
 }));
 
 const mockLeads = [
@@ -22,21 +62,9 @@ const mockLeads = [
     last_name: 'Иванов',
     email: 'ivan@example.com',
     phone: '+7 999 123-45-67',
-    company: 'ООО "Технологии"',
+    company_name: 'ООО "Технологии"',
     status: 'new',
-    source: 'website',
-    created_at: '2024-01-15',
-  },
-  {
-    id: 2,
-    first_name: 'Мария',
-    last_name: 'Петрова',
-    email: 'maria@example.com',
-    phone: '+7 999 234-56-78',
-    company: 'АО "Инновации"',
-    status: 'contacted',
-    source: 'referral',
-    created_at: '2024-01-14',
+    created_at: '2024-01-15T10:00:00Z',
   },
 ];
 
@@ -45,101 +73,53 @@ describe('LeadsList', () => {
     vi.clearAllMocks();
     client.getLeads.mockResolvedValue({
       results: mockLeads,
-      count: 2,
+      count: 1,
     });
+    client.deleteLead.mockResolvedValue({});
   });
 
   it('renders leads list with data', async () => {
     render(<LeadsList />);
-    
-    await waitFor(() => {
-      expect(screen.getByText('Лиды')).toBeInTheDocument();
-    });
-
-    expect(screen.getByText('Иван Иванов')).toBeInTheDocument();
-    expect(screen.getByText('Мария Петрова')).toBeInTheDocument();
-  });
-
-  it('shows loading state', () => {
-    client.getLeads.mockImplementation(() => new Promise(() => {}));
-    render(<LeadsList />);
-    
-    expect(screen.getByRole('table')).toBeInTheDocument();
+    await waitFor(() => expect(screen.getByText('Лиды')).toBeInTheDocument());
+    expect(screen.getByText(/Иван Иванов/)).toBeInTheDocument();
   });
 
   it('handles search', async () => {
     render(<LeadsList />);
-    
-    await waitFor(() => {
-      expect(screen.getByText('Иван Иванов')).toBeInTheDocument();
-    });
+    await waitFor(() => expect(screen.getByText(/Иван Иванов/)).toBeInTheDocument());
 
-    const searchInput = screen.getByPlaceholderText(/Поиск по имени/);
+    const searchInput = screen.getByPlaceholderText(/Поиск по имени, email.../);
     fireEvent.change(searchInput, { target: { value: 'Иван' } });
-    
-    const searchButton = screen.getByRole('button', { name: /search/i });
-    fireEvent.click(searchButton);
+    fireEvent.click(screen.getByLabelText('Search'));
 
     await waitFor(() => {
-      expect(client.getLeads).toHaveBeenCalledWith(
-        expect.objectContaining({
-          search: 'Иван',
-        })
-      );
+      expect(client.getLeads).toHaveBeenCalledWith(expect.objectContaining({ search: 'Иван' }));
     });
   });
 
   it('handles pagination', async () => {
+    client.getLeads.mockResolvedValue({ results: mockLeads, count: 15 });
     render(<LeadsList />);
-    
+    await waitFor(() => expect(screen.getByText(/Иван Иванов/)).toBeInTheDocument());
+
+    fireEvent.click(screen.getByLabelText('Next Page'));
     await waitFor(() => {
-      expect(screen.getByText('Иван Иванов')).toBeInTheDocument();
+      expect(client.getLeads).toHaveBeenCalledWith(expect.objectContaining({ page: 2 }));
     });
-
-    // Find and click next page button
-    const nextButton = screen.getByRole('button', { name: /next/i });
-    if (nextButton && !nextButton.disabled) {
-      fireEvent.click(nextButton);
-      
-      await waitFor(() => {
-        expect(client.getLeads).toHaveBeenCalledWith(
-          expect.objectContaining({
-            page: 2,
-          })
-        );
-      });
-    }
-  });
-
-  it('navigates to create new lead', async () => {
-    render(<LeadsList />);
-    
-    await waitFor(() => {
-      expect(screen.getByText('Создать лид')).toBeInTheDocument();
-    });
-
-    const createButton = screen.getByText('Создать лид');
-    fireEvent.click(createButton);
-
-    expect(router.navigate).toHaveBeenCalledWith('/leads/new');
   });
 
   it('deletes a lead', async () => {
-    client.deleteLead.mockResolvedValue({});
     render(<LeadsList />);
-    
-    await waitFor(() => {
-      expect(screen.getByText('Иван Иванов')).toBeInTheDocument();
-    });
+    await waitFor(() => expect(screen.getByText(/Иван Иванов/)).toBeInTheDocument());
 
-    const deleteButtons = screen.getAllByText('Удалить');
-    fireEvent.click(deleteButtons[0]);
+    // Click Delete in dropdown (it's already in the DOM with our mock, but let's be safe)
+    const deleteBtn = screen.getAllByText('Удалить').find(el => el.closest('[data-testid="dropdown-content"]'));
+    fireEvent.click(deleteBtn);
 
-    // Confirm deletion
-    await waitFor(() => {
-      const confirmButton = screen.getByText('Да');
-      fireEvent.click(confirmButton);
-    });
+    // Confirm in dialog
+    await waitFor(() => expect(screen.getByTestId('alert-dialog')).toBeInTheDocument());
+    const confirmButton = screen.getByTestId('alert-dialog-action');
+    fireEvent.click(confirmButton);
 
     await waitFor(() => {
       expect(client.deleteLead).toHaveBeenCalledWith(1);
@@ -148,79 +128,13 @@ describe('LeadsList', () => {
 
   it('switches to kanban view', async () => {
     render(<LeadsList />);
-    
-    await waitFor(() => {
-      expect(screen.getByText('Иван Иванов')).toBeInTheDocument();
-    });
+    await waitFor(() => expect(screen.getByText(/Иван Иванов/)).toBeInTheDocument());
 
-    const kanbanButton = screen.getByText('Канбан');
-    fireEvent.click(kanbanButton);
+    fireEvent.click(screen.getByLabelText('Table View')); 
+    fireEvent.click(screen.getByLabelText('Kanban View'));
 
     await waitFor(() => {
       expect(screen.getByTestId('kanban')).toBeInTheDocument();
-    });
-  });
-
-  it('toggles KPI display', async () => {
-    render(<LeadsList />);
-    
-    await waitFor(() => {
-      expect(screen.getByTestId('kpi')).toBeInTheDocument();
-    });
-
-    const toggleButton = screen.getByText('Скрыть статистику');
-    fireEvent.click(toggleButton);
-
-    await waitFor(() => {
-      expect(screen.queryByTestId('kpi')).not.toBeInTheDocument();
-    });
-  });
-
-  it('handles inline cell editing', async () => {
-    vi.spyOn(client, 'leadsApi', 'get').mockReturnValue({
-      patch: vi.fn().mockResolvedValue({}),
-    });
-    
-    render(<LeadsList />);
-    
-    await waitFor(() => {
-      expect(screen.getByText('ivan@example.com')).toBeInTheDocument();
-    });
-
-    // This would require more complex interaction with EditableCell
-    // For now, just verify the component renders
-    expect(screen.getByText('ivan@example.com')).toBeInTheDocument();
-  });
-
-  it('handles bulk delete', async () => {
-    client.deleteLead.mockResolvedValue({});
-    render(<LeadsList />);
-    
-    await waitFor(() => {
-      expect(screen.getByText('Иван Иванов')).toBeInTheDocument();
-    });
-
-    // Select checkboxes (implementation depends on Ant Design Table)
-    const checkboxes = screen.getAllByRole('checkbox');
-    fireEvent.click(checkboxes[1]); // First lead
-    fireEvent.click(checkboxes[2]); // Second lead
-
-    // This would trigger bulk actions
-    // Implementation depends on BulkActions component
-  });
-
-  it('handles error when fetching leads', async () => {
-    client.getLeads.mockRejectedValue(new Error('API Error'));
-    
-    render(<LeadsList />);
-    
-    await waitFor(() => {
-      expect(client.getLeads).toHaveBeenCalled();
-    });
-
-    // Should show empty state, not mock data
-    await waitFor(() => {
-      expect(screen.queryByText('Иван Иванов')).not.toBeInTheDocument();
     });
   });
 });

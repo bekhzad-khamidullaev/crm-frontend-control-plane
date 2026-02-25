@@ -37,9 +37,7 @@ code {
   border-radius: 8px !important;
   transition: box-shadow 0.2s ease, border-color 0.2s ease;
 }
-.ant-card:hover {
-  /* Using CSS variables from antd if needed, or leave to config provider */
-}
+
 .ant-card-head {
   font-weight: 600 !important;
 }
@@ -79,7 +77,6 @@ code {
 
 /* Headings */
 h1, h2, h3, h4, h5, h6, .ant-typography {
-  color: #09090b;
   letter-spacing: -0.025em;
 }
 
@@ -103,7 +100,6 @@ h1, h2, h3, h4, h5, h6, .ant-typography {
   font-size: 1.5rem;
   font-weight: 600;
   letter-spacing: -0.025em;
-  color: #09090b;
 }
 
 /* Action buttons */
@@ -130,7 +126,7 @@ h1, h2, h3, h4, h5, h6, .ant-typography {
 /* Empty state */
 .empty-state { text-align: center; padding: 48px 0; }
 .empty-state-icon { font-size: 64px; color: #d4d4d8; margin-bottom: 16px; }
-.empty-state-title { font-size: 18px; color: #09090b; margin-bottom: 8px; font-weight: 600; }
+.empty-state-title { font-size: 18px; margin-bottom: 8px; font-weight: 600; }
 .empty-state-description { font-size: 14px; color: #71717a; margin-bottom: 16px; }
 
 
@@ -170,3 +166,31 @@ h1, h2, h3, h4, h5, h6, .ant-typography {
 .dark .status-badge.contacted { background: rgba(217, 119, 6, 0.2); color: #fbbf24; }
 .dark .status-badge.qualified { background: rgba(22, 163, 74, 0.2); color: #4ade80; }
 .dark .status-badge.lost { background: rgba(220, 38, 38, 0.2); color: #f87171; }
+
+/* Custom Enterprise Component Dark Mode Overrides */
+.dark .action-panel,
+.dark .action-panel__button,
+.dark .form-section,
+.dark .form-preview,
+.dark .timeline-item__content,
+.dark .timeline-item__marker,
+.dark .info-card,
+.dark .drawer-footer,
+.dark .page-header,
+.dark .form-actions-bar,
+.dark .mdc-card {
+  background: var(--mdc-theme-surface) !important;
+  color: var(--mdc-theme-text-primary) !important;
+}
+
+.dark .card-premium__header,
+.dark .form-section__header,
+.dark .form-preview__header,
+.dark .info-card__header {
+  background: var(--mdc-theme-surface-variant) !important;
+}
+
+.dark .search-premium__input {
+  background: var(--mdc-theme-surface);
+  color: var(--mdc-theme-text-primary);
+}

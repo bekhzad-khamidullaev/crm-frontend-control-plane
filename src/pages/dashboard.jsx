@@ -1,35 +1,36 @@
-import React, { useEffect, useRef, useState } from 'react';
-import {
-  AlertTriangle,
-  BarChart3,
-  CalendarClock,
-  ChevronUp,
-  DollarSign,
-  LineChart,
-  Timer,
-  Trophy,
-  User,
-  Users,
-} from 'lucide-react';
 import Chart from 'chart.js/auto';
+import {
+    AlertTriangle,
+    BarChart3,
+    CalendarClock,
+    ChevronUp,
+    DollarSign,
+    LineChart,
+    Timer,
+    Trophy,
+    User,
+    Users,
+} from 'lucide-react';
+import { useEffect, useRef, useState } from 'react';
 
+import { CampaignsWidget, MemosWidget, RevenueChart } from '../components';
+import { AnalyticsWrapper, ContactAnalyticsCard, DealAnalyticsCard, LeadAnalyticsCard } from '../components/analytics';
 import AnalyticsCard from '../components/analytics/AnalyticsCard.jsx';
-import PredictionChart from '../components/analytics/PredictionChart.jsx';
 import AnalyticsStatusBanner from '../components/analytics/AnalyticsStatusBanner.jsx';
-import { LeadAnalyticsCard, ContactAnalyticsCard, DealAnalyticsCard, AnalyticsWrapper } from '../components/analytics';
-import { MemosWidget, CampaignsWidget, RevenueChart } from '../components';
-import { getOverview, getDashboardAnalytics, getFunnelData, getActivityFeed, normalizeOverview } from '../lib/api/analytics.js';
-import { getLeads, getContacts, getDeals } from '../lib/api/client.js';
-import { t } from '../lib/i18n';
-import { navigate } from '../router.js';
+import PredictionChart from '../components/analytics/PredictionChart.jsx';
+import { Avatar, AvatarFallback } from '../components/ui/avatar.jsx';
+import { Badge } from '../components/ui/badge.jsx';
 import { Button } from '../components/ui/button.jsx';
 import { Card } from '../components/ui/card.jsx';
-import { Badge } from '../components/ui/badge.jsx';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '../components/ui/tabs.jsx';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../components/ui/select.jsx';
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '../components/ui/tooltip.jsx';
-import { Avatar, AvatarFallback } from '../components/ui/avatar.jsx';
 import { Separator } from '../components/ui/separator.jsx';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '../components/ui/tabs.jsx';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '../components/ui/tooltip.jsx';
+import { getActivityFeed, getDashboardAnalytics, getFunnelData, getOverview, normalizeOverview } from '../lib/api/analytics.js';
+import { getContacts, getDeals, getLeads } from '../lib/api/client.js';
+import { t } from '../lib/i18n';
+import { formatCurrency } from '../lib/utils/format.js';
+import { navigate } from '../router.js';
 
 function Dashboard() {
   const [period, setPeriod] = useState('30d');
@@ -168,6 +169,7 @@ function Dashboard() {
 
   useEffect(() => {
     if (loadingAnalytics || !analytics) return;
+    if (loadingLeads || loadingDeals) return;
     Object.keys(chartInstances.current).forEach((key) => {
       if (chartInstances.current[key]) {
         chartInstances.current[key].destroy();
@@ -183,7 +185,7 @@ function Dashboard() {
         }
       });
     };
-  }, [loadingAnalytics, analytics]);
+  }, [loadingAnalytics, analytics, loadingLeads, leads, loadingDeals, deals]);
 
   const buildCharts = () => {
     const normalizeBuckets = (data) => {
@@ -205,7 +207,7 @@ function Dashboard() {
       return [];
     };
 
-    if (chartRefs.revenue.current && analytics?.monthly_growth) {
+    if (chartRefs.revenue.current && analytics?.monthly_growth && !analytics.monthly_growth._isSummary && analytics.monthly_growth.revenue?.length) {
       const ctx = chartRefs.revenue.current.getContext('2d');
       chartInstances.current.revenue = new Chart(ctx, {
         type: 'line',
@@ -232,11 +234,21 @@ function Dashboard() {
 
     if (chartRefs.monthlyGrowth.current && analytics?.monthly_growth) {
       const ctx = chartRefs.monthlyGrowth.current.getContext('2d');
-      chartInstances.current.monthlyGrowth = new Chart(ctx, {
-        type: 'bar',
-        data: {
-          labels: analytics.monthly_growth.labels,
-          datasets: [
+      const isSummary = analytics.monthly_growth._isSummary;
+      const datasets = isSummary
+        ? [
+            {
+              label: 'Итого',
+              data: analytics.monthly_growth.leads,
+              backgroundColor: [
+                'rgba(82, 196, 26, 0.6)',
+                'rgba(22, 119, 255, 0.6)',
+                'rgba(250, 140, 22, 0.6)',
+              ],
+              borderWidth: 1,
+            },
+          ]
+        : [
             {
               label: 'Лиды',
               data: analytics.monthly_growth.leads,
@@ -251,7 +263,12 @@ function Dashboard() {
               borderColor: 'rgb(22, 119, 255)',
               borderWidth: 1,
             },
-          ],
+          ];
+      chartInstances.current.monthlyGrowth = new Chart(ctx, {
+        type: 'bar',
+        data: {
+          labels: analytics.monthly_growth.labels,
+          datasets,
         },
         options: {
           responsive: true,
@@ -262,9 +279,19 @@ function Dashboard() {
       });
     }
 
-    const leadSources = normalizeBuckets(
+    // Compute lead sources from leads array if not in analytics
+    let leadSources = normalizeBuckets(
       analytics?.lead_sources || analytics?.leads_by_source || analytics?.sources
     );
+    if (!leadSources.length && leads.length) {
+      const sourceLabels = { web: 'Сайт', referral: 'Реферал', call: 'Звонок', email: 'Email', social: 'Соцсети' };
+      const counts = {};
+      leads.forEach(l => {
+        const src = l.lead_source?.name || (typeof l.lead_source === 'string' ? l.lead_source : null) || l.source || 'Другое';
+        counts[src] = (counts[src] || 0) + 1;
+      });
+      leadSources = Object.entries(counts).map(([label, value]) => ({ label: sourceLabels[label] || label, value }));
+    }
 
     if (chartRefs.leadSource.current && leadSources.length) {
       const ctx = chartRefs.leadSource.current.getContext('2d');
@@ -280,6 +307,7 @@ function Dashboard() {
                 'rgba(82, 196, 26, 0.8)',
                 'rgba(250, 140, 22, 0.8)',
                 'rgba(114, 46, 209, 0.8)',
+                'rgba(255, 77, 79, 0.8)',
               ],
             },
           ],
@@ -288,9 +316,20 @@ function Dashboard() {
       });
     }
 
-    const leadStatus = normalizeBuckets(
+    // Compute lead statuses from leads array if not in analytics
+    let leadStatus = normalizeBuckets(
       analytics?.lead_statuses || analytics?.leads_by_status || analytics?.statuses
     );
+    if (!leadStatus.length && leads.length) {
+      const statusLabels = { active: 'Активный', disqualified: 'Дисквалиф.', converted: 'Конвертирован' };
+      const counts = {};
+      leads.forEach(l => {
+        const st = l.disqualified ? 'disqualified' : (l.was_in_touch ? 'converted' : 'active');
+        const label = statusLabels[st] || st;
+        counts[label] = (counts[label] || 0) + 1;
+      });
+      leadStatus = Object.entries(counts).map(([label, value]) => ({ label, value }));
+    }
 
     if (chartRefs.leadStatus.current && leadStatus.length) {
       const ctx = chartRefs.leadStatus.current.getContext('2d');
@@ -339,12 +378,6 @@ function Dashboard() {
     }
   };
 
-  const formatCurrency = (value) =>
-    new Intl.NumberFormat('ru-RU', {
-      style: 'currency',
-      currency: 'RUB',
-      minimumFractionDigits: 0,
-    }).format(value);
 
   const getActivityIcon = (type) => {
     switch (type) {
@@ -531,16 +564,21 @@ function Dashboard() {
           <div className="grid gap-4 lg:grid-cols-2">
             <AnalyticsCard title="Последняя активность" loading={loadingActivity} error={activityError}>
               <div className="space-y-4">
-                {activity.map((item) => (
+                {activity.length === 0 && (
+                <div className="text-center text-sm text-muted-foreground py-4">Нет активности</div>
+              )}
+              {activity.map((item) => (
                   <div key={item.id || item.timestamp} className="flex items-start gap-3">
                     <Avatar className="h-8 w-8">
                       <AvatarFallback>{getActivityIcon(item.type)}</AvatarFallback>
                     </Avatar>
                     <div className="flex-1 space-y-1">
-                      <div className="text-sm font-medium">{item.title}</div>
-                      <div className="text-xs text-muted-foreground">{item.description}</div>
+                      <div className="text-sm font-medium">{item.title || item.message || item.type}</div>
+                      {item.description && (
+                        <div className="text-xs text-muted-foreground">{item.description}</div>
+                      )}
                       <div className="text-xs text-muted-foreground">
-                        {item.user} • {formatTimeAgo(item.timestamp)}
+                        {item.user ? `${item.user} • ` : ''}{formatTimeAgo(item.timestamp)}
                       </div>
                     </div>
                   </div>

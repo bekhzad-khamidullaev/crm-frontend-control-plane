@@ -1,11 +1,11 @@
-import React, { useMemo } from 'react';
-import { Select, SelectProps } from 'antd';
 import { useLeads } from '@/entities/lead/api/queries';
+import { Select, SelectProps } from 'antd';
+import React, { useMemo } from 'react';
 
 export interface LeadSelectProps extends SelectProps {}
 
 export const LeadSelect: React.FC<LeadSelectProps> = (props) => {
-  const { data, isLoading } = useLeads({ page: 1, page_size: 100 });
+  const { data, isLoading } = useLeads({ page: 1, pageSize: 100 });
 
   const options = useMemo(() => {
     return (

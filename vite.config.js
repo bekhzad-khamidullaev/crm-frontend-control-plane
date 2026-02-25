@@ -1,6 +1,6 @@
-import { defineConfig, loadEnv } from 'vite';
 import react from '@vitejs/plugin-react';
 import { visualizer } from 'rollup-plugin-visualizer';
+import { defineConfig, loadEnv } from 'vite';
 
 export default defineConfig(({ mode }) => {
   // Load env file based on `mode` in the current working directory.
@@ -32,8 +32,9 @@ export default defineConfig(({ mode }) => {
           changeOrigin: true,
           secure: false,
           configure: (proxy, _options) => {
-            proxy.on('error', (_err, _req, _res) => {
-              console.log('🔗 Backend not available - using mock data mode');
+            proxy.on('error', (err, req, _res) => {
+              console.error('❌ Proxy Error:', err.message, 'on', req.method, req.url);
+              console.log('🔗 Targeting:', env.VITE_PROXY_TARGET || env.VITE_API_BASE_URL || 'http://127.0.0.1:8000');
             });
             proxy.on('proxyReq', (proxyReq, req, _res) => {
               console.log('📡 API Request:', req.method, req.url);

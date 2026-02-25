@@ -1,4 +1,4 @@
-import { test, expect } from '@playwright/test';
+import { expect, test } from '@playwright/test';
 
 const BASE_URL = process.env.BASE_URL || 'http://localhost:3000';
 const ADMIN_USERNAME = 'admin';
@@ -63,7 +63,7 @@ test.describe('API Integration Tests', () => {
     test('should load leads from API', async ({ page }) => {
       // Listen for API request
       const responsePromise = page.waitForResponse(response =>
-        response.url().includes('/api/leads') && response.status() === 200
+        response.url().includes('/api/leads/') && response.status() === 200
       );
 
       await page.click('text=Лиды');
@@ -81,7 +81,7 @@ test.describe('API Integration Tests', () => {
       await page.waitForSelector('input[placeholder*="Поиск"]');
       
       const responsePromise = page.waitForResponse(response =>
-        response.url().includes('/api/leads') && 
+        response.url().includes('/api/leads/') && 
         response.url().includes('search') &&
         response.status() === 200
       );
@@ -101,7 +101,7 @@ test.describe('API Integration Tests', () => {
       await page.click('text=Лиды');
       
       const responsePromise = page.waitForResponse(response =>
-        response.url().includes('/api/leads') && 
+        response.url().includes('/api/leads/') && 
         response.url().includes('status') &&
         response.status() === 200
       );
@@ -124,7 +124,7 @@ test.describe('API Integration Tests', () => {
       await page.waitForSelector('.ant-pagination');
       
       const responsePromise = page.waitForResponse(response =>
-        response.url().includes('/api/leads') && 
+        response.url().includes('/api/leads/') && 
         response.url().includes('page=2') &&
         response.status() === 200
       );
@@ -148,7 +148,7 @@ test.describe('API Integration Tests', () => {
       await page.click('button:has-text("Создать")');
       
       const responsePromise = page.waitForResponse(response =>
-        response.url().includes('/api/leads') && 
+        response.url().includes('/api/leads/') && 
         response.status() === 201
       );
       
@@ -171,7 +171,7 @@ test.describe('API Integration Tests', () => {
       await page.click('.ant-table-row:first-child');
       
       const responsePromise = page.waitForResponse(response =>
-        response.url().includes('/api/leads') && 
+        response.url().includes('/api/leads/') && 
         (response.status() === 200 || response.status() === 204)
       );
       
@@ -191,7 +191,7 @@ test.describe('API Integration Tests', () => {
       await page.click('.ant-table-row:first-child');
       
       const responsePromise = page.waitForResponse(response =>
-        response.url().includes('/api/leads') && 
+        response.url().includes('/api/leads/') && 
         (response.status() === 200 || response.status() === 204)
       );
       
@@ -209,7 +209,7 @@ test.describe('API Integration Tests', () => {
   test.describe('Contacts API', () => {
     test('should load contacts from API', async ({ page }) => {
       const responsePromise = page.waitForResponse(response =>
-        response.url().includes('/api/contacts') && response.status() === 200
+        response.url().includes('/api/contacts/') && response.status() === 200
       );
 
       await page.click('text=Контакты');
@@ -225,7 +225,7 @@ test.describe('API Integration Tests', () => {
       await page.click('button:has-text("Создать")');
       
       const responsePromise = page.waitForResponse(response =>
-        response.url().includes('/api/contacts') && 
+        response.url().includes('/api/contacts/') && 
         response.status() === 201
       );
       
@@ -245,7 +245,7 @@ test.describe('API Integration Tests', () => {
   test.describe('Deals API', () => {
     test('should load deals from API', async ({ page }) => {
       const responsePromise = page.waitForResponse(response =>
-        response.url().includes('/api/deals') && response.status() === 200
+        response.url().includes('/api/deals/') && response.status() === 200
       );
 
       await page.click('text=Сделки');
@@ -261,7 +261,7 @@ test.describe('API Integration Tests', () => {
       await page.click('button:has-text("Создать")');
       
       const responsePromise = page.waitForResponse(response =>
-        response.url().includes('/api/deals') && 
+        response.url().includes('/api/deals/') && 
         response.status() === 201
       );
       
@@ -281,7 +281,7 @@ test.describe('API Integration Tests', () => {
   test.describe('Tasks API', () => {
     test('should load tasks from API', async ({ page }) => {
       const responsePromise = page.waitForResponse(response =>
-        response.url().includes('/api/tasks') && response.status() === 200
+        response.url().includes('/api/tasks/') && response.status() === 200
       );
 
       await page.click('text=Задачи');
@@ -323,7 +323,7 @@ test.describe('API Integration Tests', () => {
   test.describe('API Response Validation', () => {
     test('should validate leads response structure', async ({ page }) => {
       const responsePromise = page.waitForResponse(response =>
-        response.url().includes('/api/leads') && response.status() === 200
+        response.url().includes('/api/leads/') && response.status() === 200
       );
 
       await page.click('text=Лиды');
@@ -347,7 +347,7 @@ test.describe('API Integration Tests', () => {
 
     test('should validate contacts response structure', async ({ page }) => {
       const responsePromise = page.waitForResponse(response =>
-        response.url().includes('/api/contacts') && response.status() === 200
+        response.url().includes('/api/contacts/') && response.status() === 200
       );
 
       await page.click('text=Контакты');

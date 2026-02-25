@@ -1,18 +1,18 @@
-import { useEffect, useMemo, useState } from 'react';
-import { Bell, Eye, Edit, Trash2, Check, X } from 'lucide-react';
 import dayjs from 'dayjs';
+import { Check, Edit, Eye, Trash2, X } from 'lucide-react';
+import { useEffect, useMemo, useState } from 'react';
 
-import { getReminders, deleteReminder, updateReminder } from '../../lib/api/reminders';
-import { navigate } from '../../router';
 import EntitySelect from '../../components/EntitySelect.jsx';
-import { getUsers, getUser } from '../../lib/api';
+import { DatePicker } from '../../components/ui-DatePicker.jsx';
 import EnhancedTable from '../../components/ui-EnhancedTable.jsx';
 import TableToolbar from '../../components/ui-TableToolbar.jsx';
+import { AlertDialog, AlertDialogContent, AlertDialogHeader, AlertDialogTitle } from '../../components/ui/alert-dialog.jsx';
 import { Badge } from '../../components/ui/badge.jsx';
 import { Button } from '../../components/ui/button.jsx';
-import { DatePicker } from '../../components/ui-DatePicker.jsx';
 import { toast } from '../../components/ui/use-toast.js';
-import { AlertDialog, AlertDialogContent, AlertDialogHeader, AlertDialogTitle } from '../../components/ui/alert-dialog.jsx';
+import { getUser, getUsers } from '../../lib/api';
+import { deleteReminder, getReminders, updateReminder } from '../../lib/api/reminders';
+import { navigate } from '../../router';
 
 export default function RemindersList() {
   const [data, setData] = useState([]);
@@ -192,6 +192,7 @@ export default function RemindersList() {
         total={pagination.total}
         loading={loading}
         searchPlaceholder="Поиск по теме или описанию"
+        placeholder="Поиск по теме или описанию"
         onSearch={setSearchText}
         onCreate={() => navigate('/reminders/new')}
         createButtonText="Новое напоминание"
@@ -201,6 +202,7 @@ export default function RemindersList() {
 
       <div className="mb-4 flex flex-wrap gap-3">
         <select
+          aria-label="Фильтр активности"
           className="h-9 w-[160px] rounded-md border border-border bg-background px-2 text-sm"
           value={activeFilter ?? ''}
           onChange={(e) => setActiveFilter(e.target.value === '' ? null : e.target.value === 'true')}
@@ -255,7 +257,7 @@ export default function RemindersList() {
       <AlertDialog open={!!confirmDelete} onOpenChange={(open) => !open && setConfirmDelete(null)}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Удалить напоминание?</AlertDialogTitle>
+            <AlertDialogTitle id="delete-dialog-title">Удалить напоминание?</AlertDialogTitle>
           </AlertDialogHeader>
           <p className="text-sm text-muted-foreground">Действие нельзя отменить.</p>
           <div className="mt-4 flex justify-end gap-2">

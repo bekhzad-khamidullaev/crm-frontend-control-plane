@@ -1,8 +1,8 @@
-import React from 'react';
 import { PageHeader } from '@/shared/ui/PageHeader';
 import { LeadsTable } from '@/widgets/leads-table';
-import { Button } from 'antd';
 import { PlusOutlined } from '@ant-design/icons';
+import { Button } from 'antd';
+import React from 'react';
 // @ts-ignore
 import { navigate } from '@/router.js';
 
@@ -21,3 +21,5 @@ export const LeadsListPage: React.FC = () => {
     </>
   );
 };
+
+export default LeadsListPage;

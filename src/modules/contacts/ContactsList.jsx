@@ -9,21 +9,21 @@ import { getCompanies, getContacts } from '../../lib/api';
 import { Avatar, AvatarFallback, AvatarImage } from '../../components/ui/avatar';
 import { Button } from '../../components/ui/button';
 import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
+    DropdownMenu,
+    DropdownMenuContent,
+    DropdownMenuItem,
+    DropdownMenuLabel,
+    DropdownMenuSeparator,
+    DropdownMenuTrigger,
 } from '../../components/ui/dropdown-menu';
 import { Input } from '../../components/ui/input';
 import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
+    Table,
+    TableBody,
+    TableCell,
+    TableHead,
+    TableHeader,
+    TableRow,
 } from '../../components/ui/table';
 import { useToast } from '../../components/ui/use-toast';
 
@@ -165,6 +165,11 @@ export default function ContactsList() {
               placeholder="Поиск по имени, email..."
               value={searchText}
               onChange={(e) => setSearchText(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') {
+                  fetchContacts(1, searchText, pagination.pageSize);
+                }
+              }}
               className="pl-8"
               aria-label="Search"
             />

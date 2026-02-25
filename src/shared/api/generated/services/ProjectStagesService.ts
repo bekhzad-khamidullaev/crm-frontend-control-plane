@@ -16,6 +16,7 @@ export class ProjectStagesService {
     public static projectStagesList({
         ordering,
         page,
+        pageSize,
         search,
     }: {
         /**
@@ -27,6 +28,10 @@ export class ProjectStagesService {
          */
         page?: number,
         /**
+         * Number of results to return per page.
+         */
+        pageSize?: number,
+        /**
          * A search term.
          */
         search?: string,
@@ -37,6 +42,7 @@ export class ProjectStagesService {
             query: {
                 'ordering': ordering,
                 'page': page,
+                'page_size': pageSize,
                 'search': search,
             },
         });

@@ -7,13 +7,13 @@ import { getProfile } from './lib/api/user.js';
 import { useTheme } from './lib/hooks/useTheme.js';
 import { setLocale } from './lib/i18n/index.js';
 import {
-    addIncomingCall,
-    removeIncomingCall,
-    setChatWsConnected,
-    setChatWsReconnecting,
-    setWsConnected,
-    setWsReconnecting,
-    subscribe,
+  addIncomingCall,
+  removeIncomingCall,
+  setChatWsConnected,
+  setChatWsReconnecting,
+  setWsConnected,
+  setWsReconnecting,
+  subscribe,
 } from './lib/store/index.js';
 import sipClient from './lib/telephony/SIPClient.js';
 import callsWebSocket from './lib/websocket/CallsWebSocket.js';
@@ -593,7 +593,7 @@ function AppWithTheme() {
     algorithm: theme === 'dark' ? antdTheme.darkAlgorithm : antdTheme.defaultAlgorithm,
     token: {
       colorPrimary: theme === 'dark' ? '#fafafa' : '#18181b', // zinc-50 : zinc-900
-      colorInfo: theme === 'dark' ? '#fafafa' : '#18181b',
+      colorInfo: theme === 'dark' ? '#8ab4f8' : '#4285f4', // Better blue visibility in dark
       colorSuccess: theme === 'dark' ? '#4ade80' : '#16a34a', // green-400 : green-600
       colorWarning: theme === 'dark' ? '#fbbf24' : '#d97706', // amber-400 : amber-600
       colorError: theme === 'dark' ? '#f87171' : '#dc2626',   // red-400 : red-600
@@ -604,7 +604,7 @@ function AppWithTheme() {
       colorBorderSecondary: theme === 'dark' ? '#27272a' : '#e4e4e7', // zinc-800 : zinc-200
       colorBorder: theme === 'dark' ? '#27272a' : '#e4e4e7',
       colorTextBase: theme === 'dark' ? '#fafafa' : '#09090b', // zinc-50 : zinc-950
-      colorTextSecondary: theme === 'dark' ? '#a1a1aa' : '#71717a', // zinc-400 : zinc-500
+      colorTextSecondary: theme === 'dark' ? '#d4d4d8' : '#71717a', // Adjusted for dark mode: zinc-300 : zinc-500
       colorTextLightSolid: theme === 'dark' ? '#18181b' : '#fafafa', // inverted text for primary buttons
       fontFamily: 'ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif',
       boxShadow: theme === 'dark' ? '0 1px 2px 0 rgba(0, 0, 0, 0.5)' : '0 1px 2px 0 rgba(0, 0, 0, 0.05)',
@@ -624,7 +624,7 @@ function AppWithTheme() {
       Table: {
         colorBgContainer: theme === 'dark' ? '#09090b' : '#ffffff',
         headerBg: theme === 'dark' ? '#09090b' : '#f8fafc',
-        headerColor: theme === 'dark' ? '#a1a1aa' : '#71717a',
+        headerColor: theme === 'dark' ? '#d4d4d8' : '#71717a',
         rowHoverBg: theme === 'dark' ? '#18181b' : '#f1f5f9',
         borderColor: theme === 'dark' ? '#27272a' : '#e4e4e7',
       },
@@ -637,8 +637,8 @@ function AppWithTheme() {
         itemBg: theme === 'dark' ? '#09090b' : '#ffffff',
         activeBarBorderWidth: 0,
         itemSelectedBg: theme === 'dark' ? '#27272a' : '#f1f5f9',
-        itemSelectedColor: theme === 'dark' ? '#fafafa' : '#18181b',
-        itemColor: theme === 'dark' ? '#a1a1aa' : '#71717a',
+        itemSelectedColor: theme === 'dark' ? '#fafafa' : '#18181b', // Bright white for selected in dark
+        itemColor: theme === 'dark' ? '#fafafa' : '#71717a', // Bright white for items in dark
         itemHoverColor: theme === 'dark' ? '#fafafa' : '#18181b',
         itemHoverBg: theme === 'dark' ? '#18181b' : '#f8fafc',
       },

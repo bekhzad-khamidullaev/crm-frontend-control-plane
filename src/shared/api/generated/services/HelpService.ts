@@ -17,6 +17,7 @@ export class HelpService {
     public static helpPagesList({
         languageCode,
         page,
+        pageSize,
         search,
     }: {
         /**
@@ -50,6 +51,10 @@ export class HelpService {
          */
         page?: number,
         /**
+         * Number of results to return per page.
+         */
+        pageSize?: number,
+        /**
          * A search term.
          */
         search?: string,
@@ -60,6 +65,7 @@ export class HelpService {
             query: {
                 'language_code': languageCode,
                 'page': page,
+                'page_size': pageSize,
                 'search': search,
             },
         });
@@ -92,6 +98,7 @@ export class HelpService {
         document,
         languageCode,
         page,
+        pageSize,
     }: {
         document?: number,
         /**
@@ -124,6 +131,10 @@ export class HelpService {
          * A page number within the paginated result set.
          */
         page?: number,
+        /**
+         * Number of results to return per page.
+         */
+        pageSize?: number,
     }): CancelablePromise<PaginatedParagraphList> {
         return __request(OpenAPI, {
             method: 'GET',
@@ -132,6 +143,7 @@ export class HelpService {
                 'document': document,
                 'language_code': languageCode,
                 'page': page,
+                'page_size': pageSize,
             },
         });
     }

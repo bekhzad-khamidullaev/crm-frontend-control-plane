@@ -121,6 +121,9 @@ class CallsWebSocket {
           // Respond to ping to keep connection alive
           this.send({ type: 'pong' });
           break;
+        case 'connection_established':
+          console.log('[CallsWebSocket] Connection established message received.');
+          break;
         default:
           console.warn('[CallsWebSocket] Unknown message type:', data.type);
       }

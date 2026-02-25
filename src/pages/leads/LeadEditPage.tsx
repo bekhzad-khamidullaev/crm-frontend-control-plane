@@ -1,5 +1,5 @@
-import React from 'react';
 import { LeadForm } from '@/widgets/lead-form';
+import React from 'react';
 
 interface LeadEditPageProps {
   id?: number;
@@ -8,3 +8,5 @@ interface LeadEditPageProps {
 export const LeadEditPage: React.FC<LeadEditPageProps> = ({ id }) => {
   return <LeadForm id={id} />;
 };
+
+export default LeadEditPage;

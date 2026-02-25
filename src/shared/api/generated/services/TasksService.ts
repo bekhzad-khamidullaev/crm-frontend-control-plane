@@ -20,6 +20,7 @@ export class TasksService {
         ordering,
         owner,
         page,
+        pageSize,
         project,
         search,
         stage,
@@ -35,6 +36,10 @@ export class TasksService {
          * A page number within the paginated result set.
          */
         page?: number,
+        /**
+         * Number of results to return per page.
+         */
+        pageSize?: number,
         project?: number,
         /**
          * A search term.
@@ -51,6 +56,7 @@ export class TasksService {
                 'ordering': ordering,
                 'owner': owner,
                 'page': page,
+                'page_size': pageSize,
                 'project': project,
                 'search': search,
                 'stage': stage,

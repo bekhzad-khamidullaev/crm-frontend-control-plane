@@ -1,11 +1,11 @@
-import React, { useMemo } from 'react';
-import { Select, SelectProps } from 'antd';
 import { useContacts } from '@/entities/contact/api/queries';
+import { Select, SelectProps } from 'antd';
+import React, { useMemo } from 'react';
 
 export interface ContactSelectProps extends SelectProps {}
 
 export const ContactSelect: React.FC<ContactSelectProps> = (props) => {
-  const { data, isLoading } = useContacts({ page: 1, page_size: 100 });
+  const { data, isLoading } = useContacts({ page: 1, pageSize: 100 });
 
   const options = useMemo(() => {
     return (

@@ -1,8 +1,8 @@
-import React from 'react';
 import { PageHeader } from '@/shared/ui/PageHeader';
 import { DealsTable } from '@/widgets/deals-table';
-import { Button } from 'antd';
 import { PlusOutlined } from '@ant-design/icons';
+import { Button } from 'antd';
+import React from 'react';
 // @ts-ignore
 import { navigate } from '@/router.js';
 
@@ -26,3 +26,5 @@ export const DealsListPage: React.FC = () => {
     </>
   );
 };
+
+export default DealsListPage;

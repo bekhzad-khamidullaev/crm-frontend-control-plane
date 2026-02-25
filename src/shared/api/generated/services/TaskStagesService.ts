@@ -16,6 +16,7 @@ export class TaskStagesService {
     public static taskStagesList({
         ordering,
         page,
+        pageSize,
         search,
     }: {
         /**
@@ -27,6 +28,10 @@ export class TaskStagesService {
          */
         page?: number,
         /**
+         * Number of results to return per page.
+         */
+        pageSize?: number,
+        /**
          * A search term.
          */
         search?: string,
@@ -37,6 +42,7 @@ export class TaskStagesService {
             query: {
                 'ordering': ordering,
                 'page': page,
+                'page_size': pageSize,
                 'search': search,
             },
         });

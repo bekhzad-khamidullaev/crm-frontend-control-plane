@@ -1,14 +1,16 @@
-import { useState, useEffect } from 'react';
-import { ArrowLeft, Edit, Trash2, DollarSign } from 'lucide-react';
 import dayjs from 'dayjs';
+import { ArrowLeft, DollarSign, Edit, Trash2 } from 'lucide-react';
+import { useEffect, useState } from 'react';
 
-import { getPayment, deletePayment } from '../../lib/api/payments';
-import { navigate } from '../../router';
-import { Card } from '../../components/ui/card.jsx';
-import { Button } from '../../components/ui/button.jsx';
-import { Badge } from '../../components/ui/badge.jsx';
-import { toast } from '../../components/ui/use-toast.js';
+import { formatCurrency } from '../../lib/utils/format';
+
 import { AlertDialog, AlertDialogContent, AlertDialogHeader, AlertDialogTitle } from '../../components/ui/alert-dialog.jsx';
+import { Badge } from '../../components/ui/badge.jsx';
+import { Button } from '../../components/ui/button.jsx';
+import { Card } from '../../components/ui/card.jsx';
+import { toast } from '../../components/ui/use-toast.js';
+import { deletePayment, getPayment } from '../../lib/api/payments';
+import { navigate } from '../../router';
 
 const statusOptions = {
   r: 'Получен',
@@ -98,7 +100,7 @@ export default function PaymentDetail({ id }) {
         <div className="sm:col-span-2 rounded-md border border-border p-4">
           <div className="text-xs text-muted-foreground">Сумма</div>
           <div className="text-2xl font-semibold">
-            {Number(data.amount || 0).toLocaleString('ru-RU')} {data.currency_name || '₽'}
+            {formatCurrency(data.amount, data.currency_name || 'RUB')}
           </div>
         </div>
 

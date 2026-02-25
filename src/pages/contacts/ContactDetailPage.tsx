@@ -1,26 +1,26 @@
-import React from 'react';
-import {
-  Space,
-  Button,
-  Tabs,
-  Typography,
-  Descriptions,
-  Avatar,
-  Card,
-  Spin
-} from 'antd';
-import {
-  ArrowLeftOutlined,
-  EditOutlined,
-  UserOutlined,
-  MailOutlined,
-  PhoneOutlined,
-  BankOutlined
-} from '@ant-design/icons';
-import dayjs from 'dayjs';
-import { navigate } from '@/router.js';
-import { useContact } from '@/entities/contact/api/queries';
 import { useCompany } from '@/entities/company/api/queries';
+import { useContact } from '@/entities/contact/api/queries';
+import { navigate } from '@/router.js';
+import {
+    ArrowLeftOutlined,
+    BankOutlined,
+    EditOutlined,
+    MailOutlined,
+    PhoneOutlined,
+    UserOutlined
+} from '@ant-design/icons';
+import {
+    Avatar,
+    Button,
+    Card,
+    Descriptions,
+    Space,
+    Spin,
+    Tabs,
+    Typography
+} from 'antd';
+import dayjs from 'dayjs';
+import React from 'react';
 
 const { Title, Text } = Typography;
 
@@ -123,3 +123,5 @@ export const ContactDetailPage: React.FC<ContactDetailPageProps> = ({ id }) => {
     </div>
   );
 };
+
+export default ContactDetailPage;

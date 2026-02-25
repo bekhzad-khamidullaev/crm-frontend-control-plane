@@ -1,11 +1,11 @@
-import React from 'react';
-import { Input, Select, Row, Col } from 'antd';
-import { SearchOutlined } from '@ant-design/icons';
-import {
-  CountrySelect,
-  UserSelect
-} from '@/features/reference';
 import { useCompanies } from '@/entities/company/api/queries';
+import {
+    CountrySelect,
+    UserSelect
+} from '@/features/reference';
+import { SearchOutlined } from '@ant-design/icons';
+import { Col, Input, Row, Select } from 'antd';
+import React from 'react';
 
 interface FiltersProps {
   onFilterChange: (filters: Record<string, unknown>) => void;
@@ -13,7 +13,7 @@ interface FiltersProps {
 }
 
 export const ContactsTableFilters: React.FC<FiltersProps> = ({ onFilterChange, loading }) => {
-  const { data: companies } = useCompanies({ page: 1, page_size: 100 }); // Simplified for now
+  const { data: companies } = useCompanies({ page: 1, pageSize: 100 }); // Simplified for now
 
   return (
     <Row gutter={[16, 16]} style={{ marginBottom: 24 }}>

@@ -1,82 +1,75 @@
-import React, { useState, useEffect, useMemo } from 'react';
-import {
-  MoreHorizontal,
-  Plus,
-  Search,
-  Filter,
-  Download,
-  Trash2,
-  Phone,
-  MessageSquare,
-  RefreshCw,
-  CheckCircle2,
-  XCircle,
-  Users,
-  Briefcase,
-  LayoutGrid,
-  List as ListIcon
-} from 'lucide-react';
 import dayjs from 'dayjs';
-import { navigate } from '../../router';
-import { getLeads, deleteLead, leadsApi } from '../../lib/api/client';
-import { getLeadSources } from '../../lib/api/reference';
-import LeadsKanban from './LeadsKanban.jsx';
-import CallButton from '../../components/CallButton';
-import ClickToCall from '../../components/ui-ClickToCall.jsx';
+import {
+    Briefcase,
+    Download,
+    LayoutGrid,
+    List as ListIcon,
+    MessageSquare,
+    MoreHorizontal,
+    Plus,
+    RefreshCw,
+    Search,
+    Trash2
+} from 'lucide-react';
+import { useEffect, useMemo, useState } from 'react';
 import BulkSMSModal from '../../components/BulkSMSModal';
+import CallButton from '../../components/CallButton';
 import ReferenceSelect from '../../components/ui-ReferenceSelect';
+import { deleteLead, getLeads, leadsApi } from '../../lib/api/client';
+import { getLeadSources } from '../../lib/api/reference';
 import { exportToCSV, exportToExcel } from '../../lib/utils/export';
 import { buildLeadPayload, deriveLeadStatus, getLeadSourceLabel } from '../../lib/utils/leads';
+import { navigate } from '../../router';
+import LeadsKanban from './LeadsKanban.jsx';
 
 // Shadcn UI Components
 import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "../../components/ui/table";
-import { Button } from "../../components/ui/button";
-import { Input } from "../../components/ui/input";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-  DropdownMenuCheckboxItem,
-} from "../../components/ui/dropdown-menu";
+    AlertDialog,
+    AlertDialogAction,
+    AlertDialogCancel,
+    AlertDialogContent,
+    AlertDialogDescription,
+    AlertDialogFooter,
+    AlertDialogHeader,
+    AlertDialogTitle,
+} from "../../components/ui/alert-dialog";
+import { Avatar, AvatarFallback } from "../../components/ui/avatar";
 import { Badge } from "../../components/ui/badge";
-import { Card, CardContent } from "../../components/ui/card";
-import { Avatar, AvatarFallback, AvatarImage } from "../../components/ui/avatar";
+import { Button } from "../../components/ui/button";
+import { Card } from "../../components/ui/card";
 import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "../../components/ui/select";
-import { useToast } from "../../components/ui/use-toast";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
+    Dialog,
+    DialogContent,
+    DialogDescription,
+    DialogFooter,
+    DialogHeader,
+    DialogTitle,
 } from "../../components/ui/dialog";
 import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from "../../components/ui/alert-dialog";
+    DropdownMenu,
+    DropdownMenuContent,
+    DropdownMenuItem,
+    DropdownMenuLabel,
+    DropdownMenuSeparator,
+    DropdownMenuTrigger
+} from "../../components/ui/dropdown-menu";
+import { Input } from "../../components/ui/input";
+import {
+    Select,
+    SelectContent,
+    SelectItem,
+    SelectTrigger,
+    SelectValue,
+} from "../../components/ui/select";
+import {
+    Table,
+    TableBody,
+    TableCell,
+    TableHead,
+    TableHeader,
+    TableRow,
+} from "../../components/ui/table";
+import { useToast } from "../../components/ui/use-toast";
 
 function LeadsList() {
   const { toast } = useToast();
@@ -341,6 +334,7 @@ function LeadsList() {
                  size="sm"
                  onClick={() => setViewMode('table')}
                  className="h-8 w-8 p-0"
+                 aria-label="Table View"
                >
                  <ListIcon className="h-4 w-4" />
                </Button>
@@ -349,6 +343,7 @@ function LeadsList() {
                  size="sm"
                  onClick={() => setViewMode('kanban')}
                  className="h-8 w-8 p-0"
+                 aria-label="Kanban View"
                >
                  <LayoutGrid className="h-4 w-4" />
                </Button>
@@ -571,6 +566,7 @@ function LeadsList() {
                    size="sm"
                    onClick={() => handlePageChange(pagination.current - 1)}
                    disabled={pagination.current <= 1}
+                   aria-label="Previous Page"
                  >
                    Назад
                  </Button>
@@ -582,6 +578,7 @@ function LeadsList() {
                    size="sm"
                    onClick={() => handlePageChange(pagination.current + 1)}
                    disabled={pagination.current * pagination.pageSize >= pagination.total}
+                   aria-label="Next Page"
                  >
                    Вперед
                  </Button>

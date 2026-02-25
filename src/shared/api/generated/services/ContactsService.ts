@@ -22,6 +22,7 @@ export class ContactsService {
         ordering,
         owner,
         page,
+        pageSize,
         search,
     }: {
         company?: number,
@@ -38,6 +39,10 @@ export class ContactsService {
          */
         page?: number,
         /**
+         * Number of results to return per page.
+         */
+        pageSize?: number,
+        /**
          * A search term.
          */
         search?: string,
@@ -53,6 +58,7 @@ export class ContactsService {
                 'ordering': ordering,
                 'owner': owner,
                 'page': page,
+                'page_size': pageSize,
                 'search': search,
             },
         });

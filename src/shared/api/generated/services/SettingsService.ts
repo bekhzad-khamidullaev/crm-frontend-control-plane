@@ -44,6 +44,7 @@ export class SettingsService {
     public static settingsApiKeysList({
         ordering,
         page,
+        pageSize,
         search,
     }: {
         /**
@@ -55,6 +56,10 @@ export class SettingsService {
          */
         page?: number,
         /**
+         * Number of results to return per page.
+         */
+        pageSize?: number,
+        /**
          * A search term.
          */
         search?: string,
@@ -65,6 +70,7 @@ export class SettingsService {
             query: {
                 'ordering': ordering,
                 'page': page,
+                'page_size': pageSize,
                 'search': search,
             },
         });
@@ -273,6 +279,7 @@ export class SettingsService {
     public static settingsFacebookPagesList({
         ordering,
         page,
+        pageSize,
         search,
     }: {
         /**
@@ -284,6 +291,10 @@ export class SettingsService {
          */
         page?: number,
         /**
+         * Number of results to return per page.
+         */
+        pageSize?: number,
+        /**
          * A search term.
          */
         search?: string,
@@ -294,6 +305,7 @@ export class SettingsService {
             query: {
                 'ordering': ordering,
                 'page': page,
+                'page_size': pageSize,
                 'search': search,
             },
         });
@@ -534,6 +546,7 @@ export class SettingsService {
     public static settingsInstagramAccountsList({
         ordering,
         page,
+        pageSize,
         search,
     }: {
         /**
@@ -545,6 +558,10 @@ export class SettingsService {
          */
         page?: number,
         /**
+         * Number of results to return per page.
+         */
+        pageSize?: number,
+        /**
          * A search term.
          */
         search?: string,
@@ -555,6 +572,7 @@ export class SettingsService {
             query: {
                 'ordering': ordering,
                 'page': page,
+                'page_size': pageSize,
                 'search': search,
             },
         });
@@ -764,6 +782,7 @@ export class SettingsService {
     public static settingsIntegrationLogsList({
         ordering,
         page,
+        pageSize,
         search,
     }: {
         /**
@@ -775,6 +794,10 @@ export class SettingsService {
          */
         page?: number,
         /**
+         * Number of results to return per page.
+         */
+        pageSize?: number,
+        /**
          * A search term.
          */
         search?: string,
@@ -785,6 +808,7 @@ export class SettingsService {
             query: {
                 'ordering': ordering,
                 'page': page,
+                'page_size': pageSize,
                 'search': search,
             },
         });
@@ -1009,6 +1033,7 @@ export class SettingsService {
     public static settingsTelegramBotsList({
         ordering,
         page,
+        pageSize,
         search,
     }: {
         /**
@@ -1020,6 +1045,10 @@ export class SettingsService {
          */
         page?: number,
         /**
+         * Number of results to return per page.
+         */
+        pageSize?: number,
+        /**
          * A search term.
          */
         search?: string,
@@ -1030,6 +1059,7 @@ export class SettingsService {
             query: {
                 'ordering': ordering,
                 'page': page,
+                'page_size': pageSize,
                 'search': search,
             },
         });
@@ -1242,6 +1272,7 @@ export class SettingsService {
     public static settingsWebhooksList({
         ordering,
         page,
+        pageSize,
         search,
     }: {
         /**
@@ -1253,6 +1284,10 @@ export class SettingsService {
          */
         page?: number,
         /**
+         * Number of results to return per page.
+         */
+        pageSize?: number,
+        /**
          * A search term.
          */
         search?: string,
@@ -1263,6 +1298,7 @@ export class SettingsService {
             query: {
                 'ordering': ordering,
                 'page': page,
+                'page_size': pageSize,
                 'search': search,
             },
         });

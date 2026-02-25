@@ -1,16 +1,18 @@
+import { DollarSign, Edit, Eye, Trash2 } from 'lucide-react';
 import { useEffect, useState } from 'react';
-import { DollarSign, Eye, Edit, Trash2 } from 'lucide-react';
 
-import { navigate } from '../../router';
-import {
-  getPayments,
-  deletePayment,
-} from '../../lib/api/payments';
-import { exportToCSV, exportToExcel } from '../../lib/utils/export';
+import { formatCurrency } from '../../lib/utils/format';
+
 import EnhancedTable from '../../components/ui-EnhancedTable.jsx';
 import TableToolbar from '../../components/ui-TableToolbar.jsx';
-import { toast } from '../../components/ui/use-toast.js';
 import { Button } from '../../components/ui/button.jsx';
+import { toast } from '../../components/ui/use-toast.js';
+import {
+    deletePayment,
+    getPayments,
+} from '../../lib/api/payments';
+import { exportToCSV, exportToExcel } from '../../lib/utils/export';
+import { navigate } from '../../router';
 
 const statusOptions = [
   { value: 'r', label: 'Получен' },
@@ -131,7 +133,7 @@ function PaymentsList() {
           </div>
           <div>
             <div className="font-medium">
-              {Number(record.amount || 0).toLocaleString('ru-RU')} {record.currency_name || '₽'}
+              {formatCurrency(record.amount, record.currency_name || 'RUB')}
             </div>
             <div className="text-xs text-muted-foreground">#{record.id}</div>
           </div>

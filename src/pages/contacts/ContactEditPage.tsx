@@ -1,10 +1,10 @@
-import React from 'react';
-import { ContactForm } from '@/widgets/contact-form';
-import { useContact } from '@/entities/contact/api/queries';
 import { useUpdateContact } from '@/entities/contact/api/mutations';
+import { useContact } from '@/entities/contact/api/queries';
 import { ContactFormData } from '@/entities/contact/model/schema';
 import { navigate } from '@/router.js';
+import { ContactForm } from '@/widgets/contact-form';
 import { message, Spin } from 'antd';
+import React from 'react';
 
 export interface ContactEditPageProps {
   id?: number;
@@ -40,3 +40,5 @@ export const ContactEditPage: React.FC<ContactEditPageProps> = ({ id }) => {
     />
   );
 };
+
+export default ContactEditPage;

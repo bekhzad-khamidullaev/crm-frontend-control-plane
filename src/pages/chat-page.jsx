@@ -3,38 +3,35 @@
  * Full-featured messenger-style chat page
  */
 
-import React, { useState, useEffect } from 'react';
 import {
-  Layout,
-  List,
-  Avatar,
-  Badge,
-  Input,
-  Space,
-  Typography,
-  Button,
-  Tag,
-  Empty,
-  Spin,
-  Tabs,
-  Card,
-  message,
-} from 'antd';
-import {
-  MessageOutlined,
-  SearchOutlined,
-  UserOutlined,
-  ShopOutlined,
-  DollarOutlined,
-  RiseOutlined,
-  PhoneOutlined,
+    DollarOutlined,
+    MessageOutlined,
+    RiseOutlined,
+    ShopOutlined,
+    UserOutlined
 } from '@ant-design/icons';
-import { getChatMessages, getChatStatistics } from '../lib/api/chat.js';
-import { subscribe, getUnreadCount as getStoreUnreadCount } from '../lib/store/index.js';
-import ChatWidget from '../modules/chat/ChatWidget.jsx';
+import {
+    Avatar,
+    Badge,
+    Empty,
+    Input,
+    Layout,
+    List,
+    message,
+    Space,
+    Spin,
+    Tabs,
+    Tag,
+    Typography
+} from 'antd';
 import dayjs from 'dayjs';
-import relativeTime from 'dayjs/plugin/relativeTime';
 import 'dayjs/locale/ru';
+import relativeTime from 'dayjs/plugin/relativeTime';
+import { useEffect, useState } from 'react';
+import { getChatMessages, getChatStatistics } from '../lib/api/chat.js';
+import { useTheme } from '../lib/hooks/useTheme.js';
+import { subscribe } from '../lib/store/index.js';
+import ChatWidget from '../modules/chat/ChatWidget.jsx';
 
 dayjs.extend(relativeTime);
 dayjs.locale('ru');
@@ -51,6 +48,14 @@ function ChatPage() {
   const [searchQuery, setSearchQuery] = useState('');
   const [filter, setFilter] = useState('all'); // all, unread
   const [statistics, setStatistics] = useState(null);
+  const { theme } = useTheme();
+
+  // Theme-aware colors
+  const bg = theme === 'dark' ? '#09090b' : '#ffffff';
+  const bgSecondary = theme === 'dark' ? '#18181b' : '#f8fafc';
+  const border = theme === 'dark' ? '#27272a' : '#f0f0f0';
+  const activeBg = theme === 'dark' ? '#27272a' : '#e6f7ff';
+  const activeBorder = theme === 'dark' ? '#4285f4' : '#1890ff';
 
   useEffect(() => {
     loadChats();
@@ -204,19 +209,19 @@ function ChatPage() {
   ];
 
   return (
-    <Layout style={{ height: 'calc(100vh - 64px)', backgroundColor: '#fff' }}>
+    <Layout style={{ height: 'calc(100vh - 64px)', backgroundColor: bg }}>
       {/* Sidebar with chat list */}
       <Sider
         width={350}
         style={{
-          backgroundColor: '#fff',
-          borderRight: '1px solid #f0f0f0',
+          backgroundColor: bg,
+          borderRight: `1px solid ${border}`,
           overflow: 'hidden',
           display: 'flex',
           flexDirection: 'column',
         }}
       >
-        <div style={{ padding: 16, borderBottom: '1px solid #f0f0f0' }}>
+        <div style={{ padding: 16, borderBottom: `1px solid ${border}`, backgroundColor: bg }}>
           <Title level={4} style={{ margin: 0, marginBottom: 16 }}>
             <MessageOutlined /> Чаты
           </Title>
@@ -257,10 +262,10 @@ function ChatPage() {
                   style={{
                     cursor: 'pointer',
                     backgroundColor:
-                      activeChat?.id === chat.id ? '#e6f7ff' : 'transparent',
+                      activeChat?.id === chat.id ? activeBg : 'transparent',
                     padding: '12px 16px',
                     borderLeft:
-                      activeChat?.id === chat.id ? '3px solid #1890ff' : 'none',
+                      activeChat?.id === chat.id ? `3px solid ${activeBorder}` : 'none',
                   }}
                 >
                   <List.Item.Meta
@@ -308,7 +313,7 @@ function ChatPage() {
       </Sider>
 
       {/* Main chat area */}
-      <Content style={{ backgroundColor: '#fff' }}>
+      <Content style={{ backgroundColor: bg }}>
         {activeChat ? (
           <ChatWidget
             entityType={activeChat.entityType}
@@ -323,6 +328,7 @@ function ChatPage() {
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
+              backgroundColor: bgSecondary,
             }}
           >
             <Empty

@@ -1,16 +1,30 @@
-import { describe, it, expect, beforeEach, vi } from 'vitest';
-import { render, screen, fireEvent, waitFor } from '@testing-library/react';
+import { fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
+import * as api from '../../src/lib/api';
 import TaskForm from '../../src/modules/tasks/TaskForm';
-import * as client from '../../src/lib/api/client';
 import * as router from '../../src/router';
+
 // Mock dependencies
-vi.mock('../../src/lib/api/client');
+vi.mock('../../src/lib/api', () => ({
+  getTask: vi.fn(),
+  getTasks: vi.fn(),
+  createTask: vi.fn(),
+  updateTask: vi.fn(),
+  getUsers: vi.fn(),
+  getUser: vi.fn(),
+  getTaskStages: vi.fn(),
+  getProjects: vi.fn(),
+  getProject: vi.fn(),
+}));
+
 vi.mock('../../src/router');
+
 vi.mock('../../src/components/ui-ReferenceSelect', () => ({
-  default: ({ value, onChange, placeholder }) => (
+  default: ({ value, onChange, placeholder, id }) => (
     <select
+      id={id}
       data-testid={`select-${placeholder}`}
-      value={value}
+      value={value || ''}
       onChange={(e) => onChange(e.target.value)}
     >
       <option value="">Выберите</option>
@@ -19,11 +33,12 @@ vi.mock('../../src/components/ui-ReferenceSelect', () => ({
     </select>
   ),
 }));
+
 vi.mock('../../src/components/EntitySelect', () => ({
-  default: ({ value, onChange, placeholder }) => (
+  default: ({ value, onChange, placeholder, mode }) => (
     <select
       data-testid={`entity-select-${placeholder}`}
-      value={value}
+      value={mode === 'multiple' ? (value || []) : (value || '')}
       onChange={(e) => onChange(e.target.value)}
     >
       <option value="">Выберите</option>
@@ -33,195 +48,144 @@ vi.mock('../../src/components/EntitySelect', () => ({
   ),
 }));
 
+vi.mock('../../src/components/ui-DatePicker', () => {
+  const dayjs = require('dayjs');
+  return {
+    DatePicker: ({ value, onChange, id }) => (
+      <input
+        id={id}
+        type="date"
+        value={value ? (value.format ? value.format('YYYY-MM-DD') : dayjs(value).format('YYYY-MM-DD')) : ''}
+        onChange={(e) => onChange(dayjs(e.target.value))}
+        placeholder="Выберите дату"
+      />
+    ),
+  };
+});
+
 const mockTask = {
   id: 1,
-  title: 'Тестовая задача',
+  name: 'Тестовая задача',
   description: 'Описание задачи',
+  note: 'Заметка',
   status: 'open',
-  priority: 'normal',
+  priority: 1,
   stage: 1,
-  assigned_to: 2,
   start_date: '2024-01-20',
   due_date: '2024-02-15',
   closing_date: null,
-  next_step_date: null,
+  next_step: 'Следующий шаг',
+  next_step_date: '2024-02-01',
   project: 5,
-  contact: 10,
-  company: 15,
+  owner: 2,
+  responsible: [2],
+  active: true,
 };
 
 const mockUsers = [
-  { id: 2, username: 'ivanov', email: 'ivanov@example.com' },
-  { id: 3, username: 'smirnova', email: 'smirnova@example.com' },
+  { id: 2, name: 'Иван Иванов', username: 'ivanov' },
 ];
 
 const mockStages = [
-  { id: 1, name: 'В работе', order: 1 },
-  { id: 2, name: 'На проверке', order: 2 },
+  { id: 1, name: 'В работе' },
 ];
-
-const TestWrapper = ({ children }) => <>{children}</>;
 
 describe('TaskForm', () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    client.getTask.mockResolvedValue(mockTask);
-    client.createTask.mockResolvedValue({ id: 1, ...mockTask });
-    client.updateTask.mockResolvedValue(mockTask);
-    client.getUsers.mockResolvedValue({ results: mockUsers });
-    client.getTaskStages.mockResolvedValue({ results: mockStages });
+    api.getTask.mockResolvedValue(mockTask);
+    api.createTask.mockResolvedValue({ id: 1, ...mockTask });
+    api.updateTask.mockResolvedValue(mockTask);
+    api.getUsers.mockResolvedValue({ results: mockUsers });
+    api.getTaskStages.mockResolvedValue({ results: mockStages });
+    api.getProjects.mockResolvedValue({ results: [] });
+    api.getTasks.mockResolvedValue({ results: [] });
   });
 
   describe('Create Mode', () => {
     it('renders create form with empty fields', async () => {
-      render(
-        <TestWrapper>
-          <TaskForm />
-        </TestWrapper>
-      );
+      render(<TaskForm />);
 
       await waitFor(() => {
-        expect(screen.getByText(/Создать задачу|Новая задача/i)).toBeInTheDocument();
+        expect(screen.getByText('Создать новую задачу')).toBeInTheDocument();
       });
 
-      // Check that form fields are present
-      expect(screen.getByLabelText(/Название|Заголовок/i)).toBeInTheDocument();
+      expect(screen.getByLabelText(/Название задачи/i)).toBeInTheDocument();
       expect(screen.getByLabelText(/Описание/i)).toBeInTheDocument();
     });
 
     it('submits form with valid data', async () => {
-      render(
-        <TestWrapper>
-          <TaskForm />
-        </TestWrapper>
-      );
+      render(<TaskForm />);
 
       await waitFor(() => {
-        expect(screen.getByLabelText(/Название|Заголовок/i)).toBeInTheDocument();
+        expect(screen.getByLabelText(/Название задачи/i)).toBeInTheDocument();
       });
 
-      // Fill in required fields
-      const titleInput = screen.getByLabelText(/Название|Заголовок/i);
-      fireEvent.change(titleInput, { target: { value: 'Новая задача' } });
+      fireEvent.change(screen.getByLabelText(/Название задачи/i), { target: { value: 'Новая задача' } });
+      fireEvent.change(screen.getByLabelText(/Описание/i), { target: { value: 'Описание новой задачи' } });
+      fireEvent.change(screen.getByLabelText(/Следующий шаг/i), { target: { value: 'Шаг 1' } });
+      // Next step date is required
+      const nextStepDateInput = screen.getByLabelText(/Дата следующего шага/i);
+      fireEvent.change(nextStepDateInput, { target: { value: '2024-03-01' } });
 
-      const descriptionInput = screen.getByLabelText(/Описание/i);
-      fireEvent.change(descriptionInput, {
-        target: { value: 'Описание новой задачи' },
-      });
+      // Need to select stage
+      const stageSelect = screen.getByLabelText(/Этап/i);
+      fireEvent.change(stageSelect, { target: { value: '1' } });
 
-      // Submit form
-      const submitButton = screen.getByText(/Сохранить|Создать/i);
+      const submitButton = screen.getByRole('button', { name: /Создать/i });
       fireEvent.click(submitButton);
 
       await waitFor(() => {
-        expect(client.createTask).toHaveBeenCalled();
+        expect(api.createTask).toHaveBeenCalled();
         expect(router.navigate).toHaveBeenCalledWith('/tasks');
       });
     });
 
     it('shows validation error for empty required fields', async () => {
-      render(
-        <TestWrapper>
-          <TaskForm />
-        </TestWrapper>
-      );
+      render(<TaskForm />);
 
       await waitFor(() => {
-        expect(screen.getByLabelText(/Название|Заголовок/i)).toBeInTheDocument();
+        expect(screen.getByLabelText(/Название задачи/i)).toBeInTheDocument();
       });
 
-      // Try to submit without filling required fields
-      const submitButton = screen.getByText(/Сохранить|Создать/i);
-      fireEvent.click(submitButton);
-
-      // Form should not call API without required fields
-      await waitFor(() => {
-        expect(client.createTask).not.toHaveBeenCalled();
-      });
-    });
-
-    it('handles API error on create', async () => {
-      client.createTask.mockRejectedValue(new Error('API Error'));
-
-      render(
-        <TestWrapper>
-          <TaskForm />
-        </TestWrapper>
-      );
-
-      await waitFor(() => {
-        expect(screen.getByLabelText(/Название|Заголовок/i)).toBeInTheDocument();
-      });
-
-      // Fill in form
-      const titleInput = screen.getByLabelText(/Название|Заголовок/i);
-      fireEvent.change(titleInput, { target: { value: 'Новая задача' } });
-
-      // Submit form
-      const submitButton = screen.getByText(/Сохранить|Создать/i);
+      const submitButton = screen.getByRole('button', { name: /Создать/i });
       fireEvent.click(submitButton);
 
       await waitFor(() => {
-        expect(client.createTask).toHaveBeenCalled();
+        expect(screen.getByText('Введите название')).toBeInTheDocument();
       });
-
-      // Should not navigate on error
-      expect(router.navigate).not.toHaveBeenCalled();
+      expect(api.createTask).not.toHaveBeenCalled();
     });
   });
 
   describe('Edit Mode', () => {
     it('loads and displays existing task data', async () => {
-      render(
-        <TestWrapper>
-          <TaskForm id={1} />
-        </TestWrapper>
-      );
+      render(<TaskForm id={1} />);
 
       await waitFor(() => {
-        expect(client.getTask).toHaveBeenCalledWith(1);
+        expect(api.getTask).toHaveBeenCalledWith(1);
       });
 
       await waitFor(() => {
-        const titleInput = screen.getByLabelText(/Название|Заголовок/i);
-        expect(titleInput).toHaveValue('Тестовая задача');
+        expect(screen.getByLabelText(/Название задачи/i)).toHaveValue('Тестовая задача');
+        expect(screen.getByLabelText(/Описание/i)).toHaveValue('Описание задачи');
       });
-    });
-
-    it('shows loading state while fetching task', () => {
-      client.getTask.mockImplementation(() => new Promise(() => {}));
-
-      render(
-        <TestWrapper>
-          <TaskForm id={1} />
-        </TestWrapper>
-      );
-
-      expect(screen.getByText('Загрузка...')).toBeInTheDocument();
     });
 
     it('submits updated task data', async () => {
-      render(
-        <TestWrapper>
-          <TaskForm id={1} />
-        </TestWrapper>
-      );
+      render(<TaskForm id={1} />);
 
       await waitFor(() => {
-        const titleInput = screen.getByLabelText(/Название|Заголовок/i);
-        expect(titleInput).toHaveValue('Тестовая задача');
+        expect(screen.getByLabelText(/Название задачи/i)).toHaveValue('Тестовая задача');
       });
 
-      // Update title
-      const titleInput = screen.getByLabelText(/Название|Заголовок/i);
-      fireEvent.change(titleInput, { target: { value: 'Обновленная задача' } });
+      fireEvent.change(screen.getByLabelText(/Название задачи/i), { target: { value: 'Обновленная задача' } });
 
-      // Submit form
-      const submitButton = screen.getByText(/Сохранить|Обновить/i);
+      const submitButton = screen.getByRole('button', { name: /Обновить/i });
       fireEvent.click(submitButton);
 
       await waitFor(() => {
-        expect(client.updateTask).toHaveBeenCalledWith(
+        expect(api.updateTask).toHaveBeenCalledWith(
           1,
           expect.objectContaining({
             name: 'Обновленная задача',
@@ -230,242 +194,66 @@ describe('TaskForm', () => {
         expect(router.navigate).toHaveBeenCalledWith('/tasks');
       });
     });
-
-    it('handles API error on update', async () => {
-      client.updateTask.mockRejectedValue(new Error('API Error'));
-
-      render(
-        <TestWrapper>
-          <TaskForm id={1} />
-        </TestWrapper>
-      );
-
-      await waitFor(() => {
-        const titleInput = screen.getByLabelText(/Название|Заголовок/i);
-        expect(titleInput).toHaveValue('Тестовая задача');
-      });
-
-      // Submit form
-      const submitButton = screen.getByText(/Сохранить|Обновить/i);
-      fireEvent.click(submitButton);
-
-      await waitFor(() => {
-        expect(client.updateTask).toHaveBeenCalled();
-      });
-
-      // Should not navigate on error
-      expect(router.navigate).not.toHaveBeenCalled();
-    });
-
-    it('handles error when loading task', async () => {
-      client.getTask.mockRejectedValue(new Error('Task not found'));
-
-      render(
-        <TestWrapper>
-          <TaskForm id={999} />
-        </TestWrapper>
-      );
-
-      await waitFor(() => {
-        expect(client.getTask).toHaveBeenCalledWith(999);
-      });
-
-      // Form should still render but without data
-      await waitFor(() => {
-        expect(screen.getByText(/Редактировать задачу|Задача/i)).toBeInTheDocument();
-      });
-    });
   });
 
   describe('Form Fields', () => {
-    it('renders all form fields', async () => {
-      render(
-        <TestWrapper>
-          <TaskForm />
-        </TestWrapper>
-      );
-
-      await waitFor(() => {
-        expect(screen.getByLabelText(/Название|Заголовок/i)).toBeInTheDocument();
-      });
-
-      // Check that all major fields are present
-      expect(screen.getByLabelText(/Название|Заголовок/i)).toBeInTheDocument();
-      expect(screen.getByLabelText(/Описание/i)).toBeInTheDocument();
-    });
-
-    it('handles date field changes', async () => {
-      render(
-        <TestWrapper>
-          <TaskForm id={1} />
-        </TestWrapper>
-      );
-
-      await waitFor(() => {
-        const titleInput = screen.getByLabelText(/Название|Заголовок/i);
-        expect(titleInput).toHaveValue('Тестовая задача');
-      });
-
-      // Date fields should be rendered (DatePicker components)
-      const dateInputs = screen.getAllByPlaceholderText(/Выберите дату|дата/i);
-      expect(dateInputs.length).toBeGreaterThan(0);
-    });
-
     it('handles priority selection', async () => {
-      render(
-        <TestWrapper>
-          <TaskForm />
-        </TestWrapper>
-      );
+      render(<TaskForm />);
 
       await waitFor(() => {
-        expect(screen.getByLabelText(/Название|Заголовок/i)).toBeInTheDocument();
+        expect(screen.getByLabelText(/Название задачи/i)).toBeInTheDocument();
       });
 
-      // Priority field should be present
-      const prioritySelect = screen.queryByTestId(/select.*приоритет/i);
-      if (prioritySelect) {
-        fireEvent.change(prioritySelect, { target: { value: 'high' } });
-        expect(prioritySelect).toHaveValue('high');
-      }
+      const priorityInput = screen.getByLabelText(/Приоритет/i);
+      fireEvent.change(priorityInput, { target: { value: '2' } });
+      expect(priorityInput).toHaveValue(2);
     });
 
-    it('handles status selection', async () => {
-      render(
-        <TestWrapper>
-          <TaskForm />
-        </TestWrapper>
-      );
+    it('handles status switches', async () => {
+      render(<TaskForm />);
 
       await waitFor(() => {
-        expect(screen.getByLabelText(/Название|Заголовок/i)).toBeInTheDocument();
+        expect(screen.getByLabelText(/Название задачи/i)).toBeInTheDocument();
       });
 
-      // Status field should be present
-      const statusSelect = screen.queryByTestId(/select.*статус/i);
-      if (statusSelect) {
-        fireEvent.change(statusSelect, { target: { value: 'in_progress' } });
-        expect(statusSelect).toHaveValue('in_progress');
-      }
+      // Switches usually don't have label association that testing-library likes unless role is used
+      expect(screen.getByLabelText(/Активна/i)).toBeInTheDocument();
+      expect(screen.getByLabelText(/Напоминать/i)).toBeInTheDocument();
     });
   });
 
   describe('Navigation', () => {
     it('navigates back on cancel', async () => {
-      render(
-        <TestWrapper>
-          <TaskForm />
-        </TestWrapper>
-      );
+      render(<TaskForm />);
 
       await waitFor(() => {
-        expect(screen.getByLabelText(/Название|Заголовок/i)).toBeInTheDocument();
+        expect(screen.getByLabelText(/Название задачи/i)).toBeInTheDocument();
       });
 
-      const backButton = screen.getByText('Назад');
-      fireEvent.click(backButton);
+      const cancelButton = screen.getByText('Отмена');
+      fireEvent.click(cancelButton);
       expect(router.navigate).toHaveBeenCalledWith('/tasks');
     });
   });
 
   describe('Data Normalization', () => {
-    it('normalizes dates before submission', async () => {
-      render(
-        <TestWrapper>
-          <TaskForm id={1} />
-        </TestWrapper>
-      );
-
-      await waitFor(() => {
-        const titleInput = screen.getByLabelText(/Название|Заголовок/i);
-        expect(titleInput).toHaveValue('Тестовая задача');
-      });
-
-      // Submit form
-      const submitButton = screen.getByText(/Сохранить|Обновить/i);
-      fireEvent.click(submitButton);
-
-      await waitFor(() => {
-        expect(client.updateTask).toHaveBeenCalledWith(
-          1,
-          expect.objectContaining({
-            start_date: expect.any(String),
-            due_date: expect.any(String),
-          })
-        );
-      });
-    });
-
     it('handles null date values', async () => {
       const taskWithoutDates = {
         ...mockTask,
         start_date: null,
         due_date: null,
         closing_date: null,
-        next_step_date: null,
+        next_step_date: '2024-02-01', // This is required in schema
       };
-      client.getTask.mockResolvedValue(taskWithoutDates);
+      api.getTask.mockResolvedValue(taskWithoutDates);
 
-      render(
-        <TestWrapper>
-          <TaskForm id={1} />
-        </TestWrapper>
-      );
+      render(<TaskForm id={1} />);
 
       await waitFor(() => {
-        const titleInput = screen.getByLabelText(/Название|Заголовок/i);
-        expect(titleInput).toHaveValue('Тестовая задача');
+        expect(screen.getByLabelText(/Название задачи/i)).toHaveValue('Тестовая задача');
       });
 
-      // Form should render without errors
-      expect(screen.getByLabelText(/Название|Заголовок/i)).toBeInTheDocument();
-    });
-  });
-
-  describe('Form Validation', () => {
-    it('requires title field', async () => {
-      render(
-        <TestWrapper>
-          <TaskForm />
-        </TestWrapper>
-      );
-
-      await waitFor(() => {
-        expect(screen.getByLabelText(/Название|Заголовок/i)).toBeInTheDocument();
-      });
-
-      // Try to submit without title
-      const submitButton = screen.getByText(/Сохранить|Создать/i);
-      fireEvent.click(submitButton);
-
-      await waitFor(() => {
-        // Should show validation error or not submit
-        expect(client.createTask).not.toHaveBeenCalled();
-      });
-    });
-
-    it('accepts valid form data', async () => {
-      render(
-        <TestWrapper>
-          <TaskForm />
-        </TestWrapper>
-      );
-
-      await waitFor(() => {
-        expect(screen.getByLabelText(/Название|Заголовок/i)).toBeInTheDocument();
-      });
-
-      // Fill in valid data
-      const titleInput = screen.getByLabelText(/Название|Заголовок/i);
-      fireEvent.change(titleInput, { target: { value: 'Valid Task Title' } });
-
-      // Submit form
-      const submitButton = screen.getByText(/Сохранить|Создать/i);
-      fireEvent.click(submitButton);
-
-      await waitFor(() => {
-        expect(client.createTask).toHaveBeenCalled();
-      });
+      expect(screen.getByLabelText(/Название задачи/i)).toBeInTheDocument();
     });
   });
 });

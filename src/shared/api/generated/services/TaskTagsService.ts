@@ -17,6 +17,7 @@ export class TaskTagsService {
         forContent,
         ordering,
         page,
+        pageSize,
         search,
     }: {
         forContent?: number,
@@ -29,6 +30,10 @@ export class TaskTagsService {
          */
         page?: number,
         /**
+         * Number of results to return per page.
+         */
+        pageSize?: number,
+        /**
          * A search term.
          */
         search?: string,
@@ -40,6 +45,7 @@ export class TaskTagsService {
                 'for_content': forContent,
                 'ordering': ordering,
                 'page': page,
+                'page_size': pageSize,
                 'search': search,
             },
         });

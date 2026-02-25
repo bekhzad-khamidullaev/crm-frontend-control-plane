@@ -1,11 +1,11 @@
-import React from 'react';
-import { Card, Row, Col, Statistic, Space } from 'antd';
 import {
-  DollarOutlined,
-  TrophyOutlined,
-  RiseOutlined,
-  FallOutlined,
+    DollarOutlined,
+    FallOutlined,
+    RiseOutlined,
+    TrophyOutlined,
 } from '@ant-design/icons';
+import { Card, Col, Row, Space, Statistic } from 'antd';
+import { formatCurrency } from '../../lib/utils/format';
 import AnimatedChart from './AnimatedChart';
 
 /**
@@ -165,13 +165,6 @@ function DealAnalyticsCard({
     ],
   };
 
-  const formatCurrency = (value) => {
-    return new Intl.NumberFormat('ru-RU', {
-      style: 'currency',
-      currency: 'RUB',
-      minimumFractionDigits: 0,
-    }).format(value);
-  };
 
   const chartOptions = {
     responsive: true,

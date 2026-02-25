@@ -1,21 +1,22 @@
-import React from 'react';
-import { Table, Space, Button, Popconfirm, Avatar } from 'antd';
-import {
-  EditOutlined,
-  DeleteOutlined,
-  EyeOutlined,
-  UserOutlined,
-  MailOutlined,
-  PhoneOutlined,
-  BankOutlined
-} from '@ant-design/icons';
 import { useServerTable } from '@/shared/hooks';
-import { ContactsService } from '@/shared/api/generated/services/ContactsService';
+import {
+    BankOutlined,
+    DeleteOutlined,
+    EditOutlined,
+    EyeOutlined,
+    MailOutlined,
+    PhoneOutlined,
+    UserOutlined
+} from '@ant-design/icons';
+import { Avatar, Button, Popconfirm, Space, Table } from 'antd';
+import React from 'react';
+// @ts-ignore
 import { contactKeys } from '@/entities/contact/api/keys';
 import { useDeleteContact } from '@/entities/contact/api/mutations';
-import { ContactsTableFilters } from './ui/ContactsTableFilters';
 import type { Contact } from '@/entities/contact/model/types';
+import { ContactsService } from '@/shared/api/generated/services/ContactsService';
 import type { ColumnsType } from 'antd/es/table';
+import { ContactsTableFilters } from './ui/ContactsTableFilters';
 
 // @ts-ignore
 import CallButton from '@/components/CallButton'; // Legacy

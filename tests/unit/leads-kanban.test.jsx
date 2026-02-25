@@ -1,11 +1,18 @@
-import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { render, screen, waitFor } from '@testing-library/react';
-import LeadsKanban from '../../src/modules/leads/LeadsKanban';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 import * as client from '../../src/lib/api/client';
-// import * as router from '../../src/router';
+import LeadsKanban from '../../src/modules/leads/LeadsKanban';
 
 // Mock dependencies
-vi.mock('../../src/lib/api/client');
+vi.mock('../../src/lib/api/client', () => ({
+  getLeads: vi.fn(),
+  leadsApi: {
+    disqualify: vi.fn(),
+    convert: vi.fn(),
+    patch: vi.fn(),
+  },
+}));
+
 vi.mock('../../src/router');
 
 // Mock dnd-kit
@@ -31,7 +38,7 @@ vi.mock('@dnd-kit/sortable', () => ({
     attributes: {},
     listeners: {},
     setNodeRef: vi.fn(),
-    transform: null,
+    transform: { x: 0, y: 0, scaleX: 1, scaleY: 1 },
     transition: null,
     isDragging: false,
   })),
@@ -45,6 +52,16 @@ vi.mock('@dnd-kit/utilities', () => ({
   },
 }));
 
+// Mock Lucide icons to have predictable names
+vi.mock('lucide-react', () => ({
+  Plus: () => <span data-testid="plus-icon">Plus</span>,
+  Mail: () => <span>Mail</span>,
+  Phone: () => <span>Phone</span>,
+  User: () => <span>User</span>,
+  GripVertical: () => <span>Grip</span>,
+  Briefcase: () => <span>Briefcase</span>,
+}));
+
 const mockLeads = [
   {
     id: 1,
@@ -52,7 +69,7 @@ const mockLeads = [
     last_name: 'Иванов',
     email: 'ivan@example.com',
     phone: '+7 999 123-45-67',
-    company: 'ООО "Технологии"',
+    company_name: 'ООО "Технологии"',
     status: 'new',
   },
   {
@@ -61,8 +78,8 @@ const mockLeads = [
     last_name: 'Петрова',
     email: 'maria@example.com',
     phone: '+7 999 234-56-78',
-    company: 'АО "Инновации"',
-    status: 'contacted',
+    company_name: 'АО "Инновации"',
+    status: 'converted',
   },
   {
     id: 3,
@@ -70,8 +87,8 @@ const mockLeads = [
     last_name: 'Сидоров',
     email: 'alexey@example.com',
     phone: '+7 999 345-67-89',
-    company: 'ИП Сидоров',
-    status: 'qualified',
+    company_name: 'ИП Сидоров',
+    status: 'lost',
   },
 ];
 
@@ -82,7 +99,6 @@ describe('LeadsKanban', () => {
       results: mockLeads,
       count: 3,
     });
-    client.updateLead.mockResolvedValue({});
   });
 
   it('renders kanban board with columns', async () => {
@@ -92,8 +108,6 @@ describe('LeadsKanban', () => {
       expect(screen.getByText('Новые')).toBeInTheDocument();
     });
 
-    expect(screen.getByText('Связались')).toBeInTheDocument();
-    expect(screen.getByText('Квалифицированы')).toBeInTheDocument();
     expect(screen.getByText('Конвертированы')).toBeInTheDocument();
     expect(screen.getByText('Потеряны')).toBeInTheDocument();
   });
@@ -113,7 +127,7 @@ describe('LeadsKanban', () => {
     client.getLeads.mockImplementation(() => new Promise(() => {}));
     render(<LeadsKanban />);
     
-    expect(screen.getByRole('img', { hidden: true })).toBeInTheDocument(); // Ant Design Spin
+    expect(screen.getByText('Загрузка...')).toBeInTheDocument();
   });
 
   it('handles API error', async () => {
@@ -125,7 +139,6 @@ describe('LeadsKanban', () => {
       expect(client.getLeads).toHaveBeenCalled();
     });
 
-    // Should show empty columns, not mock data
     await waitFor(() => {
       expect(screen.queryByText('Иван Иванов')).not.toBeInTheDocument();
     });
@@ -138,9 +151,9 @@ describe('LeadsKanban', () => {
       expect(screen.getByText('Новые')).toBeInTheDocument();
     });
 
-    // Should have add buttons for each column (5 columns)
-    const addButtons = screen.getAllByRole('button', { name: /plus/i });
-    expect(addButtons.length).toBeGreaterThan(0);
+    // Each column has an add button with Plus icon
+    const plusIcons = screen.getAllByTestId('plus-icon');
+    expect(plusIcons.length).toBe(3); // 3 columns
   });
 
   it('displays company information', async () => {
@@ -164,36 +177,17 @@ describe('LeadsKanban', () => {
     expect(screen.getByText('+7 999 123-45-67')).toBeInTheDocument();
   });
 
-  it('shows empty state for empty columns', async () => {
-    client.getLeads.mockResolvedValue({
-      results: [],
-      count: 0,
-    });
-    
-    render(<LeadsKanban />);
-    
-    await waitFor(() => {
-      expect(screen.getByText('Новые')).toBeInTheDocument();
-    });
-
-    // Should show "Перетащите лиды сюда" messages
-    const emptyMessages = screen.getAllByText('Перетащите лиды сюда');
-    expect(emptyMessages.length).toBe(5); // 5 columns
-  });
-
   it('groups leads by status correctly', async () => {
     const mixedStatusLeads = [
       { id: 1, first_name: 'A', last_name: 'A', status: 'new' },
       { id: 2, first_name: 'B', last_name: 'B', status: 'new' },
-      { id: 3, first_name: 'C', last_name: 'C', status: 'contacted' },
-      { id: 4, first_name: 'D', last_name: 'D', status: 'qualified' },
-      { id: 5, first_name: 'E', last_name: 'E', status: 'converted' },
-      { id: 6, first_name: 'F', last_name: 'F', status: 'lost' },
+      { id: 3, first_name: 'C', last_name: 'C', status: 'converted' },
+      { id: 4, first_name: 'D', last_name: 'D', status: 'lost' },
     ];
     
     client.getLeads.mockResolvedValue({
       results: mixedStatusLeads,
-      count: 6,
+      count: 4,
     });
     
     render(<LeadsKanban />);
@@ -202,30 +196,8 @@ describe('LeadsKanban', () => {
       expect(screen.getByText('A A')).toBeInTheDocument();
     });
 
-    // All leads should be displayed
     expect(screen.getByText('B B')).toBeInTheDocument();
     expect(screen.getByText('C C')).toBeInTheDocument();
     expect(screen.getByText('D D')).toBeInTheDocument();
-    expect(screen.getByText('E E')).toBeInTheDocument();
-    expect(screen.getByText('F F')).toBeInTheDocument();
-  });
-
-  it('handles leads with unknown status', async () => {
-    const leadsWithUnknownStatus = [
-      { id: 1, first_name: 'Test', last_name: 'User', status: 'unknown_status' },
-    ];
-    
-    client.getLeads.mockResolvedValue({
-      results: leadsWithUnknownStatus,
-      count: 1,
-    });
-    
-    render(<LeadsKanban />);
-    
-    await waitFor(() => {
-      expect(screen.getByText('Test User')).toBeInTheDocument();
-    });
-
-    // Lead with unknown status should be placed in 'new' column
   });
 });

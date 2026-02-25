@@ -1,0 +1,1058 @@
+# Page snapshot
+
+```yaml
+- generic [ref=e4]:
+  - complementary [ref=e5]:
+    - generic [ref=e6]:
+      - generic [ref=e7]:
+        - generic [ref=e8]:
+          - generic [ref=e11]: E
+          - strong [ref=e14]: Enterprise CRM
+        - button "menu-fold" [ref=e15] [cursor=pointer]:
+          - img "menu-fold" [ref=e17]:
+            - img [ref=e18]
+      - menu [ref=e20]:
+        - menuitem "dashboard Дашборд" [ref=e21] [cursor=pointer]:
+          - img "dashboard" [ref=e22]:
+            - img [ref=e23]
+          - generic [ref=e25]: Дашборд
+        - menuitem "team Лиды" [ref=e26] [cursor=pointer]:
+          - img "team" [ref=e27]:
+            - img [ref=e28]
+          - generic [ref=e30]: Лиды
+        - menuitem "user Контакты" [ref=e31] [cursor=pointer]:
+          - img "user" [ref=e32]:
+            - img [ref=e33]
+          - generic [ref=e35]: Контакты
+        - menuitem "bank Компании" [ref=e36] [cursor=pointer]:
+          - img "bank" [ref=e37]:
+            - img [ref=e38]
+          - generic [ref=e40]: Компании
+        - menuitem "dollar Сделки" [ref=e41] [cursor=pointer]:
+          - img "dollar" [ref=e42]:
+            - img [ref=e43]
+          - generic [ref=e45]: Сделки
+        - menuitem "check-square Задачи" [ref=e46] [cursor=pointer]:
+          - img "check-square" [ref=e47]:
+            - img [ref=e48]
+          - generic [ref=e51]: Задачи
+        - menuitem "folder Проекты" [ref=e52] [cursor=pointer]:
+          - img "folder" [ref=e53]:
+            - img [ref=e54]
+          - generic [ref=e56]: Проекты
+        - menuitem "appstore Продукты" [ref=e57] [cursor=pointer]:
+          - img "appstore" [ref=e58]:
+            - img [ref=e59]
+          - generic [ref=e61]: Продукты
+        - menuitem "message Чаты" [ref=e62] [cursor=pointer]:
+          - img "message" [ref=e63]:
+            - img [ref=e64]
+          - generic [ref=e66]: Чаты
+        - menuitem "phone Звонки" [ref=e67] [cursor=pointer]:
+          - img "phone" [ref=e68]:
+            - img [ref=e69]
+          - generic [ref=e71]: Звонки
+        - menuitem "dollar Платежи" [ref=e72] [cursor=pointer]:
+          - img "dollar" [ref=e73]:
+            - img [ref=e74]
+          - generic [ref=e76]: Платежи
+        - menuitem "clock-circle Напоминания" [ref=e77] [cursor=pointer]:
+          - img "clock-circle" [ref=e78]:
+            - img [ref=e79]
+          - generic [ref=e82]: Напоминания
+        - menuitem "customer-service Кампании" [ref=e83] [cursor=pointer]:
+          - img "customer-service" [ref=e84]:
+            - img [ref=e85]
+          - generic [ref=e87]: Кампании
+        - menuitem "team Сегменты" [ref=e88] [cursor=pointer]:
+          - img "team" [ref=e89]:
+            - img [ref=e90]
+          - generic [ref=e92]: Сегменты
+        - menuitem "file-text Шаблоны" [ref=e93] [cursor=pointer]:
+          - img "file-text" [ref=e94]:
+            - img [ref=e95]
+          - generic [ref=e97]: Шаблоны
+        - menuitem "file-text Заметки" [ref=e98] [cursor=pointer]:
+          - img "file-text" [ref=e99]:
+            - img [ref=e100]
+          - generic [ref=e102]: Заметки
+        - menuitem "mail Emails" [ref=e103] [cursor=pointer]:
+          - img "mail" [ref=e104]:
+            - img [ref=e105]
+          - generic [ref=e107]: Emails
+        - menuitem "mail Massmail" [ref=e108] [cursor=pointer]:
+          - img "mail" [ref=e109]:
+            - img [ref=e110]
+          - generic [ref=e112]: Massmail
+        - menuitem "message SMS" [ref=e113] [cursor=pointer]:
+          - img "message" [ref=e114]:
+            - img [ref=e115]
+          - generic [ref=e117]: SMS
+        - menuitem "tool Операции" [ref=e118] [cursor=pointer]:
+          - img "tool" [ref=e119]:
+            - img [ref=e120]
+          - generic [ref=e122]: Операции
+        - menuitem "database Справочники" [ref=e123] [cursor=pointer]:
+          - img "database" [ref=e124]:
+            - img [ref=e125]
+          - generic [ref=e127]: Справочники
+        - menuitem "bar-chart Аналитика" [ref=e128] [cursor=pointer]:
+          - img "bar-chart" [ref=e129]:
+            - img [ref=e130]
+          - generic [ref=e132]: Аналитика
+        - menuitem "question-circle Справка" [ref=e133] [cursor=pointer]:
+          - img "question-circle" [ref=e134]:
+            - img [ref=e135]
+          - generic [ref=e138]: Справка
+        - menuitem "customer-service Телефония" [ref=e139] [cursor=pointer]:
+          - img "customer-service" [ref=e140]:
+            - img [ref=e141]
+          - generic [ref=e143]: Телефония
+        - menuitem "team Пользователи" [ref=e144] [cursor=pointer]:
+          - img "team" [ref=e145]:
+            - img [ref=e146]
+          - generic [ref=e148]: Пользователи
+        - menuitem "setting Интеграции" [ref=e149] [cursor=pointer]:
+          - img "setting" [ref=e150]:
+            - img [ref=e151]
+          - generic [ref=e153]: Интеграции
+  - generic [ref=e154]:
+    - banner [ref=e155]:
+      - generic [ref=e157]: Дашборд
+      - generic [ref=e158]:
+        - generic [ref=e160]:
+          - img "sun" [ref=e162]:
+            - img [ref=e163]
+          - switch [ref=e166] [cursor=pointer]
+          - img "moon" [ref=e170]:
+            - img [ref=e171]
+        - button "RU" [ref=e174] [cursor=pointer]:
+          - generic [ref=e175]: RU
+        - generic [ref=e177] [cursor=pointer]:
+          - img "disconnect" [ref=e180]:
+            - img [ref=e181]
+          - generic [ref=e185]: A
+          - generic [ref=e186]: admin
+    - main [ref=e187]:
+      - generic [ref=e189]:
+        - heading "Лиды" [level=1] [ref=e191]
+        - button "plus Создать лид" [ref=e193] [cursor=pointer]:
+          - img "plus" [ref=e195]:
+            - img [ref=e196]
+          - generic [ref=e199]: Создать лид
+      - generic [ref=e200]:
+        - generic [ref=e201]:
+          - generic [ref=e204]:
+            - generic [ref=e205]:
+              - searchbox "Поиск..." [active] [ref=e206]: test
+              - button "close-circle" [ref=e208] [cursor=pointer]:
+                - img "close-circle" [ref=e209]:
+                  - img [ref=e210]
+            - button "search" [ref=e213] [cursor=pointer]:
+              - img "search" [ref=e215]:
+                - img [ref=e216]
+          - generic [ref=e219] [cursor=pointer]:
+            - generic [ref=e221]:
+              - combobox [ref=e223]
+              - generic: Источник
+            - generic:
+              - img:
+                - img
+          - generic [ref=e225] [cursor=pointer]:
+            - generic [ref=e227]:
+              - combobox [ref=e229]
+              - generic: Ответственный
+            - generic:
+              - img:
+                - img
+          - generic [ref=e231] [cursor=pointer]:
+            - generic [ref=e233]:
+              - combobox [ref=e235]
+              - generic: Страна
+            - generic:
+              - img:
+                - img
+          - generic [ref=e237] [cursor=pointer]:
+            - generic [ref=e239]:
+              - combobox [ref=e241]
+              - generic: Компания
+            - generic:
+              - img:
+                - img
+        - generic [ref=e244]:
+          - table [ref=e248]:
+            - rowgroup [ref=e256]:
+              - row "Лид Контакты Статус Теги Создан Действия" [ref=e257]:
+                - columnheader "Лид" [ref=e258] [cursor=pointer]:
+                  - generic [ref=e259]:
+                    - generic [ref=e260]: Лид
+                    - generic [ref=e262]:
+                      - img [ref=e263]:
+                        - img [ref=e264]
+                      - img [ref=e266]:
+                        - img [ref=e267]
+                - columnheader "Контакты" [ref=e269]
+                - columnheader "Статус" [ref=e270]
+                - columnheader "Теги" [ref=e271]
+                - columnheader "Создан" [ref=e272] [cursor=pointer]:
+                  - generic [ref=e273]:
+                    - generic [ref=e274]: Создан
+                    - generic [ref=e276]:
+                      - img [ref=e277]:
+                        - img [ref=e278]
+                      - img [ref=e280]:
+                        - img [ref=e281]
+                - columnheader "Действия" [ref=e283]
+            - rowgroup [ref=e284]:
+              - generic:
+                - generic: Лид
+                - generic:
+                  - generic:
+                    - img:
+                      - img
+                    - img:
+                      - img
+              - generic:
+                - generic: Создан
+                - generic:
+                  - generic:
+                    - img:
+                      - img
+                    - img:
+                      - img
+              - row "user Annatest Automation bank TestCompany 9053 mail e2e.lead.1770043249053@test.com phone +79001234053 Новый 02.02.2026 phone Позвонить eye edit delete" [ref=e285]:
+                - cell "user Annatest Automation bank TestCompany 9053" [ref=e286]:
+                  - generic [ref=e287]:
+                    - img "user" [ref=e290]:
+                      - img [ref=e291]
+                    - generic [ref=e294]:
+                      - generic [ref=e295]: Annatest Automation
+                      - generic [ref=e296]:
+                        - img "bank" [ref=e297]:
+                          - img [ref=e298]
+                        - text: TestCompany 9053
+                - cell "mail e2e.lead.1770043249053@test.com phone +79001234053" [ref=e300]:
+                  - generic [ref=e301]:
+                    - generic [ref=e303]:
+                      - img "mail" [ref=e305]:
+                        - img [ref=e306]
+                      - link "e2e.lead.1770043249053@test.com" [ref=e309] [cursor=pointer]:
+                        - /url: mailto:e2e.lead.1770043249053@test.com
+                    - generic [ref=e311]:
+                      - img "phone" [ref=e313]:
+                        - img [ref=e314]
+                      - link "+79001234053" [ref=e317] [cursor=pointer]:
+                        - /url: tel:+79001234053
+                - cell "Новый" [ref=e318]:
+                  - generic [ref=e319]: Новый
+                - cell [ref=e321]
+                - cell "02.02.2026" [ref=e322]
+                - cell "phone Позвонить eye edit delete" [ref=e323]:
+                  - generic [ref=e324]:
+                    - button "phone Позвонить" [ref=e326] [cursor=pointer]:
+                      - img "phone" [ref=e328]:
+                        - img [ref=e329]
+                      - generic [ref=e331]: Позвонить
+                    - button "eye" [ref=e333] [cursor=pointer]:
+                      - img "eye" [ref=e335]:
+                        - img [ref=e336]
+                    - button "edit" [ref=e339] [cursor=pointer]:
+                      - img "edit" [ref=e341]:
+                        - img [ref=e342]
+                    - button "delete" [ref=e345] [cursor=pointer]:
+                      - img "delete" [ref=e347]:
+                        - img [ref=e348]
+              - row "user Alextest Automation bank TestCompany 3880 mail e2e.lead.1770043193880@test.com phone +79001234880 Новый 02.02.2026 phone Позвонить eye edit delete" [ref=e350]:
+                - cell "user Alextest Automation bank TestCompany 3880" [ref=e351]:
+                  - generic [ref=e352]:
+                    - img "user" [ref=e355]:
+                      - img [ref=e356]
+                    - generic [ref=e359]:
+                      - generic [ref=e360]: Alextest Automation
+                      - generic [ref=e361]:
+                        - img "bank" [ref=e362]:
+                          - img [ref=e363]
+                        - text: TestCompany 3880
+                - cell "mail e2e.lead.1770043193880@test.com phone +79001234880" [ref=e365]:
+                  - generic [ref=e366]:
+                    - generic [ref=e368]:
+                      - img "mail" [ref=e370]:
+                        - img [ref=e371]
+                      - link "e2e.lead.1770043193880@test.com" [ref=e374] [cursor=pointer]:
+                        - /url: mailto:e2e.lead.1770043193880@test.com
+                    - generic [ref=e376]:
+                      - img "phone" [ref=e378]:
+                        - img [ref=e379]
+                      - link "+79001234880" [ref=e382] [cursor=pointer]:
+                        - /url: tel:+79001234880
+                - cell "Новый" [ref=e383]:
+                  - generic [ref=e384]: Новый
+                - cell [ref=e386]
+                - cell "02.02.2026" [ref=e387]
+                - cell "phone Позвонить eye edit delete" [ref=e388]:
+                  - generic [ref=e389]:
+                    - button "phone Позвонить" [ref=e391] [cursor=pointer]:
+                      - img "phone" [ref=e393]:
+                        - img [ref=e394]
+                      - generic [ref=e396]: Позвонить
+                    - button "eye" [ref=e398] [cursor=pointer]:
+                      - img "eye" [ref=e400]:
+                        - img [ref=e401]
+                    - button "edit" [ref=e404] [cursor=pointer]:
+                      - img "edit" [ref=e406]:
+                        - img [ref=e407]
+                    - button "delete" [ref=e410] [cursor=pointer]:
+                      - img "delete" [ref=e412]:
+                        - img [ref=e413]
+              - row "user Mariatest Automation bank TestCompany 8713 mail e2e.lead.1770043138713@test.com phone +79001234713 Новый 02.02.2026 phone Позвонить eye edit delete" [ref=e415]:
+                - cell "user Mariatest Automation bank TestCompany 8713" [ref=e416]:
+                  - generic [ref=e417]:
+                    - img "user" [ref=e420]:
+                      - img [ref=e421]
+                    - generic [ref=e424]:
+                      - generic [ref=e425]: Mariatest Automation
+                      - generic [ref=e426]:
+                        - img "bank" [ref=e427]:
+                          - img [ref=e428]
+                        - text: TestCompany 8713
+                - cell "mail e2e.lead.1770043138713@test.com phone +79001234713" [ref=e430]:
+                  - generic [ref=e431]:
+                    - generic [ref=e433]:
+                      - img "mail" [ref=e435]:
+                        - img [ref=e436]
+                      - link "e2e.lead.1770043138713@test.com" [ref=e439] [cursor=pointer]:
+                        - /url: mailto:e2e.lead.1770043138713@test.com
+                    - generic [ref=e441]:
+                      - img "phone" [ref=e443]:
+                        - img [ref=e444]
+                      - link "+79001234713" [ref=e447] [cursor=pointer]:
+                        - /url: tel:+79001234713
+                - cell "Новый" [ref=e448]:
+                  - generic [ref=e449]: Новый
+                - cell [ref=e451]
+                - cell "02.02.2026" [ref=e452]
+                - cell "phone Позвонить eye edit delete" [ref=e453]:
+                  - generic [ref=e454]:
+                    - button "phone Позвонить" [ref=e456] [cursor=pointer]:
+                      - img "phone" [ref=e458]:
+                        - img [ref=e459]
+                      - generic [ref=e461]: Позвонить
+                    - button "eye" [ref=e463] [cursor=pointer]:
+                      - img "eye" [ref=e465]:
+                        - img [ref=e466]
+                    - button "edit" [ref=e469] [cursor=pointer]:
+                      - img "edit" [ref=e471]:
+                        - img [ref=e472]
+                    - button "delete" [ref=e475] [cursor=pointer]:
+                      - img "delete" [ref=e477]:
+                        - img [ref=e478]
+              - row "user Olgatest Automation bank TestCompany 7991 mail e2e.lead.1770043057991@test.com phone +79001234991 Новый 02.02.2026 phone Позвонить eye edit delete" [ref=e480]:
+                - cell "user Olgatest Automation bank TestCompany 7991" [ref=e481]:
+                  - generic [ref=e482]:
+                    - img "user" [ref=e485]:
+                      - img [ref=e486]
+                    - generic [ref=e489]:
+                      - generic [ref=e490]: Olgatest Automation
+                      - generic [ref=e491]:
+                        - img "bank" [ref=e492]:
+                          - img [ref=e493]
+                        - text: TestCompany 7991
+                - cell "mail e2e.lead.1770043057991@test.com phone +79001234991" [ref=e495]:
+                  - generic [ref=e496]:
+                    - generic [ref=e498]:
+                      - img "mail" [ref=e500]:
+                        - img [ref=e501]
+                      - link "e2e.lead.1770043057991@test.com" [ref=e504] [cursor=pointer]:
+                        - /url: mailto:e2e.lead.1770043057991@test.com
+                    - generic [ref=e506]:
+                      - img "phone" [ref=e508]:
+                        - img [ref=e509]
+                      - link "+79001234991" [ref=e512] [cursor=pointer]:
+                        - /url: tel:+79001234991
+                - cell "Новый" [ref=e513]:
+                  - generic [ref=e514]: Новый
+                - cell [ref=e516]
+                - cell "02.02.2026" [ref=e517]
+                - cell "phone Позвонить eye edit delete" [ref=e518]:
+                  - generic [ref=e519]:
+                    - button "phone Позвонить" [ref=e521] [cursor=pointer]:
+                      - img "phone" [ref=e523]:
+                        - img [ref=e524]
+                      - generic [ref=e526]: Позвонить
+                    - button "eye" [ref=e528] [cursor=pointer]:
+                      - img "eye" [ref=e530]:
+                        - img [ref=e531]
+                    - button "edit" [ref=e534] [cursor=pointer]:
+                      - img "edit" [ref=e536]:
+                        - img [ref=e537]
+                    - button "delete" [ref=e540] [cursor=pointer]:
+                      - img "delete" [ref=e542]:
+                        - img [ref=e543]
+              - row "user Olgateststatus Automation mail e2e.lead.1770042441159status@test.com phone +79001234159 Новый 02.02.2026 phone Позвонить eye edit delete" [ref=e545]:
+                - cell "user Olgateststatus Automation" [ref=e546]:
+                  - generic [ref=e547]:
+                    - img "user" [ref=e550]:
+                      - img [ref=e551]
+                    - generic [ref=e555]: Olgateststatus Automation
+                - cell "mail e2e.lead.1770042441159status@test.com phone +79001234159" [ref=e556]:
+                  - generic [ref=e557]:
+                    - generic [ref=e559]:
+                      - img "mail" [ref=e561]:
+                        - img [ref=e562]
+                      - link "e2e.lead.1770042441159status@test.com" [ref=e565] [cursor=pointer]:
+                        - /url: mailto:e2e.lead.1770042441159status@test.com
+                    - generic [ref=e567]:
+                      - img "phone" [ref=e569]:
+                        - img [ref=e570]
+                      - link "+79001234159" [ref=e573] [cursor=pointer]:
+                        - /url: tel:+79001234159
+                - cell "Новый" [ref=e574]:
+                  - generic [ref=e575]: Новый
+                - cell [ref=e577]
+                - cell "02.02.2026" [ref=e578]
+                - cell "phone Позвонить eye edit delete" [ref=e579]:
+                  - generic [ref=e580]:
+                    - button "phone Позвонить" [ref=e582] [cursor=pointer]:
+                      - img "phone" [ref=e584]:
+                        - img [ref=e585]
+                      - generic [ref=e587]: Позвонить
+                    - button "eye" [ref=e589] [cursor=pointer]:
+                      - img "eye" [ref=e591]:
+                        - img [ref=e592]
+                    - button "edit" [ref=e595] [cursor=pointer]:
+                      - img "edit" [ref=e597]:
+                        - img [ref=e598]
+                    - button "delete" [ref=e601] [cursor=pointer]:
+                      - img "delete" [ref=e603]:
+                        - img [ref=e604]
+              - row "user Olgateststatus Automation mail e2e.lead.1770041688983status@test.com phone +79001234983 Новый 02.02.2026 phone Позвонить eye edit delete" [ref=e606]:
+                - cell "user Olgateststatus Automation" [ref=e607]:
+                  - generic [ref=e608]:
+                    - img "user" [ref=e611]:
+                      - img [ref=e612]
+                    - generic [ref=e616]: Olgateststatus Automation
+                - cell "mail e2e.lead.1770041688983status@test.com phone +79001234983" [ref=e617]:
+                  - generic [ref=e618]:
+                    - generic [ref=e620]:
+                      - img "mail" [ref=e622]:
+                        - img [ref=e623]
+                      - link "e2e.lead.1770041688983status@test.com" [ref=e626] [cursor=pointer]:
+                        - /url: mailto:e2e.lead.1770041688983status@test.com
+                    - generic [ref=e628]:
+                      - img "phone" [ref=e630]:
+                        - img [ref=e631]
+                      - link "+79001234983" [ref=e634] [cursor=pointer]:
+                        - /url: tel:+79001234983
+                - cell "Новый" [ref=e635]:
+                  - generic [ref=e636]: Новый
+                - cell [ref=e638]
+                - cell "02.02.2026" [ref=e639]
+                - cell "phone Позвонить eye edit delete" [ref=e640]:
+                  - generic [ref=e641]:
+                    - button "phone Позвонить" [ref=e643] [cursor=pointer]:
+                      - img "phone" [ref=e645]:
+                        - img [ref=e646]
+                      - generic [ref=e648]: Позвонить
+                    - button "eye" [ref=e650] [cursor=pointer]:
+                      - img "eye" [ref=e652]:
+                        - img [ref=e653]
+                    - button "edit" [ref=e656] [cursor=pointer]:
+                      - img "edit" [ref=e658]:
+                        - img [ref=e659]
+                    - button "delete" [ref=e662] [cursor=pointer]:
+                      - img "delete" [ref=e664]:
+                        - img [ref=e665]
+              - row "user Sergeyteststatus Automation mail e2e.lead.1770041605702status@test.com phone +79001234702 Новый 02.02.2026 phone Позвонить eye edit delete" [ref=e667]:
+                - cell "user Sergeyteststatus Automation" [ref=e668]:
+                  - generic [ref=e669]:
+                    - img "user" [ref=e672]:
+                      - img [ref=e673]
+                    - generic [ref=e677]: Sergeyteststatus Automation
+                - cell "mail e2e.lead.1770041605702status@test.com phone +79001234702" [ref=e678]:
+                  - generic [ref=e679]:
+                    - generic [ref=e681]:
+                      - img "mail" [ref=e683]:
+                        - img [ref=e684]
+                      - link "e2e.lead.1770041605702status@test.com" [ref=e687] [cursor=pointer]:
+                        - /url: mailto:e2e.lead.1770041605702status@test.com
+                    - generic [ref=e689]:
+                      - img "phone" [ref=e691]:
+                        - img [ref=e692]
+                      - link "+79001234702" [ref=e695] [cursor=pointer]:
+                        - /url: tel:+79001234702
+                - cell "Новый" [ref=e696]:
+                  - generic [ref=e697]: Новый
+                - cell [ref=e699]
+                - cell "02.02.2026" [ref=e700]
+                - cell "phone Позвонить eye edit delete" [ref=e701]:
+                  - generic [ref=e702]:
+                    - button "phone Позвонить" [ref=e704] [cursor=pointer]:
+                      - img "phone" [ref=e706]:
+                        - img [ref=e707]
+                      - generic [ref=e709]: Позвонить
+                    - button "eye" [ref=e711] [cursor=pointer]:
+                      - img "eye" [ref=e713]:
+                        - img [ref=e714]
+                    - button "edit" [ref=e717] [cursor=pointer]:
+                      - img "edit" [ref=e719]:
+                        - img [ref=e720]
+                    - button "delete" [ref=e723] [cursor=pointer]:
+                      - img "delete" [ref=e725]:
+                        - img [ref=e726]
+              - row "user Olgatestsearch Automation mail e2e.lead.1770041602775search@test.com phone +79001234775 Новый 02.02.2026 phone Позвонить eye edit delete" [ref=e728]:
+                - cell "user Olgatestsearch Automation" [ref=e729]:
+                  - generic [ref=e730]:
+                    - img "user" [ref=e733]:
+                      - img [ref=e734]
+                    - generic [ref=e738]: Olgatestsearch Automation
+                - cell "mail e2e.lead.1770041602775search@test.com phone +79001234775" [ref=e739]:
+                  - generic [ref=e740]:
+                    - generic [ref=e742]:
+                      - img "mail" [ref=e744]:
+                        - img [ref=e745]
+                      - link "e2e.lead.1770041602775search@test.com" [ref=e748] [cursor=pointer]:
+                        - /url: mailto:e2e.lead.1770041602775search@test.com
+                    - generic [ref=e750]:
+                      - img "phone" [ref=e752]:
+                        - img [ref=e753]
+                      - link "+79001234775" [ref=e756] [cursor=pointer]:
+                        - /url: tel:+79001234775
+                - cell "Новый" [ref=e757]:
+                  - generic [ref=e758]: Новый
+                - cell [ref=e760]
+                - cell "02.02.2026" [ref=e761]
+                - cell "phone Позвонить eye edit delete" [ref=e762]:
+                  - generic [ref=e763]:
+                    - button "phone Позвонить" [ref=e765] [cursor=pointer]:
+                      - img "phone" [ref=e767]:
+                        - img [ref=e768]
+                      - generic [ref=e770]: Позвонить
+                    - button "eye" [ref=e772] [cursor=pointer]:
+                      - img "eye" [ref=e774]:
+                        - img [ref=e775]
+                    - button "edit" [ref=e778] [cursor=pointer]:
+                      - img "edit" [ref=e780]:
+                        - img [ref=e781]
+                    - button "delete" [ref=e784] [cursor=pointer]:
+                      - img "delete" [ref=e786]:
+                        - img [ref=e787]
+              - row "user Dmitrytest Automation bank TestCompany 8188 mail e2e.lead.1770041588188@test.com phone +79001234188 Новый 02.02.2026 phone Позвонить eye edit delete" [ref=e789]:
+                - cell "user Dmitrytest Automation bank TestCompany 8188" [ref=e790]:
+                  - generic [ref=e791]:
+                    - img "user" [ref=e794]:
+                      - img [ref=e795]
+                    - generic [ref=e798]:
+                      - generic [ref=e799]: Dmitrytest Automation
+                      - generic [ref=e800]:
+                        - img "bank" [ref=e801]:
+                          - img [ref=e802]
+                        - text: TestCompany 8188
+                - cell "mail e2e.lead.1770041588188@test.com phone +79001234188" [ref=e804]:
+                  - generic [ref=e805]:
+                    - generic [ref=e807]:
+                      - img "mail" [ref=e809]:
+                        - img [ref=e810]
+                      - link "e2e.lead.1770041588188@test.com" [ref=e813] [cursor=pointer]:
+                        - /url: mailto:e2e.lead.1770041588188@test.com
+                    - generic [ref=e815]:
+                      - img "phone" [ref=e817]:
+                        - img [ref=e818]
+                      - link "+79001234188" [ref=e821] [cursor=pointer]:
+                        - /url: tel:+79001234188
+                - cell "Новый" [ref=e822]:
+                  - generic [ref=e823]: Новый
+                - cell [ref=e825]
+                - cell "02.02.2026" [ref=e826]
+                - cell "phone Позвонить eye edit delete" [ref=e827]:
+                  - generic [ref=e828]:
+                    - button "phone Позвонить" [ref=e830] [cursor=pointer]:
+                      - img "phone" [ref=e832]:
+                        - img [ref=e833]
+                      - generic [ref=e835]: Позвонить
+                    - button "eye" [ref=e837] [cursor=pointer]:
+                      - img "eye" [ref=e839]:
+                        - img [ref=e840]
+                    - button "edit" [ref=e843] [cursor=pointer]:
+                      - img "edit" [ref=e845]:
+                        - img [ref=e846]
+                    - button "delete" [ref=e849] [cursor=pointer]:
+                      - img "delete" [ref=e851]:
+                        - img [ref=e852]
+              - row "user Mariatestsearch Automation mail e2e.lead.1770041518489search@test.com phone +79001234489 Новый 02.02.2026 phone Позвонить eye edit delete" [ref=e854]:
+                - cell "user Mariatestsearch Automation" [ref=e855]:
+                  - generic [ref=e856]:
+                    - img "user" [ref=e859]:
+                      - img [ref=e860]
+                    - generic [ref=e864]: Mariatestsearch Automation
+                - cell "mail e2e.lead.1770041518489search@test.com phone +79001234489" [ref=e865]:
+                  - generic [ref=e866]:
+                    - generic [ref=e868]:
+                      - img "mail" [ref=e870]:
+                        - img [ref=e871]
+                      - link "e2e.lead.1770041518489search@test.com" [ref=e874] [cursor=pointer]:
+                        - /url: mailto:e2e.lead.1770041518489search@test.com
+                    - generic [ref=e876]:
+                      - img "phone" [ref=e878]:
+                        - img [ref=e879]
+                      - link "+79001234489" [ref=e882] [cursor=pointer]:
+                        - /url: tel:+79001234489
+                - cell "Новый" [ref=e883]:
+                  - generic [ref=e884]: Новый
+                - cell [ref=e886]
+                - cell "02.02.2026" [ref=e887]
+                - cell "phone Позвонить eye edit delete" [ref=e888]:
+                  - generic [ref=e889]:
+                    - button "phone Позвонить" [ref=e891] [cursor=pointer]:
+                      - img "phone" [ref=e893]:
+                        - img [ref=e894]
+                      - generic [ref=e896]: Позвонить
+                    - button "eye" [ref=e898] [cursor=pointer]:
+                      - img "eye" [ref=e900]:
+                        - img [ref=e901]
+                    - button "edit" [ref=e904] [cursor=pointer]:
+                      - img "edit" [ref=e906]:
+                        - img [ref=e907]
+                    - button "delete" [ref=e910] [cursor=pointer]:
+                      - img "delete" [ref=e912]:
+                        - img [ref=e913]
+              - row "user Ivantest Automation bank TestCompany 4202 mail e2e.lead.1770041504202@test.com phone +79001234202 Новый 02.02.2026 phone Позвонить eye edit delete" [ref=e915]:
+                - cell "user Ivantest Automation bank TestCompany 4202" [ref=e916]:
+                  - generic [ref=e917]:
+                    - img "user" [ref=e920]:
+                      - img [ref=e921]
+                    - generic [ref=e924]:
+                      - generic [ref=e925]: Ivantest Automation
+                      - generic [ref=e926]:
+                        - img "bank" [ref=e927]:
+                          - img [ref=e928]
+                        - text: TestCompany 4202
+                - cell "mail e2e.lead.1770041504202@test.com phone +79001234202" [ref=e930]:
+                  - generic [ref=e931]:
+                    - generic [ref=e933]:
+                      - img "mail" [ref=e935]:
+                        - img [ref=e936]
+                      - link "e2e.lead.1770041504202@test.com" [ref=e939] [cursor=pointer]:
+                        - /url: mailto:e2e.lead.1770041504202@test.com
+                    - generic [ref=e941]:
+                      - img "phone" [ref=e943]:
+                        - img [ref=e944]
+                      - link "+79001234202" [ref=e947] [cursor=pointer]:
+                        - /url: tel:+79001234202
+                - cell "Новый" [ref=e948]:
+                  - generic [ref=e949]: Новый
+                - cell [ref=e951]
+                - cell "02.02.2026" [ref=e952]
+                - cell "phone Позвонить eye edit delete" [ref=e953]:
+                  - generic [ref=e954]:
+                    - button "phone Позвонить" [ref=e956] [cursor=pointer]:
+                      - img "phone" [ref=e958]:
+                        - img [ref=e959]
+                      - generic [ref=e961]: Позвонить
+                    - button "eye" [ref=e963] [cursor=pointer]:
+                      - img "eye" [ref=e965]:
+                        - img [ref=e966]
+                    - button "edit" [ref=e969] [cursor=pointer]:
+                      - img "edit" [ref=e971]:
+                        - img [ref=e972]
+                    - button "delete" [ref=e975] [cursor=pointer]:
+                      - img "delete" [ref=e977]:
+                        - img [ref=e978]
+              - row "user Annateststatus Automation mail e2e.lead.1770037273101status@test.com phone +79001234101 Новый 02.02.2026 phone Позвонить eye edit delete" [ref=e980]:
+                - cell "user Annateststatus Automation" [ref=e981]:
+                  - generic [ref=e982]:
+                    - img "user" [ref=e985]:
+                      - img [ref=e986]
+                    - generic [ref=e990]: Annateststatus Automation
+                - cell "mail e2e.lead.1770037273101status@test.com phone +79001234101" [ref=e991]:
+                  - generic [ref=e992]:
+                    - generic [ref=e994]:
+                      - img "mail" [ref=e996]:
+                        - img [ref=e997]
+                      - link "e2e.lead.1770037273101status@test.com" [ref=e1000] [cursor=pointer]:
+                        - /url: mailto:e2e.lead.1770037273101status@test.com
+                    - generic [ref=e1002]:
+                      - img "phone" [ref=e1004]:
+                        - img [ref=e1005]
+                      - link "+79001234101" [ref=e1008] [cursor=pointer]:
+                        - /url: tel:+79001234101
+                - cell "Новый" [ref=e1009]:
+                  - generic [ref=e1010]: Новый
+                - cell [ref=e1012]
+                - cell "02.02.2026" [ref=e1013]
+                - cell "phone Позвонить eye edit delete" [ref=e1014]:
+                  - generic [ref=e1015]:
+                    - button "phone Позвонить" [ref=e1017] [cursor=pointer]:
+                      - img "phone" [ref=e1019]:
+                        - img [ref=e1020]
+                      - generic [ref=e1022]: Позвонить
+                    - button "eye" [ref=e1024] [cursor=pointer]:
+                      - img "eye" [ref=e1026]:
+                        - img [ref=e1027]
+                    - button "edit" [ref=e1030] [cursor=pointer]:
+                      - img "edit" [ref=e1032]:
+                        - img [ref=e1033]
+                    - button "delete" [ref=e1036] [cursor=pointer]:
+                      - img "delete" [ref=e1038]:
+                        - img [ref=e1039]
+              - row "user Ivantestsearch Automation mail e2e.lead.1770037187610search@test.com phone +79001234610 Новый 02.02.2026 phone Позвонить eye edit delete" [ref=e1041]:
+                - cell "user Ivantestsearch Automation" [ref=e1042]:
+                  - generic [ref=e1043]:
+                    - img "user" [ref=e1046]:
+                      - img [ref=e1047]
+                    - generic [ref=e1051]: Ivantestsearch Automation
+                - cell "mail e2e.lead.1770037187610search@test.com phone +79001234610" [ref=e1052]:
+                  - generic [ref=e1053]:
+                    - generic [ref=e1055]:
+                      - img "mail" [ref=e1057]:
+                        - img [ref=e1058]
+                      - link "e2e.lead.1770037187610search@test.com" [ref=e1061] [cursor=pointer]:
+                        - /url: mailto:e2e.lead.1770037187610search@test.com
+                    - generic [ref=e1063]:
+                      - img "phone" [ref=e1065]:
+                        - img [ref=e1066]
+                      - link "+79001234610" [ref=e1069] [cursor=pointer]:
+                        - /url: tel:+79001234610
+                - cell "Новый" [ref=e1070]:
+                  - generic [ref=e1071]: Новый
+                - cell [ref=e1073]
+                - cell "02.02.2026" [ref=e1074]
+                - cell "phone Позвонить eye edit delete" [ref=e1075]:
+                  - generic [ref=e1076]:
+                    - button "phone Позвонить" [ref=e1078] [cursor=pointer]:
+                      - img "phone" [ref=e1080]:
+                        - img [ref=e1081]
+                      - generic [ref=e1083]: Позвонить
+                    - button "eye" [ref=e1085] [cursor=pointer]:
+                      - img "eye" [ref=e1087]:
+                        - img [ref=e1088]
+                    - button "edit" [ref=e1091] [cursor=pointer]:
+                      - img "edit" [ref=e1093]:
+                        - img [ref=e1094]
+                    - button "delete" [ref=e1097] [cursor=pointer]:
+                      - img "delete" [ref=e1099]:
+                        - img [ref=e1100]
+              - row "user Elenatest Automation bank TestCompany 9795 mail e2e.lead.1770037019795@test.com phone +79001234795 Новый 02.02.2026 phone Позвонить eye edit delete" [ref=e1102]:
+                - cell "user Elenatest Automation bank TestCompany 9795" [ref=e1103]:
+                  - generic [ref=e1104]:
+                    - img "user" [ref=e1107]:
+                      - img [ref=e1108]
+                    - generic [ref=e1111]:
+                      - generic [ref=e1112]: Elenatest Automation
+                      - generic [ref=e1113]:
+                        - img "bank" [ref=e1114]:
+                          - img [ref=e1115]
+                        - text: TestCompany 9795
+                - cell "mail e2e.lead.1770037019795@test.com phone +79001234795" [ref=e1117]:
+                  - generic [ref=e1118]:
+                    - generic [ref=e1120]:
+                      - img "mail" [ref=e1122]:
+                        - img [ref=e1123]
+                      - link "e2e.lead.1770037019795@test.com" [ref=e1126] [cursor=pointer]:
+                        - /url: mailto:e2e.lead.1770037019795@test.com
+                    - generic [ref=e1128]:
+                      - img "phone" [ref=e1130]:
+                        - img [ref=e1131]
+                      - link "+79001234795" [ref=e1134] [cursor=pointer]:
+                        - /url: tel:+79001234795
+                - cell "Новый" [ref=e1135]:
+                  - generic [ref=e1136]: Новый
+                - cell [ref=e1138]
+                - cell "02.02.2026" [ref=e1139]
+                - cell "phone Позвонить eye edit delete" [ref=e1140]:
+                  - generic [ref=e1141]:
+                    - button "phone Позвонить" [ref=e1143] [cursor=pointer]:
+                      - img "phone" [ref=e1145]:
+                        - img [ref=e1146]
+                      - generic [ref=e1148]: Позвонить
+                    - button "eye" [ref=e1150] [cursor=pointer]:
+                      - img "eye" [ref=e1152]:
+                        - img [ref=e1153]
+                    - button "edit" [ref=e1156] [cursor=pointer]:
+                      - img "edit" [ref=e1158]:
+                        - img [ref=e1159]
+                    - button "delete" [ref=e1162] [cursor=pointer]:
+                      - img "delete" [ref=e1164]:
+                        - img [ref=e1165]
+              - row "user Mariatest Automation bank TestCompany 6713 mail e2e.lead.1770036106713@test.com phone +79001234713 Новый 02.02.2026 phone Позвонить eye edit delete" [ref=e1167]:
+                - cell "user Mariatest Automation bank TestCompany 6713" [ref=e1168]:
+                  - generic [ref=e1169]:
+                    - img "user" [ref=e1172]:
+                      - img [ref=e1173]
+                    - generic [ref=e1176]:
+                      - generic [ref=e1177]: Mariatest Automation
+                      - generic [ref=e1178]:
+                        - img "bank" [ref=e1179]:
+                          - img [ref=e1180]
+                        - text: TestCompany 6713
+                - cell "mail e2e.lead.1770036106713@test.com phone +79001234713" [ref=e1182]:
+                  - generic [ref=e1183]:
+                    - generic [ref=e1185]:
+                      - img "mail" [ref=e1187]:
+                        - img [ref=e1188]
+                      - link "e2e.lead.1770036106713@test.com" [ref=e1191] [cursor=pointer]:
+                        - /url: mailto:e2e.lead.1770036106713@test.com
+                    - generic [ref=e1193]:
+                      - img "phone" [ref=e1195]:
+                        - img [ref=e1196]
+                      - link "+79001234713" [ref=e1199] [cursor=pointer]:
+                        - /url: tel:+79001234713
+                - cell "Новый" [ref=e1200]:
+                  - generic [ref=e1201]: Новый
+                - cell [ref=e1203]
+                - cell "02.02.2026" [ref=e1204]
+                - cell "phone Позвонить eye edit delete" [ref=e1205]:
+                  - generic [ref=e1206]:
+                    - button "phone Позвонить" [ref=e1208] [cursor=pointer]:
+                      - img "phone" [ref=e1210]:
+                        - img [ref=e1211]
+                      - generic [ref=e1213]: Позвонить
+                    - button "eye" [ref=e1215] [cursor=pointer]:
+                      - img "eye" [ref=e1217]:
+                        - img [ref=e1218]
+                    - button "edit" [ref=e1221] [cursor=pointer]:
+                      - img "edit" [ref=e1223]:
+                        - img [ref=e1224]
+                    - button "delete" [ref=e1227] [cursor=pointer]:
+                      - img "delete" [ref=e1229]:
+                        - img [ref=e1230]
+              - row "user Olgatest Automation bank TestCompany 2047 mail e2e.lead.1770035822047@test.com phone +79001234047 Новый 02.02.2026 phone Позвонить eye edit delete" [ref=e1232]:
+                - cell "user Olgatest Automation bank TestCompany 2047" [ref=e1233]:
+                  - generic [ref=e1234]:
+                    - img "user" [ref=e1237]:
+                      - img [ref=e1238]
+                    - generic [ref=e1241]:
+                      - generic [ref=e1242]: Olgatest Automation
+                      - generic [ref=e1243]:
+                        - img "bank" [ref=e1244]:
+                          - img [ref=e1245]
+                        - text: TestCompany 2047
+                - cell "mail e2e.lead.1770035822047@test.com phone +79001234047" [ref=e1247]:
+                  - generic [ref=e1248]:
+                    - generic [ref=e1250]:
+                      - img "mail" [ref=e1252]:
+                        - img [ref=e1253]
+                      - link "e2e.lead.1770035822047@test.com" [ref=e1256] [cursor=pointer]:
+                        - /url: mailto:e2e.lead.1770035822047@test.com
+                    - generic [ref=e1258]:
+                      - img "phone" [ref=e1260]:
+                        - img [ref=e1261]
+                      - link "+79001234047" [ref=e1264] [cursor=pointer]:
+                        - /url: tel:+79001234047
+                - cell "Новый" [ref=e1265]:
+                  - generic [ref=e1266]: Новый
+                - cell [ref=e1268]
+                - cell "02.02.2026" [ref=e1269]
+                - cell "phone Позвонить eye edit delete" [ref=e1270]:
+                  - generic [ref=e1271]:
+                    - button "phone Позвонить" [ref=e1273] [cursor=pointer]:
+                      - img "phone" [ref=e1275]:
+                        - img [ref=e1276]
+                      - generic [ref=e1278]: Позвонить
+                    - button "eye" [ref=e1280] [cursor=pointer]:
+                      - img "eye" [ref=e1282]:
+                        - img [ref=e1283]
+                    - button "edit" [ref=e1286] [cursor=pointer]:
+                      - img "edit" [ref=e1288]:
+                        - img [ref=e1289]
+                    - button "delete" [ref=e1292] [cursor=pointer]:
+                      - img "delete" [ref=e1294]:
+                        - img [ref=e1295]
+              - row "user Ivantest Automation bank TestCompany 9730 mail e2e.lead.1770035279730@test.com phone +79001234730 Новый 02.02.2026 phone Позвонить eye edit delete" [ref=e1297]:
+                - cell "user Ivantest Automation bank TestCompany 9730" [ref=e1298]:
+                  - generic [ref=e1299]:
+                    - img "user" [ref=e1302]:
+                      - img [ref=e1303]
+                    - generic [ref=e1306]:
+                      - generic [ref=e1307]: Ivantest Automation
+                      - generic [ref=e1308]:
+                        - img "bank" [ref=e1309]:
+                          - img [ref=e1310]
+                        - text: TestCompany 9730
+                - cell "mail e2e.lead.1770035279730@test.com phone +79001234730" [ref=e1312]:
+                  - generic [ref=e1313]:
+                    - generic [ref=e1315]:
+                      - img "mail" [ref=e1317]:
+                        - img [ref=e1318]
+                      - link "e2e.lead.1770035279730@test.com" [ref=e1321] [cursor=pointer]:
+                        - /url: mailto:e2e.lead.1770035279730@test.com
+                    - generic [ref=e1323]:
+                      - img "phone" [ref=e1325]:
+                        - img [ref=e1326]
+                      - link "+79001234730" [ref=e1329] [cursor=pointer]:
+                        - /url: tel:+79001234730
+                - cell "Новый" [ref=e1330]:
+                  - generic [ref=e1331]: Новый
+                - cell [ref=e1333]
+                - cell "02.02.2026" [ref=e1334]
+                - cell "phone Позвонить eye edit delete" [ref=e1335]:
+                  - generic [ref=e1336]:
+                    - button "phone Позвонить" [ref=e1338] [cursor=pointer]:
+                      - img "phone" [ref=e1340]:
+                        - img [ref=e1341]
+                      - generic [ref=e1343]: Позвонить
+                    - button "eye" [ref=e1345] [cursor=pointer]:
+                      - img "eye" [ref=e1347]:
+                        - img [ref=e1348]
+                    - button "edit" [ref=e1351] [cursor=pointer]:
+                      - img "edit" [ref=e1353]:
+                        - img [ref=e1354]
+                    - button "delete" [ref=e1357] [cursor=pointer]:
+                      - img "delete" [ref=e1359]:
+                        - img [ref=e1360]
+              - row "user Elenatest Automation bank TestCompany 0443 mail e2e.lead.1770035140443@test.com phone +79001234443 Новый 02.02.2026 phone Позвонить eye edit delete" [ref=e1362]:
+                - cell "user Elenatest Automation bank TestCompany 0443" [ref=e1363]:
+                  - generic [ref=e1364]:
+                    - img "user" [ref=e1367]:
+                      - img [ref=e1368]
+                    - generic [ref=e1371]:
+                      - generic [ref=e1372]: Elenatest Automation
+                      - generic [ref=e1373]:
+                        - img "bank" [ref=e1374]:
+                          - img [ref=e1375]
+                        - text: TestCompany 0443
+                - cell "mail e2e.lead.1770035140443@test.com phone +79001234443" [ref=e1377]:
+                  - generic [ref=e1378]:
+                    - generic [ref=e1380]:
+                      - img "mail" [ref=e1382]:
+                        - img [ref=e1383]
+                      - link "e2e.lead.1770035140443@test.com" [ref=e1386] [cursor=pointer]:
+                        - /url: mailto:e2e.lead.1770035140443@test.com
+                    - generic [ref=e1388]:
+                      - img "phone" [ref=e1390]:
+                        - img [ref=e1391]
+                      - link "+79001234443" [ref=e1394] [cursor=pointer]:
+                        - /url: tel:+79001234443
+                - cell "Новый" [ref=e1395]:
+                  - generic [ref=e1396]: Новый
+                - cell [ref=e1398]
+                - cell "02.02.2026" [ref=e1399]
+                - cell "phone Позвонить eye edit delete" [ref=e1400]:
+                  - generic [ref=e1401]:
+                    - button "phone Позвонить" [ref=e1403] [cursor=pointer]:
+                      - img "phone" [ref=e1405]:
+                        - img [ref=e1406]
+                      - generic [ref=e1408]: Позвонить
+                    - button "eye" [ref=e1410] [cursor=pointer]:
+                      - img "eye" [ref=e1412]:
+                        - img [ref=e1413]
+                    - button "edit" [ref=e1416] [cursor=pointer]:
+                      - img "edit" [ref=e1418]:
+                        - img [ref=e1419]
+                    - button "delete" [ref=e1422] [cursor=pointer]:
+                      - img "delete" [ref=e1424]:
+                        - img [ref=e1425]
+              - row "user Mariatest Automation bank TestCompany 3665 Updated mail e2e.lead.1770035043665@test.com phone +79001234665 Новый 02.02.2026 phone Позвонить eye edit delete" [ref=e1427]:
+                - cell "user Mariatest Automation bank TestCompany 3665 Updated" [ref=e1428]:
+                  - generic [ref=e1429]:
+                    - img "user" [ref=e1432]:
+                      - img [ref=e1433]
+                    - generic [ref=e1436]:
+                      - generic [ref=e1437]: Mariatest Automation
+                      - generic [ref=e1438]:
+                        - img "bank" [ref=e1439]:
+                          - img [ref=e1440]
+                        - text: TestCompany 3665 Updated
+                - cell "mail e2e.lead.1770035043665@test.com phone +79001234665" [ref=e1442]:
+                  - generic [ref=e1443]:
+                    - generic [ref=e1445]:
+                      - img "mail" [ref=e1447]:
+                        - img [ref=e1448]
+                      - link "e2e.lead.1770035043665@test.com" [ref=e1451] [cursor=pointer]:
+                        - /url: mailto:e2e.lead.1770035043665@test.com
+                    - generic [ref=e1453]:
+                      - img "phone" [ref=e1455]:
+                        - img [ref=e1456]
+                      - link "+79001234665" [ref=e1459] [cursor=pointer]:
+                        - /url: tel:+79001234665
+                - cell "Новый" [ref=e1460]:
+                  - generic [ref=e1461]: Новый
+                - cell [ref=e1463]
+                - cell "02.02.2026" [ref=e1464]
+                - cell "phone Позвонить eye edit delete" [ref=e1465]:
+                  - generic [ref=e1466]:
+                    - button "phone Позвонить" [ref=e1468] [cursor=pointer]:
+                      - img "phone" [ref=e1470]:
+                        - img [ref=e1471]
+                      - generic [ref=e1473]: Позвонить
+                    - button "eye" [ref=e1475] [cursor=pointer]:
+                      - img "eye" [ref=e1477]:
+                        - img [ref=e1478]
+                    - button "edit" [ref=e1481] [cursor=pointer]:
+                      - img "edit" [ref=e1483]:
+                        - img [ref=e1484]
+                    - button "delete" [ref=e1487] [cursor=pointer]:
+                      - img "delete" [ref=e1489]:
+                        - img [ref=e1490]
+              - row "user Olgatest Automation bank TestCompany 9167 mail e2e.lead.1770034849167@test.com phone +79001234167 Новый 02.02.2026 phone Позвонить eye edit delete" [ref=e1492]:
+                - cell "user Olgatest Automation bank TestCompany 9167" [ref=e1493]:
+                  - generic [ref=e1494]:
+                    - img "user" [ref=e1497]:
+                      - img [ref=e1498]
+                    - generic [ref=e1501]:
+                      - generic [ref=e1502]: Olgatest Automation
+                      - generic [ref=e1503]:
+                        - img "bank" [ref=e1504]:
+                          - img [ref=e1505]
+                        - text: TestCompany 9167
+                - cell "mail e2e.lead.1770034849167@test.com phone +79001234167" [ref=e1507]:
+                  - generic [ref=e1508]:
+                    - generic [ref=e1510]:
+                      - img "mail" [ref=e1512]:
+                        - img [ref=e1513]
+                      - link "e2e.lead.1770034849167@test.com" [ref=e1516] [cursor=pointer]:
+                        - /url: mailto:e2e.lead.1770034849167@test.com
+                    - generic [ref=e1518]:
+                      - img "phone" [ref=e1520]:
+                        - img [ref=e1521]
+                      - link "+79001234167" [ref=e1524] [cursor=pointer]:
+                        - /url: tel:+79001234167
+                - cell "Новый" [ref=e1525]:
+                  - generic [ref=e1526]: Новый
+                - cell [ref=e1528]
+                - cell "02.02.2026" [ref=e1529]
+                - cell "phone Позвонить eye edit delete" [ref=e1530]:
+                  - generic [ref=e1531]:
+                    - button "phone Позвонить" [ref=e1533] [cursor=pointer]:
+                      - img "phone" [ref=e1535]:
+                        - img [ref=e1536]
+                      - generic [ref=e1538]: Позвонить
+                    - button "eye" [ref=e1540] [cursor=pointer]:
+                      - img "eye" [ref=e1542]:
+                        - img [ref=e1543]
+                    - button "edit" [ref=e1546] [cursor=pointer]:
+                      - img "edit" [ref=e1548]:
+                        - img [ref=e1549]
+                    - button "delete" [ref=e1552] [cursor=pointer]:
+                      - img "delete" [ref=e1554]:
+                        - img [ref=e1555]
+          - list [ref=e1557]:
+            - listitem [ref=e1558]: 1-20 из 64
+            - listitem "Назад" [ref=e1559]:
+              - button "left" [disabled] [ref=e1560]:
+                - img "left" [ref=e1561]:
+                  - img [ref=e1562]
+            - listitem "1" [ref=e1564] [cursor=pointer]:
+              - generic [ref=e1565]: "1"
+            - listitem "2" [ref=e1566] [cursor=pointer]:
+              - generic [ref=e1567]: "2"
+            - listitem "3" [ref=e1568] [cursor=pointer]:
+              - generic [ref=e1569]: "3"
+            - listitem "4" [ref=e1570] [cursor=pointer]:
+              - generic [ref=e1571]: "4"
+            - listitem "Вперед" [ref=e1572] [cursor=pointer]:
+              - button "right" [ref=e1573]:
+                - img "right" [ref=e1574]:
+                  - img [ref=e1575]
+            - listitem [ref=e1577]:
+              - generic "размер страницы" [ref=e1578] [cursor=pointer]:
+                - generic [ref=e1580]:
+                  - combobox "размер страницы" [ref=e1582]
+                  - generic "20 / стр." [ref=e1583]
+                - generic:
+                  - img:
+                    - img
+              - generic [ref=e1584]:
+                - text: Перейти
+                - textbox "Страница" [ref=e1585]
+                - text: Страница
+```

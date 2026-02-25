@@ -32,6 +32,7 @@ export class CrmReferenceService {
         country,
         ordering,
         page,
+        pageSize,
         search,
     }: {
         country?: number,
@@ -44,6 +45,10 @@ export class CrmReferenceService {
          */
         page?: number,
         /**
+         * Number of results to return per page.
+         */
+        pageSize?: number,
+        /**
          * A search term.
          */
         search?: string,
@@ -55,6 +60,7 @@ export class CrmReferenceService {
                 'country': country,
                 'ordering': ordering,
                 'page': page,
+                'page_size': pageSize,
                 'search': search,
             },
         });
@@ -87,12 +93,17 @@ export class CrmReferenceService {
      */
     public static clientTypesList({
         page,
+        pageSize,
         search,
     }: {
         /**
          * A page number within the paginated result set.
          */
         page?: number,
+        /**
+         * Number of results to return per page.
+         */
+        pageSize?: number,
         /**
          * A search term.
          */
@@ -103,6 +114,7 @@ export class CrmReferenceService {
             url: '/api/client-types/',
             query: {
                 'page': page,
+                'page_size': pageSize,
                 'search': search,
             },
         });
@@ -135,12 +147,17 @@ export class CrmReferenceService {
      */
     public static closingReasonsList({
         page,
+        pageSize,
         search,
     }: {
         /**
          * A page number within the paginated result set.
          */
         page?: number,
+        /**
+         * Number of results to return per page.
+         */
+        pageSize?: number,
         /**
          * A search term.
          */
@@ -151,6 +168,7 @@ export class CrmReferenceService {
             url: '/api/closing-reasons/',
             query: {
                 'page': page,
+                'page_size': pageSize,
                 'search': search,
             },
         });
@@ -185,6 +203,7 @@ export class CrmReferenceService {
         name,
         ordering,
         page,
+        pageSize,
         search,
     }: {
         name?: string,
@@ -197,6 +216,10 @@ export class CrmReferenceService {
          */
         page?: number,
         /**
+         * Number of results to return per page.
+         */
+        pageSize?: number,
+        /**
          * A search term.
          */
         search?: string,
@@ -208,6 +231,7 @@ export class CrmReferenceService {
                 'name': name,
                 'ordering': ordering,
                 'page': page,
+                'page_size': pageSize,
                 'search': search,
             },
         });
@@ -241,6 +265,7 @@ export class CrmReferenceService {
     public static currenciesList({
         ordering,
         page,
+        pageSize,
         search,
     }: {
         /**
@@ -252,6 +277,10 @@ export class CrmReferenceService {
          */
         page?: number,
         /**
+         * Number of results to return per page.
+         */
+        pageSize?: number,
+        /**
          * A search term.
          */
         search?: string,
@@ -262,6 +291,7 @@ export class CrmReferenceService {
             query: {
                 'ordering': ordering,
                 'page': page,
+                'page_size': pageSize,
                 'search': search,
             },
         });
@@ -296,6 +326,7 @@ export class CrmReferenceService {
         id,
         ordering,
         page,
+        pageSize,
         search,
     }: {
         /**
@@ -311,6 +342,10 @@ export class CrmReferenceService {
          */
         page?: number,
         /**
+         * Number of results to return per page.
+         */
+        pageSize?: number,
+        /**
          * A search term.
          */
         search?: string,
@@ -324,6 +359,7 @@ export class CrmReferenceService {
             query: {
                 'ordering': ordering,
                 'page': page,
+                'page_size': pageSize,
                 'search': search,
             },
         });
@@ -335,12 +371,17 @@ export class CrmReferenceService {
      */
     public static industriesList({
         page,
+        pageSize,
         search,
     }: {
         /**
          * A page number within the paginated result set.
          */
         page?: number,
+        /**
+         * Number of results to return per page.
+         */
+        pageSize?: number,
         /**
          * A search term.
          */
@@ -351,6 +392,7 @@ export class CrmReferenceService {
             url: '/api/industries/',
             query: {
                 'page': page,
+                'page_size': pageSize,
                 'search': search,
             },
         });
@@ -383,12 +425,17 @@ export class CrmReferenceService {
      */
     public static leadSourcesList({
         page,
+        pageSize,
         search,
     }: {
         /**
          * A page number within the paginated result set.
          */
         page?: number,
+        /**
+         * Number of results to return per page.
+         */
+        pageSize?: number,
         /**
          * A search term.
          */
@@ -399,6 +446,7 @@ export class CrmReferenceService {
             url: '/api/lead-sources/',
             query: {
                 'page': page,
+                'page_size': pageSize,
                 'search': search,
             },
         });
@@ -431,12 +479,17 @@ export class CrmReferenceService {
      */
     public static productCategoriesList({
         page,
+        pageSize,
         search,
     }: {
         /**
          * A page number within the paginated result set.
          */
         page?: number,
+        /**
+         * Number of results to return per page.
+         */
+        pageSize?: number,
         /**
          * A search term.
          */
@@ -447,6 +500,7 @@ export class CrmReferenceService {
             url: '/api/product-categories/',
             query: {
                 'page': page,
+                'page_size': pageSize,
                 'search': search,
             },
         });

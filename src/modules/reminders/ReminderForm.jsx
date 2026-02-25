@@ -1,22 +1,22 @@
-import React, { useEffect, useState } from 'react';
-import { useForm } from 'react-hook-form';
-import { z } from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
 import dayjs from 'dayjs';
-import { ArrowLeft, Save, Bell } from 'lucide-react';
+import { ArrowLeft, Bell, Save } from 'lucide-react';
+import { useEffect, useState } from 'react';
+import { useForm } from 'react-hook-form';
+import { z } from 'zod';
 
-import { navigate } from '../../router';
-import { getReminder, createReminder, updateReminder } from '../../lib/api/reminders';
 import EntitySelect from '../../components/EntitySelect.jsx';
-import { getUsers, getUser } from '../../lib/api';
-import { Card } from '../../components/ui/card.jsx';
+import { DatePicker } from '../../components/ui-DatePicker.jsx';
 import { Button } from '../../components/ui/button.jsx';
+import { Card } from '../../components/ui/card.jsx';
 import { Input } from '../../components/ui/input.jsx';
-import { Textarea } from '../../components/ui/textarea.jsx';
 import { Label } from '../../components/ui/label.jsx';
 import { Switch } from '../../components/ui/switch.jsx';
-import { DatePicker } from '../../components/ui-DatePicker.jsx';
+import { Textarea } from '../../components/ui/textarea.jsx';
 import { toast } from '../../components/ui/use-toast.js';
+import { getUser, getUsers } from '../../lib/api';
+import { createReminder, getReminder, updateReminder } from '../../lib/api/reminders';
+import { navigate } from '../../router';
 
 const schema = z.object({
   subject: z.string().min(1, 'Введите тему напоминания'),
@@ -140,25 +140,26 @@ function ReminderForm({ id }) {
           </div>
 
           <div>
-            <Label>Дата и время напоминания *</Label>
-            <DatePicker value={reminderDate || null} onChange={(val) => setValue('reminder_date', val)} format="YYYY-MM-DD" />
+            <Label htmlFor="reminder_date">Дата и время напоминания *</Label>
+            <DatePicker id="reminder_date" value={reminderDate || null} onChange={(val) => setValue('reminder_date', val)} format="YYYY-MM-DD" />
             {errors.reminder_date && <p className="text-xs text-destructive">{errors.reminder_date.message}</p>}
           </div>
 
           <div className="flex flex-wrap gap-6">
             <div className="flex items-center gap-2">
-              <Switch checked={!!activeValue} onCheckedChange={(val) => setValue('active', val)} />
-              <Label>Активно</Label>
+              <Switch id="active" checked={!!activeValue} onCheckedChange={(val) => setValue('active', val)} />
+              <Label htmlFor="active">Активно</Label>
             </div>
             <div className="flex items-center gap-2">
-              <Switch checked={!!emailValue} onCheckedChange={(val) => setValue('send_notification_email', val)} />
-              <Label>Email уведомление</Label>
+              <Switch id="send_notification_email" checked={!!emailValue} onCheckedChange={(val) => setValue('send_notification_email', val)} />
+              <Label htmlFor="send_notification_email">Email уведомление</Label>
             </div>
           </div>
 
           <div>
-            <Label>Владелец</Label>
+            <Label htmlFor="owner">Владелец</Label>
             <EntitySelect
+              id="owner"
               placeholder="Выберите пользователя"
               fetchList={getUsers}
               fetchById={getUser}

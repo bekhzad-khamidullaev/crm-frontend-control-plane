@@ -1,19 +1,20 @@
-import React, { useState, useEffect, useMemo } from 'react';
-import { DollarSign, User, Building2 } from 'lucide-react';
+import { Building2, DollarSign, User } from 'lucide-react';
+import { useEffect, useMemo, useState } from 'react';
 
-import { navigate } from '../../router';
-import { getDeals, deleteDeal, dealsApi } from '../../lib/api/client';
-import { getStages } from '../../lib/api/reference';
 import CallButton from '../../components/CallButton';
 import QuickActions from '../../components/QuickActions';
 import BulkActions from '../../components/ui-BulkActions';
 import EnhancedTable from '../../components/ui-EnhancedTable.jsx';
 import TableToolbar from '../../components/ui-TableToolbar.jsx';
-import { exportToCSV, exportToExcel } from '../../lib/utils/export';
-import { toast } from '../../components/ui/use-toast.js';
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '../../components/ui/dialog.jsx';
 import { Button } from '../../components/ui/button.jsx';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '../../components/ui/dialog.jsx';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../../components/ui/select.jsx';
+import { toast } from '../../components/ui/use-toast.js';
+import { dealsApi, deleteDeal, getDeals } from '../../lib/api/client';
+import { getStages } from '../../lib/api/reference';
+import { exportToCSV, exportToExcel } from '../../lib/utils/export';
+import { formatCurrency } from '../../lib/utils/format';
+import { navigate } from '../../router';
 
 function DealsList() {
   const [deals, setDeals] = useState([]);
@@ -285,20 +286,14 @@ function DealsList() {
       dataIndex: 'amount',
       key: 'amount',
       width: 130,
-      render: (amount, record) => {
-        const numeric = Number(amount);
-        const formatted = Number.isFinite(numeric)
-          ? numeric.toLocaleString('ru-RU')
-          : amount || '0';
-        return (
-          <div className="flex items-center gap-2">
-            <DollarSign className="h-4 w-4 text-emerald-600" />
-            <span className="font-medium">
-              {formatted} {record.currency_name || '₽'}
-            </span>
-          </div>
-        );
-      },
+      render: (amount, record) => (
+        <div className="flex items-center gap-2">
+          <DollarSign className="h-4 w-4 text-emerald-600" />
+          <span className="font-medium">
+            {formatCurrency(amount, record.currency_name || 'RUB')}
+          </span>
+        </div>
+      ),
       sorter: (a, b) => Number(a.amount || 0) - Number(b.amount || 0),
     },
     {

@@ -1,23 +1,24 @@
-import React, { useState, useEffect } from 'react';
 import {
-  Table,
-  Button,
-  Input,
-  Space,
-  Tag,
-  Card,
-  App,
-  Popconfirm,
-  Typography,
-  Select,
-} from 'antd';
-import {
-  PlusOutlined,
-  EditOutlined,
-  DeleteOutlined,
-  SearchOutlined,
+    DeleteOutlined,
+    EditOutlined,
+    PlusOutlined,
+    SearchOutlined,
 } from '@ant-design/icons';
-import { getProducts, deleteProduct, getProductCategories } from '../../lib/api/products';
+import {
+    App,
+    Button,
+    Card,
+    Input,
+    Popconfirm,
+    Select,
+    Space,
+    Table,
+    Tag,
+    Typography,
+} from 'antd';
+import { useEffect, useState } from 'react';
+import { deleteProduct, getProductCategories, getProducts } from '../../lib/api/products';
+import { formatCurrency } from '../../lib/utils/format';
 import { navigate } from '../../router';
 
 const { Title } = Typography;
@@ -166,9 +167,7 @@ function ProductsList() {
       key: 'price',
       width: 150,
       render: (price, record) => (
-        <span>
-          {Number(price || 0).toLocaleString('ru-RU')} {record.currency_name || '₽'}
-        </span>
+        <span>{formatCurrency(price, record.currency_name || 'RUB')}</span>
       ),
     },
     {

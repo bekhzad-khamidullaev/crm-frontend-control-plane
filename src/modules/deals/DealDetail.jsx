@@ -1,29 +1,30 @@
-import React, { useState, useEffect } from 'react';
 import dayjs from 'dayjs';
 import {
-  ArrowLeft,
-  Edit,
-  Trash2,
-  DollarSign,
-  Calendar,
-  Building2,
-  Clock,
-  Phone,
+    ArrowLeft,
+    Building2,
+    Calendar,
+    Clock,
+    DollarSign,
+    Edit,
+    Phone,
+    Trash2,
 } from 'lucide-react';
+import { useEffect, useState } from 'react';
 
-import { navigate } from '../../router';
-import { getDeal, deleteDeal, getCompany, getContact } from '../../lib/api/client';
-import { getDealCallLogs } from '../../lib/api/calls';
-import { getStages } from '../../lib/api/reference';
 import ActivityLog from '../../components/ActivityLog';
 import CallButton from '../../components/CallButton';
-import ChatWidget from '../../modules/chat/ChatWidget';
-import { Card } from '../../components/ui/card.jsx';
-import { Button } from '../../components/ui/button.jsx';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '../../components/ui/tabs.jsx';
-import { Badge } from '../../components/ui/badge.jsx';
-import { toast } from '../../components/ui/use-toast.js';
 import EnhancedTable from '../../components/ui-EnhancedTable.jsx';
+import { Badge } from '../../components/ui/badge.jsx';
+import { Button } from '../../components/ui/button.jsx';
+import { Card } from '../../components/ui/card.jsx';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '../../components/ui/tabs.jsx';
+import { toast } from '../../components/ui/use-toast.js';
+import { getDealCallLogs } from '../../lib/api/calls';
+import { deleteDeal, getCompany, getContact, getDeal } from '../../lib/api/client';
+import { getStages } from '../../lib/api/reference';
+import { formatCurrency } from '../../lib/utils/format';
+import ChatWidget from '../../modules/chat/ChatWidget';
+import { navigate } from '../../router';
 
 function DealDetail({ id }) {
   const [deal, setDeal] = useState(null);
@@ -257,7 +258,7 @@ function DealDetail({ id }) {
                   <div className="flex items-center gap-2">
                     <DollarSign className="h-4 w-4 text-emerald-600" />
                     <span className="font-semibold">
-                      {Number(deal.amount || 0).toLocaleString('ru-RU')} {deal.currency_name || '₽'}
+                      {formatCurrency(deal.amount, deal.currency_name || 'RUB')}
                     </span>
                   </div>
                 }

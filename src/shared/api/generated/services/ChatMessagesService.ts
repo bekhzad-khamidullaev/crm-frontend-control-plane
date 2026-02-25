@@ -20,6 +20,7 @@ export class ChatMessagesService {
         ordering,
         owner,
         page,
+        pageSize,
         search,
     }: {
         contentType?: number,
@@ -34,6 +35,10 @@ export class ChatMessagesService {
          */
         page?: number,
         /**
+         * Number of results to return per page.
+         */
+        pageSize?: number,
+        /**
          * A search term.
          */
         search?: string,
@@ -47,6 +52,7 @@ export class ChatMessagesService {
                 'ordering': ordering,
                 'owner': owner,
                 'page': page,
+                'page_size': pageSize,
                 'search': search,
             },
         });

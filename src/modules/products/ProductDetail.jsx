@@ -1,7 +1,8 @@
-import { useState, useEffect } from 'react';
-import { App, Card, Descriptions, Button, Space, Tag, Modal, Spin } from 'antd';
-import { EditOutlined, DeleteOutlined, ArrowLeftOutlined, ShopOutlined } from '@ant-design/icons';
-import { getProduct, deleteProduct } from '../../lib/api/products';
+import { ArrowLeftOutlined, DeleteOutlined, EditOutlined, ShopOutlined } from '@ant-design/icons';
+import { App, Button, Card, Descriptions, Modal, Space, Spin, Tag } from 'antd';
+import { useEffect, useState } from 'react';
+import { deleteProduct, getProduct } from '../../lib/api/products';
+import { formatCurrency } from '../../lib/utils/format';
 import { navigate } from '../../router';
 
 export default function ProductDetail({ id }) {
@@ -94,7 +95,7 @@ export default function ProductDetail({ id }) {
           {data.category_name || (data.product_category ? `#${data.product_category}` : '-')}
         </Descriptions.Item>
         <Descriptions.Item label="Цена">
-          {Number(data.price || 0).toLocaleString('ru-RU')} {data.currency_name || '₽'}
+          {formatCurrency(data.price, data.currency_name || 'RUB')}
         </Descriptions.Item>
         <Descriptions.Item label="Тип">
           <Tag color={data.type === 'S' ? 'blue' : 'green'}>

@@ -1,5 +1,5 @@
-import axios, { AxiosError, InternalAxiosRequestConfig } from 'axios';
 import { message } from 'antd';
+import axios, { AxiosError, InternalAxiosRequestConfig } from 'axios';
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'https://api.crm.windevs.uz';
 
@@ -23,7 +23,7 @@ export const apiClient = axios.create({
  */
 apiClient.interceptors.request.use(
   (config: InternalAxiosRequestConfig) => {
-    const token = localStorage.getItem('access_token');
+    const token = localStorage.getItem('crm_access_token');
     if (token && config.headers) {
       config.headers.Authorization = `Bearer ${token}`;
     }
@@ -45,7 +45,7 @@ apiClient.interceptors.response.use(
       originalRequest._retry = true;
 
       try {
-        const refreshToken = localStorage.getItem('refresh_token');
+        const refreshToken = localStorage.getItem('crm_refresh_token');
         if (!refreshToken) {
           throw new Error('No refresh token available');
         }
@@ -54,7 +54,7 @@ apiClient.interceptors.response.use(
           refresh: refreshToken,
         });
 
-        localStorage.setItem('access_token', data.access);
+        localStorage.setItem('crm_access_token', data.access);
         if (originalRequest.headers) {
           originalRequest.headers.Authorization = `Bearer ${data.access}`;
         }
@@ -62,8 +62,8 @@ apiClient.interceptors.response.use(
         return apiClient(originalRequest);
       } catch (refreshError) {
         // Refresh failed - logout user
-        localStorage.removeItem('access_token');
-        localStorage.removeItem('refresh_token');
+        localStorage.removeItem('crm_access_token');
+        localStorage.removeItem('crm_refresh_token');
         window.location.href = '/#/login';
         return Promise.reject(refreshError);
       }

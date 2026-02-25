@@ -11,10 +11,10 @@
  * ```
  */
 
-import { useState, useCallback } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import type { TablePaginationConfig } from 'antd';
 import type { FilterValue, SorterResult } from 'antd/es/table/interface';
+import { useCallback, useState } from 'react';
 
 export interface PaginatedResponse<T> {
   count: number;
@@ -25,7 +25,7 @@ export interface PaginatedResponse<T> {
 
 export interface TableParams {
   page?: number;
-  page_size?: number;
+  pageSize?: number;
   ordering?: string;
   search?: string;
   [key: string]: unknown;
@@ -48,7 +48,7 @@ export function useServerTable<T extends { id: number | string }>({
 }: UseServerTableOptions<T>) {
   const [params, setParams] = useState<TableParams>({
     page: 1,
-    page_size: initialPageSize,
+    pageSize: initialPageSize,
     ...defaultFilters,
   });
 
@@ -68,7 +68,7 @@ export function useServerTable<T extends { id: number | string }>({
     ) => {
       const newParams: TableParams = {
         page: pagination.current || 1,
-        page_size: pagination.pageSize || initialPageSize,
+        pageSize: pagination.pageSize || initialPageSize,
       };
 
       // Handle sorting
@@ -86,7 +86,7 @@ export function useServerTable<T extends { id: number | string }>({
 
       // Preserve existing filters not changed
       Object.entries(params).forEach(([key, value]) => {
-        if (!['page', 'page_size', 'ordering'].includes(key) && !(key in filters)) {
+        if (!['page', 'pageSize', 'ordering'].includes(key) && !(key in filters)) {
           newParams[key] = value;
         }
       });
@@ -118,7 +118,7 @@ export function useServerTable<T extends { id: number | string }>({
   const handleResetFilters = useCallback(() => {
     setParams({
       page: 1,
-      page_size: initialPageSize,
+      pageSize: initialPageSize,
       ...defaultFilters,
     });
   }, [initialPageSize, defaultFilters]);
@@ -126,7 +126,7 @@ export function useServerTable<T extends { id: number | string }>({
   // Pagination config for Ant Design Table
   const pagination: TablePaginationConfig = {
     current: params.page || 1,
-    pageSize: params.page_size || initialPageSize,
+    pageSize: params.pageSize || initialPageSize,
     total: data?.count || 0,
     showSizeChanger: true,
     showQuickJumper: true,

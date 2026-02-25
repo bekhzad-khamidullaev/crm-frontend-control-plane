@@ -19,6 +19,7 @@ export class PaymentsService {
         deal,
         ordering,
         page,
+        pageSize,
         search,
         status,
     }: {
@@ -32,6 +33,10 @@ export class PaymentsService {
          * A page number within the paginated result set.
          */
         page?: number,
+        /**
+         * Number of results to return per page.
+         */
+        pageSize?: number,
         /**
          * A search term.
          */
@@ -52,6 +57,7 @@ export class PaymentsService {
                 'deal': deal,
                 'ordering': ordering,
                 'page': page,
+                'page_size': pageSize,
                 'search': search,
                 'status': status,
             },

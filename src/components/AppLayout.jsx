@@ -1,32 +1,32 @@
 import {
-    AppstoreOutlined,
-    BankOutlined,
-    BarChartOutlined,
-    CheckSquareOutlined,
-    ClockCircleOutlined,
-    CustomerServiceOutlined,
-    DashboardOutlined,
-    DatabaseOutlined,
-    DisconnectOutlined,
-    DollarOutlined,
-    FileTextOutlined,
-    FolderOutlined,
-    LogoutOutlined,
-    MailOutlined,
-    MenuFoldOutlined,
-    MenuUnfoldOutlined,
-    MessageOutlined,
-    MoonOutlined,
-    PhoneOutlined,
-    QuestionCircleOutlined,
-    SettingOutlined,
-    SunOutlined,
-    TeamOutlined,
-    ToolOutlined,
-    UserOutlined,
-    WifiOutlined,
+  AppstoreOutlined,
+  BankOutlined,
+  BarChartOutlined,
+  CheckSquareOutlined,
+  ClockCircleOutlined,
+  CustomerServiceOutlined,
+  DashboardOutlined,
+  DatabaseOutlined,
+  DisconnectOutlined,
+  DollarOutlined,
+  FileTextOutlined,
+  FolderOutlined,
+  LogoutOutlined,
+  MailOutlined,
+  MenuFoldOutlined,
+  MenuUnfoldOutlined,
+  MessageOutlined,
+  MoonOutlined,
+  PhoneOutlined,
+  QuestionCircleOutlined,
+  SettingOutlined,
+  SunOutlined,
+  TeamOutlined,
+  ToolOutlined,
+  UserOutlined,
+  WifiOutlined,
 } from '@ant-design/icons';
-import { Avatar, Badge, Button, Dropdown, Layout, Menu, Space, Switch, Typography } from 'antd';
+import { Avatar, Badge, Button, ConfigProvider, Dropdown, Layout, Menu, Space, Switch, Typography } from 'antd';
 import { useTheme } from '../lib/hooks/useTheme.js';
 import { t } from '../lib/i18n/index.js';
 import { navigate } from '../router.js';
@@ -215,13 +215,36 @@ export function AppLayout({
           )}
         </div>
 
-        <Menu
-          theme={theme === 'dark' ? 'dark' : 'light'}
-          mode="inline"
-          selectedKeys={[selectedKey]}
-          items={menuItems}
-          style={{ borderRight: 0, background: theme === 'dark' ? '#09090b' : '#ffffff' }}
-        />
+        <ConfigProvider
+          theme={{
+            components: {
+              Menu: theme === 'dark' ? {
+                darkItemBg: '#09090b',
+                darkSubMenuItemBg: '#09090b',
+                darkItemColor: '#a1a1aa',
+                darkItemHoverColor: '#ffffff',
+                darkItemSelectedColor: '#ffffff',
+                darkItemSelectedBg: '#27272a',
+                darkItemHoverBg: '#18181b',
+              } : {
+                itemBg: '#ffffff',
+                itemColor: '#52525b',
+                itemHoverColor: '#09090b',
+                itemSelectedColor: '#09090b',
+                itemSelectedBg: '#f4f4f5',
+                itemHoverBg: '#f4f4f5',
+              },
+            },
+          }}
+        >
+          <Menu
+            theme={theme === 'dark' ? 'dark' : 'light'}
+            mode="inline"
+            selectedKeys={[selectedKey]}
+            items={menuItems}
+            style={{ borderRight: 0 }}
+          />
+        </ConfigProvider>
       </Sider>
 
       <Layout style={{ marginLeft: collapsed ? 80 : 256, transition: 'all 0.2s' }}>

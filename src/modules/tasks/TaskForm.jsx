@@ -1,33 +1,32 @@
-import React, { useEffect, useState } from 'react';
-import { useForm } from 'react-hook-form';
-import { z } from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
 import dayjs from 'dayjs';
 import { ArrowLeft, Save } from 'lucide-react';
+import { useEffect, useState } from 'react';
+import { useForm } from 'react-hook-form';
+import { z } from 'zod';
 
-import { navigate } from '../../router';
-import {
-  getTask,
-  getTasks,
-  createTask,
-  updateTask,
-  getUsers,
-  getUser,
-  getTaskStages,
-  getProjects,
-  getProject,
-} from '../../lib/api';
-import ReferenceSelect from '../../components/ui-ReferenceSelect';
 import EntitySelect from '../../components/EntitySelect';
-import { normalizePayload } from '../../lib/utils/payload';
-import { Card } from '../../components/ui/card.jsx';
+import { DatePicker } from '../../components/ui-DatePicker.jsx';
+import ReferenceSelect from '../../components/ui-ReferenceSelect';
 import { Button } from '../../components/ui/button.jsx';
+import { Card } from '../../components/ui/card.jsx';
 import { Input } from '../../components/ui/input.jsx';
-import { Textarea } from '../../components/ui/textarea.jsx';
 import { Label } from '../../components/ui/label.jsx';
 import { Switch } from '../../components/ui/switch.jsx';
-import { DatePicker } from '../../components/ui-DatePicker.jsx';
+import { Textarea } from '../../components/ui/textarea.jsx';
 import { toast } from '../../components/ui/use-toast.js';
+import {
+    createTask,
+    getProject,
+    getProjects,
+    getTask,
+    getTasks,
+    getUser,
+    getUsers,
+    updateTask
+} from '../../lib/api';
+import { normalizePayload } from '../../lib/utils/payload';
+import { navigate } from '../../router';
 
 const schema = z.object({
   name: z.string().min(1, 'Введите название'),
@@ -202,7 +201,7 @@ function TaskForm({ id }) {
 
             <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
               <div>
-                <Label>Этап *</Label>
+                <Label htmlFor="stage">Этап *</Label>
                 <ReferenceSelect
                   id="stage"
                   type="task-stages"
@@ -214,19 +213,19 @@ function TaskForm({ id }) {
                 {errors.stage && <p className="text-xs text-destructive">{errors.stage.message}</p>}
               </div>
               <div>
-                <Label>Дата начала</Label>
-                <DatePicker value={startDate || null} onChange={(val) => setValue('start_date', val)} format="DD.MM.YYYY" />
+                <Label htmlFor="start_date">Дата начала</Label>
+                <DatePicker id="start_date" value={startDate || null} onChange={(val) => setValue('start_date', val)} format="DD.MM.YYYY" />
               </div>
               <div>
-                <Label>Срок выполнения</Label>
+                <Label htmlFor="due_date">Срок выполнения</Label>
                 <DatePicker id="due_date" value={dueDate || null} onChange={(val) => setValue('due_date', val)} format="DD.MM.YYYY" />
               </div>
             </div>
 
             <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
               <div>
-                <Label>Дата закрытия</Label>
-                <DatePicker value={closingDate || null} onChange={(val) => setValue('closing_date', val)} format="DD.MM.YYYY" />
+                <Label htmlFor="closing_date">Дата закрытия</Label>
+                <DatePicker id="closing_date" value={closingDate || null} onChange={(val) => setValue('closing_date', val)} format="DD.MM.YYYY" />
               </div>
               <div>
                 <Label htmlFor="lead_time">Lead time</Label>
@@ -241,7 +240,7 @@ function TaskForm({ id }) {
                 {errors.next_step && <p className="text-xs text-destructive">{errors.next_step.message}</p>}
               </div>
               <div>
-                <Label>Дата следующего шага *</Label>
+                <Label htmlFor="next_step_date">Дата следующего шага *</Label>
                 <DatePicker id="next_step_date" value={nextStepDate || null} onChange={(val) => setValue('next_step_date', val)} format="DD.MM.YYYY" />
                 {errors.next_step_date && <p className="text-xs text-destructive">{errors.next_step_date.message}</p>}
               </div>
@@ -343,12 +342,12 @@ function TaskForm({ id }) {
             <h3 className="text-lg font-semibold">Статус</h3>
             <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
               <div className="flex items-center gap-2">
-                <Switch checked={!!activeValue} onCheckedChange={(val) => setValue('active', val)} />
-                <Label>Активна</Label>
+                <Switch id="active" checked={!!activeValue} onCheckedChange={(val) => setValue('active', val)} />
+                <Label htmlFor="active">Активна</Label>
               </div>
               <div className="flex items-center gap-2">
-                <Switch checked={!!remindMeValue} onCheckedChange={(val) => setValue('remind_me', val)} />
-                <Label>Напоминать</Label>
+                <Switch id="remind_me" checked={!!remindMeValue} onCheckedChange={(val) => setValue('remind_me', val)} />
+                <Label htmlFor="remind_me">Напоминать</Label>
               </div>
             </div>
           </section>

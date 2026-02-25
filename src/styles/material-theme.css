@@ -16,11 +16,17 @@
   --mdc-theme-error: #ea4335;
   --mdc-theme-info: #4285f4;
   
-  /* Additional Google palette */
+  /* Additional Google palette for navigation */
   --google-blue: #4285f4;
   --google-red: #ea4335;
   --google-yellow: #fbbc04;
   --google-green: #34a853;
+  
+  /* Semantic color aliases */
+  --nav-blue: var(--google-blue);
+  --nav-red: var(--google-red);
+  --nav-yellow: var(--google-yellow);
+  --nav-green: var(--google-green);
   
   /* Surface & Background */
   --mdc-theme-surface: #ffffff;
@@ -64,6 +70,28 @@
   --transition-fast: 150ms cubic-bezier(0.4, 0, 0.2, 1);
   --transition-base: 250ms cubic-bezier(0.4, 0, 0.2, 1);
   --transition-slow: 350ms cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* Dark mode MDC variables */
+.dark {
+  --mdc-theme-surface: #09090b;
+  --mdc-theme-background: #09090b;
+  --mdc-theme-surface-variant: #18181b;
+  
+  --mdc-theme-on-surface: #fafafa;
+  --mdc-theme-on-background: #fafafa;
+  --mdc-theme-text-primary: #fafafa;
+  --mdc-theme-text-secondary: #a1a1aa;
+  --mdc-theme-text-disabled: #52525b;
+  
+  --border-color: #27272a;
+  --border-color-hover: #3f3f46;
+
+  /* Ensure navigation colors are visible but slightly adjusted for dark if needed */
+  --nav-blue: #8ab4f8;
+  --nav-red: #f28b82;
+  --nav-yellow: #fde293;
+  --nav-green: #81c995;
 }
 
 * {

@@ -3,35 +3,47 @@
  * Displays list of call logs with filtering and statistics
  */
 
-import React, { useState, useEffect } from 'react';
 import dayjs from 'dayjs';
-import { Phone, Search, PhoneCall, Clock, RefreshCcw, Play, Headphones, FileText, Info } from 'lucide-react';
+import { Clock, Phone, PhoneCall, RefreshCcw, Search } from 'lucide-react';
+import { useEffect, useState } from 'react';
 
-import { Card } from '../../components/ui/card.jsx';
+import {
+  AudioOutlined,
+  CheckCircleOutlined,
+  ClockCircleOutlined,
+  CloseCircleOutlined,
+  FormOutlined,
+  InfoCircleOutlined,
+  PhoneFilled,
+  PhoneOutlined,
+  PhoneTwoTone,
+  PlayCircleOutlined,
+  ReloadOutlined
+} from '@ant-design/icons';
+import { Form, Space, Tag, Tooltip } from 'antd';
+import { DatePicker } from '../../components/ui-DatePicker.jsx';
+import EnhancedTable from '../../components/ui-EnhancedTable.jsx';
 import { Button } from '../../components/ui/button.jsx';
+import { Card } from '../../components/ui/card.jsx';
 import { Input } from '../../components/ui/input.jsx';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '../../components/ui/tabs.jsx';
-import { DatePicker } from '../../components/ui-DatePicker.jsx';
-import { Badge } from '../../components/ui/badge.jsx';
-import EnhancedTable from '../../components/ui-EnhancedTable.jsx';
 import { toast } from '../../components/ui/use-toast.js';
-import { Form } from 'antd';
 // replaced Ant Design icons with lucide-react above
-import {
-  getVoipCallLogs,
-  getVoipCallLog,
-  getCallStatistics,
-  getCallLogs,
-  getCallLog,
-  createCallLog,
-  updateCallLog,
-  deleteCallLog,
-  addCallNote,
-} from '../../lib/api/calls.js';
-import { getContacts, getContact } from '../../lib/api';
-import CallButton from '../../components/CallButton.jsx';
 import AudioPlayer from '../../components/AudioPlayer.jsx';
+import CallButton from '../../components/CallButton.jsx';
 import CrudPage from '../../components/CrudPage.jsx';
+import { getContact, getContacts } from '../../lib/api';
+import {
+  addCallNote,
+  createCallLog,
+  deleteCallLog,
+  getCallLog,
+  getCallLogs,
+  getCallStatistics,
+  getVoipCallLog,
+  getVoipCallLogs,
+  updateCallLog,
+} from '../../lib/api/calls.js';
 const Title = ({ children }) => <h2 className="text-xl font-semibold">{children}</h2>;
 const Text = ({ children, secondary }) => (
   <span className={secondary ? 'text-muted-foreground' : undefined}>{children}</span>
@@ -307,14 +319,16 @@ function CallsList() {
         if (recording_url) {
           return (
             <Tooltip title="Прослушать запись">
-              <Button
-                type="link"
-                icon={<AudioOutlined />}
-                size="small"
-                onClick={() => handlePlayRecording(record)}
-              >
-                Запись
-              </Button>
+              <span>
+                <Button
+                  type="link"
+                  icon={<AudioOutlined />}
+                  size="small"
+                  onClick={() => handlePlayRecording(record)}
+                >
+                  Запись
+                </Button>
+              </span>
             </Tooltip>
           );
         }

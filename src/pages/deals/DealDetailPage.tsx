@@ -1,9 +1,11 @@
-import React from 'react';
-import { Space, Button, Tabs, Typography, Descriptions, Card, Spin, Tag, Badge } from 'antd';
-import { ArrowLeftOutlined, EditOutlined } from '@ant-design/icons';
 import { useDeal } from '@/entities/deal/api/queries';
+import { ArrowLeftOutlined, EditOutlined } from '@ant-design/icons';
+import { Badge, Button, Card, Descriptions, Space, Spin, Tabs, Tag, Typography } from 'antd';
+import React from 'react';
 // @ts-ignore
 import { navigate } from '@/router.js';
+// @ts-ignore
+import { formatCurrency } from '@/lib/utils/format.js';
 
 const { Title, Text } = Typography;
 
@@ -34,7 +36,7 @@ export const DealDetailPage: React.FC<DealDetailPageProps> = ({ id }) => {
         <Descriptions bordered column={2}>
           <Descriptions.Item label="Название">{d.name}</Descriptions.Item>
           <Descriptions.Item label="Сумма">
-            {d.amount ? Number(d.amount).toLocaleString('ru-RU') : '0'} {d.currency_name || ''}
+            {formatCurrency(d.amount, d.currency_name || 'RUB')}
           </Descriptions.Item>
           <Descriptions.Item label="Стадия">
             <Badge color="blue" text={d.stage_name} />
@@ -146,3 +148,5 @@ export const DealDetailPage: React.FC<DealDetailPageProps> = ({ id }) => {
     </div>
   );
 };
+
+export default DealDetailPage;

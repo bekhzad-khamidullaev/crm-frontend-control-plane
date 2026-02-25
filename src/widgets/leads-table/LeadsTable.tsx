@@ -1,22 +1,23 @@
-import React from 'react';
-import { Table, Space, Button, Popconfirm, Avatar, Badge, Tooltip } from 'antd';
-import {
-  EditOutlined,
-  DeleteOutlined,
-  EyeOutlined,
-  UserOutlined,
-  MailOutlined,
-  PhoneOutlined,
-  BankOutlined,
-} from '@ant-design/icons';
-import { useServerTable } from '@/shared/hooks';
-import { LeadsService } from '@/shared/api/generated/services/LeadsService';
 import { leadKeys } from '@/entities/lead/api/keys';
 import { useDeleteLead } from '@/entities/lead/api/mutations';
-import { LeadsTableFilters } from './ui/LeadsTableFilters';
-import type { Lead } from '@/entities/lead/model/types';
-import type { ColumnsType } from 'antd/es/table';
 import type { LeadListParams } from '@/entities/lead/api/queries';
+import type { Lead } from '@/entities/lead/model/types';
+// @ts-ignore
+import { LeadsService } from '@/shared/api/generated/services/LeadsService';
+import { useServerTable } from '@/shared/hooks';
+import {
+    BankOutlined,
+    DeleteOutlined,
+    EditOutlined,
+    EyeOutlined,
+    MailOutlined,
+    PhoneOutlined,
+    UserOutlined,
+} from '@ant-design/icons';
+import { Avatar, Badge, Button, Popconfirm, Space, Table, Tooltip } from 'antd';
+import type { ColumnsType } from 'antd/es/table';
+import React from 'react';
+import { LeadsTableFilters } from './ui/LeadsTableFilters';
 
 // @ts-ignore
 import CallButton from '@/components/CallButton';

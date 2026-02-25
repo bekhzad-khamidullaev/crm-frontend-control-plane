@@ -1,69 +1,66 @@
-import React, { useState, useEffect } from 'react';
-import {
-  ArrowLeft,
-  Edit,
-  Trash2,
-  Phone,
-  Mail,
-  MapPin,
-  Building2,
-  Globe,
-  Tag,
-  Calendar,
-  User,
-  CheckCircle2,
-  XCircle,
-  MoreHorizontal,
-  Briefcase,
-  History,
-  MessageSquare,
-  StickyNote
-} from 'lucide-react';
 import dayjs from 'dayjs';
+import {
+    ArrowLeft,
+    Briefcase,
+    Building2,
+    CheckCircle2,
+    Edit,
+    Globe,
+    History,
+    Mail,
+    MapPin,
+    MessageSquare,
+    MoreHorizontal,
+    Phone,
+    StickyNote,
+    Tag,
+    Trash2,
+    User,
+    XCircle
+} from 'lucide-react';
+import { useEffect, useState } from 'react';
 
 // Logic / API
-import { navigate } from '../../router';
-import { getLead, deleteLead, leadsApi, getUsers, getUser } from '../../lib/api/client';
 import { getEntityCallLogs } from '../../lib/api/calls';
+import { deleteLead, getLead, getUser, getUsers, leadsApi } from '../../lib/api/client';
 import { buildLeadPayload, deriveLeadStatus, getLeadSourceLabel } from '../../lib/utils/leads';
+import { navigate } from '../../router';
 
 // Components
-import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from '../../components/ui/card';
-import { Button } from '../../components/ui/button';
-import { Badge } from '../../components/ui/badge';
-import { Avatar, AvatarFallback, AvatarImage } from '../../components/ui/avatar';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '../../components/ui/tabs';
-import { Separator } from '../../components/ui/separator';
 import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
+    AlertDialog,
+    AlertDialogAction,
+    AlertDialogCancel,
+    AlertDialogContent,
+    AlertDialogDescription,
+    AlertDialogFooter,
+    AlertDialogHeader,
+    AlertDialogTitle
+} from "../../components/ui/alert-dialog";
+import { Avatar, AvatarFallback } from '../../components/ui/avatar';
+import { Badge } from '../../components/ui/badge';
+import { Button } from '../../components/ui/button';
+import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '../../components/ui/card';
+import {
+    Dialog,
+    DialogContent,
+    DialogDescription,
+    DialogFooter,
+    DialogHeader,
+    DialogTitle,
 } from "../../components/ui/dialog";
 import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-  AlertDialogTrigger,
-} from "../../components/ui/alert-dialog";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
+    DropdownMenu,
+    DropdownMenuContent,
+    DropdownMenuItem,
+    DropdownMenuLabel,
+    DropdownMenuSeparator,
+    DropdownMenuTrigger,
 } from "../../components/ui/dropdown-menu";
 import { Label } from '../../components/ui/label';
 import { ScrollArea } from '../../components/ui/scroll-area';
-import { Input } from '../../components/ui/input'; // For minor overrides if needed, mostly used in EntitySelect context
+import { Separator } from '../../components/ui/separator';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '../../components/ui/tabs';
 import { toast } from '../../components/ui/use-toast';
 
 // Custom / Domain Components
@@ -388,17 +385,13 @@ function LeadDetail({ id }) {
             <CardContent>
                <div className="flex justify-center gap-4 py-4">
                   {lead.phone && (
-                     <Button variant="outline" size="icon" className="rounded-full h-10 w-10 hover:border-primary hover:text-primary" asChild>
-                        <a href={`tel:${lead.phone}`} title="Позвонить">
-                          <Phone className="h-4 w-4" />
-                        </a>
+                     <Button variant="outline" size="icon" className="rounded-full h-10 w-10 hover:border-primary hover:text-primary" onClick={() => window.location.href = `tel:${lead.phone}`} title="Позвонить">
+                        <Phone className="h-4 w-4" />
                      </Button>
                   )}
                   {lead.email && (
-                     <Button variant="outline" size="icon" className="rounded-full h-10 w-10 hover:border-primary hover:text-primary" asChild>
-                        <a href={`mailto:${lead.email}`} title="Написать">
-                          <Mail className="h-4 w-4" />
-                        </a>
+                     <Button variant="outline" size="icon" className="rounded-full h-10 w-10 hover:border-primary hover:text-primary" onClick={() => window.location.href = `mailto:${lead.email}`} title="Написать">
+                        <Mail className="h-4 w-4" />
                      </Button>
                   )}
                </div>

@@ -1,27 +1,27 @@
-import React from 'react';
 import {
-  Space,
-  Button,
-  Tabs,
-  Typography,
-  Descriptions,
-  Avatar,
-  Card,
-  Spin,
-  Tag
-} from 'antd';
-import {
-  ArrowLeftOutlined,
-  EditOutlined,
-  UserOutlined,
-  MailOutlined,
-  PhoneOutlined,
-  BankOutlined
+    ArrowLeftOutlined,
+    BankOutlined,
+    EditOutlined,
+    MailOutlined,
+    PhoneOutlined,
+    UserOutlined
 } from '@ant-design/icons';
+import {
+    Avatar,
+    Button,
+    Card,
+    Descriptions,
+    Space,
+    Spin,
+    Tabs,
+    Tag,
+    Typography
+} from 'antd';
 import dayjs from 'dayjs';
+import React from 'react';
 // @ts-ignore
-import { navigate } from '@/router.js';
 import { useLead } from '@/entities/lead/api/queries';
+import { navigate } from '@/router.js';
 
 const { Title, Text } = Typography;
 
@@ -132,3 +132,5 @@ export const LeadDetailPage: React.FC<LeadDetailPageProps> = ({ id }) => {
     </div>
   );
 };
+
+export default LeadDetailPage;
