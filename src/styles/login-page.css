@@ -11,7 +11,7 @@
 
 /* Dark theme background */
 .dark .login-container {
-  background-color: #09090b;
+  background: linear-gradient(145deg, #0e1117 0%, #161b22 100%);
 }
 
 .login-card {
@@ -25,8 +25,8 @@
 }
 
 .dark .login-card {
-  background-color: #09090b;
-  border: 1px solid #27272a;
+  background-color: #161b22;
+  border: 1px solid #2d3343;
 }
 
 /* Radix-style headings and texts */
@@ -75,9 +75,9 @@
 
 .dark .radix-form .ant-input,
 .dark .radix-form .ant-input-affix-wrapper {
-  background-color: #09090b;
-  border-color: #27272a;
-  color: #fafafa;
+  background-color: #161b22;
+  border-color: #2d3343;
+  color: #f1f5f9;
 }
 .dark .radix-form .ant-input::placeholder {
   color: #a1a1aa;

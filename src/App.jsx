@@ -7,13 +7,13 @@ import { getProfile } from './lib/api/user.js';
 import { useTheme } from './lib/hooks/useTheme.js';
 import { setLocale } from './lib/i18n/index.js';
 import {
-  addIncomingCall,
-  removeIncomingCall,
-  setChatWsConnected,
-  setChatWsReconnecting,
-  setWsConnected,
-  setWsReconnecting,
-  subscribe,
+    addIncomingCall,
+    removeIncomingCall,
+    setChatWsConnected,
+    setChatWsReconnecting,
+    setWsConnected,
+    setWsReconnecting,
+    subscribe,
 } from './lib/store/index.js';
 import sipClient from './lib/telephony/SIPClient.js';
 import callsWebSocket from './lib/websocket/CallsWebSocket.js';
@@ -598,12 +598,12 @@ function AppWithTheme() {
       colorWarning: theme === 'dark' ? '#fbbf24' : '#d97706', // amber-400 : amber-600
       colorError: theme === 'dark' ? '#f87171' : '#dc2626',   // red-400 : red-600
       borderRadius: 6,
-      colorBgContainer: theme === 'dark' ? '#09090b' : '#ffffff', // zinc-950 : white
-      colorBgElevated: theme === 'dark' ? '#18181b' : '#ffffff', // zinc-900 : white
-      colorBgLayout: theme === 'dark' ? '#09090b' : '#f8fafc', // zinc-950 : slate-50
-      colorBorderSecondary: theme === 'dark' ? '#27272a' : '#e4e4e7', // zinc-800 : zinc-200
-      colorBorder: theme === 'dark' ? '#27272a' : '#e4e4e7',
-      colorTextBase: theme === 'dark' ? '#fafafa' : '#09090b', // zinc-50 : zinc-950
+      colorBgContainer: theme === 'dark' ? '#161b22' : '#ffffff', // softer dark container
+      colorBgElevated: theme === 'dark' ? '#1e232e' : '#ffffff', // elevated dark
+      colorBgLayout: theme === 'dark' ? 'transparent' : '#f8fafc', // transparent to show body gradient
+      colorBorderSecondary: theme === 'dark' ? '#2d3343' : '#e4e4e7',
+      colorBorder: theme === 'dark' ? '#2d3343' : '#e4e4e7',
+      colorTextBase: theme === 'dark' ? '#f1f5f9' : '#09090b',
       colorTextSecondary: theme === 'dark' ? '#d4d4d8' : '#71717a', // Adjusted for dark mode: zinc-300 : zinc-500
       colorTextLightSolid: theme === 'dark' ? '#18181b' : '#fafafa', // inverted text for primary buttons
       fontFamily: 'ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif',
@@ -612,53 +612,53 @@ function AppWithTheme() {
     },
     components: {
       Card: {
-        colorBgContainer: theme === 'dark' ? '#09090b' : '#ffffff',
-        colorBorderSecondary: theme === 'dark' ? '#27272a' : '#e4e4e7',
+        colorBgContainer: theme === 'dark' ? '#161b22' : '#ffffff',
+        colorBorderSecondary: theme === 'dark' ? '#2d3343' : '#e4e4e7',
       },
       Button: {
-        colorPrimaryHover: theme === 'dark' ? '#d4d4d8' : '#27272a',
-        colorPrimaryActive: theme === 'dark' ? '#a1a1aa' : '#3f3f46',
-        colorBgTextHover: theme === 'dark' ? '#27272a' : '#f4f4f5',
-        colorBgTextActive: theme === 'dark' ? '#3f3f46' : '#e4e4e7',
+        colorPrimaryHover: theme === 'dark' ? '#cbd5e1' : '#27272a',
+        colorPrimaryActive: theme === 'dark' ? '#94a3b8' : '#3f3f46',
+        colorBgTextHover: theme === 'dark' ? '#2d3343' : '#f4f4f5',
+        colorBgTextActive: theme === 'dark' ? '#3b4358' : '#e4e4e7',
       },
       Table: {
-        colorBgContainer: theme === 'dark' ? '#09090b' : '#ffffff',
-        headerBg: theme === 'dark' ? '#09090b' : '#f8fafc',
-        headerColor: theme === 'dark' ? '#d4d4d8' : '#71717a',
-        rowHoverBg: theme === 'dark' ? '#18181b' : '#f1f5f9',
-        borderColor: theme === 'dark' ? '#27272a' : '#e4e4e7',
+        colorBgContainer: theme === 'dark' ? '#161b22' : '#ffffff',
+        headerBg: theme === 'dark' ? '#11151c' : '#f8fafc',
+        headerColor: theme === 'dark' ? '#cbd5e1' : '#71717a',
+        rowHoverBg: theme === 'dark' ? '#1e232e' : '#f1f5f9',
+        borderColor: theme === 'dark' ? '#2d3343' : '#e4e4e7',
       },
       Layout: {
-        siderBg: theme === 'dark' ? '#09090b' : '#ffffff',
-        headerBg: theme === 'dark' ? '#09090b' : '#ffffff',
-        bodyBg: theme === 'dark' ? '#09090b' : '#f8fafc',
+        siderBg: theme === 'dark' ? '#161b22' : '#ffffff',
+        headerBg: theme === 'dark' ? '#161b22' : '#ffffff',
+        bodyBg: theme === 'dark' ? 'transparent' : '#f8fafc',
       },
       Menu: {
-        itemBg: theme === 'dark' ? '#09090b' : '#ffffff',
+        itemBg: theme === 'dark' ? '#161b22' : '#ffffff',
         activeBarBorderWidth: 0,
-        itemSelectedBg: theme === 'dark' ? '#27272a' : '#f1f5f9',
-        itemSelectedColor: theme === 'dark' ? '#fafafa' : '#18181b', // Bright white for selected in dark
-        itemColor: theme === 'dark' ? '#fafafa' : '#71717a', // Bright white for items in dark
-        itemHoverColor: theme === 'dark' ? '#fafafa' : '#18181b',
-        itemHoverBg: theme === 'dark' ? '#18181b' : '#f8fafc',
+        itemSelectedBg: theme === 'dark' ? '#2d3343' : '#f1f5f9',
+        itemSelectedColor: theme === 'dark' ? '#f1f5f9' : '#18181b', // Bright white for selected in dark
+        itemColor: theme === 'dark' ? '#cbd5e1' : '#71717a', // Bright white for items in dark
+        itemHoverColor: theme === 'dark' ? '#f1f5f9' : '#18181b',
+        itemHoverBg: theme === 'dark' ? '#1e232e' : '#f8fafc',
       },
       Input: {
-        colorBgContainer: theme === 'dark' ? '#09090b' : '#ffffff',
-        colorBorder: theme === 'dark' ? '#27272a' : '#e4e4e7',
-        activeBorderColor: theme === 'dark' ? '#fafafa' : '#18181b',
-        hoverBorderColor: theme === 'dark' ? '#3f3f46' : '#d4d4d8',
+        colorBgContainer: theme === 'dark' ? '#161b22' : '#ffffff',
+        colorBorder: theme === 'dark' ? '#2d3343' : '#e4e4e7',
+        activeBorderColor: theme === 'dark' ? '#f1f5f9' : '#18181b',
+        hoverBorderColor: theme === 'dark' ? '#46506b' : '#d4d4d8',
       },
       Select: {
-        colorBgContainer: theme === 'dark' ? '#09090b' : '#ffffff',
-        colorBorder: theme === 'dark' ? '#27272a' : '#e4e4e7',
-        colorPrimaryHover: theme === 'dark' ? '#3f3f46' : '#d4d4d8',
-        colorPrimary: theme === 'dark' ? '#fafafa' : '#18181b',
-        optionSelectedBg: theme === 'dark' ? '#27272a' : '#f1f5f9',
+        colorBgContainer: theme === 'dark' ? '#161b22' : '#ffffff',
+        colorBorder: theme === 'dark' ? '#2d3343' : '#e4e4e7',
+        colorPrimaryHover: theme === 'dark' ? '#46506b' : '#d4d4d8',
+        colorPrimary: theme === 'dark' ? '#f1f5f9' : '#18181b',
+        optionSelectedBg: theme === 'dark' ? '#2d3343' : '#f1f5f9',
       },
       Dropdown: {
-        colorBgElevated: theme === 'dark' ? '#18181b' : '#ffffff',
-        colorText: theme === 'dark' ? '#fafafa' : '#09090b',
-        controlItemBgHover: theme === 'dark' ? '#27272a' : '#f1f5f9',
+        colorBgElevated: theme === 'dark' ? '#1e232e' : '#ffffff',
+        colorText: theme === 'dark' ? '#f1f5f9' : '#09090b',
+        controlItemBgHover: theme === 'dark' ? '#2d3343' : '#f1f5f9',
       }
     }
   };

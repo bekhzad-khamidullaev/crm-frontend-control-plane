@@ -1,30 +1,30 @@
 import {
-  AppstoreOutlined,
-  BankOutlined,
-  BarChartOutlined,
-  CheckSquareOutlined,
-  ClockCircleOutlined,
-  CustomerServiceOutlined,
-  DashboardOutlined,
-  DatabaseOutlined,
-  DisconnectOutlined,
-  DollarOutlined,
-  FileTextOutlined,
-  FolderOutlined,
-  LogoutOutlined,
-  MailOutlined,
-  MenuFoldOutlined,
-  MenuUnfoldOutlined,
-  MessageOutlined,
-  MoonOutlined,
-  PhoneOutlined,
-  QuestionCircleOutlined,
-  SettingOutlined,
-  SunOutlined,
-  TeamOutlined,
-  ToolOutlined,
-  UserOutlined,
-  WifiOutlined,
+    AppstoreOutlined,
+    BankOutlined,
+    BarChartOutlined,
+    CheckSquareOutlined,
+    ClockCircleOutlined,
+    CustomerServiceOutlined,
+    DashboardOutlined,
+    DatabaseOutlined,
+    DisconnectOutlined,
+    DollarOutlined,
+    FileTextOutlined,
+    FolderOutlined,
+    LogoutOutlined,
+    MailOutlined,
+    MenuFoldOutlined,
+    MenuUnfoldOutlined,
+    MessageOutlined,
+    MoonOutlined,
+    PhoneOutlined,
+    QuestionCircleOutlined,
+    SettingOutlined,
+    SunOutlined,
+    TeamOutlined,
+    ToolOutlined,
+    UserOutlined,
+    WifiOutlined,
 } from '@ant-design/icons';
 import { Avatar, Badge, Button, ConfigProvider, Dropdown, Layout, Menu, Space, Switch, Typography } from 'antd';
 import { useTheme } from '../lib/hooks/useTheme.js';
@@ -175,8 +175,8 @@ export function AppLayout({
           left: 0,
           top: 0,
           bottom: 0,
-          borderRight: `1px solid ${theme === 'dark' ? '#27272a' : '#e4e4e7'}`,
-          background: theme === 'dark' ? '#09090b' : '#ffffff',
+          borderRight: `1px solid ${theme === 'dark' ? '#2d3343' : '#e4e4e7'}`,
+          background: theme === 'dark' ? '#161b22' : '#ffffff',
         }}
       >
         <div
@@ -186,14 +186,14 @@ export function AppLayout({
             alignItems: 'center',
             justifyContent: collapsed ? 'center' : 'space-between',
             padding: collapsed ? '0' : '0 16px',
-            borderBottom: `1px solid ${theme === 'dark' ? '#27272a' : '#e4e4e7'}`,
+            borderBottom: `1px solid ${theme === 'dark' ? '#2d3343' : '#e4e4e7'}`,
           }}
         >
           <Space>
             <Avatar
               style={{
-                backgroundColor: theme === 'dark' ? '#27272a' : '#f1f5f9',
-                color: theme === 'dark' ? '#fafafa' : '#09090b',
+                backgroundColor: theme === 'dark' ? '#2d3343' : '#f1f5f9',
+                color: theme === 'dark' ? '#f1f5f9' : '#09090b',
                 verticalAlign: 'middle',
               }}
               size="large"
@@ -201,7 +201,7 @@ export function AppLayout({
               E
             </Avatar>
             {!collapsed && (
-              <Text strong style={{ color: theme === 'dark' ? '#fafafa' : '#09090b', fontSize: 16 }}>
+              <Text strong style={{ color: theme === 'dark' ? '#f1f5f9' : '#09090b', fontSize: 16 }}>
                 Enterprise CRM
               </Text>
             )}
@@ -209,7 +209,7 @@ export function AppLayout({
           {!collapsed && (
             <Button
               type="text"
-              icon={<MenuFoldOutlined style={{ color: theme === 'dark' ? '#fafafa' : '#09090b' }} />}
+              icon={<MenuFoldOutlined style={{ color: theme === 'dark' ? '#f1f5f9' : '#09090b' }} />}
               onClick={onToggleCollapsed}
             />
           )}
@@ -219,13 +219,13 @@ export function AppLayout({
           theme={{
             components: {
               Menu: theme === 'dark' ? {
-                darkItemBg: '#09090b',
-                darkSubMenuItemBg: '#09090b',
-                darkItemColor: '#a1a1aa',
+                darkItemBg: '#161b22',
+                darkSubMenuItemBg: '#161b22',
+                darkItemColor: '#cbd5e1',
                 darkItemHoverColor: '#ffffff',
                 darkItemSelectedColor: '#ffffff',
-                darkItemSelectedBg: '#27272a',
-                darkItemHoverBg: '#18181b',
+                darkItemSelectedBg: '#2d3343',
+                darkItemHoverBg: '#1e232e',
               } : {
                 itemBg: '#ffffff',
                 itemColor: '#52525b',
@@ -251,8 +251,8 @@ export function AppLayout({
         <Header
           style={{
             padding: '0 24px',
-            background: theme === 'dark' ? '#09090b' : '#ffffff',
-            borderBottom: `1px solid ${theme === 'dark' ? '#27272a' : '#e4e4e7'}`,
+            background: theme === 'dark' ? '#161b22' : '#ffffff',
+            borderBottom: `1px solid ${theme === 'dark' ? '#2d3343' : '#e4e4e7'}`,
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'space-between',

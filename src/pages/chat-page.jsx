@@ -50,11 +50,10 @@ function ChatPage() {
   const [statistics, setStatistics] = useState(null);
   const { theme } = useTheme();
 
-  // Theme-aware colors
-  const bg = theme === 'dark' ? '#09090b' : '#ffffff';
-  const bgSecondary = theme === 'dark' ? '#18181b' : '#f8fafc';
-  const border = theme === 'dark' ? '#27272a' : '#f0f0f0';
-  const activeBg = theme === 'dark' ? '#27272a' : '#e6f7ff';
+  const bg = theme === 'dark' ? 'transparent' : '#ffffff'; // Use transparent to inherit global body gradient
+  const bgSecondary = theme === 'dark' ? '#1e232e' : '#f8fafc';
+  const border = theme === 'dark' ? '#2d3343' : '#f0f0f0';
+  const activeBg = theme === 'dark' ? '#2d3343' : '#e6f7ff';
   const activeBorder = theme === 'dark' ? '#4285f4' : '#1890ff';
 
   useEffect(() => {

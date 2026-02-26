@@ -74,18 +74,18 @@
 
 /* Dark mode MDC variables */
 .dark {
-  --mdc-theme-surface: #09090b;
-  --mdc-theme-background: #09090b;
-  --mdc-theme-surface-variant: #18181b;
+  --mdc-theme-surface: #161b22;
+  --mdc-theme-background: transparent;
+  --mdc-theme-surface-variant: #1e232e;
   
-  --mdc-theme-on-surface: #fafafa;
-  --mdc-theme-on-background: #fafafa;
-  --mdc-theme-text-primary: #fafafa;
-  --mdc-theme-text-secondary: #a1a1aa;
-  --mdc-theme-text-disabled: #52525b;
+  --mdc-theme-on-surface: #f1f5f9;
+  --mdc-theme-on-background: #f1f5f9;
+  --mdc-theme-text-primary: #f1f5f9;
+  --mdc-theme-text-secondary: #cbd5e1;
+  --mdc-theme-text-disabled: #64748b;
   
-  --border-color: #27272a;
-  --border-color-hover: #3f3f46;
+  --border-color: #2d3343;
+  --border-color-hover: #46506b;
 
   /* Ensure navigation colors are visible but slightly adjusted for dark if needed */
   --nav-blue: #8ab4f8;
