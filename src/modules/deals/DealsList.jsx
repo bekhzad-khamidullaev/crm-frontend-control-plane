@@ -1,32 +1,24 @@
-import React, { useState, useEffect } from 'react';
-import {
-  Button,
-  Space,
-  Tag,
-  message,
-  Progress,
-  Avatar,
-  Modal,
-  Select,
-  Tooltip,
-} from 'antd';
-import {
-  DollarOutlined,
-  UserOutlined,
-  ShopOutlined,
-  InboxOutlined,
-} from '@ant-design/icons';
-import { navigate } from '../../router';
-import { getDeals, deleteDeal, dealsApi } from '../../lib/api/client';
+import { Building2, DollarSign, User } from 'lucide-react';
+import { useEffect, useMemo, useState } from 'react';
+
 import CallButton from '../../components/CallButton';
 import QuickActions from '../../components/QuickActions';
 import BulkActions from '../../components/ui-BulkActions';
 import EnhancedTable from '../../components/ui-EnhancedTable.jsx';
 import TableToolbar from '../../components/ui-TableToolbar.jsx';
-import { exportAndDownload } from '../../lib/api/export';
+import { Button } from '../../components/ui/button.jsx';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '../../components/ui/dialog.jsx';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../../components/ui/select.jsx';
+import { toast } from '../../components/ui/use-toast.js';
+import { dealsApi, deleteDeal, getDeals } from '../../lib/api/client';
+import { getStages } from '../../lib/api/reference';
+import { exportToCSV, exportToExcel } from '../../lib/utils/export';
+import { formatCurrency } from '../../lib/utils/format';
+import { navigate } from '../../router';
 
 function DealsList() {
   const [deals, setDeals] = useState([]);
+  const [allDealsCache, setAllDealsCache] = useState(null);
   const [loading, setLoading] = useState(false);
   const [searchText, setSearchText] = useState('');
   const [pagination, setPagination] = useState({
@@ -37,106 +29,114 @@ function DealsList() {
   const [selectedRowKeys, setSelectedRowKeys] = useState([]);
   const [stageChangeModalVisible, setStageChangeModalVisible] = useState(false);
   const [bulkStage, setBulkStage] = useState('');
+  const [stages, setStages] = useState([]);
+  const [stageFilter, setStageFilter] = useState(null);
+  const [quickStageModal, setQuickStageModal] = useState({ open: false, record: null, stage: '' });
 
-  const fetchDeals = async (page = 1, search = '') => {
+  const fetchDeals = async (page = 1, search = '', stage = stageFilter, pageSize = pagination.pageSize) => {
     setLoading(true);
     try {
       const response = await getDeals({
         page,
-        page_size: pagination.pageSize,
+        page_size: pageSize,
         search,
+        stage: stage || undefined,
       });
-      setDeals(response.results || []);
-      setPagination({
-        ...pagination,
+      const results = response.results || [];
+      const totalCount = response.count || 0;
+      
+      // Check if backend pagination is working
+      if (results.length > pageSize && results.length === totalCount) {
+        console.warn('⚠️ DealsList: Caching all data and using client-side pagination');
+        setAllDealsCache(results);
+        const startIndex = (page - 1) * pageSize;
+        const endIndex = startIndex + pageSize;
+        setDeals(results.slice(startIndex, endIndex));
+      } else {
+        setAllDealsCache(null);
+        setDeals(results);
+      }
+      
+      setPagination((prev) => ({
+        ...prev,
         current: page,
-        total: response.count || 0,
-      });
+        pageSize: pageSize,
+        total: totalCount,
+      }));
     } catch (error) {
-      message.error('Ошибка загрузки сделок');
-      // Mock data for demo
-      setDeals([
-        {
-          id: 1,
-          title: 'Поставка оборудования',
-          amount: 1500000,
-          stage: 'negotiation',
-          probability: 70,
-          expected_close_date: '2024-03-15',
-          contact: 'Иван Петров',
-          contact_phone: '+7 999 111-22-33',
-          company: 'ООО "ТехноПром"',
-          owner: 'Алексей Иванов',
-          created_at: '2024-01-20',
-        },
-        {
-          id: 2,
-          title: 'Внедрение CRM системы',
-          amount: 850000,
-          stage: 'proposal',
-          probability: 50,
-          expected_close_date: '2024-03-30',
-          contact: 'Мария Сидорова',
-          contact_phone: '+7 999 222-33-44',
-          company: 'АО "Инновации"',
-          owner: 'Елена Смирнова',
-          created_at: '2024-01-18',
-        },
-        {
-          id: 3,
-          title: 'Консалтинговые услуги',
-          amount: 450000,
-          stage: 'closed_won',
-          probability: 100,
-          expected_close_date: '2024-02-28',
-          contact: 'Дмитрий Козлов',
-          company: 'ИП Козлов',
-          owner: 'Алексей Иванов',
-          created_at: '2024-01-15',
-        },
-      ]);
-      setPagination({
-        ...pagination,
+      toast({ title: 'Ошибка', description: 'Ошибка загрузки сделок', variant: 'destructive' });
+      setDeals([]);
+      setPagination((prev) => ({
+        ...prev,
         current: 1,
-        total: 3,
-      });
+        total: 0,
+      }));
     } finally {
       setLoading(false);
     }
   };
 
   useEffect(() => {
-    fetchDeals(1, searchText);
+    fetchDeals(1, searchText, stageFilter);
+    loadStages();
   }, []);
+
+  const loadStages = async () => {
+    try {
+      const response = await getStages({ page_size: 200 });
+      setStages(response.results || response || []);
+    } catch (error) {
+      console.error('Error loading deal stages:', error);
+      setStages([]);
+    }
+  };
 
   const handleSearch = (value) => {
     setSearchText(value);
-    fetchDeals(1, value);
+    fetchDeals(1, value, stageFilter);
   };
 
   const handleDelete = async (id) => {
     try {
       await deleteDeal(id);
-      message.success('Сделка удалена');
-      fetchDeals(pagination.current, searchText);
+      toast({ title: 'Сделка удалена', description: 'Сделка удалена' });
+      fetchDeals(pagination.current, searchText, stageFilter);
     } catch (error) {
-      message.error('Ошибка удаления сделки');
+      toast({ title: 'Ошибка', description: 'Ошибка удаления сделки', variant: 'destructive' });
     }
   };
 
-  const handleTableChange = (newPagination, filters, sorter) => {
-    fetchDeals(newPagination.current, searchText);
+  const handleTableChange = (newPagination) => {
+    const nextPage = newPagination?.current || 1;
+    const nextPageSize = newPagination?.pageSize || pagination.pageSize;
+    
+    // If pageSize changed, clear cache
+    if (nextPageSize !== pagination.pageSize) {
+      setPagination((p) => ({ ...p, pageSize: nextPageSize }));
+      setAllDealsCache(null);
+      fetchDeals(nextPage, searchText, stageFilter, nextPageSize);
+      return;
+    }
+    
+    // If we have cached data, use it
+    if (allDealsCache && allDealsCache.length > 0) {
+      const startIndex = (nextPage - 1) * nextPageSize;
+      const endIndex = startIndex + nextPageSize;
+      setDeals(allDealsCache.slice(startIndex, endIndex));
+      setPagination((p) => ({ ...p, current: nextPage }));
+    } else {
+      fetchDeals(nextPage, searchText, stageFilter, nextPageSize);
+    }
   };
 
-  // Bulk actions handlers
   const handleBulkDelete = async (ids) => {
     try {
-      await Promise.all(ids.map(id => deleteDeal(id)));
-      message.success(`Удалено ${ids.length} сделок`);
+      await Promise.all(ids.map((id) => deleteDeal(id)));
+      toast({ title: 'Удалено', description: `Удалено ${ids.length} сделок` });
       setSelectedRowKeys([]);
-      fetchDeals(pagination.current, searchText);
+      fetchDeals(pagination.current, searchText, stageFilter);
     } catch (error) {
-      message.error('Ошибка массового удаления');
+      toast({ title: 'Ошибка', description: 'Ошибка массового удаления', variant: 'destructive' });
     }
   };
 
@@ -146,48 +146,81 @@ function DealsList() {
 
   const handleStageChangeConfirm = async () => {
     if (!bulkStage) {
-      message.error('Выберите стадию');
+      toast({ title: 'Ошибка', description: 'Выберите стадию', variant: 'destructive' });
       return;
     }
 
     try {
       await Promise.all(
-        selectedRowKeys.map(id =>
-          dealsApi.patch(id, { stage: bulkStage })
-        )
+        selectedRowKeys.map((id) => dealsApi.patch(id, { stage: Number(bulkStage) }))
       );
-      message.success(`Стадия изменена для ${selectedRowKeys.length} сделок`);
+      toast({ title: 'Стадия изменена', description: `Стадия изменена для ${selectedRowKeys.length} сделок` });
       setSelectedRowKeys([]);
       setStageChangeModalVisible(false);
       setBulkStage('');
-      fetchDeals(pagination.current, searchText);
+      fetchDeals(pagination.current, searchText, stageFilter);
     } catch (error) {
-      message.error('Ошибка изменения стадии');
+      toast({ title: 'Ошибка', description: 'Ошибка изменения стадии', variant: 'destructive' });
     }
   };
 
-  const handleBulkExport = async () => {
-    try {
-      await exportAndDownload('deals', {
-        format: 'csv',
-        filters: { id__in: selectedRowKeys.join(',') },
-      });
-      message.success('Данные экспортированы');
-    } catch (error) {
-      message.error('Ошибка экспорта данных');
+  const exportColumns = [
+    { key: 'name', label: 'Название' },
+    { key: 'amount', label: 'Сумма' },
+    { key: 'currency_name', label: 'Валюта' },
+    { key: 'stage_name', label: 'Стадия' },
+    { key: 'company_name', label: 'Компания' },
+    { key: 'contact_name', label: 'Контакт' },
+    { key: 'owner_name', label: 'Ответственный' },
+  ];
+
+  const buildExportRows = (ids = []) => {
+    const source = ids.length ? deals.filter((deal) => ids.includes(deal.id)) : deals;
+    return source;
+  };
+
+  const performExport = (format, ids = []) => {
+    const rows = buildExportRows(ids);
+    if (!rows.length) {
+      toast({ title: 'Нет данных', description: 'Нет данных для экспорта', variant: 'destructive' });
+      return;
     }
+    const ext = format === 'excel' ? 'xlsx' : 'csv';
+    const filename = `deals_${new Date().toISOString().split('T')[0]}.${ext}`;
+    if (format === 'excel') {
+      exportToExcel(rows, exportColumns, filename);
+    } else {
+      exportToCSV(rows, exportColumns, filename);
+    }
+    toast({ title: 'Экспорт', description: 'Данные экспортированы' });
+  };
+
+  const handleBulkExport = (ids) => {
+    performExport('csv', ids);
   };
 
   const handleDuplicate = async (record) => {
     try {
-      const newDeal = { ...record };
-      delete newDeal.id;
-      newDeal.title = `${record.title} (копия)`;
+      const {
+        id,
+        creation_date,
+        update_date,
+        workflow,
+        ticket,
+        stage_name,
+        stages_dates,
+        ...payload
+      } = record;
+      const baseName = record.name || record.title || 'Сделка';
+      const newDeal = {
+        ...payload,
+        name: `${baseName} (копия)`,
+      };
       await dealsApi.create(newDeal);
-      message.success('Сделка дублирована');
-      fetchDeals(pagination.current, searchText);
+      toast({ title: 'Сделка дублирована', description: 'Сделка дублирована' });
+      fetchDeals(pagination.current, searchText, stageFilter);
     } catch (error) {
-      message.error('Ошибка дублирования сделки');
+      toast({ title: 'Ошибка', description: 'Ошибка дублирования сделки', variant: 'destructive' });
     }
   };
 
@@ -198,111 +231,129 @@ function DealsList() {
     },
   };
 
-  const stageConfig = {
-    lead: { color: 'default', text: 'Лид' },
-    qualification: { color: 'blue', text: 'Квалификация' },
-    meeting: { color: 'cyan', text: 'Встреча' },
-    proposal: { color: 'orange', text: 'Предложение' },
-    negotiation: { color: 'gold', text: 'Переговоры' },
-    closed_won: { color: 'green', text: 'Выиграна' },
-    closed_lost: { color: 'red', text: 'Проиграна' },
-  };
+  const stageMap = useMemo(() => {
+    return stages.reduce((acc, stage) => {
+      acc[stage.id] = stage.name;
+      return acc;
+    }, {});
+  }, [stages]);
 
-  // Обработчики для QuickActions
+  const stageOptions = stages.map((stage) => ({
+    label: stage.name,
+    value: stage.id,
+  }));
+
   const handleChangeStage = async (record, newStage) => {
     try {
-      await dealsApi.patch(record.id, { stage: newStage });
-      message.success('Стадия сделки изменена');
-      fetchDeals(pagination.current, searchText);
+      await dealsApi.patch(record.id, { stage: Number(newStage) });
+      toast({ title: 'Стадия сделки изменена', description: 'Стадия сделки изменена' });
+      fetchDeals(pagination.current, searchText, stageFilter);
     } catch (error) {
-      message.error('Ошибка изменения стадии');
+      toast({ title: 'Ошибка', description: 'Ошибка изменения стадии', variant: 'destructive' });
     }
   };
 
   const handleArchive = async (record) => {
     try {
-      await dealsApi.patch(record.id, { is_archived: true });
-      message.success('Сделка архивирована');
-      fetchDeals(pagination.current, searchText);
+      await dealsApi.patch(record.id, { active: false });
+      toast({ title: 'Сделка архивирована', description: 'Сделка архивирована' });
+      fetchDeals(pagination.current, searchText, stageFilter);
     } catch (error) {
-      message.error('Ошибка архивирования');
+      toast({ title: 'Ошибка', description: 'Ошибка архивирования', variant: 'destructive' });
     }
   };
 
   const columns = [
     {
       title: 'Название',
-      dataIndex: 'title',
-      key: 'title',
+      dataIndex: 'name',
+      key: 'name',
       width: 200,
-      render: (title, record) => (
+      render: (name, record) => (
         <div>
-          <div style={{ fontWeight: 500 }}>{title}</div>
-          {record.company && (
-            <div style={{ fontSize: 12, color: '#999' }}>
-              <ShopOutlined /> {record.company}
+          <div className="font-medium">{name}</div>
+          {(record.company_name || record.company) && (
+            <div className="text-xs text-muted-foreground">
+              <Building2 className="mr-1 inline h-3 w-3" /> {record.company_name || record.company}
             </div>
           )}
         </div>
       ),
-      sorter: (a, b) => a.title.localeCompare(b.title),
+      sorter: (a, b) => (a.name || '').localeCompare(b.name || ''),
     },
     {
       title: 'Сумма',
       dataIndex: 'amount',
       key: 'amount',
       width: 130,
-      render: (amount) => (
-        <Space>
-          <DollarOutlined style={{ color: '#52c41a' }} />
-          <span style={{ fontWeight: 500 }}>{amount.toLocaleString('ru-RU')} ₽</span>
-        </Space>
+      render: (amount, record) => (
+        <div className="flex items-center gap-2">
+          <DollarSign className="h-4 w-4 text-emerald-600" />
+          <span className="font-medium">
+            {formatCurrency(amount, record.currency_name || 'RUB')}
+          </span>
+        </div>
       ),
-      sorter: (a, b) => a.amount - b.amount,
+      sorter: (a, b) => Number(a.amount || 0) - Number(b.amount || 0),
     },
     {
       title: 'Стадия',
       dataIndex: 'stage',
       key: 'stage',
       width: 140,
-      render: (stage) => {
-        const config = stageConfig[stage] || stageConfig.lead;
-        return <Tag color={config.color}>{config.text}</Tag>;
+      render: (stage, record) => {
+        const label = record.stage_name || stageMap[stage];
+        const display = label || (stage ? `Этап #${stage}` : '-');
+        return stage ? (
+          <span className="inline-flex items-center rounded-full bg-sky-100 px-2 py-0.5 text-xs text-sky-700">
+            {display}
+          </span>
+        ) : (
+          '-'
+        );
       },
-      filters: Object.keys(stageConfig).map((key) => ({
-        text: stageConfig[key].text,
-        value: key,
-      })),
-      onFilter: (value, record) => record.stage === value,
     },
     {
       title: 'Вероятность',
       dataIndex: 'probability',
       key: 'probability',
       width: 120,
-      render: (probability) => (
-        <Progress
-          percent={probability}
-          size="small"
-          status={probability >= 70 ? 'success' : probability >= 40 ? 'normal' : 'exception'}
-        />
-      ),
-      sorter: (a, b) => a.probability - b.probability,
+      render: (probability) => {
+        const value = Number(probability || 0);
+        return (
+          <div className="w-full">
+            <div className="h-2 w-full rounded-full bg-muted">
+              <div
+                className={`h-2 rounded-full ${
+                  value >= 70 ? 'bg-emerald-500' : value >= 40 ? 'bg-sky-500' : 'bg-rose-500'
+                }`}
+                style={{ width: `${value}%` }}
+              />
+            </div>
+            <div className="mt-1 text-xs text-muted-foreground">{value}%</div>
+          </div>
+        );
+      },
+      sorter: (a, b) => Number(a.probability || 0) - Number(b.probability || 0),
     },
     {
       title: 'Контакт',
       key: 'contact',
       width: 180,
       render: (_, record) => (
-        <Space>
-          <Avatar size="small" icon={<UserOutlined />} />
+        <div className="flex items-center gap-2">
+          <div className="flex h-6 w-6 items-center justify-center rounded-full bg-muted">
+            <User className="h-3 w-3" />
+          </div>
           <div>
-            <div style={{ fontSize: 13 }}>{record.contact}</div>
+            <div className="text-sm">
+              {record.contact_name || record.contact_full_name || (record.contact ? `#${record.contact}` : '-')}
+            </div>
             {record.contact_phone && (
-              <div style={{ fontSize: 11, color: '#999' }}>{record.contact_phone}</div>
+              <div className="text-xs text-muted-foreground">{record.contact_phone}</div>
             )}
           </div>
-        </Space>
+        </div>
       ),
     },
     {
@@ -310,41 +361,44 @@ function DealsList() {
       dataIndex: 'owner',
       key: 'owner',
       width: 140,
-      sorter: (a, b) => (a.owner || '').localeCompare(b.owner || ''),
+      render: (owner, record) => record.owner_name || owner || '-',
+      sorter: (a, b) =>
+        (a.owner_name || a.owner || '')
+          .toString()
+          .localeCompare((b.owner_name || b.owner || '').toString()),
     },
     {
       title: 'Закрытие',
-      dataIndex: 'expected_close_date',
-      key: 'expected_close_date',
+      dataIndex: 'closing_date',
+      key: 'closing_date',
       width: 120,
       render: (date) => {
         if (!date) return '-';
         const closeDate = new Date(date);
         const today = new Date();
         const daysLeft = Math.ceil((closeDate - today) / (1000 * 60 * 60 * 24));
-        
+
         return (
           <div>
-            <div style={{ fontSize: 13 }}>{closeDate.toLocaleDateString('ru-RU')}</div>
+            <div className="text-sm">{closeDate.toLocaleDateString('ru-RU')}</div>
             {daysLeft > 0 && daysLeft <= 7 && (
-              <div style={{ fontSize: 11, color: '#faad14' }}>через {daysLeft} дн.</div>
+              <div className="text-xs text-amber-600">через {daysLeft} дн.</div>
             )}
             {daysLeft < 0 && (
-              <div style={{ fontSize: 11, color: '#ff4d4f' }}>просрочено</div>
+              <div className="text-xs text-rose-600">просрочено</div>
             )}
           </div>
         );
       },
-      sorter: (a, b) => new Date(a.expected_close_date) - new Date(b.expected_close_date),
+      sorter: (a, b) => new Date(a.closing_date) - new Date(b.closing_date),
     },
     {
       title: 'Действия',
       key: 'actions',
-      width: 100,
-      fixed: 'right',
+      width: 120,
       align: 'center',
       render: (_, record) => (
-        <Space size="small">
+        <div className="flex items-center gap-2">
           {record.contact_phone && (
             <CallButton
               phone={record.contact_phone}
@@ -361,53 +415,22 @@ function DealsList() {
             onDelete={(r) => handleDelete(r.id)}
             onDuplicate={handleDuplicate}
             onCall={record.contact_phone ? (r) => window.open(`tel:${r.contact_phone}`) : null}
-            onChangeStatus={(r) => {
-              Modal.confirm({
-                title: 'Изменить стадию',
-                content: (
-                  <Select
-                    id="stage-select"
-                    style={{ width: '100%', marginTop: 16 }}
-                    placeholder="Выберите стадию"
-                    options={Object.keys(stageConfig).map(key => ({
-                      label: stageConfig[key].text,
-                      value: key,
-                    }))}
-                  />
-                ),
-                onOk: () => {
-                  const newStage = document.getElementById('stage-select')?.value;
-                  if (newStage) handleChangeStage(r, newStage);
-                },
-              });
-            }}
+            onChangeStatus={(r) => setQuickStageModal({ open: true, record: r, stage: '' })}
             onArchive={handleArchive}
           />
-        </Space>
+        </div>
       ),
     },
   ];
 
-  const handleExport = async (format) => {
-    try {
-      await exportAndDownload('deals', {
-        format: format === 'excel' ? 'xlsx' : 'csv',
-        filters: selectedRowKeys.length > 0 ? { id__in: selectedRowKeys.join(',') } : {},
-      });
-      message.success(`Данные экспортированы в ${format.toUpperCase()}`);
-    } catch (error) {
-      message.error('Ошибка экспорта данных');
-    }
+  const handleExport = (format) => {
+    performExport(format, selectedRowKeys);
   };
 
-  // Фильтры для toolbar
-  const stageFilters = Object.keys(stageConfig).map(key => ({
-    label: stageConfig[key].text,
-    value: key,
-  }));
+  const stageFilters = stageOptions;
 
   return (
-    <div>
+    <div className="space-y-4">
       <TableToolbar
         title="Сделки"
         total={pagination.total}
@@ -416,7 +439,7 @@ function DealsList() {
         onSearch={handleSearch}
         onCreate={() => navigate('/deals/new')}
         onExport={handleExport}
-        onRefresh={() => fetchDeals(pagination.current, searchText)}
+        onRefresh={() => fetchDeals(pagination.current, searchText, stageFilter)}
         filters={[
           {
             key: 'stage',
@@ -426,8 +449,10 @@ function DealsList() {
           },
         ]}
         onFilterChange={(key, value) => {
-          // Здесь можно добавить логику фильтрации
-          message.info(`Фильтр ${key}: ${value}`);
+          if (key === 'stage') {
+            setStageFilter(value || null);
+            fetchDeals(1, searchText, value || null);
+          }
         }}
         createButtonText="Создать сделку"
         showViewModeSwitch={false}
@@ -440,10 +465,9 @@ function DealsList() {
         pagination={pagination}
         onChange={handleTableChange}
         rowSelection={rowSelection}
-        scroll={{ x: 1500 }}
-        showTotal={true}
-        showSizeChanger={true}
-        showQuickJumper={true}
+        showTotal
+        showSizeChanger
+        showQuickJumper
         emptyText="Нет сделок"
         emptyDescription="Создайте первую сделку или измените параметры поиска"
       />
@@ -457,28 +481,73 @@ function DealsList() {
         entityName="сделок"
       />
 
-      <Modal
-        title="Изменить стадию сделок"
-        open={stageChangeModalVisible}
-        onCancel={() => setStageChangeModalVisible(false)}
-        onOk={handleStageChangeConfirm}
-        okText="Применить"
-        cancelText="Отмена"
-      >
-        <p>Изменить стадию для {selectedRowKeys.length} выбранных сделок</p>
-        <Select
-          style={{ width: '100%' }}
-          placeholder="Выберите стадию"
-          value={bulkStage}
-          onChange={setBulkStage}
-        >
-          {Object.keys(stageConfig).map(key => (
-            <Select.Option key={key} value={key}>
-              {stageConfig[key].text}
-            </Select.Option>
-          ))}
-        </Select>
-      </Modal>
+      <Dialog open={stageChangeModalVisible} onOpenChange={setStageChangeModalVisible}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Изменить стадию сделок</DialogTitle>
+          </DialogHeader>
+          <p className="text-sm text-muted-foreground">
+            Изменить стадию для {selectedRowKeys.length} выбранных сделок
+          </p>
+          <div className="mt-3">
+            <Select value={bulkStage} onValueChange={setBulkStage}>
+              <SelectTrigger>
+                <SelectValue placeholder="Выберите стадию" />
+              </SelectTrigger>
+              <SelectContent>
+                {stageOptions.map((option) => (
+                  <SelectItem key={option.value} value={String(option.value)}>
+                    {option.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+          <div className="mt-4 flex justify-end gap-2">
+            <Button variant="outline" onClick={() => setStageChangeModalVisible(false)}>Отмена</Button>
+            <Button onClick={handleStageChangeConfirm}>Применить</Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={quickStageModal.open} onOpenChange={(open) => setQuickStageModal((prev) => ({ ...prev, open }))}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Изменить стадию</DialogTitle>
+          </DialogHeader>
+          <div className="mt-3">
+            <Select
+              value={quickStageModal.stage}
+              onValueChange={(val) => setQuickStageModal((prev) => ({ ...prev, stage: val }))}
+            >
+              <SelectTrigger>
+                <SelectValue placeholder="Выберите стадию" />
+              </SelectTrigger>
+              <SelectContent>
+                {stageOptions.map((option) => (
+                  <SelectItem key={option.value} value={String(option.value)}>
+                    {option.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+          <div className="mt-4 flex justify-end gap-2">
+            <Button variant="outline" onClick={() => setQuickStageModal({ open: false, record: null, stage: '' })}>
+              Отмена
+            </Button>
+            <Button
+              onClick={() => {
+                if (!quickStageModal.stage || !quickStageModal.record) return;
+                handleChangeStage(quickStageModal.record, quickStageModal.stage);
+                setQuickStageModal({ open: false, record: null, stage: '' });
+              }}
+            >
+              Сохранить
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

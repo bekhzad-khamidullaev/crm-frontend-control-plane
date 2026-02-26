@@ -1,8 +1,8 @@
 import {
   clearToken,
-  getRefreshToken,
+  getRefreshToken as _getRefreshToken,
   getToken,
-  isTokenExpired,
+  isTokenExpired as _isTokenExpired,
   isTokenTooLarge,
   MAX_HEADER_SAFE_LENGTH,
   setToken,
@@ -25,11 +25,34 @@ const SEND_COOKIES =
   (import.meta.env.VITE_API_SEND_COOKIES || runtimeConfig.apiSendCookies || '').toString() === 'true' ||
   AUTH_MODE === 'session';
 const resolveCredentials = (mode = AUTH_MODE) => (SEND_COOKIES || mode === 'session' ? 'include' : 'omit');
-const MAX_AUTH_HEADER_LENGTH = MAX_HEADER_SAFE_LENGTH;
+const _MAX_AUTH_HEADER_LENGTH = MAX_HEADER_SAFE_LENGTH;
 
 const AUTH_ENDPOINTS = ['/api/token/', '/api/token/refresh/', '/api/token/verify/', '/api/auth/token/'];
 const RETRYABLE_STATUS = [502, 503, 504];
 const MAX_RETRY_DELAY = 4000;
+
+// When backend/proxy is misconfigured it may cause redirect loops (ERR_TOO_MANY_REDIRECTS)
+// which surface in browsers as a network failure (TypeError: Failed to fetch).
+// For reference endpoints we can safely degrade by returning an empty page instead of blocking the UI.
+const REFERENCE_ENDPOINT_REGEX =
+  /^\/api\/(users|industries|client-types|lead-sources|countries|cities|departments|currencies|crm-tags|task-stages|project-stages|stages|product-categories|task-tags)\//;
+const referenceWarned = new Set();
+const EMPTY_PAGE = Object.freeze({ count: 0, next: null, previous: null, results: [] });
+
+function isNetworkFailure(err) {
+  // fetch failures in browsers are usually TypeError("Failed to fetch")
+  if (err instanceof TypeError) return true;
+  if (err instanceof ApiError && (err.status === 0 || !err.status)) return true;
+  return false;
+}
+
+function warnReferenceOnce(path, err) {
+  const key = path;
+  if (referenceWarned.has(key)) return;
+  referenceWarned.add(key);
+  // Intentionally only console.warn here (no antd message in API layer).
+  console.warn(`[API] Reference endpoint failed, falling back to empty list: ${path}`, err);
+}
 
 export class ApiError extends Error {
   constructor(message, { status = 0, statusText = '', url = '', details = null } = {}) {
@@ -93,14 +116,35 @@ function withTimeout(promise, ms, controller) {
   });
 }
 
-async function parseResponseBody(response) {
+async function parseResponseBody(response, responseType = 'json', forError = false) {
   const contentType = response.headers.get('content-type') || '';
   if (response.status === 204) return {};
+
+  if (forError) {
+    if (contentType.includes('application/json')) {
+      try {
+        return await response.json();
+      } catch {
+        return {};
+      }
+    }
+
+    const text = await response.text();
+    return text || {};
+  }
+
+  if (responseType === 'blob') {
+    return response.blob();
+  }
+
+  if (responseType === 'text') {
+    return response.text();
+  }
 
   if (contentType.includes('application/json')) {
     try {
       return await response.json();
-    } catch (_) {
+    } catch {
       return {};
     }
   }
@@ -156,33 +200,47 @@ function normalizeError(response, payload, url) {
   });
 }
 
-let refreshPromise = null;
+let _refreshPromise = null;
 
-async function refreshAccessToken(refreshToken) {
+async function _refreshAccessToken(refreshToken) {
   if (!refreshToken) {
     throw new ApiError('No refresh token available', { status: 401 });
   }
 
-  const url = buildUrl('/api/token/refresh/');
-  const response = await fetch(url, {
-    method: 'POST',
-    headers: {
-      Accept: 'application/json',
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify({ refresh: refreshToken }),
-    mode: 'cors',
-    credentials: resolveCredentials(),
-  });
+  try {
+    const url = buildUrl('/api/token/refresh/');
+    const response = await fetch(url, {
+      method: 'POST',
+      headers: {
+        Accept: 'application/json',
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ refresh: refreshToken }),
+      mode: 'cors',
+      credentials: resolveCredentials(),
+    });
 
-  const payload = await parseResponseBody(response);
-  if (!response.ok || !payload?.access) {
+    const payload = await parseResponseBody(response);
+    if (!response.ok) {
+      clearToken();
+      // If refresh fails with 401, try re-login
+      if (response.status === 401 || response.status === 500) {
+        throw new ApiError('Session expired. Please login again', { status: 401 });
+      }
+      throw normalizeError(response, payload, url);
+    }
+
+    if (!payload?.access) {
+      clearToken();
+      throw new ApiError('Invalid refresh response', { status: 400 });
+    }
+
+    setToken(payload.access, payload.refresh || refreshToken);
+    return payload.access;
+  } catch (error) {
     clearToken();
-    throw normalizeError(response, payload, url);
+    throw error;
   }
-
-  setToken(payload.access, payload.refresh || refreshToken);
-  return payload.access;
 }
 
 async function ensureFreshAccessToken(authMode = AUTH_MODE) {
@@ -191,17 +249,16 @@ async function ensureFreshAccessToken(authMode = AUTH_MODE) {
   }
 
   const access = getToken();
-  const refresh = getRefreshToken();
-  if (!refresh) return access;
-  if (access && !isTokenExpired(access)) return access;
-
-  if (!refreshPromise) {
-    refreshPromise = refreshAccessToken(refresh).finally(() => {
-      refreshPromise = null;
-    });
+  
+  // If no token or token expired, return it anyway and let the request handle 401
+  // The API will return 401, which triggers clearToken() and forces re-login
+  if (!access) {
+    return null;
   }
 
-  return refreshPromise;
+  // Return token regardless of expiration - let the server validate it
+  // If expired, we'll get 401 and will need to re-login
+  return access;
 }
 
 async function attachAuth(headers, authMode) {
@@ -249,18 +306,13 @@ async function request(method, path, options = {}) {
 
   try {
     const response = await withTimeout(fetchPromise, API_TIMEOUT, controller);
-    const payload = await parseResponseBody(response);
+    const payload = await parseResponseBody(response, options.responseType, !response.ok);
 
-    if (response.status === 401 && authAllowed && authMode === 'jwt' && getRefreshToken() && !options._retriedWithRefresh) {
-      try {
-        await refreshAccessToken(getRefreshToken());
-        return request(method, path, { ...options, _retriedWithRefresh: true });
-      } catch (refreshError) {
-        clearToken();
-        throw refreshError instanceof ApiError
-          ? refreshError
-          : new ApiError(refreshError.message || 'Failed to refresh token', { url });
-      }
+    // On 401, always clear tokens and require re-login
+    // (automatic refresh can cause issues if backend doesn't support it properly)
+    if (response.status === 401 && authAllowed) {
+      clearToken();
+      throw normalizeError(response, payload, url);
     }
 
     if (response.status === 403 && authAllowed) {
@@ -280,6 +332,13 @@ async function request(method, path, options = {}) {
 
     return payload;
   } catch (err) {
+    // Centralized graceful fallback for reference endpoints when backend causes redirect loops
+    // (ERR_TOO_MANY_REDIRECTS -> fetch throws TypeError: Failed to fetch).
+    if (method === 'GET' && REFERENCE_ENDPOINT_REGEX.test(path) && isNetworkFailure(err)) {
+      warnReferenceOnce(path, err);
+      return EMPTY_PAGE;
+    }
+
     const apiError = err instanceof ApiError ? err : new ApiError(err.message || 'Network error', { url });
     if (shouldRetry(apiError, retry, method)) {
       const attempt = (options._attempt || 0) + 1;
@@ -288,92 +347,8 @@ async function request(method, path, options = {}) {
       return request(method, path, { ...options, retry: retry - 1, _attempt: attempt });
     }
 
-    // In development, provide graceful fallback for connection errors
-    if (import.meta.env.DEV && (apiError.message.includes('Failed to fetch') || apiError.message.includes('CONNECTION_REFUSED'))) {
-      console.warn(`API connection failed: ${url}. Using fallback data in development mode.`);
-      return getFallbackData(method, path);
-    }
-
     throw apiError;
   }
-}
-
-// Development fallback data generator
-function getFallbackData(method, path) {
-  if (method !== 'GET') {
-    return { success: true, message: 'Operation completed (mock)' };
-  }
-
-  // Analytics endpoints
-  if (path.includes('/analytics/overview/')) {
-    return {
-      total_leads: 42,
-      total_contacts: 38,
-      total_deals: 15,
-      total_revenue: 125000,
-      conversion_rate: 0.35
-    };
-  }
-
-  if (path.includes('/dashboard/analytics/')) {
-    return {
-      leads_this_month: 12,
-      deals_closed: 5,
-      revenue_this_month: 45000,
-      conversion_rate: 0.42
-    };
-  }
-
-  if (path.includes('/dashboard/funnel/')) {
-    return [
-      { stage: 'New', count: 25, value: 50000 },
-      { stage: 'Qualified', count: 15, value: 35000 },
-      { stage: 'Proposal', count: 8, value: 22000 },
-      { stage: 'Closed', count: 5, value: 15000 }
-    ];
-  }
-
-  if (path.includes('/dashboard/activity/')) {
-    return [
-      { id: 1, type: 'lead', action: 'created', description: 'New lead: John Doe', timestamp: new Date().toISOString() },
-      { id: 2, type: 'deal', action: 'updated', description: 'Deal moved to Proposal stage', timestamp: new Date().toISOString() }
-    ];
-  }
-
-  // Entity list endpoints
-  if (path.includes('/leads/')) {
-    return {
-      count: 3,
-      results: [
-        { id: 1, name: 'John Doe', email: 'john@example.com', status: 'new', company: 'Acme Corp', phone: '+1234567890' },
-        { id: 2, name: 'Jane Smith', email: 'jane@example.com', status: 'qualified', company: 'Tech Inc', phone: '+1234567891' },
-        { id: 3, name: 'Bob Wilson', email: 'bob@example.com', status: 'contacted', company: 'StartupXYZ', phone: '+1234567892' }
-      ]
-    };
-  }
-
-  if (path.includes('/contacts/')) {
-    return {
-      count: 2,
-      results: [
-        { id: 1, name: 'Alice Johnson', email: 'alice@company.com', company: 'Big Corp', type: 'client' },
-        { id: 2, name: 'Charlie Brown', email: 'charlie@startup.com', company: 'Innovation Labs', type: 'partner' }
-      ]
-    };
-  }
-
-  if (path.includes('/deals/')) {
-    return {
-      count: 2,
-      results: [
-        { id: 1, title: 'Enterprise Software Sale', value: 50000, stage: 'proposal', probability: 75, company: 'Big Corp' },
-        { id: 2, title: 'Consulting Project', value: 25000, stage: 'qualified', probability: 50, company: 'Tech Inc' }
-      ]
-    };
-  }
-
-  // Default fallback for lists
-  return { count: 0, results: [] };
 }
 
 export const apiConfig = {
@@ -392,15 +367,21 @@ export const api = {
   delete: (path, opts) => request('DELETE', path, opts),
 };
 
+export const get = api.get;
+export const post = api.post;
+export const put = api.put;
+export const patch = api.patch;
+export const del = api.delete;
+
 function crudResource(basePath) {
   const base = basePath.endsWith('/') ? basePath : `${basePath}/`;
   return {
-    list: (params) => api.get(base, { params }),
-    retrieve: (id) => api.get(`${base}${id}/`),
-    create: (payload) => api.post(base, { body: payload }),
-    update: (id, payload) => api.put(`${base}${id}/`, { body: payload }),
-    patch: (id, payload) => api.patch(`${base}${id}/`, { body: payload }),
-    remove: (id) => api.delete(`${base}${id}/`),
+    list: (params, opts = {}) => api.get(base, { ...opts, params }),
+    retrieve: (id, opts = {}) => api.get(`${base}${id}/`, { ...opts }),
+    create: (payload, opts = {}) => api.post(base, { ...opts, body: payload }),
+    update: (id, payload, opts = {}) => api.put(`${base}${id}/`, { ...opts, body: payload }),
+    patch: (id, payload, opts = {}) => api.patch(`${base}${id}/`, { ...opts, body: payload }),
+    remove: (id, opts = {}) => api.delete(`${base}${id}/`, { ...opts }),
   };
 }
 
@@ -412,24 +393,10 @@ function readonlyResource(basePath) {
   };
 }
 
-// Authentication (JWT + Token) — per Django-CRM API.yaml
+// Authentication (JWT + Token) — per Contora API.yaml
 async function loginWithFallback(credentials) {
-  const candidates = ['/api/token/', '/api/auth/token/', '/auth/login/', '/login/', '/auth/token/'];
-  let lastError = null;
-
-  for (const endpoint of candidates) {
-    try {
-      return await api.post(endpoint, { body: credentials, skipAuth: true });
-    } catch (err) {
-      lastError = err;
-      const status = err instanceof ApiError ? err.status : null;
-      if (!status || ![404, 405, 500, 502, 503, 504].includes(status)) {
-        throw err;
-      }
-    }
-  }
-
-  throw lastError || new ApiError('Authentication endpoint not found');
+  // Use only the correct endpoint: /api/token/
+  return await api.post('/api/token/', { body: credentials, skipAuth: true });
 }
 
 export const authApi = {
@@ -525,6 +492,7 @@ export const getContacts = (params) => contactsApi.list(params);
 export const getContact = (id) => contactsApi.retrieve(id);
 export const createContact = (payload) => contactsApi.create(payload);
 export const updateContact = (id, payload) => contactsApi.update(id, payload);
+export const patchContact = (id, payload) => contactsApi.patch(id, payload);
 export const deleteContact = (id) => contactsApi.remove(id);
 
 export const getCompanies = (params) => companiesApi.list(params);
@@ -544,9 +512,13 @@ export const getTask = (id) => tasksApi.retrieve(id);
 export const createTask = (payload) => tasksApi.create(payload);
 export const updateTask = (id, payload) => tasksApi.update(id, payload);
 export const deleteTask = (id) => tasksApi.remove(id);
+export const getTaskStages = (params) => api.get('/api/task-stages/', { params });
 
 export const getProjects = (params) => projectsApi.list(params);
 export const getProject = (id) => projectsApi.retrieve(id);
 export const createProject = (payload) => projectsApi.create(payload);
 export const updateProject = (id, payload) => projectsApi.update(id, payload);
 export const deleteProject = (id) => projectsApi.remove(id);
+
+export const getUsers = (params) => usersApi.list(params);
+export const getUser = (id) => usersApi.retrieve(id);

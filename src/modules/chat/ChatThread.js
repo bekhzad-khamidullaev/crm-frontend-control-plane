@@ -3,7 +3,7 @@
  * Displays a conversation thread with messages and input
  */
 
-import { getEntityChatMessages, createChatMessage, deleteChatMessage } from '../../lib/api/chat.js';
+import { getEntityChatMessages, getMessageThread, createChatMessage, deleteChatMessage } from '../../lib/api/chat.js';
 import ChatMessage from '../../components/ui-ChatMessage.jsx';
 import ChatInput from '../../components/ui-ChatInput.jsx';
 import { Spinner, Toast } from '../../components/index.js';
@@ -63,11 +63,11 @@ export function ChatThread({ entityType, entityId, threadId } = {}) {
   container.appendChild(inputContainer);
 
   // Load messages
-  loadMessages(messagesContainer, entityType, entityId, threadId);
+  loadMessages(messagesContainer, entityType, entityId, threadId, false, (msg) => { replyingTo = msg; });
 
   // Auto-refresh messages every 10 seconds
   const refreshInterval = setInterval(() => {
-    loadMessages(messagesContainer, entityType, entityId, threadId, true);
+    loadMessages(messagesContainer, entityType, entityId, threadId, true, (msg) => { replyingTo = msg; });
   }, 10000);
 
   // Cleanup on unmount
@@ -98,18 +98,15 @@ export function ChatThread({ entityType, entityId, threadId } = {}) {
     try {
       const messageData = {
         content: data.content,
-        parent: data.parent || threadId || null,
+        answer_to: data.answer_to || threadId || null,
+        content_type: entityType,
+        object_id: entityId,
       };
-
-      // Add entity relation
-      if (entityType && entityId) {
-        messageData[`related_${entityType}`] = entityId;
-      }
 
       await createChatMessage(messageData);
       
       // Reload messages
-      await loadMessages(container, entityType, entityId, threadId, true);
+      await loadMessages(container, entityType, entityId, threadId, true, (msg) => { replyingTo = msg; });
       
       // Scroll to bottom
       container.scrollTop = container.scrollHeight;
@@ -126,7 +123,7 @@ export function ChatThread({ entityType, entityId, threadId } = {}) {
 /**
  * Load and display messages
  */
-async function loadMessages(container, entityType, entityId, threadId, silent = false) {
+async function loadMessages(container, entityType, entityId, threadId, silent = false, replyingToSetter = null) {
   try {
     let data;
 
@@ -171,13 +168,15 @@ async function loadMessages(container, entityType, entityId, threadId, silent = 
 
     // Display messages
     data.results.forEach(msg => {
-      const isOwn = msg.sender?.id === currentUserId;
+      const isOwn = msg.owner === currentUserId || msg.sender?.id === currentUserId;
       
       const messageEl = ChatMessage(msg, {
         isOwn,
         onReply: (message) => {
           // Set replying state
-          replyingTo = message;
+          if (replyingToSetter) {
+            replyingToSetter(message);
+          }
           // Scroll to input
           container.parentElement.querySelector('.chat-thread__input-container').scrollIntoView({ behavior: 'smooth' });
         },
@@ -185,7 +184,7 @@ async function loadMessages(container, entityType, entityId, threadId, silent = 
           if (confirm('Delete this message?')) {
             try {
               await deleteChatMessage(message.id);
-              await loadMessages(container, entityType, entityId, threadId, true);
+              await loadMessages(container, entityType, entityId, threadId, true, replyingToSetter);
               Toast.success('Message deleted');
             } catch (error) {
               console.error('Error deleting message:', error);

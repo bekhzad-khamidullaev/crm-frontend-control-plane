@@ -245,7 +245,7 @@ export function CallWidget({ global = false } = {}) {
         }
         break;
 
-      case 'terminated':
+      case 'terminated': {
         updateStatus('Call ended', 'idle');
         
         // Stop timer and get duration
@@ -279,6 +279,7 @@ export function CallWidget({ global = false } = {}) {
           currentCall = null;
         }, 2000);
         break;
+      }
 
       case 'held':
         callState.isOnHold = true;

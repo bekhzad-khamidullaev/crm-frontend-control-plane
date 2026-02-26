@@ -48,6 +48,7 @@ export default function IntegrationCard({
   };
 
   const handleDisconnect = async () => {
+    if (!onDisconnect) return;
     setActionLoading(true);
     try {
       await onDisconnect();
@@ -136,9 +137,11 @@ export default function IntegrationCard({
           <div style={{ marginTop: 16 }}>
             {isConnected ? (
               <Space>
-                <Button danger onClick={handleDisconnect} loading={actionLoading}>
-                  Отключить
-                </Button>
+                {onDisconnect && (
+                  <Button danger onClick={handleDisconnect} loading={actionLoading}>
+                    Отключить
+                  </Button>
+                )}
                 {onSettings && (
                   <Button onClick={onSettings}>
                     Настроить

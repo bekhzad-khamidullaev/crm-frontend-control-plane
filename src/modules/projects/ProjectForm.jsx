@@ -1,34 +1,92 @@
-import React, { useState, useEffect } from 'react';
-import {
-  Form,
-  Input,
-  Select,
-  Button,
-  Card,
-  Space,
-  message,
-  Typography,
-  Spin,
-  Row,
-  Col,
-  DatePicker,
-  InputNumber,
-} from 'antd';
-import { SaveOutlined, ArrowLeftOutlined } from '@ant-design/icons';
-import { navigate } from '../../router';
-import { getProject, createProject, updateProject } from '../../lib/api/client';
+import React, { useEffect, useState } from 'react';
+import { useForm } from 'react-hook-form';
+import { z } from 'zod';
+import { zodResolver } from '@hookform/resolvers/zod';
 import dayjs from 'dayjs';
+import { ArrowLeft, Save } from 'lucide-react';
 
-const { Title } = Typography;
-const { TextArea } = Input;
-const { Option } = Select;
-const { RangePicker } = DatePicker;
+import { navigate } from '../../router';
+import { getProject, createProject, updateProject, getUsers, getUser, getProjectStages } from '../../lib/api';
+import ReferenceSelect from '../../components/ui-ReferenceSelect';
+import EntitySelect from '../../components/EntitySelect';
+import { normalizePayload } from '../../lib/utils/payload';
+import { Card } from '../../components/ui/card.jsx';
+import { Button } from '../../components/ui/button.jsx';
+import { Input } from '../../components/ui/input.jsx';
+import { Textarea } from '../../components/ui/textarea.jsx';
+import { Label } from '../../components/ui/label.jsx';
+import { Switch } from '../../components/ui/switch.jsx';
+import { DatePicker } from '../../components/ui-DatePicker.jsx';
+import { toast } from '../../components/ui/use-toast.js';
+
+const schema = z.object({
+  name: z.string().min(1, 'Введите название'),
+  description: z.string().optional(),
+  note: z.string().optional(),
+  stage: z.any().optional(),
+  start_date: z.any().optional(),
+  due_date: z.any().optional(),
+  closing_date: z.any().optional(),
+  next_step: z.string().min(1, 'Введите следующий шаг'),
+  next_step_date: z.any().refine((val) => val, { message: 'Выберите дату следующего шага' }),
+  priority: z.any().optional(),
+  owner: z.any().optional(),
+  co_owner: z.any().optional(),
+  responsible: z.any().optional(),
+  subscribers: z.any().optional(),
+  tags: z.any().optional(),
+  active: z.boolean().optional(),
+  remind_me: z.boolean().optional(),
+});
 
 function ProjectForm({ id }) {
-  const [form] = Form.useForm();
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
   const isEdit = !!id;
+
+  const {
+    register,
+    handleSubmit,
+    setValue,
+    reset,
+    watch,
+    formState: { errors },
+  } = useForm({
+    resolver: zodResolver(schema),
+    defaultValues: {
+      name: '',
+      description: '',
+      note: '',
+      stage: '',
+      start_date: null,
+      due_date: null,
+      closing_date: null,
+      next_step: '',
+      next_step_date: null,
+      priority: '',
+      owner: '',
+      co_owner: '',
+      responsible: [],
+      subscribers: [],
+      tags: [],
+      active: true,
+      remind_me: false,
+    },
+  });
+
+  const stageValue = watch('stage');
+  const startDate = watch('start_date');
+  const dueDate = watch('due_date');
+  const closingDate = watch('closing_date');
+  const nextStepDate = watch('next_step_date');
+  const priorityValue = watch('priority');
+  const ownerValue = watch('owner');
+  const coOwnerValue = watch('co_owner');
+  const responsibleValue = watch('responsible');
+  const subscribersValue = watch('subscribers');
+  const tagsValue = watch('tags');
+  const activeValue = watch('active');
+  const remindMeValue = watch('remind_me');
 
   useEffect(() => {
     if (isEdit) {
@@ -40,212 +98,221 @@ function ProjectForm({ id }) {
     setLoading(true);
     try {
       const project = await getProject(id);
-      if (project.start_date && project.end_date) {
-        project.dateRange = [dayjs(project.start_date), dayjs(project.end_date)];
-      }
-      form.setFieldsValue(project);
-    } catch (error) {
-      message.error('Ошибка загрузки данных проекта');
-      // Mock data for demo
-      form.setFieldsValue({
-        name: 'Внедрение CRM системы',
-        description: 'Полное внедрение CRM системы для автоматизации бизнес-процессов компании',
-        status: 'in_progress',
-        dateRange: [dayjs('2024-01-15'), dayjs('2024-04-30')],
-        budget: 2500000,
-        client_id: '1',
-        manager_id: '1',
-        team_size: 5,
+      reset({
+        ...project,
+        start_date: project.start_date ? dayjs(project.start_date) : null,
+        due_date: project.due_date ? dayjs(project.due_date) : null,
+        closing_date: project.closing_date ? dayjs(project.closing_date) : null,
+        next_step_date: project.next_step_date ? dayjs(project.next_step_date) : null,
       });
+    } catch (error) {
+      toast({ title: 'Ошибка', description: 'Ошибка загрузки данных проекта', variant: 'destructive' });
     } finally {
       setLoading(false);
     }
   };
 
-  const onFinish = async (values) => {
+  const onSubmit = async (values) => {
     setSaving(true);
     try {
-      const payload = {
-        ...values,
-        start_date: values.dateRange ? values.dateRange[0].format('YYYY-MM-DD') : null,
-        end_date: values.dateRange ? values.dateRange[1].format('YYYY-MM-DD') : null,
-      };
-      delete payload.dateRange;
+      const payload = normalizePayload(
+        {
+          ...values,
+          start_date: values.start_date ? values.start_date.format('YYYY-MM-DD') : null,
+          due_date: values.due_date ? values.due_date.format('YYYY-MM-DD') : null,
+          closing_date: values.closing_date ? values.closing_date.format('YYYY-MM-DD') : null,
+          next_step_date: values.next_step_date ? values.next_step_date.format('YYYY-MM-DD') : null,
+        },
+        { preserveEmptyArrays: ['responsible', 'subscribers', 'tags'] }
+      );
 
       if (isEdit) {
         await updateProject(id, payload);
-        message.success('Проект обновлен');
+        toast({ title: 'Проект обновлен', description: 'Проект обновлен' });
       } else {
         await createProject(payload);
-        message.success('Проект создан');
+        toast({ title: 'Проект создан', description: 'Проект создан' });
       }
       navigate('/projects');
     } catch (error) {
-      message.error(`Ошибка ${isEdit ? 'обновления' : 'создания'} проекта`);
+      toast({ title: 'Ошибка', description: `Ошибка ${isEdit ? 'обновления' : 'создания'} проекта`, variant: 'destructive' });
     } finally {
       setSaving(false);
     }
   };
 
   if (loading) {
-    return (
-      <div style={{ textAlign: 'center', padding: '50px' }}>
-        <Spin size="large" />
-      </div>
-    );
+    return <div className="py-12 text-center text-sm text-muted-foreground">Загрузка...</div>;
   }
 
   return (
-    <div>
-      <Space style={{ marginBottom: 16 }}>
-        <Button icon={<ArrowLeftOutlined />} onClick={() => navigate('/projects')}>
-          Назад
-        </Button>
-      </Space>
+    <div className="space-y-4">
+      <Button variant="outline" onClick={() => navigate('/projects')}>
+        <ArrowLeft className="mr-2 h-4 w-4" />
+        Назад
+      </Button>
 
-      <Title level={2}>
+      <h2 className="text-2xl font-semibold">
         {isEdit ? 'Редактировать проект' : 'Создать новый проект'}
-      </Title>
+      </h2>
 
-      <Card>
-        <Form
-          form={form}
-          layout="vertical"
-          onFinish={onFinish}
-          autoComplete="off"
-        >
-          <Title level={4}>Основная информация</Title>
-          <Row gutter={16}>
-            <Col xs={24} md={16}>
-              <Form.Item
-                label="Название проекта"
-                name="name"
-                rules={[{ required: true, message: 'Введите название' }]}
-              >
-                <Input placeholder="Внедрение CRM системы" />
-              </Form.Item>
-            </Col>
+      <Card className="p-6">
+        <form className="space-y-6" onSubmit={handleSubmit(onSubmit)}>
+          <section className="space-y-3">
+            <h3 className="text-lg font-semibold">Основная информация</h3>
+            <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+              <div>
+                <Label htmlFor="name">Название проекта *</Label>
+                <Input id="name" placeholder="Внедрение CRM системы" {...register('name')} />
+                {errors.name && <p className="text-xs text-destructive">{errors.name.message}</p>}
+              </div>
+              <div>
+                <Label htmlFor="priority">Приоритет</Label>
+                <Input id="priority" type="number" min={1} max={3} value={priorityValue || ''} onChange={(e) => setValue('priority', e.target.value)} />
+              </div>
+            </div>
 
-            <Col xs={24} md={8}>
-              <Form.Item
-                label="Статус"
-                name="status"
-                rules={[{ required: true, message: 'Выберите статус' }]}
-                initialValue="planning"
-              >
-                <Select placeholder="Выберите статус">
-                  <Option value="planning">Планирование</Option>
-                  <Option value="in_progress">В работе</Option>
-                  <Option value="on_hold">Приостановлен</Option>
-                  <Option value="completed">Завершен</Option>
-                  <Option value="cancelled">Отменен</Option>
-                </Select>
-              </Form.Item>
-            </Col>
-          </Row>
+            <div>
+              <Label htmlFor="description">Описание</Label>
+              <Textarea id="description" rows={4} placeholder="Детальное описание проекта" {...register('description')} />
+            </div>
 
-          <Form.Item label="Описание" name="description">
-            <TextArea rows={4} placeholder="Детальное описание проекта" />
-          </Form.Item>
+            <div>
+              <Label htmlFor="note">Заметка</Label>
+              <Textarea id="note" rows={3} placeholder="Внутренние заметки" {...register('note')} />
+            </div>
 
-          <Title level={4} style={{ marginTop: 24 }}>
-            Сроки и бюджет
-          </Title>
-          <Row gutter={16}>
-            <Col xs={24} md={12}>
-              <Form.Item
-                label="Период выполнения"
-                name="dateRange"
-                rules={[{ required: true, message: 'Выберите даты' }]}
-              >
-                <RangePicker
-                  style={{ width: '100%' }}
-                  format="DD.MM.YYYY"
-                  placeholder={['Дата начала', 'Дата окончания']}
+            <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
+              <div>
+                <Label>Этап</Label>
+                <ReferenceSelect
+                  type="project-stages"
+                  placeholder="Выберите этап"
+                  allowClear
+                  value={stageValue || ''}
+                  onChange={(val) => setValue('stage', val)}
                 />
-              </Form.Item>
-            </Col>
+              </div>
+              <div>
+                <Label>Дата начала</Label>
+                <DatePicker value={startDate || null} onChange={(val) => setValue('start_date', val)} format="DD.MM.YYYY" />
+              </div>
+              <div>
+                <Label>Срок завершения</Label>
+                <DatePicker value={dueDate || null} onChange={(val) => setValue('due_date', val)} format="DD.MM.YYYY" />
+              </div>
+            </div>
 
-            <Col xs={24} md={12}>
-              <Form.Item
-                label="Бюджет (₽)"
-                name="budget"
-                rules={[{ required: true, message: 'Введите бюджет' }]}
-              >
-                <InputNumber
-                  min={0}
-                  style={{ width: '100%' }}
-                  placeholder="2500000"
-                  formatter={(value) =>
-                    `${value}`.replace(/\B(?=(\d{3})+(?!\d))/g, ' ')
-                  }
-                  parser={(value) => value.replace(/\s/g, '')}
+            <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+              <div>
+                <Label>Дата закрытия</Label>
+                <DatePicker value={closingDate || null} onChange={(val) => setValue('closing_date', val)} format="DD.MM.YYYY" />
+              </div>
+              <div>
+                <Label htmlFor="next_step">Следующий шаг *</Label>
+                <Input id="next_step" placeholder="Определить цели" {...register('next_step')} />
+                {errors.next_step && <p className="text-xs text-destructive">{errors.next_step.message}</p>}
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+              <div>
+                <Label>Дата следующего шага *</Label>
+                <DatePicker value={nextStepDate || null} onChange={(val) => setValue('next_step_date', val)} format="DD.MM.YYYY" />
+                {errors.next_step_date && <p className="text-xs text-destructive">{errors.next_step_date.message}</p>}
+              </div>
+            </div>
+          </section>
+
+          <section className="space-y-3">
+            <h3 className="text-lg font-semibold">Ответственные</h3>
+            <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+              <div>
+                <Label>Владелец</Label>
+                <EntitySelect
+                  value={ownerValue || ''}
+                  placeholder="Выберите пользователя"
+                  fetchOptions={getUsers}
+                  fetchById={getUser}
+                  onChange={(val) => setValue('owner', val)}
                 />
-              </Form.Item>
-            </Col>
-          </Row>
-
-          <Title level={4} style={{ marginTop: 24 }}>
-            Команда и клиент
-          </Title>
-          <Row gutter={16}>
-            <Col xs={24} md={8}>
-              <Form.Item
-                label="Клиент"
-                name="client_id"
-                rules={[{ required: true, message: 'Выберите клиента' }]}
-              >
-                <Select placeholder="Выберите компанию" showSearch>
-                  <Option value="1">ООО "ТехноПром"</Option>
-                  <Option value="2">АО "Инновации"</Option>
-                  <Option value="3">ИП Козлов</Option>
-                </Select>
-              </Form.Item>
-            </Col>
-
-            <Col xs={24} md={8}>
-              <Form.Item
-                label="Менеджер проекта"
-                name="manager_id"
-                rules={[{ required: true, message: 'Выберите менеджера' }]}
-              >
-                <Select placeholder="Выберите сотрудника" showSearch>
-                  <Option value="1">Алексей Иванов</Option>
-                  <Option value="2">Елена Смирнова</Option>
-                  <Option value="3">Дмитрий Козлов</Option>
-                </Select>
-              </Form.Item>
-            </Col>
-
-            <Col xs={24} md={8}>
-              <Form.Item
-                label="Размер команды"
-                name="team_size"
-                rules={[{ required: true, message: 'Укажите размер команды' }]}
-              >
-                <InputNumber
-                  min={1}
-                  style={{ width: '100%' }}
-                  placeholder="5"
+              </div>
+              <div>
+                <Label>Со-владелец</Label>
+                <EntitySelect
+                  value={coOwnerValue || ''}
+                  placeholder="Выберите пользователя"
+                  fetchOptions={getUsers}
+                  fetchById={getUser}
+                  onChange={(val) => setValue('co_owner', val)}
                 />
-              </Form.Item>
-            </Col>
-          </Row>
+              </div>
+            </div>
 
-          <Form.Item>
-            <Space>
-              <Button
-                type="primary"
-                htmlType="submit"
-                icon={<SaveOutlined />}
-                loading={saving}
-              >
-                {isEdit ? 'Обновить' : 'Создать'}
-              </Button>
-              <Button onClick={() => navigate('/projects')}>Отмена</Button>
-            </Space>
-          </Form.Item>
-        </Form>
+            <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+              <div>
+                <Label>Ответственные</Label>
+                <EntitySelect
+                  mode="multiple"
+                  value={responsibleValue || []}
+                  placeholder="Выберите пользователей"
+                  fetchOptions={getUsers}
+                  fetchById={getUser}
+                  onChange={(val) => setValue('responsible', val)}
+                />
+              </div>
+              <div>
+                <Label>Подписчики</Label>
+                <EntitySelect
+                  mode="multiple"
+                  value={subscribersValue || []}
+                  placeholder="Выберите пользователей"
+                  fetchOptions={getUsers}
+                  fetchById={getUser}
+                  onChange={(val) => setValue('subscribers', val)}
+                />
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+              <div>
+                <Label>Теги</Label>
+                <ReferenceSelect
+                  type="crm-tags"
+                  placeholder="Выберите теги"
+                  mode="multiple"
+                  allowClear
+                  value={tagsValue || []}
+                  onChange={(val) => setValue('tags', val)}
+                />
+              </div>
+            </div>
+          </section>
+
+          <section className="space-y-3">
+            <h3 className="text-lg font-semibold">Статус</h3>
+            <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+              <div className="flex items-center gap-2">
+                <Switch checked={!!activeValue} onCheckedChange={(val) => setValue('active', val)} />
+                <Label>Активен</Label>
+              </div>
+              <div className="flex items-center gap-2">
+                <Switch checked={!!remindMeValue} onCheckedChange={(val) => setValue('remind_me', val)} />
+                <Label>Напоминать</Label>
+              </div>
+            </div>
+          </section>
+
+          <div className="flex flex-wrap gap-2">
+            <Button type="submit" loading={saving}>
+              <Save className="mr-2 h-4 w-4" />
+              {isEdit ? 'Обновить' : 'Создать'}
+            </Button>
+            <Button variant="outline" onClick={() => navigate('/projects')}>
+              Отмена
+            </Button>
+          </div>
+        </form>
       </Card>
     </div>
   );

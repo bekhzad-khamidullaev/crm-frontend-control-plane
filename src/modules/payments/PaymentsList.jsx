@@ -1,258 +1,189 @@
-import { useState, useEffect } from 'react';
-import { Button, Space, Tag, Select, message, Modal } from 'antd';
-import { DollarOutlined, PrinterOutlined } from '@ant-design/icons';
-import { getPayments, deletePayment, updatePayment } from '../../lib/api/payments';
-import { navigate } from '../../router';
-import dayjs from 'dayjs';
-import BulkActions from '../../components/ui-BulkActions.jsx';
+import { DollarSign, Edit, Eye, Trash2 } from 'lucide-react';
+import { useEffect, useState } from 'react';
+
+import { formatCurrency } from '../../lib/utils/format';
+
 import EnhancedTable from '../../components/ui-EnhancedTable.jsx';
 import TableToolbar from '../../components/ui-TableToolbar.jsx';
-import QuickActions from '../../components/QuickActions.jsx';
+import { Button } from '../../components/ui/button.jsx';
+import { toast } from '../../components/ui/use-toast.js';
+import {
+    deletePayment,
+    getPayments,
+} from '../../lib/api/payments';
+import { exportToCSV, exportToExcel } from '../../lib/utils/export';
+import { navigate } from '../../router';
 
-export default function PaymentsList() {
-  const [data, setData] = useState([]);
+const statusOptions = [
+  { value: 'r', label: 'Получен' },
+  { value: 'g', label: 'Гарантирован' },
+  { value: 'h', label: 'Высокая вероятность' },
+  { value: 'l', label: 'Низкая вероятность' },
+];
+
+const statusColors = {
+  r: 'bg-emerald-100 text-emerald-700',
+  g: 'bg-sky-100 text-sky-700',
+  h: 'bg-amber-100 text-amber-700',
+  l: 'bg-muted text-muted-foreground',
+};
+
+function PaymentsList() {
+  const [payments, setPayments] = useState([]);
+  const [allPaymentsCache, setAllPaymentsCache] = useState(null);
   const [loading, setLoading] = useState(false);
   const [pagination, setPagination] = useState({ current: 1, pageSize: 10, total: 0 });
   const [searchText, setSearchText] = useState('');
-  const [currencyFilter, setCurrencyFilter] = useState(null);
   const [statusFilter, setStatusFilter] = useState(null);
-  const [selectedRowKeys, setSelectedRowKeys] = useState([]);
-  const [importModalVisible, setImportModalVisible] = useState(false);
 
   useEffect(() => {
-    fetchData();
-  }, [pagination.current, pagination.pageSize, searchText, currencyFilter, statusFilter]);
+    fetchPayments(1, searchText, statusFilter);
+  }, []);
 
-  const fetchData = async () => {
+  const fetchPayments = async (page = 1, search = '', status = statusFilter, pageSize = pagination.pageSize) => {
     setLoading(true);
     try {
-      const params = {
-        page: pagination.current,
-        page_size: pagination.pageSize,
-        search: searchText || undefined,
-        currency: currencyFilter || undefined,
-        status: statusFilter || undefined,
-      };
-      const res = await getPayments(params);
-      const results = res.results || [];
-      setData(results);
-      setPagination((prev) => ({ ...prev, total: res.count || results.length }));
+      const response = await getPayments({
+        page,
+        page_size: pageSize,
+        search: search || undefined,
+        status: status || undefined,
+      });
+      const results = response.results || [];
+      const totalCount = response.count || 0;
+      
+      if (results.length > pageSize && results.length === totalCount) {
+        console.warn('⚠️ PaymentsList: Caching all data');
+        setAllPaymentsCache(results);
+        const startIndex = (page - 1) * pageSize;
+        setPayments(results.slice(startIndex, startIndex + pageSize));
+      } else {
+        setAllPaymentsCache(null);
+        setPayments(results);
+      }
+      
+      setPagination((prev) => ({
+        ...prev,
+        current: page,
+        pageSize: pageSize,
+        total: totalCount,
+      }));
     } catch (error) {
-      message.error('Failed to fetch payments');
-      console.error(error);
+      toast({ title: 'Ошибка', description: 'Ошибка загрузки платежей', variant: 'destructive' });
+      setPayments([]);
+      setPagination((prev) => ({ ...prev, current: 1, total: 0 }));
     } finally {
       setLoading(false);
     }
   };
 
-  const handleDelete = (id) => {
-    Modal.confirm({
-      title: 'Delete Payment',
-      content: 'Are you sure you want to delete this payment?',
-      okText: 'Delete',
-      okType: 'danger',
-      onOk: async () => {
-        try {
-          await deletePayment(id);
-          message.success('Payment deleted successfully');
-          fetchData();
-        } catch (error) {
-          message.error('Failed to delete payment');
-        }
-      },
-    });
+  const handleSearch = (value) => {
+    setSearchText(value);
+    fetchPayments(1, value, statusFilter);
   };
 
   const handleTableChange = (newPagination) => {
-    setPagination(newPagination);
-  };
-
-  // Bulk operations
-  const handleBulkDelete = async (ids) => {
-    try {
-      await Promise.all(ids.map(id => deletePayment(id)));
-      message.success(`Deleted ${ids.length} payments`);
-      setSelectedRowKeys([]);
-      fetchData();
-    } catch (error) {
-      message.error('Failed to delete payments');
-      throw error;
+    const nextPage = newPagination?.current || 1;
+    const nextPageSize = newPagination?.pageSize || pagination.pageSize;
+    
+    if (nextPageSize !== pagination.pageSize) {
+      setPagination((p) => ({ ...p, pageSize: nextPageSize }));
+      setAllPaymentsCache(null);
+      fetchPayments(nextPage, searchText, statusFilter, nextPageSize);
+      return;
+    }
+    
+    if (allPaymentsCache && allPaymentsCache.length > 0) {
+      const startIndex = (nextPage - 1) * nextPageSize;
+      setPayments(allPaymentsCache.slice(startIndex, startIndex + nextPageSize));
+      setPagination((p) => ({ ...p, current: nextPage }));
+    } else {
+      fetchPayments(nextPage, searchText, statusFilter, nextPageSize);
     }
   };
 
-  const handleBulkStatusChange = (ids) => {
-    Modal.confirm({
-      title: 'Change Status',
-      content: (
-        <Select
-          id="bulk-status-select"
-          style={{ width: '100%', marginTop: 16 }}
-          placeholder="Select new status"
-        >
-          <Select.Option value="pending">Pending</Select.Option>
-          <Select.Option value="completed">Completed</Select.Option>
-          <Select.Option value="failed">Failed</Select.Option>
-          <Select.Option value="cancelled">Cancelled</Select.Option>
-        </Select>
-      ),
-      onOk: async () => {
-        const newStatus = document.getElementById('bulk-status-select').value;
-        if (!newStatus) {
-          message.warning('Please select a status');
-          return;
-        }
-        try {
-          await Promise.all(ids.map(id => updatePayment(id, { status: newStatus })));
-          message.success(`Updated ${ids.length} payments`);
-          setSelectedRowKeys([]);
-          fetchData();
-        } catch (error) {
-          message.error('Failed to update payments');
-        }
-      },
-    });
+  const handleDelete = async (id) => {
+    try {
+      await deletePayment(id);
+      toast({ title: 'Платеж удален', description: 'Платеж удален' });
+      fetchPayments(pagination.current, searchText, statusFilter);
+    } catch (error) {
+      toast({ title: 'Ошибка', description: 'Ошибка удаления платежа', variant: 'destructive' });
+    }
   };
 
-  const handleBulkExport = (ids) => {
-    return data.filter(item => ids.includes(item.id));
-  };
-
-  // Import functionality
-  const handleImport = async (importedData) => {
-    console.log('Importing payments:', importedData);
-    message.success(`Would import ${importedData.length} payments`);
-    fetchData();
-  };
-
-  const importFields = [
-    { name: 'amount', label: 'Amount', type: 'number', required: true },
-    { name: 'currency', label: 'Currency', required: true },
-    { name: 'status', label: 'Status', required: false },
-    { name: 'payment_date', label: 'Payment Date', type: 'date', required: false },
-    { name: 'method', label: 'Method', required: false },
-    { name: 'notes', label: 'Notes', required: false },
-  ];
-
-  const importValidationRules = [
-    { field: 'amount', required: true, type: 'number', label: 'Amount' },
-    { field: 'currency', required: true, label: 'Currency' },
-  ];
-
-  const getStatusColor = (status) => {
-    const colors = {
-      pending: 'orange',
-      completed: 'green',
-      failed: 'red',
-      cancelled: 'default',
-    };
-    return colors[status] || 'default';
+  const handleExport = (format) => {
+    const filename = `payments_${new Date().toISOString().split('T')[0]}.${format === 'excel' ? 'xlsx' : 'csv'}`;
+    if (format === 'excel') {
+      exportToExcel(payments, [], filename);
+    } else {
+      exportToCSV(payments, [], filename);
+    }
+    toast({ title: 'Экспорт', description: 'Платежи экспортированы' });
   };
 
   const columns = [
     {
-      title: 'Amount',
-      dataIndex: 'amount',
-      key: 'amount',
-      render: (amount, record) => (
-        <span style={{ fontWeight: 'bold' }}>
-          {record.currency || '$'} {parseFloat(amount).toFixed(2)}
-        </span>
+      title: 'Платеж',
+      key: 'payment',
+      render: (_, record) => (
+        <div className="flex items-center gap-2">
+          <div className="flex h-8 w-8 items-center justify-center rounded-full bg-primary/10 text-primary">
+            <DollarSign className="h-4 w-4" />
+          </div>
+          <div>
+            <div className="font-medium">
+              {formatCurrency(record.amount, record.currency_name || 'RUB')}
+            </div>
+            <div className="text-xs text-muted-foreground">#{record.id}</div>
+          </div>
+        </div>
       ),
-      sorter: true,
     },
     {
-      title: 'Deal',
-      dataIndex: 'deal',
-      key: 'deal',
-      render: (deal) => deal?.title || '-',
-    },
-    {
-      title: 'Invoice',
-      dataIndex: 'invoice',
-      key: 'invoice',
-      render: (invoice) => invoice?.number || '-',
-    },
-    {
-      title: 'Status',
+      title: 'Статус',
       dataIndex: 'status',
       key: 'status',
       render: (status) => (
-        <Tag color={getStatusColor(status)}>
-          {status ? status.toUpperCase() : 'UNKNOWN'}
-        </Tag>
+        <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs ${statusColors[status] || 'bg-muted text-muted-foreground'}`}>
+          {statusOptions.find((opt) => opt.value === status)?.label || status || '-'}
+        </span>
       ),
     },
     {
-      title: 'Payment Date',
+      title: 'Дата платежа',
       dataIndex: 'payment_date',
       key: 'payment_date',
-      render: (date) => date ? dayjs(date).format('DD MMM YYYY') : '-',
-      sorter: true,
+      render: (date) => (date ? new Date(date).toLocaleDateString('ru-RU') : '-'),
     },
     {
-      title: 'Method',
-      dataIndex: 'method',
-      key: 'method',
-      render: (method) => method || '-',
+      title: 'Сделка',
+      dataIndex: 'deal_name',
+      key: 'deal_name',
+      render: (value, record) => value || (record.deal ? `#${record.deal}` : '-'),
     },
     {
-      title: 'Actions',
+      title: 'Действия',
       key: 'actions',
-      fixed: 'right',
-      width: 150,
+      width: 180,
       render: (_, record) => (
-        <Space size="small">
-          <Button
-            type="link"
-            size="small"
-            icon={<EyeOutlined />}
-            onClick={() => navigate(`/payments/${record.id}`)}
-          >
-            View
+        <div className="flex flex-wrap items-center gap-2">
+          <Button variant="ghost" size="sm" onClick={() => navigate(`/payments/${record.id}`)}>
+            <Eye className="mr-1 h-4 w-4" />
+            Просмотр
           </Button>
-          <Button
-            type="link"
-            size="small"
-            icon={<EditOutlined />}
-            onClick={() => navigate(`/payments/${record.id}/edit`)}
-          />
-          <Button
-            type="link"
-            size="small"
-            danger
-            icon={<DeleteOutlined />}
-            onClick={() => handleDelete(record.id)}
-          />
-        </Space>
+          <Button variant="ghost" size="sm" onClick={() => navigate(`/payments/${record.id}/edit`)}>
+            <Edit className="mr-1 h-4 w-4" />
+            Редактировать
+          </Button>
+          <Button variant="ghost" size="sm" className="text-destructive" onClick={() => handleDelete(record.id)}>
+            <Trash2 className="mr-1 h-4 w-4" />
+            Удалить
+          </Button>
+        </div>
       ),
     },
   ];
-
-  // Export columns configuration
-  // Temporarily commented out
-  /*
-  const exportColumns = [
-    { key: 'id', label: 'ID' },
-    { key: 'amount', label: 'Amount', format: formatters.number },
-    { key: 'currency', label: 'Currency' },
-    { key: 'status', label: 'Status' },
-    { key: 'payment_date', label: 'Payment Date', format: formatters.date },
-    { key: 'method', label: 'Method' },
-    { key: 'deal.title', label: 'Deal' },
-    { key: 'invoice.number', label: 'Invoice' },
-    { key: 'created_at', label: 'Created', format: formatters.datetime },
-  ];
-  */
-
-  const rowSelection = {
-    selectedRowKeys,
-    onChange: setSelectedRowKeys,
-    selections: [
-      Table.SELECTION_ALL,
-      Table.SELECTION_INVERT,
-      Table.SELECTION_NONE,
-    ],
-  };
 
   return (
     <div>
@@ -260,66 +191,42 @@ export default function PaymentsList() {
         title="Платежи"
         total={pagination.total}
         loading={loading}
-        searchPlaceholder="Поиск платежей..."
-        onSearch={setSearchText}
+        searchPlaceholder="Поиск по платежам..."
+        onSearch={handleSearch}
         onCreate={() => navigate('/payments/new')}
-        onRefresh={fetchData}
+        onExport={handleExport}
+        onRefresh={() => fetchPayments(pagination.current, searchText, statusFilter)}
         filters={[
-          {
-            key: 'currency',
-            placeholder: 'Валюта',
-            value: currencyFilter,
-            options: [
-              { label: 'USD', value: 'USD' },
-              { label: 'EUR', value: 'EUR' },
-              { label: 'GBP', value: 'GBP' },
-              { label: 'UZS', value: 'UZS' },
-            ],
-            width: 120,
-          },
           {
             key: 'status',
             placeholder: 'Статус',
-            value: statusFilter,
-            options: [
-              { label: 'Ожидание', value: 'pending' },
-              { label: 'Завершен', value: 'completed' },
-              { label: 'Ошибка', value: 'failed' },
-              { label: 'Отменен', value: 'cancelled' },
-            ],
-            width: 130,
+            options: statusOptions,
+            width: 150,
           },
         ]}
         onFilterChange={(key, value) => {
-          if (key === 'currency') setCurrencyFilter(value);
-          if (key === 'status') setStatusFilter(value);
+          if (key === 'status') {
+            setStatusFilter(value || null);
+            fetchPayments(1, searchText, value || null);
+          }
         }}
-        createButtonText="Новый платеж"
+        createButtonText="Создать платеж"
         showViewModeSwitch={false}
-        showExportButton={false}
       />
 
       <EnhancedTable
         columns={columns}
-        dataSource={data}
+        dataSource={payments}
         loading={loading}
         pagination={pagination}
         onChange={handleTableChange}
-        rowSelection={rowSelection}
-        scroll={{ x: 1000 }}
         showTotal={true}
         showSizeChanger={true}
         emptyText="Нет платежей"
         emptyDescription="Создайте первый платеж"
       />
-
-      <BulkActions
-        selectedRowKeys={selectedRowKeys}
-        onClearSelection={() => setSelectedRowKeys([])}
-        onDelete={handleBulkDelete}
-        onStatusChange={handleBulkStatusChange}
-        entityName="платежей"
-      />
     </div>
   );
 }
+
+export default PaymentsList;

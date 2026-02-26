@@ -48,7 +48,7 @@ export async function getOutput(id) {
  * @returns {Promise<Object>}
  */
 export async function createOutput(data) {
-  return api.post('/api/outputs/', data);
+  return api.post('/api/outputs/', { body: data });
 }
 
 /**
@@ -58,7 +58,7 @@ export async function createOutput(data) {
  * @returns {Promise<Object>}
  */
 export async function updateOutput(id, data) {
-  return api.put(`/api/outputs/${id}/`, data);
+  return api.put(`/api/outputs/${id}/`, { body: data });
 }
 
 /**
@@ -68,7 +68,7 @@ export async function updateOutput(id, data) {
  * @returns {Promise<Object>}
  */
 export async function patchOutput(id, data) {
-  return api.patch(`/api/outputs/${id}/`, data);
+  return api.patch(`/api/outputs/${id}/`, { body: data });
 }
 
 /**

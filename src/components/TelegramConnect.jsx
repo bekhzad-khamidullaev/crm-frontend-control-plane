@@ -5,27 +5,26 @@
 
 import React, { useState } from 'react';
 import { Form, Input, Button, Space, Alert, Typography, Card, App } from 'antd';
-import { SendOutlined, CopyOutlined } from '@ant-design/icons';
+import { SendOutlined } from '@ant-design/icons';
 import { connectTelegramBot, setTelegramWebhook } from '../lib/api/integrations/telegram';
 
-const { Text, Link, Paragraph } = Typography;
+const { Link, Paragraph } = Typography;
 
 export default function TelegramConnect({ onSuccess, onCancel }) {
   const { message } = App.useApp();
   const [form] = Form.useForm();
   const [loading, setLoading] = useState(false);
-  const [webhookUrl, setWebhookUrl] = useState('');
 
   const handleConnect = async (values) => {
     setLoading(true);
     try {
       const result = await connectTelegramBot(values);
-      
-      // After connecting, set up webhook
-      if (result.success && webhookUrl) {
-        await setTelegramWebhook({ webhook_url: webhookUrl });
+      const botId = result?.id || result?.bot_id;
+
+      if (botId && values.webhook_url) {
+        await setTelegramWebhook(botId, { webhook_url: values.webhook_url });
       }
-      
+
       message.success('Telegram бот успешно подключен');
       onSuccess?.(result);
     } catch (error) {
@@ -34,13 +33,6 @@ export default function TelegramConnect({ onSuccess, onCancel }) {
     } finally {
       setLoading(false);
     }
-  };
-
-  const copyWebhookUrl = () => {
-    const url = `${window.location.origin}/api/integrations/telegram/webhook/`;
-    navigator.clipboard.writeText(url);
-    setWebhookUrl(url);
-    message.success('URL скопирован');
   };
 
   return (
@@ -120,23 +112,11 @@ export default function TelegramConnect({ onSuccess, onCancel }) {
           description={
             <div>
               <Paragraph>
-                После подключения бота, будет автоматически настроен webhook на адрес:
+                При необходимости укажите URL, на который Telegram будет отправлять события:
               </Paragraph>
-              <Space.Compact style={{ width: '100%' }}>
-                <Input
-                  readOnly
-                  value={`${window.location.origin}/api/integrations/telegram/webhook/`}
-                />
-                <Button
-                  icon={<CopyOutlined />}
-                  onClick={copyWebhookUrl}
-                />
-              </Space.Compact>
-              <Paragraph style={{ marginTop: 8, marginBottom: 0 }}>
-                <Text type="secondary">
-                  Webhook позволяет боту получать сообщения в реальном времени
-                </Text>
-              </Paragraph>
+              <Form.Item name="webhook_url" style={{ marginBottom: 0 }}>
+                <Input placeholder="https://crm.example.com/api/telegram/webhook/" />
+              </Form.Item>
             </div>
           }
           type="info"

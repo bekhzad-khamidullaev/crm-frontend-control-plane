@@ -9,6 +9,7 @@ import {
   BellOutlined,
   ClockCircleOutlined,
   CheckOutlined,
+  FieldTimeOutlined,
   PlusOutlined,
 } from '@ant-design/icons';
 import {
@@ -56,9 +57,9 @@ const RemindersWidget = ({ maxItems = 5 }) => {
     }
   };
 
-  const getTimeColor = (remindAt) => {
+  const getTimeColor = (reminderDate) => {
     const now = new Date();
-    const reminderTime = new Date(remindAt);
+    const reminderTime = new Date(reminderDate);
     const diffMinutes = (reminderTime - now) / (1000 * 60);
 
     if (diffMinutes < 0) return 'red'; // Просрочено
@@ -66,9 +67,9 @@ const RemindersWidget = ({ maxItems = 5 }) => {
     return 'blue'; // Больше часа
   };
 
-  const formatTime = (remindAt) => {
+  const formatTime = (reminderDate) => {
     const now = new Date();
-    const reminderTime = new Date(remindAt);
+    const reminderTime = new Date(reminderDate);
     const diffMinutes = Math.floor((reminderTime - now) / (1000 * 60));
 
     if (diffMinutes < 0) {
@@ -141,7 +142,7 @@ const RemindersWidget = ({ maxItems = 5 }) => {
                   <Button
                     type="text"
                     size="small"
-                    icon={<SnoozeOutlined />}
+                    icon={<FieldTimeOutlined />}
                     onClick={() => handleSnooze(reminder.id)}
                   />
                 </Tooltip>,
@@ -158,12 +159,12 @@ const RemindersWidget = ({ maxItems = 5 }) => {
               <List.Item.Meta
                 title={
                   <Space>
-                    <span>{reminder.title}</span>
+                    <span>{reminder.subject}</span>
                     <Tag
-                      color={getTimeColor(reminder.remind_at)}
+                      color={getTimeColor(reminder.reminder_date)}
                       icon={<ClockCircleOutlined />}
                     >
-                      {formatTime(reminder.remind_at)}
+                      {formatTime(reminder.reminder_date)}
                     </Tag>
                   </Space>
                 }
@@ -177,7 +178,7 @@ const RemindersWidget = ({ maxItems = 5 }) => {
                       </div>
                     )}
                     <small style={{ color: '#999' }}>
-                      {new Date(reminder.remind_at).toLocaleString('ru')}
+                      {reminder.reminder_date ? new Date(reminder.reminder_date).toLocaleString('ru') : '-'}
                     </small>
                   </div>
                 }

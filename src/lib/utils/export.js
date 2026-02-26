@@ -1,4 +1,5 @@
 import dayjs from 'dayjs';
+import { formatCurrency } from './format';
 
 /**
  * Export utilities for CSV, Excel, and PDF formats
@@ -71,10 +72,10 @@ export function exportToExcel(data, columns, filename = 'export.csv') {
  * @param {Array} data - Array of objects to export
  * @param {Array} columns - Column configuration
  * @param {string} filename - Output filename
- * @param {Object} options - PDF options (title, orientation)
+ * @param {Object} options - PDF options (title, _orientation)
  */
-export function exportToPDF(data, columns, filename = 'export.pdf', options = {}) {
-  const { title = 'Export', orientation = 'portrait' } = options;
+export function exportToPDF(data, columns, _filename = 'export.pdf', options = {}) {
+  const { title = 'Export', orientation: _orientation = 'portrait' } = options;
   
   // Create HTML table
   let html = `
@@ -216,8 +217,9 @@ export const formatters = {
   date: (value) => value ? dayjs(value).format('DD/MM/YYYY') : '-',
   datetime: (value) => value ? dayjs(value).format('DD/MM/YYYY HH:mm') : '-',
   currency: (value, row) => {
-    const currency = row.currency || '$';
-    return value ? `${currency} ${parseFloat(value).toFixed(2)}` : '-';
+    // row.currency_name — текстовое название ('Рубли'), row.currency_code — ISO код ('RUB')
+    const currencyCode = row.currency_code || row.currency || 'RUB';
+    return value ? formatCurrency(value, currencyCode) : '-';
   },
   boolean: (value) => value ? 'Yes' : 'No',
   array: (value) => Array.isArray(value) ? value.join(', ') : '-',

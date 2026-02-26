@@ -11,8 +11,6 @@ import {
   Dropdown,
   Button,
   Tooltip,
-  Tag,
-  Image,
   message as antMessage,
 } from 'antd';
 import {
@@ -22,10 +20,7 @@ import {
   DeleteOutlined,
   EnterOutlined,
   CopyOutlined,
-  CheckOutlined,
-  DoubleRightOutlined,
-  FileOutlined,
-  DownloadOutlined,
+  CommentOutlined,
 } from '@ant-design/icons';
 import dayjs from 'dayjs';
 import relativeTime from 'dayjs/plugin/relativeTime';
@@ -40,6 +35,7 @@ function ChatMessageItem({
   message,
   isCurrentUser = false,
   onReply,
+  onViewThread,
   onEdit,
   onDelete,
   onCopy,
@@ -54,17 +50,23 @@ function ChatMessageItem({
       label: 'Ответить',
       onClick: () => onReply && onReply(message),
     },
+    onViewThread && {
+      key: 'thread',
+      icon: <CommentOutlined />,
+      label: 'Ответы',
+      onClick: () => onViewThread(message),
+    },
     {
       key: 'copy',
       icon: <CopyOutlined />,
       label: 'Копировать',
       onClick: () => {
-        navigator.clipboard.writeText(message.message);
+        navigator.clipboard.writeText(message.content || '');
         antMessage.success('Скопировано в буфер обмена');
         onCopy && onCopy(message);
       },
     },
-  ];
+  ].filter(Boolean);
 
   if (isCurrentUser) {
     menuItems.push(
@@ -86,38 +88,6 @@ function ChatMessageItem({
       }
     );
   }
-
-  const renderAttachment = (attachment) => {
-    const isImage = attachment.file_type?.startsWith('image/');
-    
-    if (isImage) {
-      return (
-        <Image
-          key={attachment.id}
-          src={attachment.file_url}
-          alt={attachment.file_name}
-          style={{ maxWidth: 200, maxHeight: 200, borderRadius: 8 }}
-          preview
-        />
-      );
-    }
-
-    return (
-      <a
-        key={attachment.id}
-        href={attachment.file_url}
-        target="_blank"
-        rel="noopener noreferrer"
-        style={{ display: 'block', marginTop: 8 }}
-      >
-        <Space>
-          <FileOutlined />
-          <Text>{attachment.file_name}</Text>
-          <DownloadOutlined />
-        </Space>
-      </a>
-    );
-  };
 
   const messageStyle = {
     padding: '8px 12px',
@@ -153,7 +123,7 @@ function ChatMessageItem({
       )}
 
       <div style={{ maxWidth: '70%' }}>
-        {!isCurrentUser && message.sender?.name && (
+        {!isCurrentUser && (message.owner_name || message.sender?.name) && (
           <Text
             type="secondary"
             style={{
@@ -163,7 +133,7 @@ function ChatMessageItem({
               marginLeft: 4,
             }}
           >
-            {message.sender.name}
+            {message.owner_name || message.sender?.name}
           </Text>
         )}
 
@@ -182,8 +152,25 @@ function ChatMessageItem({
             <Space size={4}>
               <EnterOutlined style={{ fontSize: 10 }} />
               <Text type="secondary" ellipsis style={{ maxWidth: 300 }}>
-                {message.parent.message}
+                {message.parent.content}
               </Text>
+            </Space>
+          </div>
+        )}
+        {!message.parent && message.answer_to && (
+          <div
+            style={{
+              padding: '4px 8px',
+              marginBottom: 4,
+              borderLeft: '3px solid #1890ff',
+              backgroundColor: 'rgba(24, 144, 255, 0.1)',
+              borderRadius: 4,
+              fontSize: 12,
+            }}
+          >
+            <Space size={4}>
+              <EnterOutlined style={{ fontSize: 10 }} />
+              <Text type="secondary">Ответ на сообщение #{message.answer_to}</Text>
             </Space>
           </div>
         )}
@@ -195,15 +182,8 @@ function ChatMessageItem({
               color: isCurrentUser ? '#fff' : 'inherit',
             }}
           >
-            {message.message}
+            {message.content}
           </Paragraph>
-
-          {/* Attachments */}
-          {message.attachments && message.attachments.length > 0 && (
-            <div style={{ marginTop: 8 }}>
-              {message.attachments.map(renderAttachment)}
-            </div>
-          )}
         </div>
 
         <Space
@@ -218,29 +198,11 @@ function ChatMessageItem({
             display: 'flex',
           }}
         >
-          <Tooltip title={dayjs(message.created_at).format('DD.MM.YYYY HH:mm')}>
+          <Tooltip title={dayjs(message.creation_date || message.created_at).format('DD.MM.YYYY HH:mm')}>
             <Text type="secondary" style={{ fontSize: 11 }}>
-              {dayjs(message.created_at).fromNow()}
+              {dayjs(message.creation_date || message.created_at).fromNow()}
             </Text>
           </Tooltip>
-
-          {message.edited && (
-            <Tooltip title="Отредактировано">
-              <EditOutlined style={{ fontSize: 10, color: '#999' }} />
-            </Tooltip>
-          )}
-
-          {isCurrentUser && (
-            message.is_read ? (
-              <Tooltip title="Прочитано">
-                <DoubleRightOutlined style={{ fontSize: 10, color: '#52c41a' }} />
-              </Tooltip>
-            ) : (
-              <Tooltip title="Отправлено">
-                <CheckOutlined style={{ fontSize: 10, color: '#999' }} />
-              </Tooltip>
-            )
-          )}
         </Space>
       </div>
 

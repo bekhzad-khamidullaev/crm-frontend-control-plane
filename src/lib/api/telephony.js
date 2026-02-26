@@ -16,10 +16,14 @@ import { api } from './client';
  * @returns {Promise<Object>}
  */
 export async function initiateCall(data) {
-  // Use VoIP cold-call initiate endpoint from API.yaml (line 7346)
-  return api.post('/api/voip/cold-call/initiate/', { 
-    phone: data.phone_number,
-    contact_name: data.contact_name 
+  return api.post('/api/voip/cold-call/initiate/', {
+    body: {
+      to_number: data.to_number || data.phone_number || data.phone,
+      from_number: data.from_number,
+      lead_id: data.lead_id,
+      contact_id: data.contact_id,
+      campaign_id: data.campaign_id,
+    },
   });
 }
 
@@ -30,80 +34,6 @@ export async function initiateCall(data) {
  * @param {string} callId - Call ID
  * @returns {Promise<Object>}
  */
-export async function endCall(callId) {
-  console.warn('Call control endpoints not available in API. Use WebRTC client (JsSIP) for call control.');
-  throw new Error('Call control should be handled by WebRTC/SIP client.');
-}
-
-/**
- * Answer incoming call
- * Note: Call control should be handled by WebRTC/SIP client (JsSIP)
- * @param {string} callId - Call ID
- * @returns {Promise<Object>}
- */
-export async function answerCall(callId) {
-  console.warn('Call control should be handled by WebRTC/SIP client.');
-  throw new Error('Use WebRTC/SIP client (JsSIP) to answer calls.');
-}
-
-/**
- * Reject incoming call
- * Note: Call control should be handled by WebRTC/SIP client (JsSIP)
- * @param {string} callId - Call ID
- * @returns {Promise<Object>}
- */
-export async function rejectCall(callId) {
-  console.warn('Call control should be handled by WebRTC/SIP client.');
-  throw new Error('Use WebRTC/SIP client (JsSIP) to reject calls.');
-}
-
-/**
- * Hold/Unhold call
- * Note: Call control should be handled by WebRTC/SIP client (JsSIP)
- * @param {string} callId - Call ID
- * @param {boolean} hold - True to hold, false to unhold
- * @returns {Promise<Object>}
- */
-export async function holdCall(callId, hold = true) {
-  console.warn('Call control should be handled by WebRTC/SIP client.');
-  throw new Error('Use WebRTC/SIP client (JsSIP) for hold/unhold.');
-}
-
-/**
- * Mute/Unmute call
- * Note: Call control should be handled by WebRTC/SIP client (JsSIP)
- * @param {string} callId - Call ID
- * @param {boolean} mute - True to mute, false to unmute
- * @returns {Promise<Object>}
- */
-export async function muteCall(callId, mute = true) {
-  console.warn('Call control should be handled by WebRTC/SIP client.');
-  throw new Error('Use WebRTC/SIP client (JsSIP) for mute/unmute.');
-}
-
-/**
- * Transfer call
- * Note: Call control should be handled by WebRTC/SIP client (JsSIP)
- * @param {string} callId - Call ID
- * @param {string} targetNumber - Target phone number
- * @returns {Promise<Object>}
- */
-export async function transferCall(callId, targetNumber) {
-  console.warn('Call control should be handled by WebRTC/SIP client.');
-  throw new Error('Use WebRTC/SIP client (JsSIP) for call transfer.');
-}
-
-/**
- * Get active call status
- * Note: This endpoint doesn't exist in API.yaml
- * @param {string} callId - Call ID
- * @returns {Promise<Object>}
- */
-export async function getCallStatus(callId) {
-  console.warn('Call status endpoint not available. Use call queue instead.');
-  // Could use /api/voip/call-queue/ instead
-  throw new Error('Call status endpoint not available.');
-}
 
 /**
  * Get call history (uses VoIP call logs endpoint)
@@ -117,24 +47,7 @@ export async function getCallStatus(callId) {
  * @returns {Promise<Object>}
  */
 export async function getCallHistory(params = {}) {
-  try {
-    return await api.get('/api/voip/call-logs/', { params });
-  } catch (error) {
-    // Call logs endpoint may not be available
-    return { results: [], count: 0 };
-  }
-}
-
-/**
- * Get call recording
- * Note: This endpoint doesn't exist in API.yaml
- * Recordings might be stored in call logs
- * @param {string} callId - Call ID
- * @returns {Promise<Object>}
- */
-export async function getCallRecording(callId) {
-  console.warn('Call recording endpoint not available. Check call log recording_url field.');
-  throw new Error('Call recording endpoint not available. Use call log recording_url.');
+  return api.get('/api/voip/call-logs/', { params });
 }
 
 /**
@@ -144,7 +57,7 @@ export async function getCallRecording(callId) {
  * @returns {Promise<Object>}
  */
 export async function addCallNote(logId, note) {
-  return api.post(`/api/voip/call-logs/${logId}/add-note/`, { note });
+  return api.post(`/api/voip/call-logs/${logId}/add-note/`, { body: { note } });
 }
 
 /**
@@ -155,19 +68,7 @@ export async function addCallNote(logId, note) {
  * @returns {Promise<Object>}
  */
 export async function getTelephonyStats(params = {}) {
-  try {
-    return await api.get('/api/voip/call-statistics/', { params });
-  } catch (error) {
-    console.warn('Telephony stats endpoint not available:', error.message);
-    // Return fallback data for graceful degradation
-    return {
-      total_calls: 0,
-      incoming_calls: 0,
-      outgoing_calls: 0,
-      missed_calls: 0,
-      average_duration: 0,
-    };
-  }
+  return api.get('/api/voip/call-statistics/', { params });
 }
 
 /**
@@ -175,7 +76,7 @@ export async function getTelephonyStats(params = {}) {
  * @returns {Promise<Object>}
  */
 export async function getSIPConfig() {
-  return api.get('/api/voip/connections/');
+  return api.get('/api/voip/my-connections/');
 }
 
 /**
@@ -188,7 +89,7 @@ export async function getSIPConfig() {
  * @returns {Promise<Object>}
  */
 export async function saveSIPConfig(data) {
-  return api.post('/api/voip/connections/', data);
+  return api.post('/api/voip/connections/', { body: data });
 }
 
 /**
@@ -198,7 +99,7 @@ export async function saveSIPConfig(data) {
  * @returns {Promise<Object>}
  */
 export async function updateSIPConfig(id, data) {
-  return api.patch(`/api/voip/connections/${id}/`, data);
+  return api.patch(`/api/voip/connections/${id}/`, { body: data });
 }
 
 /**
@@ -211,35 +112,19 @@ export async function deleteSIPConfig(id) {
 }
 
 /**
- * Test SIP connection
- * Note: This endpoint doesn't exist in Django-CRM API.yaml
- * Returns mock success for demo purposes
- * @param {Object} data
- * @returns {Promise<Object>}
- */
-export async function testSIPConnection() {
-  throw new Error('SIP connection test endpoint is not defined in Django-CRM API.yaml');
-}
-
-/**
  * Get SIP status
  * Uses voip/connections to determine status
  * @returns {Promise<Object>}
  */
 export async function getSIPStatus() {
-  try {
-    const connections = await api.get('/api/voip/connections/');
-    const activeConnection = connections.results?.find(c => c.active);
-    
-    return {
-      connected: !!activeConnection,
-      status: activeConnection ? 'online' : 'offline',
-      connection: activeConnection || null,
-    };
-  } catch (error) {
-    console.warn('Error getting SIP status:', error);
-    return { connected: false, status: 'offline', connection: null };
-  }
+  const connections = await api.get('/api/voip/my-connections/');
+  const activeConnection = connections.results?.find(c => c.active);
+
+  return {
+    connected: !!activeConnection,
+    status: activeConnection ? 'online' : 'offline',
+    connection: activeConnection || null,
+  };
 }
 
 /**
@@ -249,22 +134,13 @@ export async function getSIPStatus() {
  * @returns {Promise<Object>}
  */
 export async function updateTelephonySettings(settings) {
-  try {
-    // Get current connections
-    const connections = await api.get('/api/voip/connections/');
-    const activeConnection = connections.results?.find(c => c.active);
-    
-    if (activeConnection) {
-      // Update existing connection
-      return await api.patch(`/api/voip/connections/${activeConnection.id}/`, settings);
-    } else {
-      // Create new connection if none exists
-      return await api.post('/api/voip/connections/', { ...settings, active: true });
-    }
-  } catch (error) {
-    console.warn('Error updating telephony settings:', error);
-    throw error;
+  const connections = await api.get('/api/voip/my-connections/');
+  const activeConnection = connections.results?.find(c => c.active);
+
+  if (activeConnection) {
+    return api.patch(`/api/voip/connections/${activeConnection.id}/`, { body: settings });
   }
+  return api.post('/api/voip/connections/', { body: { ...settings, active: true } });
 }
 
 /**
@@ -273,15 +149,55 @@ export async function updateTelephonySettings(settings) {
  * @returns {Promise<Object>}
  */
 export async function getTelephonySettings() {
-  try {
-    const connections = await api.get('/api/voip/connections/');
-    const activeConnection = connections.results?.find(c => c.active);
-    
-    return activeConnection || { active: false };
-  } catch (error) {
-    console.warn('Error getting telephony settings:', error);
-    return { active: false };
-  }
+  const connections = await api.get('/api/voip/my-connections/');
+  const activeConnection = connections.results?.find(c => c.active);
+
+  return activeConnection || { active: false };
+}
+
+/**
+ * Get call queue
+ * @param {Object} params - Query parameters
+ * @returns {Promise<Object>}
+ */
+export async function getCallQueue(params = {}) {
+  return api.get('/api/voip/call-queue/', { params });
+}
+
+/**
+ * Get incoming calls
+ * @param {Object} params - Query parameters
+ * @returns {Promise<Object>}
+ */
+export async function getIncomingCalls(params = {}) {
+  return api.get('/api/voip/incoming-calls/', { params });
+}
+
+/**
+ * Get incoming call by ID
+ * @param {number} id - Incoming call ID
+ * @returns {Promise<Object>}
+ */
+export async function getIncomingCall(id) {
+  return api.get(`/api/voip/incoming-calls/${id}/`);
+}
+
+/**
+ * Schedule a cold call
+ * @param {Object} data - Payload
+ * @returns {Promise<Object>}
+ */
+export async function scheduleColdCall(data) {
+  return api.post('/api/voip/cold-call/schedule/', { body: data });
+}
+
+/**
+ * Bulk cold call
+ * @param {Object} data - Payload
+ * @returns {Promise<Object>}
+ */
+export async function bulkColdCall(data) {
+  return api.post('/api/voip/cold-call/bulk/', { body: data });
 }
 
 // ============================================================================
@@ -319,7 +235,7 @@ export async function getVoIPConnection(id) {
  * @returns {Promise<Object>}
  */
 export async function createVoIPConnection(data) {
-  return api.post('/api/voip/connections/', data);
+  return api.post('/api/voip/connections/', { body: data });
 }
 
 /**
@@ -329,7 +245,7 @@ export async function createVoIPConnection(data) {
  * @returns {Promise<Object>}
  */
 export async function updateVoIPConnection(id, data) {
-  return api.put(`/api/voip/connections/${id}/`, data);
+  return api.put(`/api/voip/connections/${id}/`, { body: data });
 }
 
 /**
@@ -339,7 +255,7 @@ export async function updateVoIPConnection(id, data) {
  * @returns {Promise<Object>}
  */
 export async function patchVoIPConnection(id, data) {
-  return api.patch(`/api/voip/connections/${id}/`, data);
+  return api.patch(`/api/voip/connections/${id}/`, { body: data });
 }
 
 /**
@@ -349,42 +265,6 @@ export async function patchVoIPConnection(id, data) {
  */
 export async function deleteVoIPConnection(id) {
   return api.delete(`/api/voip/connections/${id}/`);
-}
-
-// ============================================================================
-// Incoming Calls (входящие звонки)
-// ============================================================================
-
-/**
- * Get all incoming calls
- * @param {Object} params - Query parameters
- * @param {number} params.page - Page number
- * @param {number} params.page_size - Items per page
- * @param {string} params.status - Filter by status
- * @param {string} params.date_from - Filter from date
- * @param {string} params.date_to - Filter to date
- * @returns {Promise<Object>}
- */
-export async function getIncomingCalls(params = {}) {
-  return api.get('/api/voip/incoming-calls/', { params });
-}
-
-/**
- * Get single incoming call by ID
- * @param {number} id - Incoming call ID
- * @returns {Promise<Object>}
- */
-export async function getIncomingCall(id) {
-  return api.get(`/api/voip/incoming-calls/${id}/`);
-}
-
-/**
- * Get current call queue
- * @param {Object} params
- * @returns {Promise<Object>}
- */
-export async function getCallQueue(params = {}) {
-  return api.get('/api/voip/call-queue/', { params });
 }
 
 // ============================================================================
@@ -435,23 +315,4 @@ export async function getRecentIncomingCalls(limit = 10) {
  */
 export async function getMissedCalls(params = {}) {
   return getIncomingCalls({ ...params, status: 'missed' });
-}
-// Cold Call Bulk and Schedule endpoints
-
-/**
- * Bulk create cold calls
- * @param {Object} data - Bulk cold call data
- * @returns {Promise<Object>}
- */
-export async function bulkCreateColdCalls(data) {
-  return api.post('/api/voip/cold-call/bulk/', data);
-}
-
-/**
- * Schedule cold calls
- * @param {Object} data - Schedule data
- * @returns {Promise<Object>}
- */
-export async function scheduleColdCalls(data) {
-  return api.post('/api/voip/cold-call/schedule/', data);
 }

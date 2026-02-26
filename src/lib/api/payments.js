@@ -16,12 +16,9 @@ import { api } from './client.js';
  * @param {number} params.page - Page number
  * @param {number} params.page_size - Items per page
  * @param {string} params.search - Search query
+ * @param {number} params.currency - Filter by currency ID
  * @param {number} params.deal - Filter by deal ID
- * @param {number} params.contact - Filter by contact ID
  * @param {string} params.status - Filter by status
- * @param {string} params.payment_method - Filter by payment method
- * @param {string} params.date_from - Filter from date (YYYY-MM-DD)
- * @param {string} params.date_to - Filter to date (YYYY-MM-DD)
  * @param {string} params.ordering - Sort field
  * @returns {Promise<Object>}
  */
@@ -53,7 +50,7 @@ export async function getPayment(id) {
  * @returns {Promise<Object>}
  */
 export async function createPayment(data) {
-  return api.post('/api/payments/', data);
+  return api.post('/api/payments/', { body: data });
 }
 
 /**
@@ -63,7 +60,7 @@ export async function createPayment(data) {
  * @returns {Promise<Object>}
  */
 export async function updatePayment(id, data) {
-  return api.put(`/api/payments/${id}/`, data);
+  return api.put(`/api/payments/${id}/`, { body: data });
 }
 
 /**
@@ -73,7 +70,7 @@ export async function updatePayment(id, data) {
  * @returns {Promise<Object>}
  */
 export async function patchPayment(id, data) {
-  return api.patch(`/api/payments/${id}/`, data);
+  return api.patch(`/api/payments/${id}/`, { body: data });
 }
 
 /**

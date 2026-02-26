@@ -1,5 +1,10 @@
-import { describe, it, expect, beforeEach, afterEach } from 'vitest';
-import { parseHash, navigate, onRouteChange } from '../../src/router.js';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import * as auth from '../../src/lib/api/auth.js';
+import { navigate, onRouteChange, parseHash } from '../../src/router.js';
+
+vi.mock('../../src/lib/api/auth.js', () => ({
+  isAuthenticated: vi.fn(),
+}));
 
 describe('Router', () => {
   let originalHash;
@@ -8,6 +13,7 @@ describe('Router', () => {
   beforeEach(() => {
     originalHash = location.hash;
     cleanup?.();
+    auth.isAuthenticated.mockReturnValue(false);
   });
 
   afterEach(() => {
@@ -16,9 +22,15 @@ describe('Router', () => {
   });
 
   describe('parseHash', () => {
-    it('parses empty hash to leads-list', () => {
+    it('parses empty hash to login when not authenticated', () => {
       location.hash = '';
-      expect(parseHash()).toEqual({ name: 'leads-list', params: {} });
+      expect(parseHash()).toEqual({ name: 'login', params: {} });
+    });
+
+    it('parses empty hash to dashboard when authenticated', () => {
+      location.hash = '';
+      auth.isAuthenticated.mockReturnValue(true);
+      expect(parseHash()).toEqual({ name: 'dashboard', params: {} });
     });
 
     it('parses #/login', () => {

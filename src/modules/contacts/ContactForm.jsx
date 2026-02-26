@@ -1,31 +1,118 @@
-import React, { useState, useEffect } from 'react';
-import {
-  Form,
-  Input,
-  Select,
-  Button,
-  Card,
-  Space,
-  message,
-  Typography,
-  Spin,
-  Row,
-  Col,
-} from 'antd';
-import { SaveOutlined, ArrowLeftOutlined } from '@ant-design/icons';
-import { navigate } from '../../router';
-import { getContact, createContact, updateContact } from '../../lib/api/client';
-import ReferenceSelect from '../../components/ui-ReferenceSelect';
+import React, { useEffect, useState } from 'react';
+import { useForm } from 'react-hook-form';
+import { z } from 'zod';
+import { zodResolver } from '@hookform/resolvers/zod';
+import dayjs from 'dayjs';
+import { ArrowLeft, Save } from 'lucide-react';
 
-const { Title } = Typography;
-const { TextArea } = Input;
-const { Option } = Select;
+import { navigate } from '../../router';
+import {
+  getContact,
+  createContact,
+  updateContact,
+  getCompanies,
+  getCompany,
+  getUsers,
+  getUser,
+} from '../../lib/api/client';
+import ReferenceSelect from '../../components/ui-ReferenceSelect';
+import EntitySelect from '../../components/EntitySelect';
+import { normalizePayload } from '../../lib/utils/payload';
+import { Card } from '../../components/ui/card.jsx';
+import { Button } from '../../components/ui/button.jsx';
+import { Input } from '../../components/ui/input.jsx';
+import { Textarea } from '../../components/ui/textarea.jsx';
+import { Label } from '../../components/ui/label.jsx';
+import { Switch } from '../../components/ui/switch.jsx';
+import { DatePicker } from '../../components/ui-DatePicker.jsx';
+import { toast } from '../../components/ui/use-toast.js';
+
+const schema = z.object({
+  first_name: z.string().min(1, 'Введите имя'),
+  middle_name: z.string().optional(),
+  last_name: z.string().optional(),
+  title: z.string().optional(),
+  sex: z.string().optional(),
+  birth_date: z.any().optional(),
+  email: z.string().email('Некорректный email').min(1, 'Введите email'),
+  secondary_email: z.string().optional(),
+  phone: z.string().optional(),
+  other_phone: z.string().optional(),
+  mobile: z.string().optional(),
+  company: z.any().optional(),
+  lead_source: z.any().optional(),
+  country: z.any().optional(),
+  city: z.any().optional(),
+  city_name: z.string().optional(),
+  region: z.string().optional(),
+  district: z.string().optional(),
+  address: z.string().optional(),
+  tags: z.any().optional(),
+  token: z.string().optional(),
+  owner: z.any().optional(),
+  department: z.any().optional(),
+  massmail: z.boolean().optional(),
+  disqualified: z.boolean().optional(),
+  was_in_touch: z.any().optional(),
+  description: z.string().optional(),
+});
 
 function ContactForm({ id }) {
-  const [form] = Form.useForm();
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
   const isEdit = !!id;
+
+  const {
+    register,
+    handleSubmit,
+    setValue,
+    reset,
+    watch,
+    formState: { errors },
+  } = useForm({
+    resolver: zodResolver(schema),
+    defaultValues: {
+      first_name: '',
+      middle_name: '',
+      last_name: '',
+      title: '',
+      sex: '',
+      birth_date: null,
+      email: '',
+      secondary_email: '',
+      phone: '',
+      other_phone: '',
+      mobile: '',
+      company: '',
+      lead_source: '',
+      country: '',
+      city: '',
+      city_name: '',
+      region: '',
+      district: '',
+      address: '',
+      tags: [],
+      token: '',
+      owner: '',
+      department: '',
+      massmail: false,
+      disqualified: false,
+      was_in_touch: null,
+      description: '',
+    },
+  });
+
+  const birthDate = watch('birth_date');
+  const lastTouch = watch('was_in_touch');
+  const massmail = watch('massmail');
+  const disqualified = watch('disqualified');
+  const companyValue = watch('company');
+  const ownerValue = watch('owner');
+  const tagsValue = watch('tags');
+  const leadSourceValue = watch('lead_source');
+  const countryValue = watch('country');
+  const cityValue = watch('city');
+  const departmentValue = watch('department');
 
   useEffect(() => {
     if (isEdit) {
@@ -37,196 +124,291 @@ function ContactForm({ id }) {
     setLoading(true);
     try {
       const contact = await getContact(id);
-      form.setFieldsValue(contact);
+      reset({
+        ...contact,
+        birth_date: contact.birth_date ? dayjs(contact.birth_date) : null,
+        was_in_touch: contact.was_in_touch ? dayjs(contact.was_in_touch) : null,
+      });
     } catch (error) {
-      message.error('Ошибка загрузки данных контакта');
-      console.error('Error loading contact:', error);
+      toast({ title: 'Ошибка', description: 'Ошибка загрузки данных контакта', variant: 'destructive' });
     } finally {
       setLoading(false);
     }
   };
 
-  const onFinish = async (values) => {
+  const onSubmit = async (values) => {
     setSaving(true);
     try {
+      const payload = normalizePayload(
+        {
+          ...values,
+          birth_date: values.birth_date ? values.birth_date.format('YYYY-MM-DD') : null,
+          was_in_touch: values.was_in_touch ? values.was_in_touch.format('YYYY-MM-DD') : null,
+        },
+        { preserveEmptyArrays: ['tags'] }
+      );
       if (isEdit) {
-        await updateContact(id, values);
-        message.success('Контакт обновлен');
+        await updateContact(id, payload);
+        toast({ title: 'Контакт обновлен', description: 'Контакт обновлен' });
       } else {
-        await createContact(values);
-        message.success('Контакт создан');
+        await createContact(payload);
+        toast({ title: 'Контакт создан', description: 'Контакт создан' });
       }
       navigate('/contacts');
     } catch (error) {
-      message.error(`Ошибка ${isEdit ? 'обновления' : 'создания'} контакта`);
+      const details = error?.details;
+      if (details && typeof details === 'object') {
+        const message = details?.detail || `Ошибка ${isEdit ? 'обновления' : 'создания'} контакта`;
+        toast({ title: 'Ошибка', description: message, variant: 'destructive' });
+      } else {
+        toast({ title: 'Ошибка', description: `Ошибка ${isEdit ? 'обновления' : 'создания'} контакта`, variant: 'destructive' });
+      }
     } finally {
       setSaving(false);
     }
   };
 
   if (loading) {
-    return (
-      <div style={{ textAlign: 'center', padding: '50px' }}>
-        <Spin size="large" />
-      </div>
-    );
+    return <div className="py-12 text-center text-sm text-muted-foreground">Загрузка...</div>;
   }
 
   return (
-    <div>
-      <Space style={{ marginBottom: 16 }}>
-        <Button icon={<ArrowLeftOutlined />} onClick={() => navigate('/contacts')}>
-          Назад
-        </Button>
-      </Space>
+    <div className="space-y-4">
+      <Button variant="outline" onClick={() => navigate('/contacts')}>
+        <ArrowLeft className="mr-2 h-4 w-4" />
+        Назад
+      </Button>
 
-      <Title level={2}>
+      <h2 className="text-2xl font-semibold">
         {isEdit ? 'Редактировать контакт' : 'Создать новый контакт'}
-      </Title>
+      </h2>
 
-      <Card>
-        <Form
-          form={form}
-          layout="vertical"
-          onFinish={onFinish}
-          autoComplete="off"
-        >
-          <Title level={4}>Основная информация</Title>
-          <Row gutter={16}>
-            <Col xs={24} md={12}>
-              <Form.Item
-                label="Имя"
-                name="first_name"
-                rules={[{ required: true, message: 'Введите имя' }]}
-              >
-                <Input placeholder="Анна" />
-              </Form.Item>
-            </Col>
+      <Card className="p-6">
+        <form className="space-y-6" onSubmit={handleSubmit(onSubmit)}>
+          <section className="space-y-3">
+            <h3 className="text-lg font-semibold">Основная информация</h3>
+            <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
+              <div>
+                <Label htmlFor="first_name">Имя *</Label>
+                <Input id="first_name" placeholder="Анна" {...register('first_name')} />
+                {errors.first_name && <p className="text-xs text-destructive">{errors.first_name.message}</p>}
+              </div>
+              <div>
+                <Label htmlFor="middle_name">Отчество</Label>
+                <Input id="middle_name" placeholder="Сергеевна" {...register('middle_name')} />
+              </div>
+              <div>
+                <Label htmlFor="last_name">Фамилия</Label>
+                <Input id="last_name" placeholder="Смирнова" {...register('last_name')} />
+              </div>
+            </div>
 
-            <Col xs={24} md={12}>
-              <Form.Item
-                label="Фамилия"
-                name="last_name"
-                rules={[{ required: true, message: 'Введите фамилию' }]}
-              >
-                <Input placeholder="Смирнова" />
-              </Form.Item>
-            </Col>
-          </Row>
+            <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+              <div>
+                <Label htmlFor="title">Должность</Label>
+                <Input id="title" placeholder="Менеджер" {...register('title')} />
+              </div>
+              <div>
+                <Label htmlFor="sex">Пол</Label>
+                <select
+                  id="sex"
+                  className="h-9 w-full rounded-md border border-border bg-background px-2 text-sm"
+                  {...register('sex')}
+                >
+                  <option value="">Выберите пол</option>
+                  <option value="M">Мужской</option>
+                  <option value="F">Женский</option>
+                  <option value="O">Другое</option>
+                </select>
+              </div>
+            </div>
 
-          <Row gutter={16}>
-            <Col xs={24} md={12}>
-              <Form.Item
-                label="Email"
-                name="email"
-                rules={[
-                  { required: true, message: 'Введите email' },
-                  { type: 'email', message: 'Некорректный email' },
-                ]}
-              >
-                <Input placeholder="anna@example.com" />
-              </Form.Item>
-            </Col>
+            <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+              <div>
+                <Label>Дата рождения</Label>
+                <DatePicker value={birthDate || null} onChange={(val) => setValue('birth_date', val)} format="DD.MM.YYYY" />
+              </div>
+            </div>
+          </section>
 
-            <Col xs={24} md={12}>
-              <Form.Item
-                label="Телефон"
-                name="phone"
-                rules={[{ required: true, message: 'Введите телефон' }]}
-              >
-                <Input placeholder="+7 999 111-22-33" />
-              </Form.Item>
-            </Col>
-          </Row>
+          <section className="space-y-3">
+            <h3 className="text-lg font-semibold">Контакты</h3>
+            <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+              <div>
+                <Label htmlFor="email">Email *</Label>
+                <Input id="email" placeholder="anna@example.com" {...register('email')} />
+                {errors.email && <p className="text-xs text-destructive">{errors.email.message}</p>}
+              </div>
+              <div>
+                <Label htmlFor="secondary_email">Доп. Email</Label>
+                <Input id="secondary_email" placeholder="anna.secondary@example.com" {...register('secondary_email')} />
+              </div>
+            </div>
 
-          <Title level={4} style={{ marginTop: 24 }}>
-            Организация
-          </Title>
-          <Row gutter={16}>
-            <Col xs={24} md={12}>
-              <Form.Item label="Компания" name="company">
-                <Input placeholder="ООО «Альфа»" />
-              </Form.Item>
-            </Col>
+            <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
+              <div>
+                <Label htmlFor="phone">Телефон</Label>
+                <Input id="phone" placeholder="+7 999 111-22-33" {...register('phone')} />
+              </div>
+              <div>
+                <Label htmlFor="other_phone">Доп. телефон</Label>
+                <Input id="other_phone" placeholder="+7 999 222-33-44" {...register('other_phone')} />
+              </div>
+              <div>
+                <Label htmlFor="mobile">Мобильный</Label>
+                <Input id="mobile" placeholder="+7 999 333-44-55" {...register('mobile')} />
+              </div>
+            </div>
+          </section>
 
-            <Col xs={24} md={12}>
-              <Form.Item label="Должность" name="position">
-                <Input placeholder="Менеджер" />
-              </Form.Item>
-            </Col>
-          </Row>
-
-          <Row gutter={16}>
-            <Col xs={24} md={12}>
-              <Form.Item
-                label="Тип контакта"
-                name="type"
-                rules={[{ required: true, message: 'Выберите тип' }]}
-                initialValue="client"
-              >
-                <ReferenceSelect
-                  type="contact-types"
-                  placeholder="Выберите тип"
-                  allowClear
+          <section className="space-y-3">
+            <h3 className="text-lg font-semibold">Организация</h3>
+            <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+              <div>
+                <Label>Компания</Label>
+                <EntitySelect
+                  value={companyValue || ''}
+                  placeholder="Выберите компанию"
+                  fetchOptions={getCompanies}
+                  fetchById={getCompany}
+                  onChange={(val) => setValue('company', val)}
                 />
-              </Form.Item>
-            </Col>
+              </div>
+              <div>
+                <Label>Источник</Label>
+                <ReferenceSelect
+                  type="lead-sources"
+                  placeholder="Выберите источник"
+                  allowClear
+                  value={leadSourceValue || ''}
+                  onChange={(val) => setValue('lead_source', val)}
+                />
+              </div>
+            </div>
+          </section>
 
-            <Col xs={24} md={12}>
-              <Form.Item label="Страна" name="country">
+          <section className="space-y-3">
+            <h3 className="text-lg font-semibold">Локация</h3>
+            <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+              <div>
+                <Label>Страна</Label>
                 <ReferenceSelect
                   type="countries"
                   placeholder="Выберите страну"
                   allowClear
+                  value={countryValue || ''}
+                  onChange={(val) => setValue('country', val)}
                 />
-              </Form.Item>
-            </Col>
-          </Row>
-
-          <Row gutter={16}>
-            <Col xs={24} md={12}>
-              <Form.Item label="Город" name="city">
+              </div>
+              <div>
+                <Label>Город</Label>
                 <ReferenceSelect
                   type="cities"
                   placeholder="Выберите город"
                   allowClear
+                  value={cityValue || ''}
+                  onChange={(val) => setValue('city', val)}
                 />
-              </Form.Item>
-            </Col>
+              </div>
+            </div>
+            <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+              <div>
+                <Label htmlFor="city_name">Город (строкой)</Label>
+                <Input id="city_name" placeholder="Ташкент" {...register('city_name')} />
+              </div>
+              <div>
+                <Label htmlFor="region">Регион/область</Label>
+                <Input id="region" placeholder="Ташкентская область" {...register('region')} />
+              </div>
+            </div>
+            <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+              <div>
+                <Label htmlFor="district">Район</Label>
+                <Input id="district" placeholder="Юнусабадский район" {...register('district')} />
+              </div>
+              <div>
+                <Label htmlFor="address">Адрес</Label>
+                <Input id="address" placeholder="г. Москва, ул. Ленина, д. 1" {...register('address')} />
+              </div>
+            </div>
+          </section>
 
-            <Col xs={24} md={12}>
-              <Form.Item label="Веб-сайт" name="website">
-                <Input placeholder="https://example.com" />
-              </Form.Item>
-            </Col>
-          </Row>
+          <section className="space-y-3">
+            <h3 className="text-lg font-semibold">Управление и теги</h3>
+            <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+              <div>
+                <Label>Теги</Label>
+                <ReferenceSelect
+                  type="crm-tags"
+                  placeholder="Выберите теги"
+                  mode="multiple"
+                  allowClear
+                  value={tagsValue || []}
+                  onChange={(val) => setValue('tags', val)}
+                />
+              </div>
+              <div>
+                <Label htmlFor="token">Токен</Label>
+                <Input id="token" placeholder="Авто" {...register('token')} />
+              </div>
+            </div>
+            <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+              <div>
+                <Label>Ответственный</Label>
+                <EntitySelect
+                  value={ownerValue || ''}
+                  placeholder="Выберите пользователя"
+                  fetchOptions={getUsers}
+                  fetchById={getUser}
+                  onChange={(val) => setValue('owner', val)}
+                />
+              </div>
+              <div>
+                <Label>Отдел</Label>
+                <ReferenceSelect
+                  type="departments"
+                  placeholder="Выберите отдел"
+                  allowClear
+                  value={departmentValue || ''}
+                  onChange={(val) => setValue('department', val)}
+                />
+              </div>
+            </div>
 
-          <Title level={4} style={{ marginTop: 24 }}>
-            Дополнительная информация
-          </Title>
+            <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
+              <div className="flex items-center gap-2">
+                <Switch checked={!!massmail} onCheckedChange={(val) => setValue('massmail', val)} />
+                <Label>Массовая рассылка</Label>
+              </div>
+              <div className="flex items-center gap-2">
+                <Switch checked={!!disqualified} onCheckedChange={(val) => setValue('disqualified', val)} />
+                <Label>Дисквалифицирован</Label>
+              </div>
+              <div>
+                <Label>Последний контакт</Label>
+                <DatePicker value={lastTouch || null} onChange={(val) => setValue('was_in_touch', val)} format="DD.MM.YYYY" />
+              </div>
+            </div>
+          </section>
 
-          <Form.Item label="Адрес" name="address">
-            <Input placeholder="г. Москва, ул. Ленина, д. 1" />
-          </Form.Item>
+          <section className="space-y-3">
+            <h3 className="text-lg font-semibold">Дополнительная информация</h3>
+            <div>
+              <Label htmlFor="description">Описание</Label>
+              <Textarea id="description" rows={4} placeholder="Дополнительная информация о контакте" {...register('description')} />
+            </div>
+          </section>
 
-          <Form.Item label="Заметки" name="notes">
-            <TextArea rows={4} placeholder="Дополнительная информация о контакте" />
-          </Form.Item>
-
-          <Form.Item>
-            <Space>
-              <Button
-                type="primary"
-                htmlType="submit"
-                icon={<SaveOutlined />}
-                loading={saving}
-              >
-                {isEdit ? 'Обновить' : 'Создать'}
-              </Button>
-              <Button onClick={() => navigate('/contacts')}>Отмена</Button>
-            </Space>
-          </Form.Item>
-        </Form>
+          <div className="flex flex-wrap gap-2">
+            <Button type="submit" loading={saving}>
+              <Save className="mr-2 h-4 w-4" />
+              {isEdit ? 'Обновить' : 'Создать'}
+            </Button>
+            <Button variant="outline" onClick={() => navigate('/contacts')}>
+              Отмена
+            </Button>
+          </div>
+        </form>
       </Card>
     </div>
   );

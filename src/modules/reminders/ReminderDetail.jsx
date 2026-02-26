@@ -1,13 +1,19 @@
-import { useState, useEffect } from 'react';
-import { Card, Descriptions, Button, Space, Tag, message, Modal, Spin } from 'antd';
-import { EditOutlined, DeleteOutlined, ArrowLeftOutlined, BellOutlined, CheckOutlined, CloseOutlined } from '@ant-design/icons';
+import { useEffect, useState } from 'react';
+import { ArrowLeft, Edit, Trash2, Bell, Check, X } from 'lucide-react';
+import dayjs from 'dayjs';
+
 import { getReminder, deleteReminder, updateReminder } from '../../lib/api/reminders';
 import { navigate } from '../../router';
-import dayjs from 'dayjs';
+import { Card } from '../../components/ui/card.jsx';
+import { Button } from '../../components/ui/button.jsx';
+import { Badge } from '../../components/ui/badge.jsx';
+import { toast } from '../../components/ui/use-toast.js';
+import { AlertDialog, AlertDialogContent, AlertDialogHeader, AlertDialogTitle } from '../../components/ui/alert-dialog.jsx';
 
 export default function ReminderDetail({ id }) {
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [confirmOpen, setConfirmOpen] = useState(false);
 
   useEffect(() => {
     fetchData();
@@ -19,171 +25,141 @@ export default function ReminderDetail({ id }) {
       const res = await getReminder(id);
       setData(res);
     } catch (error) {
-      message.error('Failed to fetch reminder details');
+      toast({ title: 'Ошибка', description: 'Не удалось загрузить напоминание', variant: 'destructive' });
       console.error(error);
     } finally {
       setLoading(false);
     }
   };
 
-  const handleDelete = () => {
-    Modal.confirm({
-      title: 'Delete Reminder',
-      content: 'Are you sure you want to delete this reminder?',
-      okText: 'Delete',
-      okType: 'danger',
-      onOk: async () => {
-        try {
-          await deleteReminder(id);
-          message.success('Reminder deleted successfully');
-          navigate('/reminders');
-        } catch (error) {
-          message.error('Failed to delete reminder');
-        }
-      },
-    });
+  const handleDelete = async () => {
+    try {
+      await deleteReminder(id);
+      toast({ title: 'Напоминание удалено', description: 'Напоминание удалено' });
+      navigate('/reminders');
+    } catch (error) {
+      toast({ title: 'Ошибка', description: 'Не удалось удалить напоминание', variant: 'destructive' });
+    }
   };
 
   const handleToggleActive = async () => {
     try {
       await updateReminder(id, { active: !data.active });
-      message.success(`Reminder ${!data.active ? 'activated' : 'deactivated'}`);
+      toast({
+        title: !data.active ? 'Напоминание активировано' : 'Напоминание деактивировано',
+        description: !data.active ? 'Напоминание активировано' : 'Напоминание деактивировано',
+      });
       fetchData();
     } catch (error) {
-      message.error('Failed to update reminder');
+      toast({ title: 'Ошибка', description: 'Не удалось обновить напоминание', variant: 'destructive' });
     }
-  };
-
-  const getRelatedEntity = () => {
-    if (data.lead) return { type: 'Lead', id: data.lead.id, title: data.lead.title };
-    if (data.deal) return { type: 'Deal', id: data.deal.id, title: data.deal.title };
-    if (data.contact) return { type: 'Contact', id: data.contact.id, title: data.contact.name };
-    if (data.task) return { type: 'Task', id: data.task.id, title: data.task.title };
-    return null;
   };
 
   if (loading) {
     return (
-      <Card>
-        <div style={{ textAlign: 'center', padding: '50px' }}>
-          <Spin size="large" />
-        </div>
+      <Card className="p-6">
+        <div className="text-center text-sm text-muted-foreground">Загрузка...</div>
       </Card>
     );
   }
 
   if (!data) {
     return (
-      <Card>
-        <div style={{ textAlign: 'center', padding: '50px' }}>
-          Reminder not found
-        </div>
+      <Card className="p-6">
+        <div className="text-center text-sm text-muted-foreground">Напоминание не найдено</div>
       </Card>
     );
   }
 
-  const entity = getRelatedEntity();
-  const reminderDate = dayjs(data.remind_at);
-  const isPast = reminderDate.isBefore(dayjs());
+  const reminderDate = data.reminder_date ? dayjs(data.reminder_date) : null;
+  const isPast = reminderDate ? reminderDate.isBefore(dayjs()) : false;
 
   return (
-    <Card
-      title={
-        <Space>
-          <BellOutlined />
-          <span>Reminder Details</span>
-        </Space>
-      }
-      extra={
-        <Space>
-          <Button
-            icon={<ArrowLeftOutlined />}
-            onClick={() => navigate('/reminders')}
-          >
-            Back
+    <Card className="p-6">
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        <div className="flex items-center gap-2">
+          <Bell className="h-5 w-5 text-primary" />
+          <h2 className="text-xl font-semibold">Детали напоминания</h2>
+        </div>
+        <div className="flex flex-wrap items-center gap-2">
+          <Button variant="outline" onClick={() => navigate('/reminders')}>
+            <ArrowLeft className="mr-2 h-4 w-4" />
+            Назад
           </Button>
           <Button
-            type={data.active ? 'default' : 'primary'}
-            icon={data.active ? <CloseOutlined /> : <CheckOutlined />}
+            variant={data.active ? 'outline' : 'default'}
             onClick={handleToggleActive}
           >
-            {data.active ? 'Deactivate' : 'Activate'}
+            {data.active ? <X className="mr-2 h-4 w-4" /> : <Check className="mr-2 h-4 w-4" />}
+            {data.active ? 'Отключить' : 'Включить'}
           </Button>
-          <Button
-            type="primary"
-            icon={<EditOutlined />}
-            onClick={() => navigate(`/reminders/${id}/edit`)}
-          >
-            Edit
+          <Button onClick={() => navigate(`/reminders/${id}/edit`)}>
+            <Edit className="mr-2 h-4 w-4" />
+            Редактировать
           </Button>
-          <Button
-            danger
-            icon={<DeleteOutlined />}
-            onClick={handleDelete}
-          >
-            Delete
+          <Button variant="destructive" onClick={() => setConfirmOpen(true)}>
+            <Trash2 className="mr-2 h-4 w-4" />
+            Удалить
           </Button>
-        </Space>
-      }
-    >
-      <Descriptions bordered column={2}>
-        <Descriptions.Item label="Title" span={2}>
-          <span style={{ fontSize: '18px', fontWeight: 'bold' }}>
-            {data.title}
-          </span>
-        </Descriptions.Item>
+        </div>
+      </div>
 
-        <Descriptions.Item label="Status">
-          <Tag color={data.active ? 'green' : 'default'}>
-            {data.active ? 'ACTIVE' : 'INACTIVE'}
-          </Tag>
-        </Descriptions.Item>
+      <div className="mt-6 grid grid-cols-1 gap-4 sm:grid-cols-2">
+        <div className="sm:col-span-2 rounded-md border border-border p-4">
+          <div className="text-xs text-muted-foreground">Тема</div>
+          <div className="text-lg font-semibold">{data.subject}</div>
+        </div>
 
-        <Descriptions.Item label="Remind At">
-          <span style={{ color: isPast ? '#ff4d4f' : undefined, fontWeight: 'bold' }}>
-            {reminderDate.format('DD MMM YYYY HH:mm')}
-            {isPast && ' (Past)'}
-          </span>
-        </Descriptions.Item>
+        <DetailRow label="Статус">
+          <Badge variant={data.active ? 'default' : 'secondary'}>
+            {data.active ? 'Активно' : 'Неактивно'}
+          </Badge>
+        </DetailRow>
 
-        {entity && (
-          <>
-            <Descriptions.Item label="Related Entity Type">
-              <Tag color="blue">{entity.type}</Tag>
-            </Descriptions.Item>
+        <DetailRow label="Дата напоминания">
+          {reminderDate ? (
+            <span className={isPast ? 'text-destructive font-semibold' : 'font-semibold'}>
+              {reminderDate.format('DD MMM YYYY HH:mm')}
+              {isPast && ' (Просрочено)'}
+            </span>
+          ) : (
+            '-'
+          )}
+        </DetailRow>
 
-            <Descriptions.Item label="Related Entity">
-              <Button
-                type="link"
-                onClick={() => navigate(`/${entity.type.toLowerCase()}s/${entity.id}`)}
-                style={{ padding: 0 }}
-              >
-                {entity.title || `${entity.type} #${entity.id}`}
-              </Button>
-            </Descriptions.Item>
-          </>
-        )}
+        <DetailRow label="Content type ID">{data.content_type ?? '-'}</DetailRow>
+        <DetailRow label="Object ID">{data.object_id ?? '-'}</DetailRow>
+        <DetailRow label="Владелец">{data.owner_name || '-'}</DetailRow>
+        <DetailRow label="Email уведомление">{data.send_notification_email ? 'Да' : 'Нет'}</DetailRow>
+        <DetailRow label="Описание">{data.description || '-'} </DetailRow>
+        <DetailRow label="Дата создания">{data.creation_date ? dayjs(data.creation_date).format('DD MMM YYYY HH:mm') : '-'}</DetailRow>
+      </div>
 
-        <Descriptions.Item label="Owner">
-          {data.owner?.username || data.owner?.email || '-'}
-        </Descriptions.Item>
-
-        <Descriptions.Item label="Created By">
-          {data.created_by?.username || data.created_by?.email || '-'}
-        </Descriptions.Item>
-
-        <Descriptions.Item label="Description" span={2}>
-          {data.description || '-'}
-        </Descriptions.Item>
-
-        <Descriptions.Item label="Created At">
-          {data.created_at ? dayjs(data.created_at).format('DD MMM YYYY HH:mm') : '-'}
-        </Descriptions.Item>
-
-        <Descriptions.Item label="Updated At">
-          {data.updated_at ? dayjs(data.updated_at).format('DD MMM YYYY HH:mm') : '-'}
-        </Descriptions.Item>
-      </Descriptions>
+      <AlertDialog open={confirmOpen} onOpenChange={setConfirmOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Удалить напоминание?</AlertDialogTitle>
+          </AlertDialogHeader>
+          <p className="text-sm text-muted-foreground">Действие нельзя отменить.</p>
+          <div className="mt-4 flex justify-end gap-2">
+            <Button variant="outline" onClick={() => setConfirmOpen(false)}>
+              Отмена
+            </Button>
+            <Button variant="destructive" onClick={handleDelete}>
+              Удалить
+            </Button>
+          </div>
+        </AlertDialogContent>
+      </AlertDialog>
     </Card>
+  );
+}
+
+function DetailRow({ label, children }) {
+  return (
+    <div className="rounded-md border border-border p-4">
+      <div className="text-xs text-muted-foreground">{label}</div>
+      <div className="mt-1 text-sm">{children}</div>
+    </div>
   );
 }

@@ -3,18 +3,30 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>CRM Frontend - Ant Design</title>
-    <script type="module" crossorigin src="/assets/js/index-32YCzt_N.js"></script>
-    <link rel="modulepreload" crossorigin href="/assets/js/vendor-CKxIv8fN.js">
-    <link rel="modulepreload" crossorigin href="/assets/js/antd-icons-XEFI1_32.js">
-    <link rel="modulepreload" crossorigin href="/assets/js/antd-core-BXnIT4De.js">
-    <link rel="modulepreload" crossorigin href="/assets/js/charts-ncLCtVEj.js">
-    <link rel="modulepreload" crossorigin href="/assets/js/react-vendor-BBxOOwe1.js">
-    <link rel="modulepreload" crossorigin href="/assets/js/pdf-export-DFeootJ-.js">
-    <link rel="stylesheet" crossorigin href="/assets/css/antd-core-BdOndhxL.css">
-    <link rel="stylesheet" crossorigin href="/assets/css/index-BcjlLpyN.css">
+    <meta name="description" content="Enterprise CRM - Modern CRM System for Business Management" />
+    <meta name="author" content="Enterprise CRM Team" />
+    <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' fill='%2309090b'/%3E%3Ctext x='50' y='62' font-size='56' text-anchor='middle' fill='white' font-family='Arial'%3EE%3C/text%3E%3C/svg%3E" />
+    <title>Enterprise CRM</title>
+    <script type="module" crossorigin src="/assets/js/index-DJyVShon.js"></script>
+    <link rel="modulepreload" crossorigin href="/assets/js/vendor-qRd8HGD0.js">
+    <link rel="modulepreload" crossorigin href="/assets/js/charts-rmnfnrA0.js">
+    <link rel="modulepreload" crossorigin href="/assets/js/react-vendor-BrSZgRFX.js">
+    <link rel="modulepreload" crossorigin href="/assets/js/pdf-export-CK13hU3s.js">
+    <link rel="stylesheet" crossorigin href="/assets/css/index-BzLsXPcM.css">
   </head>
   <body>
     <div id="root"></div>
+    <script>
+      // Load SIPml dynamically — ignore if unavailable (403/404 in some envs)
+      (function() {
+        var s = document.createElement('script');
+        s.src = 'https://api.crm.windevs.uz/static/voip/sipml/SIPml-api.js';
+        s.onerror = function() {
+          console.warn('[SIPml] VoIP library not available in this environment. SIP features disabled.');
+          window.SIPml = null;
+        };
+        document.body.appendChild(s);
+      })();
+    </script>
   </body>
 </html>

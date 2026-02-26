@@ -4,12 +4,16 @@
  */
 
 import React, { useState, useEffect } from 'react';
-import { Modal, Button, Space, Typography, Avatar, Tag, Spin, Alert, Descriptions } from 'antd';
-import { PhoneOutlined, CloseOutlined, UserOutlined, PhoneFilled, MailOutlined } from '@ant-design/icons';
-import sipClient from '../../lib/telephony/SIPClient.js';
-import { api as apiClient } from '../../lib/api/client.js';
+import { Phone, X, User, PhoneCall, Mail } from 'lucide-react';
 
-const { Title, Text } = Typography;
+import sipClient from '../../lib/telephony/SIPClient.js';
+import { api } from '../../lib/api/client.js';
+import { Dialog, DialogContent } from '../../components/ui/dialog.jsx';
+import { Button } from '../../components/ui/button.jsx';
+import { Badge } from '../../components/ui/badge.jsx';
+import { Avatar, AvatarFallback } from '../../components/ui/avatar.jsx';
+import { Alert, AlertDescription, AlertTitle } from '../../components/ui/alert.jsx';
+import { Skeleton } from '../../components/ui/skeleton.jsx';
 
 function IncomingCallModal({ visible, callData, onAnswer, onReject }) {
   const [searchingContact, setSearchingContact] = useState(false);
@@ -24,9 +28,8 @@ function IncomingCallModal({ visible, callData, onAnswer, onReject }) {
   const searchContactByPhone = async (phoneNumber) => {
     setSearchingContact(true);
     try {
-      // Search in contacts
-      const response = await apiClient.get('/api/contacts/', {
-        params: { search: phoneNumber }
+      const response = await api.get('/api/contacts/', {
+        params: { search: phoneNumber },
       });
 
       if (response.data.results && response.data.results.length > 0) {
@@ -37,9 +40,8 @@ function IncomingCallModal({ visible, callData, onAnswer, onReject }) {
         return;
       }
 
-      // Search in leads
-      const leadsResponse = await apiClient.get('/api/leads/', {
-        params: { search: phoneNumber }
+      const leadsResponse = await api.get('/api/leads/', {
+        params: { search: phoneNumber },
       });
 
       if (leadsResponse.data.results && leadsResponse.data.results.length > 0) {
@@ -56,10 +58,7 @@ function IncomingCallModal({ visible, callData, onAnswer, onReject }) {
   };
 
   const handleAnswer = () => {
-    if (onAnswer) {
-      onAnswer(callData);
-    }
-    // The actual SIP answer logic would be handled by SIPClient
+    onAnswer?.(callData);
     const audioElement = document.getElementById('incoming-call-audio');
     if (audioElement) {
       sipClient.answerCall(audioElement);
@@ -67,130 +66,90 @@ function IncomingCallModal({ visible, callData, onAnswer, onReject }) {
   };
 
   const handleReject = () => {
-    if (onReject) {
-      onReject(callData);
-    }
+    onReject?.(callData);
     sipClient.rejectCall();
   };
 
   if (!callData) return null;
 
   return (
-    <Modal
-      open={visible}
-      onCancel={handleReject}
-      footer={null}
-      closable={false}
-      width={500}
-      centered
-      maskClosable={false}
-    >
-      <div style={{ textAlign: 'center', padding: '20px 0' }}>
-        {/* Animated phone icon */}
-        <div style={{ marginBottom: 20 }}>
-          <Avatar
-            size={80}
-            icon={<PhoneFilled />}
-            style={{
-              backgroundColor: '#52c41a',
-              animation: 'pulse 1.5s infinite',
-            }}
-          />
-        </div>
+    <Dialog open={visible}>
+      <DialogContent className="max-w-lg">
+        <div className="flex flex-col items-center gap-5 text-center">
+          <div className="flex h-20 w-20 items-center justify-center rounded-full bg-emerald-500/20 text-emerald-600">
+            <PhoneCall className="h-10 w-10 animate-pulse" />
+          </div>
 
-        <Title level={3}>Входящий звонок</Title>
+          <div>
+            <h2 className="text-xl font-semibold">Входящий звонок</h2>
+          </div>
 
-        {/* Caller information */}
-        {searchingContact ? (
-          <Spin tip="Поиск контакта..." spinning={true}>
-            <div style={{ minHeight: '80px' }}></div>
-          </Spin>
-        ) : contactInfo ? (
-          <div style={{ marginBottom: 20 }}>
-            <Space direction="vertical" size="small">
-              <Avatar size={64} icon={<UserOutlined />} style={{ backgroundColor: '#1890ff' }} />
-              <Title level={4} style={{ margin: 0 }}>
-                {contactInfo.data.first_name} {contactInfo.data.last_name}
-              </Title>
-              <Tag color={contactInfo.type === 'contact' ? 'blue' : 'green'}>
-                {contactInfo.type === 'contact' ? 'Контакт' : 'Лид'}
-              </Tag>
+          {searchingContact ? (
+            <div className="w-full space-y-2">
+              <Skeleton className="h-4 w-2/3" />
+              <Skeleton className="h-4 w-1/2" />
+              <Skeleton className="h-4 w-1/3" />
+            </div>
+          ) : contactInfo ? (
+            <div className="flex flex-col items-center gap-3">
+              <Avatar className="h-16 w-16">
+                <AvatarFallback>
+                  <User className="h-6 w-6" />
+                </AvatarFallback>
+              </Avatar>
+              <div>
+                <div className="text-lg font-semibold">
+                  {contactInfo.data.first_name} {contactInfo.data.last_name}
+                </div>
+                <Badge variant={contactInfo.type === 'contact' ? 'secondary' : 'default'}>
+                  {contactInfo.type === 'contact' ? 'Контакт' : 'Лид'}
+                </Badge>
+              </div>
               {contactInfo.data.company && (
-                <Text type="secondary">{contactInfo.data.company}</Text>
+                <div className="text-sm text-muted-foreground">{contactInfo.data.company}</div>
               )}
               {contactInfo.data.email && (
-                <Text type="secondary">
-                  <MailOutlined /> {contactInfo.data.email}
-                </Text>
+                <div className="flex items-center gap-1 text-sm text-muted-foreground">
+                  <Mail className="h-4 w-4" />
+                  {contactInfo.data.email}
+                </div>
               )}
-            </Space>
-          </div>
-        ) : (
-          <div style={{ marginBottom: 20 }}>
-            <Avatar size={64} icon={<UserOutlined />} style={{ backgroundColor: '#8c8c8c' }} />
-            <Title level={4} style={{ margin: '8px 0' }}>
-              {callData.callerName || 'Неизвестный номер'}
-            </Title>
-            <Alert
-              message="Контакт не найден в CRM"
-              type="info"
-              showIcon
-              style={{ marginTop: 12, textAlign: 'left' }}
-            />
-          </div>
-        )}
+            </div>
+          ) : (
+            <div className="flex flex-col items-center gap-3">
+              <Avatar className="h-16 w-16">
+                <AvatarFallback>
+                  <User className="h-6 w-6" />
+                </AvatarFallback>
+              </Avatar>
+              <div className="text-lg font-semibold">{callData.callerName || 'Неизвестный номер'}</div>
+              <Alert className="text-left">
+                <AlertTitle>Контакт не найден</AlertTitle>
+                <AlertDescription>Контакт не найден в CRM</AlertDescription>
+              </Alert>
+            </div>
+          )}
 
-        {/* Phone number */}
-        <div style={{ marginBottom: 20 }}>
-          <PhoneOutlined style={{ fontSize: 24, color: '#1890ff', marginRight: 8 }} />
-          <Text strong style={{ fontSize: 18 }}>
+          <div className="flex items-center gap-2 text-lg font-semibold">
+            <Phone className="h-5 w-5 text-primary" />
             {callData.phoneNumber}
-          </Text>
+          </div>
+
+          <div className="flex w-full flex-col gap-3 sm:flex-row sm:justify-center">
+            <Button variant="destructive" size="lg" onClick={handleReject}>
+              <X className="mr-2 h-5 w-5" />
+              Отклонить
+            </Button>
+            <Button size="lg" className="bg-emerald-600 text-white hover:bg-emerald-700" onClick={handleAnswer}>
+              <Phone className="mr-2 h-5 w-5" />
+              Ответить
+            </Button>
+          </div>
+
+          <audio id="incoming-call-audio" autoPlay className="hidden" />
         </div>
-
-        {/* Action buttons */}
-        <Space size="large" style={{ marginTop: 20 }}>
-          <Button
-            type="primary"
-            danger
-            size="large"
-            icon={<CloseOutlined />}
-            onClick={handleReject}
-            style={{ width: 140, height: 56 }}
-          >
-            Отклонить
-          </Button>
-          <Button
-            type="primary"
-            size="large"
-            icon={<PhoneOutlined />}
-            onClick={handleAnswer}
-            style={{ width: 140, height: 56, backgroundColor: '#52c41a', borderColor: '#52c41a' }}
-          >
-            Ответить
-          </Button>
-        </Space>
-
-        {/* Hidden audio element for incoming call */}
-        <audio id="incoming-call-audio" autoPlay style={{ display: 'none' }} />
-      </div>
-
-      {/* CSS animation for pulse effect */}
-      <style>
-        {`
-          @keyframes pulse {
-            0%, 100% {
-              transform: scale(1);
-              opacity: 1;
-            }
-            50% {
-              transform: scale(1.1);
-              opacity: 0.8;
-            }
-          }
-        `}
-      </style>
-    </Modal>
+      </DialogContent>
+    </Dialog>
   );
 }
 

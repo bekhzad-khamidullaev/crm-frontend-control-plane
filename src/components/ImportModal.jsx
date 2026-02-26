@@ -300,7 +300,7 @@ export default function ImportModal({
       onCancel={handleClose}
       footer={null}
       width={800}
-      destroyOnClose
+      destroyOnHidden
     >
       <Steps current={currentStep} style={{ marginBottom: 24 }}>
         <Step title="Upload File" icon={<UploadOutlined />} />

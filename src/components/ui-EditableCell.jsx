@@ -1,7 +1,10 @@
 import { useState, useEffect, useRef } from 'react';
-import { Input, InputNumber, Select, DatePicker, message } from 'antd';
-import { CheckOutlined, CloseOutlined } from '@ant-design/icons';
 import dayjs from 'dayjs';
+import { Input, Select, DatePicker, InputNumber, Button, App } from 'antd';
+import { CheckOutlined, CloseOutlined } from '@ant-design/icons';
+
+const { TextArea } = Input;
+const { Option } = Select;
 
 /**
  * EditableCell component for inline table editing
@@ -12,7 +15,7 @@ export default function EditableCell({
   record,
   dataIndex,
   editable = true,
-  type = 'text', // text, number, select, date
+  type = 'text', // text, number, select, date, textarea
   options = [], // for select type
   onSave,
   format, // function to format display value
@@ -20,6 +23,7 @@ export default function EditableCell({
   placeholder,
   ...restProps
 }) {
+  const { message } = App.useApp();
   const [editing, setEditing] = useState(false);
   const [value, setValue] = useState(initialValue);
   const [saving, setSaving] = useState(false);
@@ -31,7 +35,7 @@ export default function EditableCell({
 
   useEffect(() => {
     if (editing && inputRef.current) {
-      inputRef.current.focus();
+      inputRef.current.focus?.();
     }
   }, [editing]);
 
@@ -52,10 +56,10 @@ export default function EditableCell({
       setSaving(true);
       await onSave(record, dataIndex, value);
       setEditing(false);
-      message.success('Updated successfully');
+      message.success('Сохранено');
     } catch (error) {
       console.error('Save error:', error);
-      message.error('Failed to update');
+      message.error('Ошибка сохранения');
       setValue(initialValue);
     } finally {
       setSaving(false);
@@ -67,10 +71,10 @@ export default function EditableCell({
     setEditing(false);
   };
 
-  const handleKeyDown = (e) => {
-    if (e.key === 'Enter' && type !== 'textarea') {
+  const handleKeyDown = (event) => {
+    if (event.key === 'Enter' && type !== 'textarea') {
       save();
-    } else if (e.key === 'Escape') {
+    } else if (event.key === 'Escape') {
       cancel();
     }
   };
@@ -78,13 +82,10 @@ export default function EditableCell({
   const renderInput = () => {
     const commonProps = {
       ref: inputRef,
-      value,
-      onChange: (e) => setValue(e?.target?.value ?? e),
-      onBlur: save,
-      onKeyDown: handleKeyDown,
       disabled: saving,
       size: 'small',
-      style: { width: '100%' },
+      onPressEnter: type !== 'textarea' ? save : undefined,
+      onBlur: save,
     };
 
     switch (type) {
@@ -92,43 +93,60 @@ export default function EditableCell({
         return (
           <InputNumber
             {...commonProps}
+            value={value}
             onChange={(val) => setValue(val)}
+            style={{ width: '100%' }}
           />
         );
-      
+
       case 'select':
         return (
           <Select
             {...commonProps}
-            ref={inputRef}
+            value={value ?? undefined}
             onChange={(val) => setValue(val)}
-            options={options}
-            showSearch
-            optionFilterProp="label"
-          />
+            placeholder={placeholder || 'Выберите...'}
+            style={{ width: '100%' }}
+          >
+            {options.map((option) => (
+              <Option key={option.value} value={option.value}>
+                {option.label}
+              </Option>
+            ))}
+          </Select>
         );
-      
+
       case 'date':
         return (
           <DatePicker
             {...commonProps}
-            ref={inputRef}
             value={value ? dayjs(value) : null}
-            onChange={(date) => setValue(date ? date.format('YYYY-MM-DD') : null)}
-            format="DD/MM/YYYY"
+            onChange={(date) => setValue(date)}
+            format="DD.MM.YYYY"
+            style={{ width: '100%' }}
           />
         );
-      
+
       case 'textarea':
         return (
-          <Input.TextArea
+          <TextArea
             {...commonProps}
-            autoSize={{ minRows: 2, maxRows: 6 }}
+            value={value}
+            onChange={(e) => setValue(e.target.value)}
+            rows={2}
+            onPressEnter={undefined}
           />
         );
-      
+
       default:
-        return <Input {...commonProps} />;
+        return (
+          <Input
+            {...commonProps}
+            value={value}
+            onChange={(e) => setValue(e.target.value)}
+            placeholder={placeholder}
+          />
+        );
     }
   };
 
@@ -142,7 +160,7 @@ export default function EditableCell({
     }
 
     if (type === 'select' && options.length > 0) {
-      const option = options.find(opt => opt.value === value);
+      const option = options.find((opt) => opt.value === value);
       return option ? option.label : value;
     }
 
@@ -150,43 +168,47 @@ export default function EditableCell({
   };
 
   if (!editable) {
-    return (
-      <div style={restProps.style}>
-        {renderView ? renderView(initialValue) : getDisplayValue()}
-      </div>
-    );
+    return <div style={restProps.style}>{renderView ? renderView(initialValue) : getDisplayValue()}</div>;
   }
 
   return editing ? (
-    <div style={{ display: 'flex', gap: '4px', alignItems: 'center', ...restProps.style }}>
-      {renderInput()}
-      <CheckOutlined
-        style={{ color: '#52c41a', cursor: 'pointer' }}
+    <div style={{ display: 'flex', gap: 4, alignItems: 'center', ...restProps.style }}>
+      <div style={{ flex: 1 }}>{renderInput()}</div>
+      <Button
+        type="link"
+        size="small"
+        icon={<CheckOutlined />}
         onClick={save}
+        loading={saving}
+        style={{ color: '#52c41a' }}
       />
-      <CloseOutlined
-        style={{ color: '#ff4d4f', cursor: 'pointer' }}
+      <Button
+        type="link"
+        size="small"
+        icon={<CloseOutlined />}
         onClick={cancel}
+        disabled={saving}
+        danger
       />
     </div>
   ) : (
     <div
       style={{
-        cursor: editable ? 'pointer' : 'default',
+        cursor: 'pointer',
         padding: '4px 8px',
-        borderRadius: '4px',
-        minHeight: '32px',
+        borderRadius: 4,
+        minHeight: 32,
         display: 'flex',
         alignItems: 'center',
         ...restProps.style,
       }}
       onClick={toggleEdit}
-      onKeyDown={(e) => {
-        if (e.key === 'Enter' || e.key === ' ') {
+      onKeyDown={(event) => {
+        if (event.key === 'Enter' || event.key === ' ') {
           toggleEdit();
         }
       }}
-      tabIndex={editable ? 0 : -1}
+      tabIndex={0}
       role="button"
       aria-label="Click to edit"
     >

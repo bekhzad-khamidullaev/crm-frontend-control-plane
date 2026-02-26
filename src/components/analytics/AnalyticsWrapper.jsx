@@ -1,5 +1,5 @@
 import React, { useState, useRef } from 'react';
-import { Card, Space, Button, Select, DatePicker, Dropdown, message, Tooltip, Switch } from 'antd';
+import { Card, Space, Button, Select, DatePicker, Dropdown, App, Tooltip, Switch } from 'antd';
 import {
   DownloadOutlined,
   ReloadOutlined,
@@ -46,6 +46,7 @@ function AnalyticsWrapper({
   onRealTimeToggle,
   lastUpdate = null,
 }) {
+  const { message } = App.useApp();
   const [period, setPeriod] = useState(defaultPeriod);
   const [customRange, setCustomRange] = useState(null);
   const [showCustomPicker, setShowCustomPicker] = useState(false);

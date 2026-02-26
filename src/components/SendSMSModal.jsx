@@ -6,9 +6,7 @@
 import React, { useState, useEffect } from 'react';
 import { Modal, Form, Input, Select, Button, Space, App, Typography, Alert, Divider } from 'antd';
 import { MessageOutlined, SendOutlined, EyeOutlined } from '@ant-design/icons';
-// SMS API not available in Django-CRM API.yaml
-const sendSMS = async () => { throw new Error('SMS API requires backend implementation'); };
-const getSMSTemplates = async () => { return []; };
+import smsApi from '../lib/api/sms.js';
 
 const { TextArea } = Input;
 const { Text, Paragraph } = Typography;
@@ -18,49 +16,29 @@ export default function SendSMSModal({
   onClose,
   phoneNumber = '',
   contactName = '',
-  entityType = 'contact',
-  entityId = null,
 }) {
   const { message } = App.useApp();
   const [form] = Form.useForm();
   const [loading, setLoading] = useState(false);
-  const [templates, setTemplates] = useState([]);
+  const [providers, setProviders] = useState([]);
   const [preview, setPreview] = useState('');
   const [showPreview, setShowPreview] = useState(false);
   const [charCount, setCharCount] = useState(0);
 
   useEffect(() => {
     if (visible) {
-      loadTemplates();
+      loadProviders();
       form.setFieldsValue({ phone_number: phoneNumber });
     }
   }, [visible, phoneNumber]);
 
-  const loadTemplates = async () => {
+  const loadProviders = async () => {
     try {
-      const data = await getSMSTemplates();
-      setTemplates(data || []);
+      const data = await smsApi.providers();
+      setProviders(data?.results || data || []);
     } catch (error) {
-      console.error('Error loading SMS templates:', error);
+      console.error('Error loading SMS providers:', error);
     }
-  };
-
-  const handleTemplateSelect = (templateId) => {
-    const template = templates.find(t => t.id === templateId);
-    if (template) {
-      const message = replaceVariables(template.content);
-      form.setFieldsValue({ message });
-      setPreview(message);
-      setCharCount(message.length);
-    }
-  };
-
-  const replaceVariables = (text) => {
-    return text
-      .replace(/\{name\}/g, contactName || '[Имя]')
-      .replace(/\{phone\}/g, phoneNumber || '[Телефон]')
-      .replace(/\{date\}/g, new Date().toLocaleDateString('ru'))
-      .replace(/\{time\}/g, new Date().toLocaleTimeString('ru', { hour: '2-digit', minute: '2-digit' }));
   };
 
   const handleMessageChange = (e) => {
@@ -72,11 +50,11 @@ export default function SendSMSModal({
   const handleSend = async (values) => {
     setLoading(true);
     try {
-      await sendSMS({
-        phone_number: values.phone_number,
-        message: values.message,
-        entity_type: entityType,
-        entity_id: entityId,
+      await smsApi.send({
+        channel_id: values.channel_id,
+        to: values.phone_number,
+        text: values.message,
+        async: true,
       });
       
       message.success(`SMS отправлено на номер ${values.phone_number}`);
@@ -118,6 +96,20 @@ export default function SendSMSModal({
         }}
       >
         <Form.Item
+          label="Канал отправки"
+          name="channel_id"
+          rules={[{ required: true, message: 'Выберите канал' }]}
+        >
+          <Select
+            placeholder="Выберите канал"
+            options={providers.map((provider) => ({
+              value: provider.channel_id || provider.id,
+              label: provider.name || provider.provider || provider.title || `Канал ${provider.channel_id || provider.id}`,
+            }))}
+          />
+        </Form.Item>
+
+        <Form.Item
           label="Номер телефона"
           name="phone_number"
           rules={[
@@ -139,23 +131,6 @@ export default function SendSMSModal({
             style={{ marginBottom: 16 }}
           />
         )}
-
-        <Form.Item
-          label="Выбрать шаблон"
-          name="template_id"
-        >
-          <Select
-            placeholder="Выберите шаблон (опционально)"
-            allowClear
-            onChange={handleTemplateSelect}
-          >
-            {templates.map(template => (
-              <Select.Option key={template.id} value={template.id}>
-                {template.name}
-              </Select.Option>
-            ))}
-          </Select>
-        </Form.Item>
 
         <Form.Item
           label={

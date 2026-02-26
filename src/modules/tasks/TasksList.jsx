@@ -1,26 +1,19 @@
-import React, { useState, useEffect } from 'react';
-import {
-  Button,
-  Space,
-  Tag,
-  message,
-  Avatar,
-  Checkbox,
-  Progress,
-} from 'antd';
-import {
-  UserOutlined,
-  CheckOutlined,
-  CopyOutlined,
-} from '@ant-design/icons';
-import { navigate } from '../../router';
-import { getTasks, deleteTask } from '../../lib/api/client';
+import { Calendar, Clock, Edit, Eye, Trash2, User } from 'lucide-react';
+import { useEffect, useMemo, useState } from 'react';
+
 import EnhancedTable from '../../components/ui-EnhancedTable.jsx';
 import TableToolbar from '../../components/ui-TableToolbar.jsx';
-import QuickActions from '../../components/QuickActions.jsx';
+import { AlertDialog, AlertDialogContent, AlertDialogHeader, AlertDialogTitle } from '../../components/ui/alert-dialog.jsx';
+import { Avatar, AvatarFallback } from '../../components/ui/avatar.jsx';
+import { Badge } from '../../components/ui/badge.jsx';
+import { Button } from '../../components/ui/button.jsx';
+import { toast } from '../../components/ui/use-toast.js';
+import { deleteTask, getTasks, getTaskStages, getUsers, updateTask } from '../../lib/api';
+import { navigate } from '../../router';
 
 function TasksList() {
   const [tasks, setTasks] = useState([]);
+  const [allTasksCache, setAllTasksCache] = useState(null);
   const [loading, setLoading] = useState(false);
   const [searchText, setSearchText] = useState('');
   const [pagination, setPagination] = useState({
@@ -28,75 +21,86 @@ function TasksList() {
     pageSize: 10,
     total: 0,
   });
+  const [stages, setStages] = useState([]);
+  const [users, setUsers] = useState([]);
+  const [deleteTarget, setDeleteTarget] = useState(null);
 
-  const fetchTasks = async (page = 1, search = '') => {
+  useEffect(() => {
+    console.log('TASKS_LIST_API', { getTasks: typeof getTasks, isMock: !!getTasks?.mock });
+    fetchTasks(1, searchText);
+    loadReferences();
+  }, []);
+
+  const loadReferences = async () => {
+    const [stagesRes, usersRes] = await Promise.allSettled([
+      getTaskStages({ page_size: 200 }),
+      getUsers({ page_size: 200 }),
+    ]);
+
+    if (stagesRes.status === 'fulfilled') {
+      const data = stagesRes.value;
+      setStages(data?.results || data || []);
+    } else {
+      console.error('Error loading task stages:', stagesRes.reason);
+      setStages([]);
+      toast({
+        title: 'Внимание',
+        description: 'Не удалось загрузить стадии задач. Фильтры будут ограничены.',
+      });
+    }
+
+    if (usersRes.status === 'fulfilled') {
+      const data = usersRes.value;
+      setUsers(data?.results || data || []);
+    } else {
+      console.error('Error loading users:', usersRes.reason);
+      setUsers([]);
+      toast({
+        title: 'Внимание',
+        description: 'Не удалось загрузить пользователей. Фильтры будут ограничены.',
+      });
+    }
+  };
+
+  const fetchTasks = async (page = 1, search = '', pageSize = pagination.pageSize) => {
     setLoading(true);
     try {
       const response = await getTasks({
         page,
-        page_size: pagination.pageSize,
-        search,
+        page_size: pageSize,
+        search: search || undefined,
       });
-      setTasks(response.results || []);
-      setPagination({
-        ...pagination,
+      const results = response.results || [];
+      const totalCount = response.count || 0;
+      
+      if (results.length > pageSize && results.length === totalCount) {
+        console.warn('⚠️ TasksList: Caching all data');
+        setAllTasksCache(results);
+        const startIndex = (page - 1) * pageSize;
+        setTasks(results.slice(startIndex, startIndex + pageSize));
+      } else {
+        setAllTasksCache(null);
+        setTasks(results);
+      }
+      
+      setPagination((prev) => ({
+        ...prev,
         current: page,
-        total: response.count || 0,
-      });
+        pageSize: pageSize,
+        total: totalCount,
+      }));
     } catch (error) {
-      message.error('Ошибка загрузки задач');
-      // Mock data for demo
-      setTasks([
-        {
-          id: 1,
-          title: 'Подготовить коммерческое предложение',
-          description: 'Для компании ООО "ТехноПром"',
-          status: 'in_progress',
-          priority: 'high',
-          due_date: '2024-02-15',
-          assignee: 'Алексей Иванов',
-          related_to: 'Deal #1',
-          progress: 60,
-          created_at: '2024-01-20',
-        },
-        {
-          id: 2,
-          title: 'Провести встречу с клиентом',
-          description: 'Обсудить условия сотрудничества',
-          status: 'todo',
-          priority: 'medium',
-          due_date: '2024-02-20',
-          assignee: 'Елена Смирнова',
-          related_to: 'Contact #2',
-          progress: 0,
-          created_at: '2024-01-19',
-        },
-        {
-          id: 3,
-          title: 'Отправить документы',
-          description: 'Договор и акты',
-          status: 'completed',
-          priority: 'low',
-          due_date: '2024-02-10',
-          assignee: 'Алексей Иванов',
-          related_to: 'Deal #3',
-          progress: 100,
-          created_at: '2024-01-18',
-        },
-      ]);
-      setPagination({
-        ...pagination,
+      toast({ title: 'Ошибка', description: 'Ошибка загрузки задач', variant: 'destructive' });
+      setTasks([]);
+      setPagination((prev) => ({
+        ...prev,
         current: 1,
-        total: 3,
-      });
+        total: 0,
+      }));
     } finally {
       setLoading(false);
     }
   };
-
-  useEffect(() => {
-    fetchTasks(1, searchText);
-  }, []);
 
   const handleSearch = (value) => {
     setSearchText(value);
@@ -106,35 +110,70 @@ function TasksList() {
   const handleDelete = async (id) => {
     try {
       await deleteTask(id);
-      message.success('Задача удалена');
+      toast({ title: 'Задача удалена', description: 'Задача удалена' });
       fetchTasks(pagination.current, searchText);
     } catch (error) {
-      message.error('Ошибка удаления задачи');
+      toast({ title: 'Ошибка', description: 'Ошибка удаления задачи', variant: 'destructive' });
     }
   };
 
   const handleTableChange = (newPagination) => {
-    fetchTasks(newPagination.current, searchText);
+    const nextPage = newPagination?.current || 1;
+    const nextPageSize = newPagination?.pageSize || pagination.pageSize;
+    
+    if (nextPageSize !== pagination.pageSize) {
+      setPagination((p) => ({ ...p, pageSize: nextPageSize }));
+      setAllTasksCache(null);
+      fetchTasks(nextPage, searchText, nextPageSize);
+      return;
+    }
+    
+    if (allTasksCache && allTasksCache.length > 0) {
+      const startIndex = (nextPage - 1) * nextPageSize;
+      setTasks(allTasksCache.slice(startIndex, startIndex + nextPageSize));
+      setPagination((p) => ({ ...p, current: nextPage }));
+    } else {
+      fetchTasks(nextPage, searchText, nextPageSize);
+    }
   };
+
+  const stagesById = useMemo(() => {
+    return stages.reduce((acc, stage) => {
+      acc[stage.id] = stage;
+      return acc;
+    }, {});
+  }, [stages]);
+
+  const userNameById = useMemo(() => {
+    return users.reduce((acc, user) => {
+      acc[user.id] = user.username || user.email || `#${user.id}`;
+      return acc;
+    }, {});
+  }, [users]);
+
+  const doneStage = stages.find((stage) => stage.done);
+  const inProgressStage = stages.find((stage) => stage.in_progress) || stages.find((stage) => stage.default);
 
   const handleToggleComplete = async (task) => {
-    const newStatus = task.status === 'completed' ? 'in_progress' : 'completed';
-    message.info(`Задача "${task.title}" отмечена как ${newStatus === 'completed' ? 'выполненная' : 'в работе'}`);
-    // Here you would call updateTask API
-  };
-
-  const statusConfig = {
-    todo: { color: 'default', text: 'К выполнению' },
-    in_progress: { color: 'blue', text: 'В работе' },
-    completed: { color: 'green', text: 'Выполнено' },
-    cancelled: { color: 'red', text: 'Отменено' },
+    if (!doneStage || !inProgressStage) {
+      toast({ title: 'Внимание', description: 'Этапы задач не настроены' });
+      return;
+    }
+    const isDone = task.stage === doneStage.id;
+    const newStage = isDone ? inProgressStage.id : doneStage.id;
+    try {
+      await updateTask(task.id, { stage: newStage });
+      toast({ title: 'Статус задачи обновлен', description: 'Статус задачи обновлен' });
+      fetchTasks(pagination.current, searchText);
+    } catch (error) {
+      toast({ title: 'Ошибка', description: 'Ошибка обновления статуса задачи', variant: 'destructive' });
+    }
   };
 
   const priorityConfig = {
-    low: { color: 'green', text: 'Низкий' },
-    medium: { color: 'orange', text: 'Средний' },
-    high: { color: 'red', text: 'Высокий' },
-    urgent: { color: 'magenta', text: 'Срочно' },
+    1: { color: 'bg-emerald-100 text-emerald-700', text: 'Низкий' },
+    2: { color: 'bg-amber-100 text-amber-700', text: 'Средний' },
+    3: { color: 'bg-rose-100 text-rose-700', text: 'Высокий' },
   };
 
   const columns = [
@@ -143,8 +182,10 @@ function TasksList() {
       key: 'checkbox',
       width: 50,
       render: (_, record) => (
-        <Checkbox
-          checked={record.status === 'completed'}
+        <input
+          type="checkbox"
+          className="h-4 w-4 accent-primary"
+          checked={doneStage ? record.stage === doneStage.id : false}
           onChange={() => handleToggleComplete(record)}
         />
       ),
@@ -154,137 +195,108 @@ function TasksList() {
       key: 'task',
       render: (_, record) => (
         <div>
-          <div style={{ fontWeight: 500 }}>{record.title}</div>
+          <div className="font-medium">{record.name}</div>
           {record.description && (
-            <Text type="secondary" style={{ fontSize: 12 }}>
-              {record.description}
-            </Text>
+            <div className="text-xs text-muted-foreground">{record.description}</div>
           )}
         </div>
       ),
-      sorter: (a, b) => a.title.localeCompare(b.title),
+      sorter: (a, b) => (a.name || '').localeCompare(b.name || ''),
     },
     {
-      title: 'Статус',
-      dataIndex: 'status',
-      key: 'status',
-      render: (status) => {
-        const config = statusConfig[status] || statusConfig.todo;
-        return <Tag color={config.color}>{config.text}</Tag>;
+      title: 'Этап',
+      dataIndex: 'stage',
+      key: 'stage',
+      render: (stageId) => {
+        const stage = stagesById[stageId];
+        return stage ? (
+          <Badge variant="secondary" className={stage.done ? 'bg-emerald-100 text-emerald-700' : stage.in_progress ? 'bg-sky-100 text-sky-700' : ''}>
+            {stage.name}
+          </Badge>
+        ) : (
+          '-'
+        );
       },
-      filters: Object.keys(statusConfig).map((key) => ({
-        text: statusConfig[key].text,
-        value: key,
-      })),
-      onFilter: (value, record) => record.status === value,
     },
     {
       title: 'Приоритет',
       dataIndex: 'priority',
       key: 'priority',
       render: (priority) => {
-        const config = priorityConfig[priority] || priorityConfig.medium;
-        return <Tag color={config.color}>{config.text}</Tag>;
+        const config = priorityConfig[priority] || { color: 'bg-muted text-muted-foreground', text: '-' };
+        return <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs ${config.color}`}>{config.text}</span>;
       },
-      filters: Object.keys(priorityConfig).map((key) => ({
-        text: priorityConfig[key].text,
-        value: key,
-      })),
-      onFilter: (value, record) => record.priority === value,
     },
     {
-      title: 'Прогресс',
-      dataIndex: 'progress',
-      key: 'progress',
-      render: (progress) => (
-        <div style={{ width: 100 }}>
-          <Progress
-            percent={progress}
-            size="small"
-            status={progress === 100 ? 'success' : 'active'}
-          />
-        </div>
-      ),
-      sorter: (a, b) => a.progress - b.progress,
-    },
-    {
-      title: 'Ответственный',
-      dataIndex: 'assignee',
-      key: 'assignee',
-      render: (assignee) => (
-        <Space>
-          <Avatar size="small" icon={<UserOutlined />} />
-          <Text>{assignee}</Text>
-        </Space>
-      ),
+      title: 'Ответственные',
+      dataIndex: 'responsible',
+      key: 'responsible',
+      render: (responsible, record) => {
+        const ids = Array.isArray(responsible) ? responsible : [];
+        const names = ids.map((id) => userNameById[id]).filter(Boolean);
+        const ownerLabel = record.owner ? userNameById[record.owner] || `#${record.owner}` : null;
+        const display = names.length ? names.join(', ') : ownerLabel;
+        return (
+          <div className="flex items-center gap-2">
+            <Avatar className="h-6 w-6">
+              <AvatarFallback>
+                <User className="h-3 w-3" />
+              </AvatarFallback>
+            </Avatar>
+            <span className="text-sm">{display || '-'}</span>
+          </div>
+        );
+      },
     },
     {
       title: 'Срок',
       dataIndex: 'due_date',
       key: 'due_date',
       render: (date) => {
+        if (!date) return '-';
         const dueDate = new Date(date);
         const today = new Date();
         const daysLeft = Math.ceil((dueDate - today) / (1000 * 60 * 60 * 24));
-        
         return (
-          <Space direction="vertical" size="small">
-            <Space size="small">
-              <CalendarOutlined />
+          <div className="space-y-1">
+            <div className="flex items-center gap-2 text-sm">
+              <Calendar className="h-4 w-4 text-muted-foreground" />
               {dueDate.toLocaleDateString('ru-RU')}
-            </Space>
+            </div>
             {daysLeft > 0 && daysLeft <= 3 && (
-              <Text type="warning" style={{ fontSize: 12 }}>
-                <ClockCircleOutlined /> {daysLeft} дн.
-              </Text>
+              <div className="text-xs text-amber-600">
+                <Clock className="inline h-3 w-3" /> {daysLeft} дн.
+              </div>
             )}
             {daysLeft < 0 && (
-              <Text type="danger" style={{ fontSize: 12 }}>
-                <ClockCircleOutlined /> просрочено
-              </Text>
+              <div className="text-xs text-rose-600">
+                <Clock className="inline h-3 w-3" /> просрочено
+              </div>
             )}
-          </Space>
+          </div>
         );
       },
-      sorter: (a, b) => new Date(a.due_date) - new Date(b.due_date),
-    },
-    {
-      title: 'Связано с',
-      dataIndex: 'related_to',
-      key: 'related_to',
+      sorter: (a, b) => new Date(a.due_date || 0) - new Date(b.due_date || 0),
     },
     {
       title: 'Действия',
       key: 'actions',
       width: 200,
       render: (_, record) => (
-        <Space size="small">
-          <Button
-            type="link"
-            icon={<EyeOutlined />}
-            onClick={() => navigate(`/tasks/${record.id}`)}
-          >
+        <div className="flex flex-wrap items-center gap-2">
+          <Button variant="ghost" size="sm" onClick={() => navigate(`/tasks/${record.id}`)}>
+            <Eye className="mr-1 h-4 w-4" />
             Просмотр
           </Button>
-          <Button
-            type="link"
-            icon={<EditOutlined />}
-            onClick={() => navigate(`/tasks/${record.id}/edit`)}
-          >
+          <Button variant="ghost" size="sm" onClick={() => navigate(`/tasks/${record.id}/edit`)}>
+            <Edit className="mr-1 h-4 w-4" />
             Редактировать
           </Button>
-          <Popconfirm
-            title="Удалить эту задачу?"
-            description="Это действие нельзя отменить"
-            onConfirm={() => handleDelete(record.id)}
-            okText="Да"
-            cancelText="Нет"
-          >
-            <Button type="link" danger icon={<DeleteOutlined />}>
-              Удалить
-            </Button>
-          </Popconfirm>
-        </Space>
+          <Button variant="ghost" size="sm" className="text-destructive" onClick={() => setDeleteTarget(record)}>
+            <Trash2 className="mr-1 h-4 w-4" />
+            Удалить
+          </Button>
+        </div>
       ),
     },
   ];
@@ -310,22 +322,43 @@ function TasksList() {
         loading={loading}
         pagination={pagination}
         onChange={handleTableChange}
-        scroll={{ x: 1400 }}
-        rowClassName={(record) =>
-          record.status === 'completed' ? 'row-completed' : ''
-        }
+        rowClassName={(record) => (doneStage && record.stage === doneStage.id ? 'row-completed' : '')}
         showTotal={true}
         showSizeChanger={true}
         emptyText="Нет задач"
         emptyDescription="Создайте первую задачу"
       />
 
-      <style jsx>{`
+      <style>{`
         .row-completed {
           opacity: 0.6;
           text-decoration: line-through;
         }
       `}</style>
+
+      <AlertDialog open={!!deleteTarget} onOpenChange={(open) => !open && setDeleteTarget(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Удалить эту задачу?</AlertDialogTitle>
+          </AlertDialogHeader>
+          <p className="text-sm text-muted-foreground">Это действие нельзя отменить</p>
+          <div className="mt-4 flex justify-end gap-2">
+            <Button variant="outline" onClick={() => setDeleteTarget(null)}>
+              Нет
+            </Button>
+            <Button
+              variant="destructive"
+              onClick={() => {
+                if (!deleteTarget) return;
+                handleDelete(deleteTarget.id);
+                setDeleteTarget(null);
+              }}
+            >
+              Да
+            </Button>
+          </div>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

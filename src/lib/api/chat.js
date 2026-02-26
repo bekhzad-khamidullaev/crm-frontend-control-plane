@@ -8,11 +8,9 @@ import { api as apiClient } from './client.js';
 /**
  * Get list of chat messages with optional filters
  * @param {Object} params - Query parameters
- * @param {string} [params.related_lead] - Filter by lead ID
- * @param {string} [params.related_contact] - Filter by contact ID
- * @param {string} [params.related_deal] - Filter by deal ID
- * @param {string} [params.sender] - Filter by sender user ID
- * @param {string} [params.parent] - Filter by parent message ID (for threads)
+ * @param {number} [params.content_type] - Filter by content type ID
+ * @param {number} [params.object_id] - Filter by related object ID
+ * @param {string} [params.owner] - Filter by owner user ID
  * @param {string} [params.search] - Search in message content
  * @param {string} [params.ordering] - Ordering field (e.g., '-created_at')
  * @param {number} [params.page] - Page number
@@ -43,7 +41,12 @@ export async function getChatMessage(id) {
  * @returns {Promise<Object>}
  */
 export async function createChatMessage(data) {
-  return apiClient.post('/api/chat-messages/', data);
+  const payload = {
+    ...data,
+    content: data.content ?? data.message,
+  };
+  delete payload.message;
+  return apiClient.post('/api/chat-messages/', { body: payload });
 }
 
 /**
@@ -53,7 +56,12 @@ export async function createChatMessage(data) {
  * @returns {Promise<Object>}
  */
 export async function updateChatMessage(id, data) {
-  return apiClient.patch(`/api/chat-messages/${id}/`, data);
+  const payload = {
+    ...data,
+    content: data.content ?? data.message,
+  };
+  delete payload.message;
+  return apiClient.patch(`/api/chat-messages/${id}/`, { body: payload });
 }
 
 /**
@@ -72,7 +80,25 @@ export async function deleteChatMessage(id) {
  * @returns {Promise<{count: number, results: Array}>}
  */
 export async function getMessageThread(parentId, params = {}) {
-  return getChatMessages({ ...params, parent: parentId, ordering: 'created_at' });
+  try {
+    return await apiClient.get(`/api/chat-messages/${parentId}/thread/`, { params });
+  } catch {
+    return getChatMessages({ ...params, answer_to: parentId, ordering: 'creation_date' });
+  }
+}
+
+/**
+ * Get direct replies for a message
+ * @param {string|number} parentId - Parent message ID
+ * @param {Object} params - Query parameters
+ * @returns {Promise<{count: number, results: Array}>}
+ */
+export async function getMessageReplies(parentId, params = {}) {
+  try {
+    return await apiClient.get(`/api/chat-messages/${parentId}/replies/`, { params });
+  } catch {
+    return getChatMessages({ ...params, answer_to: parentId, ordering: 'creation_date' });
+  }
 }
 
 /**
@@ -83,8 +109,20 @@ export async function getMessageThread(parentId, params = {}) {
  * @returns {Promise<{count: number, results: Array}>}
  */
 export async function getEntityChatMessages(entityType, entityId, params = {}) {
-  const filterKey = `related_${entityType}`;
-  return getChatMessages({ ...params, [filterKey]: entityId, ordering: '-created_at' });
+  const response = await getChatMessages({ ...params, ordering: '-creation_date' });
+  const results = response?.results || response || [];
+  const normalizedType = typeof entityType === 'string' ? entityType.toLowerCase() : entityType;
+
+  const filtered = results.filter((msg) => {
+    const msgType = (msg.content_type_name || msg.content_type || '').toString().toLowerCase();
+    const typeMatches = normalizedType
+      ? msgType.includes(normalizedType) || Number(msg.content_type) === Number(normalizedType)
+      : true;
+    const idMatches = entityId ? Number(msg.object_id) === Number(entityId) : true;
+    return typeMatches && idMatches;
+  });
+
+  return { count: filtered.length, results: filtered };
 }
 
 /**
@@ -95,34 +133,7 @@ export async function getEntityChatMessages(entityType, entityId, params = {}) {
  * @returns {Promise<Object>}
  */
 export async function markMessagesAsRead(messageIds) {
-  // Bulk endpoint doesn't exist in API.yaml, use individual updates
-  console.warn('Bulk mark-read endpoint not available in API, using individual PATCH requests');
-  return Promise.all(
-    messageIds.map(id => updateChatMessage(id, { is_read: true }))
-  );
-}
-
-/**
- * Upload attachment for a chat message
- * Note: This endpoint doesn't exist in API.yaml
- * @param {File} file - File to upload
- * @param {string|number} messageId - Message ID (optional)
- * @returns {Promise<Object>}
- */
-export async function uploadAttachment(file, messageId = null) {
-  console.warn('Chat attachment upload endpoint not available in API');
-  throw new Error('Chat message attachments are not supported by API');
-}
-
-/**
- * Delete attachment
- * Note: This endpoint doesn't exist in API.yaml
- * @param {string|number} attachmentId - Attachment ID
- * @returns {Promise<void>}
- */
-export async function deleteAttachment(attachmentId) {
-  console.warn('Chat attachment deletion endpoint not available in API');
-  throw new Error('Chat message attachments are not supported by API');
+  return Promise.all(messageIds.map((id) => updateChatMessage(id, { is_read: true })));
 }
 
 /**
@@ -133,52 +144,33 @@ export async function deleteAttachment(attachmentId) {
  * @returns {Promise<Object>}
  */
 export async function getChatStatistics(params = {}) {
-  // Statistics endpoint doesn't exist in API.yaml
-  console.warn('Chat statistics endpoint not available in API, calculating from messages');
-    try {
-      const messages = await getChatMessages({ ...params, page_size: 1000 });
-      
-      const stats = {
-        total: messages?.data?.count || 0,
-        unread: 0,
-        by_entity_type: {
-          lead: 0,
-          contact: 0,
-          deal: 0,
-        },
-        today: 0,
-        this_week: 0,
-      };
+  const messages = await getChatMessages({ ...params, page_size: 1000 });
+  const results = messages?.results || messages || [];
 
-      const now = new Date();
-      const todayStart = new Date(now.setHours(0, 0, 0, 0));
-      const weekStart = new Date(now.setDate(now.getDate() - 7));
+  const stats = {
+    total: Array.isArray(results) ? results.length : 0,
+    unread: 0,
+    by_entity_type: {},
+    today: 0,
+    this_week: 0,
+  };
 
-      messages?.data?.results?.forEach(msg => {
-        if (!msg.is_read) stats.unread++;
-        
-        const createdAt = new Date(msg.created_at);
-        if (createdAt >= todayStart) stats.today++;
-        if (createdAt >= weekStart) stats.this_week++;
-        
-        if (msg.related_lead) stats.by_entity_type.lead++;
-        if (msg.related_contact) stats.by_entity_type.contact++;
-        if (msg.related_deal) stats.by_entity_type.deal++;
-      });
+  const now = new Date();
+  const todayStart = new Date(now);
+  todayStart.setHours(0, 0, 0, 0);
+  const weekStart = new Date(now);
+  weekStart.setDate(now.getDate() - 7);
 
-      return { data: stats };
-    } catch (innerError) {
-      console.error('Error calculating statistics from messages:', innerError);
-      return {
-        data: {
-          total: 0,
-          unread: 0,
-          by_entity_type: { lead: 0, contact: 0, deal: 0 },
-          today: 0,
-          this_week: 0,
-        }
-      };
-    }
+  results.forEach((msg) => {
+    const createdAt = new Date(msg.creation_date || msg.created_at || msg.timestamp || Date.now());
+    if (createdAt >= todayStart) stats.today++;
+    if (createdAt >= weekStart) stats.this_week++;
+
+    const typeName = (msg.content_type_name || msg.content_type || 'unknown').toString().toLowerCase();
+    stats.by_entity_type[typeName] = (stats.by_entity_type[typeName] || 0) + 1;
+  });
+
+  return { data: stats };
 }
 
 /**
@@ -214,17 +206,8 @@ export async function replyToMessage(parentId, data) {
  * @returns {Promise<number>}
  */
 export async function getUnreadCount(params = {}) {
-  try {
-    const response = await getChatMessages({
-      ...params,
-      is_read: false,
-      page_size: 1,
-    });
-    return response.data.count || 0;
-  } catch (error) {
-    console.error('Error fetching unread count:', error);
-    return 0;
-  }
+  const response = await getChatMessages({ ...params, page_size: 1 });
+  return response?.count || 0;
 }
 
 /**
@@ -234,9 +217,8 @@ export async function getUnreadCount(params = {}) {
  * @returns {Promise<{count: number, results: Array}>}
  */
 export async function getCompanyChatMessages(companyId, params = {}) {
-  return getChatMessages({
-    ...params,
-    company: companyId,
-    ordering: '-created_at',
-  });
+  const response = await getChatMessages({ ...params, ordering: '-creation_date' });
+  const results = response?.results || response || [];
+  const filtered = results.filter((msg) => Number(msg.company_id || msg.company) === Number(companyId));
+  return { count: filtered.length, results: filtered };
 }

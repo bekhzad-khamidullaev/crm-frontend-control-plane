@@ -9,10 +9,14 @@ import {
   Spin,
   Empty,
   Space,
+  List,
   Typography,
   Tag,
   message as antMessage,
   Button,
+  Modal,
+  Input,
+  Tabs,
 } from 'antd';
 import {
   MessageOutlined,
@@ -24,13 +28,15 @@ import {
   createChatMessage,
   updateChatMessage,
   deleteChatMessage,
-  markMessagesAsRead,
+  getMessageThread,
+  getMessageReplies,
 } from '../../lib/api/chat.js';
 import chatWebSocket from '../../lib/websocket/ChatWebSocket.js';
 import { subscribe, addChatMessage, updateChatMessage as updateStoreMessage, deleteChatMessage as deleteStoreMessage } from '../../lib/store/index.js';
 import ChatMessageItem from '../../components/ChatMessageItem.jsx';
 import ChatMessageComposer from '../../components/ChatMessageComposer.jsx';
 import CallButton from '../../components/CallButton.jsx';
+import { getUserFromToken } from '../../lib/api/auth.js';
 
 const { Title, Text } = Typography;
 
@@ -39,8 +45,20 @@ function ChatWidget({ entityType, entityId, entityName, entityPhone }) {
   const [loading, setLoading] = useState(false);
   const [replyTo, setReplyTo] = useState(null);
   const [typingUsers, setTypingUsers] = useState([]);
+  const [contentTypeId, setContentTypeId] = useState(null);
+  const [editingMessage, setEditingMessage] = useState(null);
+  const [editValue, setEditValue] = useState('');
+  const [editSaving, setEditSaving] = useState(false);
+  const [threadModal, setThreadModal] = useState({
+    open: false,
+    loading: false,
+    message: null,
+    replies: [],
+    thread: [],
+  });
+  const [threadTab, setThreadTab] = useState('replies');
   const messagesEndRef = useRef(null);
-  const currentUserId = 1; // TODO: Get from auth context
+  const currentUserId = getUserFromToken()?.id;
 
   useEffect(() => {
     loadMessages();
@@ -50,34 +68,33 @@ function ChatWidget({ entityType, entityId, entityName, entityPhone }) {
       if (data.entityType === entityType && data.entityId === entityId) {
         const newMessage = {
           id: data.id,
-          message: data.message,
-          sender: data.sender,
-          created_at: data.timestamp,
-          is_read: false,
-          attachments: data.attachments || [],
-          parent: data.parentId,
+          content: data.message,
+          owner: data.sender?.id,
+          owner_name: data.sender?.name,
+          creation_date: data.timestamp,
+          answer_to: data.parentId || null,
+          content_type: data.entityType,
+          object_id: data.entityId,
         };
-        
-        setMessages(prev => [...prev, newMessage]);
+
+        setMessages((prev) => [...prev, newMessage]);
         addChatMessage(newMessage);
         scrollToBottom();
-        
-        // Mark as read if not from current user
-        if (data.sender?.id !== currentUserId) {
-          markMessagesAsRead([data.id]).catch(console.error);
-        }
       }
     };
 
     const handleMessageUpdated = (data) => {
-      setMessages(prev =>
-        prev.map(msg => (msg.id === data.id ? { ...msg, ...data } : msg))
-      );
-      updateStoreMessage(data.id, data);
+      const updates = {
+        content: data.message ?? data.content,
+        is_read: data.isRead ?? data.is_read,
+        updated_at: data.updatedAt ?? data.updated_at,
+      };
+      setMessages((prev) => prev.map((msg) => (msg.id === data.id ? { ...msg, ...updates } : msg)));
+      updateStoreMessage(data.id, updates);
     };
 
     const handleMessageDeleted = (data) => {
-      setMessages(prev => prev.filter(msg => msg.id !== data.id));
+      setMessages((prev) => prev.filter((msg) => msg.id !== data.id));
       deleteStoreMessage(data.id);
     };
 
@@ -118,42 +135,18 @@ function ChatWidget({ entityType, entityId, entityName, entityPhone }) {
   const loadMessages = async () => {
     setLoading(true);
     try {
-      const response = await getEntityChatMessages(entityType, entityId, {
-        page_size: 50,
-      });
-      
-      const msgs = response.data.results || [];
+      const response = await getEntityChatMessages(entityType, entityId, { page_size: 50 });
+      const msgs = response?.results || [];
       setMessages(msgs);
-      
-      // Mark unread messages as read
-      const unreadIds = msgs.filter(m => !m.is_read && m.sender?.id !== currentUserId).map(m => m.id);
-      if (unreadIds.length > 0) {
-        markMessagesAsRead(unreadIds).catch(console.error);
+
+      const detectedContentType = msgs.find((msg) => msg.content_type)?.content_type;
+      if (detectedContentType) {
+        setContentTypeId(detectedContentType);
       }
-      
+
       scrollToBottom();
     } catch (error) {
       console.error('Error loading messages:', error);
-      
-      // Mock data for demo
-      setMessages([
-        {
-          id: 1,
-          message: 'Здравствуйте! Интересует ваше предложение.',
-          sender: { id: 2, name: entityName, avatar: null },
-          created_at: new Date(Date.now() - 3600000).toISOString(),
-          is_read: true,
-          attachments: [],
-        },
-        {
-          id: 2,
-          message: 'Добрый день! С удовольствием расскажу подробнее.',
-          sender: { id: currentUserId, name: 'Вы', avatar: null },
-          created_at: new Date(Date.now() - 3000000).toISOString(),
-          is_read: true,
-          attachments: [],
-        },
-      ]);
     } finally {
       setLoading(false);
     }
@@ -165,29 +158,117 @@ function ChatWidget({ entityType, entityId, entityName, entityPhone }) {
     }, 100);
   };
 
+  const openThreadModal = async (message) => {
+    setThreadModal({
+      open: true,
+      loading: true,
+      message,
+      replies: [],
+      thread: [],
+    });
+    setThreadTab('replies');
+    try {
+      const [repliesResponse, threadResponse] = await Promise.all([
+        getMessageReplies(message.id, { page_size: 50, ordering: 'creation_date' }),
+        getMessageThread(message.id),
+      ]);
+      const replies = repliesResponse?.results || repliesResponse || [];
+      const thread = threadResponse?.results || threadResponse || [];
+      setThreadModal({
+        open: true,
+        loading: false,
+        message,
+        replies,
+        thread,
+      });
+    } catch (error) {
+      console.error('Error loading thread:', error);
+      setThreadModal({
+        open: true,
+        loading: false,
+        message,
+        replies: [],
+        thread: [],
+      });
+    }
+  };
+
+  const closeThreadModal = () => {
+    setThreadModal({
+      open: false,
+      loading: false,
+      message: null,
+      replies: [],
+      thread: [],
+    });
+    setThreadTab('replies');
+  };
+
+  const renderThreadList = (items) => {
+    if (!items || items.length === 0) {
+      return <Empty description="Нет сообщений" image={Empty.PRESENTED_IMAGE_SIMPLE} />;
+    }
+
+    return (
+      <List
+        dataSource={items}
+        renderItem={(msg) => (
+          <List.Item>
+            <List.Item.Meta
+              title={
+                <Space>
+                  <Text strong>{msg.owner_name || msg.sender?.name || `#${msg.owner || msg.sender?.id}`}</Text>
+                  <Text type="secondary" style={{ fontSize: 12 }}>
+                    {msg.creation_date || msg.created_at
+                      ? new Date(msg.creation_date || msg.created_at).toLocaleString('ru-RU')
+                      : ''}
+                  </Text>
+                </Space>
+              }
+              description={<div style={{ whiteSpace: 'pre-wrap' }}>{msg.content}</div>}
+            />
+          </List.Item>
+        )}
+      />
+    );
+  };
+
+  const resolveContentType = () => {
+    if (typeof entityType === 'number') return entityType;
+    if (typeof entityType === 'string' && /^\d+$/.test(entityType)) return Number(entityType);
+    return contentTypeId || entityType;
+  };
+
   const handleSend = async (messageData) => {
     try {
+      const resolvedContentType = resolveContentType();
+      if (!resolvedContentType || !entityId) {
+        antMessage.error('Не удалось определить тип сущности для чата');
+        return;
+      }
+
       const payload = {
-        message: messageData.message,
-        content_type: entityType,
-        object_id: entityId,
-        parent: messageData.parent,
-        // attachments will be handled separately
+        content: messageData.content,
+        content_type: resolvedContentType,
+        object_id: Number(entityId),
+        answer_to: messageData.answer_to || null,
       };
 
       const response = await createChatMessage(payload);
-      
+
       const newMessage = {
-        id: response.data.id,
-        message: messageData.message,
-        sender: { id: currentUserId, name: 'Вы' },
-        created_at: new Date().toISOString(),
-        is_read: false,
-        attachments: [],
-        parent: messageData.parent ? messages.find(m => m.id === messageData.parent) : null,
+        ...response,
+        content: response.content ?? messageData.content,
+        creation_date: response.creation_date || new Date().toISOString(),
+        owner: response.owner ?? currentUserId,
+        owner_name: response.owner_name || 'Вы',
+        content_type: response.content_type ?? resolvedContentType,
+        object_id: response.object_id ?? Number(entityId),
+        answer_to: response.answer_to ?? messageData.answer_to ?? null,
+        parent: messageData.answer_to ? messages.find((m) => m.id === messageData.answer_to) : null,
       };
 
-      setMessages(prev => [...prev, newMessage]);
+      setMessages((prev) => [...prev, newMessage]);
       addChatMessage(newMessage);
       setReplyTo(null);
       scrollToBottom();
@@ -203,9 +284,9 @@ function ChatWidget({ entityType, entityId, entityName, entityPhone }) {
     setReplyTo(message);
   };
 
-  const handleEdit = async (message) => {
-    // TODO: Implement edit functionality
-    antMessage.info('Редактирование в разработке');
+  const handleEdit = (message) => {
+    setEditingMessage(message);
+    setEditValue(message.content || '');
   };
 
   const handleDelete = async (message) => {
@@ -278,8 +359,9 @@ function ChatWidget({ entityType, entityId, entityName, entityPhone }) {
               <ChatMessageItem
                 key={msg.id}
                 message={msg}
-                isCurrentUser={msg.sender?.id === currentUserId}
+                isCurrentUser={msg.owner === currentUserId || msg.sender?.id === currentUserId}
                 onReply={handleReply}
+                onViewThread={openThreadModal}
                 onEdit={handleEdit}
                 onDelete={handleDelete}
               />
@@ -309,6 +391,84 @@ function ChatWidget({ entityType, entityId, entityName, entityPhone }) {
         replyTo={replyTo}
         onCancelReply={() => setReplyTo(null)}
       />
+
+      <Modal
+        title="Редактировать сообщение"
+        open={!!editingMessage}
+        onCancel={() => {
+          setEditingMessage(null);
+          setEditValue('');
+        }}
+        onOk={async () => {
+          if (!editingMessage) return;
+          const nextValue = editValue.trim();
+          if (!nextValue) {
+            antMessage.warning('Сообщение не может быть пустым');
+            return;
+          }
+          setEditSaving(true);
+          try {
+            const updated = await updateChatMessage(editingMessage.id, { content: nextValue });
+            const updatedMessage = {
+              ...editingMessage,
+              ...updated,
+              content: updated.content ?? nextValue,
+            };
+            setMessages((prev) =>
+              prev.map((msg) => (msg.id === editingMessage.id ? updatedMessage : msg))
+            );
+            updateStoreMessage(editingMessage.id, updatedMessage);
+            antMessage.success('Сообщение обновлено');
+            setEditingMessage(null);
+            setEditValue('');
+          } catch (error) {
+            console.error('Error updating message:', error);
+            antMessage.error('Ошибка редактирования сообщения');
+          } finally {
+            setEditSaving(false);
+          }
+        }}
+        okText="Сохранить"
+        cancelText="Отмена"
+        confirmLoading={editSaving}
+      >
+        <Input.TextArea
+          rows={4}
+          value={editValue}
+          onChange={(event) => setEditValue(event.target.value)}
+        />
+      </Modal>
+
+      <Modal
+        title={threadModal.message ? `Тред сообщения #${threadModal.message.id}` : 'Тред сообщения'}
+        open={threadModal.open}
+        onCancel={closeThreadModal}
+        footer={null}
+        width={720}
+      >
+        {threadModal.loading ? (
+          <div style={{ textAlign: 'center', padding: 24 }}>
+            <Spin />
+          </div>
+        ) : (
+          <Tabs
+            activeKey={threadTab}
+            onChange={setThreadTab}
+            items={[
+              {
+                key: 'replies',
+                label: `Ответы (${threadModal.replies.length})`,
+                children: renderThreadList(threadModal.replies),
+              },
+              {
+                key: 'thread',
+                label: `Тред (${threadModal.thread.length})`,
+                children: renderThreadList(threadModal.thread),
+              },
+            ]}
+          />
+        )}
+      </Modal>
     </Card>
   );
 }

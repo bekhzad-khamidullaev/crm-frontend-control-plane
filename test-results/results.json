@@ -1,0 +1,1029 @@
+{
+  "config": {
+    "configFile": "/Applications/Git/crm/crm-frontend/playwright.config.cjs",
+    "rootDir": "/Applications/Git/crm/crm-frontend/tests/e2e",
+    "forbidOnly": false,
+    "fullyParallel": false,
+    "globalSetup": null,
+    "globalTeardown": null,
+    "globalTimeout": 0,
+    "grep": {},
+    "grepInvert": null,
+    "maxFailures": 0,
+    "metadata": {
+      "actualWorkers": 1
+    },
+    "preserveOutput": "always",
+    "projects": [
+      {
+        "outputDir": "/Applications/Git/crm/crm-frontend/test-results",
+        "repeatEach": 1,
+        "retries": 0,
+        "metadata": {
+          "actualWorkers": 1
+        },
+        "id": "chromium",
+        "name": "chromium",
+        "testDir": "/Applications/Git/crm/crm-frontend/tests/e2e",
+        "testIgnore": [],
+        "testMatch": [
+          "**/*.@(spec|test).?(c|m)[jt]s?(x)"
+        ],
+        "timeout": 60000
+      }
+    ],
+    "quiet": false,
+    "reporter": [
+      [
+        "html",
+        {
+          "outputFolder": "playwright-report"
+        }
+      ],
+      [
+        "list",
+        null
+      ],
+      [
+        "json",
+        {
+          "outputFile": "test-results/results.json"
+        }
+      ]
+    ],
+    "reportSlowTests": {
+      "max": 5,
+      "threshold": 300000
+    },
+    "runAgents": "none",
+    "shard": null,
+    "tags": [],
+    "updateSnapshots": "missing",
+    "updateSourceMethod": "patch",
+    "version": "1.58.1",
+    "workers": 1,
+    "webServer": {
+      "command": "npm run dev",
+      "url": "http://localhost:3001",
+      "reuseExistingServer": true,
+      "timeout": 120000,
+      "stdout": "ignore",
+      "stderr": "pipe"
+    }
+  },
+  "suites": [
+    {
+      "title": "api-integration.spec.js",
+      "file": "api-integration.spec.js",
+      "column": 0,
+      "line": 0,
+      "specs": [],
+      "suites": [
+        {
+          "title": "API Integration Tests",
+          "file": "api-integration.spec.js",
+          "line": 57,
+          "column": 6,
+          "specs": [],
+          "suites": [
+            {
+              "title": "Leads API",
+              "file": "api-integration.spec.js",
+              "line": 62,
+              "column": 8,
+              "specs": [
+                {
+                  "title": "should load leads from API",
+                  "ok": true,
+                  "tags": [],
+                  "tests": [
+                    {
+                      "timeout": 60000,
+                      "annotations": [],
+                      "expectedStatus": "passed",
+                      "projectId": "chromium",
+                      "projectName": "chromium",
+                      "results": [
+                        {
+                          "workerIndex": 0,
+                          "parallelIndex": 0,
+                          "status": "passed",
+                          "duration": 3279,
+                          "errors": [],
+                          "stdout": [],
+                          "stderr": [],
+                          "retry": 0,
+                          "startTime": "2026-02-25T00:19:58.641Z",
+                          "annotations": [],
+                          "attachments": []
+                        }
+                      ],
+                      "status": "expected"
+                    }
+                  ],
+                  "id": "026ec64a5ba4d795099b-ceaf830948c4e3354c85",
+                  "file": "api-integration.spec.js",
+                  "line": 63,
+                  "column": 5
+                },
+                {
+                  "title": "should search leads via API",
+                  "ok": true,
+                  "tags": [],
+                  "tests": [
+                    {
+                      "timeout": 60000,
+                      "annotations": [],
+                      "expectedStatus": "passed",
+                      "projectId": "chromium",
+                      "projectName": "chromium",
+                      "results": [
+                        {
+                          "workerIndex": 0,
+                          "parallelIndex": 0,
+                          "status": "passed",
+                          "duration": 17217,
+                          "errors": [],
+                          "stdout": [],
+                          "stderr": [],
+                          "retry": 0,
+                          "startTime": "2026-02-25T00:20:02.236Z",
+                          "annotations": [],
+                          "attachments": []
+                        }
+                      ],
+                      "status": "expected"
+                    }
+                  ],
+                  "id": "026ec64a5ba4d795099b-f2a477939cfbfd317ebd",
+                  "file": "api-integration.spec.js",
+                  "line": 79,
+                  "column": 5
+                },
+                {
+                  "title": "should filter leads via API",
+                  "ok": true,
+                  "tags": [],
+                  "tests": [
+                    {
+                      "timeout": 60000,
+                      "annotations": [],
+                      "expectedStatus": "passed",
+                      "projectId": "chromium",
+                      "projectName": "chromium",
+                      "results": [
+                        {
+                          "workerIndex": 0,
+                          "parallelIndex": 0,
+                          "status": "passed",
+                          "duration": 17385,
+                          "errors": [],
+                          "stdout": [],
+                          "stderr": [],
+                          "retry": 0,
+                          "startTime": "2026-02-25T00:20:19.458Z",
+                          "annotations": [],
+                          "attachments": []
+                        }
+                      ],
+                      "status": "expected"
+                    }
+                  ],
+                  "id": "026ec64a5ba4d795099b-8012523ce0dcf2529191",
+                  "file": "api-integration.spec.js",
+                  "line": 100,
+                  "column": 5
+                },
+                {
+                  "title": "should paginate leads via API",
+                  "ok": false,
+                  "tags": [],
+                  "tests": [
+                    {
+                      "timeout": 60000,
+                      "annotations": [],
+                      "expectedStatus": "passed",
+                      "projectId": "chromium",
+                      "projectName": "chromium",
+                      "results": [
+                        {
+                          "workerIndex": 0,
+                          "parallelIndex": 0,
+                          "status": "failed",
+                          "duration": 2545,
+                          "error": {
+                            "message": "Error: page.waitForResponse: Test ended.",
+                            "stack": "Error: page.waitForResponse: Test ended.\n    at /Applications/Git/crm/crm-frontend/tests/e2e/api-integration.spec.js:126:36",
+                            "location": {
+                              "file": "/Applications/Git/crm/crm-frontend/tests/e2e/api-integration.spec.js",
+                              "column": 36,
+                              "line": 126
+                            },
+                            "snippet": "\u001b[0m \u001b[90m 124 |\u001b[39m       \u001b[36mawait\u001b[39m page\u001b[33m.\u001b[39mwaitForSelector(\u001b[32m'.ant-pagination'\u001b[39m)\u001b[33m;\u001b[39m\n \u001b[90m 125 |\u001b[39m       \n\u001b[31m\u001b[1m>\u001b[22m\u001b[39m\u001b[90m 126 |\u001b[39m       \u001b[36mconst\u001b[39m responsePromise \u001b[33m=\u001b[39m page\u001b[33m.\u001b[39mwaitForResponse(response \u001b[33m=>\u001b[39m\n \u001b[90m     |\u001b[39m                                    \u001b[31m\u001b[1m^\u001b[22m\u001b[39m\n \u001b[90m 127 |\u001b[39m         response\u001b[33m.\u001b[39murl()\u001b[33m.\u001b[39mincludes(\u001b[32m'/api/leads/'\u001b[39m) \u001b[33m&&\u001b[39m \n \u001b[90m 128 |\u001b[39m         response\u001b[33m.\u001b[39murl()\u001b[33m.\u001b[39mincludes(\u001b[32m'page=2'\u001b[39m) \u001b[33m&&\u001b[39m\n \u001b[90m 129 |\u001b[39m         response\u001b[33m.\u001b[39mstatus() \u001b[33m===\u001b[39m \u001b[35m200\u001b[39m\u001b[0m"
+                          },
+                          "errors": [
+                            {
+                              "location": {
+                                "file": "/Applications/Git/crm/crm-frontend/tests/e2e/api-integration.spec.js",
+                                "column": 36,
+                                "line": 126
+                              },
+                              "message": "Error: page.waitForResponse: Test ended.\n\n\u001b[0m \u001b[90m 124 |\u001b[39m       \u001b[36mawait\u001b[39m page\u001b[33m.\u001b[39mwaitForSelector(\u001b[32m'.ant-pagination'\u001b[39m)\u001b[33m;\u001b[39m\n \u001b[90m 125 |\u001b[39m       \n\u001b[31m\u001b[1m>\u001b[22m\u001b[39m\u001b[90m 126 |\u001b[39m       \u001b[36mconst\u001b[39m responsePromise \u001b[33m=\u001b[39m page\u001b[33m.\u001b[39mwaitForResponse(response \u001b[33m=>\u001b[39m\n \u001b[90m     |\u001b[39m                                    \u001b[31m\u001b[1m^\u001b[22m\u001b[39m\n \u001b[90m 127 |\u001b[39m         response\u001b[33m.\u001b[39murl()\u001b[33m.\u001b[39mincludes(\u001b[32m'/api/leads/'\u001b[39m) \u001b[33m&&\u001b[39m \n \u001b[90m 128 |\u001b[39m         response\u001b[33m.\u001b[39murl()\u001b[33m.\u001b[39mincludes(\u001b[32m'page=2'\u001b[39m) \u001b[33m&&\u001b[39m\n \u001b[90m 129 |\u001b[39m         response\u001b[33m.\u001b[39mstatus() \u001b[33m===\u001b[39m \u001b[35m200\u001b[39m\u001b[0m\n\u001b[2m    at /Applications/Git/crm/crm-frontend/tests/e2e/api-integration.spec.js:126:36\u001b[22m"
+                            }
+                          ],
+                          "stdout": [],
+                          "stderr": [],
+                          "retry": 0,
+                          "startTime": "2026-02-25T00:20:36.849Z",
+                          "annotations": [],
+                          "attachments": [
+                            {
+                              "name": "screenshot",
+                              "contentType": "image/png",
+                              "path": "/Applications/Git/crm/crm-frontend/test-results/api-integration-API-Integr-31232-ould-paginate-leads-via-API-chromium/test-failed-1.png"
+                            }
+                          ],
+                          "errorLocation": {
+                            "file": "/Applications/Git/crm/crm-frontend/tests/e2e/api-integration.spec.js",
+                            "column": 36,
+                            "line": 126
+                          }
+                        }
+                      ],
+                      "status": "unexpected"
+                    }
+                  ],
+                  "id": "026ec64a5ba4d795099b-8bd134e2b0f8775c9c23",
+                  "file": "api-integration.spec.js",
+                  "line": 122,
+                  "column": 5
+                },
+                {
+                  "title": "should create lead via API",
+                  "ok": false,
+                  "tags": [],
+                  "tests": [
+                    {
+                      "timeout": 60000,
+                      "annotations": [],
+                      "expectedStatus": "passed",
+                      "projectId": "chromium",
+                      "projectName": "chromium",
+                      "results": [
+                        {
+                          "workerIndex": 1,
+                          "parallelIndex": 0,
+                          "status": "failed",
+                          "duration": 17724,
+                          "error": {
+                            "message": "TimeoutError: page.waitForResponse: Timeout 15000ms exceeded while waiting for event \"response\"",
+                            "stack": "TimeoutError: page.waitForResponse: Timeout 15000ms exceeded while waiting for event \"response\"\n    at /Applications/Git/crm/crm-frontend/tests/e2e/api-integration.spec.js:150:36",
+                            "location": {
+                              "file": "/Applications/Git/crm/crm-frontend/tests/e2e/api-integration.spec.js",
+                              "column": 36,
+                              "line": 150
+                            },
+                            "snippet": "\u001b[0m \u001b[90m 148 |\u001b[39m       \u001b[36mawait\u001b[39m page\u001b[33m.\u001b[39mclick(\u001b[32m'button:has-text(\"Создать\")'\u001b[39m)\u001b[33m;\u001b[39m\n \u001b[90m 149 |\u001b[39m       \n\u001b[31m\u001b[1m>\u001b[22m\u001b[39m\u001b[90m 150 |\u001b[39m       \u001b[36mconst\u001b[39m responsePromise \u001b[33m=\u001b[39m page\u001b[33m.\u001b[39mwaitForResponse(response \u001b[33m=>\u001b[39m\n \u001b[90m     |\u001b[39m                                    \u001b[31m\u001b[1m^\u001b[22m\u001b[39m\n \u001b[90m 151 |\u001b[39m         response\u001b[33m.\u001b[39murl()\u001b[33m.\u001b[39mincludes(\u001b[32m'/api/leads/'\u001b[39m) \u001b[33m&&\u001b[39m \n \u001b[90m 152 |\u001b[39m         response\u001b[33m.\u001b[39mstatus() \u001b[33m===\u001b[39m \u001b[35m201\u001b[39m\n \u001b[90m 153 |\u001b[39m       )\u001b[33m;\u001b[39m\u001b[0m"
+                          },
+                          "errors": [
+                            {
+                              "location": {
+                                "file": "/Applications/Git/crm/crm-frontend/tests/e2e/api-integration.spec.js",
+                                "column": 36,
+                                "line": 150
+                              },
+                              "message": "TimeoutError: page.waitForResponse: Timeout 15000ms exceeded while waiting for event \"response\"\n\n\u001b[0m \u001b[90m 148 |\u001b[39m       \u001b[36mawait\u001b[39m page\u001b[33m.\u001b[39mclick(\u001b[32m'button:has-text(\"Создать\")'\u001b[39m)\u001b[33m;\u001b[39m\n \u001b[90m 149 |\u001b[39m       \n\u001b[31m\u001b[1m>\u001b[22m\u001b[39m\u001b[90m 150 |\u001b[39m       \u001b[36mconst\u001b[39m responsePromise \u001b[33m=\u001b[39m page\u001b[33m.\u001b[39mwaitForResponse(response \u001b[33m=>\u001b[39m\n \u001b[90m     |\u001b[39m                                    \u001b[31m\u001b[1m^\u001b[22m\u001b[39m\n \u001b[90m 151 |\u001b[39m         response\u001b[33m.\u001b[39murl()\u001b[33m.\u001b[39mincludes(\u001b[32m'/api/leads/'\u001b[39m) \u001b[33m&&\u001b[39m \n \u001b[90m 152 |\u001b[39m         response\u001b[33m.\u001b[39mstatus() \u001b[33m===\u001b[39m \u001b[35m201\u001b[39m\n \u001b[90m 153 |\u001b[39m       )\u001b[33m;\u001b[39m\u001b[0m\n\u001b[2m    at /Applications/Git/crm/crm-frontend/tests/e2e/api-integration.spec.js:150:36\u001b[22m"
+                            },
+                            {
+                              "location": {
+                                "file": "/Applications/Git/crm/crm-frontend/tests/e2e/api-integration.spec.js",
+                                "column": 18,
+                                "line": 155
+                              },
+                              "message": "TimeoutError: page.fill: Timeout 15000ms exceeded.\nCall log:\n\u001b[2m  - waiting for locator('input[placeholder*=\"Имя\"]')\u001b[22m\n\n\n\u001b[0m \u001b[90m 153 |\u001b[39m       )\u001b[33m;\u001b[39m\n \u001b[90m 154 |\u001b[39m       \n\u001b[31m\u001b[1m>\u001b[22m\u001b[39m\u001b[90m 155 |\u001b[39m       \u001b[36mawait\u001b[39m page\u001b[33m.\u001b[39mfill(\u001b[32m'input[placeholder*=\"Имя\"]'\u001b[39m\u001b[33m,\u001b[39m \u001b[32m`API Test ${Date.now()}`\u001b[39m)\u001b[33m;\u001b[39m\n \u001b[90m     |\u001b[39m                  \u001b[31m\u001b[1m^\u001b[22m\u001b[39m\n \u001b[90m 156 |\u001b[39m       \u001b[36mawait\u001b[39m page\u001b[33m.\u001b[39mfill(\u001b[32m'input[placeholder*=\"Email\"]'\u001b[39m\u001b[33m,\u001b[39m \u001b[32m`api${Date.now()}@test.com`\u001b[39m)\u001b[33m;\u001b[39m\n \u001b[90m 157 |\u001b[39m       \u001b[36mawait\u001b[39m page\u001b[33m.\u001b[39mclick(\u001b[32m'button:has-text(\"Сохранить\")'\u001b[39m)\u001b[33m;\u001b[39m\n \u001b[90m 158 |\u001b[39m       \u001b[0m\n\u001b[2m    at /Applications/Git/crm/crm-frontend/tests/e2e/api-integration.spec.js:155:18\u001b[22m"
+                            }
+                          ],
+                          "stdout": [],
+                          "stderr": [],
+                          "retry": 0,
+                          "startTime": "2026-02-25T00:20:39.929Z",
+                          "annotations": [],
+                          "attachments": [
+                            {
+                              "name": "screenshot",
+                              "contentType": "image/png",
+                              "path": "/Applications/Git/crm/crm-frontend/test-results/api-integration-API-Integr-b323d--should-create-lead-via-API-chromium/test-failed-1.png"
+                            },
+                            {
+                              "name": "video",
+                              "contentType": "video/webm",
+                              "path": "/Applications/Git/crm/crm-frontend/test-results/api-integration-API-Integr-b323d--should-create-lead-via-API-chromium/video.webm"
+                            },
+                            {
+                              "name": "error-context",
+                              "contentType": "text/markdown",
+                              "path": "/Applications/Git/crm/crm-frontend/test-results/api-integration-API-Integr-b323d--should-create-lead-via-API-chromium/error-context.md"
+                            }
+                          ],
+                          "errorLocation": {
+                            "file": "/Applications/Git/crm/crm-frontend/tests/e2e/api-integration.spec.js",
+                            "column": 36,
+                            "line": 150
+                          }
+                        }
+                      ],
+                      "status": "unexpected"
+                    }
+                  ],
+                  "id": "026ec64a5ba4d795099b-62040ad9e7b3ff5ec5fb",
+                  "file": "api-integration.spec.js",
+                  "line": 146,
+                  "column": 5
+                },
+                {
+                  "title": "should update lead via API",
+                  "ok": false,
+                  "tags": [],
+                  "tests": [
+                    {
+                      "timeout": 60000,
+                      "annotations": [],
+                      "expectedStatus": "passed",
+                      "projectId": "chromium",
+                      "projectName": "chromium",
+                      "results": [
+                        {
+                          "workerIndex": 2,
+                          "parallelIndex": 0,
+                          "status": "failed",
+                          "duration": 17647,
+                          "error": {
+                            "message": "TimeoutError: page.click: Timeout 15000ms exceeded.\nCall log:\n\u001b[2m  - waiting for locator('.ant-table-row:first-child')\u001b[22m\n",
+                            "stack": "TimeoutError: page.click: Timeout 15000ms exceeded.\nCall log:\n\u001b[2m  - waiting for locator('.ant-table-row:first-child')\u001b[22m\n\n    at /Applications/Git/crm/crm-frontend/tests/e2e/api-integration.spec.js:171:18",
+                            "location": {
+                              "file": "/Applications/Git/crm/crm-frontend/tests/e2e/api-integration.spec.js",
+                              "column": 18,
+                              "line": 171
+                            },
+                            "snippet": "\u001b[0m \u001b[90m 169 |\u001b[39m     test(\u001b[32m'should update lead via API'\u001b[39m\u001b[33m,\u001b[39m \u001b[36masync\u001b[39m ({ page }) \u001b[33m=>\u001b[39m {\n \u001b[90m 170 |\u001b[39m       \u001b[36mawait\u001b[39m page\u001b[33m.\u001b[39mclick(\u001b[32m'text=Лиды'\u001b[39m)\u001b[33m;\u001b[39m\n\u001b[31m\u001b[1m>\u001b[22m\u001b[39m\u001b[90m 171 |\u001b[39m       \u001b[36mawait\u001b[39m page\u001b[33m.\u001b[39mclick(\u001b[32m'.ant-table-row:first-child'\u001b[39m)\u001b[33m;\u001b[39m\n \u001b[90m     |\u001b[39m                  \u001b[31m\u001b[1m^\u001b[22m\u001b[39m\n \u001b[90m 172 |\u001b[39m       \n \u001b[90m 173 |\u001b[39m       \u001b[36mconst\u001b[39m responsePromise \u001b[33m=\u001b[39m page\u001b[33m.\u001b[39mwaitForResponse(response \u001b[33m=>\u001b[39m\n \u001b[90m 174 |\u001b[39m         response\u001b[33m.\u001b[39murl()\u001b[33m.\u001b[39mincludes(\u001b[32m'/api/leads/'\u001b[39m) \u001b[33m&&\u001b[39m \u001b[0m"
+                          },
+                          "errors": [
+                            {
+                              "location": {
+                                "file": "/Applications/Git/crm/crm-frontend/tests/e2e/api-integration.spec.js",
+                                "column": 18,
+                                "line": 171
+                              },
+                              "message": "TimeoutError: page.click: Timeout 15000ms exceeded.\nCall log:\n\u001b[2m  - waiting for locator('.ant-table-row:first-child')\u001b[22m\n\n\n\u001b[0m \u001b[90m 169 |\u001b[39m     test(\u001b[32m'should update lead via API'\u001b[39m\u001b[33m,\u001b[39m \u001b[36masync\u001b[39m ({ page }) \u001b[33m=>\u001b[39m {\n \u001b[90m 170 |\u001b[39m       \u001b[36mawait\u001b[39m page\u001b[33m.\u001b[39mclick(\u001b[32m'text=Лиды'\u001b[39m)\u001b[33m;\u001b[39m\n\u001b[31m\u001b[1m>\u001b[22m\u001b[39m\u001b[90m 171 |\u001b[39m       \u001b[36mawait\u001b[39m page\u001b[33m.\u001b[39mclick(\u001b[32m'.ant-table-row:first-child'\u001b[39m)\u001b[33m;\u001b[39m\n \u001b[90m     |\u001b[39m                  \u001b[31m\u001b[1m^\u001b[22m\u001b[39m\n \u001b[90m 172 |\u001b[39m       \n \u001b[90m 173 |\u001b[39m       \u001b[36mconst\u001b[39m responsePromise \u001b[33m=\u001b[39m page\u001b[33m.\u001b[39mwaitForResponse(response \u001b[33m=>\u001b[39m\n \u001b[90m 174 |\u001b[39m         response\u001b[33m.\u001b[39murl()\u001b[33m.\u001b[39mincludes(\u001b[32m'/api/leads/'\u001b[39m) \u001b[33m&&\u001b[39m \u001b[0m\n\u001b[2m    at /Applications/Git/crm/crm-frontend/tests/e2e/api-integration.spec.js:171:18\u001b[22m"
+                            }
+                          ],
+                          "stdout": [],
+                          "stderr": [],
+                          "retry": 0,
+                          "startTime": "2026-02-25T00:20:58.353Z",
+                          "annotations": [],
+                          "attachments": [
+                            {
+                              "name": "screenshot",
+                              "contentType": "image/png",
+                              "path": "/Applications/Git/crm/crm-frontend/test-results/api-integration-API-Integr-c2478--should-update-lead-via-API-chromium/test-failed-1.png"
+                            },
+                            {
+                              "name": "video",
+                              "contentType": "video/webm",
+                              "path": "/Applications/Git/crm/crm-frontend/test-results/api-integration-API-Integr-c2478--should-update-lead-via-API-chromium/video.webm"
+                            },
+                            {
+                              "name": "error-context",
+                              "contentType": "text/markdown",
+                              "path": "/Applications/Git/crm/crm-frontend/test-results/api-integration-API-Integr-c2478--should-update-lead-via-API-chromium/error-context.md"
+                            }
+                          ],
+                          "errorLocation": {
+                            "file": "/Applications/Git/crm/crm-frontend/tests/e2e/api-integration.spec.js",
+                            "column": 18,
+                            "line": 171
+                          }
+                        }
+                      ],
+                      "status": "unexpected"
+                    }
+                  ],
+                  "id": "026ec64a5ba4d795099b-72a71d9930bbb733f6d3",
+                  "file": "api-integration.spec.js",
+                  "line": 169,
+                  "column": 5
+                },
+                {
+                  "title": "should delete lead via API",
+                  "ok": false,
+                  "tags": [],
+                  "tests": [
+                    {
+                      "timeout": 60000,
+                      "annotations": [],
+                      "expectedStatus": "passed",
+                      "projectId": "chromium",
+                      "projectName": "chromium",
+                      "results": [
+                        {
+                          "workerIndex": 3,
+                          "parallelIndex": 0,
+                          "status": "failed",
+                          "duration": 17720,
+                          "error": {
+                            "message": "TimeoutError: page.click: Timeout 15000ms exceeded.\nCall log:\n\u001b[2m  - waiting for locator('.ant-table-row:first-child')\u001b[22m\n",
+                            "stack": "TimeoutError: page.click: Timeout 15000ms exceeded.\nCall log:\n\u001b[2m  - waiting for locator('.ant-table-row:first-child')\u001b[22m\n\n    at /Applications/Git/crm/crm-frontend/tests/e2e/api-integration.spec.js:191:18",
+                            "location": {
+                              "file": "/Applications/Git/crm/crm-frontend/tests/e2e/api-integration.spec.js",
+                              "column": 18,
+                              "line": 191
+                            },
+                            "snippet": "\u001b[0m \u001b[90m 189 |\u001b[39m     test(\u001b[32m'should delete lead via API'\u001b[39m\u001b[33m,\u001b[39m \u001b[36masync\u001b[39m ({ page }) \u001b[33m=>\u001b[39m {\n \u001b[90m 190 |\u001b[39m       \u001b[36mawait\u001b[39m page\u001b[33m.\u001b[39mclick(\u001b[32m'text=Лиды'\u001b[39m)\u001b[33m;\u001b[39m\n\u001b[31m\u001b[1m>\u001b[22m\u001b[39m\u001b[90m 191 |\u001b[39m       \u001b[36mawait\u001b[39m page\u001b[33m.\u001b[39mclick(\u001b[32m'.ant-table-row:first-child'\u001b[39m)\u001b[33m;\u001b[39m\n \u001b[90m     |\u001b[39m                  \u001b[31m\u001b[1m^\u001b[22m\u001b[39m\n \u001b[90m 192 |\u001b[39m       \n \u001b[90m 193 |\u001b[39m       \u001b[36mconst\u001b[39m responsePromise \u001b[33m=\u001b[39m page\u001b[33m.\u001b[39mwaitForResponse(response \u001b[33m=>\u001b[39m\n \u001b[90m 194 |\u001b[39m         response\u001b[33m.\u001b[39murl()\u001b[33m.\u001b[39mincludes(\u001b[32m'/api/leads/'\u001b[39m) \u001b[33m&&\u001b[39m \u001b[0m"
+                          },
+                          "errors": [
+                            {
+                              "location": {
+                                "file": "/Applications/Git/crm/crm-frontend/tests/e2e/api-integration.spec.js",
+                                "column": 18,
+                                "line": 191
+                              },
+                              "message": "TimeoutError: page.click: Timeout 15000ms exceeded.\nCall log:\n\u001b[2m  - waiting for locator('.ant-table-row:first-child')\u001b[22m\n\n\n\u001b[0m \u001b[90m 189 |\u001b[39m     test(\u001b[32m'should delete lead via API'\u001b[39m\u001b[33m,\u001b[39m \u001b[36masync\u001b[39m ({ page }) \u001b[33m=>\u001b[39m {\n \u001b[90m 190 |\u001b[39m       \u001b[36mawait\u001b[39m page\u001b[33m.\u001b[39mclick(\u001b[32m'text=Лиды'\u001b[39m)\u001b[33m;\u001b[39m\n\u001b[31m\u001b[1m>\u001b[22m\u001b[39m\u001b[90m 191 |\u001b[39m       \u001b[36mawait\u001b[39m page\u001b[33m.\u001b[39mclick(\u001b[32m'.ant-table-row:first-child'\u001b[39m)\u001b[33m;\u001b[39m\n \u001b[90m     |\u001b[39m                  \u001b[31m\u001b[1m^\u001b[22m\u001b[39m\n \u001b[90m 192 |\u001b[39m       \n \u001b[90m 193 |\u001b[39m       \u001b[36mconst\u001b[39m responsePromise \u001b[33m=\u001b[39m page\u001b[33m.\u001b[39mwaitForResponse(response \u001b[33m=>\u001b[39m\n \u001b[90m 194 |\u001b[39m         response\u001b[33m.\u001b[39murl()\u001b[33m.\u001b[39mincludes(\u001b[32m'/api/leads/'\u001b[39m) \u001b[33m&&\u001b[39m \u001b[0m\n\u001b[2m    at /Applications/Git/crm/crm-frontend/tests/e2e/api-integration.spec.js:191:18\u001b[22m"
+                            }
+                          ],
+                          "stdout": [],
+                          "stderr": [],
+                          "retry": 0,
+                          "startTime": "2026-02-25T00:21:16.596Z",
+                          "annotations": [],
+                          "attachments": [
+                            {
+                              "name": "screenshot",
+                              "contentType": "image/png",
+                              "path": "/Applications/Git/crm/crm-frontend/test-results/api-integration-API-Integr-7235b--should-delete-lead-via-API-chromium/test-failed-1.png"
+                            },
+                            {
+                              "name": "video",
+                              "contentType": "video/webm",
+                              "path": "/Applications/Git/crm/crm-frontend/test-results/api-integration-API-Integr-7235b--should-delete-lead-via-API-chromium/video.webm"
+                            },
+                            {
+                              "name": "error-context",
+                              "contentType": "text/markdown",
+                              "path": "/Applications/Git/crm/crm-frontend/test-results/api-integration-API-Integr-7235b--should-delete-lead-via-API-chromium/error-context.md"
+                            }
+                          ],
+                          "errorLocation": {
+                            "file": "/Applications/Git/crm/crm-frontend/tests/e2e/api-integration.spec.js",
+                            "column": 18,
+                            "line": 191
+                          }
+                        }
+                      ],
+                      "status": "unexpected"
+                    }
+                  ],
+                  "id": "026ec64a5ba4d795099b-21fc0e780cd71422548a",
+                  "file": "api-integration.spec.js",
+                  "line": 189,
+                  "column": 5
+                }
+              ]
+            },
+            {
+              "title": "Contacts API",
+              "file": "api-integration.spec.js",
+              "line": 209,
+              "column": 8,
+              "specs": [
+                {
+                  "title": "should load contacts from API",
+                  "ok": true,
+                  "tags": [],
+                  "tests": [
+                    {
+                      "timeout": 60000,
+                      "annotations": [],
+                      "expectedStatus": "passed",
+                      "projectId": "chromium",
+                      "projectName": "chromium",
+                      "results": [
+                        {
+                          "workerIndex": 4,
+                          "parallelIndex": 0,
+                          "status": "passed",
+                          "duration": 2299,
+                          "errors": [],
+                          "stdout": [],
+                          "stderr": [],
+                          "retry": 0,
+                          "startTime": "2026-02-25T00:21:34.908Z",
+                          "annotations": [],
+                          "attachments": []
+                        }
+                      ],
+                      "status": "expected"
+                    }
+                  ],
+                  "id": "026ec64a5ba4d795099b-9adef4d288a344b9c197",
+                  "file": "api-integration.spec.js",
+                  "line": 210,
+                  "column": 5
+                },
+                {
+                  "title": "should create contact via API",
+                  "ok": false,
+                  "tags": [],
+                  "tests": [
+                    {
+                      "timeout": 60000,
+                      "annotations": [],
+                      "expectedStatus": "passed",
+                      "projectId": "chromium",
+                      "projectName": "chromium",
+                      "results": [
+                        {
+                          "workerIndex": 4,
+                          "parallelIndex": 0,
+                          "status": "failed",
+                          "duration": 17671,
+                          "error": {
+                            "message": "TimeoutError: page.waitForResponse: Timeout 15000ms exceeded while waiting for event \"response\"",
+                            "stack": "TimeoutError: page.waitForResponse: Timeout 15000ms exceeded while waiting for event \"response\"\n    at /Applications/Git/crm/crm-frontend/tests/e2e/api-integration.spec.js:227:36",
+                            "location": {
+                              "file": "/Applications/Git/crm/crm-frontend/tests/e2e/api-integration.spec.js",
+                              "column": 36,
+                              "line": 227
+                            },
+                            "snippet": "\u001b[0m \u001b[90m 225 |\u001b[39m       \u001b[36mawait\u001b[39m page\u001b[33m.\u001b[39mclick(\u001b[32m'button:has-text(\"Создать\")'\u001b[39m)\u001b[33m;\u001b[39m\n \u001b[90m 226 |\u001b[39m       \n\u001b[31m\u001b[1m>\u001b[22m\u001b[39m\u001b[90m 227 |\u001b[39m       \u001b[36mconst\u001b[39m responsePromise \u001b[33m=\u001b[39m page\u001b[33m.\u001b[39mwaitForResponse(response \u001b[33m=>\u001b[39m\n \u001b[90m     |\u001b[39m                                    \u001b[31m\u001b[1m^\u001b[22m\u001b[39m\n \u001b[90m 228 |\u001b[39m         response\u001b[33m.\u001b[39murl()\u001b[33m.\u001b[39mincludes(\u001b[32m'/api/contacts/'\u001b[39m) \u001b[33m&&\u001b[39m \n \u001b[90m 229 |\u001b[39m         response\u001b[33m.\u001b[39mstatus() \u001b[33m===\u001b[39m \u001b[35m201\u001b[39m\n \u001b[90m 230 |\u001b[39m       )\u001b[33m;\u001b[39m\u001b[0m"
+                          },
+                          "errors": [
+                            {
+                              "location": {
+                                "file": "/Applications/Git/crm/crm-frontend/tests/e2e/api-integration.spec.js",
+                                "column": 36,
+                                "line": 227
+                              },
+                              "message": "TimeoutError: page.waitForResponse: Timeout 15000ms exceeded while waiting for event \"response\"\n\n\u001b[0m \u001b[90m 225 |\u001b[39m       \u001b[36mawait\u001b[39m page\u001b[33m.\u001b[39mclick(\u001b[32m'button:has-text(\"Создать\")'\u001b[39m)\u001b[33m;\u001b[39m\n \u001b[90m 226 |\u001b[39m       \n\u001b[31m\u001b[1m>\u001b[22m\u001b[39m\u001b[90m 227 |\u001b[39m       \u001b[36mconst\u001b[39m responsePromise \u001b[33m=\u001b[39m page\u001b[33m.\u001b[39mwaitForResponse(response \u001b[33m=>\u001b[39m\n \u001b[90m     |\u001b[39m                                    \u001b[31m\u001b[1m^\u001b[22m\u001b[39m\n \u001b[90m 228 |\u001b[39m         response\u001b[33m.\u001b[39murl()\u001b[33m.\u001b[39mincludes(\u001b[32m'/api/contacts/'\u001b[39m) \u001b[33m&&\u001b[39m \n \u001b[90m 229 |\u001b[39m         response\u001b[33m.\u001b[39mstatus() \u001b[33m===\u001b[39m \u001b[35m201\u001b[39m\n \u001b[90m 230 |\u001b[39m       )\u001b[33m;\u001b[39m\u001b[0m\n\u001b[2m    at /Applications/Git/crm/crm-frontend/tests/e2e/api-integration.spec.js:227:36\u001b[22m"
+                            },
+                            {
+                              "location": {
+                                "file": "/Applications/Git/crm/crm-frontend/tests/e2e/api-integration.spec.js",
+                                "column": 18,
+                                "line": 232
+                              },
+                              "message": "TimeoutError: page.fill: Timeout 15000ms exceeded.\nCall log:\n\u001b[2m  - waiting for locator('input[placeholder*=\"Имя\"]')\u001b[22m\n\n\n\u001b[0m \u001b[90m 230 |\u001b[39m       )\u001b[33m;\u001b[39m\n \u001b[90m 231 |\u001b[39m       \n\u001b[31m\u001b[1m>\u001b[22m\u001b[39m\u001b[90m 232 |\u001b[39m       \u001b[36mawait\u001b[39m page\u001b[33m.\u001b[39mfill(\u001b[32m'input[placeholder*=\"Имя\"]'\u001b[39m\u001b[33m,\u001b[39m \u001b[32m`Contact ${Date.now()}`\u001b[39m)\u001b[33m;\u001b[39m\n \u001b[90m     |\u001b[39m                  \u001b[31m\u001b[1m^\u001b[22m\u001b[39m\n \u001b[90m 233 |\u001b[39m       \u001b[36mawait\u001b[39m page\u001b[33m.\u001b[39mfill(\u001b[32m'input[placeholder*=\"Email\"]'\u001b[39m\u001b[33m,\u001b[39m \u001b[32m`contact${Date.now()}@test.com`\u001b[39m)\u001b[33m;\u001b[39m\n \u001b[90m 234 |\u001b[39m       \u001b[36mawait\u001b[39m page\u001b[33m.\u001b[39mclick(\u001b[32m'button:has-text(\"Сохранить\")'\u001b[39m)\u001b[33m;\u001b[39m\n \u001b[90m 235 |\u001b[39m       \u001b[0m\n\u001b[2m    at /Applications/Git/crm/crm-frontend/tests/e2e/api-integration.spec.js:232:18\u001b[22m"
+                            }
+                          ],
+                          "stdout": [],
+                          "stderr": [],
+                          "retry": 0,
+                          "startTime": "2026-02-25T00:21:37.319Z",
+                          "annotations": [],
+                          "attachments": [
+                            {
+                              "name": "screenshot",
+                              "contentType": "image/png",
+                              "path": "/Applications/Git/crm/crm-frontend/test-results/api-integration-API-Integr-a5825-ould-create-contact-via-API-chromium/test-failed-1.png"
+                            },
+                            {
+                              "name": "video",
+                              "contentType": "video/webm",
+                              "path": "/Applications/Git/crm/crm-frontend/test-results/api-integration-API-Integr-a5825-ould-create-contact-via-API-chromium/video.webm"
+                            },
+                            {
+                              "name": "error-context",
+                              "contentType": "text/markdown",
+                              "path": "/Applications/Git/crm/crm-frontend/test-results/api-integration-API-Integr-a5825-ould-create-contact-via-API-chromium/error-context.md"
+                            }
+                          ],
+                          "errorLocation": {
+                            "file": "/Applications/Git/crm/crm-frontend/tests/e2e/api-integration.spec.js",
+                            "column": 36,
+                            "line": 227
+                          }
+                        }
+                      ],
+                      "status": "unexpected"
+                    }
+                  ],
+                  "id": "026ec64a5ba4d795099b-b5b98a2ff7706880f9d0",
+                  "file": "api-integration.spec.js",
+                  "line": 223,
+                  "column": 5
+                }
+              ]
+            },
+            {
+              "title": "Deals API",
+              "file": "api-integration.spec.js",
+              "line": 245,
+              "column": 8,
+              "specs": [
+                {
+                  "title": "should load deals from API",
+                  "ok": true,
+                  "tags": [],
+                  "tests": [
+                    {
+                      "timeout": 60000,
+                      "annotations": [],
+                      "expectedStatus": "passed",
+                      "projectId": "chromium",
+                      "projectName": "chromium",
+                      "results": [
+                        {
+                          "workerIndex": 5,
+                          "parallelIndex": 0,
+                          "status": "passed",
+                          "duration": 2732,
+                          "errors": [],
+                          "stdout": [],
+                          "stderr": [],
+                          "retry": 0,
+                          "startTime": "2026-02-25T00:21:55.479Z",
+                          "annotations": [],
+                          "attachments": []
+                        }
+                      ],
+                      "status": "expected"
+                    }
+                  ],
+                  "id": "026ec64a5ba4d795099b-cbc3450a09da05a49f76",
+                  "file": "api-integration.spec.js",
+                  "line": 246,
+                  "column": 5
+                },
+                {
+                  "title": "should create deal via API",
+                  "ok": false,
+                  "tags": [],
+                  "tests": [
+                    {
+                      "timeout": 60000,
+                      "annotations": [],
+                      "expectedStatus": "passed",
+                      "projectId": "chromium",
+                      "projectName": "chromium",
+                      "results": [
+                        {
+                          "workerIndex": 5,
+                          "parallelIndex": 0,
+                          "status": "failed",
+                          "duration": 17729,
+                          "error": {
+                            "message": "TimeoutError: page.waitForResponse: Timeout 15000ms exceeded while waiting for event \"response\"",
+                            "stack": "TimeoutError: page.waitForResponse: Timeout 15000ms exceeded while waiting for event \"response\"\n    at /Applications/Git/crm/crm-frontend/tests/e2e/api-integration.spec.js:263:36",
+                            "location": {
+                              "file": "/Applications/Git/crm/crm-frontend/tests/e2e/api-integration.spec.js",
+                              "column": 36,
+                              "line": 263
+                            },
+                            "snippet": "\u001b[0m \u001b[90m 261 |\u001b[39m       \u001b[36mawait\u001b[39m page\u001b[33m.\u001b[39mclick(\u001b[32m'button:has-text(\"Создать\")'\u001b[39m)\u001b[33m;\u001b[39m\n \u001b[90m 262 |\u001b[39m       \n\u001b[31m\u001b[1m>\u001b[22m\u001b[39m\u001b[90m 263 |\u001b[39m       \u001b[36mconst\u001b[39m responsePromise \u001b[33m=\u001b[39m page\u001b[33m.\u001b[39mwaitForResponse(response \u001b[33m=>\u001b[39m\n \u001b[90m     |\u001b[39m                                    \u001b[31m\u001b[1m^\u001b[22m\u001b[39m\n \u001b[90m 264 |\u001b[39m         response\u001b[33m.\u001b[39murl()\u001b[33m.\u001b[39mincludes(\u001b[32m'/api/deals/'\u001b[39m) \u001b[33m&&\u001b[39m \n \u001b[90m 265 |\u001b[39m         response\u001b[33m.\u001b[39mstatus() \u001b[33m===\u001b[39m \u001b[35m201\u001b[39m\n \u001b[90m 266 |\u001b[39m       )\u001b[33m;\u001b[39m\u001b[0m"
+                          },
+                          "errors": [
+                            {
+                              "location": {
+                                "file": "/Applications/Git/crm/crm-frontend/tests/e2e/api-integration.spec.js",
+                                "column": 36,
+                                "line": 263
+                              },
+                              "message": "TimeoutError: page.waitForResponse: Timeout 15000ms exceeded while waiting for event \"response\"\n\n\u001b[0m \u001b[90m 261 |\u001b[39m       \u001b[36mawait\u001b[39m page\u001b[33m.\u001b[39mclick(\u001b[32m'button:has-text(\"Создать\")'\u001b[39m)\u001b[33m;\u001b[39m\n \u001b[90m 262 |\u001b[39m       \n\u001b[31m\u001b[1m>\u001b[22m\u001b[39m\u001b[90m 263 |\u001b[39m       \u001b[36mconst\u001b[39m responsePromise \u001b[33m=\u001b[39m page\u001b[33m.\u001b[39mwaitForResponse(response \u001b[33m=>\u001b[39m\n \u001b[90m     |\u001b[39m                                    \u001b[31m\u001b[1m^\u001b[22m\u001b[39m\n \u001b[90m 264 |\u001b[39m         response\u001b[33m.\u001b[39murl()\u001b[33m.\u001b[39mincludes(\u001b[32m'/api/deals/'\u001b[39m) \u001b[33m&&\u001b[39m \n \u001b[90m 265 |\u001b[39m         response\u001b[33m.\u001b[39mstatus() \u001b[33m===\u001b[39m \u001b[35m201\u001b[39m\n \u001b[90m 266 |\u001b[39m       )\u001b[33m;\u001b[39m\u001b[0m\n\u001b[2m    at /Applications/Git/crm/crm-frontend/tests/e2e/api-integration.spec.js:263:36\u001b[22m"
+                            },
+                            {
+                              "location": {
+                                "file": "/Applications/Git/crm/crm-frontend/tests/e2e/api-integration.spec.js",
+                                "column": 18,
+                                "line": 268
+                              },
+                              "message": "TimeoutError: page.fill: Timeout 15000ms exceeded.\nCall log:\n\u001b[2m  - waiting for locator('input[placeholder*=\"Название\"]')\u001b[22m\n\n\n\u001b[0m \u001b[90m 266 |\u001b[39m       )\u001b[33m;\u001b[39m\n \u001b[90m 267 |\u001b[39m       \n\u001b[31m\u001b[1m>\u001b[22m\u001b[39m\u001b[90m 268 |\u001b[39m       \u001b[36mawait\u001b[39m page\u001b[33m.\u001b[39mfill(\u001b[32m'input[placeholder*=\"Название\"]'\u001b[39m\u001b[33m,\u001b[39m \u001b[32m`Deal ${Date.now()}`\u001b[39m)\u001b[33m;\u001b[39m\n \u001b[90m     |\u001b[39m                  \u001b[31m\u001b[1m^\u001b[22m\u001b[39m\n \u001b[90m 269 |\u001b[39m       \u001b[36mawait\u001b[39m page\u001b[33m.\u001b[39mfill(\u001b[32m'input[placeholder*=\"Сумма\"]'\u001b[39m\u001b[33m,\u001b[39m \u001b[32m'50000'\u001b[39m)\u001b[33m;\u001b[39m\n \u001b[90m 270 |\u001b[39m       \u001b[36mawait\u001b[39m page\u001b[33m.\u001b[39mclick(\u001b[32m'button:has-text(\"Сохранить\")'\u001b[39m)\u001b[33m;\u001b[39m\n \u001b[90m 271 |\u001b[39m       \u001b[0m\n\u001b[2m    at /Applications/Git/crm/crm-frontend/tests/e2e/api-integration.spec.js:268:18\u001b[22m"
+                            }
+                          ],
+                          "stdout": [],
+                          "stderr": [],
+                          "retry": 0,
+                          "startTime": "2026-02-25T00:21:58.365Z",
+                          "annotations": [],
+                          "attachments": [
+                            {
+                              "name": "screenshot",
+                              "contentType": "image/png",
+                              "path": "/Applications/Git/crm/crm-frontend/test-results/api-integration-API-Integr-c756f--should-create-deal-via-API-chromium/test-failed-1.png"
+                            },
+                            {
+                              "name": "video",
+                              "contentType": "video/webm",
+                              "path": "/Applications/Git/crm/crm-frontend/test-results/api-integration-API-Integr-c756f--should-create-deal-via-API-chromium/video.webm"
+                            },
+                            {
+                              "name": "error-context",
+                              "contentType": "text/markdown",
+                              "path": "/Applications/Git/crm/crm-frontend/test-results/api-integration-API-Integr-c756f--should-create-deal-via-API-chromium/error-context.md"
+                            }
+                          ],
+                          "errorLocation": {
+                            "file": "/Applications/Git/crm/crm-frontend/tests/e2e/api-integration.spec.js",
+                            "column": 36,
+                            "line": 263
+                          }
+                        }
+                      ],
+                      "status": "unexpected"
+                    }
+                  ],
+                  "id": "026ec64a5ba4d795099b-312730b89f1fee6f7cbd",
+                  "file": "api-integration.spec.js",
+                  "line": 259,
+                  "column": 5
+                }
+              ]
+            },
+            {
+              "title": "Tasks API",
+              "file": "api-integration.spec.js",
+              "line": 281,
+              "column": 8,
+              "specs": [
+                {
+                  "title": "should load tasks from API",
+                  "ok": true,
+                  "tags": [],
+                  "tests": [
+                    {
+                      "timeout": 60000,
+                      "annotations": [],
+                      "expectedStatus": "passed",
+                      "projectId": "chromium",
+                      "projectName": "chromium",
+                      "results": [
+                        {
+                          "workerIndex": 6,
+                          "parallelIndex": 0,
+                          "status": "passed",
+                          "duration": 2208,
+                          "errors": [],
+                          "stdout": [],
+                          "stderr": [],
+                          "retry": 0,
+                          "startTime": "2026-02-25T00:22:16.590Z",
+                          "annotations": [],
+                          "attachments": []
+                        }
+                      ],
+                      "status": "expected"
+                    }
+                  ],
+                  "id": "026ec64a5ba4d795099b-67067136f9ebd31c1aae",
+                  "file": "api-integration.spec.js",
+                  "line": 282,
+                  "column": 5
+                }
+              ]
+            },
+            {
+              "title": "API Error Handling",
+              "file": "api-integration.spec.js",
+              "line": 296,
+              "column": 8,
+              "specs": [
+                {
+                  "title": "should handle 401 unauthorized",
+                  "ok": false,
+                  "tags": [],
+                  "tests": [
+                    {
+                      "timeout": 60000,
+                      "annotations": [],
+                      "expectedStatus": "passed",
+                      "projectId": "chromium",
+                      "projectName": "chromium",
+                      "results": [
+                        {
+                          "workerIndex": 6,
+                          "parallelIndex": 0,
+                          "status": "failed",
+                          "duration": 7356,
+                          "error": {
+                            "message": "TimeoutError: page.waitForURL: Timeout 5000ms exceeded.\n=========================== logs ===========================\nwaiting for navigation to \"**/login\" until \"load\"\n============================================================",
+                            "stack": "TimeoutError: page.waitForURL: Timeout 5000ms exceeded.\n=========================== logs ===========================\nwaiting for navigation to \"**/login\" until \"load\"\n============================================================\n    at /Applications/Git/crm/crm-frontend/tests/e2e/api-integration.spec.js:304:18",
+                            "location": {
+                              "file": "/Applications/Git/crm/crm-frontend/tests/e2e/api-integration.spec.js",
+                              "column": 18,
+                              "line": 304
+                            },
+                            "snippet": "\u001b[0m \u001b[90m 302 |\u001b[39m       \n \u001b[90m 303 |\u001b[39m       \u001b[90m// Should redirect to login\u001b[39m\n\u001b[31m\u001b[1m>\u001b[22m\u001b[39m\u001b[90m 304 |\u001b[39m       \u001b[36mawait\u001b[39m page\u001b[33m.\u001b[39mwaitForURL(\u001b[32m'**/login'\u001b[39m\u001b[33m,\u001b[39m { timeout\u001b[33m:\u001b[39m \u001b[35m5000\u001b[39m })\u001b[33m;\u001b[39m\n \u001b[90m     |\u001b[39m                  \u001b[31m\u001b[1m^\u001b[22m\u001b[39m\n \u001b[90m 305 |\u001b[39m     })\u001b[33m;\u001b[39m\n \u001b[90m 306 |\u001b[39m\n \u001b[90m 307 |\u001b[39m     test(\u001b[32m'should handle network errors gracefully'\u001b[39m\u001b[33m,\u001b[39m \u001b[36masync\u001b[39m ({ page }) \u001b[33m=>\u001b[39m {\u001b[0m"
+                          },
+                          "errors": [
+                            {
+                              "location": {
+                                "file": "/Applications/Git/crm/crm-frontend/tests/e2e/api-integration.spec.js",
+                                "column": 18,
+                                "line": 304
+                              },
+                              "message": "TimeoutError: page.waitForURL: Timeout 5000ms exceeded.\n=========================== logs ===========================\nwaiting for navigation to \"**/login\" until \"load\"\n============================================================\n\n\u001b[0m \u001b[90m 302 |\u001b[39m       \n \u001b[90m 303 |\u001b[39m       \u001b[90m// Should redirect to login\u001b[39m\n\u001b[31m\u001b[1m>\u001b[22m\u001b[39m\u001b[90m 304 |\u001b[39m       \u001b[36mawait\u001b[39m page\u001b[33m.\u001b[39mwaitForURL(\u001b[32m'**/login'\u001b[39m\u001b[33m,\u001b[39m { timeout\u001b[33m:\u001b[39m \u001b[35m5000\u001b[39m })\u001b[33m;\u001b[39m\n \u001b[90m     |\u001b[39m                  \u001b[31m\u001b[1m^\u001b[22m\u001b[39m\n \u001b[90m 305 |\u001b[39m     })\u001b[33m;\u001b[39m\n \u001b[90m 306 |\u001b[39m\n \u001b[90m 307 |\u001b[39m     test(\u001b[32m'should handle network errors gracefully'\u001b[39m\u001b[33m,\u001b[39m \u001b[36masync\u001b[39m ({ page }) \u001b[33m=>\u001b[39m {\u001b[0m\n\u001b[2m    at /Applications/Git/crm/crm-frontend/tests/e2e/api-integration.spec.js:304:18\u001b[22m"
+                            }
+                          ],
+                          "stdout": [],
+                          "stderr": [],
+                          "retry": 0,
+                          "startTime": "2026-02-25T00:22:18.932Z",
+                          "annotations": [],
+                          "attachments": [
+                            {
+                              "name": "screenshot",
+                              "contentType": "image/png",
+                              "path": "/Applications/Git/crm/crm-frontend/test-results/api-integration-API-Integr-e9935-uld-handle-401-unauthorized-chromium/test-failed-1.png"
+                            },
+                            {
+                              "name": "video",
+                              "contentType": "video/webm",
+                              "path": "/Applications/Git/crm/crm-frontend/test-results/api-integration-API-Integr-e9935-uld-handle-401-unauthorized-chromium/video.webm"
+                            },
+                            {
+                              "name": "error-context",
+                              "contentType": "text/markdown",
+                              "path": "/Applications/Git/crm/crm-frontend/test-results/api-integration-API-Integr-e9935-uld-handle-401-unauthorized-chromium/error-context.md"
+                            }
+                          ],
+                          "errorLocation": {
+                            "file": "/Applications/Git/crm/crm-frontend/tests/e2e/api-integration.spec.js",
+                            "column": 18,
+                            "line": 304
+                          }
+                        }
+                      ],
+                      "status": "unexpected"
+                    }
+                  ],
+                  "id": "026ec64a5ba4d795099b-df344a985c42a1e8f181",
+                  "file": "api-integration.spec.js",
+                  "line": 297,
+                  "column": 5
+                },
+                {
+                  "title": "should handle network errors gracefully",
+                  "ok": false,
+                  "tags": [],
+                  "tests": [
+                    {
+                      "timeout": 60000,
+                      "annotations": [],
+                      "expectedStatus": "passed",
+                      "projectId": "chromium",
+                      "projectName": "chromium",
+                      "results": [
+                        {
+                          "workerIndex": 7,
+                          "parallelIndex": 0,
+                          "status": "failed",
+                          "duration": 7503,
+                          "error": {
+                            "message": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mlocator\u001b[39m\u001b[2m).\u001b[22mtoBeVisible\u001b[2m(\u001b[22m\u001b[2m)\u001b[22m failed\n\nLocator: locator('.ant-message-error, .ant-notification-error')\nExpected: visible\nTimeout: 5000ms\nError: element(s) not found\n\nCall log:\n\u001b[2m  - Expect \"toBeVisible\" with timeout 5000ms\u001b[22m\n\u001b[2m  - waiting for locator('.ant-message-error, .ant-notification-error')\u001b[22m\n",
+                            "stack": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mlocator\u001b[39m\u001b[2m).\u001b[22mtoBeVisible\u001b[2m(\u001b[22m\u001b[2m)\u001b[22m failed\n\nLocator: locator('.ant-message-error, .ant-notification-error')\nExpected: visible\nTimeout: 5000ms\nError: element(s) not found\n\nCall log:\n\u001b[2m  - Expect \"toBeVisible\" with timeout 5000ms\u001b[22m\n\u001b[2m  - waiting for locator('.ant-message-error, .ant-notification-error')\u001b[22m\n\n    at /Applications/Git/crm/crm-frontend/tests/e2e/api-integration.spec.js:316:81",
+                            "location": {
+                              "file": "/Applications/Git/crm/crm-frontend/tests/e2e/api-integration.spec.js",
+                              "column": 81,
+                              "line": 316
+                            },
+                            "snippet": "\u001b[0m \u001b[90m 314 |\u001b[39m       \n \u001b[90m 315 |\u001b[39m       \u001b[90m// Should show error message\u001b[39m\n\u001b[31m\u001b[1m>\u001b[22m\u001b[39m\u001b[90m 316 |\u001b[39m       \u001b[36mawait\u001b[39m expect(page\u001b[33m.\u001b[39mlocator(\u001b[32m'.ant-message-error, .ant-notification-error'\u001b[39m))\u001b[33m.\u001b[39mtoBeVisible({ timeout\u001b[33m:\u001b[39m \u001b[35m5000\u001b[39m })\u001b[33m;\u001b[39m\n \u001b[90m     |\u001b[39m                                                                                 \u001b[31m\u001b[1m^\u001b[22m\u001b[39m\n \u001b[90m 317 |\u001b[39m       \n \u001b[90m 318 |\u001b[39m       \u001b[90m// Go back online\u001b[39m\n \u001b[90m 319 |\u001b[39m       \u001b[36mawait\u001b[39m page\u001b[33m.\u001b[39mcontext()\u001b[33m.\u001b[39msetOffline(\u001b[36mfalse\u001b[39m)\u001b[33m;\u001b[39m\u001b[0m"
+                          },
+                          "errors": [
+                            {
+                              "location": {
+                                "file": "/Applications/Git/crm/crm-frontend/tests/e2e/api-integration.spec.js",
+                                "column": 81,
+                                "line": 316
+                              },
+                              "message": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mlocator\u001b[39m\u001b[2m).\u001b[22mtoBeVisible\u001b[2m(\u001b[22m\u001b[2m)\u001b[22m failed\n\nLocator: locator('.ant-message-error, .ant-notification-error')\nExpected: visible\nTimeout: 5000ms\nError: element(s) not found\n\nCall log:\n\u001b[2m  - Expect \"toBeVisible\" with timeout 5000ms\u001b[22m\n\u001b[2m  - waiting for locator('.ant-message-error, .ant-notification-error')\u001b[22m\n\n\n\u001b[0m \u001b[90m 314 |\u001b[39m       \n \u001b[90m 315 |\u001b[39m       \u001b[90m// Should show error message\u001b[39m\n\u001b[31m\u001b[1m>\u001b[22m\u001b[39m\u001b[90m 316 |\u001b[39m       \u001b[36mawait\u001b[39m expect(page\u001b[33m.\u001b[39mlocator(\u001b[32m'.ant-message-error, .ant-notification-error'\u001b[39m))\u001b[33m.\u001b[39mtoBeVisible({ timeout\u001b[33m:\u001b[39m \u001b[35m5000\u001b[39m })\u001b[33m;\u001b[39m\n \u001b[90m     |\u001b[39m                                                                                 \u001b[31m\u001b[1m^\u001b[22m\u001b[39m\n \u001b[90m 317 |\u001b[39m       \n \u001b[90m 318 |\u001b[39m       \u001b[90m// Go back online\u001b[39m\n \u001b[90m 319 |\u001b[39m       \u001b[36mawait\u001b[39m page\u001b[33m.\u001b[39mcontext()\u001b[33m.\u001b[39msetOffline(\u001b[36mfalse\u001b[39m)\u001b[33m;\u001b[39m\u001b[0m\n\u001b[2m    at /Applications/Git/crm/crm-frontend/tests/e2e/api-integration.spec.js:316:81\u001b[22m"
+                            }
+                          ],
+                          "stdout": [],
+                          "stderr": [],
+                          "retry": 0,
+                          "startTime": "2026-02-25T00:22:26.728Z",
+                          "annotations": [],
+                          "attachments": [
+                            {
+                              "name": "screenshot",
+                              "contentType": "image/png",
+                              "path": "/Applications/Git/crm/crm-frontend/test-results/api-integration-API-Integr-7d788-e-network-errors-gracefully-chromium/test-failed-1.png"
+                            },
+                            {
+                              "name": "video",
+                              "contentType": "video/webm",
+                              "path": "/Applications/Git/crm/crm-frontend/test-results/api-integration-API-Integr-7d788-e-network-errors-gracefully-chromium/video.webm"
+                            },
+                            {
+                              "name": "error-context",
+                              "contentType": "text/markdown",
+                              "path": "/Applications/Git/crm/crm-frontend/test-results/api-integration-API-Integr-7d788-e-network-errors-gracefully-chromium/error-context.md"
+                            }
+                          ],
+                          "errorLocation": {
+                            "file": "/Applications/Git/crm/crm-frontend/tests/e2e/api-integration.spec.js",
+                            "column": 81,
+                            "line": 316
+                          }
+                        }
+                      ],
+                      "status": "unexpected"
+                    }
+                  ],
+                  "id": "026ec64a5ba4d795099b-955b81109f372cda108c",
+                  "file": "api-integration.spec.js",
+                  "line": 307,
+                  "column": 5
+                }
+              ]
+            },
+            {
+              "title": "API Response Validation",
+              "file": "api-integration.spec.js",
+              "line": 323,
+              "column": 8,
+              "specs": [
+                {
+                  "title": "should validate leads response structure",
+                  "ok": true,
+                  "tags": [],
+                  "tests": [
+                    {
+                      "timeout": 60000,
+                      "annotations": [],
+                      "expectedStatus": "passed",
+                      "projectId": "chromium",
+                      "projectName": "chromium",
+                      "results": [
+                        {
+                          "workerIndex": 8,
+                          "parallelIndex": 0,
+                          "status": "passed",
+                          "duration": 2536,
+                          "errors": [],
+                          "stdout": [],
+                          "stderr": [],
+                          "retry": 0,
+                          "startTime": "2026-02-25T00:22:34.796Z",
+                          "annotations": [],
+                          "attachments": []
+                        }
+                      ],
+                      "status": "expected"
+                    }
+                  ],
+                  "id": "026ec64a5ba4d795099b-469d0101773fdf84cd3f",
+                  "file": "api-integration.spec.js",
+                  "line": 324,
+                  "column": 5
+                },
+                {
+                  "title": "should validate contacts response structure",
+                  "ok": true,
+                  "tags": [],
+                  "tests": [
+                    {
+                      "timeout": 60000,
+                      "annotations": [],
+                      "expectedStatus": "passed",
+                      "projectId": "chromium",
+                      "projectName": "chromium",
+                      "results": [
+                        {
+                          "workerIndex": 8,
+                          "parallelIndex": 0,
+                          "status": "passed",
+                          "duration": 2268,
+                          "errors": [],
+                          "stdout": [],
+                          "stderr": [],
+                          "retry": 0,
+                          "startTime": "2026-02-25T00:22:37.429Z",
+                          "annotations": [],
+                          "attachments": []
+                        }
+                      ],
+                      "status": "expected"
+                    }
+                  ],
+                  "id": "026ec64a5ba4d795099b-d60ac1797bd8779f7d64",
+                  "file": "api-integration.spec.js",
+                  "line": 348,
+                  "column": 5
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "errors": [],
+  "stats": {
+    "startTime": "2026-02-25T00:19:58.168Z",
+    "duration": 161560.583,
+    "expected": 8,
+    "skipped": 0,
+    "unexpected": 8,
+    "flaky": 0
+  }
+}

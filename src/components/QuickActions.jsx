@@ -1,4 +1,5 @@
-import { Dropdown, message, Modal, Button, Tooltip } from 'antd';
+import React from 'react';
+import { Button, Dropdown, Modal, App } from 'antd';
 import {
   MoreOutlined,
   EditOutlined,
@@ -16,27 +17,25 @@ import {
 } from '@ant-design/icons';
 
 /**
- * QuickActions component - Dropdown menu for common row actions
- * @param {Object} props
- * @param {Object} props.record - Table row record
- * @param {Function} props.onView - View details callback
- * @param {Function} props.onEdit - Edit callback
- * @param {Function} props.onDelete - Delete callback
- * @param {Function} props.onDuplicate - Duplicate callback
- * @param {Function} props.onChangeStatus - Change status callback
- * @param {Function} props.onAssign - Assign owner callback
- * @param {Function} props.onAddNote - Add note callback
- * @param {Function} props.onCall - Make call callback
- * @param {Function} props.onSMS - Send SMS callback
- * @param {Function} props.onEmail - Send email callback
- * @param {Function} props.onConvert - Convert callback (e.g., lead to deal)
- * @param {Function} props.onArchive - Archive callback
- * @param {Array} props.customActions - Additional custom actions
- * @param {string} props.placement - Dropdown placement
- * @param {string} props.trigger - Dropdown trigger type
- * @param {React.ReactNode} props.icon - Custom trigger icon
- * @param {string} props.size - Button size
- * @param {string} props.type - Button type
+ * QuickActions component - Dropdown menu for common row actions using Ant Design 5.x
+ * 
+ * @param {Object} record - The data record associated with this action menu
+ * @param {Function} onView - Callback for view action
+ * @param {Function} onEdit - Callback for edit action
+ * @param {Function} onDelete - Callback for delete action
+ * @param {Function} onDuplicate - Callback for duplicate action
+ * @param {Function} onChangeStatus - Callback for change status action
+ * @param {Function} onAssign - Callback for assign action
+ * @param {Function} onAddNote - Callback for add note action
+ * @param {Function} onCall - Callback for call action
+ * @param {Function} onSMS - Callback for SMS action
+ * @param {Function} onEmail - Callback for email action
+ * @param {Function} onConvert - Callback for convert action
+ * @param {Function} onArchive - Callback for archive action
+ * @param {Array} customActions - Array of custom action objects
+ * @param {ReactNode} icon - Custom icon for the trigger button
+ * @param {String} size - Button size (small, middle, large)
+ * @param {String} type - Button type (default, primary, dashed, link, text)
  */
 export default function QuickActions({
   record,
@@ -53,39 +52,38 @@ export default function QuickActions({
   onConvert,
   onArchive,
   customActions = [],
-  placement = 'bottomRight',
-  trigger = ['click'],
   icon = <MoreOutlined />,
   size = 'small',
   type = 'text',
   ...props
 }) {
-  const handleDelete = () => {
-    Modal.confirm({
-      title: 'Confirm Delete',
-      content: 'Are you sure you want to delete this item?',
-      okText: 'Delete',
-      okType: 'danger',
-      onOk: async () => {
-        try {
-          await onDelete(record);
-          message.success('Deleted successfully');
-        } catch (error) {
-          message.error('Failed to delete');
-        }
-      },
-    });
+  const { message, modal } = App.useApp();
+  const [deleteModalOpen, setDeleteModalOpen] = React.useState(false);
+
+  const handleDelete = async () => {
+    try {
+      await onDelete(record);
+      message.success('Удалено успешно');
+      setDeleteModalOpen(false);
+    } catch (error) {
+      message.error('Не удалось удалить');
+    }
   };
 
   const handleDuplicate = async () => {
     try {
       await onDuplicate(record);
-      message.success('Duplicated successfully');
+      message.success('Дублировано успешно');
     } catch (error) {
-      message.error('Failed to duplicate');
+      message.error('Не удалось дублировать');
     }
   };
 
+  const showDeleteConfirm = () => {
+    setDeleteModalOpen(true);
+  };
+
+  // Build menu items array
   const items = [];
 
   // View action
@@ -98,7 +96,7 @@ export default function QuickActions({
     });
   }
 
-  // Communication actions
+  // Communication actions section
   const communicationActions = [];
   if (onCall) {
     communicationActions.push({
@@ -124,13 +122,13 @@ export default function QuickActions({
       onClick: () => onEmail(record),
     });
   }
-  
+
   if (communicationActions.length > 0) {
     if (items.length > 0) items.push({ type: 'divider' });
     items.push(...communicationActions);
   }
 
-  // Edit and management actions
+  // Management actions section
   const managementActions = [];
   if (onEdit) {
     managementActions.push({
@@ -200,15 +198,13 @@ export default function QuickActions({
     items.push(...managementActions);
   }
 
-  // Add custom actions
+  // Custom actions
   if (customActions.length > 0) {
     if (items.length > 0) items.push({ type: 'divider' });
-    customActions.forEach(action => {
-      items.push(action);
-    });
+    items.push(...customActions);
   }
 
-  // Delete action
+  // Delete action (always last and separated)
   if (onDelete) {
     if (items.length > 0) items.push({ type: 'divider' });
     items.push({
@@ -216,27 +212,41 @@ export default function QuickActions({
       label: 'Удалить',
       icon: <DeleteOutlined />,
       danger: true,
-      onClick: handleDelete,
+      onClick: showDeleteConfirm,
     });
   }
 
+  // Don't render if no actions available
   if (items.length === 0) {
     return null;
   }
 
   return (
-    <Dropdown
-      menu={{ items }}
-      trigger={trigger}
-      placement={placement}
-      {...props}
-    >
-      <Button
-        type={type}
-        size={size}
-        icon={icon}
-        style={{ cursor: 'pointer' }}
-      />
-    </Dropdown>
+    <>
+      <Dropdown
+        menu={{ items }}
+        trigger={['click']}
+        placement="bottomRight"
+      >
+        <Button 
+          type={type} 
+          size={size} 
+          icon={icon}
+          {...props}
+        />
+      </Dropdown>
+
+      <Modal
+        title="Подтверждение удаления"
+        open={deleteModalOpen}
+        onOk={handleDelete}
+        onCancel={() => setDeleteModalOpen(false)}
+        okText="Удалить"
+        cancelText="Отмена"
+        okButtonProps={{ danger: true }}
+      >
+        <p>Вы уверены, что хотите удалить этот элемент?</p>
+      </Modal>
+    </>
   );
 }

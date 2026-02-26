@@ -17,6 +17,7 @@ import {
   Table,
   Tag,
   Empty,
+  message,
 } from 'antd';
 import {
   PhoneOutlined,
@@ -28,7 +29,7 @@ import {
   CheckCircleOutlined,
   CloseCircleOutlined,
 } from '@ant-design/icons';
-import { getCallStatistics, getCallLogs } from '../lib/api/calls.js';
+import { getCallStatistics, getVoipCallLogs } from '../lib/api/calls.js';
 import {
   CallsActivityChart,
   CallsDistributionChart,
@@ -62,68 +63,36 @@ function CallsDashboard() {
       // Load statistics
       const params = {};
       if (dateRange && dateRange.length === 2) {
-        params.started_at__gte = dateRange[0].format('YYYY-MM-DD');
-        params.started_at__lte = dateRange[1].format('YYYY-MM-DD');
+        params.date_from = dateRange[0].format('YYYY-MM-DD');
+        params.date_to = dateRange[1].format('YYYY-MM-DD');
       }
 
       const stats = await getCallStatistics(params);
       setStatistics(stats);
 
       // Load recent calls
-      const callsResponse = await getCallLogs({
+      const callsResponse = await getVoipCallLogs({
         ...params,
-        page_size: 10,
-        ordering: '-started_at',
+        limit: 10,
       });
-      setRecentCalls(callsResponse.results || []);
+      const recent = callsResponse?.results || callsResponse || [];
+      setRecentCalls(recent);
 
       // Load all calls for chart data
-      const allCallsResponse = await getCallLogs({
+      const allCallsResponse = await getVoipCallLogs({
         ...params,
-        page_size: 1000,
-        ordering: 'started_at',
+        limit: 1000,
       });
       
       // Process data for charts
-      processChartData(allCallsResponse.results || []);
+      const allCalls = allCallsResponse?.results || allCallsResponse || [];
+      processChartData(allCalls);
     } catch (error) {
       console.error('Error loading dashboard data:', error);
-      
-      // Mock data
-      setStatistics({
-        total: 245,
-        inbound: 130,
-        outbound: 115,
-        completed: 210,
-        missed: 25,
-        busy: 10,
-        totalDuration: 36000,
-        averageDuration: 147,
-      });
-
-      const mockCalls = [
-        {
-          id: 1,
-          phone_number: '+7 999 123-45-67',
-          direction: 'outbound',
-          status: 'completed',
-          started_at: dayjs().subtract(1, 'hour').toISOString(),
-          duration: 300,
-        },
-        {
-          id: 2,
-          phone_number: '+7 999 234-56-78',
-          direction: 'inbound',
-          status: 'completed',
-          started_at: dayjs().subtract(3, 'hours').toISOString(),
-          duration: 180,
-        },
-      ];
-      setRecentCalls(mockCalls);
-      
-      // Generate mock chart data
-      const mockAllCalls = generateMockChartData();
-      processChartData(mockAllCalls);
+      message.error('Не удалось загрузить данные телефонии');
+      setStatistics(null);
+      setRecentCalls([]);
+      setChartData(null);
     } finally {
       setLoading(false);
     }
@@ -169,30 +138,16 @@ function CallsDashboard() {
 
   const calculateSuccessRate = () => {
     if (!statistics) return 0;
-    const total = statistics.total || 1;
-    return ((statistics.completed / total) * 100).toFixed(1);
-  };
-
-  const generateMockChartData = () => {
-    const calls = [];
-    const days = period === 'week' ? 7 : period === 'month' ? 30 : 365;
-    
-    for (let i = 0; i < days * 5; i++) {
-      calls.push({
-        direction: Math.random() > 0.5 ? 'inbound' : 'outbound',
-        status: Math.random() > 0.15 ? 'completed' : Math.random() > 0.5 ? 'missed' : 'busy',
-        started_at: dayjs().subtract(Math.floor(Math.random() * days), 'days').toISOString(),
-        duration: Math.floor(Math.random() * 600) + 60,
-      });
-    }
-    return calls;
+    const total = statistics.total || 0;
+    const completed = statistics.completed ?? statistics.answered ?? statistics.connected ?? 0;
+    return total > 0 ? ((completed / total) * 100).toFixed(1) : 0;
   };
 
   const processChartData = (calls) => {
     // Group by date
     const dateGroups = {};
     calls.forEach(call => {
-      const date = dayjs(call.started_at).format('DD.MM');
+      const date = dayjs(call.started_at || call.timestamp).format('DD.MM');
       if (!dateGroups[date]) {
         dateGroups[date] = { inbound: 0, outbound: 0, durations: [] };
       }
@@ -251,6 +206,7 @@ function CallsDashboard() {
       title: 'Номер',
       dataIndex: 'phone_number',
       key: 'phone_number',
+      render: (phone, record) => phone || record.number,
     },
     {
       title: 'Статус',
@@ -259,7 +215,11 @@ function CallsDashboard() {
       render: (status) => {
         const config = {
           completed: { color: 'success', text: 'Завершен', icon: <CheckCircleOutlined /> },
+          answered: { color: 'success', text: 'Отвечен', icon: <CheckCircleOutlined /> },
           missed: { color: 'error', text: 'Пропущен', icon: <CloseCircleOutlined /> },
+          no_answer: { color: 'error', text: 'Нет ответа', icon: <CloseCircleOutlined /> },
+          busy: { color: 'warning', text: 'Занято', icon: <CloseCircleOutlined /> },
+          failed: { color: 'error', text: 'Ошибка', icon: <CloseCircleOutlined /> },
         };
         const style = config[status] || config.completed;
         return (
@@ -273,7 +233,7 @@ function CallsDashboard() {
       title: 'Время',
       dataIndex: 'started_at',
       key: 'started_at',
-      render: (date) => dayjs(date).format('HH:mm'),
+      render: (date, record) => dayjs(date || record.timestamp).format('HH:mm'),
     },
     {
       title: 'Длительность',
@@ -360,7 +320,7 @@ function CallsDashboard() {
           <Card loading={loading}>
             <Statistic
               title="Завершенные"
-              value={statistics?.completed || 0}
+              value={statistics?.completed ?? statistics?.answered ?? statistics?.connected ?? 0}
               prefix={<CheckCircleOutlined />}
               valueStyle={{ color: '#52c41a' }}
             />
@@ -370,7 +330,7 @@ function CallsDashboard() {
           <Card loading={loading}>
             <Statistic
               title="Пропущенные"
-              value={statistics?.missed || 0}
+              value={statistics?.missed ?? statistics?.missed_calls ?? statistics?.no_answer ?? 0}
               prefix={<CloseCircleOutlined />}
               valueStyle={{ color: '#ff4d4f' }}
             />
@@ -380,7 +340,7 @@ function CallsDashboard() {
           <Card loading={loading}>
             <Statistic
               title="Общее время"
-              value={statistics ? formatTotalDuration(statistics.totalDuration) : '0ч 0м'}
+              value={statistics ? formatTotalDuration(statistics.totalDuration || statistics.total_duration || 0) : '0ч 0м'}
               prefix={<ClockCircleOutlined />}
             />
           </Card>
@@ -389,7 +349,7 @@ function CallsDashboard() {
           <Card loading={loading}>
             <Statistic
               title="Средняя длительность"
-              value={statistics ? formatDuration(Math.round(statistics.averageDuration)) : '0:00'}
+              value={statistics ? formatDuration(Math.round(statistics.averageDuration || statistics.average_duration || 0)) : '0:00'}
               prefix={<ClockCircleOutlined />}
             />
           </Card>

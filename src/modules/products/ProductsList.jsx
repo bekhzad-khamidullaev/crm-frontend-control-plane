@@ -1,28 +1,24 @@
-/**
- * Products List Component
- * Каталог продуктов с поиском и фильтрами
- */
-
-import React, { useState, useEffect } from 'react';
 import {
-  Table,
-  Button,
-  Input,
-  Space,
-  Tag,
-  Card,
-  message,
-  Popconfirm,
-  Typography,
-  Select,
-} from 'antd';
-import {
-  PlusOutlined,
-  EditOutlined,
-  DeleteOutlined,
-  SearchOutlined,
+    DeleteOutlined,
+    EditOutlined,
+    PlusOutlined,
+    SearchOutlined,
 } from '@ant-design/icons';
-import { getProducts, deleteProduct, getProductCategories } from '../../lib/api/products';
+import {
+    App,
+    Button,
+    Card,
+    Input,
+    Popconfirm,
+    Select,
+    Space,
+    Table,
+    Tag,
+    Typography,
+} from 'antd';
+import { useEffect, useState } from 'react';
+import { deleteProduct, getProductCategories, getProducts } from '../../lib/api/products';
+import { formatCurrency } from '../../lib/utils/format';
 import { navigate } from '../../router';
 
 const { Title } = Typography;
@@ -30,7 +26,9 @@ const { Search } = Input;
 const { Option } = Select;
 
 function ProductsList() {
+  const { message } = App.useApp();
   const [products, setProducts] = useState([]);
+  const [allProductsCache, setAllProductsCache] = useState(null);
   const [categories, setCategories] = useState([]);
   const [loading, setLoading] = useState(false);
   const [searchText, setSearchText] = useState('');
@@ -52,33 +50,49 @@ function ProductsList() {
       setCategories(data.results || data || []);
     } catch (error) {
       console.error('Error loading categories:', error);
+      setCategories([]);
     }
   };
 
-  const loadProducts = async (page = 1, search = searchText, category = selectedCategory) => {
+  const loadProducts = async (page = 1, search = searchText, category = selectedCategory, pageSize = pagination.pageSize) => {
     setLoading(true);
     try {
       const params = {
         page,
-        page_size: pagination.pageSize,
       };
+
+      if (pageSize) {
+        params.page_size = pageSize;
+      }
 
       if (search) {
         params.search = search;
       }
 
       if (category) {
-        params.category = category;
+        params.product_category = category;
       }
 
       const response = await getProducts(params);
+
+      const results = response?.results || response || [];
+      const total = typeof response?.count === 'number' ? response.count : results.length;
+      if (results.length > pageSize && results.length === total) {
+        console.warn('⚠️ ProductsList: Caching all data');
+        setAllProductsCache(results);
+        const startIndex = (page - 1) * pageSize;
+        setProducts(results.slice(startIndex, startIndex + pageSize));
+      } else {
+        setAllProductsCache(null);
+        setProducts(results);
+      }
       
-      setProducts(response.results || []);
-      setPagination({
-        ...pagination,
+      setPagination((prev) => ({
+        ...prev,
         current: page,
-        total: response.count || 0,
-      });
+        pageSize: pageSize,
+        total,
+      }));
     } catch (error) {
       message.error('Ошибка загрузки продуктов');
       console.error('Error loading products:', error);
@@ -98,7 +112,26 @@ function ProductsList() {
   };
 
   const handleTableChange = (newPagination) => {
-    loadProducts(newPagination.current);
+    const nextPage = newPagination?.current || 1;
+    const nextPageSize = newPagination?.pageSize || pagination.pageSize;
+    const totalCount = typeof pagination.total === 'number' ? pagination.total : 0;
+    const maxPage = totalCount > 0 ? Math.max(1, Math.ceil(totalCount / nextPageSize)) : 1;
+    const safePage = Math.min(nextPage, maxPage);
+    
+    if (nextPageSize !== pagination.pageSize) {
+      setPagination((prev) => ({ ...prev, pageSize: nextPageSize }));
+      setAllProductsCache(null);
+      loadProducts(safePage, searchText, selectedCategory, nextPageSize);
+      return;
+    }
+    
+    if (allProductsCache && allProductsCache.length > 0) {
+      const startIndex = (safePage - 1) * nextPageSize;
+      setProducts(allProductsCache.slice(startIndex, startIndex + nextPageSize));
+      setPagination((prev) => ({ ...prev, current: safePage }));
+    } else {
+      loadProducts(safePage, searchText, selectedCategory, nextPageSize);
+    }
   };
 
   const handleDelete = async (id) => {
@@ -114,12 +147,6 @@ function ProductsList() {
 
   const columns = [
     {
-      title: 'SKU',
-      dataIndex: 'sku',
-      key: 'sku',
-      width: 120,
-    },
-    {
       title: 'Название',
       dataIndex: 'name',
       key: 'name',
@@ -131,38 +158,37 @@ function ProductsList() {
       title: 'Категория',
       dataIndex: 'category_name',
       key: 'category',
-      width: 150,
+      width: 180,
+      render: (value) => value || '-',
     },
     {
       title: 'Цена',
       dataIndex: 'price',
       key: 'price',
-      width: 120,
+      width: 150,
       render: (price, record) => (
-        <span>
-          {price} {record.currency || '₽'}
-        </span>
+        <span>{formatCurrency(price, record.currency_name || 'RUB')}</span>
       ),
     },
     {
-      title: 'Остаток',
-      dataIndex: 'stock_quantity',
-      key: 'stock_quantity',
-      width: 100,
-      render: (quantity) => (
-        <Tag color={quantity > 10 ? 'green' : quantity > 0 ? 'orange' : 'red'}>
-          {quantity || 0}
+      title: 'Тип',
+      dataIndex: 'type',
+      key: 'type',
+      width: 120,
+      render: (type) => (
+        <Tag color={type === 'S' ? 'blue' : 'green'}>
+          {type === 'S' ? 'Услуга' : type === 'G' ? 'Товар' : '-'}
         </Tag>
       ),
     },
     {
-      title: 'Статус',
-      dataIndex: 'is_active',
-      key: 'is_active',
-      width: 100,
-      render: (isActive) => (
-        <Tag color={isActive ? 'green' : 'default'}>
-          {isActive ? 'Активен' : 'Неактивен'}
+      title: 'В продаже',
+      dataIndex: 'on_sale',
+      key: 'on_sale',
+      width: 120,
+      render: (onSale) => (
+        <Tag color={onSale ? 'green' : 'default'}>
+          {onSale ? 'Да' : 'Нет'}
         </Tag>
       ),
     },
@@ -185,12 +211,7 @@ function ProductsList() {
             okText="Да"
             cancelText="Нет"
           >
-            <Button
-              type="link"
-              size="small"
-              danger
-              icon={<DeleteOutlined />}
-            />
+            <Button type="link" size="small" danger icon={<DeleteOutlined />} />
           </Popconfirm>
         </Space>
       ),
@@ -214,7 +235,7 @@ function ProductsList() {
         <Space style={{ marginBottom: 16, width: '100%' }} direction="vertical" size="middle">
           <Space wrap>
             <Search
-              placeholder="Поиск по названию или SKU"
+              placeholder="Поиск по названию"
               allowClear
               enterButton={<SearchOutlined />}
               onSearch={handleSearch}
@@ -233,9 +254,7 @@ function ProductsList() {
                 </Option>
               ))}
             </Select>
-            <Button onClick={() => loadProducts(1)}>
-              Обновить
-            </Button>
+            <Button onClick={() => loadProducts(1)}>Обновить</Button>
           </Space>
         </Space>
 
@@ -246,7 +265,7 @@ function ProductsList() {
           loading={loading}
           pagination={pagination}
           onChange={handleTableChange}
-          scroll={{ x: 1000 }}
+          scroll={{ x: 1100 }}
         />
       </Card>
     </div>

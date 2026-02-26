@@ -1,260 +1,160 @@
-import React, { useState, useEffect, useRef } from 'react';
-import {
-  Space,
-  Input,
-  Button,
-  Segmented,
-  Badge,
-  Dropdown,
-  Select,
-  Tooltip,
-  Typography,
-} from 'antd';
+import React from 'react';
+import { Input, Button, Space, Dropdown, Badge, Tooltip, Typography, Segmented } from 'antd';
 import {
   SearchOutlined,
-  PlusOutlined,
-  ExportOutlined,
   FilterOutlined,
   ReloadOutlined,
-  TableOutlined,
-  AppstoreOutlined,
   DownloadOutlined,
-  UploadOutlined,
+  SettingOutlined,
+  ClearOutlined,
+  PlusOutlined,
+  AppstoreOutlined,
+  BarsOutlined,
 } from '@ant-design/icons';
 
 const { Search } = Input;
+const { Title, Text } = Typography;
 
-/**
- * TableToolbar - Универсальная панель инструментов для таблиц
- * @param {Object} props
- * @param {string} props.title - Заголовок
- * @param {number} props.total - Общее количество записей
- * @param {boolean} props.loading - Состояние загрузки
- * @param {string} props.searchPlaceholder - Placeholder для поиска
- * @param {Function} props.onSearch - Callback для поиска (с debounce)
- * @param {Function} props.onCreate - Callback для создания новой записи
- * @param {Function} props.onExport - Callback для экспорта
- * @param {Function} props.onImport - Callback для импорта
- * @param {Function} props.onRefresh - Callback для обновления данных
- * @param {Array} props.filters - Массив фильтров для отображения
- * @param {Function} props.onFilterChange - Callback для изменения фильтров
- * @param {string} props.viewMode - Режим отображения ('table' | 'kanban' | 'grid')
- * @param {Function} props.onViewModeChange - Callback для смены режима
- * @param {Array} props.viewModes - Доступные режимы отображения
- * @param {React.ReactNode} props.extra - Дополнительные элементы
- * @param {string} props.createButtonText - Текст кнопки создания
- * @param {boolean} props.showCreateButton - Показывать ли кнопку создания
- * @param {boolean} props.showExportButton - Показывать ли кнопку экспорта
- * @param {boolean} props.showImportButton - Показывать ли кнопку импорта
- * @param {boolean} props.showRefreshButton - Показывать ли кнопку обновления
- * @param {boolean} props.showViewModeSwitch - Показывать ли переключатель режимов
- * @param {number} props.searchDebounce - Задержка debounce для поиска (мс)
- */
 export default function TableToolbar({
   title,
-  total = 0,
-  loading = false,
-  searchPlaceholder = 'Поиск...',
-  onSearch,
-  onCreate,
-  onExport,
-  onImport,
+  total,
+  searchValue = '',
+  onSearch, // Changed from onSearchChange to match LeadsList usage (check this!) - LeadsList uses onSearch={handleSearch} which takes value
+  onSearchChange, // Keeping both for compatibility
   onRefresh,
-  filters = [],
-  onFilterChange,
-  viewMode = 'table',
-  onViewModeChange,
-  viewModes = ['table', 'kanban'],
-  extra,
+  onCreate,
   createButtonText = 'Создать',
-  showCreateButton = true,
-  showExportButton = true,
-  showImportButton = false,
-  showRefreshButton = true,
-  showViewModeSwitch = true,
-  searchDebounce = 500,
+  onExport,
+  onFilterClick,
+  activeFiltersCount = 0,
+  loading = false,
+  showSearch = true,
+  showRefresh = true,
+  showExport = true,
+  showFilters = true,
+  showSettings = false,
+  showCreate = true,
+  showViewModeSwitch = false,
+  viewMode = 'table', // 'table' | 'kanban'
+  onViewModeChange,
+  onSettingsClick,
+  extra,
+  placeholder = 'Поиск...',
+  children,
 }) {
-  const [searchValue, setSearchValue] = useState('');
-  const [debouncedSearch, setDebouncedSearch] = useState('');
-  const onSearchRef = useRef(onSearch);
-  const hasTriggeredInitialSearch = useRef(false);
-
-  // Keep latest onSearch handler without retriggering effect on every render
-  useEffect(() => {
-    onSearchRef.current = onSearch;
-  }, [onSearch]);
-
-  // Debounce для поиска
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      setDebouncedSearch(searchValue);
-    }, searchDebounce);
-
-    return () => clearTimeout(timer);
-  }, [searchValue, searchDebounce]);
-
-  // Вызов callback при изменении debounced значения
-  useEffect(() => {
-    // Skip the implicit first run with empty value to avoid double fetch on mount
-    if (!hasTriggeredInitialSearch.current) {
-      hasTriggeredInitialSearch.current = true;
-      if (!debouncedSearch) return;
-    }
-
-    if (onSearchRef.current) {
-      onSearchRef.current(debouncedSearch);
-    }
-  }, [debouncedSearch]);
-
-  const handleSearchChange = (e) => {
-    setSearchValue(e.target.value);
+  // Handle search value change for both patterns
+  const handleSearch = (val) => {
+    if (onSearch) onSearch(val);
+    if (onSearchChange) onSearchChange(val);
   };
-
-  // Конфигурация режимов отображения
-  const viewModeConfig = {
-    table: { label: 'Таблица', icon: <TableOutlined /> },
-    kanban: { label: 'Канбан', icon: <AppstoreOutlined /> },
-    grid: { label: 'Сетка', icon: <AppstoreOutlined /> },
-  };
-
-  // Опции для Segmented
-  const viewModeOptions = viewModes.map((mode) => ({
-    value: mode,
-    icon: viewModeConfig[mode]?.icon,
-    label: viewModeConfig[mode]?.label || mode,
-  }));
-
-  // Меню экспорта/импорта
-  const exportMenuItems = [];
-  
-  if (onExport) {
-    exportMenuItems.push({
-      key: 'export-excel',
-      icon: <DownloadOutlined />,
-      label: 'Экспорт в Excel',
-      onClick: () => onExport('excel'),
-    });
-    exportMenuItems.push({
-      key: 'export-csv',
-      icon: <DownloadOutlined />,
-      label: 'Экспорт в CSV',
-      onClick: () => onExport('csv'),
-    });
-  }
-
-  if (onImport) {
-    if (exportMenuItems.length > 0) {
-      exportMenuItems.push({ type: 'divider' });
-    }
-    exportMenuItems.push({
-      key: 'import',
-      icon: <UploadOutlined />,
-      label: 'Импорт',
-      onClick: onImport,
-    });
-  }
 
   return (
-    <div
-      style={{
-        display: 'flex',
-        justifyContent: 'space-between',
-        alignItems: 'center',
-        marginBottom: 16,
-        flexWrap: 'wrap',
-        gap: 16,
-      }}
-    >
-      {/* Левая часть: заголовок и счетчик */}
-      <Space size="middle" style={{ flex: '0 0 auto' }}>
-        {title && (
-          <div>
-            <span style={{ fontSize: 18, fontWeight: 600 }}>{title}</span>
-            {total > 0 && (
-              <Badge
-                count={total}
-                showZero
-                style={{
-                  marginLeft: 12,
-                  backgroundColor: '#1890ff',
-                }}
-              />
-            )}
-          </div>
-        )}
-      </Space>
+    <div style={{ marginBottom: 16 }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
+        {/* Left Side: Title & Total */}
+        <Space align="center">
+          {title && <Title level={4} style={{ margin: 0 }}>{title}</Title>}
+          {total !== undefined && <Text type="secondary">({total})</Text>}
+        </Space>
 
-      {/* Центральная часть: поиск и фильтры */}
-      <Space size="middle" style={{ flex: '1 1 auto', justifyContent: 'center' }}>
-        {onSearch && (
-          <Search
-            placeholder={searchPlaceholder}
-            value={searchValue}
-            onChange={handleSearchChange}
-            onSearch={(value) => onSearch && onSearch(value)}
-            loading={loading}
-            allowClear
-            style={{ width: 300 }}
-            prefix={<SearchOutlined />}
-          />
-        )}
-
-        {filters.length > 0 && (
-          <Space size="small">
-            {filters.map((filter, index) => (
-              <Select
-                key={filter.key || index}
-                placeholder={filter.placeholder}
-                value={filter.value}
-                onChange={(value) => onFilterChange && onFilterChange(filter.key, value)}
-                style={{ width: filter.width || 150 }}
-                allowClear
-                options={filter.options}
-              />
-            ))}
-          </Space>
-        )}
-      </Space>
-
-      {/* Правая часть: действия и переключатель режимов */}
-      <Space size="middle" style={{ flex: '0 0 auto' }}>
-        {extra}
-
-        {showRefreshButton && onRefresh && (
-          <Tooltip title="Обновить">
-            <Button
-              icon={<ReloadOutlined spin={loading} />}
-              onClick={onRefresh}
-              disabled={loading}
+        {/* Right Side: Actions (Create & View Mode) */}
+        <Space>
+           {showViewModeSwitch && onViewModeChange && (
+            <Segmented
+              value={viewMode}
+              onChange={onViewModeChange}
+              options={[
+                { value: 'table', icon: <BarsOutlined /> },
+                { value: 'kanban', icon: <AppstoreOutlined /> },
+              ]}
             />
-          </Tooltip>
-        )}
+          )}
 
-        {(showExportButton || showImportButton) && exportMenuItems.length > 0 && (
-          <Dropdown menu={{ items: exportMenuItems }} placement="bottomRight">
-            <Button icon={<ExportOutlined />}>
-              Экспорт
+          {children}
+
+          {showCreate && onCreate && (
+            <Button
+              type="primary"
+              icon={<PlusOutlined />}
+              onClick={onCreate}
+            >
+              {createButtonText}
             </Button>
-          </Dropdown>
-        )}
+          )}
+        </Space>
+      </div>
 
-        {showCreateButton && onCreate && (
-          <Button
-            type="primary"
-            icon={<PlusOutlined />}
-            onClick={onCreate}
-          >
-            {createButtonText}
-          </Button>
-        )}
+      <Space wrap style={{ width: '100%', justifyContent: 'space-between' }}>
+        <Space wrap>
+          {showSearch && (
+            <Search
+              placeholder={placeholder}
+              value={searchValue}
+              onChange={(e) => handleSearch(e.target.value)}
+              onSearch={handleSearch}
+              style={{ width: 300 }}
+              allowClear
+            />
+          )}
 
-        {showViewModeSwitch && onViewModeChange && viewModes.length > 1 && (
-          <Segmented
-            options={viewModeOptions}
-            value={viewMode}
-            onChange={onViewModeChange}
-          />
-        )}
+          {showFilters && onFilterClick && (
+            <Badge count={activeFiltersCount} offset={[10, 0]}>
+              <Button
+                icon={<FilterOutlined />}
+                onClick={onFilterClick}
+              >
+                Фильтры
+              </Button>
+            </Badge>
+          )}
+
+          {activeFiltersCount > 0 && (
+            <Tooltip title="Очистить фильтры">
+              <Button
+                icon={<ClearOutlined />}
+                onClick={() => onFilterClick?.('clear')}
+              />
+            </Tooltip>
+          )}
+        </Space>
+
+        <Space wrap>
+          {extra}
+
+          {showRefresh && (
+            <Tooltip title="Обновить">
+              <Button
+                icon={<ReloadOutlined />}
+                onClick={onRefresh}
+                loading={loading}
+              />
+            </Tooltip>
+          )}
+
+          {showExport && (
+            <Tooltip title="Экспорт">
+              <Dropdown
+                 menu={{
+                   items: [
+                     { key: 'csv', label: 'CSV Export', onClick: () => onExport && onExport('csv') },
+                     { key: 'excel', label: 'Excel Export', onClick: () => onExport && onExport('excel') }
+                   ]
+                 }}
+              >
+                <Button icon={<DownloadOutlined />} />
+              </Dropdown>
+            </Tooltip>
+          )}
+
+          {showSettings && (
+            <Tooltip title="Настройки">
+              <Button
+                icon={<SettingOutlined />}
+                onClick={onSettingsClick}
+              />
+            </Tooltip>
+          )}
+        </Space>
       </Space>
     </div>
   );

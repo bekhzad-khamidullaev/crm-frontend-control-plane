@@ -1,11 +1,24 @@
-import { useState, useEffect } from 'react';
-import { Table, Button, Space, Tag, Input, Select, message, Modal, Card } from 'antd';
-import { PlusOutlined, EditOutlined, DeleteOutlined, EyeOutlined, SearchOutlined, FileTextOutlined, InboxOutlined } from '@ant-design/icons';
-import { getMemos, deleteMemo, updateMemo } from '../../lib/api/memos';
-import { navigate } from '../../router';
+import { useEffect, useMemo, useState } from 'react';
+import { FileText, Eye, Edit, Trash2, Clock, Check } from 'lucide-react';
 import dayjs from 'dayjs';
 
-const { Search } = Input;
+import { getMemos, deleteMemo, markMemoReviewed, markMemoPostponed } from '../../lib/api/memos';
+import { navigate } from '../../router';
+import EntitySelect from '../../components/EntitySelect.jsx';
+import { getUsers, getUser } from '../../lib/api';
+import EnhancedTable from '../../components/ui-EnhancedTable.jsx';
+import TableToolbar from '../../components/ui-TableToolbar.jsx';
+import { Badge } from '../../components/ui/badge.jsx';
+import { Button } from '../../components/ui/button.jsx';
+import { DatePicker } from '../../components/ui-DatePicker.jsx';
+import { toast } from '../../components/ui/use-toast.js';
+import { AlertDialog, AlertDialogContent, AlertDialogHeader, AlertDialogTitle } from '../../components/ui/alert-dialog.jsx';
+
+const stageLabels = {
+  pen: { text: 'В ожидании', className: 'bg-sky-100 text-sky-700' },
+  pos: { text: 'Отложено', className: 'bg-amber-100 text-amber-700' },
+  rev: { text: 'Рассмотрено', className: 'bg-emerald-100 text-emerald-700' },
+};
 
 export default function MemosList() {
   const [data, setData] = useState([]);
@@ -13,11 +26,14 @@ export default function MemosList() {
   const [pagination, setPagination] = useState({ current: 1, pageSize: 10, total: 0 });
   const [searchText, setSearchText] = useState('');
   const [draftFilter, setDraftFilter] = useState(null);
-  const [entityFilter, setEntityFilter] = useState(null);
+  const [stageFilter, setStageFilter] = useState(null);
+  const [recipientFilter, setRecipientFilter] = useState(null);
+  const [dateRange, setDateRange] = useState(null);
+  const [confirmDelete, setConfirmDelete] = useState(null);
 
   useEffect(() => {
     fetchData();
-  }, [pagination.current, pagination.pageSize, searchText, draftFilter, entityFilter]);
+  }, [pagination.current, pagination.pageSize, searchText, draftFilter, stageFilter, recipientFilter, dateRange]);
 
   const fetchData = async () => {
     setLoading(true);
@@ -26,200 +42,257 @@ export default function MemosList() {
         page: pagination.current,
         page_size: pagination.pageSize,
         search: searchText || undefined,
-        draft: draftFilter,
+        draft: typeof draftFilter === 'boolean' ? draftFilter : undefined,
+        stage: stageFilter || undefined,
+        to: recipientFilter || undefined,
+        ordering: '-update_date',
       };
       const res = await getMemos(params);
       const results = res.results || [];
-      setData(results);
-      setPagination((prev) => ({ ...prev, total: res.count || results.length }));
+      const filtered = dateRange && dateRange.length === 2
+        ? results.filter((item) => {
+            const date = item.update_date || item.creation_date;
+            if (!date) return false;
+            const parsed = dayjs(date);
+            return parsed.isAfter(dayjs(dateRange[0]).startOf('day')) && parsed.isBefore(dayjs(dateRange[1]).endOf('day'));
+          })
+        : results;
+
+      setData(filtered);
+      setPagination((prev) => ({ ...prev, total: res.count || filtered.length }));
     } catch (error) {
-      message.error('Failed to fetch memos');
+      toast({ title: 'Ошибка', description: 'Не удалось загрузить мемо', variant: 'destructive' });
       console.error(error);
     } finally {
       setLoading(false);
     }
   };
 
-  const handleDelete = (id) => {
-    Modal.confirm({
-      title: 'Delete Memo',
-      content: 'Are you sure you want to delete this memo?',
-      okText: 'Delete',
-      okType: 'danger',
-      onOk: async () => {
-        try {
-          await deleteMemo(id);
-          message.success('Memo deleted successfully');
-          fetchData();
-        } catch (error) {
-          message.error('Failed to delete memo');
-        }
-      },
-    });
-  };
-
-  const handleArchive = async (id, currentArchived) => {
+  const handleDelete = async (id) => {
     try {
-      await updateMemo(id, { archived: !currentArchived });
-      message.success(`Memo ${!currentArchived ? 'archived' : 'unarchived'}`);
+      await deleteMemo(id);
+      toast({ title: 'Мемо удалено', description: 'Мемо удалено' });
       fetchData();
     } catch (error) {
-      message.error('Failed to update memo');
+      toast({ title: 'Ошибка', description: 'Не удалось удалить мемо', variant: 'destructive' });
+    } finally {
+      setConfirmDelete(null);
     }
   };
 
-  const handleTableChange = (newPagination) => {
-    setPagination(newPagination);
+  const handleMarkReviewed = async (id) => {
+    try {
+      await markMemoReviewed(id);
+      toast({ title: 'Мемо рассмотрено', description: 'Мемо отмечено как рассмотренное' });
+      fetchData();
+    } catch (error) {
+      toast({ title: 'Ошибка', description: 'Не удалось обновить мемо', variant: 'destructive' });
+    }
   };
 
-  const getRelatedEntity = (record) => {
-    if (record.deal) return { type: 'Deal', name: record.deal.title || record.deal.id };
-    if (record.project) return { type: 'Project', name: record.project.name || record.project.id };
-    if (record.contact) return { type: 'Contact', name: record.contact.name || record.contact.id };
-    return null;
+  const handleMarkPostponed = async (id) => {
+    try {
+      await markMemoPostponed(id);
+      toast({ title: 'Мемо отложено', description: 'Мемо отложено' });
+      fetchData();
+    } catch (error) {
+      toast({ title: 'Ошибка', description: 'Не удалось обновить мемо', variant: 'destructive' });
+    }
   };
 
-  const columns = [
+  const columns = useMemo(() => ([
     {
-      title: 'Title',
-      dataIndex: 'title',
-      key: 'title',
-      render: (title) => <strong>{title}</strong>,
+      title: 'Название',
+      dataIndex: 'name',
+      key: 'name',
+      render: (name) => <strong>{name}</strong>,
     },
     {
-      title: 'Status',
-      dataIndex: 'draft',
-      key: 'draft',
-      render: (draft, record) => (
-        <Space>
-          <Tag color={draft ? 'orange' : 'green'}>
-            {draft ? 'DRAFT' : 'PUBLISHED'}
-          </Tag>
-          {record.archived && <Tag color="default">ARCHIVED</Tag>}
-        </Space>
-      ),
-    },
-    {
-      title: 'Related Entity',
-      key: 'related',
+      title: 'Статус',
+      key: 'status',
       render: (_, record) => {
-        const entity = getRelatedEntity(record);
-        if (!entity) return '-';
+        const stage = stageLabels[record.stage] || { text: record.stage || '—', className: 'bg-muted text-muted-foreground' };
         return (
-          <Space direction="vertical" size="small">
-            <Tag color="blue">{entity.type}</Tag>
-            <span>{entity.name}</span>
-          </Space>
+          <div className="flex flex-wrap gap-2">
+            <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs ${stage.className}`}>
+              {stage.text}
+            </span>
+            {record.draft && (
+              <span className="inline-flex items-center rounded-full bg-amber-100 px-2 py-0.5 text-xs text-amber-700">
+                Черновик
+              </span>
+            )}
+          </div>
         );
       },
     },
     {
-      title: 'Created',
-      dataIndex: 'created_at',
-      key: 'created_at',
-      render: (date) => date ? dayjs(date).format('DD MMM YYYY HH:mm') : '-',
-      sorter: true,
+      title: 'Получатель',
+      dataIndex: 'to_name',
+      key: 'to_name',
+      render: (toName) => toName || '-',
     },
     {
-      title: 'Owner',
-      dataIndex: 'owner',
-      key: 'owner',
-      render: (owner) => owner?.username || owner?.email || '-',
+      title: 'Связь',
+      key: 'related',
+      render: (_, record) => {
+        const items = [
+          record.deal_name && { label: 'Сделка', value: record.deal_name },
+          record.project_name && { label: 'Проект', value: record.project_name },
+          record.task_name && { label: 'Задача', value: record.task_name },
+        ].filter(Boolean);
+        if (items.length === 0) return '-';
+        return (
+          <div className="flex flex-col gap-1 text-xs text-muted-foreground">
+            {items.map((item) => (
+              <span key={item.label}>{item.label}: {item.value}</span>
+            ))}
+          </div>
+        );
+      },
     },
     {
-      title: 'Actions',
+      title: 'Дата обзора',
+      dataIndex: 'review_date',
+      key: 'review_date',
+      render: (value) => value ? dayjs(value).format('DD.MM.YYYY') : '-',
+    },
+    {
+      title: 'Обновлено',
+      dataIndex: 'update_date',
+      key: 'update_date',
+      render: (date, record) => {
+        const value = date || record.creation_date;
+        return value ? dayjs(value).format('DD.MM.YYYY HH:mm') : '-';
+      },
+    },
+    {
+      title: 'Действия',
       key: 'actions',
-      fixed: 'right',
-      width: 220,
+      width: 260,
       render: (_, record) => (
-        <Space size="small" direction="vertical">
-          <Space size="small">
-            <Button
-              type="link"
-              size="small"
-              icon={<EyeOutlined />}
-              onClick={() => navigate(`/memos/${record.id}`)}
-            >
-              View
-            </Button>
-            <Button
-              type="link"
-              size="small"
-              icon={<EditOutlined />}
-              onClick={() => navigate(`/memos/${record.id}/edit`)}
-            />
-          </Space>
-          <Space size="small">
-            <Button
-              type="link"
-              size="small"
-              icon={<InboxOutlined />}
-              onClick={() => handleArchive(record.id, record.archived)}
-            >
-              {record.archived ? 'Unarchive' : 'Archive'}
-            </Button>
-            <Button
-              type="link"
-              size="small"
-              danger
-              icon={<DeleteOutlined />}
-              onClick={() => handleDelete(record.id)}
-            />
-          </Space>
-        </Space>
+        <div className="flex flex-wrap items-center gap-2">
+          <Button variant="ghost" size="sm" onClick={() => navigate(`/memos/${record.id}`)}>
+            <Eye className="mr-1 h-4 w-4" />
+            Открыть
+          </Button>
+          <Button variant="ghost" size="sm" onClick={() => navigate(`/memos/${record.id}/edit`)}>
+            <Edit className="mr-1 h-4 w-4" />
+            Ред.
+          </Button>
+          <Button variant="ghost" size="sm" onClick={() => handleMarkPostponed(record.id)}>
+            <Clock className="mr-1 h-4 w-4" />
+            Отложить
+          </Button>
+          <Button variant="ghost" size="sm" onClick={() => handleMarkReviewed(record.id)}>
+            <Check className="mr-1 h-4 w-4" />
+            Рассмотрено
+          </Button>
+          <Button variant="ghost" size="sm" className="text-destructive" onClick={() => setConfirmDelete(record)}>
+            <Trash2 className="mr-1 h-4 w-4" />
+            Удалить
+          </Button>
+        </div>
       ),
     },
-  ];
+  ]), []);
 
   return (
-    <Card
-      title={
-        <Space>
-          <FileTextOutlined />
-          <span>Memos</span>
-        </Space>
-      }
-      extra={
-        <Button
-          type="primary"
-          icon={<PlusOutlined />}
-          onClick={() => navigate('/memos/new')}
-        >
-          New Memo
-        </Button>
-      }
-    >
-      <Space direction="vertical" size="middle" style={{ width: '100%' }}>
-        <Space wrap>
-          <Search
-            placeholder="Search memos..."
-            allowClear
-            enterButton={<SearchOutlined />}
-            style={{ width: 300 }}
-            onSearch={setSearchText}
-          />
-          <Select
-            placeholder="Filter by Status"
-            style={{ width: 150 }}
-            allowClear
-            onChange={setDraftFilter}
-            value={draftFilter}
-          >
-            <Select.Option value={true}>Draft</Select.Option>
-            <Select.Option value={false}>Published</Select.Option>
-          </Select>
-        </Space>
+    <div>
+      <TableToolbar
+        title="Мемо"
+        total={pagination.total}
+        loading={loading}
+        searchPlaceholder="Поиск по названию или тексту"
+        onSearch={setSearchText}
+        onCreate={() => navigate('/memos/new')}
+        createButtonText="Новое мемо"
+        showViewModeSwitch={false}
+        showExportButton={false}
+      />
 
-        <Table
-          columns={columns}
-          dataSource={data}
-          loading={loading}
-          rowKey="id"
-          pagination={pagination}
-          onChange={handleTableChange}
-          scroll={{ x: 1200 }}
+      <div className="mb-4 flex flex-wrap gap-3">
+        <input
+          type="text"
+          placeholder="Поиск по названию или тексту"
+          className="h-9 w-[260px] rounded-md border border-border bg-background px-2 text-sm"
+          value={searchText}
+          onChange={(e) => setSearchText(e.target.value)}
         />
-      </Space>
-    </Card>
+        <select
+          className="h-9 w-[160px] rounded-md border border-border bg-background px-2 text-sm"
+          value={draftFilter ?? ''}
+          onChange={(e) => setDraftFilter(e.target.value === '' ? null : e.target.value === 'true')}
+        >
+          <option value="">Черновики</option>
+          <option value="true">Черновик</option>
+          <option value="false">Опубликованные</option>
+        </select>
+        <select
+          className="h-9 w-[180px] rounded-md border border-border bg-background px-2 text-sm"
+          value={stageFilter ?? ''}
+          onChange={(e) => setStageFilter(e.target.value || null)}
+        >
+          <option value="">Стадия</option>
+          <option value="pen">В ожидании</option>
+          <option value="pos">Отложено</option>
+          <option value="rev">Рассмотрено</option>
+        </select>
+        <EntitySelect
+          placeholder="Получатель"
+          value={recipientFilter}
+          onChange={setRecipientFilter}
+          fetchList={getUsers}
+          fetchById={getUser}
+          allowClear
+        />
+        <div className="flex items-center gap-2">
+          <DatePicker
+            value={dateRange?.[0] || null}
+            onChange={(val) => setDateRange((prev) => [val, prev?.[1] || null])}
+            format="DD.MM.YYYY"
+          />
+          <span className="text-sm text-muted-foreground">—</span>
+          <DatePicker
+            value={dateRange?.[1] || null}
+            onChange={(val) => setDateRange((prev) => [prev?.[0] || null, val])}
+            format="DD.MM.YYYY"
+          />
+        </div>
+      </div>
+
+      <EnhancedTable
+        columns={columns}
+        dataSource={data}
+        loading={loading}
+        rowKey="id"
+        pagination={pagination}
+        onChange={(newPagination) => setPagination((prev) => ({
+          ...prev,
+          current: newPagination.current,
+          pageSize: newPagination.pageSize,
+        }))}
+        scroll={{ x: 1200 }}
+        emptyText="Нет мемо"
+        emptyDescription="Создайте новое мемо"
+      />
+
+      <AlertDialog open={!!confirmDelete} onOpenChange={(open) => !open && setConfirmDelete(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Удалить мемо?</AlertDialogTitle>
+          </AlertDialogHeader>
+          <p className="text-sm text-muted-foreground">Действие нельзя отменить.</p>
+          <div className="mt-4 flex justify-end gap-2">
+            <Button variant="outline" onClick={() => setConfirmDelete(null)}>
+              Отмена
+            </Button>
+            <Button variant="destructive" onClick={() => handleDelete(confirmDelete.id)}>
+              Удалить
+            </Button>
+          </div>
+        </AlertDialogContent>
+      </AlertDialog>
+    </div>
   );
 }

@@ -131,12 +131,11 @@ class SIPClient {
           this.session = this.stack.newSession('register', {
             events_listener: { events: '*', listener: this.handleSessionEvent.bind(this) }
           });
-          
-          this.session.register();
-          
+
           // Resolve will be called by event handler
           this._registerResolve = resolve;
           this._registerReject = reject;
+          this.session.register();
         }, 500);
       } catch (error) {
         console.error('[SIPClient] Registration error:', error);

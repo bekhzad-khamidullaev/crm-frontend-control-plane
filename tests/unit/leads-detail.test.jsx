@@ -1,14 +1,49 @@
-import { describe, it, expect, beforeEach, vi } from 'vitest';
-import { render, screen, fireEvent, waitFor } from '@testing-library/react';
-import LeadDetail from '../../src/modules/leads/LeadDetail';
-import * as client from '../../src/lib/api/client';
-import * as router from '../../src/router';
+import { fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 import * as callsApi from '../../src/lib/api/calls';
+import * as client from '../../src/lib/api/client';
+import LeadDetail from '../../src/modules/leads/LeadDetail';
+import * as router from '../../src/router';
 
 // Mock dependencies
-vi.mock('../../src/lib/api/client');
+vi.mock('../../src/lib/api/client', () => ({
+  getLead: vi.fn(),
+  deleteLead: vi.fn(),
+  leadsApi: {
+    convert: vi.fn(),
+    disqualify: vi.fn(),
+    assign: vi.fn(),
+  },
+  getUsers: vi.fn(),
+  getUser: vi.fn(),
+}));
 vi.mock('../../src/router');
 vi.mock('../../src/lib/api/calls');
+vi.mock('../../src/components/ui/dropdown-menu', () => ({
+  DropdownMenu: ({ children }) => <div>{children}</div>,
+  DropdownMenuTrigger: ({ children }) => <div>{children}</div>,
+  DropdownMenuContent: ({ children }) => <div>{children}</div>,
+  DropdownMenuItem: ({ children, onClick }) => <button onClick={onClick}>{children}</button>,
+  DropdownMenuLabel: ({ children }) => <div>{children}</div>,
+  DropdownMenuSeparator: () => <hr />,
+}));
+vi.mock('../../src/components/ui/alert-dialog', () => ({
+  AlertDialog: ({ children, open }) => open ? <div data-testid="alert-dialog">{children}</div> : null,
+  AlertDialogAction: ({ children, onClick }) => <button onClick={onClick} data-testid="alert-action">{children}</button>,
+  AlertDialogCancel: ({ children, onClick }) => <button onClick={onClick} data-testid="alert-cancel">{children}</button>,
+  AlertDialogContent: ({ children }) => <div>{children}</div>,
+  AlertDialogDescription: ({ children }) => <div>{children}</div>,
+  AlertDialogFooter: ({ children }) => <div>{children}</div>,
+  AlertDialogHeader: ({ children }) => <div>{children}</div>,
+  AlertDialogTitle: ({ children }) => <div>{children}</div>,
+  AlertDialogTrigger: ({ children, onClick }) => <button onClick={onClick}>{children}</button>,
+}));
+vi.mock('../../src/components/ui/tabs', () => ({
+  Tabs: ({ children }) => <div>{children}</div>,
+  TabsList: ({ children }) => <div role="tablist">{children}</div>,
+  TabsTrigger: ({ children, value }) => <button role="tab" data-value={value}>{children}</button>,
+  TabsContent: ({ children }) => <div>{children}</div>,
+}));
 vi.mock('../../src/components/CallButton', () => ({
   default: ({ phone, name }) => <button>Call {name} at {phone}</button>,
 }));
@@ -24,6 +59,7 @@ const mockLead = {
   phone: '+7 999 123-45-67',
   company: 'ООО "Технологии"',
   position: 'Директор',
+  title: 'Директор',
   status: 'new',
   source: 'website',
   description: 'Интересуется нашими услугами',
@@ -48,10 +84,8 @@ describe('LeadDetail', () => {
     vi.clearAllMocks();
     client.getLead.mockResolvedValue(mockLead);
     callsApi.getEntityCallLogs.mockResolvedValue({ results: mockCallLogs });
-    client.leadsApi = {
-      convert: vi.fn().mockResolvedValue({}),
-      disqualify: vi.fn().mockResolvedValue({}),
-    };
+    client.leadsApi.convert.mockResolvedValue({});
+    client.leadsApi.disqualify.mockResolvedValue({});
   });
 
   it('renders lead details', async () => {
@@ -63,15 +97,15 @@ describe('LeadDetail', () => {
 
     expect(screen.getByText('ivan@example.com')).toBeInTheDocument();
     expect(screen.getByText('+7 999 123-45-67')).toBeInTheDocument();
-    expect(screen.getByText('ООО "Технологии"')).toBeInTheDocument();
-    expect(screen.getByText('Директор')).toBeInTheDocument();
+    expect(screen.getAllByText('ООО "Технологии"')[0]).toBeInTheDocument();
+    expect(screen.getAllByText('Директор')[0]).toBeInTheDocument();
   });
 
   it('shows loading state', () => {
     client.getLead.mockImplementation(() => new Promise(() => {}));
-    render(<LeadDetail id={1} />);
+    const { container } = render(<LeadDetail id={1} />);
     
-    expect(screen.getByRole('img', { hidden: true })).toBeInTheDocument(); // Ant Design Spin
+    expect(container.querySelector('.animate-spin')).toBeInTheDocument();
   });
 
   it('navigates back to list', async () => {
@@ -81,7 +115,7 @@ describe('LeadDetail', () => {
       expect(screen.getByText('Иван Иванов')).toBeInTheDocument();
     });
 
-    const backButton = screen.getByText('Назад к списку');
+    const backButton = screen.getAllByRole('button').find(b => b.textContent.includes('Назад'));
     fireEvent.click(backButton);
 
     expect(router.navigate).toHaveBeenCalledWith('/leads');
@@ -94,7 +128,10 @@ describe('LeadDetail', () => {
       expect(screen.getByText('Иван Иванов')).toBeInTheDocument();
     });
 
-    const editButton = screen.getByText('Редактировать');
+    const actionsMenu = screen.getByRole('button', { name: /действия/i });
+    fireEvent.pointerDown(actionsMenu); fireEvent.click(actionsMenu);
+
+    const editButton = await screen.findByText('Редактировать');
     fireEvent.click(editButton);
 
     expect(router.navigate).toHaveBeenCalledWith('/leads/1/edit');
@@ -107,17 +144,17 @@ describe('LeadDetail', () => {
       expect(screen.getByText('Иван Иванов')).toBeInTheDocument();
     });
 
-    const convertButton = screen.getByText('Конвертировать');
+    const convertButton = screen.getAllByText('Конвертировать')[0];
     fireEvent.click(convertButton);
 
     // Confirm action
     await waitFor(() => {
-      const confirmButton = screen.getByText('Да');
+      const confirmButton = screen.getByTestId('alert-action');
       fireEvent.click(confirmButton);
     });
 
     await waitFor(() => {
-      expect(client.leadsApi.convert).toHaveBeenCalledWith(1);
+      expect(client.leadsApi.convert).toHaveBeenCalledWith(1, expect.any(Object));
     });
   });
 
@@ -128,17 +165,20 @@ describe('LeadDetail', () => {
       expect(screen.getByText('Иван Иванов')).toBeInTheDocument();
     });
 
-    const disqualifyButton = screen.getByText('Дисквалифицировать');
+    const actionsMenu = screen.getByRole('button', { name: /действия/i });
+    fireEvent.pointerDown(actionsMenu); fireEvent.click(actionsMenu);
+
+    const disqualifyButton = await screen.findByText(/Дисквалифицировать/);
     fireEvent.click(disqualifyButton);
 
     // Confirm action
     await waitFor(() => {
-      const confirmButton = screen.getByText('Да');
+      const confirmButton = screen.getByTestId('alert-action');
       fireEvent.click(confirmButton);
     });
 
     await waitFor(() => {
-      expect(client.leadsApi.disqualify).toHaveBeenCalledWith(1);
+      expect(client.leadsApi.disqualify).toHaveBeenCalledWith(1, expect.any(Object));
     });
   });
 
@@ -150,12 +190,15 @@ describe('LeadDetail', () => {
       expect(screen.getByText('Иван Иванов')).toBeInTheDocument();
     });
 
-    const deleteButton = screen.getByText('Удалить');
+    const actionsMenu = screen.getByRole('button', { name: /действия/i });
+    fireEvent.click(actionsMenu);
+
+    const deleteButton = await screen.findByText('Удалить');
     fireEvent.click(deleteButton);
 
     // Confirm deletion
     await waitFor(() => {
-      const confirmButton = screen.getByText('Да');
+      const confirmButton = screen.getByTestId('alert-action');
       fireEvent.click(confirmButton);
     });
 
@@ -169,15 +212,8 @@ describe('LeadDetail', () => {
     render(<LeadDetail id={1} />);
     
     await waitFor(() => {
-      expect(screen.getByText('Иван Иванов')).toBeInTheDocument();
-    });
-
-    // Switch to calls tab
-    const callsTab = screen.getByText(/История звонков/);
-    fireEvent.click(callsTab);
-
-    await waitFor(() => {
-      expect(screen.getByText('Первый контакт')).toBeInTheDocument();
+      // The call log 'direction: outbound' renders as 'Исходящий звонок'
+      expect(screen.getByText('Исходящий звонок')).toBeInTheDocument();
     });
   });
 
@@ -188,14 +224,11 @@ describe('LeadDetail', () => {
       expect(screen.getByText('Иван Иванов')).toBeInTheDocument();
     });
 
-    // Switch to messages tab
-    const messagesTab = screen.getByText('Сообщения');
-    fireEvent.click(messagesTab);
-
     await waitFor(() => {
       expect(screen.getByTestId('chat-widget')).toBeInTheDocument();
     });
   });
+
 
   it('handles error when loading lead', async () => {
     client.getLead.mockRejectedValue(new Error('API Error'));
@@ -219,16 +252,16 @@ describe('LeadDetail', () => {
       expect(screen.getByText('Иван Иванов')).toBeInTheDocument();
     });
 
-    const convertButton = screen.getByText('Конвертировать');
+    const convertButton = screen.getAllByText('Конвертировать')[0];
     fireEvent.click(convertButton);
 
     await waitFor(() => {
-      const confirmButton = screen.getByText('Да');
+      const confirmButton = screen.getByTestId('alert-action');
       fireEvent.click(confirmButton);
     });
 
     await waitFor(() => {
-      expect(client.leadsApi.convert).toHaveBeenCalledWith(1);
+      expect(client.leadsApi.convert).toHaveBeenCalledWith(1, expect.any(Object));
     });
   });
 
@@ -242,7 +275,7 @@ describe('LeadDetail', () => {
     });
 
     // Switch to calls tab
-    const callsTab = screen.getByText(/История звонков/);
+    const callsTab = screen.getByRole('tab', { name: /Звонки/i });
     fireEvent.click(callsTab);
 
     await waitFor(() => {

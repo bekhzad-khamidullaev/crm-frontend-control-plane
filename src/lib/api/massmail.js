@@ -47,7 +47,7 @@ export async function getEmailAccount(id) {
  * @returns {Promise<Object>}
  */
 export async function createEmailAccount(data) {
-  return api.post('/api/massmail/email-accounts/', data);
+  return api.post('/api/massmail/email-accounts/', { body: data });
 }
 
 /**
@@ -57,7 +57,7 @@ export async function createEmailAccount(data) {
  * @returns {Promise<Object>}
  */
 export async function updateEmailAccount(id, data) {
-  return api.put(`/api/massmail/email-accounts/${id}/`, data);
+  return api.put(`/api/massmail/email-accounts/${id}/`, { body: data });
 }
 
 /**
@@ -67,7 +67,7 @@ export async function updateEmailAccount(id, data) {
  * @returns {Promise<Object>}
  */
 export async function patchEmailAccount(id, data) {
-  return api.patch(`/api/massmail/email-accounts/${id}/`, data);
+  return api.patch(`/api/massmail/email-accounts/${id}/`, { body: data });
 }
 
 /**
@@ -149,7 +149,7 @@ export async function getMessage(id) {
  * @returns {Promise<Object>}
  */
 export async function createMessage(data) {
-  return api.post('/api/massmail/messages/', data);
+  return api.post('/api/massmail/messages/', { body: data });
 }
 
 /**
@@ -159,7 +159,7 @@ export async function createMessage(data) {
  * @returns {Promise<Object>}
  */
 export async function updateMessage(id, data) {
-  return api.put(`/api/massmail/messages/${id}/`, data);
+  return api.put(`/api/massmail/messages/${id}/`, { body: data });
 }
 
 /**
@@ -169,7 +169,7 @@ export async function updateMessage(id, data) {
  * @returns {Promise<Object>}
  */
 export async function patchMessage(id, data) {
-  return api.patch(`/api/massmail/messages/${id}/`, data);
+  return api.patch(`/api/massmail/messages/${id}/`, { body: data });
 }
 
 /**
@@ -212,7 +212,7 @@ export async function getSignature(id) {
  * @returns {Promise<Object>}
  */
 export async function createSignature(data) {
-  return api.post('/api/massmail/signatures/', data);
+  return api.post('/api/massmail/signatures/', { body: data });
 }
 
 /**
@@ -222,7 +222,7 @@ export async function createSignature(data) {
  * @returns {Promise<Object>}
  */
 export async function updateSignature(id, data) {
-  return api.put(`/api/massmail/signatures/${id}/`, data);
+  return api.put(`/api/massmail/signatures/${id}/`, { body: data });
 }
 
 /**
@@ -232,7 +232,7 @@ export async function updateSignature(id, data) {
  * @returns {Promise<Object>}
  */
 export async function patchSignature(id, data) {
-  return api.patch(`/api/massmail/signatures/${id}/`, data);
+  return api.patch(`/api/massmail/signatures/${id}/`, { body: data });
 }
 
 /**
@@ -255,17 +255,6 @@ export async function deleteSignature(id) {
  */
 export async function getActiveEmailAccounts(params = {}) {
   return getEmailAccounts({ ...params, is_active: true });
-}
-
-/**
- * Test email account connection
- * @param {number} id - Email account ID
- * @returns {Promise<Object>}
- */
-export async function testEmailAccountConnection(id) {
-  // Note: This endpoint may need to be implemented on backend
-  // For now, this is a placeholder
-  return patchEmailAccount(id, { test_connection: true });
 }
 
 /**
@@ -362,7 +351,7 @@ export async function getMailingsByStatus(status, params = {}) {
  */
 export async function cloneSignature(id, newName) {
   const signature = await getSignature(id);
-  const { id: _, created_at, updated_at, is_default, ...signatureData } = signature;
+  const { id: _, created_at: _created_at, updated_at: _updated_at, is_default: _is_default, ...signatureData } = signature;
   
   return createSignature({
     ...signatureData,

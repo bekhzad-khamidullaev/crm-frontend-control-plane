@@ -8,7 +8,6 @@ import {
   Spin,
   message,
   Tabs,
-  Timeline,
   Typography,
   Avatar,
   Row,
@@ -34,8 +33,18 @@ import {
   PhoneTwoTone,
 } from '@ant-design/icons';
 import { navigate } from '../../router';
-import { getCompany, deleteCompany } from '../../lib/api/client';
+import { getCompany, deleteCompany, getContacts, getDeals, getUsers } from '../../lib/api/client';
 import { getCompanyCallLogs } from '../../lib/api/calls';
+import {
+  getClientTypes,
+  getIndustries,
+  getLeadSources,
+  getCrmTags,
+  getCountries,
+  getCities,
+  getDepartments,
+} from '../../lib/api/reference';
+import ActivityLog from '../../components/ActivityLog';
 import CallButton from '../../components/CallButton';
 import ChatWidget from '../../modules/chat/ChatWidget';
 import dayjs from 'dayjs';
@@ -47,10 +56,25 @@ function CompanyDetail({ id }) {
   const [loading, setLoading] = useState(true);
   const [callLogs, setCallLogs] = useState([]);
   const [callLogsLoading, setCallLogsLoading] = useState(false);
+  const [contacts, setContacts] = useState([]);
+  const [contactsLoading, setContactsLoading] = useState(false);
+  const [deals, setDeals] = useState([]);
+  const [dealsLoading, setDealsLoading] = useState(false);
+  const [clientTypes, setClientTypes] = useState([]);
+  const [industries, setIndustries] = useState([]);
+  const [leadSources, setLeadSources] = useState([]);
+  const [crmTags, setCrmTags] = useState([]);
+  const [countries, setCountries] = useState([]);
+  const [cities, setCities] = useState([]);
+  const [departments, setDepartments] = useState([]);
+  const [users, setUsers] = useState([]);
 
   useEffect(() => {
     loadCompany();
     loadCallLogs();
+    loadContacts();
+    loadDeals();
+    loadReferenceData();
   }, [id]);
 
   const loadCompany = async () => {
@@ -60,22 +84,6 @@ function CompanyDetail({ id }) {
       setCompany(data);
     } catch (error) {
       message.error('Ошибка загрузки данных компании');
-      // Mock data for demo
-      setCompany({
-        id,
-        name: 'ООО "ТехноПром"',
-        email: 'info@technoprom.ru',
-        phone: '+7 495 123-45-67',
-        website: 'https://technoprom.ru',
-        industry: 'Производство',
-        employees_count: 150,
-        annual_revenue: 50000000,
-        type: 'client',
-        address: 'г. Москва, Промышленная ул., д. 10',
-        description: 'Крупный производитель промышленного оборудования. Работает на рынке с 2010 года.',
-        created_at: '2024-01-15T10:30:00Z',
-        updated_at: '2024-01-15T10:30:00Z',
-      });
     } finally {
       setLoading(false);
     }
@@ -88,29 +96,77 @@ function CompanyDetail({ id }) {
       setCallLogs(response.results || []);
     } catch (error) {
       console.error('Error loading call logs:', error);
-      // Mock data
-      setCallLogs([
-        {
-          id: 1,
-          phone_number: '+7 495 123-45-67',
-          direction: 'outbound',
-          status: 'completed',
-          started_at: '2024-01-20T14:30:00Z',
-          duration: 480,
-          notes: 'Обсуждение условий контракта',
-        },
-        {
-          id: 2,
-          phone_number: '+7 495 123-45-67',
-          direction: 'inbound',
-          status: 'completed',
-          started_at: '2024-01-18T11:20:00Z',
-          duration: 320,
-          notes: 'Запрос коммерческого предложения',
-        },
-      ]);
+      setCallLogs([]);
     } finally {
       setCallLogsLoading(false);
+    }
+  };
+
+  const loadContacts = async () => {
+    setContactsLoading(true);
+    try {
+      const response = await getContacts({ company: id, page_size: 50 });
+      setContacts(response.results || response || []);
+    } catch (error) {
+      console.error('Error loading contacts:', error);
+      setContacts([]);
+    } finally {
+      setContactsLoading(false);
+    }
+  };
+
+  const loadDeals = async () => {
+    setDealsLoading(true);
+    try {
+      const response = await getDeals({ company: id, page_size: 50 });
+      setDeals(response.results || response || []);
+    } catch (error) {
+      console.error('Error loading deals:', error);
+      setDeals([]);
+    } finally {
+      setDealsLoading(false);
+    }
+  };
+
+  const loadReferenceData = async () => {
+    try {
+      const [
+        clientTypesResponse,
+        industriesResponse,
+        leadSourcesResponse,
+        crmTagsResponse,
+        countriesResponse,
+        citiesResponse,
+        departmentsResponse,
+        usersResponse,
+      ] = await Promise.all([
+        getClientTypes({ page_size: 200 }),
+        getIndustries({ page_size: 200 }),
+        getLeadSources({ page_size: 200 }),
+        getCrmTags({ page_size: 200 }),
+        getCountries({ page_size: 200 }),
+        getCities({ page_size: 200 }),
+        getDepartments({ page_size: 200 }),
+        getUsers({ page_size: 200 }),
+      ]);
+      setClientTypes(clientTypesResponse.results || clientTypesResponse || []);
+      setIndustries(industriesResponse.results || industriesResponse || []);
+      setLeadSources(leadSourcesResponse.results || leadSourcesResponse || []);
+      setCrmTags(crmTagsResponse.results || crmTagsResponse || []);
+      setCountries(countriesResponse.results || countriesResponse || []);
+      setCities(citiesResponse.results || citiesResponse || []);
+      setDepartments(departmentsResponse.results || departmentsResponse || []);
+      setUsers(usersResponse.results || usersResponse || []);
+    } catch (error) {
+      console.error('Error loading reference data:', error);
+      setClientTypes([]);
+      setIndustries([]);
+      setLeadSources([]);
+      setCrmTags([]);
+      setCountries([]);
+      setCities([]);
+      setDepartments([]);
+      setUsers([]);
     }
   };
 
@@ -131,13 +187,6 @@ function CompanyDetail({ id }) {
     return `${mins}:${secs.toString().padStart(2, '0')}`;
   };
 
-  const typeConfig = {
-    client: { color: 'blue', text: 'Клиент' },
-    partner: { color: 'green', text: 'Партнер' },
-    supplier: { color: 'orange', text: 'Поставщик' },
-    competitor: { color: 'red', text: 'Конкурент' },
-  };
-
   if (loading) {
     return (
       <div style={{ textAlign: 'center', padding: '50px' }}>
@@ -150,12 +199,26 @@ function CompanyDetail({ id }) {
     return <div>Компания не найдена</div>;
   }
 
-  const typeStyle = typeConfig[company.type] || typeConfig.client;
-
-  const mockContacts = [
-    { id: 1, name: 'Иван Петров', position: 'Директор', phone: '+7 999 111-22-33' },
-    { id: 2, name: 'Мария Сидорова', position: 'Менеджер', phone: '+7 999 222-33-44' },
-  ];
+  const clientType = clientTypes.find((item) => item.id === company.type);
+  const typeLabel = clientType?.name || (company.type ? `Тип #${company.type}` : '-');
+  const companyName = company.full_name || company.name || company.company_name || 'Компания';
+  const ownerName = users.find((u) => u.id === company.owner)?.username || company.owner;
+  const departmentName = departments.find((d) => d.id === company.department)?.name || company.department;
+  const countryName = countries.find((c) => c.id === company.country)?.name || company.country;
+  const cityName = cities.find((c) => c.id === company.city)?.name || company.city || company.city_name;
+  const leadSourceName = leadSources.find((ls) => ls.id === company.lead_source)?.name || company.lead_source;
+  const industryNames = Array.isArray(company.industry)
+    ? company.industry.map((id) => industries.find((ind) => ind.id === id)?.name).filter(Boolean)
+    : [];
+  const tagNames = Array.isArray(company.tags)
+    ? company.tags.map((id) => crmTags.find((tag) => tag.id === id)?.name).filter(Boolean)
+    : [];
+  const contactsCount = contacts.length;
+  const dealsCount = deals.length;
+  const dealsAmount = deals.reduce((sum, deal) => {
+    const value = Number(deal.amount || deal.value || 0);
+    return Number.isNaN(value) ? sum : sum + value;
+  }, 0);
 
   const tabItems = [
     {
@@ -168,13 +231,15 @@ function CompanyDetail({ id }) {
               <Space>
                 <Avatar icon={<ShopOutlined />} size="large" style={{ backgroundColor: '#52c41a' }} />
                 <Text strong style={{ fontSize: 16 }}>
-                  {company.name}
+                  {companyName}
                 </Text>
               </Space>
             </Descriptions.Item>
-            <Descriptions.Item label="Отрасль">{company.industry}</Descriptions.Item>
+            <Descriptions.Item label="Отрасли">
+              {industryNames.length ? industryNames.join(', ') : '-'}
+            </Descriptions.Item>
             <Descriptions.Item label="Тип">
-              <Tag color={typeStyle.color}>{typeStyle.text}</Tag>
+              {company.type ? <Tag color="blue">{typeLabel}</Tag> : '-'}
             </Descriptions.Item>
             <Descriptions.Item label="Email">
               <Space>
@@ -188,6 +253,9 @@ function CompanyDetail({ id }) {
                 <a href={`tel:${company.phone}`}>{company.phone}</a>
               </Space>
             </Descriptions.Item>
+            <Descriptions.Item label="Источник">
+              {leadSourceName || '-'}
+            </Descriptions.Item>
             {company.website && (
               <Descriptions.Item label="Веб-сайт" span={2}>
                 <Space>
@@ -198,6 +266,20 @@ function CompanyDetail({ id }) {
                 </Space>
               </Descriptions.Item>
             )}
+            <Descriptions.Item label="Альтернативные названия">
+              {company.alternative_names || '-'}
+            </Descriptions.Item>
+            <Descriptions.Item label="Регистрационный номер">
+              {company.registration_number || '-'}
+            </Descriptions.Item>
+            <Descriptions.Item label="Страна">{countryName || '-'}</Descriptions.Item>
+            <Descriptions.Item label="Город">{cityName || '-'}</Descriptions.Item>
+            {company.region && (
+              <Descriptions.Item label="Регион">{company.region}</Descriptions.Item>
+            )}
+            {company.district && (
+              <Descriptions.Item label="Район">{company.district}</Descriptions.Item>
+            )}
             {company.address && (
               <Descriptions.Item label="Адрес" span={2}>
                 <Space>
@@ -206,19 +288,35 @@ function CompanyDetail({ id }) {
                 </Space>
               </Descriptions.Item>
             )}
-            <Descriptions.Item label="Количество сотрудников">
-              {company.employees_count ? `${company.employees_count} чел.` : '-'}
+            <Descriptions.Item label="Активна">
+              <Tag color={company.active ? 'green' : 'default'}>
+                {company.active ? 'Да' : 'Нет'}
+              </Tag>
             </Descriptions.Item>
-            <Descriptions.Item label="Годовой доход">
-              {company.annual_revenue
-                ? `${(company.annual_revenue / 1000000).toFixed(1)} млн ₽`
-                : '-'}
+            <Descriptions.Item label="Дисквалифицирована">
+              <Tag color={company.disqualified ? 'red' : 'default'}>
+                {company.disqualified ? 'Да' : 'Нет'}
+              </Tag>
+            </Descriptions.Item>
+            <Descriptions.Item label="Массовая рассылка">
+              <Tag color={company.massmail ? 'blue' : 'default'}>
+                {company.massmail ? 'Да' : 'Нет'}
+              </Tag>
+            </Descriptions.Item>
+            <Descriptions.Item label="Последний контакт">
+              {company.was_in_touch ? dayjs(company.was_in_touch).format('DD.MM.YYYY') : '-'}
+            </Descriptions.Item>
+            <Descriptions.Item label="Токен">{company.token || '-'}</Descriptions.Item>
+            <Descriptions.Item label="Ответственный">{ownerName || '-'}</Descriptions.Item>
+            <Descriptions.Item label="Отдел">{departmentName || '-'}</Descriptions.Item>
+            <Descriptions.Item label="Теги" span={2}>
+              {tagNames.length ? tagNames.map((tag) => <Tag key={tag}>{tag}</Tag>) : '-'}
             </Descriptions.Item>
             <Descriptions.Item label="Дата создания">
-              {new Date(company.created_at).toLocaleString('ru-RU')}
+              {new Date(company.creation_date || company.created_at).toLocaleString('ru-RU')}
             </Descriptions.Item>
             <Descriptions.Item label="Последнее обновление">
-              {new Date(company.updated_at).toLocaleString('ru-RU')}
+              {new Date(company.update_date || company.updated_at).toLocaleString('ru-RU')}
             </Descriptions.Item>
             {company.description && (
               <Descriptions.Item label="Описание" span={2}>
@@ -232,7 +330,7 @@ function CompanyDetail({ id }) {
               <Card>
                 <Statistic
                   title="Контактов"
-                  value={2}
+                  value={contactsCount}
                   prefix={<TeamOutlined />}
                   valueStyle={{ color: '#3f8600' }}
                 />
@@ -242,7 +340,7 @@ function CompanyDetail({ id }) {
               <Card>
                 <Statistic
                   title="Активных сделок"
-                  value={3}
+                  value={dealsCount}
                   prefix={<RiseOutlined />}
                   valueStyle={{ color: '#1890ff' }}
                 />
@@ -252,19 +350,10 @@ function CompanyDetail({ id }) {
               <Card>
                 <Statistic
                   title="Сумма сделок"
-                  value={5500000}
+                  value={dealsAmount}
                   prefix={<DollarOutlined />}
                   suffix="₽"
                   valueStyle={{ color: '#cf1322' }}
-                />
-              </Card>
-            </Col>
-            <Col xs={24} md={6}>
-              <Card>
-                <Statistic
-                  title="Задач"
-                  value={7}
-                  valueStyle={{ color: '#faad14' }}
                 />
               </Card>
             </Col>
@@ -277,7 +366,8 @@ function CompanyDetail({ id }) {
       label: 'Контакты',
       children: (
         <List
-          dataSource={mockContacts}
+          loading={contactsLoading}
+          dataSource={contacts}
           renderItem={(contact) => (
             <List.Item
               actions={[
@@ -288,12 +378,12 @@ function CompanyDetail({ id }) {
             >
               <List.Item.Meta
                 avatar={<Avatar icon={<TeamOutlined />} />}
-                title={contact.name}
+                title={contact.full_name || contact.name}
                 description={
                   <Space direction="vertical" size="small">
-                    <Text>{contact.position}</Text>
+                    <Text>{contact.title || contact.position || '-'}</Text>
                     <Text type="secondary">
-                      <PhoneOutlined /> {contact.phone}
+                      <PhoneOutlined /> {contact.phone || contact.mobile || contact.other_phone || '-'}
                     </Text>
                   </Space>
                 }
@@ -306,7 +396,50 @@ function CompanyDetail({ id }) {
     {
       key: 'deals',
       label: 'Сделки',
-      children: <div>Список сделок с этой компанией появится здесь</div>,
+      children: (
+        <Table
+          dataSource={deals}
+          loading={dealsLoading}
+          rowKey="id"
+          pagination={{ pageSize: 10 }}
+          locale={{
+            emptyText: (
+              <Empty
+                description="Сделок с этой компанией пока нет"
+                image={Empty.PRESENTED_IMAGE_SIMPLE}
+              />
+            ),
+          }}
+          columns={[
+            {
+              title: 'Название',
+              dataIndex: 'name',
+              key: 'name',
+              render: (text, record) => (
+                <a onClick={() => navigate(`/deals/${record.id}`)}>{text}</a>
+              ),
+            },
+            {
+              title: 'Стадия',
+              dataIndex: 'stage_name',
+              key: 'stage_name',
+              render: (value) => value || '-',
+            },
+            {
+              title: 'Сумма',
+              dataIndex: 'amount',
+              key: 'amount',
+              render: (value) => (value ? `${value} ₽` : '-'),
+            },
+            {
+              title: 'Дата закрытия',
+              dataIndex: 'closing_date',
+              key: 'closing_date',
+              render: (value) => (value ? dayjs(value).format('DD.MM.YYYY') : '-'),
+            },
+          ]}
+        />
+      ),
     },
     {
       key: 'messages',
@@ -315,7 +448,7 @@ function CompanyDetail({ id }) {
         <ChatWidget
           entityType="company"
           entityId={company.id}
-          entityName={company.name}
+          entityName={companyName}
           entityPhone={company.phone}
         />
       ),
@@ -323,48 +456,7 @@ function CompanyDetail({ id }) {
     {
       key: 'activity',
       label: 'История активности',
-      children: (
-        <Timeline
-          items={[
-            {
-              color: 'green',
-              children: (
-                <>
-                  <Text strong>Компания создана</Text>
-                  <br />
-                  <Text type="secondary">
-                    {new Date(company.created_at).toLocaleString('ru-RU')}
-                  </Text>
-                </>
-              ),
-            },
-            {
-              color: 'blue',
-              children: (
-                <>
-                  <Text strong>Тип изменен на "{typeStyle.text}"</Text>
-                  <br />
-                  <Text type="secondary">
-                    {new Date(company.updated_at).toLocaleString('ru-RU')}
-                  </Text>
-                </>
-              ),
-            },
-            {
-              color: 'orange',
-              children: (
-                <>
-                  <Text strong>Новая сделка создана</Text>
-                  <br />
-                  <Text type="secondary">
-                    {new Date(company.updated_at).toLocaleString('ru-RU')}
-                  </Text>
-                </>
-              ),
-            },
-          ]}
-        />
-      ),
+      children: <ActivityLog entityType="company" entityId={company.id} />,
     },
     {
       key: 'calls',
@@ -397,24 +489,16 @@ function CompanyDetail({ id }) {
               ),
             },
             {
-              title: 'Статус',
-              dataIndex: 'status',
-              key: 'status',
-              width: 120,
-              render: (status) => {
-                const config = {
-                  completed: { color: 'success', text: 'Завершен' },
-                  missed: { color: 'error', text: 'Пропущен' },
-                  busy: { color: 'warning', text: 'Занято' },
-                };
-                const style = config[status] || config.completed;
-                return <Tag color={style.color}>{style.text}</Tag>;
-              },
+              title: 'Номер',
+              dataIndex: 'number',
+              key: 'number',
+              width: 160,
+              render: (value, record) => value || record.phone_number || '-',
             },
             {
               title: 'Дата и время',
-              dataIndex: 'started_at',
-              key: 'started_at',
+              dataIndex: 'timestamp',
+              key: 'timestamp',
               width: 180,
               render: (date) => dayjs(date).format('DD.MM.YYYY HH:mm'),
             },
@@ -431,20 +515,13 @@ function CompanyDetail({ id }) {
               ),
             },
             {
-              title: 'Заметки',
-              dataIndex: 'notes',
-              key: 'notes',
-              ellipsis: true,
-              render: (notes) => notes || <span style={{ color: '#999' }}>-</span>,
-            },
-            {
               title: 'Действия',
               key: 'actions',
               width: 120,
               render: (_, record) => (
                 <CallButton
-                  phone={record.phone_number}
-                  name={company.name}
+                  phone={record.number || record.phone_number}
+                  name={companyName}
                   entityType="company"
                   entityId={company.id}
                   size="small"
@@ -476,7 +553,7 @@ function CompanyDetail({ id }) {
         </Button>
       </Space>
 
-      <Title level={2}>{company.name}</Title>
+      <Title level={2}>{companyName}</Title>
 
       <Card>
         <Tabs items={tabItems} />

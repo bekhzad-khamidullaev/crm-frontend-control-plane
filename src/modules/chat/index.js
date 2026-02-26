@@ -20,11 +20,12 @@ export function mountChat(container, route) {
       container.appendChild(ChatList());
       break;
     
-    case 'chat-thread':
+    case 'chat-thread': {
       // Show specific thread or entity chat
       const { entityType, entityId, threadId } = route.params;
       container.appendChild(ChatThread({ entityType, entityId, threadId }));
       break;
+    }
     
     default:
       // Default to list view

@@ -2,6 +2,7 @@
  * CallsWebSocket - WebSocket client for real-time call notifications
  * Handles incoming call notifications and call status updates
  */
+import { resolveWebSocketUrl, stripSensitiveParams } from './resolveWsUrl.js';
 
 class CallsWebSocket {
   constructor() {
@@ -11,6 +12,7 @@ class CallsWebSocket {
     this.reconnectDelay = 2000;
     this.isConnected = false;
     this.shouldReconnect = true;
+    this.token = null;
     
     // Event listeners
     this.listeners = {
@@ -33,17 +35,26 @@ class CallsWebSocket {
       return;
     }
 
-    // Check if WebSocket server URL is configured
-    const wsUrl = import.meta.env.VITE_WS_URL;
-    if (!wsUrl) {
-      console.warn('[CallsWebSocket] WebSocket URL not configured. Skipping connection.');
+    if (token) {
+      this.token = token;
+    }
+    const authToken = token || this.token;
+    if (!authToken) {
+      console.warn('[CallsWebSocket] Missing auth token. Skipping connection.');
       return;
     }
 
     try {
-      const url = `${wsUrl}?token=${token}`;
-      
-      console.log('[CallsWebSocket] Connecting to:', wsUrl);
+      const baseUrl = resolveWebSocketUrl(import.meta.env.VITE_WS_URL, '/ws/calls/');
+      if (!baseUrl) {
+        console.warn('[CallsWebSocket] WebSocket URL not configured. Skipping connection.');
+        return;
+      }
+
+      const separator = baseUrl.includes('?') ? '&' : '?';
+      const url = `${baseUrl}${separator}token=${encodeURIComponent(authToken)}`;
+
+      console.log('[CallsWebSocket] Connecting to:', stripSensitiveParams(url));
       this.ws = new WebSocket(url);
 
       this.ws.onopen = this.handleOpen.bind(this);
@@ -62,8 +73,17 @@ class CallsWebSocket {
    */
   disconnect() {
     this.shouldReconnect = false;
+    this.token = null;
     if (this.ws) {
-      this.ws.close();
+      // If still CONNECTING (readyState=0), abort on open instead of closing immediately
+      // to avoid the 'WebSocket closed before connection established' browser error.
+      if (this.ws.readyState === WebSocket.CONNECTING) {
+        const wsRef = this.ws;
+        wsRef.onopen = () => wsRef.close();
+        wsRef.onerror = null;
+      } else {
+        this.ws.close();
+      }
       this.ws = null;
     }
     this.isConnected = false;
@@ -100,6 +120,9 @@ class CallsWebSocket {
         case 'ping':
           // Respond to ping to keep connection alive
           this.send({ type: 'pong' });
+          break;
+        case 'connection_established':
+          console.log('[CallsWebSocket] Connection established message received.');
           break;
         default:
           console.warn('[CallsWebSocket] Unknown message type:', data.type);
@@ -215,7 +238,7 @@ class CallsWebSocket {
 
     setTimeout(() => {
       if (this.shouldReconnect) {
-        this.connect(token);
+        this.connect(token || this.token);
       }
     }, delay);
   }

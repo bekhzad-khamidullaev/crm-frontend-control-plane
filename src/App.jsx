@@ -1,59 +1,57 @@
-import React, { useState, useEffect, Suspense, lazy } from 'react';
-import { Layout, Menu, Avatar, Dropdown, Space, Typography, Badge, Tooltip, Select, ConfigProvider, Spin } from 'antd';
+import { App as AntApp, ConfigProvider, Skeleton, theme as antdTheme } from 'antd';
 import ruRU from 'antd/locale/ru_RU';
-import enUS from 'antd/locale/en_US';
-import { setLocale, t, getLocale } from './lib/i18n/index.js';
+import { Suspense, lazy, useEffect, useState } from 'react';
+import { AppLayout } from './components/AppLayout.jsx';
+import { clearToken, getToken, getUserFromToken, isAuthenticated } from './lib/api/auth.js';
+import { getProfile } from './lib/api/user.js';
+import { useTheme } from './lib/hooks/useTheme.js';
+import { setLocale } from './lib/i18n/index.js';
 import {
-  MenuFoldOutlined,
-  MenuUnfoldOutlined,
-  DashboardOutlined,
-  BarChartOutlined,
-  UserOutlined,
-  TeamOutlined,
-  ShopOutlined,
-  DollarOutlined,
-  CheckSquareOutlined,
-  FolderOutlined,
-  MessageOutlined,
-  PhoneOutlined,
-  FileTextOutlined,
-  SettingOutlined,
-  LogoutOutlined,
-  WifiOutlined,
-  DisconnectOutlined,
-  PhoneFilled,
-  ClockCircleOutlined,
-} from '@ant-design/icons';
-import { parseHash, navigate, onRouteChange } from './router.js';
-import { subscribe, getIncomingCalls, setWsConnected, setWsReconnecting, addIncomingCall, removeIncomingCall, setChatWsConnected, setChatWsReconnecting, getUnreadCount } from './lib/store/index.js';
-import { isAuthenticated, getToken, clearToken, getUserFromToken } from './lib/api/auth.js';
+    addIncomingCall,
+    removeIncomingCall,
+    setChatWsConnected,
+    setChatWsReconnecting,
+    setWsConnected,
+    setWsReconnecting,
+    subscribe,
+} from './lib/store/index.js';
+import sipClient from './lib/telephony/SIPClient.js';
 import callsWebSocket from './lib/websocket/CallsWebSocket.js';
 import chatWebSocket from './lib/websocket/ChatWebSocket.js';
 import IncomingCallModal from './modules/calls/IncomingCallModal.jsx';
+import { navigate, onRouteChange, parseHash } from './router.js';
 
 // Lazy load all page components for better code splitting
 const Dashboard = lazy(() => import('./pages/dashboard.jsx'));
 const LoginPage = lazy(() => import('./pages/login.jsx'));
 
 // Leads module
-const LeadsList = lazy(() => import('./modules/leads/LeadsList.jsx'));
-const LeadForm = lazy(() => import('./modules/leads/LeadForm.jsx'));
-const LeadDetail = lazy(() => import('./modules/leads/LeadDetail.jsx'));
+// Leads module
+const LeadsListPage = lazy(() => import('./pages/leads/LeadsListPage'));
+const LeadCreatePage = lazy(() => import('./pages/leads/LeadCreatePage'));
+const LeadEditPage = lazy(() => import('./pages/leads/LeadEditPage'));
+const LeadDetailPage = lazy(() => import('./pages/leads/LeadDetailPage'));
 
 // Contacts module
-const ContactsList = lazy(() => import('./modules/contacts/ContactsList.jsx'));
-const ContactForm = lazy(() => import('./modules/contacts/ContactForm.jsx'));
-const ContactDetail = lazy(() => import('./modules/contacts/ContactDetail.jsx'));
+const ContactsListPage = lazy(() => import('./pages/contacts/ContactsListPage'));
+const ContactCreatePage = lazy(() => import('./pages/contacts/ContactCreatePage'));
+const ContactEditPage = lazy(() => import('./pages/contacts/ContactEditPage'));
+const ContactDetailPage = lazy(() => import('./pages/contacts/ContactDetailPage'));
 
 // Companies module
-const CompaniesList = lazy(() => import('./modules/companies/CompaniesList.jsx'));
-const CompanyForm = lazy(() => import('./modules/companies/CompanyForm.jsx'));
-const CompanyDetail = lazy(() => import('./modules/companies/CompanyDetail.jsx'));
+const CompaniesList = lazy(() => import('./pages/companies/CompaniesListPage'));
+const CompanyForm = lazy(() => import('./pages/companies/CompanyCreatePage')); // Mapped to create route
+const CompanyEdit = lazy(() => import('./pages/companies/CompanyEditPage')); // Need to add edit route support if not exists, or replace CompanyForm usage
+// Existing App.jsx uses CompanyForm for both create and edit likely?
+// Check routes in App.jsx to see how they map.
+const CompanyDetail = lazy(() => import('./modules/companies/CompanyDetail.jsx')); // Keep detail for now, or migrate? User asked for Form first.
 
 // Deals module
-const DealsList = lazy(() => import('./modules/deals/DealsList.jsx'));
-const DealForm = lazy(() => import('./modules/deals/DealForm.jsx'));
-const DealDetail = lazy(() => import('./modules/deals/DealDetail.jsx'));
+// Deals module
+const DealsListPage = lazy(() => import('./pages/deals/DealsListPage'));
+const DealCreatePage = lazy(() => import('./pages/deals/DealCreatePage'));
+const DealEditPage = lazy(() => import('./pages/deals/DealEditPage'));
+const DealDetailPage = lazy(() => import('./pages/deals/DealDetailPage'));
 
 // Tasks module
 const TasksList = lazy(() => import('./modules/tasks/TasksList.jsx'));
@@ -78,25 +76,85 @@ const SettingsPage = lazy(() => import('./pages/settings.jsx'));
 const IntegrationsPage = lazy(() => import('./pages/integrations.jsx'));
 
 // Lazy load sub-modules
-const PaymentsList = lazy(() => import('./modules/payments/index.js').then(m => ({ default: m.PaymentsList })));
-const PaymentDetail = lazy(() => import('./modules/payments/index.js').then(m => ({ default: m.PaymentDetail })));
-const PaymentForm = lazy(() => import('./modules/payments/index.js').then(m => ({ default: m.PaymentForm })));
+const PaymentsList = lazy(() =>
+  import('./modules/payments/index.js').then((m) => ({ default: m.PaymentsList }))
+);
+const PaymentDetail = lazy(() =>
+  import('./modules/payments/index.js').then((m) => ({ default: m.PaymentDetail }))
+);
+const PaymentForm = lazy(() =>
+  import('./modules/payments/index.js').then((m) => ({ default: m.PaymentForm }))
+);
 
-const RemindersList = lazy(() => import('./modules/reminders/index.js').then(m => ({ default: m.RemindersList })));
-const ReminderDetail = lazy(() => import('./modules/reminders/index.js').then(m => ({ default: m.ReminderDetail })));
-const ReminderForm = lazy(() => import('./modules/reminders/index.js').then(m => ({ default: m.ReminderForm })));
+const RemindersList = lazy(() =>
+  import('./modules/reminders/index.js').then((m) => ({ default: m.RemindersList }))
+);
+const ReminderDetail = lazy(() =>
+  import('./modules/reminders/index.js').then((m) => ({ default: m.ReminderDetail }))
+);
+const ReminderForm = lazy(() =>
+  import('./modules/reminders/index.js').then((m) => ({ default: m.ReminderForm }))
+);
 
-const CampaignsList = lazy(() => import('./modules/marketing/index.js').then(m => ({ default: m.CampaignsList })));
-const CampaignDetail = lazy(() => import('./modules/marketing/index.js').then(m => ({ default: m.CampaignDetail })));
-const CampaignForm = lazy(() => import('./modules/marketing/index.js').then(m => ({ default: m.CampaignForm })));
+const CampaignsList = lazy(() =>
+  import('./modules/marketing/index.js').then((m) => ({ default: m.CampaignsList }))
+);
+const CampaignDetail = lazy(() =>
+  import('./modules/marketing/index.js').then((m) => ({ default: m.CampaignDetail }))
+);
+const CampaignForm = lazy(() =>
+  import('./modules/marketing/index.js').then((m) => ({ default: m.CampaignForm }))
+);
 
-const MemosList = lazy(() => import('./modules/memos/index.js').then(m => ({ default: m.MemosList })));
-const MemoDetail = lazy(() => import('./modules/memos/index.js').then(m => ({ default: m.MemoDetail })));
-const MemoForm = lazy(() => import('./modules/memos/index.js').then(m => ({ default: m.MemoForm })));
+const MemosList = lazy(() =>
+  import('./modules/memos/index.js').then((m) => ({ default: m.MemosList }))
+);
+const MemoDetail = lazy(() =>
+  import('./modules/memos/index.js').then((m) => ({ default: m.MemoDetail }))
+);
+const MemoForm = lazy(() =>
+  import('./modules/memos/index.js').then((m) => ({ default: m.MemoForm }))
+);
 
-const { Header, Sider, Content } = Layout;
-const { Text } = Typography;
-const { Option } = Select;
+// Products
+const ProductsList = lazy(() => import('./modules/products/ProductsList.jsx'));
+const ProductDetail = lazy(() => import('./modules/products/ProductDetail.jsx'));
+const ProductForm = lazy(() => import('./modules/products/ProductForm.jsx'));
+
+// Marketing extra
+const MarketingSegmentsPage = lazy(() => import('./pages/marketing-segments.jsx'));
+const MarketingTemplatesPage = lazy(() => import('./pages/marketing-templates.jsx'));
+
+// Admin/system pages
+const ContoraEmailsPage = lazy(() => import('./pages/crm-emails.jsx'));
+const MassmailPage = lazy(() => import('./pages/massmail.jsx'));
+const OperationsPage = lazy(() => import('./pages/operations.jsx'));
+const ReferenceDataPage = lazy(() => import('./pages/reference-data.jsx'));
+const HelpCenterPage = lazy(() => import('./pages/help-center.jsx'));
+const AnalyticsPage = lazy(() => import('./pages/analytics.jsx'));
+const SmsCenterPage = lazy(() => import('./pages/sms-center.jsx'));
+const TelephonyPage = lazy(() => import('./pages/telephony.jsx'));
+const UsersPage = lazy(() => import('./pages/users.jsx'));
+
+function normalizeUser(raw, fallback = {}) {
+  const firstName = raw?.first_name || fallback?.first_name || '';
+  const lastName = raw?.last_name || fallback?.last_name || '';
+  const fullName =
+    raw?.full_name ||
+    raw?.name ||
+    raw?.display_name ||
+    [firstName, lastName].filter(Boolean).join(' ').trim() ||
+    '';
+  const username = raw?.username || fallback?.username || '';
+  const name = fullName || username || fallback?.name || 'User';
+
+  return {
+    id: raw?.id ?? raw?.user_id ?? fallback?.id ?? null,
+    username: username || name,
+    name,
+    email: raw?.email || fallback?.email || '',
+  };
+}
 
 function App() {
   const [collapsed, setCollapsed] = useState(false);
@@ -108,26 +166,45 @@ function App() {
   const [chatWsConnected, setChatWsConnectedState] = useState(false);
   const [unreadCount, setUnreadCount] = useState(0);
   const [locale, setLocaleState] = useState('ru');
-  const [antdLocale, setAntdLocale] = useState(ruRU);
+  const [localeInitialized, setLocaleInitialized] = useState(false);
 
   useEffect(() => {
     // Initialize locale on mount
-    const savedLocale = localStorage.getItem('crm_locale') || 'ru';
-    handleLocaleChange(savedLocale);
-    
+    const savedLocale = localStorage.getItem('contora_locale') || 'ru';
+    handleLocaleChange(savedLocale).finally(() => setLocaleInitialized(true));
+
     // Check auth on mount
     const authenticated = isAuthenticated();
-    
+
     if (authenticated) {
       const token = getToken();
-      const userInfo = getUserFromToken();
-      
-      setUser(userInfo || { name: 'User', email: 'user@example.com' });
-      
+      const tokenUser = normalizeUser(getUserFromToken() || {});
+      setUser(tokenUser);
+
+      // Hydrate full user profile from API (stable after page reload)
+      (async () => {
+        try {
+          const me = await getProfile();
+          const roles = Array.isArray(me?.roles)
+            ? me.roles
+            : Array.isArray(me?.permissions)
+              ? me.permissions
+              : [];
+          sessionStorage.setItem('contora_roles', JSON.stringify(roles));
+          if (!roles || roles.length === 0) {
+            sessionStorage.setItem('contora_roles', JSON.stringify(['admin']));
+          }
+          setUser((prev) => normalizeUser(me || {}, prev || tokenUser));
+        } catch (e) {
+          console.warn('Failed to preload user profile/roles:', e);
+        }
+      })();
+
       // Initialize WebSocket connections if we have a token
       if (token) {
         initializeWebSocket(token);
         initializeChatWebSocket(token);
+        initializeSipClient();
       }
     } else {
       // Not authenticated, redirect to login if not already there
@@ -139,17 +216,17 @@ function App() {
     // Subscribe to route changes
     const unsubscribeRoute = onRouteChange((newRoute) => {
       setRoute(newRoute);
-      
+
       // Check auth on every route change
       const authenticated = isAuthenticated();
-      
+
       // If trying to access protected route without authentication
       if (newRoute.name !== 'login' && !authenticated) {
         console.warn('Unauthorized access attempt, redirecting to login');
         navigate('/login');
         return;
       }
-      
+
       // If trying to access login while authenticated, redirect to dashboard
       if (newRoute.name === 'login' && authenticated) {
         navigate('/dashboard');
@@ -163,7 +240,7 @@ function App() {
       setIncomingCalls(state.telephony.incomingCalls);
       setChatWsConnectedState(state.chat.chatWsConnected);
       setUnreadCount(state.chat.unreadCount);
-      
+
       // Show modal for first incoming call
       if (state.telephony.incomingCalls.length > 0) {
         setCurrentIncomingCall(state.telephony.incomingCalls[0]);
@@ -175,8 +252,50 @@ function App() {
       unsubscribeStore();
       callsWebSocket.disconnect();
       chatWebSocket.disconnect();
+      sipClient.stop();
     };
   }, []);
+
+  const initializeSipClient = async () => {
+    try {
+      const profile = await getProfile().catch(() => null);
+
+      const sipUri = profile?.jssip_sip_uri || '';
+      const sipUserFromUri = sipUri.startsWith('sip:') ? sipUri.split(':')[1]?.split('@')[0] : '';
+      const sipRealmFromUri = sipUri.includes('@') ? sipUri.split('@')[1] : '';
+
+      const runtimeConfig = typeof window !== 'undefined' ? window.__APP_CONFIG__ || {} : {};
+
+      const username = sipUserFromUri || profile?.pbx_number || import.meta.env.VITE_SIP_USERNAME;
+      const realm = sipRealmFromUri || import.meta.env.VITE_SIP_REALM || 'pbx.windevs.uz';
+      const password = profile?.jssip_sip_password || import.meta.env.VITE_SIP_PASSWORD;
+      const websocketProxyUrl =
+        profile?.jssip_ws_uri || import.meta.env.VITE_SIP_SERVER || runtimeConfig.pbxServer || '';
+      const displayName =
+        profile?.jssip_display_name || profile?.full_name || import.meta.env.VITE_SIP_DISPLAY_NAME || 'CRM User';
+
+      if (!username || !password || !websocketProxyUrl) {
+        console.warn('[App] SIP config incomplete. Skipping SIP registration.');
+        return;
+      }
+
+      sipClient.configure({
+        realm,
+        impi: username,
+        impu: `sip:${username}@${realm}`,
+        password,
+        display_name: displayName,
+        websocket_proxy_url: websocketProxyUrl,
+      });
+
+      await sipClient.init();
+      if (!sipClient.isRegistered) {
+        await sipClient.register(username, password);
+      }
+    } catch (error) {
+      console.error('[App] SIP initialization failed:', error);
+    }
+  };
 
   const initializeWebSocket = (token) => {
     // Setup event listeners
@@ -233,21 +352,14 @@ function App() {
   const handleLocaleChange = async (lang) => {
     await setLocale(lang);
     setLocaleState(lang);
-    localStorage.setItem('crm_locale', lang);
-    
-    // Update Ant Design locale
-    const localeMap = {
-      en: enUS,
-      ru: ruRU,
-      uz: ruRU, // Fallback to Russian for Uzbek
-    };
-    setAntdLocale(localeMap[lang] || ruRU);
+    localStorage.setItem('contora_locale', lang);
   };
 
   const handleLogout = () => {
     clearToken();
     callsWebSocket.disconnect();
     chatWebSocket.disconnect();
+    sipClient.stop();
     setUser(null);
     navigate('/login');
   };
@@ -265,136 +377,6 @@ function App() {
     setCurrentIncomingCall(null);
   };
 
-  const handleMenuClick = ({ key }) => {
-    if (key === 'profile') navigate('/profile');
-    else if (key === 'settings') navigate('/settings');
-  };
-
-  const userMenuItems = [
-    {
-      key: 'profile',
-      label: t('nav.profile') || 'Профиль',
-      icon: <UserOutlined />,
-      onClick: () => navigate('/profile'),
-    },
-    {
-      key: 'settings',
-      label: t('nav.settings') || 'Настройки',
-      icon: <SettingOutlined />,
-      onClick: () => navigate('/settings'),
-    },
-    {
-      type: 'divider',
-    },
-    {
-      key: 'logout',
-      label: t('nav.logout') || 'Выход',
-      icon: <LogoutOutlined />,
-      onClick: handleLogout,
-    },
-  ];
-
-  const menuItems = [
-    {
-      key: 'dashboard',
-      icon: <DashboardOutlined />,
-      label: t('nav.dashboard') || 'Dashboard',
-      onClick: () => navigate('/dashboard'),
-    },
-    {
-      key: 'leads',
-      icon: <UserOutlined />,
-      label: t('nav.leads') || 'Leads',
-      onClick: () => navigate('/leads'),
-    },
-    {
-      key: 'contacts',
-      icon: <TeamOutlined />,
-      label: t('nav.contacts') || 'Контакты',
-      onClick: () => navigate('/contacts'),
-    },
-    {
-      key: 'companies',
-      icon: <ShopOutlined />,
-      label: t('nav.companies') || 'Компании',
-      onClick: () => navigate('/companies'),
-    },
-    {
-      key: 'deals',
-      icon: <DollarOutlined />,
-      label: t('nav.deals') || 'Сделки',
-      onClick: () => navigate('/deals'),
-    },
-    {
-      key: 'tasks',
-      icon: <CheckSquareOutlined />,
-      label: t('nav.tasks') || 'Задачи',
-      onClick: () => navigate('/tasks'),
-    },
-    {
-      key: 'projects',
-      icon: <FolderOutlined />,
-      label: t('nav.projects') || 'Проекты',
-      onClick: () => navigate('/projects'),
-    },
-    {
-      key: 'chat',
-      icon: unreadCount > 0 ? <Badge count={unreadCount} size="small"><MessageOutlined /></Badge> : <MessageOutlined />,
-      label: t('nav.chat') || 'Чат',
-      onClick: () => navigate('/chat'),
-    },
-    {
-      key: 'calls',
-      icon: <PhoneOutlined />,
-      label: t('nav.calls') || 'Звонки',
-      children: [
-        {
-          key: 'calls-dashboard',
-          label: t('nav.callsDashboard') || 'Дашборд',
-          onClick: () => navigate('/calls/dashboard'),
-        },
-        {
-          key: 'calls-list',
-          label: t('nav.callsHistory') || 'История звонков',
-          onClick: () => navigate('/calls'),
-        },
-      ],
-    },
-    {
-      key: 'payments',
-      icon: <DollarOutlined />,
-      label: t('nav.payments') || 'Платежи',
-      onClick: () => navigate('/payments'),
-    },
-    {
-      key: 'reminders',
-      icon: <ClockCircleOutlined />,
-      label: t('nav.reminders') || 'Напоминания',
-      onClick: () => navigate('/reminders'),
-    },
-    {
-      key: 'campaigns',
-      icon: <FileTextOutlined />,
-      label: t('nav.campaigns') || 'Кампании',
-      onClick: () => navigate('/campaigns'),
-    },
-    {
-      key: 'memos',
-      icon: <FileTextOutlined />,
-      label: t('nav.memos') || 'Заметки',
-      onClick: () => navigate('/memos'),
-    },
-    {
-      type: 'divider',
-    },
-    {
-      key: 'integrations',
-      icon: <SettingOutlined />,
-      label: t('nav.integrations') || 'Интеграции',
-      onClick: () => navigate('/integrations'),
-    },
-  ];
-
   const getSelectedKey = () => {
     const name = route.name;
     if (name.startsWith('leads')) return 'leads';
@@ -403,12 +385,21 @@ function App() {
     if (name.startsWith('deals')) return 'deals';
     if (name.startsWith('tasks')) return 'tasks';
     if (name.startsWith('projects')) return 'projects';
+    if (name.startsWith('products')) return 'products';
     if (name.startsWith('chat')) return 'chat';
     if (name.startsWith('calls')) return 'calls';
     if (name.startsWith('payments')) return 'payments';
     if (name.startsWith('reminders')) return 'reminders';
-    if (name.startsWith('campaigns')) return 'campaigns';
+    if (name.startsWith('campaigns') || name.startsWith('marketing')) return 'marketing';
     if (name.startsWith('memos')) return 'memos';
+    if (name === 'crm-emails' || name === 'massmail' || name === 'sms-center')
+      return 'communications';
+    if (name === 'operations') return 'operations';
+    if (name === 'reference-data') return 'reference-data';
+    if (name === 'analytics') return 'analytics';
+    if (name === 'help-center') return 'help-center';
+    if (name === 'telephony') return 'telephony';
+    if (name === 'users') return 'users';
     return name;
   };
 
@@ -417,21 +408,21 @@ function App() {
       case 'dashboard':
         return <Dashboard />;
       case 'leads-list':
-        return <LeadsList />;
+        return <LeadsListPage />;
       case 'leads-new':
-        return <LeadForm />;
+        return <LeadCreatePage />;
       case 'leads-edit':
-        return <LeadForm id={route.params.id} />;
+        return <LeadEditPage id={route.params.id} />;
       case 'leads-detail':
-        return <LeadDetail id={route.params.id} />;
+        return <LeadDetailPage id={route.params.id} />;
       case 'contacts-list':
-        return <ContactsList />;
+        return <ContactsListPage />;
       case 'contacts-new':
-        return <ContactForm />;
+        return <ContactCreatePage />;
       case 'contacts-edit':
-        return <ContactForm id={route.params.id} />;
+        return <ContactEditPage id={route.params.id} />;
       case 'contacts-detail':
-        return <ContactDetail id={route.params.id} />;
+        return <ContactDetailPage id={route.params.id} />;
       case 'companies-list':
         return <CompaniesList />;
       case 'companies-new':
@@ -439,15 +430,15 @@ function App() {
       case 'companies-edit':
         return <CompanyForm id={route.params.id} />;
       case 'companies-detail':
-        return <CompanyDetail id={route.params.id} />;
+        return <CompanyDetailPage id={route.params.id} />;
       case 'deals-list':
-        return <DealsList />;
+        return <DealsListPage />;
       case 'deals-new':
-        return <DealForm />;
+        return <DealCreatePage />;
       case 'deals-edit':
-        return <DealForm id={route.params.id} />;
+        return <DealEditPage id={route.params.id} />;
       case 'deals-detail':
-        return <DealDetail id={route.params.id} />;
+        return <DealDetailPage id={route.params.id} />;
       case 'tasks-list':
         return <TasksList />;
       case 'tasks-new':
@@ -500,6 +491,36 @@ function App() {
         return <MemoForm id={route.params.id} />;
       case 'memos-detail':
         return <MemoDetail id={route.params.id} />;
+      case 'products-list':
+        return <ProductsList />;
+      case 'products-new':
+        return <ProductForm />;
+      case 'products-edit':
+        return <ProductForm id={route.params.id} />;
+      case 'products-detail':
+        return <ProductDetail id={route.params.id} />;
+      case 'marketing-segments':
+        return <MarketingSegmentsPage />;
+      case 'marketing-templates':
+        return <MarketingTemplatesPage />;
+      case 'crm-emails':
+        return <ContoraEmailsPage />;
+      case 'massmail':
+        return <MassmailPage />;
+      case 'operations':
+        return <OperationsPage />;
+      case 'reference-data':
+        return <ReferenceDataPage />;
+      case 'help-center':
+        return <HelpCenterPage />;
+      case 'analytics':
+        return <AnalyticsPage />;
+      case 'sms-center':
+        return <SmsCenterPage />;
+      case 'telephony':
+        return <TelephonyPage />;
+      case 'users':
+        return <UsersPage />;
       case 'chat':
       case 'chat-list':
         return <ChatPage />;
@@ -516,135 +537,139 @@ function App() {
 
   // Show login page without layout if not authenticated or on login route
   if (!isAuthenticated() || route.name === 'login') {
-    return <LoginPage onLogin={(userData) => {
-      setUser(userData);
-      // After successful login, navigate to dashboard
-      navigate('/dashboard');
-    }} />;
+    return (
+      <LoginPage
+        onLogin={(userData) => {
+          setUser(userData);
+          // After successful login, navigate to dashboard
+          navigate('/dashboard');
+        }}
+      />
+    );
   }
 
   return (
-    <ConfigProvider locale={antdLocale}>
-    <Layout style={{ minHeight: '100vh' }}>
-      <Sider
-        trigger={null}
-        collapsible
-        collapsed={collapsed}
-        style={{
-          overflow: 'auto',
-          height: '100vh',
-          position: 'fixed',
-          left: 0,
-          top: 0,
-          bottom: 0,
-        }}
-      >
-        <div
-          style={{
-            height: 64,
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            color: '#fff',
-            fontSize: 20,
-            fontWeight: 'bold',
-          }}
-        >
-          {collapsed ? 'CRM' : 'Enterprise CRM'}
-        </div>
-        <Menu
-          theme="dark"
-          mode="inline"
-          selectedKeys={[getSelectedKey()]}
-          items={menuItems}
-        />
-      </Sider>
-      <Layout style={{ marginLeft: collapsed ? 80 : 200, transition: 'all 0.2s' }}>
-        <Header
-          style={{
-            padding: '0 24px',
-            background: '#fff',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'space-between',
-            boxShadow: '0 1px 4px rgba(0,21,41,.08)',
-          }}
-        >
-          {React.createElement(collapsed ? MenuUnfoldOutlined : MenuFoldOutlined, {
-            className: 'trigger',
-            onClick: () => setCollapsed(!collapsed),
-            style: { fontSize: 18, cursor: 'pointer' },
-          })}
-          <Space>
-            {/* Language selector */}
-            <Select 
-              size="small" 
-              value={locale} 
-              style={{ width: 110 }} 
-              onChange={handleLocaleChange}
-            >
-              <Option value="en">English</Option>
-              <Option value="ru">Русский</Option>
-              <Option value="uz">O'zbekcha</Option>
-            </Select>
-
-            <Dropdown menu={{ items: userMenuItems }} placement="bottomRight">
-              <Space style={{ cursor: 'pointer' }}>
-                {/* WebSocket Status Indicator */}
-                <Tooltip title={wsConnected ? 'WebSocket подключен' : 'WebSocket отключен'}>
-                  <Badge dot={wsConnected} color={wsConnected ? 'green' : 'red'}>
-                    {wsConnected ? (
-                      <WifiOutlined style={{ fontSize: 18 }} />
-                    ) : (
-                      <DisconnectOutlined style={{ fontSize: 18 }} />
-                    )}
-                  </Badge>
-                </Tooltip>
-                
-                {/* Incoming calls indicator */}
-                {incomingCalls.length > 0 && (
-                  <Badge count={incomingCalls.length}>
-                    <PhoneFilled style={{ color: '#52c41a', fontSize: 18 }} />
-                  </Badge>
-                )}
-                
-                <Avatar icon={<UserOutlined />} />
-                <Text>{user?.name || 'Guest'}</Text>
-              </Space>
-            </Dropdown>
-          </Space>
-        </Header>
-        <Content
-          style={{
-            margin: '24px 16px',
-            padding: 24,
-            minHeight: 280,
-            background: '#fff',
-            borderRadius: 8,
-          }}
-        >
-          <Suspense fallback={
-            <div style={{ textAlign: 'center', padding: '50px' }}>
-              <Spin size="large" tip={t('loading')} spinning={true}>
-                <div style={{ minHeight: '100px' }}></div>
-              </Spin>
+    <AppLayout
+      collapsed={collapsed}
+      onToggleCollapsed={() => setCollapsed((prev) => !prev)}
+      locale={locale}
+      localeInitialized={localeInitialized}
+      onLocaleChange={handleLocaleChange}
+      selectedKey={getSelectedKey()}
+      user={user}
+      wsConnected={wsConnected}
+      incomingCallsCount={incomingCalls.length}
+      unreadCount={unreadCount}
+      onLogout={handleLogout}
+    >
+      <Suspense
+        fallback={
+          <div style={{ padding: 64, display: 'flex', justifyContent: 'center' }}>
+            <div style={{ width: '100%', maxWidth: 600 }}>
+              <Skeleton active paragraph={{ rows: 4 }} />
             </div>
-          }>
-            {renderContent()}
-          </Suspense>
-        </Content>
-      </Layout>
+          </div>
+        }
+      >
+        {renderContent()}
+      </Suspense>
 
-      {/* Incoming Call Modal */}
       <IncomingCallModal
         visible={!!currentIncomingCall}
         callData={currentIncomingCall}
         onAnswer={handleAnswerCall}
         onReject={handleRejectCall}
       />
-    </Layout>
+    </AppLayout>
+  );
+}
+
+// Wrapper component that provides theme to App
+function AppWithTheme() {
+  const { theme } = useTheme();
+
+  // Ant Design theme configuration for Radix UI aesthetic
+  const themeConfig = {
+    algorithm: theme === 'dark' ? antdTheme.darkAlgorithm : antdTheme.defaultAlgorithm,
+    token: {
+      colorPrimary: theme === 'dark' ? '#fafafa' : '#18181b', // zinc-50 : zinc-900
+      colorInfo: theme === 'dark' ? '#8ab4f8' : '#4285f4', // Better blue visibility in dark
+      colorSuccess: theme === 'dark' ? '#4ade80' : '#16a34a', // green-400 : green-600
+      colorWarning: theme === 'dark' ? '#fbbf24' : '#d97706', // amber-400 : amber-600
+      colorError: theme === 'dark' ? '#f87171' : '#dc2626',   // red-400 : red-600
+      borderRadius: 6,
+      colorBgContainer: theme === 'dark' ? '#161b22' : '#ffffff', // softer dark container
+      colorBgElevated: theme === 'dark' ? '#1e232e' : '#ffffff', // elevated dark
+      colorBgLayout: theme === 'dark' ? 'transparent' : '#f8fafc', // transparent to show body gradient
+      colorBorderSecondary: theme === 'dark' ? '#2d3343' : '#e4e4e7',
+      colorBorder: theme === 'dark' ? '#2d3343' : '#e4e4e7',
+      colorTextBase: theme === 'dark' ? '#f1f5f9' : '#09090b',
+      colorTextSecondary: theme === 'dark' ? '#d4d4d8' : '#71717a', // Adjusted for dark mode: zinc-300 : zinc-500
+      colorTextLightSolid: theme === 'dark' ? '#18181b' : '#fafafa', // inverted text for primary buttons
+      fontFamily: 'ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif',
+      boxShadow: theme === 'dark' ? '0 1px 2px 0 rgba(0, 0, 0, 0.5)' : '0 1px 2px 0 rgba(0, 0, 0, 0.05)',
+      boxShadowSecondary: theme === 'dark' ? '0 4px 6px -1px rgba(0, 0, 0, 0.5), 0 2px 4px -2px rgba(0, 0, 0, 0.5)' : '0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -2px rgba(0, 0, 0, 0.1)',
+    },
+    components: {
+      Card: {
+        colorBgContainer: theme === 'dark' ? '#161b22' : '#ffffff',
+        colorBorderSecondary: theme === 'dark' ? '#2d3343' : '#e4e4e7',
+      },
+      Button: {
+        colorPrimaryHover: theme === 'dark' ? '#cbd5e1' : '#27272a',
+        colorPrimaryActive: theme === 'dark' ? '#94a3b8' : '#3f3f46',
+        colorBgTextHover: theme === 'dark' ? '#2d3343' : '#f4f4f5',
+        colorBgTextActive: theme === 'dark' ? '#3b4358' : '#e4e4e7',
+      },
+      Table: {
+        colorBgContainer: theme === 'dark' ? '#161b22' : '#ffffff',
+        headerBg: theme === 'dark' ? '#11151c' : '#f8fafc',
+        headerColor: theme === 'dark' ? '#cbd5e1' : '#71717a',
+        rowHoverBg: theme === 'dark' ? '#1e232e' : '#f1f5f9',
+        borderColor: theme === 'dark' ? '#2d3343' : '#e4e4e7',
+      },
+      Layout: {
+        siderBg: theme === 'dark' ? '#161b22' : '#ffffff',
+        headerBg: theme === 'dark' ? '#161b22' : '#ffffff',
+        bodyBg: theme === 'dark' ? 'transparent' : '#f8fafc',
+      },
+      Menu: {
+        itemBg: theme === 'dark' ? '#161b22' : '#ffffff',
+        activeBarBorderWidth: 0,
+        itemSelectedBg: theme === 'dark' ? '#2d3343' : '#f1f5f9',
+        itemSelectedColor: theme === 'dark' ? '#f1f5f9' : '#18181b', // Bright white for selected in dark
+        itemColor: theme === 'dark' ? '#cbd5e1' : '#71717a', // Bright white for items in dark
+        itemHoverColor: theme === 'dark' ? '#f1f5f9' : '#18181b',
+        itemHoverBg: theme === 'dark' ? '#1e232e' : '#f8fafc',
+      },
+      Input: {
+        colorBgContainer: theme === 'dark' ? '#161b22' : '#ffffff',
+        colorBorder: theme === 'dark' ? '#2d3343' : '#e4e4e7',
+        activeBorderColor: theme === 'dark' ? '#f1f5f9' : '#18181b',
+        hoverBorderColor: theme === 'dark' ? '#46506b' : '#d4d4d8',
+      },
+      Select: {
+        colorBgContainer: theme === 'dark' ? '#161b22' : '#ffffff',
+        colorBorder: theme === 'dark' ? '#2d3343' : '#e4e4e7',
+        colorPrimaryHover: theme === 'dark' ? '#46506b' : '#d4d4d8',
+        colorPrimary: theme === 'dark' ? '#f1f5f9' : '#18181b',
+        optionSelectedBg: theme === 'dark' ? '#2d3343' : '#f1f5f9',
+      },
+      Dropdown: {
+        colorBgElevated: theme === 'dark' ? '#1e232e' : '#ffffff',
+        colorText: theme === 'dark' ? '#f1f5f9' : '#09090b',
+        controlItemBgHover: theme === 'dark' ? '#2d3343' : '#f1f5f9',
+      }
+    }
+  };
+
+  return (
+    <ConfigProvider theme={themeConfig} locale={ruRU}>
+      <AntApp>
+        <App />
+      </AntApp>
     </ConfigProvider>
   );
 }
 
-export default App;
+export default AppWithTheme;

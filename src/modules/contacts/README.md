@@ -1,6 +1,6 @@
 # Contacts Module - 100% Functional Coverage ✅
 
-Полнофункциональный модуль управления контактами с интеграцией к Django-CRM API.
+Полнофункциональный модуль управления контактами с интеграцией к Contora API.
 
 ## 📋 Оглавление
 
@@ -12,7 +12,7 @@
 
 ## 🔗 API Endpoints
 
-Все эндпоинты полностью подключены к Django-CRM API без fallback на mock-данные:
+Все эндпоинты полностью подключены к Contora API без fallback на mock-данные:
 
 - `GET /api/contacts/` - список контактов с фильтрами (`search`, `owner`, `ordering`, `page`)
 - `POST /api/contacts/` - создание контакта

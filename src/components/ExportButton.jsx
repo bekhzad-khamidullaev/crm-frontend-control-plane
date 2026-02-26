@@ -1,6 +1,6 @@
 import { useState } from 'react';
-import { Button, Dropdown, message } from 'antd';
-import { DownloadOutlined, FileExcelOutlined, FilePdfOutlined, FileTextOutlined } from '@ant-design/icons';
+import { Button, Dropdown, App } from 'antd';
+import { DownloadOutlined, FileExcelOutlined, FileTextOutlined, FilePdfOutlined } from '@ant-design/icons';
 import { exportToCSV, exportToExcel, exportToPDF, generateFilename } from '../lib/utils/export';
 
 /**
@@ -12,19 +12,20 @@ import { exportToCSV, exportToExcel, exportToPDF, generateFilename } from '../li
  * @param {string} props.title - Title for PDF export
  * @param {Function} props.onExport - Callback before export (can return filtered data)
  */
-export default function ExportButton({ 
-  data = [], 
-  columns = [], 
+export default function ExportButton({
+  data = [],
+  columns = [],
   filename = 'export',
   title = 'Export',
   onExport,
-  ...buttonProps 
+  ...buttonProps
 }) {
+  const { message } = App.useApp();
   const [loading, setLoading] = useState(false);
 
   const handleExport = async (format) => {
     setLoading(true);
-    
+
     try {
       // Allow parent to modify data before export
       let exportData = data;
@@ -33,7 +34,7 @@ export default function ExportButton({
       }
 
       if (!exportData || exportData.length === 0) {
-        message.warning('No data to export');
+        message.warning('Нет данных для экспорта');
         return;
       }
 
@@ -42,22 +43,22 @@ export default function ExportButton({
       switch (format) {
         case 'csv':
           exportToCSV(exportData, columns, fname);
-          message.success(`Exported ${exportData.length} records to CSV`);
+          message.success(`Экспортировано ${exportData.length} записей в CSV`);
           break;
         case 'excel':
           exportToExcel(exportData, columns, fname);
-          message.success(`Exported ${exportData.length} records to Excel`);
+          message.success(`Экспортировано ${exportData.length} записей в Excel`);
           break;
         case 'pdf':
           exportToPDF(exportData, columns, fname, { title });
-          message.success(`Exported ${exportData.length} records to PDF`);
+          message.success(`Экспортировано ${exportData.length} записей в PDF`);
           break;
         default:
-          message.error('Unknown export format');
+          message.error('Неизвестный формат экспорта');
       }
     } catch (error) {
       console.error('Export error:', error);
-      message.error('Failed to export data');
+      message.error('Ошибка экспорта данных');
     } finally {
       setLoading(false);
     }
@@ -85,16 +86,8 @@ export default function ExportButton({
   ];
 
   return (
-    <Dropdown
-      menu={{ items }}
-      placement="bottomRight"
-      trigger={['click']}
-    >
-      <Button
-        icon={<DownloadOutlined />}
-        loading={loading}
-        {...buttonProps}
-      >
+    <Dropdown menu={{ items }} placement="bottomRight">
+      <Button icon={<DownloadOutlined />} loading={loading} {...buttonProps}>
         Export
       </Button>
     </Dropdown>

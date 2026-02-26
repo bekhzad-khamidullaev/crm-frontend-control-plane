@@ -1,34 +1,72 @@
-import React from 'react';
 import { Modal as AntModal } from 'antd';
+import { 
+  ExclamationCircleOutlined, 
+  InfoCircleOutlined, 
+  CheckCircleOutlined, 
+  CloseCircleOutlined 
+} from '@ant-design/icons';
 
 /**
  * Modal wrapper around Ant Design Modal
  * Provides a promise-based API for confirmation dialogs
  */
-export function Modal({ 
-  title = 'Confirm', 
-  body = '', 
-  confirmText = 'OK', 
+export function Modal({
+  title = 'Confirm',
+  body = '',
+  confirmText = 'OK',
   cancelText = 'Cancel',
   type = 'confirm',
-  okType = 'primary',
   ...rest
 } = {}) {
   return new Promise((resolve) => {
-    const modal = AntModal[type]({
+    const content = typeof body === 'string' ? body : body;
+    
+    const config = {
       title,
-      content: body,
+      content,
       okText: confirmText,
-      cancelText: cancelText,
-      okType: okType,
-      onOk: () => {
-        resolve(true);
-      },
-      onCancel: () => {
-        resolve(false);
-      },
-      ...rest
-    });
+      cancelText,
+      onOk: () => resolve(true),
+      onCancel: () => resolve(false),
+      ...rest,
+    };
+
+    // Используем соответствующий метод в зависимости от типа
+    if (type === 'confirm') {
+      AntModal.confirm(config);
+    } else if (type === 'info') {
+      AntModal.info({
+        ...config,
+        icon: <InfoCircleOutlined />,
+        okText: confirmText,
+        onOk: () => resolve(true),
+        cancelButtonProps: { style: { display: 'none' } },
+      });
+    } else if (type === 'success') {
+      AntModal.success({
+        ...config,
+        icon: <CheckCircleOutlined />,
+        okText: confirmText,
+        onOk: () => resolve(true),
+        cancelButtonProps: { style: { display: 'none' } },
+      });
+    } else if (type === 'error') {
+      AntModal.error({
+        ...config,
+        icon: <CloseCircleOutlined />,
+        okText: confirmText,
+        onOk: () => resolve(true),
+        cancelButtonProps: { style: { display: 'none' } },
+      });
+    } else if (type === 'warning') {
+      AntModal.warning({
+        ...config,
+        icon: <ExclamationCircleOutlined />,
+        okText: confirmText,
+        onOk: () => resolve(true),
+        cancelButtonProps: { style: { display: 'none' } },
+      });
+    }
   });
 }
 

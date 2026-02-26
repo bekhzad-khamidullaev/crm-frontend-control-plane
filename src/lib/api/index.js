@@ -21,13 +21,18 @@
 // export * as user from './user.js';
 
 // CRM Core Entities - only export functions that actually exist in client.js
-export { 
-  getLeads, 
-  getLead, 
-  createLead, 
-  updateLead, 
+export {
+  getLeads,
+  getLead,
+  createLead,
+  updateLead,
+  patchLead,
   deleteLead,
-} from './client.js';
+  assignLead,
+  convertLead,
+  disqualifyLead,
+  bulkTagLeads,
+} from './leads.js';
 
 export {
   getContacts,
@@ -35,38 +40,71 @@ export {
   createContact,
   updateContact,
   deleteContact,
-} from './client.js';
+  patchContact,
+} from './contacts.js';
 
+// From companies.js
 export {
   getCompanies,
   getCompany,
   createCompany,
   updateCompany,
+  patchCompany,
   deleteCompany,
-} from './client.js';
+  assignCompany,
+  addTagToCompany,
+  bulkTagCompanies,
+} from './companies.js';
 
+// From deals.js
 export {
   getDeals,
   getDeal,
   createDeal,
   updateDeal,
+  patchDeal,
   deleteDeal,
-} from './client.js';
+  getDealStages,
+  bulkTagDeals,
+  moveDealToStage,
+  assignDeal,
+  closeDealAsWon,
+  closeDealAsLost,
+} from './deals.js';
 
+// From tasks.js
 export {
   getTasks,
   getTask,
   createTask,
   updateTask,
+  patchTask,
   deleteTask,
-} from './client.js';
+  completeTask,
+  reassignTask,
+  changeTaskPriority,
+  moveTaskToStage,
+  bulkTagTasks,
+} from './tasks.js';
 
+// From projects.js
 export {
   getProjects,
   getProject,
   createProject,
   updateProject,
+  patchProject,
   deleteProject,
+  assignProject,
+  completeProject,
+  reopenProject,
+  bulkTagProjects,
+  exportProjects,
+} from './projects.js';
+
+export {
+  getUsers,
+  getUser,
 } from './client.js';
 
 // Communication
@@ -173,8 +211,8 @@ export {
   deleteMemo,
   markMemoPostponed,
   markMemoReviewed,
-  getActiveMemos,
-  getMyMemos,
+  getMemosByStage,
+  getMemosByRecipient,
 } from './memos.js';
 
 // From reminders.js
@@ -185,7 +223,7 @@ export {
   updateReminder,
   deleteReminder,
   getUpcomingReminders,
-  getMyReminders,
+  getRemindersByOwner,
   markReminderCompleted,
   snoozeReminder,
 } from './reminders.js';
@@ -219,9 +257,17 @@ export {
 export {
   getCallLogs,
   getCallLog,
+  getVoipCallLogs,
+  getVoipCallLog,
   createCallLog,
   updateCallLog,
   deleteCallLog,
+  addCallNote,
+  getEntityCallLogs,
+  getCompanyCallLogs,
+  getDealCallLogs,
+  getCallStatistics,
+  getCrmCallStatistics,
 } from './calls.js';
 
 // From chat.js
@@ -231,9 +277,21 @@ export {
   createChatMessage,
   updateChatMessage,
   deleteChatMessage,
-  getChatMessageReplies,
-  getChatMessageThread,
+  getMessageThread,
+  getEntityChatMessages,
+  getChatStatistics,
+  getUnreadCount,
 } from './chat.js';
+
+// From user.js
+export {
+  getUsers as getUsersDirectory,
+  getProfiles,
+  getProfileByUser,
+  getUserSessions,
+  revokeAllSessions,
+  get2FAStatus,
+} from './user.js';
 
 /**
  * Default export: object with all API modules

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import {
   Table,
   Button,
@@ -24,88 +24,93 @@ import {
 } from '@ant-design/icons';
 import { navigate } from '../../router';
 import { getCompanies, deleteCompany } from '../../lib/api/client';
+import { getIndustries, getClientTypes } from '../../lib/api/reference';
 import CallButton from '../../components/CallButton';
 
 const { Title } = Typography;
 
 function CompaniesList() {
   const [companies, setCompanies] = useState([]);
+  const [allCompaniesCache, setAllCompaniesCache] = useState(null);
   const [loading, setLoading] = useState(false);
   const [searchText, setSearchText] = useState('');
+  const [industries, setIndustries] = useState([]);
+  const [clientTypes, setClientTypes] = useState([]);
   const [pagination, setPagination] = useState({
     current: 1,
     pageSize: 10,
     total: 0,
   });
 
-  const fetchCompanies = async (page = 1, search = '') => {
+  useEffect(() => {
+    fetchCompanies(1, searchText);
+    loadReferenceData();
+  }, []);
+
+  const fetchCompanies = async (page = 1, search = '', pageSize = pagination.pageSize) => {
     setLoading(true);
     try {
       const response = await getCompanies({
         page,
-        page_size: pagination.pageSize,
+        page_size: pageSize,
         search,
       });
-      setCompanies(response.results || []);
-      setPagination({
-        ...pagination,
+      const results = response.results || [];
+      const totalCount = response.count || 0;
+      
+      if (results.length > pageSize && results.length === totalCount) {
+        console.warn('⚠️ CompaniesList: Caching all data');
+        setAllCompaniesCache(results);
+        const startIndex = (page - 1) * pageSize;
+        setCompanies(results.slice(startIndex, startIndex + pageSize));
+      } else {
+        setAllCompaniesCache(null);
+        setCompanies(results);
+      }
+      
+      setPagination((prev) => ({
+        ...prev,
         current: page,
-        total: response.count || 0,
-      });
+        pageSize: pageSize,
+        total: totalCount,
+      }));
     } catch (error) {
       message.error('Ошибка загрузки компаний');
-      // Mock data for demo
-      setCompanies([
-        {
-          id: 1,
-          name: 'ООО "ТехноПром"',
-          email: 'info@technoprom.ru',
-          phone: '+7 495 123-45-67',
-          website: 'https://technoprom.ru',
-          industry: 'Производство',
-          employees_count: 150,
-          annual_revenue: 50000000,
-          type: 'client',
-          created_at: '2024-01-15',
-        },
-        {
-          id: 2,
-          name: 'АО "Инновации"',
-          email: 'contact@innovations.ru',
-          phone: '+7 495 234-56-78',
-          website: 'https://innovations.ru',
-          industry: 'IT',
-          employees_count: 75,
-          annual_revenue: 30000000,
-          type: 'partner',
-          created_at: '2024-01-14',
-        },
-        {
-          id: 3,
-          name: 'ИП Сидоров А.В.',
-          email: 'sidorov@example.ru',
-          phone: '+7 495 345-67-89',
-          website: 'https://sidorov-business.ru',
-          industry: 'Торговля',
-          employees_count: 10,
-          annual_revenue: 5000000,
-          type: 'supplier',
-          created_at: '2024-01-13',
-        },
-      ]);
-      setPagination({
-        ...pagination,
+      setCompanies([]);
+      setPagination((prev) => ({
+        ...prev,
         current: 1,
-        total: 3,
-      });
+        total: 0,
+      }));
     } finally {
       setLoading(false);
     }
   };
 
-  useEffect(() => {
-    fetchCompanies(1, searchText);
-  }, []);
+  const loadReferenceData = async () => {
+    const [industriesRes, clientTypesRes] = await Promise.allSettled([
+      getIndustries({ page_size: 200 }),
+      getClientTypes({ page_size: 200 }),
+    ]);
+
+    if (industriesRes.status === 'fulfilled') {
+      const data = industriesRes.value;
+      setIndustries(data?.results || data || []);
+    } else {
+      console.error('Error loading industries:', industriesRes.reason);
+      setIndustries([]);
+      message.warning('Не удалось загрузить справочник индустрий. Фильтры будут ограничены.');
+    }
+
+    if (clientTypesRes.status === 'fulfilled') {
+      const data = clientTypesRes.value;
+      setClientTypes(data?.results || data || []);
+    } else {
+      console.error('Error loading client types:', clientTypesRes.reason);
+      setClientTypes([]);
+      message.warning('Не удалось загрузить справочник типов клиентов. Фильтры будут ограничены.');
+    }
+  };
 
   const handleSearch = (value) => {
     setSearchText(value);
@@ -123,15 +128,38 @@ function CompaniesList() {
   };
 
   const handleTableChange = (newPagination) => {
-    fetchCompanies(newPagination.current, searchText);
+    const nextPage = newPagination?.current || 1;
+    const nextPageSize = newPagination?.pageSize || pagination.pageSize;
+    
+    if (nextPageSize !== pagination.pageSize) {
+      setPagination((p) => ({ ...p, pageSize: nextPageSize }));
+      setAllCompaniesCache(null);
+      fetchCompanies(nextPage, searchText, nextPageSize);
+      return;
+    }
+    
+    if (allCompaniesCache && allCompaniesCache.length > 0) {
+      const startIndex = (nextPage - 1) * nextPageSize;
+      setCompanies(allCompaniesCache.slice(startIndex, startIndex + nextPageSize));
+      setPagination((p) => ({ ...p, current: nextPage }));
+    } else {
+      fetchCompanies(nextPage, searchText, nextPageSize);
+    }
   };
 
-  const typeConfig = {
-    client: { color: 'blue', text: 'Клиент' },
-    partner: { color: 'green', text: 'Партнер' },
-    supplier: { color: 'orange', text: 'Поставщик' },
-    competitor: { color: 'red', text: 'Конкурент' },
-  };
+  const industryMap = useMemo(() => {
+    return industries.reduce((acc, item) => {
+      acc[item.id] = item.name;
+      return acc;
+    }, {});
+  }, [industries]);
+
+  const clientTypeMap = useMemo(() => {
+    return clientTypes.reduce((acc, item) => {
+      acc[item.id] = item.name;
+      return acc;
+    }, {});
+  }, [clientTypes]);
 
   const columns = [
     {
@@ -141,14 +169,19 @@ function CompaniesList() {
         <Space>
           <Avatar icon={<ShopOutlined />} style={{ backgroundColor: '#52c41a' }} />
           <div>
-            <div style={{ fontWeight: 500 }}>{record.name}</div>
-            {record.industry && (
-              <div style={{ fontSize: 12, color: '#999' }}>{record.industry}</div>
+            <div style={{ fontWeight: 500 }}>{record.full_name || record.name}</div>
+            {Array.isArray(record.industry) && record.industry.length > 0 && (
+              <div style={{ fontSize: 12, color: '#999' }}>
+                {record.industry
+                  .map((id) => industryMap[id])
+                  .filter(Boolean)
+                  .join(', ') || '-'}
+              </div>
             )}
           </div>
         </Space>
       ),
-      sorter: (a, b) => a.name.localeCompare(b.name),
+      sorter: (a, b) => (a.full_name || a.name || '').localeCompare(b.full_name || b.name || ''),
     },
     {
       title: 'Контакты',
@@ -175,40 +208,21 @@ function CompaniesList() {
       ),
     },
     {
-      title: 'Сотрудников',
-      dataIndex: 'employees_count',
-      key: 'employees_count',
-      sorter: (a, b) => a.employees_count - b.employees_count,
-      render: (count) => (count ? `${count} чел.` : '-'),
-    },
-    {
-      title: 'Годовой доход',
-      dataIndex: 'annual_revenue',
-      key: 'annual_revenue',
-      sorter: (a, b) => a.annual_revenue - b.annual_revenue,
-      render: (revenue) =>
-        revenue ? `${(revenue / 1000000).toFixed(1)} млн ₽` : '-',
-    },
-    {
       title: 'Тип',
       dataIndex: 'type',
       key: 'type',
       render: (type) => {
-        const config = typeConfig[type] || typeConfig.client;
-        return <Tag color={config.color}>{config.text}</Tag>;
+        if (!type) return '-';
+        const label = clientTypeMap[type] || `Тип #${type}`;
+        return <Tag color="blue">{label}</Tag>;
       },
-      filters: Object.keys(typeConfig).map((key) => ({
-        text: typeConfig[key].text,
-        value: key,
-      })),
-      onFilter: (value, record) => record.type === value,
     },
     {
       title: 'Дата создания',
-      dataIndex: 'created_at',
-      key: 'created_at',
-      sorter: (a, b) => new Date(a.created_at) - new Date(b.created_at),
-      render: (date) => new Date(date).toLocaleDateString('ru-RU'),
+      dataIndex: 'creation_date',
+      key: 'creation_date',
+      sorter: (a, b) => new Date(a.creation_date) - new Date(b.creation_date),
+      render: (date) => (date ? new Date(date).toLocaleDateString('ru-RU') : '-'),
     },
     {
       title: 'Действия',

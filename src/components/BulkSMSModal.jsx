@@ -6,9 +6,7 @@
 import React, { useState, useEffect } from 'react';
 import { Modal, Form, Input, Select, Button, Space, App, Typography, Alert, Table, Progress } from 'antd';
 import { MessageOutlined, SendOutlined } from '@ant-design/icons';
-// SMS API not available in Django-CRM API.yaml
-const sendBulkSMS = async () => { throw new Error('SMS API requires backend implementation'); };
-const getSMSTemplates = async () => { return []; };
+import smsApi from '../lib/api/sms.js';
 
 const { TextArea } = Input;
 const { Text } = Typography;
@@ -21,31 +19,23 @@ export default function BulkSMSModal({
   const { message } = App.useApp();
   const [form] = Form.useForm();
   const [loading, setLoading] = useState(false);
-  const [templates, setTemplates] = useState([]);
+  const [providers, setProviders] = useState([]);
   const [charCount, setCharCount] = useState(0);
   const [sending, setSending] = useState(false);
   const [progress, setProgress] = useState(0);
 
   useEffect(() => {
     if (visible) {
-      loadTemplates();
+      loadProviders();
     }
   }, [visible]);
 
-  const loadTemplates = async () => {
+  const loadProviders = async () => {
     try {
-      const data = await getSMSTemplates();
-      setTemplates(data || []);
+      const data = await smsApi.providers();
+      setProviders(data?.results || data || []);
     } catch (error) {
-      console.error('Error loading SMS templates:', error);
-    }
-  };
-
-  const handleTemplateSelect = (templateId) => {
-    const template = templates.find(t => t.id === templateId);
-    if (template) {
-      form.setFieldsValue({ message: template.content });
-      setCharCount(template.content.length);
+      console.error('Error loading SMS providers:', error);
     }
   };
 
@@ -57,10 +47,10 @@ export default function BulkSMSModal({
     try {
       const phoneNumbers = recipients.map(r => r.phone);
       
-      await sendBulkSMS({
+      await smsApi.sendBulk({
+        channel_id: values.channel_id,
         phone_numbers: phoneNumbers,
-        message: values.message,
-        template_id: values.template_id,
+        text: values.message,
       });
 
       message.success(`SMS отправлено ${phoneNumbers.length} получателям`);
@@ -111,18 +101,18 @@ export default function BulkSMSModal({
       />
 
       <Form form={form} layout="vertical" onFinish={handleSend}>
-        <Form.Item label="Шаблон" name="template_id">
+        <Form.Item
+          label="Канал отправки"
+          name="channel_id"
+          rules={[{ required: true, message: 'Выберите канал' }]}
+        >
           <Select
-            placeholder="Выберите шаблон"
-            allowClear
-            onChange={handleTemplateSelect}
-          >
-            {templates.map(template => (
-              <Select.Option key={template.id} value={template.id}>
-                {template.name}
-              </Select.Option>
-            ))}
-          </Select>
+            placeholder="Выберите канал"
+            options={providers.map((provider) => ({
+              value: provider.channel_id || provider.id,
+              label: provider.name || provider.provider || provider.title || `Канал ${provider.channel_id || provider.id}`,
+            }))}
+          />
         </Form.Item>
 
         <Form.Item

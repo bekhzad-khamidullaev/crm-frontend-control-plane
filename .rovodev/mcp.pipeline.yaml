@@ -1,0 +1,146 @@
+version: 1.0
+
+pipeline:
+  # ----------------------
+  - stage: PR_Submitted
+    description: "При открытии Pull Request"
+    agent: django_architect
+    action: create_technical_plan
+    outputs:
+      - plan_ready: true
+
+  # ----------------------
+  - stage: Static_Analysis
+    description: "Проверка кода на ошибки и стиль"
+    agent: django_qa
+    tools:
+      - flake8
+      - isort
+      - black
+    condition: PR_Submitted.plan_ready == true
+    outputs:
+      - lint_passed: true
+
+  # ----------------------
+  - stage: Backend_Tests
+    description: "Юнит и интеграционные тесты backend"
+    agent: django_qa
+    tools:
+      - pytest
+      - coverage
+    targets:
+      - apps/
+    condition: lint_passed == true
+    outputs:
+      - backend_tests_passed: true
+
+  # ----------------------
+  - stage: Database_Check
+    description: "Проверка миграций и БД"
+    agent: django_db
+    tools:
+      - django_manage
+      - bash
+    actions:
+      - makemigrations --check
+      - migrate --plan
+    condition: backend_tests_passed == true
+    outputs:
+      - db_ok: true
+
+  # ----------------------
+  - stage: API_Tests
+    description: "Проверка API контрактов и permissions"
+    agent: django_qa
+    tools:
+      - pytest
+      - requests
+    condition: db_ok == true
+    outputs:
+      - api_ok: true
+
+  # ----------------------
+  - stage: Async_Tasks_Tests
+    description: "Проверка Celery задач и retries"
+    agent: django_async
+    tools:
+      - pytest
+      - celery_testing
+    condition: api_ok == true
+    outputs:
+      - async_ok: true
+
+  # ----------------------
+  - stage: Realtime_Tests
+    description: "Проверка Channels/WebSocket flows"
+    agent: django_realtime
+    tools:
+      - pytest
+      - channels_testing
+    condition: async_ok == true
+    outputs:
+      - realtime_ok: true
+
+  # ----------------------
+  - stage: Frontend_Tests
+    description: "Headless browser для верстки и взаимодействий"
+    agent: django_qa
+    tools:
+      - pytest-playwright
+      - screenshot
+    actions:
+      - check_forms
+      - check_htmx_interactions
+      - check_visuals
+    condition: realtime_ok == true
+    outputs:
+      - frontend_ok: true
+
+  # ----------------------
+  - stage: Security_Tests
+    description: "Проверка доступа, ролей и правил"
+    agent: django_security
+    tools:
+      - pytest
+      - manual_check
+    actions:
+      - check_permissions
+      - check_idor
+      - check_csrf
+    condition: frontend_ok == true
+    outputs:
+      - security_ok: true
+
+  # ----------------------
+  - stage: Full_Report
+    description: "Сбор отчёта и артефактов для MCP"
+    agent: django_qa
+    tools:
+      - coverage
+      - screenshots
+      - logs
+    condition: security_ok == true
+    outputs:
+      - report_ready: true
+
+  # ----------------------
+  - stage: Deploy_Staging
+    description: "Деплой на staging"
+    agent: django_devops
+    tools:
+      - docker_compose
+      - systemd
+    condition: report_ready == true
+    outputs:
+      - staging_deployed: true
+
+  # ----------------------
+  - stage: Deploy_Production
+    description: "Деплой на production после проверки staging"
+    agent: django_devops
+    tools:
+      - docker_compose
+      - systemd
+    condition: staging_deployed == true
+    outputs:
+      - production_deployed: true

@@ -1,44 +1,37 @@
-import React, { useState, useEffect } from 'react';
-import {
-  Card,
-  Descriptions,
-  Button,
-  Space,
-  Tag,
-  Spin,
-  message,
-  Tabs,
-  Timeline,
-  Typography,
-  Progress,
-  Row,
-  Col,
-  Statistic,
-  List,
-  Avatar,
-} from 'antd';
-import {
-  ArrowLeftOutlined,
-  EditOutlined,
-  DeleteOutlined,
-  CalendarOutlined,
-  TeamOutlined,
-  DollarOutlined,
-  FolderOutlined,
-  CheckSquareOutlined,
-  ClockCircleOutlined,
-} from '@ant-design/icons';
-import { navigate } from '../../router';
-import { getProject, deleteProject } from '../../lib/api/client';
+import React, { useEffect, useMemo, useState } from 'react';
+import { ArrowLeft, Edit, Trash2, Calendar, User, CheckCircle, RotateCcw } from 'lucide-react';
+import dayjs from 'dayjs';
 
-const { Title, Text } = Typography;
+import { navigate } from '../../router';
+import { getProject, deleteProject, getUsers, getUser, projectsApi } from '../../lib/api/client';
+import { getProjectStages, getCrmTags } from '../../lib/api/reference';
+import ActivityLog from '../../components/ActivityLog';
+import EntitySelect from '../../components/EntitySelect.jsx';
+import { Card } from '../../components/ui/card.jsx';
+import { Button } from '../../components/ui/button.jsx';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '../../components/ui/tabs.jsx';
+import { Badge } from '../../components/ui/badge.jsx';
+import { toast } from '../../components/ui/use-toast.js';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '../../components/ui/dialog.jsx';
 
 function ProjectDetail({ id }) {
   const [project, setProject] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [stages, setStages] = useState([]);
+  const [tags, setTags] = useState([]);
+  const [users, setUsers] = useState([]);
+  const [assignModalOpen, setAssignModalOpen] = useState(false);
+  const [assigning, setAssigning] = useState(false);
+  const [assignState, setAssignState] = useState({
+    owner: '',
+    co_owner: '',
+    responsible: [],
+    subscribers: [],
+  });
 
   useEffect(() => {
     loadProject();
+    loadReferences();
   }, [id]);
 
   const loadProject = async () => {
@@ -47,289 +40,303 @@ function ProjectDetail({ id }) {
       const data = await getProject(id);
       setProject(data);
     } catch (error) {
-      message.error('Ошибка загрузки данных проекта');
-      // Mock data for demo
-      setProject({
-        id,
-        name: 'Внедрение CRM системы',
-        description: 'Полное внедрение CRM системы для автоматизации бизнес-процессов компании. Включает анализ, разработку, внедрение и обучение персонала.',
-        status: 'in_progress',
-        progress: 45,
-        start_date: '2024-01-15',
-        end_date: '2024-04-30',
-        budget: 2500000,
-        spent: 1125000,
-        client: { id: 1, name: 'ООО "ТехноПром"' },
-        manager: { id: 1, name: 'Алексей Иванов' },
-        team_size: 5,
-        created_at: '2024-01-10T10:30:00Z',
-        updated_at: '2024-01-22T15:45:00Z',
-      });
+      toast({ title: 'Ошибка', description: 'Ошибка загрузки данных проекта', variant: 'destructive' });
     } finally {
       setLoading(false);
+    }
+  };
+
+  const loadReferences = async () => {
+    try {
+      const [stagesResponse, tagsResponse, usersResponse] = await Promise.all([
+        getProjectStages({ page_size: 200 }),
+        getCrmTags({ page_size: 200 }),
+        getUsers({ page_size: 200 }),
+      ]);
+      setStages(stagesResponse.results || stagesResponse || []);
+      setTags(tagsResponse.results || tagsResponse || []);
+      setUsers(usersResponse.results || usersResponse || []);
+    } catch (error) {
+      console.error('Error loading project references:', error);
+      setStages([]);
+      setTags([]);
+      setUsers([]);
     }
   };
 
   const handleDelete = async () => {
     try {
       await deleteProject(id);
-      message.success('Проект удален');
+      toast({ title: 'Проект удален', description: 'Проект удален' });
       navigate('/projects');
     } catch (error) {
-      message.error('Ошибка удаления проекта');
+      toast({ title: 'Ошибка', description: 'Ошибка удаления проекта', variant: 'destructive' });
     }
   };
 
-  const statusConfig = {
-    planning: { color: 'default', text: 'Планирование' },
-    in_progress: { color: 'blue', text: 'В работе' },
-    on_hold: { color: 'orange', text: 'Приостановлен' },
-    completed: { color: 'green', text: 'Завершен' },
-    cancelled: { color: 'red', text: 'Отменен' },
+  const handleComplete = async () => {
+    try {
+      await projectsApi.complete(id);
+      toast({ title: 'Проект завершен', description: 'Проект завершен' });
+      loadProject();
+    } catch (error) {
+      toast({ title: 'Ошибка', description: 'Ошибка завершения проекта', variant: 'destructive' });
+    }
   };
 
+  const handleReopen = async () => {
+    try {
+      await projectsApi.reopen(id);
+      toast({ title: 'Проект возобновлен', description: 'Проект возобновлен' });
+      loadProject();
+    } catch (error) {
+      toast({ title: 'Ошибка', description: 'Ошибка возобновления проекта', variant: 'destructive' });
+    }
+  };
+
+  const openAssignModal = () => {
+    setAssignState({
+      owner: project?.owner || '',
+      co_owner: project?.co_owner || '',
+      responsible: project?.responsible || [],
+      subscribers: project?.subscribers || [],
+    });
+    setAssignModalOpen(true);
+  };
+
+  const handleAssign = async () => {
+    try {
+      setAssigning(true);
+      await projectsApi.assign(id, assignState);
+      toast({ title: 'Назначения обновлены', description: 'Назначения обновлены' });
+      setAssignModalOpen(false);
+      loadProject();
+    } catch (error) {
+      toast({ title: 'Ошибка', description: 'Ошибка назначения', variant: 'destructive' });
+    } finally {
+      setAssigning(false);
+    }
+  };
+
+  const stageMap = useMemo(() => {
+    return stages.reduce((acc, stage) => {
+      acc[stage.id] = stage;
+      return acc;
+    }, {});
+  }, [stages]);
+
+  const userMap = useMemo(() => {
+    return users.reduce((acc, user) => {
+      acc[user.id] = user.username || user.email || `#${user.id}`;
+      return acc;
+    }, {});
+  }, [users]);
+
+  const tagMap = useMemo(() => {
+    return tags.reduce((acc, tag) => {
+      acc[tag.id] = tag.name;
+      return acc;
+    }, {});
+  }, [tags]);
+
   if (loading) {
-    return (
-      <div style={{ textAlign: 'center', padding: '50px' }}>
-        <Spin size="large" />
-      </div>
-    );
+    return <div className="py-12 text-center text-sm text-muted-foreground">Загрузка...</div>;
   }
 
   if (!project) {
     return <div>Проект не найден</div>;
   }
 
-  const statusStyle = statusConfig[project.status] || statusConfig.planning;
-  const startDate = new Date(project.start_date);
-  const endDate = new Date(project.end_date);
-  const today = new Date();
-  const totalDays = Math.ceil((endDate - startDate) / (1000 * 60 * 60 * 24));
-  const daysLeft = Math.ceil((endDate - today) / (1000 * 60 * 60 * 24));
-  const budgetUsed = ((project.spent / project.budget) * 100).toFixed(0);
-
-  const mockTasks = [
-    { id: 1, title: 'Анализ бизнес-процессов', status: 'completed', assignee: 'Алексей Иванов' },
-    { id: 2, title: 'Разработка ТЗ', status: 'completed', assignee: 'Елена Смирнова' },
-    { id: 3, title: 'Настройка системы', status: 'in_progress', assignee: 'Дмитрий Козлов' },
-    { id: 4, title: 'Обучение персонала', status: 'todo', assignee: 'Алексей Иванов' },
-  ];
-
-  const tabItems = [
-    {
-      key: 'details',
-      label: 'Детали',
-      children: (
-        <>
-          <Descriptions bordered column={2} style={{ marginBottom: 24 }}>
-            <Descriptions.Item label="Название" span={2}>
-              <Space>
-                <FolderOutlined style={{ fontSize: 20, color: '#1890ff' }} />
-                <Text strong style={{ fontSize: 16 }}>
-                  {project.name}
-                </Text>
-              </Space>
-            </Descriptions.Item>
-            <Descriptions.Item label="Статус">
-              <Tag color={statusStyle.color}>{statusStyle.text}</Tag>
-            </Descriptions.Item>
-            <Descriptions.Item label="Прогресс">
-              <Progress percent={project.progress} status="active" />
-            </Descriptions.Item>
-            <Descriptions.Item label="Клиент">
-              <a onClick={() => navigate(`/companies/${project.client.id}`)}>
-                {project.client.name}
-              </a>
-            </Descriptions.Item>
-            <Descriptions.Item label="Менеджер проекта">
-              {project.manager.name}
-            </Descriptions.Item>
-            <Descriptions.Item label="Период выполнения" span={2}>
-              <Space>
-                <CalendarOutlined />
-                {startDate.toLocaleDateString('ru-RU')} - {endDate.toLocaleDateString('ru-RU')}
-              </Space>
-              <div style={{ marginTop: 4 }}>
-                <Text type="secondary" style={{ fontSize: 12 }}>
-                  {totalDays} дней, осталось {daysLeft > 0 ? daysLeft : 0} дней
-                </Text>
-              </div>
-            </Descriptions.Item>
-            <Descriptions.Item label="Бюджет">
-              {project.budget.toLocaleString('ru-RU')} ₽
-            </Descriptions.Item>
-            <Descriptions.Item label="Потрачено">
-              {project.spent.toLocaleString('ru-RU')} ₽ ({budgetUsed}%)
-            </Descriptions.Item>
-            <Descriptions.Item label="Размер команды">
-              <Space>
-                <TeamOutlined />
-                {project.team_size} человек
-              </Space>
-            </Descriptions.Item>
-            <Descriptions.Item label="Дата создания">
-              {new Date(project.created_at).toLocaleString('ru-RU')}
-            </Descriptions.Item>
-            {project.description && (
-              <Descriptions.Item label="Описание" span={2}>
-                {project.description}
-              </Descriptions.Item>
-            )}
-          </Descriptions>
-
-          <Row gutter={16}>
-            <Col xs={24} md={6}>
-              <Card>
-                <Statistic
-                  title="Прогресс"
-                  value={project.progress}
-                  suffix="%"
-                  valueStyle={{ color: '#3f8600' }}
-                />
-              </Card>
-            </Col>
-            <Col xs={24} md={6}>
-              <Card>
-                <Statistic
-                  title="Дней осталось"
-                  value={daysLeft > 0 ? daysLeft : 0}
-                  prefix={<ClockCircleOutlined />}
-                  valueStyle={{ color: daysLeft > 0 ? '#1890ff' : '#cf1322' }}
-                />
-              </Card>
-            </Col>
-            <Col xs={24} md={6}>
-              <Card>
-                <Statistic
-                  title="Бюджет использован"
-                  value={budgetUsed}
-                  suffix="%"
-                  prefix={<DollarOutlined />}
-                  valueStyle={{ color: budgetUsed > 80 ? '#cf1322' : '#52c41a' }}
-                />
-              </Card>
-            </Col>
-            <Col xs={24} md={6}>
-              <Card>
-                <Statistic
-                  title="Команда"
-                  value={project.team_size}
-                  suffix="чел"
-                  prefix={<TeamOutlined />}
-                />
-              </Card>
-            </Col>
-          </Row>
-        </>
-      ),
-    },
-    {
-      key: 'tasks',
-      label: 'Задачи',
-      children: (
-        <List
-          dataSource={mockTasks}
-          renderItem={(task) => (
-            <List.Item
-              actions={[
-                <Button type="link" onClick={() => navigate(`/tasks/${task.id}`)}>
-                  Просмотр
-                </Button>,
-              ]}
-            >
-              <List.Item.Meta
-                avatar={<Avatar icon={<CheckSquareOutlined />} />}
-                title={task.title}
-                description={
-                  <Space>
-                    <Tag color={task.status === 'completed' ? 'green' : task.status === 'in_progress' ? 'blue' : 'default'}>
-                      {task.status === 'completed' ? 'Выполнено' : task.status === 'in_progress' ? 'В работе' : 'К выполнению'}
-                    </Tag>
-                    <Text type="secondary">{task.assignee}</Text>
-                  </Space>
-                }
-              />
-            </List.Item>
-          )}
-        />
-      ),
-    },
-    {
-      key: 'activity',
-      label: 'История активности',
-      children: (
-        <Timeline
-          items={[
-            {
-              color: 'green',
-              children: (
-                <>
-                  <Text strong>Проект создан</Text>
-                  <br />
-                  <Text type="secondary">
-                    {new Date(project.created_at).toLocaleString('ru-RU')}
-                  </Text>
-                </>
-              ),
-            },
-            {
-              color: 'blue',
-              children: (
-                <>
-                  <Text strong>Статус изменен на "{statusStyle.text}"</Text>
-                  <br />
-                  <Text type="secondary">
-                    {new Date(project.updated_at).toLocaleString('ru-RU')}
-                  </Text>
-                </>
-              ),
-            },
-            {
-              color: 'orange',
-              children: (
-                <>
-                  <Text strong>Прогресс обновлен до {project.progress}%</Text>
-                  <br />
-                  <Text type="secondary">
-                    {new Date(project.updated_at).toLocaleString('ru-RU')}
-                  </Text>
-                </>
-              ),
-            },
-          ]}
-        />
-      ),
-    },
-    {
-      key: 'team',
-      label: 'Команда',
-      children: <div>Список участников команды появится здесь</div>,
-    },
-  ];
+  const stage = stageMap[project.stage];
+  const responsibleNames = Array.isArray(project.responsible)
+    ? project.responsible.map((id) => userMap[id]).filter(Boolean)
+    : [];
+  const subscriberNames = Array.isArray(project.subscribers)
+    ? project.subscribers.map((id) => userMap[id]).filter(Boolean)
+    : [];
+  const tagNames = Array.isArray(project.tags) ? project.tags.map((id) => tagMap[id]).filter(Boolean) : [];
+  const isCompleted = stage?.done || project.active === false;
 
   return (
     <div>
-      <Space style={{ marginBottom: 16 }}>
-        <Button icon={<ArrowLeftOutlined />} onClick={() => navigate('/projects')}>
-          Назад к списку
+      <div className="mb-4 flex flex-wrap items-center gap-2">
+        <Button variant="outline" onClick={() => navigate('/projects')}>
+          <ArrowLeft className="mr-2 h-4 w-4" />
+          Назад
         </Button>
-        <Button
-          type="primary"
-          icon={<EditOutlined />}
-          onClick={() => navigate(`/projects/${id}/edit`)}
-        >
+        <Button onClick={() => navigate(`/projects/${id}/edit`)}>
+          <Edit className="mr-2 h-4 w-4" />
           Редактировать
         </Button>
-        <Button danger icon={<DeleteOutlined />} onClick={handleDelete}>
+        <Button variant="outline" onClick={openAssignModal}>
+          <User className="mr-2 h-4 w-4" />
+          Назначить
+        </Button>
+        {isCompleted ? (
+          <Button variant="outline" onClick={handleReopen}>
+            <RotateCcw className="mr-2 h-4 w-4" />
+            Возобновить
+          </Button>
+        ) : (
+          <Button variant="outline" onClick={handleComplete}>
+            <CheckCircle className="mr-2 h-4 w-4" />
+            Завершить
+          </Button>
+        )}
+        <Button variant="destructive" onClick={handleDelete}>
+          <Trash2 className="mr-2 h-4 w-4" />
           Удалить
         </Button>
-      </Space>
+      </div>
 
-      <Title level={2}>{project.name}</Title>
+      <h2 className="text-2xl font-semibold">{project.name}</h2>
 
-      <Card>
-        <Tabs items={tabItems} />
+      <Card className="p-4">
+        <Tabs defaultValue="details">
+          <TabsList>
+            <TabsTrigger value="details">Детали</TabsTrigger>
+            <TabsTrigger value="activity">История активности</TabsTrigger>
+          </TabsList>
+
+          <TabsContent value="details">
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+              <DetailRow label="Название" value={<span className="text-base font-semibold">{project.name}</span>} span />
+              <DetailRow
+                label="Этап"
+                value={stage ? (
+                  <Badge variant="secondary">{stage.name}</Badge>
+                ) : (
+                  '-'
+                )}
+              />
+              <DetailRow label="Приоритет" value={project.priority ? `Приоритет ${project.priority}` : '-'} />
+              <DetailRow
+                label="Дата начала"
+                value={project.start_date ? (
+                  <div className="flex items-center gap-2">
+                    <Calendar className="h-4 w-4" />
+                    {dayjs(project.start_date).format('DD.MM.YYYY')}
+                  </div>
+                ) : (
+                  '-'
+                )}
+              />
+              <DetailRow
+                label="Срок завершения"
+                value={project.due_date ? (
+                  <div className="flex items-center gap-2">
+                    <Calendar className="h-4 w-4" />
+                    {dayjs(project.due_date).format('DD.MM.YYYY')}
+                  </div>
+                ) : (
+                  '-'
+                )}
+              />
+              <DetailRow label="Дата закрытия" value={project.closing_date ? dayjs(project.closing_date).format('DD.MM.YYYY') : '-'} />
+              <DetailRow label="Следующий шаг" value={project.next_step || '-'} />
+              <DetailRow label="Дата следующего шага" value={project.next_step_date ? dayjs(project.next_step_date).format('DD.MM.YYYY') : '-'} />
+              <DetailRow label="Активен" value={<Badge variant={project.active ? 'default' : 'secondary'}>{project.active ? 'Да' : 'Нет'}</Badge>} />
+              <DetailRow label="Напоминать" value={<Badge variant={project.remind_me ? 'secondary' : 'outline'}>{project.remind_me ? 'Да' : 'Нет'}</Badge>} />
+              <DetailRow
+                label="Владелец"
+                value={
+                  <div className="flex items-center gap-2">
+                    <User className="h-4 w-4 text-muted-foreground" />
+                    {project.owner ? userMap[project.owner] || `#${project.owner}` : '-'}
+                  </div>
+                }
+              />
+              <DetailRow label="Со-владелец" value={project.co_owner ? userMap[project.co_owner] || `#${project.co_owner}` : '-'} />
+              <DetailRow label="Ответственные" value={responsibleNames.length ? responsibleNames.join(', ') : '-'} span />
+              <DetailRow label="Подписчики" value={subscriberNames.length ? subscriberNames.join(', ') : '-'} span />
+              <DetailRow
+                label="Теги"
+                value={tagNames.length ? tagNames.map((tag) => (
+                  <Badge key={tag} variant="secondary" className="mr-2">{tag}</Badge>
+                )) : '-'}
+                span
+              />
+              <DetailRow label="Дата создания" value={project.creation_date ? dayjs(project.creation_date).format('DD.MM.YYYY HH:mm') : '-'} />
+              <DetailRow label="Последнее обновление" value={project.update_date ? dayjs(project.update_date).format('DD.MM.YYYY HH:mm') : '-'} />
+              {project.description && <DetailRow label="Описание" value={project.description} span />}
+              {project.note && <DetailRow label="Заметка" value={project.note} span />}
+            </div>
+          </TabsContent>
+
+          <TabsContent value="activity">
+            <ActivityLog entityType="project" entityId={project.id} />
+          </TabsContent>
+        </Tabs>
       </Card>
+
+      <Dialog open={assignModalOpen} onOpenChange={setAssignModalOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Назначения проекта</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-3">
+            <div>
+              <label className="text-sm font-medium">Владелец</label>
+              <EntitySelect
+                fetchOptions={getUsers}
+                fetchById={getUser}
+                placeholder="Выберите владельца"
+                value={assignState.owner || ''}
+                onChange={(val) => setAssignState((prev) => ({ ...prev, owner: val }))}
+              />
+            </div>
+            <div>
+              <label className="text-sm font-medium">Со-владелец</label>
+              <EntitySelect
+                fetchOptions={getUsers}
+                fetchById={getUser}
+                placeholder="Выберите со-владельца"
+                value={assignState.co_owner || ''}
+                onChange={(val) => setAssignState((prev) => ({ ...prev, co_owner: val }))}
+              />
+            </div>
+            <div>
+              <label className="text-sm font-medium">Ответственные</label>
+              <EntitySelect
+                fetchOptions={getUsers}
+                fetchById={getUser}
+                mode="multiple"
+                placeholder="Выберите ответственных"
+                value={assignState.responsible}
+                onChange={(val) => setAssignState((prev) => ({ ...prev, responsible: val }))}
+              />
+            </div>
+            <div>
+              <label className="text-sm font-medium">Подписчики</label>
+              <EntitySelect
+                fetchOptions={getUsers}
+                fetchById={getUser}
+                mode="multiple"
+                placeholder="Выберите подписчиков"
+                value={assignState.subscribers}
+                onChange={(val) => setAssignState((prev) => ({ ...prev, subscribers: val }))}
+              />
+            </div>
+          </div>
+          <div className="mt-4 flex justify-end gap-2">
+            <Button variant="outline" onClick={() => setAssignModalOpen(false)}>
+              Отмена
+            </Button>
+            <Button onClick={handleAssign} loading={assigning}>
+              Сохранить
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+    </div>
+  );
+}
+
+function DetailRow({ label, value, span = false }) {
+  return (
+    <div className={span ? 'sm:col-span-2' : ''}>
+      <div className="text-xs text-muted-foreground">{label}</div>
+      <div className="mt-1 text-sm">{value}</div>
     </div>
   );
 }

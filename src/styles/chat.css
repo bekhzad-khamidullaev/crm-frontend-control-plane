@@ -527,3 +527,195 @@
     transform: translateY(0);
   }
 }
+
+/* ========== DARK MODE ========== */
+.dark .chat-list {
+  background: transparent;
+}
+
+.dark .chat-list__header {
+  border-bottom-color: #2d3343;
+  background: transparent;
+}
+
+.dark .chat-list__filter,
+.dark .chat-list__search {
+  border-color: #2d3343;
+  background: #1e232e;
+  color: #f1f5f9;
+}
+
+.dark .chat-list__item:hover {
+  background-color: #1e232e;
+}
+
+.dark .chat-list__item-time,
+.dark .chat-list__item-preview {
+  color: #a1a1aa;
+}
+
+.dark .chat-list__empty,
+.dark .chat-list__error {
+  color: #71717a;
+}
+
+/* Chat Thread */
+.dark .chat-thread {
+  background: transparent;
+}
+
+.dark .chat-thread__header {
+  border-bottom-color: #2d3343;
+  background: #1e232e;
+}
+
+.dark .chat-thread__title h3 {
+  color: #f1f5f9;
+}
+
+.dark .chat-thread__subtitle {
+  color: #cbd5e1;
+}
+
+.dark .chat-thread__messages {
+  background: transparent;
+}
+
+.dark .chat-thread__input-container {
+  border-top-color: #2d3343;
+  background: transparent;
+}
+
+.dark .chat-thread__empty,
+.dark .chat-thread__error {
+  color: #71717a;
+}
+
+/* Chat Messages */
+.dark .chat-message__sender {
+  color: #d4d4d8;
+}
+
+.dark .chat-message__timestamp {
+  color: #71717a;
+}
+
+.dark .chat-message__reply-to {
+  color: #cbd5e1;
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.dark .chat-message__body {
+  background: #1e232e;
+  color: #f1f5f9;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.4);
+}
+
+.dark .chat-message--own .chat-message__body {
+  background: #1d4ed8;
+  color: #fff;
+}
+
+.dark .chat-message__action-btn {
+  color: #a1a1aa;
+}
+
+.dark .chat-message__action-btn:hover {
+  background: rgba(255, 255, 255, 0.08);
+  color: #fafafa;
+}
+
+/* Chat Input */
+.dark .chat-input__reply-indicator {
+  background: #1e3a5f;
+  border-left-color: #3b82f6;
+  color: #d4d4d8;
+}
+
+.dark .chat-input__cancel-reply {
+  color: #a1a1aa;
+}
+
+.dark .chat-input__cancel-reply:hover {
+  color: #fafafa;
+}
+
+.dark .chat-input__wrapper {
+  background: #1e232e;
+  border-color: #2d3343;
+}
+
+.dark .chat-input__textarea {
+  background: #1e232e;
+  color: #f1f5f9;
+}
+
+.dark .chat-input__textarea::placeholder {
+  color: #52525b;
+}
+
+.dark .chat-input__btn {
+  color: #a1a1aa;
+}
+
+.dark .chat-input__btn:hover {
+  background: rgba(255, 255, 255, 0.08);
+  color: #fafafa;
+}
+
+.dark .chat-input__emoji-picker {
+  background: #1e232e;
+  border-color: #2d3343;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.5);
+}
+
+.dark .chat-input__emoji-picker button:hover {
+  background: #27272a;
+}
+
+/* Chat Widget */
+.dark .chat-widget {
+  background: #161b22;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.5);
+}
+
+.dark .chat-widget__messages {
+  background: #161b22;
+}
+
+.dark .chat-widget__input {
+  border-top-color: #2d3343;
+}
+
+.dark .chat-widget__empty {
+  color: #71717a;
+}
+
+/* Ant Design overrides for chat page in dark mode */
+.dark .ant-list-item {
+  border-block-end-color: #2d3343 !important;
+}
+
+.dark .ant-list-item:hover {
+  background: #1e232e;
+}
+
+.dark .ant-layout-sider {
+  background: transparent !important;
+}
+
+.dark .ant-tabs-tab {
+  color: #cbd5e1 !important;
+}
+
+.dark .ant-tabs-tab-active .ant-tabs-tab-btn {
+  color: #f1f5f9 !important;
+}
+
+.dark .ant-tabs-ink-bar {
+  background: #f1f5f9 !important;
+}
+
+.dark .ant-tabs-nav::before {
+  border-bottom-color: #2d3343 !important;
+}

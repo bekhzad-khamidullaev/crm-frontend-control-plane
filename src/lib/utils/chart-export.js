@@ -117,7 +117,7 @@ export function exportChartData(chartInstance, format = 'csv', filename = 'chart
   const { labels, datasets } = chartInstance.data;
 
   switch (format) {
-    case 'csv':
+    case 'csv': {
       // Преобразуем данные чарта в табличный формат
       const data = labels.map((label, index) => {
         const row = { label };
@@ -128,14 +128,16 @@ export function exportChartData(chartInstance, format = 'csv', filename = 'chart
       });
       exportToCSV(data, `${filename}.csv`);
       break;
+    }
 
-    case 'json':
+    case 'json': {
       const jsonData = { labels, datasets };
       const blob = new Blob([JSON.stringify(jsonData, null, 2)], { 
         type: 'application/json' 
       });
       downloadBlob(blob, `${filename}.json`);
       break;
+    }
 
     case 'png':
       exportChartAsImage(chartInstance.canvas, `${filename}.png`);

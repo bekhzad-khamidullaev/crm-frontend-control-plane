@@ -51,7 +51,7 @@ export async function getShipment(id) {
  * @returns {Promise<Object>}
  */
 export async function createShipment(data) {
-  return api.post('/api/shipments/', data);
+  return api.post('/api/shipments/', { body: data });
 }
 
 /**
@@ -61,7 +61,7 @@ export async function createShipment(data) {
  * @returns {Promise<Object>}
  */
 export async function updateShipment(id, data) {
-  return api.put(`/api/shipments/${id}/`, data);
+  return api.put(`/api/shipments/${id}/`, { body: data });
 }
 
 /**
@@ -71,7 +71,7 @@ export async function updateShipment(id, data) {
  * @returns {Promise<Object>}
  */
 export async function patchShipment(id, data) {
-  return api.patch(`/api/shipments/${id}/`, data);
+  return api.patch(`/api/shipments/${id}/`, { body: data });
 }
 
 /**

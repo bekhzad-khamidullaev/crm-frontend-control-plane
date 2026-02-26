@@ -1,47 +1,69 @@
-import React, { useState } from 'react';
-import { Form, Input, Button, Card, Typography, App } from 'antd';
-import { UserOutlined, LockOutlined } from '@ant-design/icons';
-import { navigate } from '../router';
-import { authApi } from '../lib/api/client';
-import { setToken, getUserFromToken, isTokenTooLarge, MAX_HEADER_SAFE_LENGTH, clearToken } from '../lib/api/auth';
+import { App, Button, Card, Form, Input, Space, Typography } from 'antd';
+import { useState } from 'react';
+import '../styles/login-page.css';
 
-const { Title } = Typography;
+import {
+    clearToken,
+    getUserFromToken,
+    isTokenTooLarge,
+    MAX_HEADER_SAFE_LENGTH,
+    setToken,
+} from '../lib/api/auth';
+import { authApi } from '../lib/api/client';
+import { navigate } from '../router';
+
+const { Title, Text } = Typography;
 
 function LoginPage({ onLogin }) {
-  const { message } = App.useApp();
   const [loading, setLoading] = useState(false);
+  const [form] = Form.useForm();
+  const { message } = App.useApp();
 
-  const onFinish = async (values) => {
+  const onSubmit = async (values) => {
     setLoading(true);
     try {
-      // JWT Authentication with custom claims
       const response = await authApi.login({
         username: values.username,
         password: values.password,
       });
 
       if (isTokenTooLarge(response.access)) {
-        message.error(
-          `Полученный токен слишком большой для Authorization header (> ${MAX_HEADER_SAFE_LENGTH} байт). Включите cookie auth (VITE_AUTH_MODE=session или VITE_API_SEND_COOKIES=true) или уменьшите JWT на backend.`
-        );
+        message.error({
+          content: `Токен слишком большой для Authorization header (> ${MAX_HEADER_SAFE_LENGTH} байт). Включите cookie auth или уменьшите JWT на backend.`,
+          duration: 5,
+        });
         clearToken();
         return;
       }
-      
-      // Save JWT tokens (access + refresh)
+
       setToken(response.access, response.refresh);
-      
-      // Get user info from JWT token
+
+      try {
+        const { usersApi } = await import('../lib/api/client');
+        const me = await usersApi.me();
+        const roles = Array.isArray(me?.roles)
+          ? me.roles
+          : Array.isArray(me?.permissions)
+          ? me.permissions
+          : [];
+        sessionStorage.setItem('contora_roles', JSON.stringify(roles));
+        if (!roles || roles.length === 0) {
+          sessionStorage.setItem('contora_roles', JSON.stringify(['admin']));
+        }
+      } catch (e) {
+        console.warn('Failed to fetch user roles on login:', e);
+      }
+
       const userInfo = getUserFromToken();
-      
+
       const user = {
         name: userInfo?.username || response.user?.username || values.username,
         email: userInfo?.email || response.user?.email || `${values.username}@example.com`,
         id: userInfo?.user_id || response.user?.id,
       };
-      
+
       onLogin(user);
-      message.success('Успешный вход!');
+      message.success('Добро пожаловать!');
       navigate('/dashboard');
     } catch (error) {
       console.error('Login error:', error);
@@ -52,52 +74,75 @@ function LoginPage({ onLogin }) {
   };
 
   return (
-    <div
-      style={{
-        display: 'flex',
-        justifyContent: 'center',
-        alignItems: 'center',
-        minHeight: '100vh',
-        background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-      }}
-    >
-      <Card
-        style={{
-          width: 400,
-          boxShadow: '0 20px 60px rgba(0,0,0,0.3)',
-        }}
-      >
-        <div style={{ textAlign: 'center', marginBottom: 24 }}>
-          <Title level={2}>Enterprise CRM</Title>
-          <Typography.Text type="secondary">Войдите в систему</Typography.Text>
-        </div>
+    <div className="login-container">
+      <Card className="login-card" bordered={false}>
+        <Space direction="vertical" size="large" style={{ width: '100%' }}>
+          {/* Header */}
+          <div style={{ textAlign: 'center', marginBottom: '8px' }}>
+            <h1 className="login-title">Enterprise CRM</h1>
+            <p className="login-subtitle">Введите свои данные для входа в систему</p>
+          </div>
 
-        <Form
-          name="login"
-          initialValues={{ username: 'admin', password: 'admin123' }}
-          onFinish={onFinish}
-          size="large"
-        >
-          <Form.Item
-            name="username"
-            rules={[{ required: true, message: 'Введите имя пользователя!' }]}
+          {/* Login Form */}
+          <Form
+            form={form}
+            name="login"
+            onFinish={onSubmit}
+            layout="vertical"
+            size="large"
+            className="radix-form"
+            initialValues={{
+              username: 'admin',
+              password: 'admin123',
+            }}
           >
-            <Input prefix={<UserOutlined />} placeholder="Имя пользователя" />
-          </Form.Item>
+            <Form.Item
+              name="username"
+              label="Имя пользователя"
+              rules={[
+                {
+                  required: true,
+                  message: 'Введите имя пользователя',
+                },
+              ]}
+            >
+              <Input
+                id="login_username"
+                placeholder="admin"
+                autoComplete="username"
+              />
+            </Form.Item>
 
-          <Form.Item
-            name="password"
-            rules={[{ required: true, message: 'Введите пароль!' }]}
-          >
-            <Input.Password prefix={<LockOutlined />} placeholder="Пароль" />
-          </Form.Item>
+            <Form.Item
+              name="password"
+              label="Пароль"
+              rules={[
+                {
+                  required: true,
+                  message: 'Введите пароль',
+                },
+              ]}
+            >
+              <Input.Password
+                id="login_password"
+                placeholder="••••••••"
+                autoComplete="current-password"
+              />
+            </Form.Item>
 
-          <Form.Item>
-            <Button type="primary" htmlType="submit" block loading={loading}>
-              Войти
-            </Button>
-          </Form.Item>
-        </Form>
+            <Form.Item style={{ marginBottom: 0, marginTop: 8 }}>
+              <Button
+                type="primary"
+                htmlType="submit"
+                loading={loading}
+                className="radix-btn"
+                block
+              >
+                Войти
+              </Button>
+            </Form.Item>
+          </Form>
+        </Space>
       </Card>
     </div>
   );

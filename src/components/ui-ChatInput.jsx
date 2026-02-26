@@ -1,6 +1,6 @@
 /**
  * ChatInput Component
- * Input field for sending chat messages with mentions, emoji, and file attachments
+ * Input field for sending chat messages with emoji support
  */
 
 /**
@@ -22,7 +22,7 @@ export function ChatInput({ onSend, onTyping, replyingTo, onCancelReply } = {}) 
     replyIndicator.className = 'chat-input__reply-indicator';
     replyIndicator.innerHTML = `
       <i class="material-icons">reply</i>
-      <span>Replying to ${replyingTo.sender?.full_name || 'Unknown'}</span>
+      <span>Replying to ${replyingTo.owner_name || replyingTo.sender?.full_name || 'Unknown'}</span>
       <button class="chat-input__cancel-reply" type="button">
         <i class="material-icons">close</i>
       </button>
@@ -43,27 +43,10 @@ export function ChatInput({ onSend, onTyping, replyingTo, onCancelReply } = {}) 
   const inputWrapper = document.createElement('div');
   inputWrapper.className = 'chat-input__wrapper';
 
-  // File attachment button
-  const fileBtn = document.createElement('button');
-  fileBtn.type = 'button';
-  fileBtn.className = 'chat-input__btn chat-input__btn--attach';
-  fileBtn.innerHTML = '<i class="material-icons">attach_file</i>';
-  fileBtn.title = 'Attach file';
-  
-  const fileInput = document.createElement('input');
-  fileInput.type = 'file';
-  fileInput.hidden = true;
-  fileInput.multiple = true;
-  
-  fileBtn.onclick = () => fileInput.click();
-  fileInput.onchange = (e) => {
-    handleFileAttachment(e.target.files);
-  };
-
   // Text input
   const textarea = document.createElement('textarea');
   textarea.className = 'chat-input__textarea';
-  textarea.placeholder = 'Type a message... (@ to mention, : for emoji)';
+  textarea.placeholder = 'Type a message...';
   textarea.rows = 1;
   textarea.maxLength = 4000;
 
@@ -74,18 +57,6 @@ export function ChatInput({ onSend, onTyping, replyingTo, onCancelReply } = {}) 
     
     if (onTyping) {
       onTyping(textarea.value);
-    }
-  });
-
-  // Handle @ mentions
-  textarea.addEventListener('keyup', (e) => {
-    const cursorPos = textarea.selectionStart;
-    const text = textarea.value.substring(0, cursorPos);
-    const lastAtIndex = text.lastIndexOf('@');
-    
-    if (lastAtIndex !== -1 && lastAtIndex === cursorPos - 1) {
-      // Show mention suggestions (would need user list)
-      showMentionSuggestions(textarea);
     }
   });
 
@@ -114,7 +85,7 @@ export function ChatInput({ onSend, onTyping, replyingTo, onCancelReply } = {}) 
     if (content && onSend) {
       onSend({
         content,
-        parent: replyingTo?.id || null,
+        answer_to: replyingTo?.id || null,
       });
       
       textarea.value = '';
@@ -133,34 +104,14 @@ export function ChatInput({ onSend, onTyping, replyingTo, onCancelReply } = {}) 
     }
   });
 
-  inputWrapper.appendChild(fileBtn);
   inputWrapper.appendChild(textarea);
   inputWrapper.appendChild(emojiBtn);
   inputWrapper.appendChild(sendBtn);
 
   form.appendChild(inputWrapper);
-  form.appendChild(fileInput);
   container.appendChild(form);
 
   return container;
-}
-
-/**
- * Handle file attachment
- */
-function handleFileAttachment(files) {
-  // TODO: Implement file upload
-  console.log('Files to attach:', files);
-  // Could show preview, validate size, upload to server, etc.
-}
-
-/**
- * Show mention suggestions
- */
-function showMentionSuggestions(textarea) {
-  // TODO: Implement mention suggestions dropdown
-  // Would need list of users and position dropdown near cursor
-  console.log('Show mention suggestions');
 }
 
 /**

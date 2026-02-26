@@ -1,9 +1,9 @@
 /**
  * Calls API client
- * Handles VoIP call-logs operations according to Django-CRM API.yaml (lines 7221-7288)
+ * Handles CRM call-logs operations according to Django-CRM API.yaml
  */
 
-import { api as apiClient } from './client.js';
+import { api as apiClient, getContacts, getDeal } from './client.js';
 
 /**
  * Get list of call logs with optional filters
@@ -19,6 +19,15 @@ import { api as apiClient } from './client.js';
  * @returns {Promise<{count: number, results: Array}>}
  */
 export async function getCallLogs(params = {}) {
+  return apiClient.get('/api/call-logs/', { params });
+}
+
+/**
+ * Get VoIP call logs (read-only)
+ * @param {Object} params - Query parameters
+ * @returns {Promise<Object|Array>}
+ */
+export async function getVoipCallLogs(params = {}) {
   return apiClient.get('/api/voip/call-logs/', { params });
 }
 
@@ -28,7 +37,57 @@ export async function getCallLogs(params = {}) {
  * @returns {Promise<Object>}
  */
 export async function getCallLog(logId) {
+  return apiClient.get(`/api/call-logs/${logId}/`);
+}
+
+/**
+ * Get VoIP call log by ID
+ * @param {string|number} logId - VoIP call log ID
+ * @returns {Promise<Object>}
+ */
+export async function getVoipCallLog(logId) {
   return apiClient.get(`/api/voip/call-logs/${logId}/`);
+}
+
+function normalizeCallLogPayload(data = {}) {
+  const payload = { ...data };
+  if (!payload.number && payload.phone_number) {
+    payload.number = payload.phone_number;
+  }
+  delete payload.phone_number;
+  delete payload.status;
+  delete payload.started_at;
+  delete payload.ended_at;
+  delete payload.timestamp;
+  return payload;
+}
+
+/**
+ * Create a new CRM call log
+ * @param {Object} data - Call log data
+ * @returns {Promise<Object>}
+ */
+export async function createCallLog(data) {
+  return apiClient.post('/api/call-logs/', { body: normalizeCallLogPayload(data) });
+}
+
+/**
+ * Update a CRM call log
+ * @param {string|number} logId - Call log ID
+ * @param {Object} data - Call log updates
+ * @returns {Promise<Object>}
+ */
+export async function updateCallLog(logId, data) {
+  return apiClient.patch(`/api/call-logs/${logId}/`, { body: normalizeCallLogPayload(data) });
+}
+
+/**
+ * Delete a CRM call log
+ * @param {string|number} logId - Call log ID
+ * @returns {Promise<void>}
+ */
+export async function deleteCallLog(logId) {
+  return apiClient.delete(`/api/call-logs/${logId}/`);
 }
 
 /**
@@ -38,46 +97,8 @@ export async function getCallLog(logId) {
  * @param {Object} data - Call log data
  * @returns {Promise<Object>}
  */
-export async function createCallLog(data) {
-  console.warn('Creating call logs is not supported by API. Call logs are created by VoIP system.');
-  throw new Error('Creating call logs is not supported. Use VoIP system to initiate calls.');
-}
-
-/**
- * Add note to a call log
- * @param {string|number} logId - Call log ID
- * @param {Object} data - Note data
- * @param {string} data.note - Note text
- * @returns {Promise<Object>}
- */
 export async function addCallNote(logId, data) {
-  return apiClient.post(`/api/voip/call-logs/${logId}/add-note/`, data);
-}
-
-/**
- * Update a call log (deprecated - use addCallNote instead)
- * @deprecated Use addCallNote for adding notes to call logs
- * @param {string|number} id - Call log ID
- * @param {Object} data - Updated call log data
- * @returns {Promise<Object>}
- */
-export async function updateCallLog(id, data) {
-  console.warn('updateCallLog is deprecated. Use addCallNote instead.');
-  if (data.notes || data.note) {
-    return addCallNote(id, { note: data.notes || data.note });
-  }
-  throw new Error('Call log updates not supported. Use addCallNote to add notes.');
-}
-
-/**
- * Delete a call log
- * Note: DELETE method not available in API.yaml for /api/voip/call-logs/
- * @param {string|number} id - Call log ID
- * @returns {Promise<void>}
- */
-export async function deleteCallLog(id) {
-  console.warn('Deleting call logs is not supported by API.');
-  throw new Error('Deleting call logs is not supported.');
+  return apiClient.post(`/api/voip/call-logs/${logId}/add-note/`, { body: data });
 }
 
 /**
@@ -88,8 +109,18 @@ export async function deleteCallLog(id) {
  * @returns {Promise<{count: number, results: Array}>}
  */
 export async function getEntityCallLogs(entityType, entityId, params = {}) {
-  const filterKey = `related_${entityType}`;
-  return getCallLogs({ ...params, [filterKey]: entityId, ordering: '-started_at' });
+  const response = await getCallLogs({ ...params, ordering: '-timestamp', page_size: params.page_size || 200 });
+  const results = response?.results || response || [];
+
+  if (entityType === 'contact' && entityId) {
+    const filtered = results.filter((call) => Number(call.contact) === Number(entityId));
+    return { count: filtered.length, results: filtered };
+  }
+
+  return {
+    count: response?.count ?? results.length,
+    results,
+  };
 }
 
 /**
@@ -99,9 +130,18 @@ export async function getEntityCallLogs(entityType, entityId, params = {}) {
  * @returns {Promise<{count: number, results: Array}>}
  */
 export async function getCompanyCallLogs(companyId, params = {}) {
-  // In real implementation, backend should filter by company's contacts
-  // For now, we'll use a search parameter or custom endpoint
-  return getCallLogs({ ...params, company: companyId, ordering: '-started_at' });
+  const contactsResponse = await getContacts({ company: companyId, page_size: 500 });
+  const contacts = contactsResponse?.results || contactsResponse || [];
+  const contactIds = contacts.map((contact) => Number(contact.id)).filter(Boolean);
+
+  if (contactIds.length === 0) {
+    return { count: 0, results: [] };
+  }
+
+  const response = await getCallLogs({ ...params, ordering: '-timestamp', page_size: params.page_size || 1000 });
+  const results = response?.results || response || [];
+  const filtered = results.filter((call) => contactIds.includes(Number(call.contact)));
+  return { count: filtered.length, results: filtered };
 }
 
 /**
@@ -111,8 +151,11 @@ export async function getCompanyCallLogs(companyId, params = {}) {
  * @returns {Promise<{count: number, results: Array}>}
  */
 export async function getDealCallLogs(dealId, params = {}) {
-  // Backend should filter by deal's primary contact
-  return getCallLogs({ ...params, deal: dealId, ordering: '-started_at' });
+  const deal = await getDeal(dealId);
+  if (!deal?.contact) {
+    return { count: 0, results: [] };
+  }
+  return getEntityCallLogs('contact', deal.contact, params);
 }
 
 /**
@@ -121,31 +164,37 @@ export async function getDealCallLogs(dealId, params = {}) {
  * @returns {Promise<Object>} Statistics object
  */
 export async function getCallStatistics(params = {}) {
-  // This would require a custom endpoint in the backend
-  // For now, we fetch all calls and calculate stats on the client
-  const { results } = await getCallLogs({ ...params, page_size: 1000 });
-  
+  const stats = await apiClient.get('/api/voip/call-statistics/', { params });
+  if (!stats || typeof stats !== 'object') {
+    return stats;
+  }
+
   return {
-    total: results.length,
-    inbound: results.filter(c => c.direction === 'inbound').length,
-    outbound: results.filter(c => c.direction === 'outbound').length,
-    completed: results.filter(c => c.status === 'completed').length,
-    missed: results.filter(c => c.status === 'missed').length,
-    totalDuration: results.reduce((sum, c) => sum + (c.duration || 0), 0),
-    averageDuration: results.length > 0 
-      ? results.reduce((sum, c) => sum + (c.duration || 0), 0) / results.length 
-      : 0,
+    ...stats,
+    total: stats.total ?? stats.total_calls ?? stats.calls_total ?? stats.count ?? 0,
+    inbound: stats.inbound ?? stats.incoming ?? stats.incoming_calls ?? 0,
+    outbound: stats.outbound ?? stats.outgoing ?? stats.outgoing_calls ?? 0,
+    completed: stats.completed ?? stats.answered ?? stats.connected ?? 0,
+    missed: stats.missed ?? stats.missed_calls ?? stats.no_answer ?? 0,
+    totalDuration: stats.totalDuration ?? stats.total_duration ?? stats.duration_total ?? 0,
+    averageDuration: stats.averageDuration ?? stats.average_duration ?? stats.avg_duration ?? 0,
   };
 }
 
 /**
- * Upload call recording
- * Note: This endpoint doesn't exist in API.yaml
- * @param {string|number} callLogId - Call log ID
- * @param {Blob} audioBlob - Audio recording blob
+ * Get CRM call statistics (client-side aggregation)
+ * @param {Object} params - Query parameters
  * @returns {Promise<Object>}
  */
-export async function uploadRecording(callLogId, audioBlob) {
-  console.warn('Call recording upload endpoint not available in API.');
-  throw new Error('Call recording upload is not supported by API.');
+export async function getCrmCallStatistics(params = {}) {
+  const response = await getCallLogs({ ...params, page_size: params.page_size || 1000 });
+  const results = response?.results || response || [];
+  const totalDuration = results.reduce((sum, c) => sum + (c.duration || 0), 0);
+  return {
+    total: results.length,
+    inbound: results.filter((c) => c.direction === 'inbound').length,
+    outbound: results.filter((c) => c.direction === 'outbound').length,
+    totalDuration,
+    averageDuration: results.length > 0 ? totalDuration / results.length : 0,
+  };
 }

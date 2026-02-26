@@ -1,56 +1,62 @@
 import React from 'react';
 import { FloatButton } from 'antd';
-import { PlusOutlined } from '@ant-design/icons';
+import { 
+  PlusOutlined, 
+  EditOutlined, 
+  DeleteOutlined, 
+  SaveOutlined, 
+  UploadOutlined 
+} from '@ant-design/icons';
 
 /**
  * FAB (Floating Action Button) wrapper around Ant Design FloatButton
  */
-export function FAB({ 
-  icon = 'add', 
-  label = '', 
-  onClick, 
+export function FAB({
+  icon = 'add',
+  label = '',
+  onClick,
   extended = false,
   type = 'primary',
   shape = 'circle',
+  className = '',
   style = {},
   ...rest
 } = {}) {
-  
-  // Map common icon names to Ant Design icons
   const iconMap = {
-    'add': <PlusOutlined />,
-    'edit': '✏️',
-    'delete': '🗑️',
-    'save': '💾',
-    'upload': '⬆️',
+    add: <PlusOutlined />,
+    edit: <EditOutlined />,
+    delete: <DeleteOutlined />,
+    save: <SaveOutlined />,
+    upload: <UploadOutlined />,
   };
 
   const fabIcon = iconMap[icon] || icon;
 
-  // For extended FAB, render as a button with text
-  if (extended) {
+  // Если extended (с текстом), используем обычную FloatButton с description
+  if (extended && label) {
     return (
       <FloatButton
         icon={fabIcon}
         description={label}
-        onClick={onClick}
         type={type}
-        shape="square"
-        style={{ width: 'auto', ...style }}
+        shape={shape}
+        onClick={onClick}
+        style={{ right: 24, bottom: 24, ...style }}
+        className={className}
         {...rest}
       />
     );
   }
 
-  // Regular FAB
+  // Обычная круглая кнопка
   return (
     <FloatButton
       icon={fabIcon}
-      tooltip={label}
-      onClick={onClick}
       type={type}
       shape={shape}
-      style={style}
+      onClick={onClick}
+      style={{ right: 24, bottom: 24, ...style }}
+      className={className}
       {...rest}
     />
   );

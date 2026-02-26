@@ -1,42 +1,27 @@
-import React, { useState, useEffect } from 'react';
-import {
-  Card,
-  Descriptions,
-  Button,
-  Space,
-  Tag,
-  Spin,
-  message,
-  Tabs,
-  Timeline,
-  Typography,
-  Progress,
-  Row,
-  Col,
-  Checkbox,
-  Avatar,
-} from 'antd';
-import {
-  ArrowLeftOutlined,
-  EditOutlined,
-  DeleteOutlined,
-  CalendarOutlined,
-  UserOutlined,
-  ClockCircleOutlined,
-  CheckCircleOutlined,
-  LinkOutlined,
-} from '@ant-design/icons';
-import { navigate } from '../../router';
-import { getTask, deleteTask } from '../../lib/api/client';
+import React, { useEffect, useMemo, useState } from 'react';
+import { ArrowLeft, Edit, Trash2, Calendar, User } from 'lucide-react';
+import dayjs from 'dayjs';
 
-const { Title, Text } = Typography;
+import { navigate } from '../../router';
+import { getTask, deleteTask, getUsers } from '../../lib/api/client';
+import { getTaskStages, getTaskTags } from '../../lib/api/reference';
+import ActivityLog from '../../components/ActivityLog';
+import { Card } from '../../components/ui/card.jsx';
+import { Button } from '../../components/ui/button.jsx';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '../../components/ui/tabs.jsx';
+import { Badge } from '../../components/ui/badge.jsx';
+import { toast } from '../../components/ui/use-toast.js';
 
 function TaskDetail({ id }) {
   const [task, setTask] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [stages, setStages] = useState([]);
+  const [tags, setTags] = useState([]);
+  const [users, setUsers] = useState([]);
 
   useEffect(() => {
     loadTask();
+    loadReferences();
   }, [id]);
 
   const loadTask = async () => {
@@ -45,276 +30,185 @@ function TaskDetail({ id }) {
       const data = await getTask(id);
       setTask(data);
     } catch (error) {
-      message.error('Ошибка загрузки данных задачи');
-      // Mock data for demo
-      setTask({
-        id,
-        title: 'Подготовить коммерческое предложение',
-        description: 'Создать детальное коммерческое предложение для компании ООО "ТехноПром". Включить прайс-лист, условия оплаты и сроки поставки.',
-        status: 'in_progress',
-        priority: 'high',
-        due_date: '2024-02-15',
-        assignee: { id: 1, name: 'Алексей Иванов' },
-        related_type: 'deal',
-        related_id: '1',
-        related_name: 'Поставка оборудования',
-        progress: 60,
-        created_at: '2024-01-20T10:30:00Z',
-        updated_at: '2024-01-22T15:45:00Z',
-      });
+      toast({ title: 'Ошибка', description: 'Ошибка загрузки данных задачи', variant: 'destructive' });
     } finally {
       setLoading(false);
+    }
+  };
+
+  const loadReferences = async () => {
+    try {
+      const [stagesResponse, tagsResponse, usersResponse] = await Promise.all([
+        getTaskStages({ page_size: 200 }),
+        getTaskTags({ page_size: 200 }),
+        getUsers({ page_size: 200 }),
+      ]);
+      setStages(stagesResponse.results || stagesResponse || []);
+      setTags(tagsResponse.results || tagsResponse || []);
+      setUsers(usersResponse.results || usersResponse || []);
+    } catch (error) {
+      console.error('Error loading task references:', error);
+      setStages([]);
+      setTags([]);
+      setUsers([]);
     }
   };
 
   const handleDelete = async () => {
     try {
       await deleteTask(id);
-      message.success('Задача удалена');
+      toast({ title: 'Задача удалена', description: 'Задача удалена' });
       navigate('/tasks');
     } catch (error) {
-      message.error('Ошибка удаления задачи');
+      toast({ title: 'Ошибка', description: 'Ошибка удаления задачи', variant: 'destructive' });
     }
   };
 
-  const handleToggleComplete = () => {
-    const newStatus = task.status === 'completed' ? 'in_progress' : 'completed';
-    message.success(`Задача отмечена как ${newStatus === 'completed' ? 'выполненная' : 'в работе'}`);
-    setTask({ ...task, status: newStatus, progress: newStatus === 'completed' ? 100 : task.progress });
-  };
+  const stageMap = useMemo(() => {
+    return stages.reduce((acc, stage) => {
+      acc[stage.id] = stage;
+      return acc;
+    }, {});
+  }, [stages]);
 
-  const statusConfig = {
-    todo: { color: 'default', text: 'К выполнению' },
-    in_progress: { color: 'blue', text: 'В работе' },
-    completed: { color: 'green', text: 'Выполнено' },
-    cancelled: { color: 'red', text: 'Отменено' },
-  };
+  const userMap = useMemo(() => {
+    return users.reduce((acc, user) => {
+      acc[user.id] = user.username || user.email || `#${user.id}`;
+      return acc;
+    }, {});
+  }, [users]);
 
-  const priorityConfig = {
-    low: { color: 'green', text: 'Низкий' },
-    medium: { color: 'orange', text: 'Средний' },
-    high: { color: 'red', text: 'Высокий' },
-    urgent: { color: 'magenta', text: 'Срочно' },
-  };
+  const tagMap = useMemo(() => {
+    return tags.reduce((acc, tag) => {
+      acc[tag.id] = tag.name;
+      return acc;
+    }, {});
+  }, [tags]);
 
   if (loading) {
-    return (
-      <div style={{ textAlign: 'center', padding: '50px' }}>
-        <Spin size="large" />
-      </div>
-    );
+    return <div className="py-12 text-center text-sm text-muted-foreground">Загрузка...</div>;
   }
 
   if (!task) {
     return <div>Задача не найдена</div>;
   }
 
-  const statusStyle = statusConfig[task.status] || statusConfig.todo;
-  const priorityStyle = priorityConfig[task.priority] || priorityConfig.medium;
-  const dueDate = new Date(task.due_date);
-  const today = new Date();
-  const daysLeft = Math.ceil((dueDate - today) / (1000 * 60 * 60 * 24));
-
-  const tabItems = [
-    {
-      key: 'details',
-      label: 'Детали',
-      children: (
-        <>
-          <Descriptions bordered column={2} style={{ marginBottom: 24 }}>
-            <Descriptions.Item label="Название" span={2}>
-              <Space>
-                <Checkbox
-                  checked={task.status === 'completed'}
-                  onChange={handleToggleComplete}
-                />
-                <Text strong style={{ fontSize: 16 }}>
-                  {task.title}
-                </Text>
-              </Space>
-            </Descriptions.Item>
-            <Descriptions.Item label="Статус">
-              <Tag color={statusStyle.color}>{statusStyle.text}</Tag>
-            </Descriptions.Item>
-            <Descriptions.Item label="Приоритет">
-              <Tag color={priorityStyle.color}>{priorityStyle.text}</Tag>
-            </Descriptions.Item>
-            <Descriptions.Item label="Прогресс" span={2}>
-              <Progress
-                percent={task.progress}
-                status={task.progress === 100 ? 'success' : 'active'}
-              />
-            </Descriptions.Item>
-            <Descriptions.Item label="Ответственный">
-              <Space>
-                <Avatar size="small" icon={<UserOutlined />} />
-                {task.assignee.name}
-              </Space>
-            </Descriptions.Item>
-            <Descriptions.Item label="Срок выполнения">
-              <Space direction="vertical" size="small">
-                <Space>
-                  <CalendarOutlined />
-                  {dueDate.toLocaleDateString('ru-RU')}
-                </Space>
-                {daysLeft > 0 && (
-                  <Text type={daysLeft <= 3 ? 'warning' : 'secondary'} style={{ fontSize: 12 }}>
-                    <ClockCircleOutlined /> через {daysLeft} дней
-                  </Text>
-                )}
-                {daysLeft < 0 && (
-                  <Text type="danger" style={{ fontSize: 12 }}>
-                    <ClockCircleOutlined /> просрочено на {Math.abs(daysLeft)} дней
-                  </Text>
-                )}
-              </Space>
-            </Descriptions.Item>
-            {task.related_type && (
-              <Descriptions.Item label="Связано с" span={2}>
-                <Space>
-                  <LinkOutlined />
-                  <a onClick={() => navigate(`/${task.related_type}s/${task.related_id}`)}>
-                    {task.related_name || `${task.related_type} #${task.related_id}`}
-                  </a>
-                </Space>
-              </Descriptions.Item>
-            )}
-            <Descriptions.Item label="Дата создания">
-              {new Date(task.created_at).toLocaleString('ru-RU')}
-            </Descriptions.Item>
-            <Descriptions.Item label="Последнее обновление">
-              {new Date(task.updated_at).toLocaleString('ru-RU')}
-            </Descriptions.Item>
-            {task.description && (
-              <Descriptions.Item label="Описание" span={2}>
-                {task.description}
-              </Descriptions.Item>
-            )}
-          </Descriptions>
-
-          <Row gutter={16}>
-            <Col xs={24} md={8}>
-              <Card>
-                <div style={{ textAlign: 'center' }}>
-                  <div style={{ fontSize: 36, marginBottom: 8 }}>
-                    {daysLeft > 0 ? daysLeft : 0}
-                  </div>
-                  <Text type="secondary">Дней до дедлайна</Text>
-                </div>
-              </Card>
-            </Col>
-            <Col xs={24} md={8}>
-              <Card>
-                <div style={{ textAlign: 'center' }}>
-                  <div style={{ fontSize: 36, marginBottom: 8, color: '#52c41a' }}>
-                    {task.progress}%
-                  </div>
-                  <Text type="secondary">Завершено</Text>
-                </div>
-              </Card>
-            </Col>
-            <Col xs={24} md={8}>
-              <Card>
-                <div style={{ textAlign: 'center' }}>
-                  <div style={{ fontSize: 36, marginBottom: 8 }}>
-                    <CheckCircleOutlined style={{ color: task.status === 'completed' ? '#52c41a' : '#d9d9d9' }} />
-                  </div>
-                  <Text type="secondary">{statusStyle.text}</Text>
-                </div>
-              </Card>
-            </Col>
-          </Row>
-        </>
-      ),
-    },
-    {
-      key: 'activity',
-      label: 'История активности',
-      children: (
-        <Timeline
-          items={[
-            {
-              color: 'green',
-              children: (
-                <>
-                  <Text strong>Задача создана</Text>
-                  <br />
-                  <Text type="secondary">
-                    {new Date(task.created_at).toLocaleString('ru-RU')}
-                  </Text>
-                </>
-              ),
-            },
-            {
-              color: 'blue',
-              children: (
-                <>
-                  <Text strong>Статус изменен на "{statusStyle.text}"</Text>
-                  <br />
-                  <Text type="secondary">
-                    {new Date(task.updated_at).toLocaleString('ru-RU')}
-                  </Text>
-                </>
-              ),
-            },
-            {
-              color: 'orange',
-              children: (
-                <>
-                  <Text strong>Прогресс обновлен до {task.progress}%</Text>
-                  <br />
-                  <Text type="secondary">
-                    {new Date(task.updated_at).toLocaleString('ru-RU')}
-                  </Text>
-                </>
-              ),
-            },
-          ]}
-        />
-      ),
-    },
-    {
-      key: 'comments',
-      label: 'Комментарии',
-      children: <div>Комментарии к задаче появятся здесь</div>,
-    },
-    {
-      key: 'files',
-      label: 'Файлы',
-      children: <div>Прикрепленные файлы появятся здесь</div>,
-    },
-  ];
+  const stage = stageMap[task.stage];
+  const priorityLabel = task.priority ? `Приоритет ${task.priority}` : '-';
+  const responsibleNames = Array.isArray(task.responsible)
+    ? task.responsible.map((id) => userMap[id]).filter(Boolean)
+    : [];
+  const subscriberNames = Array.isArray(task.subscribers)
+    ? task.subscribers.map((id) => userMap[id]).filter(Boolean)
+    : [];
+  const tagNames = Array.isArray(task.tags) ? task.tags.map((id) => tagMap[id]).filter(Boolean) : [];
 
   return (
-    <div>
-      <Space style={{ marginBottom: 16 }}>
-        <Button icon={<ArrowLeftOutlined />} onClick={() => navigate('/tasks')}>
-          Назад к списку
+    <div className="space-y-4">
+      <div className="flex flex-wrap items-center gap-2">
+        <Button variant="outline" onClick={() => navigate('/tasks')}>
+          <ArrowLeft className="mr-2 h-4 w-4" />
+          Назад
         </Button>
-        <Button
-          type="primary"
-          icon={<EditOutlined />}
-          onClick={() => navigate(`/tasks/${id}/edit`)}
-        >
+        <Button onClick={() => navigate(`/tasks/${id}/edit`)}>
+          <Edit className="mr-2 h-4 w-4" />
           Редактировать
         </Button>
-        <Button
-          type={task.status === 'completed' ? 'default' : 'primary'}
-          icon={<CheckCircleOutlined />}
-          onClick={handleToggleComplete}
-        >
-          {task.status === 'completed' ? 'Вернуть в работу' : 'Отметить выполненной'}
-        </Button>
-        <Button danger icon={<DeleteOutlined />} onClick={handleDelete}>
+        <Button variant="destructive" onClick={handleDelete}>
+          <Trash2 className="mr-2 h-4 w-4" />
           Удалить
         </Button>
-      </Space>
+      </div>
 
-      <Title level={2}>{task.title}</Title>
+      <h2 className="text-2xl font-semibold">{task.name}</h2>
 
-      <Card>
-        <Tabs items={tabItems} />
+      <Card className="p-4">
+        <Tabs defaultValue="details">
+          <TabsList>
+            <TabsTrigger value="details">Детали</TabsTrigger>
+            <TabsTrigger value="activity">История активности</TabsTrigger>
+          </TabsList>
+
+          <TabsContent value="details">
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+              <DetailRow label="Название" value={<span className="text-base font-semibold">{task.name}</span>} span />
+              <DetailRow
+                label="Этап"
+                value={stage ? (
+                  <Badge variant="secondary">{stage.name}</Badge>
+                ) : (
+                  '-'
+                )}
+              />
+              <DetailRow label="Приоритет" value={priorityLabel} />
+              <DetailRow
+                label="Дата начала"
+                value={task.start_date ? (
+                  <div className="flex items-center gap-2">
+                    <Calendar className="h-4 w-4" />
+                    {dayjs(task.start_date).format('DD.MM.YYYY')}
+                  </div>
+                ) : (
+                  '-'
+                )}
+              />
+              <DetailRow
+                label="Срок выполнения"
+                value={task.due_date ? (
+                  <div className="flex items-center gap-2">
+                    <Calendar className="h-4 w-4" />
+                    {dayjs(task.due_date).format('DD.MM.YYYY')}
+                  </div>
+                ) : (
+                  '-'
+                )}
+              />
+              <DetailRow label="Дата закрытия" value={task.closing_date ? dayjs(task.closing_date).format('DD.MM.YYYY') : '-'} />
+              <DetailRow label="Следующий шаг" value={task.next_step || '-'} />
+              <DetailRow label="Дата следующего шага" value={task.next_step_date ? dayjs(task.next_step_date).format('DD.MM.YYYY') : '-'} />
+              <DetailRow label="Lead time" value={task.lead_time || '-'} />
+              <DetailRow label="Активна" value={<Badge variant={task.active ? 'default' : 'secondary'}>{task.active ? 'Да' : 'Нет'}</Badge>} />
+              <DetailRow label="Напоминать" value={<Badge variant={task.remind_me ? 'secondary' : 'outline'}>{task.remind_me ? 'Да' : 'Нет'}</Badge>} />
+              <DetailRow
+                label="Владелец"
+                value={
+                  <div className="flex items-center gap-2">
+                    <User className="h-4 w-4 text-muted-foreground" />
+                    {task.owner ? userMap[task.owner] || `#${task.owner}` : '-'}
+                  </div>
+                }
+              />
+              <DetailRow label="Со-владелец" value={task.co_owner ? userMap[task.co_owner] || `#${task.co_owner}` : '-'} />
+              <DetailRow label="Ответственные" value={responsibleNames.length ? responsibleNames.join(', ') : '-'} span />
+              <DetailRow label="Подписчики" value={subscriberNames.length ? subscriberNames.join(', ') : '-'} span />
+              <DetailRow
+                label="Теги"
+                value={tagNames.length ? tagNames.map((tag) => (
+                  <Badge key={tag} variant="secondary" className="mr-2">{tag}</Badge>
+                )) : '-'}
+                span
+              />
+              <DetailRow label="Дата создания" value={task.creation_date ? dayjs(task.creation_date).format('DD.MM.YYYY HH:mm') : '-'} />
+              <DetailRow label="Последнее обновление" value={task.update_date ? dayjs(task.update_date).format('DD.MM.YYYY HH:mm') : '-'} />
+              {task.description && <DetailRow label="Описание" value={task.description} span />}
+              {task.note && <DetailRow label="Заметка" value={task.note} span />}
+            </div>
+          </TabsContent>
+
+          <TabsContent value="activity">
+            <ActivityLog entityType="task" entityId={task.id} />
+          </TabsContent>
+        </Tabs>
       </Card>
+    </div>
+  );
+}
+
+function DetailRow({ label, value, span = false }) {
+  return (
+    <div className={span ? 'sm:col-span-2' : ''}>
+      <div className="text-xs text-muted-foreground">{label}</div>
+      <div className="mt-1 text-sm">{value}</div>
     </div>
   );
 }
