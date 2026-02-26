@@ -60,10 +60,7 @@ export default defineConfig(({ mode }) => {
           manualChunks: (id) => {
             // Vendor chunks
             if (id.includes('node_modules')) {
-              // React core
-              if (id.includes('react') || id.includes('react-dom')) {
-                return 'react-vendor';
-              }
+              // Removed react-vendor explicit split to prevent circular dependencies with 'object-assign' and other internals
 
               // Chart.js
               if (id.includes('chart.js') || id.includes('react-chartjs-2')) {
