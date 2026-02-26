@@ -31,7 +31,7 @@ RUN apk add --no-cache curl
 RUN rm /etc/nginx/conf.d/default.conf
 
 # Copy custom nginx configuration
-COPY nginx.conf /etc/nginx/conf.d/windevs.conf
+COPY nginx.conf.http-only /etc/nginx/conf.d/windevs.conf
 
 # Copy built assets from builder stage
 COPY --from=builder /app/dist /var/www/windevs.uz/dist

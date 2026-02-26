@@ -1,7 +1,6 @@
-version: '3.8'
+version: "3.8"
 
 services:
-  # Production frontend service
   frontend:
     build:
       context: .
@@ -11,32 +10,20 @@ services:
     container_name: crm-frontend-production
     restart: unless-stopped
     ports:
-      - "80:80"
-      - "443:443"
+      - "127.0.0.1:8080:80"
     environment:
       - API_BASE_URL=https://crm.windevs.uz
       - API_PREFIX=/api
-      - BACKEND_API_URL=https://api.crm.windevs.uz:8443
-      - PBX_SERVER=wss://pbx.windevs.uz:5061
+      - PBX_SERVER=wss://crm.windevs.uz/asterisk/ws
     volumes:
-      # Mount SSL certificates (self-signed for testing)
-      - ./ssl-certs/fullchain.pem:/etc/ssl/certs/windevs.uz/fullchain.pem:ro
-      - ./ssl-certs/privkey.pem:/etc/ssl/certs/windevs.uz/privkey.pem:ro
-      # Mount nginx logs
       - ./logs/nginx:/var/log/nginx
-    networks:
-      - crm-network
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost/health"]
       interval: 30s
       timeout: 3s
       retries: 3
       start_period: 10s
-    labels:
-      - "com.windevs.app=crm-frontend"
-      - "com.windevs.environment=production"
 
-  # Staging frontend service (optional)
   frontend-staging:
     build:
       context: .
@@ -46,22 +33,10 @@ services:
     container_name: crm-frontend-staging
     restart: unless-stopped
     ports:
-      - "8080:80"
+      - "127.0.0.1:8081:80"
     environment:
-      - API_BASE_URL=https://staging.crm.windevs.uz
+      - API_BASE_URL=https://crm.windevs.uz
       - API_PREFIX=/api
-      - PBX_SERVER=wss://pbx.windevs.uz:5061
-    networks:
-      - crm-network
+      - PBX_SERVER=wss://crm.windevs.uz/asterisk/ws
     profiles:
       - staging
-    labels:
-      - "com.windevs.app=crm-frontend"
-      - "com.windevs.environment=staging"
-
-networks:
-  crm-network:
-    driver: bridge
-
-volumes:
-  nginx-logs:

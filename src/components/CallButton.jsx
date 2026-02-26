@@ -3,6 +3,7 @@ import { Button, Modal, Space, Typography, App, Input, Select, Badge, Tooltip } 
 import { PhoneOutlined, ClockCircleOutlined, CheckCircleOutlined, AudioOutlined, AudioMutedOutlined } from '@ant-design/icons';
 import { createCallLog, updateCallLog, uploadRecording } from '../lib/api/calls.js';
 import sipClient from '../lib/telephony/SIPClient.js';
+import { getProfile } from '../lib/api/user.js';
 import { setActiveCall, clearActiveCall, addCallToHistory } from '../lib/store/index.js';
 
 const { Text, Title } = Typography;
@@ -21,6 +22,41 @@ function CallButton({ phone, name, entityType, entityId, size = 'middle', type =
   const [recordingBlob, setRecordingBlob] = useState(null);
   const audioRef = useRef(null);
   const timerRef = useRef(null);
+
+  const ensureSipRegistration = async () => {
+    if (sipClient.isRegistered) return true;
+
+    const profile = await getProfile().catch(() => null);
+    const sipUri = profile?.jssip_sip_uri || '';
+    const sipUserFromUri = sipUri.startsWith('sip:') ? sipUri.split(':')[1]?.split('@')[0] : '';
+    const sipRealmFromUri = sipUri.includes('@') ? sipUri.split('@')[1] : '';
+    const runtimeConfig = typeof window !== 'undefined' ? window.__APP_CONFIG__ || {} : {};
+
+    const username = sipUserFromUri || profile?.pbx_number || import.meta.env.VITE_SIP_USERNAME;
+    const realm = sipRealmFromUri || import.meta.env.VITE_SIP_REALM || 'pbx.windevs.uz';
+    const password = profile?.jssip_sip_password || import.meta.env.VITE_SIP_PASSWORD;
+    const websocketProxyUrl =
+      profile?.jssip_ws_uri || import.meta.env.VITE_SIP_SERVER || runtimeConfig.pbxServer || '';
+    const displayName =
+      profile?.jssip_display_name || profile?.full_name || import.meta.env.VITE_SIP_DISPLAY_NAME || 'CRM User';
+
+    if (!username || !password || !websocketProxyUrl) {
+      throw new Error('SIP credentials are not configured');
+    }
+
+    sipClient.configure({
+      realm,
+      impi: username,
+      impu: `sip:${username}@${realm}`,
+      password,
+      display_name: displayName,
+      websocket_proxy_url: websocketProxyUrl,
+    });
+
+    await sipClient.init();
+    await sipClient.register(username, password);
+    return true;
+  };
 
   // Setup event listeners for SIP client
   useEffect(() => {
@@ -147,9 +183,7 @@ function CallButton({ phone, name, entityType, entityId, size = 'middle', type =
       // WebRTC call via SIP
       try {
         if (!sipClient.isRegistered) {
-          message.error('SIP клиент не подключен. Попробуйте перезагрузить страницу.');
-          setCallStatus('idle');
-          return;
+          await ensureSipRegistration();
         }
 
         const audioElement = audioRef.current;

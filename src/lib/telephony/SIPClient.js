@@ -9,9 +9,11 @@ class SIPClient {
       this.isInitialized = false;
       this.isRegistered = false;
       this.emit = () => {};
+      this.configure = () => {};
       this.init = async () => Promise.resolve();
       this.register = async () => Promise.resolve();
       this.call = async () => { throw new Error('SIP disabled in demo/offline mode'); };
+      this.stop = () => {};
       return;
     }
     this.stack = null;
@@ -63,6 +65,17 @@ class SIPClient {
       sip_headers: [
         { name: 'User-Agent', value: 'CRM-WebRTC-Client/1.0' }
       ]
+    };
+  }
+
+  /**
+   * Update SIP runtime configuration before register().
+   */
+  configure(partialConfig = {}) {
+    if (!partialConfig || typeof partialConfig !== 'object') return;
+    this.config = {
+      ...this.config,
+      ...partialConfig,
     };
   }
 
@@ -329,7 +342,7 @@ class SIPClient {
         break;
       case 'i_new_message':
         // Handle incoming SIP message
-        this.emit('message', e);
+        this.emit('message', event);
         break;
     }
   }
