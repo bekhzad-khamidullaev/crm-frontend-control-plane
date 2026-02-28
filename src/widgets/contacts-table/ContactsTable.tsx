@@ -8,7 +8,7 @@ import {
     PhoneOutlined,
     UserOutlined
 } from '@ant-design/icons';
-import { Avatar, Button, Popconfirm, Space, Table } from 'antd';
+import { Avatar, Button, Grid, Popconfirm, Space, Table } from 'antd';
 import React from 'react';
 // @ts-ignore
 import { contactKeys } from '@/entities/contact/api/keys';
@@ -23,6 +23,9 @@ import CallButton from '@/components/CallButton'; // Legacy
 import { navigate } from '@/router.js';
 
 export const ContactsTable: React.FC = () => {
+  const screens = Grid.useBreakpoint();
+  const isMobile = !screens.md;
+
   const {
     data,
     isLoading,
@@ -55,6 +58,7 @@ export const ContactsTable: React.FC = () => {
       title: 'Контакт',
       key: 'contact',
       sorter: true,
+      width: isMobile ? 220 : 280,
       render: (_, record) => (
         <Space>
           <Avatar icon={<UserOutlined />} style={{ backgroundColor: '#1890ff' }} />
@@ -72,6 +76,8 @@ export const ContactsTable: React.FC = () => {
     {
       title: 'Связь',
       key: 'communication',
+      responsive: ['md'],
+      width: 240,
       render: (_, record) => (
         <Space direction="vertical" size="small">
           {record.email && (
@@ -93,6 +99,8 @@ export const ContactsTable: React.FC = () => {
       title: 'Компания',
       dataIndex: 'company',
       key: 'company',
+      responsive: ['sm'],
+      width: 160,
       render: (companyId: number) => companyId ? (
         // Ideally fetch company name or store in Redux/Cache. For now linking by ID.
         // Or could fetch company name if API included it.
@@ -106,6 +114,7 @@ export const ContactsTable: React.FC = () => {
       title: 'Дата создания',
       dataIndex: 'creation_date',
       key: 'creation_date',
+      responsive: ['lg'],
       width: 150,
       sorter: true,
       render: (date) => (date ? new Date(date).toLocaleDateString('ru-RU') : '-'),
@@ -113,7 +122,7 @@ export const ContactsTable: React.FC = () => {
     {
       title: 'Действия',
       key: 'actions',
-      width: 200,
+      width: isMobile ? 152 : 200,
       render: (_, record) => (
         <Space size="small" wrap>
           <CallButton
@@ -158,9 +167,10 @@ export const ContactsTable: React.FC = () => {
         dataSource={data}
         rowKey="id"
         loading={isLoading}
+        size={isMobile ? 'small' : 'middle'}
         pagination={pagination}
         onChange={handleTableChange}
-        scroll={{ x: 1000 }}
+        scroll={{ x: isMobile ? 720 : 1000 }}
       />
     </div>
   );

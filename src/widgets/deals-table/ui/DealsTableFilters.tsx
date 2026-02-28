@@ -23,7 +23,7 @@ export const DealsTableFilters: React.FC<DealsTableFiltersProps> = ({
   return (
     <div style={{ marginBottom: 16 }}>
       <Row gutter={[16, 16]}>
-        <Col xs={24} md={8} lg={6}>
+        <Col xs={24} sm={12} lg={6}>
           <Input.Search
             placeholder="Поиск по названию..."
             onSearch={handleSearch}
@@ -32,7 +32,7 @@ export const DealsTableFilters: React.FC<DealsTableFiltersProps> = ({
             onClear={() => handleSearch('')}
           />
         </Col>
-        <Col xs={24} md={8} lg={6}>
+        <Col xs={24} sm={12} lg={6}>
           <StageSelect
             placeholder="Стадия"
             value={filters.stage}
@@ -41,7 +41,7 @@ export const DealsTableFilters: React.FC<DealsTableFiltersProps> = ({
             allowClear
           />
         </Col>
-        <Col xs={24} md={8} lg={6}>
+        <Col xs={24} sm={12} lg={6}>
           <UserSelect
             placeholder="Ответственный"
             value={filters.owner}
@@ -50,7 +50,7 @@ export const DealsTableFilters: React.FC<DealsTableFiltersProps> = ({
             allowClear
           />
         </Col>
-        <Col xs={24} md={8} lg={6}>
+        <Col xs={24} sm={12} lg={6}>
           <CompanySelect
             placeholder="Компания"
             value={filters.company}

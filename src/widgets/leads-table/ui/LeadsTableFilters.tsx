@@ -23,14 +23,14 @@ export const LeadsTableFilters: React.FC<LeadsTableFiltersProps> = ({
 
   return (
     <Row gutter={[16, 16]} style={{ marginBottom: 16 }}>
-      <Col span={6}>
+      <Col xs={24} sm={12} lg={7}>
         <Input.Search
           placeholder="Поиск..."
           onSearch={(val) => handleFilterChange('search', val)}
           allowClear
         />
       </Col>
-      <Col span={4}>
+      <Col xs={24} sm={12} lg={4}>
          <LeadSourceSelect
            placeholder="Источник"
            value={filters.leadSource}
@@ -39,7 +39,7 @@ export const LeadsTableFilters: React.FC<LeadsTableFiltersProps> = ({
            style={{ width: '100%' }}
          />
       </Col>
-      <Col span={4}>
+      <Col xs={24} sm={12} lg={4}>
          <UserSelect
            placeholder="Ответственный"
            value={filters.owner}
@@ -48,7 +48,7 @@ export const LeadsTableFilters: React.FC<LeadsTableFiltersProps> = ({
            style={{ width: '100%' }}
          />
       </Col>
-      <Col span={4}>
+      <Col xs={24} sm={12} lg={4}>
         <CountrySelect
           placeholder="Страна"
           value={filters.country}
@@ -57,7 +57,7 @@ export const LeadsTableFilters: React.FC<LeadsTableFiltersProps> = ({
           style={{ width: '100%' }}
         />
       </Col>
-       <Col span={4}>
+       <Col xs={24} sm={12} lg={5}>
         <CompanySelect
           placeholder="Компания"
           value={filters.company}

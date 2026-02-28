@@ -7,6 +7,7 @@ import {
   Space,
   Row,
   Col,
+  Grid,
   Switch,
   Typography,
 } from 'antd';
@@ -42,6 +43,8 @@ export const ContactForm: React.FC<ContactFormProps> = ({
 }) => {
   const [form] = Form.useForm();
   const country = Form.useWatch('country', form);
+  const screens = Grid.useBreakpoint();
+  const isMobile = !screens.md;
 
   useEffect(() => {
     if (initialValues) {
@@ -59,13 +62,13 @@ export const ContactForm: React.FC<ContactFormProps> = ({
 
   return (
     <div>
-      <Space style={{ marginBottom: 16 }}>
-        <Button icon={<ArrowLeftOutlined />} onClick={() => navigate('/contacts')}>
+      <Space wrap style={{ marginBottom: 16 }}>
+        <Button icon={<ArrowLeftOutlined />} onClick={() => navigate('/contacts')} block={isMobile}>
           Назад
         </Button>
       </Space>
 
-      <Title level={2}>
+      <Title level={isMobile ? 3 : 2}>
         {isEdit ? 'Редактировать контакт' : 'Создать новый контакт'}
       </Title>
 
@@ -203,11 +206,13 @@ export const ContactForm: React.FC<ContactFormProps> = ({
           </Form.Item>
 
           <Form.Item>
-            <Space>
-              <Button type="primary" htmlType="submit" icon={<SaveOutlined />} loading={isLoading}>
+            <Space wrap style={{ width: '100%' }}>
+              <Button type="primary" htmlType="submit" icon={<SaveOutlined />} loading={isLoading} block={isMobile}>
                 {isEdit ? 'Обновить' : 'Создать'}
               </Button>
-              <Button onClick={() => navigate('/contacts')}>Отмена</Button>
+              <Button onClick={() => navigate('/contacts')} block={isMobile}>
+                Отмена
+              </Button>
             </Space>
           </Form.Item>
         </Form>

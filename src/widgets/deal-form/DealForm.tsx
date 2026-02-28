@@ -13,6 +13,7 @@ import {
   DatePicker,
   Spin,
   InputNumber,
+  Grid,
 } from 'antd';
 import { SaveOutlined, ArrowLeftOutlined } from '@ant-design/icons';
 import dayjs from 'dayjs';
@@ -46,6 +47,8 @@ export const DealForm: React.FC<DealFormProps> = ({ id }) => {
   const [form] = Form.useForm();
   const { message } = App.useApp();
   const isEdit = !!id;
+  const screens = Grid.useBreakpoint();
+  const isMobile = !screens.md;
 
   const { data: deal, isLoading: isLoadingDeal } = useDealQuery(id!, !!id);
   const createMutation = useCreateDeal();
@@ -99,13 +102,13 @@ export const DealForm: React.FC<DealFormProps> = ({ id }) => {
 
   return (
     <div>
-      <Space style={{ marginBottom: 16 }}>
-        <Button icon={<ArrowLeftOutlined />} onClick={() => navigate('/deals')}>
+      <Space wrap style={{ marginBottom: 16 }}>
+        <Button icon={<ArrowLeftOutlined />} onClick={() => navigate('/deals')} block={isMobile}>
           Назад
         </Button>
       </Space>
 
-      <Title level={2}>{isEdit ? 'Редактировать сделку' : 'Создать новую сделку'}</Title>
+      <Title level={isMobile ? 3 : 2}>{isEdit ? 'Редактировать сделку' : 'Создать новую сделку'}</Title>
 
       <Card>
         <Form
@@ -261,17 +264,17 @@ export const DealForm: React.FC<DealFormProps> = ({ id }) => {
             Статус
           </Title>
           <Row gutter={16}>
-            <Col span={6}>
+            <Col xs={24} md={8}>
               <Form.Item label="Активна" name="active" valuePropName="checked">
                 <Switch />
               </Form.Item>
             </Col>
-            <Col span={6}>
+            <Col xs={24} md={8}>
               <Form.Item label="Актуальна" name="relevant" valuePropName="checked">
                 <Switch />
               </Form.Item>
             </Col>
-            <Col span={6}>
+            <Col xs={24} md={8}>
               <Form.Item label="Новая" name="is_new" valuePropName="checked">
                 <Switch />
               </Form.Item>
@@ -286,16 +289,19 @@ export const DealForm: React.FC<DealFormProps> = ({ id }) => {
           </Form.Item>
 
           <Form.Item>
-            <Space>
+            <Space wrap style={{ width: '100%' }}>
               <Button
                 type="primary"
                 htmlType="submit"
                 icon={<SaveOutlined />}
                 loading={createMutation.isPending || updateMutation.isPending}
+                block={isMobile}
               >
                 {isEdit ? 'Обновить' : 'Создать'}
               </Button>
-              <Button onClick={() => navigate('/deals')}>Отмена</Button>
+              <Button onClick={() => navigate('/deals')} block={isMobile}>
+                Отмена
+              </Button>
             </Space>
           </Form.Item>
         </Form>

@@ -12,6 +12,7 @@ import {
   Select,
   Switch,
   DatePicker,
+  Grid,
   Spin,
 } from 'antd';
 import { SaveOutlined, ArrowLeftOutlined } from '@ant-design/icons';
@@ -47,6 +48,8 @@ export const LeadForm: React.FC<LeadFormProps> = ({ id }) => {
   const [form] = Form.useForm();
   const { message } = App.useApp();
   const isEdit = !!id;
+  const screens = Grid.useBreakpoint();
+  const isMobile = !screens.md;
 
   const { data: lead, isLoading: isLoadingLead } = useLeadQuery(id!, !!id);
   const createMutation = useCreateLead();
@@ -97,13 +100,13 @@ export const LeadForm: React.FC<LeadFormProps> = ({ id }) => {
 
   return (
     <div>
-      <Space style={{ marginBottom: 16 }}>
-        <Button icon={<ArrowLeftOutlined />} onClick={() => navigate('/leads')}>
+      <Space wrap style={{ marginBottom: 16 }}>
+        <Button icon={<ArrowLeftOutlined />} onClick={() => navigate('/leads')} block={isMobile}>
           Назад
         </Button>
       </Space>
 
-      <Title level={2}>{isEdit ? 'Редактировать лид' : 'Создать новый лид'}</Title>
+      <Title level={isMobile ? 3 : 2}>{isEdit ? 'Редактировать лид' : 'Создать новый лид'}</Title>
 
       <Card>
         <Form
@@ -367,16 +370,19 @@ export const LeadForm: React.FC<LeadFormProps> = ({ id }) => {
           </Form.Item>
 
           <Form.Item>
-            <Space>
+            <Space wrap style={{ width: '100%' }}>
               <Button
                 type="primary"
                 htmlType="submit"
                 icon={<SaveOutlined />}
                 loading={createMutation.isPending || updateMutation.isPending}
+                block={isMobile}
               >
                 {isEdit ? 'Обновить' : 'Создать'}
               </Button>
-              <Button onClick={() => navigate('/leads')}>Отмена</Button>
+              <Button onClick={() => navigate('/leads')} block={isMobile}>
+                Отмена
+              </Button>
             </Space>
           </Form.Item>
         </Form>

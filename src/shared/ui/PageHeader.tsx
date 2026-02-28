@@ -4,7 +4,7 @@
  */
 
 import React from 'react';
-import { Breadcrumb } from 'antd';
+import { Breadcrumb, Grid } from 'antd';
 import { HomeOutlined } from '@ant-design/icons';
 
 export interface PageHeaderProps {
@@ -22,6 +22,9 @@ export const PageHeader: React.FC<PageHeaderProps> = ({
   extra,
   children,
 }) => {
+  const screens = Grid.useBreakpoint();
+  const isMobile = !screens.md;
+
   return (
     <div className="page-header" style={{ marginBottom: 24 }}>
       {breadcrumbs && breadcrumbs.length > 0 && (
@@ -37,14 +40,22 @@ export const PageHeader: React.FC<PageHeaderProps> = ({
         </Breadcrumb>
       )}
 
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+      <div
+        style={{
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: isMobile ? 'flex-start' : 'center',
+          flexDirection: isMobile ? 'column' : 'row',
+          gap: isMobile ? 12 : 16,
+        }}
+      >
         <div>
-          <h1 style={{ margin: 0, fontSize: 24, fontWeight: 600 }}>{title}</h1>
+          <h1 style={{ margin: 0, fontSize: isMobile ? 22 : 24, fontWeight: 600 }}>{title}</h1>
           {subtitle && (
             <div style={{ color: '#666', marginTop: 4 }}>{subtitle}</div>
           )}
         </div>
-        {extra && <div>{extra}</div>}
+        {extra && <div style={{ width: isMobile ? '100%' : 'auto' }}>{extra}</div>}
       </div>
 
       {children && <div style={{ marginTop: 16 }}>{children}</div>}

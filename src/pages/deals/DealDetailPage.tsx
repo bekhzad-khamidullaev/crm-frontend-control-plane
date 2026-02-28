@@ -1,6 +1,6 @@
 import { useDeal } from '@/entities/deal/api/queries';
 import { ArrowLeftOutlined, EditOutlined } from '@ant-design/icons';
-import { Badge, Button, Card, Descriptions, Space, Spin, Tabs, Tag, Typography } from 'antd';
+import { Badge, Button, Card, Descriptions, Grid, Space, Spin, Tabs, Tag, Typography } from 'antd';
 import React from 'react';
 // @ts-ignore
 import { navigate } from '@/router.js';
@@ -14,6 +14,8 @@ interface DealDetailPageProps {
 }
 
 export const DealDetailPage: React.FC<DealDetailPageProps> = ({ id }) => {
+  const screens = Grid.useBreakpoint();
+  const isMobile = !screens.md;
   const dealId = Number(id);
   const { data: deal, isLoading } = useDeal(dealId);
 
@@ -33,7 +35,7 @@ export const DealDetailPage: React.FC<DealDetailPageProps> = ({ id }) => {
       key: '1',
       label: 'Детали',
       children: (
-        <Descriptions bordered column={2}>
+        <Descriptions bordered column={{ xs: 1, sm: 1, md: 2 }}>
           <Descriptions.Item label="Название">{d.name}</Descriptions.Item>
           <Descriptions.Item label="Сумма">
             {formatCurrency(d.amount, d.currency_name || 'RUB')}
@@ -108,30 +110,33 @@ export const DealDetailPage: React.FC<DealDetailPageProps> = ({ id }) => {
 
   return (
     <div>
-      <Space style={{ marginBottom: 16 }}>
-        <Button icon={<ArrowLeftOutlined />} onClick={() => navigate('/deals')}>
+      <Space wrap style={{ marginBottom: 16 }}>
+        <Button icon={<ArrowLeftOutlined />} onClick={() => navigate('/deals')} block={isMobile}>
           Список
         </Button>
         <Button
           icon={<EditOutlined />}
           type="primary"
           onClick={() => navigate(`/deals/${dealId}/edit`)}
+          block={isMobile}
         >
           Редактировать
         </Button>
       </Space>
 
-      <Card>
+      <Card bodyStyle={{ padding: isMobile ? 12 : 24 }}>
         <div
           style={{
             marginBottom: 24,
             display: 'flex',
             justifyContent: 'space-between',
-            alignItems: 'center',
+            alignItems: isMobile ? 'flex-start' : 'center',
+            flexDirection: isMobile ? 'column' : 'row',
+            gap: isMobile ? 8 : 0,
           }}
         >
           <Space direction="vertical">
-            <Title level={3} style={{ margin: 0 }}>
+            <Title level={isMobile ? 4 : 3} style={{ margin: 0 }}>
               {deal.name}
             </Title>
             <Text type="secondary">
@@ -143,7 +148,7 @@ export const DealDetailPage: React.FC<DealDetailPageProps> = ({ id }) => {
           </Space>
         </div>
 
-        <Tabs defaultActiveKey="1" items={items} />
+        <Tabs defaultActiveKey="1" items={items} size={isMobile ? 'small' : 'middle'} />
       </Card>
     </div>
   );

@@ -14,7 +14,7 @@ import {
     PhoneOutlined,
     UserOutlined,
 } from '@ant-design/icons';
-import { Avatar, Badge, Button, Popconfirm, Space, Table, Tooltip } from 'antd';
+import { Avatar, Badge, Button, Grid, Popconfirm, Space, Table, Tooltip } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
 import React from 'react';
 import { LeadsTableFilters } from './ui/LeadsTableFilters';
@@ -24,6 +24,9 @@ import CallButton from '@/components/CallButton';
 import { navigate } from '@/router.js';
 
 export const LeadsTable: React.FC = () => {
+  const screens = Grid.useBreakpoint();
+  const isMobile = !screens.md;
+
   const {
     data,
     isLoading,
@@ -72,7 +75,7 @@ export const LeadsTable: React.FC = () => {
       key: 'lead',
       sorter: true,
       fixed: 'left',
-      width: 250,
+      width: isMobile ? 220 : 250,
       render: (_, record) => (
         <Space>
           <Avatar
@@ -101,6 +104,7 @@ export const LeadsTable: React.FC = () => {
     {
       title: 'Контакты',
       key: 'contacts',
+      responsive: ['md'],
       width: 220,
       render: (_, record) => (
         <Space direction="vertical" size={0}>
@@ -131,6 +135,7 @@ export const LeadsTable: React.FC = () => {
     {
       title: 'Теги',
       key: 'tags',
+      responsive: ['lg'],
       width: 150,
       render: (_, record) => (
         <Space wrap>
@@ -144,6 +149,7 @@ export const LeadsTable: React.FC = () => {
       title: 'Создан',
       dataIndex: 'creation_date',
       key: 'creation_date',
+      responsive: ['lg'],
       width: 120,
       sorter: true,
       render: (date) => (date ? new Date(date).toLocaleDateString('ru-RU') : '-'),
@@ -152,7 +158,7 @@ export const LeadsTable: React.FC = () => {
       title: 'Действия',
       key: 'actions',
       fixed: 'right',
-      width: 180,
+      width: isMobile ? 152 : 180,
       render: (_, record) => (
         <Space size="small">
           <CallButton
@@ -209,9 +215,10 @@ export const LeadsTable: React.FC = () => {
         dataSource={data}
         rowKey="id"
         loading={isLoading}
+        size={isMobile ? 'small' : 'middle'}
         pagination={pagination}
         onChange={handleTableChange}
-        scroll={{ x: 1200 }}
+        scroll={{ x: isMobile ? 760 : 1200 }}
       />
     </div>
   );

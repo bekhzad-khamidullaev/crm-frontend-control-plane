@@ -16,8 +16,8 @@ export const ContactsTableFilters: React.FC<FiltersProps> = ({ onFilterChange, l
   const { data: companies } = useCompanies({ page: 1, pageSize: 100 }); // Simplified for now
 
   return (
-    <Row gutter={[16, 16]} style={{ marginBottom: 24 }}>
-      <Col xs={24} md={6}>
+    <Row gutter={[16, 16]} style={{ marginBottom: 16 }}>
+      <Col xs={24} sm={12} lg={6}>
         <Input
           placeholder="Поиск..."
           prefix={<SearchOutlined />}
@@ -25,7 +25,7 @@ export const ContactsTableFilters: React.FC<FiltersProps> = ({ onFilterChange, l
           allowClear
         />
       </Col>
-      <Col xs={24} md={6}>
+      <Col xs={24} sm={12} lg={6}>
         <Select
           style={{ width: '100%' }}
           placeholder="Компания"
@@ -40,14 +40,14 @@ export const ContactsTableFilters: React.FC<FiltersProps> = ({ onFilterChange, l
           ))}
         </Select>
       </Col>
-      <Col xs={24} md={6}>
+      <Col xs={24} sm={12} lg={6}>
         <UserSelect
           placeholder="Ответственный"
           style={{ width: '100%' }}
           onChange={(val) => onFilterChange({ owner: val })}
         />
       </Col>
-      <Col xs={24} md={6}>
+      <Col xs={24} sm={12} lg={6}>
         <CountrySelect
            placeholder="Страна"
            style={{ width: '100%' }}

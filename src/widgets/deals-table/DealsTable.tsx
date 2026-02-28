@@ -10,7 +10,8 @@ import {
     EyeOutlined,
     UserOutlined,
 } from '@ant-design/icons';
-import { Badge, Button, Popconfirm, Space, Table, Tooltip } from 'antd';
+import { Badge, Button, Grid, Popconfirm, Space, Table, Tooltip } from 'antd';
+import type { ColumnsType } from 'antd/es/table';
 import React from 'react';
 import { DealsTableFilters } from './ui/DealsTableFilters';
 // @ts-ignore
@@ -19,6 +20,9 @@ import { navigate } from '@/router.js';
 import { formatCurrency } from '@/lib/utils/format.js';
 
 export const DealsTable: React.FC = () => {
+  const screens = Grid.useBreakpoint();
+  const isMobile = !screens.md;
+
   const { data, isLoading, pagination, handleTableChange, params, handleFilterChange } =
     useServerTable<Deal>({
       queryKey: dealKeys.list({}) as unknown as unknown[],
@@ -32,11 +36,12 @@ export const DealsTable: React.FC = () => {
     // Invalidation is handled in mutation hook
   };
 
-  const columns = [
+  const columns: ColumnsType<Deal> = [
     {
       title: 'Название',
       dataIndex: 'name',
       key: 'name',
+      width: isMobile ? 220 : 260,
       render: (text: string, record: Deal) => (
         <a onClick={() => navigate(`/deals/${record.id}`)}>{text}</a>
       ),
@@ -45,6 +50,8 @@ export const DealsTable: React.FC = () => {
       title: 'Сумма',
       dataIndex: 'amount',
       key: 'amount',
+      responsive: ['sm'],
+      width: 160,
       render: (amount: string, record: Deal) => (
         <span>{formatCurrency(amount, (record as any).currency_name || 'RUB')}</span>
       ),
@@ -53,6 +60,7 @@ export const DealsTable: React.FC = () => {
       title: 'Стадия',
       dataIndex: 'stage_name',
       key: 'stage_name',
+      width: 170,
       render: (stageName: string, record: Deal) => (
         <Badge
           color={record.stage ? 'blue' : 'default'}
@@ -64,12 +72,16 @@ export const DealsTable: React.FC = () => {
       title: 'Вероятность',
       dataIndex: 'probability',
       key: 'probability',
+      responsive: ['md'],
+      width: 130,
       render: (val: number) => (val ? `${val}%` : '-'),
     },
     {
       title: 'Компания',
       dataIndex: 'company_name',
       key: 'company_name',
+      responsive: ['lg'],
+      width: 190,
       render: (_name: string, record: any) => (
         <>
           {record.company_name ? (
@@ -87,6 +99,8 @@ export const DealsTable: React.FC = () => {
       title: 'Контакты',
       dataIndex: 'contact_name',
       key: 'contact_name',
+      responsive: ['lg'],
+      width: 190,
       render: (name: string, record: any) => (
         <Space direction="vertical" size={0}>
           <span>{name || '-'}</span>
@@ -98,6 +112,8 @@ export const DealsTable: React.FC = () => {
       title: 'Ответственный',
       dataIndex: 'owner_name',
       key: 'owner_name',
+      responsive: ['xl'],
+      width: 170,
       render: (name: string) => (
         <Space>
           <UserOutlined />
@@ -109,6 +125,8 @@ export const DealsTable: React.FC = () => {
       title: 'Дата закрытия',
       dataIndex: 'closing_date',
       key: 'closing_date',
+      responsive: ['xl'],
+      width: 130,
       render: (date: string) => {
         if (!date) return '-';
         const d = new Date(date);
@@ -118,6 +136,8 @@ export const DealsTable: React.FC = () => {
     {
       title: 'Действия',
       key: 'actions',
+      fixed: 'right' as const,
+      width: isMobile ? 152 : 180,
       render: (_: any, record: Deal) => (
         <Space>
           <Tooltip title="Просмотр">
@@ -145,11 +165,12 @@ export const DealsTable: React.FC = () => {
       <Table
         dataSource={data}
         loading={isLoading}
+        size={isMobile ? 'small' : 'middle'}
         pagination={pagination}
         onChange={handleTableChange}
         rowKey="id"
         columns={columns}
-        scroll={{ x: 1200 }}
+        scroll={{ x: isMobile ? 760 : 1200 }}
       />
     </div>
   );

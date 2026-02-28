@@ -82,10 +82,25 @@ export function AppLayout({
   const isMobile = !screens.lg;
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const siderWidth = 256;
+  const drawerWidth = screens.sm ? 300 : '86vw';
+  const selectedNavLabel = baseNav.find((item) => item.key === selectedKey)?.label || t('nav.dashboard') || 'Dashboard';
 
   useEffect(() => {
     setMobileMenuOpen(false);
   }, [selectedKey, isMobile]);
+
+  useEffect(() => {
+    if (!isMobile) {
+      return undefined;
+    }
+
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = mobileMenuOpen ? 'hidden' : '';
+
+    return () => {
+      document.body.style.overflow = previousOverflow;
+    };
+  }, [isMobile, mobileMenuOpen]);
 
   // Convert baseNav to Ant Design Menu items
   const menuItems = baseNav.map((item) => ({
@@ -145,7 +160,7 @@ export function AppLayout({
   ];
 
   return (
-    <Layout style={{ minHeight: '100vh' }}>
+    <Layout style={{ minHeight: '100dvh' }}>
       {!isMobile && (
         <Sider
         collapsible
@@ -228,7 +243,7 @@ export function AppLayout({
             mode="inline"
             selectedKeys={[selectedKey]}
             items={menuItems}
-            style={{ borderRight: 0 }}
+            style={{ borderRight: 0, height: 'calc(100vh - 64px)', overflowY: 'auto', paddingBottom: 16 }}
           />
         </ConfigProvider>
       </Sider>
@@ -236,7 +251,7 @@ export function AppLayout({
 
       <Drawer
         placement="left"
-        width={siderWidth}
+        width={drawerWidth}
         open={isMobile && mobileMenuOpen}
         onClose={() => setMobileMenuOpen(false)}
         bodyStyle={{ padding: 0 }}
@@ -244,9 +259,11 @@ export function AppLayout({
           header: {
             background: theme === 'dark' ? '#161b22' : '#ffffff',
             borderBottom: `1px solid ${theme === 'dark' ? '#2d3343' : '#e4e4e7'}`,
+            paddingTop: 'env(safe-area-inset-top)',
           },
           body: {
             background: theme === 'dark' ? '#161b22' : '#ffffff',
+            paddingBottom: 'env(safe-area-inset-bottom)',
           },
         }}
       >
@@ -279,7 +296,7 @@ export function AppLayout({
             mode="inline"
             selectedKeys={[selectedKey]}
             items={menuItems}
-            style={{ borderRight: 0 }}
+            style={{ borderRight: 0, height: '100%', overflowY: 'auto', paddingBottom: 16 }}
           />
         </ConfigProvider>
       </Drawer>
@@ -287,7 +304,9 @@ export function AppLayout({
       <Layout style={{ marginLeft: isMobile ? 0 : (collapsed ? 80 : siderWidth), transition: 'all 0.2s' }}>
         <Header
           style={{
-            padding: isMobile ? '0 12px' : '0 24px',
+            padding: isMobile
+              ? '0 calc(12px + env(safe-area-inset-right)) 0 calc(12px + env(safe-area-inset-left))'
+              : '0 24px',
             background: theme === 'dark' ? '#161b22' : '#ffffff',
             borderBottom: `1px solid ${theme === 'dark' ? '#2d3343' : '#e4e4e7'}`,
             display: 'flex',
@@ -295,7 +314,7 @@ export function AppLayout({
             justifyContent: 'space-between',
             position: 'sticky',
             top: 0,
-            zIndex: 1,
+            zIndex: 1100,
             boxShadow: theme === 'dark' ? '0 1px 4px rgba(0,0,0,.5)' : '0 1px 4px rgba(0,0,0,.08)',
           }}
         >
@@ -310,20 +329,22 @@ export function AppLayout({
                 onClick={onToggleCollapsed}
               />
             )}
-            <Text type="secondary">{t('nav.dashboard') || 'Dashboard'}</Text>
+            <Text type="secondary" ellipsis style={{ maxWidth: isMobile ? 160 : 'none' }}>
+              {selectedNavLabel}
+            </Text>
           </Space>
 
-          <Space size="middle">
+          <Space size={isMobile ? 'small' : 'middle'} wrap={false}>
             {/* Theme Toggle */}
-            <Space>
-              <SunOutlined style={{ color: theme === 'light' ? '#1890ff' : '#999' }} />
+            <Space size="small">
+              {!isMobile && <SunOutlined style={{ color: theme === 'light' ? '#1890ff' : '#999' }} />}
               <Switch checked={theme === 'dark'} onChange={toggleTheme} size="small" />
-              <MoonOutlined style={{ color: theme === 'dark' ? '#1890ff' : '#999' }} />
+              {!isMobile && <MoonOutlined style={{ color: theme === 'dark' ? '#1890ff' : '#999' }} />}
             </Space>
 
             {/* Locale Selector */}
             <Dropdown menu={{ items: localeMenuItems }} placement="bottomRight">
-              <Button>{locale.toUpperCase()}</Button>
+              <Button size={isMobile ? 'small' : 'middle'}>{locale.toUpperCase()}</Button>
             </Dropdown>
 
             {/* User Menu */}
@@ -344,7 +365,16 @@ export function AppLayout({
           </Space>
         </Header>
 
-        <Content style={{ margin: isMobile ? '12px' : '24px', minHeight: 280, overflowX: 'hidden' }}>{children}</Content>
+        <Content
+          style={{
+            margin: isMobile ? '12px clamp(10px, 3vw, 14px) calc(12px + env(safe-area-inset-bottom))' : '24px',
+            minHeight: 280,
+            overflowX: 'hidden',
+            maxWidth: '100%',
+          }}
+        >
+          {children}
+        </Content>
       </Layout>
     </Layout>
   );
