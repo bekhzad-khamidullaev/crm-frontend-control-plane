@@ -17,6 +17,7 @@ import {
   CloseOutlined,
 } from '@ant-design/icons';
 import { useMessage } from '../lib/hooks/useMessage';
+import { useTheme } from '../lib/hooks/useTheme';
 
 const { TextArea } = Input;
 
@@ -36,6 +37,7 @@ function ChatMessageComposer({
   replyTo = null,
   onCancelReply,
 }) {
+  const { theme } = useTheme();
   const messageApi = useMessage();
   const [message, setMessage] = useState('');
   const [emojiVisible, setEmojiVisible] = useState(false);
@@ -119,7 +121,7 @@ function ChatMessageComposer({
     <div style={{ width: 280, maxHeight: 300, overflow: 'auto' }}>
       {Object.entries(EMOJI_CATEGORIES).map(([category, emojis]) => (
         <div key={category} style={{ marginBottom: 12 }}>
-          <div style={{ fontSize: 12, color: '#999', marginBottom: 8 }}>{category}</div>
+          <div style={{ fontSize: 12, color: theme === 'dark' ? '#a1a1aa' : '#999', marginBottom: 8 }}>{category}</div>
           <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4 }}>
             {emojis.map(emoji => (
               <Button
@@ -139,14 +141,20 @@ function ChatMessageComposer({
   );
 
   return (
-    <div style={{ padding: 16, borderTop: '1px solid #f0f0f0', backgroundColor: '#fff' }}>
+    <div
+      style={{
+        padding: 16,
+        borderTop: `1px solid ${theme === 'dark' ? '#2d3343' : '#f0f0f0'}`,
+        backgroundColor: theme === 'dark' ? '#161b22' : '#fff',
+      }}
+    >
       {/* Reply preview */}
       {replyTo && (
         <div
           style={{
             padding: '8px 12px',
             marginBottom: 8,
-            backgroundColor: '#f5f5f5',
+            backgroundColor: theme === 'dark' ? '#1e232e' : '#f5f5f5',
             borderRadius: 8,
             display: 'flex',
             justifyContent: 'space-between',
@@ -154,7 +162,7 @@ function ChatMessageComposer({
           }}
         >
           <div style={{ flex: 1 }}>
-            <div style={{ fontSize: 12, color: '#999' }}>Ответ на сообщение:</div>
+            <div style={{ fontSize: 12, color: theme === 'dark' ? '#a1a1aa' : '#999' }}>Ответ на сообщение:</div>
             <div style={{ fontSize: 14, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
             {replyTo.content}
           </div>

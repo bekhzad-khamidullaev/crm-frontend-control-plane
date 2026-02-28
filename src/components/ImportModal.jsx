@@ -10,6 +10,7 @@ import {
   autoDetectMapping,
   transformers 
 } from '../lib/utils/import';
+import { useTheme } from '../lib/hooks/useTheme';
 
 const { Dragger } = Upload;
 const { Step } = Steps;
@@ -26,6 +27,7 @@ export default function ImportModal({
   validationRules = [],
   dataTransformers = {},
 }) {
+  const { theme } = useTheme();
   const [currentStep, setCurrentStep] = useState(0);
   const [file, setFile] = useState(null);
   const [parsedData, setParsedData] = useState([]);
@@ -235,7 +237,15 @@ export default function ImportModal({
                 {validationResult.errors.length > 0 && (
                   <div style={{ marginBottom: 16 }}>
                     <h4>Errors (must fix before importing):</h4>
-                    <div style={{ maxHeight: 200, overflow: 'auto', background: '#fff1f0', padding: 8, borderRadius: 4 }}>
+                    <div
+                      style={{
+                        maxHeight: 200,
+                        overflow: 'auto',
+                        background: theme === 'dark' ? 'rgba(220, 38, 38, 0.14)' : '#fff1f0',
+                        padding: 8,
+                        borderRadius: 4,
+                      }}
+                    >
                       {validationResult.errors.slice(0, 10).map((error, index) => (
                         <div key={index} style={{ marginBottom: 4 }}>
                           Row {error.row}: {error.message}
@@ -253,7 +263,15 @@ export default function ImportModal({
                 {validationResult.warnings.length > 0 && (
                   <div style={{ marginBottom: 16 }}>
                     <h4>Warnings (can proceed with caution):</h4>
-                    <div style={{ maxHeight: 150, overflow: 'auto', background: '#fffbe6', padding: 8, borderRadius: 4 }}>
+                    <div
+                      style={{
+                        maxHeight: 150,
+                        overflow: 'auto',
+                        background: theme === 'dark' ? 'rgba(217, 119, 6, 0.14)' : '#fffbe6',
+                        padding: 8,
+                        borderRadius: 4,
+                      }}
+                    >
                       {validationResult.warnings.slice(0, 5).map((warning, index) => (
                         <div key={index} style={{ marginBottom: 4 }}>
                           Row {warning.row}: {warning.message}
@@ -299,7 +317,7 @@ export default function ImportModal({
       open={open}
       onCancel={handleClose}
       footer={null}
-      width={800}
+      width="min(800px, 92vw)"
       destroyOnHidden
     >
       <Steps current={currentStep} style={{ marginBottom: 24 }}>

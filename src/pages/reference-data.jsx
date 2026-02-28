@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Button, Modal, Table, Tabs, Tag, Spin } from 'antd';
+import { Button, Grid, Modal, Table, Tabs, Tag, Spin } from 'antd';
 import CrudPage from '../components/CrudPage.jsx';
 import {
   getCountries,
@@ -32,6 +32,7 @@ import {
   getCurrencyRates,
 } from '../lib/api/reference.js';
 import { getProductCategories, getProductCategory } from '../lib/api/products.js';
+import { useTheme } from '../lib/hooks/useTheme.js';
 
 function CurrencyRatesTab() {
   const [data, setData] = useState([]);
@@ -115,6 +116,9 @@ function CurrencyRatesTab() {
 }
 
 export default function ReferenceDataPage() {
+  const { theme } = useTheme();
+  const screens = Grid.useBreakpoint();
+  const isMobile = !screens.lg;
   const readOnly = true;
   const emptyFields = [];
   const [membersModal, setMembersModal] = useState({
@@ -408,8 +412,12 @@ export default function ReferenceDataPage() {
     <>
       <Tabs
         items={tabs}
-        tabPosition="left"
-        style={{ background: '#fff', padding: 16, borderRadius: 8 }}
+        tabPosition={isMobile ? 'top' : 'left'}
+        style={{
+          background: theme === 'dark' ? '#161b22' : '#fff',
+          padding: isMobile ? 12 : 16,
+          borderRadius: 8,
+        }}
       />
       <Modal
         title={membersModal.title}

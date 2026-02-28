@@ -15,6 +15,7 @@ import {
   DeleteOutlined,
   MoreOutlined,
 } from '@ant-design/icons';
+import { useTheme } from '../lib/hooks/useTheme';
 
 export default function BulkActions({
   selectedRowKeys = [],
@@ -28,6 +29,7 @@ export default function BulkActions({
   customActions = [],
   entityName = 'записей',
 }) {
+  const { theme } = useTheme();
   const { message, modal } = App.useApp();
   const count = selectedRowKeys.length;
 
@@ -97,23 +99,23 @@ export default function BulkActions({
     <div
       style={{
         position: 'fixed',
-        bottom: 24,
+        bottom: 16,
         left: '50%',
         transform: 'translateX(-50%)',
         zIndex: 1000,
         maxWidth: 600,
-        width: '90%',
+        width: 'calc(100% - 24px)',
         padding: '12px 16px',
-        background: '#fff',
+        background: theme === 'dark' ? '#161b22' : '#fff',
         borderRadius: 8,
-        boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
-        border: '1px solid #d9d9d9',
+        boxShadow: theme === 'dark' ? '0 4px 12px rgba(0,0,0,0.35)' : '0 4px 12px rgba(0,0,0,0.15)',
+        border: `1px solid ${theme === 'dark' ? '#2d3343' : '#d9d9d9'}`,
       }}
     >
       <Space style={{ width: '100%', justifyContent: 'space-between' }} wrap>
         <Space>
           <Badge count={count} style={{ backgroundColor: '#1890ff' }} />
-          <span style={{ fontSize: 14, fontWeight: 500 }}>
+          <span style={{ fontSize: 14, fontWeight: 500, color: theme === 'dark' ? '#f1f5f9' : 'inherit' }}>
             Выбрано: {count} {entityName}
           </span>
         </Space>

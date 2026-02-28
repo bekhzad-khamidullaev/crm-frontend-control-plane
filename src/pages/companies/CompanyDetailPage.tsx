@@ -14,6 +14,7 @@ import {
   Statistic,
   List,
   Table,
+  theme as antdTheme,
 } from 'antd';
 import {
   ArrowLeftOutlined,
@@ -36,6 +37,7 @@ export interface CompanyDetailPageProps {
 }
 
 export const CompanyDetailPage: React.FC<CompanyDetailPageProps> = ({ id }) => {
+  const { token } = antdTheme.useToken();
   const { data: company, isLoading: isLoadingCompany } = useCompany(id!);
   const { data: contactsData, isLoading: isLoadingContacts } = useCompanyContacts(id!);
   const { data: dealsData, isLoading: isLoadingDeals } = useCompanyDeals(id!);
@@ -77,7 +79,12 @@ export const CompanyDetailPage: React.FC<CompanyDetailPageProps> = ({ id }) => {
       key: 'details',
       label: 'Детали',
       children: (
-        <Descriptions bordered column={2} contentStyle={{ background: '#fff' }} >
+        <Descriptions
+          bordered
+          column={{ xs: 1, sm: 1, md: 2 }}
+          contentStyle={{ background: token.colorBgContainer }}
+          labelStyle={{ background: token.colorFillAlter }}
+        >
           <Descriptions.Item label="Название" span={2}>
             <Space>
               <Avatar icon={<ShopOutlined />} style={{ backgroundColor: '#52c41a' }} />

@@ -191,3 +191,50 @@ h1, h2, h3, h4, h5, h6, .ant-typography {
   background: var(--mdc-theme-surface);
   color: var(--mdc-theme-text-primary);
 }
+
+/* Ant Design dark-surface fixes for pages with white leftovers */
+.dark .ant-tabs-content-holder,
+.dark .ant-tabs-tabpane,
+.dark .ant-card,
+.dark .ant-card-body,
+.dark .ant-descriptions-view,
+.dark .ant-descriptions-item-label,
+.dark .ant-descriptions-item-content,
+.dark .ant-modal-content {
+  background: #161b22 !important;
+  color: #f1f5f9 !important;
+}
+
+.dark .ant-descriptions-item-label {
+  background: #1e232e !important;
+}
+
+.dark .ant-empty-description,
+.dark .ant-typography,
+.dark .ant-table-cell,
+.dark .ant-list-item-meta-description {
+  color: #cbd5e1 !important;
+}
+
+/* Mobile-friendly defaults */
+@media (max-width: 992px) {
+  .ant-card-body {
+    padding: 14px !important;
+  }
+
+  .ant-table-wrapper {
+    overflow-x: auto;
+  }
+
+  .ant-space {
+    max-width: 100%;
+  }
+
+  .ant-space-item {
+    min-width: 0;
+  }
+
+  .page-header-title {
+    font-size: 1.25rem;
+  }
+}

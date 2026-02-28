@@ -15,6 +15,7 @@ import {
     Spin,
     Tabs,
     Tag,
+    theme as antdTheme,
     Typography
 } from 'antd';
 import dayjs from 'dayjs';
@@ -30,6 +31,7 @@ interface LeadDetailPageProps {
 }
 
 export const LeadDetailPage: React.FC<LeadDetailPageProps> = ({ id }) => {
+  const { token } = antdTheme.useToken();
   const { data: lead, isLoading } = useLead(id!);
 
   // Explicitly check for loading status
@@ -47,7 +49,12 @@ export const LeadDetailPage: React.FC<LeadDetailPageProps> = ({ id }) => {
       key: 'details',
       label: 'Детали',
       children: (
-        <Descriptions bordered column={2} contentStyle={{ background: '#fff' }}>
+        <Descriptions
+          bordered
+          column={{ xs: 1, sm: 1, md: 2 }}
+          contentStyle={{ background: token.colorBgContainer }}
+          labelStyle={{ background: token.colorFillAlter }}
+        >
           <Descriptions.Item label="ФИО" span={2}>
             <Space>
                <Avatar icon={<UserOutlined />} style={{ backgroundColor: '#1890ff' }} />
