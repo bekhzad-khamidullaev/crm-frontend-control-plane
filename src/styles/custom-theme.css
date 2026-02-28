@@ -1,5 +1,11 @@
 /* Custom Ant Design Theme Overrides - Enterprise CRM / Radix UI Style */
 
+html,
+body,
+#root {
+  min-height: 100%;
+}
+
 body {
   margin: 0;
   padding: 0;
@@ -8,6 +14,8 @@ body {
   color: #09090b;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+  -webkit-text-size-adjust: 100%;
+  overflow-x: hidden;
 }
 
 code {
@@ -216,14 +224,38 @@ h1, h2, h3, h4, h5, h6, .ant-typography {
   color: #cbd5e1 !important;
 }
 
+.dark .detail-page a {
+  color: #8ab4f8;
+}
+
+.dark .detail-page .ant-descriptions-bordered .ant-descriptions-item-label {
+  border-color: #2d3343 !important;
+}
+
+.dark .detail-page .ant-descriptions-bordered .ant-descriptions-item-content {
+  border-color: #2d3343 !important;
+}
+
 /* Mobile-friendly defaults */
 @media (max-width: 992px) {
+  .ant-layout {
+    min-height: 100dvh;
+  }
+
   .ant-card-body {
     padding: 14px !important;
   }
 
   .ant-table-wrapper {
     overflow-x: auto;
+  }
+
+  .ant-table-wrapper .ant-table {
+    min-width: 640px;
+  }
+
+  .ant-btn {
+    min-height: 36px;
   }
 
   .ant-space {
@@ -236,5 +268,35 @@ h1, h2, h3, h4, h5, h6, .ant-typography {
 
   .page-header-title {
     font-size: 1.25rem;
+  }
+}
+
+@media (max-width: 576px) {
+  .ant-modal,
+  .ant-drawer-content-wrapper {
+    max-width: 100vw;
+  }
+
+  .ant-form-item {
+    margin-bottom: 14px;
+  }
+
+  .page-header {
+    margin-bottom: 16px;
+  }
+
+  .action-buttons {
+    gap: 6px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
   }
 }

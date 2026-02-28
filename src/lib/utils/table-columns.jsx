@@ -12,6 +12,7 @@ import {
   PhoneOutlined,
 } from '@ant-design/icons';
 import dayjs from 'dayjs';
+import { formatCurrency } from './format.js';
 
 // Общие стили
 const styles = {
@@ -84,8 +85,6 @@ export function createAmountColumn({
   title = 'Сумма',
   dataIndex = 'amount',
   width = 130,
-  currency = '₽',
-  locale = 'ru-RU',
   iconColor = '#52c41a',
   ...restProps
 }) {
@@ -97,9 +96,7 @@ export function createAmountColumn({
     render: (amount) => (
       <Space>
         <DollarOutlined style={{ color: iconColor }} />
-        <span style={styles.primaryText}>
-          {amount ? amount.toLocaleString(locale) : '0'} {currency}
-        </span>
+        <span style={styles.primaryText}>{formatCurrency(amount)}</span>
       </Space>
     ),
     sorter: (a, b) => (a[dataIndex] || 0) - (b[dataIndex] || 0),

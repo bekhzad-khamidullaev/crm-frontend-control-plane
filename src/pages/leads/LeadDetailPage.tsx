@@ -11,6 +11,7 @@ import {
     Button,
     Card,
     Descriptions,
+    Grid,
     Space,
     Spin,
     Tabs,
@@ -32,6 +33,8 @@ interface LeadDetailPageProps {
 
 export const LeadDetailPage: React.FC<LeadDetailPageProps> = ({ id }) => {
   const { token } = antdTheme.useToken();
+  const screens = Grid.useBreakpoint();
+  const isMobile = !screens.md;
   const { data: lead, isLoading } = useLead(id!);
 
   // Explicitly check for loading status
@@ -117,24 +120,25 @@ export const LeadDetailPage: React.FC<LeadDetailPageProps> = ({ id }) => {
   ];
 
   return (
-    <div>
-      <Space style={{ marginBottom: 16 }}>
-        <Button icon={<ArrowLeftOutlined />} onClick={() => navigate('/leads')}>
+    <div className="detail-page">
+      <Space wrap style={{ marginBottom: 16 }}>
+        <Button icon={<ArrowLeftOutlined />} onClick={() => navigate('/leads')} block={isMobile}>
           Назад
         </Button>
         <Button
           type="primary"
           icon={<EditOutlined />}
           onClick={() => navigate(`/leads/${id}/edit`)}
+          block={isMobile}
         >
           Редактировать
         </Button>
       </Space>
 
-      <Title level={2}>{lead.full_name}</Title>
+      <Title level={isMobile ? 3 : 2}>{lead.full_name}</Title>
 
-      <Card>
-        <Tabs items={tabItems} defaultActiveKey="details" />
+      <Card bodyStyle={{ padding: isMobile ? 12 : 24 }}>
+        <Tabs items={tabItems} defaultActiveKey="details" size={isMobile ? 'small' : 'middle'} />
       </Card>
     </div>
   );

@@ -14,6 +14,7 @@ import {
     Button,
     Card,
     Descriptions,
+    Grid,
     Space,
     Spin,
     Tabs,
@@ -31,6 +32,8 @@ export interface ContactDetailPageProps {
 
 export const ContactDetailPage: React.FC<ContactDetailPageProps> = ({ id }) => {
   const { token } = antdTheme.useToken();
+  const screens = Grid.useBreakpoint();
+  const isMobile = !screens.md;
   const { data: contact, isLoading } = useContact(id!);
 
   // Conditionally fetch company if exists
@@ -108,24 +111,25 @@ export const ContactDetailPage: React.FC<ContactDetailPageProps> = ({ id }) => {
   ];
 
   return (
-    <div>
-      <Space style={{ marginBottom: 16 }}>
-        <Button icon={<ArrowLeftOutlined />} onClick={() => navigate('/contacts')}>
+    <div className="detail-page">
+      <Space wrap style={{ marginBottom: 16 }}>
+        <Button icon={<ArrowLeftOutlined />} onClick={() => navigate('/contacts')} block={isMobile}>
           Назад
         </Button>
         <Button
           type="primary"
           icon={<EditOutlined />}
           onClick={() => navigate(`/contacts/${id}/edit`)}
+          block={isMobile}
         >
           Редактировать
         </Button>
       </Space>
 
-      <Title level={2}>{contact.full_name}</Title>
+      <Title level={isMobile ? 3 : 2}>{contact.full_name}</Title>
 
-      <Card>
-        <Tabs items={tabItems} defaultActiveKey="details" />
+      <Card bodyStyle={{ padding: isMobile ? 12 : 24 }}>
+        <Tabs items={tabItems} defaultActiveKey="details" size={isMobile ? 'small' : 'middle'} />
       </Card>
     </div>
   );

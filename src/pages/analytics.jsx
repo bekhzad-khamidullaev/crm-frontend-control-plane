@@ -26,14 +26,9 @@ import { api } from '../lib/api/client.js';
 import { getOverview, getDashboardAnalytics, getFunnelData, getActivityFeed } from '../lib/api/analytics.js';
 import predictions from '../lib/api/predictions.js';
 import { AnalyticsCard, AnimatedChart, PredictionChart } from '../components/analytics';
+import { formatCurrency } from '../lib/utils/format.js';
 
 const { Text, Title } = Typography;
-
-const currencyFormatter = new Intl.NumberFormat('ru-RU', {
-  style: 'currency',
-  currency: 'RUB',
-  maximumFractionDigits: 0,
-});
 
 const chartColors = {
   primary: 'rgba(24, 144, 255, 0.7)',
@@ -435,7 +430,7 @@ export default function AnalyticsPage() {
                 <Statistic
                   title="Выручка"
                   value={overview?.total_revenue || 0}
-                  formatter={(value) => currencyFormatter.format(value)}
+                  formatter={(value) => formatCurrency(value)}
                   suffix={renderGrowthTag(overview?.revenue_growth)}
                 />
               </Col>

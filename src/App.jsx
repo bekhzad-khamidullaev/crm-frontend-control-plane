@@ -44,7 +44,7 @@ const CompanyForm = lazy(() => import('./pages/companies/CompanyCreatePage')); /
 const CompanyEdit = lazy(() => import('./pages/companies/CompanyEditPage')); // Need to add edit route support if not exists, or replace CompanyForm usage
 // Existing App.jsx uses CompanyForm for both create and edit likely?
 // Check routes in App.jsx to see how they map.
-const CompanyDetail = lazy(() => import('./modules/companies/CompanyDetail.jsx')); // Keep detail for now, or migrate? User asked for Form first.
+const CompanyDetailPage = lazy(() => import('./pages/companies/CompanyDetailPage'));
 
 // Deals module
 // Deals module

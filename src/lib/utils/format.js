@@ -11,6 +11,20 @@ const ISO_CURRENCY_CODES = new Set([
 ]);
 
 /**
+ * Единая валюта отображения по всему приложению.
+ * При необходимости можно переопределить через localStorage: contora_currency.
+ */
+export const APP_CURRENCY_CODE = (() => {
+  try {
+    const stored = (typeof window !== 'undefined' && window.localStorage.getItem('contora_currency')) || '';
+    const normalized = stored.trim().toUpperCase();
+    return ISO_CURRENCY_CODES.has(normalized) ? normalized : 'RUB';
+  } catch {
+    return 'RUB';
+  }
+})();
+
+/**
  * Форматирует денежную сумму единообразно по всему приложению.
  *
  * @param {number|string} value        - Числовое значение суммы
@@ -25,9 +39,9 @@ const ISO_CURRENCY_CODES = new Set([
  * formatCurrency(1234, 'UZS')    // → "1 234 UZS"
  * formatCurrency(null)           // → "0 ₽"
  */
-export function formatCurrency(value, currencyCode = 'RUB') {
+export function formatCurrency(value, _currencyCode = 'RUB') {
   const num = parseFloat(value) || 0;
-  const code = (currencyCode || 'RUB').trim();
+  const code = APP_CURRENCY_CODE;
 
   if (ISO_CURRENCY_CODES.has(code)) {
     return new Intl.NumberFormat('ru-RU', {

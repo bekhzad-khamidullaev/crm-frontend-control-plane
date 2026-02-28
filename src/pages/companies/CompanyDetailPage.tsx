@@ -38,6 +38,14 @@ export interface CompanyDetailPageProps {
 
 export const CompanyDetailPage: React.FC<CompanyDetailPageProps> = ({ id }) => {
   const { token } = antdTheme.useToken();
+  const formatAmount = (value: number) =>
+    new Intl.NumberFormat('ru-RU', {
+      style: 'currency',
+      currency: 'RUB',
+      minimumFractionDigits: 0,
+      maximumFractionDigits: 2,
+    }).format(Number(value || 0));
+
   const { data: company, isLoading: isLoadingCompany } = useCompany(id!);
   const { data: contactsData, isLoading: isLoadingContacts } = useCompanyContacts(id!);
   const { data: dealsData, isLoading: isLoadingDeals } = useCompanyDeals(id!);
@@ -169,7 +177,7 @@ export const CompanyDetailPage: React.FC<CompanyDetailPageProps> = ({ id }) => {
           pagination={false}
           columns={[
             { title: 'Название', dataIndex: 'name', key: 'name', render: (val: string, rec: any) => <a onClick={() => navigate(`/deals/${rec.id}`)}>{val}</a> },
-            { title: 'Сумма', dataIndex: 'amount', key: 'amount', render: (val: number) => val ? `${val} ₽` : '-' },
+            { title: 'Сумма', dataIndex: 'amount', key: 'amount', render: (val: number) => val ? formatAmount(val) : '-' },
             { title: 'Стадия', dataIndex: 'stage', key: 'stage' },
             { title: 'Дата', dataIndex: 'created_at', key: 'created_at', render: (val: string) => dayjs(val).format('DD.MM.YYYY') }
           ]}
@@ -179,8 +187,8 @@ export const CompanyDetailPage: React.FC<CompanyDetailPageProps> = ({ id }) => {
   ];
 
   return (
-    <div>
-      <Space style={{ marginBottom: 16 }}>
+    <div className="detail-page">
+      <Space wrap style={{ marginBottom: 16 }}>
         <Button icon={<ArrowLeftOutlined />} onClick={() => navigate('/companies')}>
           Назад
         </Button>
@@ -196,7 +204,7 @@ export const CompanyDetailPage: React.FC<CompanyDetailPageProps> = ({ id }) => {
       <Title level={2}>{companyName}</Title>
 
       <Row gutter={16} style={{ marginBottom: 24 }}>
-        <Col span={8}>
+        <Col xs={24} md={8}>
           <Card>
             <Statistic
               title="Контактов"
@@ -206,7 +214,7 @@ export const CompanyDetailPage: React.FC<CompanyDetailPageProps> = ({ id }) => {
             />
           </Card>
         </Col>
-        <Col span={8}>
+        <Col xs={24} md={8}>
           <Card>
             <Statistic
               title="Сделок"
@@ -216,13 +224,13 @@ export const CompanyDetailPage: React.FC<CompanyDetailPageProps> = ({ id }) => {
             />
           </Card>
         </Col>
-        <Col span={8}>
+        <Col xs={24} md={8}>
           <Card>
              <Statistic
               title="Сумма сделок"
               value={dealsAmount}
               prefix={<DollarOutlined />}
-              suffix="₽"
+              formatter={(value) => formatAmount(Number(value || 0))}
               valueStyle={{ color: '#cf1322' }}
             />
           </Card>
