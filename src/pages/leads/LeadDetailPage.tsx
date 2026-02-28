@@ -7,11 +7,13 @@ import {
     UserOutlined
 } from '@ant-design/icons';
 import {
+    App,
     Avatar,
     Button,
     Card,
     Descriptions,
     Grid,
+    Modal,
     Space,
     Spin,
     Tabs,
@@ -23,6 +25,7 @@ import dayjs from 'dayjs';
 import React from 'react';
 // @ts-ignore
 import { useLead } from '@/entities/lead/api/queries';
+import { convertLead } from '@/lib/api/leads.js';
 import { navigate } from '@/router.js';
 
 const { Title, Text } = Typography;
@@ -35,7 +38,41 @@ export const LeadDetailPage: React.FC<LeadDetailPageProps> = ({ id }) => {
   const { token } = antdTheme.useToken();
   const screens = Grid.useBreakpoint();
   const isMobile = !screens.md;
+  const { message } = App.useApp();
   const { data: lead, isLoading } = useLead(id!);
+  const [isConverting, setIsConverting] = React.useState(false);
+
+  const isConverted = Boolean(lead?.contact || lead?.company || lead?.was_in_touch);
+
+  const handleConvertToDeal = () => {
+    if (!id || isConverting || isConverted) return;
+
+    Modal.confirm({
+      title: 'Конвертировать лид в сделку?',
+      content: 'Будут созданы/связаны контакт, компания и новая сделка.',
+      okText: 'Конвертировать',
+      cancelText: 'Отмена',
+      onOk: async () => {
+        try {
+          setIsConverting(true);
+          const result = await convertLead(id, { create_deal: true });
+          message.success('Лид успешно конвертирован');
+
+          if (result?.deal) {
+            navigate(`/deals/${result.deal}`);
+            return;
+          }
+
+          navigate('/deals');
+        } catch (error) {
+          console.error(error);
+          message.error('Не удалось конвертировать лид');
+        } finally {
+          setIsConverting(false);
+        }
+      },
+    });
+  };
 
   // Explicitly check for loading status
   if (isLoading) {
@@ -132,6 +169,14 @@ export const LeadDetailPage: React.FC<LeadDetailPageProps> = ({ id }) => {
           block={isMobile}
         >
           Редактировать
+        </Button>
+        <Button
+          onClick={handleConvertToDeal}
+          loading={isConverting}
+          disabled={isConverted}
+          block={isMobile}
+        >
+          {isConverted ? 'Уже конвертирован' : 'Конвертировать в сделку'}
         </Button>
       </Space>
 
