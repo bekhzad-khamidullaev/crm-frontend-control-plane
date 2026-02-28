@@ -16,7 +16,6 @@ export class UserProfilesService {
      */
     public static profilesList({
         page,
-        pageSize,
         search,
         user,
     }: {
@@ -24,10 +23,6 @@ export class UserProfilesService {
          * A page number within the paginated result set.
          */
         page?: number,
-        /**
-         * Number of results to return per page.
-         */
-        pageSize?: number,
         /**
          * A search term.
          */
@@ -39,7 +34,6 @@ export class UserProfilesService {
             url: '/api/profiles/',
             query: {
                 'page': page,
-                'page_size': pageSize,
                 'search': search,
                 'user': user,
             },

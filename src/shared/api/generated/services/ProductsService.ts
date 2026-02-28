@@ -19,7 +19,6 @@ export class ProductsService {
         onSale,
         ordering,
         page,
-        pageSize,
         productCategory,
         search,
         type,
@@ -34,10 +33,6 @@ export class ProductsService {
          * A page number within the paginated result set.
          */
         page?: number,
-        /**
-         * Number of results to return per page.
-         */
-        pageSize?: number,
         productCategory?: number,
         /**
          * A search term.
@@ -57,7 +52,6 @@ export class ProductsService {
                 'on_sale': onSale,
                 'ordering': ordering,
                 'page': page,
-                'page_size': pageSize,
                 'product_category': productCategory,
                 'search': search,
                 'type': type,

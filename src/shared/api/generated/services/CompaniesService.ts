@@ -22,7 +22,6 @@ export class CompaniesService {
         ordering,
         owner,
         page,
-        pageSize,
         search,
         type,
     }: {
@@ -40,10 +39,6 @@ export class CompaniesService {
          */
         page?: number,
         /**
-         * Number of results to return per page.
-         */
-        pageSize?: number,
-        /**
          * A search term.
          */
         search?: string,
@@ -60,7 +55,6 @@ export class CompaniesService {
                 'ordering': ordering,
                 'owner': owner,
                 'page': page,
-                'page_size': pageSize,
                 'search': search,
                 'type': type,
             },

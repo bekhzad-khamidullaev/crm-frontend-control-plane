@@ -18,7 +18,6 @@ export class VoIpService {
     public static voipConnectionsList({
         active,
         page,
-        pageSize,
         provider,
     }: {
         active?: boolean,
@@ -26,10 +25,6 @@ export class VoIpService {
          * A page number within the paginated result set.
          */
         page?: number,
-        /**
-         * Number of results to return per page.
-         */
-        pageSize?: number,
         /**
          * Specify VoIP service provider
          *
@@ -45,7 +40,6 @@ export class VoIpService {
             query: {
                 'active': active,
                 'page': page,
-                'page_size': pageSize,
                 'provider': provider,
             },
         });
@@ -162,7 +156,6 @@ export class VoIpService {
         clientType,
         isConsumed,
         page,
-        pageSize,
         search,
         user,
     }: {
@@ -172,10 +165,6 @@ export class VoIpService {
          * A page number within the paginated result set.
          */
         page?: number,
-        /**
-         * Number of results to return per page.
-         */
-        pageSize?: number,
         /**
          * A search term.
          */
@@ -189,7 +178,6 @@ export class VoIpService {
                 'client_type': clientType,
                 'is_consumed': isConsumed,
                 'page': page,
-                'page_size': pageSize,
                 'search': search,
                 'user': user,
             },

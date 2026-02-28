@@ -23,7 +23,6 @@ export class CrmEmailsService {
         ordering,
         owner,
         page,
-        pageSize,
         request,
         search,
     }: {
@@ -41,10 +40,6 @@ export class CrmEmailsService {
          * A page number within the paginated result set.
          */
         page?: number,
-        /**
-         * Number of results to return per page.
-         */
-        pageSize?: number,
         request?: number,
         /**
          * A search term.
@@ -63,7 +58,6 @@ export class CrmEmailsService {
                 'ordering': ordering,
                 'owner': owner,
                 'page': page,
-                'page_size': pageSize,
                 'request': request,
                 'search': search,
             },

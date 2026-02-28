@@ -20,7 +20,6 @@ export class RemindersService {
         ordering,
         owner,
         page,
-        pageSize,
         search,
     }: {
         active?: boolean,
@@ -35,10 +34,6 @@ export class RemindersService {
          */
         page?: number,
         /**
-         * Number of results to return per page.
-         */
-        pageSize?: number,
-        /**
          * A search term.
          */
         search?: string,
@@ -52,7 +47,6 @@ export class RemindersService {
                 'ordering': ordering,
                 'owner': owner,
                 'page': page,
-                'page_size': pageSize,
                 'search': search,
             },
         });

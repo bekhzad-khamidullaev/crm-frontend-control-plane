@@ -18,7 +18,6 @@ export class CrmTagsService {
         ordering,
         owner,
         page,
-        pageSize,
         search,
     }: {
         department?: number,
@@ -32,10 +31,6 @@ export class CrmTagsService {
          */
         page?: number,
         /**
-         * Number of results to return per page.
-         */
-        pageSize?: number,
-        /**
          * A search term.
          */
         search?: string,
@@ -48,7 +43,6 @@ export class CrmTagsService {
                 'ordering': ordering,
                 'owner': owner,
                 'page': page,
-                'page_size': pageSize,
                 'search': search,
             },
         });

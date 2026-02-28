@@ -23,7 +23,6 @@ export class LeadsService {
         ordering,
         owner,
         page,
-        pageSize,
         search,
         wasInTouch,
     }: {
@@ -42,10 +41,6 @@ export class LeadsService {
          */
         page?: number,
         /**
-         * Number of results to return per page.
-         */
-        pageSize?: number,
-        /**
          * A search term.
          */
         search?: string,
@@ -63,7 +58,6 @@ export class LeadsService {
                 'ordering': ordering,
                 'owner': owner,
                 'page': page,
-                'page_size': pageSize,
                 'search': search,
                 'was_in_touch': wasInTouch,
             },

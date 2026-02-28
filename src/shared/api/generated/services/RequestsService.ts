@@ -23,7 +23,6 @@ export class RequestsService {
         ordering,
         owner,
         page,
-        pageSize,
         search,
     }: {
         company?: number,
@@ -41,10 +40,6 @@ export class RequestsService {
          */
         page?: number,
         /**
-         * Number of results to return per page.
-         */
-        pageSize?: number,
-        /**
          * A search term.
          */
         search?: string,
@@ -61,7 +56,6 @@ export class RequestsService {
                 'ordering': ordering,
                 'owner': owner,
                 'page': page,
-                'page_size': pageSize,
                 'search': search,
             },
         });

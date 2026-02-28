@@ -17,7 +17,6 @@ export class CallLogsService {
     public static callLogsList({
         ordering,
         page,
-        pageSize,
         search,
     }: {
         /**
@@ -29,10 +28,6 @@ export class CallLogsService {
          */
         page?: number,
         /**
-         * Number of results to return per page.
-         */
-        pageSize?: number,
-        /**
          * A search term.
          */
         search?: string,
@@ -43,7 +38,6 @@ export class CallLogsService {
             query: {
                 'ordering': ordering,
                 'page': page,
-                'page_size': pageSize,
                 'search': search,
             },
         });

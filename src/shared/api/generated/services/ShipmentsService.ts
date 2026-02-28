@@ -19,7 +19,6 @@ export class ShipmentsService {
         deal,
         ordering,
         page,
-        pageSize,
         product,
         search,
     }: {
@@ -33,10 +32,6 @@ export class ShipmentsService {
          * A page number within the paginated result set.
          */
         page?: number,
-        /**
-         * Number of results to return per page.
-         */
-        pageSize?: number,
         product?: number,
         /**
          * A search term.
@@ -51,7 +46,6 @@ export class ShipmentsService {
                 'deal': deal,
                 'ordering': ordering,
                 'page': page,
-                'page_size': pageSize,
                 'product': product,
                 'search': search,
             },
