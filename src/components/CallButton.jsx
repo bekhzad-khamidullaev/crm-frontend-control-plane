@@ -1,6 +1,7 @@
 import { CheckCircleOutlined, ClockCircleOutlined, PhoneOutlined } from '@ant-design/icons';
 import { App, Button, Modal, Space, Typography } from 'antd';
 import { useEffect, useRef, useState } from 'react';
+import { initiateCall } from '../lib/api/telephony.js';
 import { getProfile } from '../lib/api/user.js';
 import { addCallToHistory, clearActiveCall, setActiveCall } from '../lib/store/index.js';
 import sipClient from '../lib/telephony/SIPClient.js';
@@ -215,7 +216,25 @@ function CallButton({ phone, name, entityType, entityId, size = 'middle', type =
         });
       } catch (error) {
         console.error('[CallButton] Error starting call:', error);
-        message.error('Ошибка при звонке: ' + error.message);
+        const reason = String(error?.message || '').trim();
+        if (/not found/i.test(reason)) {
+          try {
+            const profile = await getProfile().catch(() => null);
+            const fromNumber = String(profile?.pbx_number || '').trim();
+            await initiateCall({
+              to_number: normalizePhone(phone),
+              from_number: fromNumber || undefined,
+              contact_id: entityType === 'contact' ? entityId : undefined,
+              lead_id: entityType === 'lead' ? entityId : undefined,
+            });
+            message.success('Звонок отправлен через сервер телефонии');
+            closeModal();
+            return;
+          } catch (fallbackError) {
+            console.error('[CallButton] Fallback originate failed:', fallbackError);
+          }
+        }
+        message.error('Ошибка при звонке: ' + reason);
         setCallStatus('idle');
         currentCallTokenRef.current = null;
       }
