@@ -18,6 +18,13 @@ function CallButton({ phone, name, entityType, entityId, size = 'middle', type =
   const currentCallTokenRef = useRef(null);
   const fallbackAttemptedRef = useRef(false);
   const normalizePhone = (value) => String(value || '').replace(/[^\d+]/g, '');
+  const normalizeDialForSip = (value) => {
+    const digits = String(value || '').replace(/\D/g, '');
+    if (digits.startsWith('998') && digits.length >= 12) {
+      return digits.slice(-9);
+    }
+    return digits;
+  };
   const isLikelyInternalExtension = (value) => {
     const digits = String(value || '').replace(/\D/g, '');
     return digits.length > 0 && digits.length <= 5;
@@ -232,21 +239,12 @@ function CallButton({ phone, name, entityType, entityId, size = 'middle', type =
     fallbackAttemptedRef.current = false;
 
     if (mode === 'browser') {
-      // External numbers should be originated by backend/PBX logic.
-      // Direct SIP INVITE is kept for internal short extensions.
+      // Try SIP call first (with dialplan-friendly normalization), then fallback to backend originate.
       try {
-        const dialNumber = normalizePhone(phone).replace(/^\+/, '');
+        const dialNumber = normalizeDialForSip(phone);
         if (!dialNumber) {
           throw new Error('Неверный формат номера');
         }
-
-        if (!isLikelyInternalExtension(dialNumber)) {
-          const started = await tryServerOriginateFallback();
-          if (started) return;
-          throw new Error('Не удалось инициировать исходящий вызов через сервер');
-        }
-
-        // WebRTC call via SIP for internal extensions
         if (!sipClient.isRegistered) {
           const registered = await ensureSipReady();
           if (!registered) {
