@@ -14,6 +14,37 @@ function CallButton({ phone, name, entityType, entityId, size = 'middle', type =
   const [callDuration, setCallDuration] = useState(0);
   const audioRef = useRef(null);
   const timerRef = useRef(null);
+  const currentCallTokenRef = useRef(null);
+  const normalizePhone = (value) => String(value || '').replace(/[^\d+]/g, '');
+
+  const isOwnCall = (callData) => {
+    if (!callData || typeof callData !== 'object') return false;
+
+    const token = callData.uiCallToken;
+    if (token && currentCallTokenRef.current) {
+      return token === currentCallTokenRef.current;
+    }
+
+    const callEntityId = callData.relatedEntityId ?? callData.entityId;
+    const localEntityId = entityId ?? null;
+    if (callEntityId != null && localEntityId != null) {
+      return String(callEntityId) === String(localEntityId);
+    }
+
+    const callPhone = normalizePhone(callData.phoneNumber || callData.number);
+    const localPhone = normalizePhone(phone);
+    if (callPhone && localPhone) {
+      return callPhone === localPhone;
+    }
+
+    const callName = String(callData.contactName || callData.name || '').trim();
+    const localName = String(name || '').trim();
+    if (callName && localName) {
+      return callName === localName;
+    }
+
+    return false;
+  };
 
   const ensureSipRegistration = async () => {
     if (sipClient.isRegistered) return true;
@@ -53,6 +84,7 @@ function CallButton({ phone, name, entityType, entityId, size = 'middle', type =
   // Setup event listeners for SIP client
   useEffect(() => {
     const handleCallStarted = async (callData) => {
+      if (!isOwnCall(callData)) return;
       console.log('[CallButton] Call started:', callData);
       setCallStatus('calling');
 
@@ -68,12 +100,14 @@ function CallButton({ phone, name, entityType, entityId, size = 'middle', type =
     };
 
     const handleCallAnswered = (callData) => {
+      if (!isOwnCall(callData)) return;
       console.log('[CallButton] Call answered:', callData);
       setCallStatus('connected');
       startTimer();
     };
 
     const handleCallEnded = async (callData) => {
+      if (!isOwnCall(callData)) return;
       console.log('[CallButton] Call ended:', callData);
       stopTimer();
       clearActiveCall();
@@ -102,7 +136,7 @@ function CallButton({ phone, name, entityType, entityId, size = 'middle', type =
       sipClient.off('callAnswered', handleCallAnswered);
       sipClient.off('callEnded', handleCallEnded);
     };
-  }, [entityType, entityId, name]);
+  }, [entityType, entityId, name, phone]);
 
   const handleCall = () => {
     if (!phone) {
@@ -153,6 +187,8 @@ function CallButton({ phone, name, entityType, entityId, size = 'middle', type =
 
   const startCall = async () => {
     setCallStatus('calling');
+    const callToken = `${Date.now()}-${Math.random().toString(36).slice(2, 10)}`;
+    currentCallTokenRef.current = callToken;
 
     if (mode === 'browser') {
       // WebRTC call via SIP
@@ -172,6 +208,7 @@ function CallButton({ phone, name, entityType, entityId, size = 'middle', type =
 
         const audioElement = audioRef.current;
         await sipClient.call(phone, audioElement, {
+          uiCallToken: callToken,
           relatedEntity: entityType,
           relatedEntityId: entityId,
           contactName: name
@@ -180,6 +217,7 @@ function CallButton({ phone, name, entityType, entityId, size = 'middle', type =
         console.error('[CallButton] Error starting call:', error);
         message.error('Ошибка при звонке: ' + error.message);
         setCallStatus('idle');
+        currentCallTokenRef.current = null;
       }
     } else if (mode === 'mobile') {
       // Mobile tel: link
@@ -232,6 +270,7 @@ function CallButton({ phone, name, entityType, entityId, size = 'middle', type =
     setModalVisible(false);
     setCallStatus('idle');
     setCallDuration(0);
+    currentCallTokenRef.current = null;
   };
 
   const formatDuration = (seconds) => {
