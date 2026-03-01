@@ -1,7 +1,8 @@
 import React, { useEffect, useState } from 'react';
-import { Card, Tabs, Form, Input, Button, Space, message, Table, Alert } from 'antd';
-import { SettingOutlined, MailOutlined, BellOutlined, GlobalOutlined, ReloadOutlined } from '@ant-design/icons';
+import { Card, Tabs, Form, Input, Button, Space, message, Table, Alert, Upload } from 'antd';
+import { SettingOutlined, MailOutlined, BellOutlined, GlobalOutlined, ReloadOutlined, DatabaseOutlined, UploadOutlined, DownloadOutlined } from '@ant-design/icons';
 import settingsApi from '../lib/api/settings.js';
+import { exportCrmDataExcel, importCrmDataExcel } from '../lib/api/crmData.js';
 
 const { TextArea } = Input;
 
@@ -11,6 +12,9 @@ function SettingsPage() {
   const [loading, setLoading] = useState(false);
   const [domains, setDomains] = useState([]);
   const [domainsLoading, setDomainsLoading] = useState(false);
+  const [dataExchangeLoading, setDataExchangeLoading] = useState(false);
+  const [importFile, setImportFile] = useState(null);
+  const [importResult, setImportResult] = useState(null);
 
   useEffect(() => {
     loadMassmailSettings();
@@ -164,6 +168,101 @@ function SettingsPage() {
               </Button>
             </Space>
           </Form>
+        </Card>
+      ),
+    },
+    {
+      key: 'crm-data',
+      label: (
+        <span>
+          <DatabaseOutlined />
+          Данные CRM
+        </span>
+      ),
+      children: (
+        <Card title="Импорт/Экспорт всех данных CRM">
+          <Alert
+            message="Экспорт и импорт полного Excel-файла CRM"
+            description="Экспорт формирует форматированный Excel с листами по всем сущностям CRM. Для импорта загрузите этот же файл после редактирования."
+            type="info"
+            showIcon
+            style={{ marginBottom: 16 }}
+          />
+          <Space direction="vertical" size="middle" style={{ width: '100%' }}>
+            <Button
+              type="primary"
+              icon={<DownloadOutlined />}
+              loading={dataExchangeLoading}
+              onClick={async () => {
+                try {
+                  setDataExchangeLoading(true);
+                  const blob = await exportCrmDataExcel();
+                  const url = window.URL.createObjectURL(blob);
+                  const link = document.createElement('a');
+                  link.href = url;
+                  link.download = `crm_full_export_${new Date().toISOString().slice(0, 10)}.xlsx`;
+                  document.body.appendChild(link);
+                  link.click();
+                  document.body.removeChild(link);
+                  window.URL.revokeObjectURL(url);
+                  message.success('Экспорт CRM завершён');
+                } catch (error) {
+                  console.error('Error exporting CRM data:', error);
+                  message.error('Не удалось экспортировать данные CRM');
+                } finally {
+                  setDataExchangeLoading(false);
+                }
+              }}
+            >
+              Экспортировать в Excel
+            </Button>
+
+            <Space>
+              <Upload
+                maxCount={1}
+                beforeUpload={(file) => {
+                  setImportFile(file);
+                  return false;
+                }}
+                onRemove={() => {
+                  setImportFile(null);
+                }}
+                accept=".xlsx"
+              >
+                <Button icon={<UploadOutlined />}>Выбрать Excel файл</Button>
+              </Upload>
+              <Button
+                type="primary"
+                loading={dataExchangeLoading}
+                disabled={!importFile}
+                onClick={async () => {
+                  if (!importFile) return;
+                  try {
+                    setDataExchangeLoading(true);
+                    const result = await importCrmDataExcel(importFile);
+                    setImportResult(result);
+                    message.success('Импорт CRM завершён');
+                  } catch (error) {
+                    console.error('Error importing CRM data:', error);
+                    message.error('Ошибка импорта CRM данных');
+                  } finally {
+                    setDataExchangeLoading(false);
+                  }
+                }}
+              >
+                Импортировать из Excel
+              </Button>
+            </Space>
+
+            {importResult && (
+              <Alert
+                type="success"
+                showIcon
+                message={`Импорт завершён: создано ${importResult.created || 0}, обновлено ${importResult.updated || 0}, ошибок ${importResult.errors || 0}`}
+                description={<pre style={{ margin: 0, whiteSpace: 'pre-wrap' }}>{JSON.stringify(importResult.sheets || {}, null, 2)}</pre>}
+              />
+            )}
+          </Space>
         </Card>
       ),
     },

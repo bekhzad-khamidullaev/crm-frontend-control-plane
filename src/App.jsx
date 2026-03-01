@@ -451,6 +451,7 @@ function App() {
     'help-center': 'help-center',
     telephony: 'telephony',
     users: 'users',
+    settings: 'settings',
     integrations: 'integrations',
   };
 
@@ -471,10 +472,11 @@ function App() {
     if (name.startsWith('calls')) return 'calls';
     if (name.startsWith('payments')) return 'payments';
     if (name.startsWith('reminders')) return 'reminders';
-    if (name.startsWith('campaigns') || name.startsWith('marketing')) return 'marketing';
+    if (name.startsWith('campaigns')) return 'campaigns';
+    if (name === 'marketing-segments') return 'segments';
+    if (name === 'marketing-templates') return 'templates';
     if (name.startsWith('memos')) return 'memos';
-    if (name === 'crm-emails' || name === 'massmail' || name === 'sms-center')
-      return 'communications';
+    if (name === 'crm-emails' || name === 'massmail' || name === 'sms-center') return name;
     if (name === 'operations') return 'operations';
     if (name === 'reference-data') return 'reference-data';
     if (name === 'analytics') return 'analytics';

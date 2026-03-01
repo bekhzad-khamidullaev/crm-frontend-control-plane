@@ -5,14 +5,11 @@ import {
     CheckSquareOutlined,
     ClockCircleOutlined,
     CustomerServiceOutlined,
-    DashboardOutlined,
-    DatabaseOutlined,
     DisconnectOutlined,
     DollarOutlined,
     FileTextOutlined,
     FolderOutlined,
     LogoutOutlined,
-    MailOutlined,
     MenuFoldOutlined,
     MenuUnfoldOutlined,
     MessageOutlined,
@@ -22,7 +19,6 @@ import {
     SettingOutlined,
     SunOutlined,
     TeamOutlined,
-    ToolOutlined,
     UserOutlined,
     WifiOutlined,
 } from '@ant-design/icons';
@@ -60,7 +56,6 @@ export function AppLayout({
   const drawerWidth = screens.sm ? 300 : '86vw';
   // Build nav labels at render time so they react to locale changes.
   const baseNav = [
-    { key: 'dashboard', label: t('nav.dashboard') || 'Dashboard', icon: <DashboardOutlined />, path: '/dashboard' },
     { key: 'leads', label: t('nav.leads') || 'Leads', icon: <TeamOutlined />, path: '/leads' },
     { key: 'contacts', label: t('nav.contacts') || 'Контакты', icon: <UserOutlined />, path: '/contacts' },
     { key: 'companies', label: t('nav.companies') || 'Компании', icon: <BankOutlined />, path: '/companies' },
@@ -76,21 +71,64 @@ export function AppLayout({
     { key: 'segments', label: 'Сегменты', icon: <TeamOutlined />, path: '/marketing/segments' },
     { key: 'templates', label: 'Шаблоны', icon: <FileTextOutlined />, path: '/marketing/templates' },
     { key: 'memos', label: t('nav.memos') || 'Заметки', icon: <FileTextOutlined />, path: '/memos' },
-    { key: 'crm-emails', label: 'Emails', icon: <MailOutlined />, path: '/crm-emails' },
-    { key: 'massmail', label: 'Massmail', icon: <MailOutlined />, path: '/massmail' },
-    { key: 'sms-center', label: 'SMS', icon: <MessageOutlined />, path: '/sms' },
-    { key: 'operations', label: 'Операции', icon: <ToolOutlined />, path: '/operations' },
-    { key: 'reference-data', label: 'Справочники', icon: <DatabaseOutlined />, path: '/reference-data' },
-    { key: 'analytics', label: 'Аналитика', icon: <BarChartOutlined />, path: '/analytics' },
     { key: 'help-center', label: 'Справка', icon: <QuestionCircleOutlined />, path: '/help' },
-    { key: 'telephony', label: 'Телефония', icon: <CustomerServiceOutlined />, path: '/telephony' },
-    { key: 'users', label: 'Пользователи', icon: <TeamOutlined />, path: '/users' },
-    { key: 'integrations', label: t('nav.integrations') || 'Интеграции', icon: <SettingOutlined />, path: '/integrations' },
+    {
+      key: 'reports-analytics',
+      label: 'Отчеты и аналитика',
+      icon: <BarChartOutlined />,
+      children: [
+        { key: 'dashboard', label: t('nav.dashboard') || 'Dashboard', path: '/dashboard' },
+        { key: 'analytics', label: 'Аналитика', path: '/analytics' },
+      ],
+    },
+    {
+      key: 'integrations-hub',
+      label: t('nav.integrations') || 'Интеграции',
+      icon: <SettingOutlined />,
+      children: [
+        { key: 'integrations', label: t('nav.integrations') || 'Интеграции', path: '/integrations' },
+        { key: 'crm-emails', label: 'Emails', path: '/crm-emails' },
+        { key: 'massmail', label: 'Massmail', path: '/massmail' },
+        { key: 'sms-center', label: 'SMS', path: '/sms' },
+      ],
+    },
+    {
+      key: 'settings-hub',
+      label: t('nav.settings') || 'Настройки',
+      icon: <SettingOutlined />,
+      children: [
+        { key: 'settings', label: t('nav.settings') || 'Настройки', path: '/settings' },
+        { key: 'operations', label: 'Операции', path: '/operations' },
+        { key: 'reference-data', label: 'Справочники', path: '/reference-data' },
+        { key: 'telephony', label: 'Телефония', path: '/telephony' },
+        { key: 'users', label: 'Пользователи', path: '/users' },
+      ],
+    },
   ];
   const visibleNav = Array.isArray(allowedNavKeys) && allowedNavKeys.length
-    ? baseNav.filter((item) => allowedNavKeys.includes(item.key))
+    ? baseNav
+      .map((item) => {
+        if (!Array.isArray(item.children)) {
+          return allowedNavKeys.includes(item.key) ? item : null;
+        }
+        const children = item.children.filter((child) => allowedNavKeys.includes(child.key));
+        return children.length ? { ...item, children } : null;
+      })
+      .filter(Boolean)
     : baseNav;
-  const selectedNavLabel = baseNav.find((item) => item.key === selectedKey)?.label || t('nav.dashboard') || 'Dashboard';
+
+  const findNavLabel = (items, key) => {
+    for (const item of items) {
+      if (item.key === key) return item.label;
+      if (Array.isArray(item.children)) {
+        const childLabel = findNavLabel(item.children, key);
+        if (childLabel) return childLabel;
+      }
+    }
+    return null;
+  };
+
+  const selectedNavLabel = findNavLabel(baseNav, selectedKey) || t('nav.dashboard') || 'Dashboard';
 
   useEffect(() => {
     setMobileMenuOpen(false);
@@ -109,18 +147,37 @@ export function AppLayout({
     };
   }, [isMobile, mobileMenuOpen]);
 
-  // Convert baseNav to Ant Design Menu items
-  const menuItems = visibleNav.map((item) => ({
-    key: item.key,
-    icon: item.icon,
-    label: item.label,
-    onClick: () => {
-      navigate(item.path);
-      if (isMobile) {
-        setMobileMenuOpen(false);
-      }
-    },
-  }));
+  // Convert baseNav to Ant Design Menu items (with nested groups)
+  const menuItems = visibleNav.map((item) => {
+    if (Array.isArray(item.children)) {
+      return {
+        key: item.key,
+        icon: item.icon,
+        label: item.label,
+        children: item.children.map((child) => ({
+          key: child.key,
+          label: child.label,
+          onClick: () => {
+            navigate(child.path);
+            if (isMobile) {
+              setMobileMenuOpen(false);
+            }
+          },
+        })),
+      };
+    }
+    return {
+      key: item.key,
+      icon: item.icon,
+      label: item.label,
+      onClick: () => {
+        navigate(item.path);
+        if (isMobile) {
+          setMobileMenuOpen(false);
+        }
+      },
+    };
+  });
 
   // User dropdown menu items
   const userMenuItems = [
