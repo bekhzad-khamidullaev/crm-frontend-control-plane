@@ -18,6 +18,10 @@ function CallButton({ phone, name, entityType, entityId, size = 'middle', type =
   const currentCallTokenRef = useRef(null);
   const fallbackAttemptedRef = useRef(false);
   const normalizePhone = (value) => String(value || '').replace(/[^\d+]/g, '');
+  const isLikelyInternalExtension = (value) => {
+    const digits = String(value || '').replace(/\D/g, '');
+    return digits.length > 0 && digits.length <= 5;
+  };
 
   const isOwnCall = (callData) => {
     if (!callData || typeof callData !== 'object') return false;
@@ -228,8 +232,21 @@ function CallButton({ phone, name, entityType, entityId, size = 'middle', type =
     fallbackAttemptedRef.current = false;
 
     if (mode === 'browser') {
-      // WebRTC call via SIP
+      // External numbers should be originated by backend/PBX logic.
+      // Direct SIP INVITE is kept for internal short extensions.
       try {
+        const dialNumber = normalizePhone(phone).replace(/^\+/, '');
+        if (!dialNumber) {
+          throw new Error('Неверный формат номера');
+        }
+
+        if (!isLikelyInternalExtension(dialNumber)) {
+          const started = await tryServerOriginateFallback();
+          if (started) return;
+          throw new Error('Не удалось инициировать исходящий вызов через сервер');
+        }
+
+        // WebRTC call via SIP for internal extensions
         if (!sipClient.isRegistered) {
           const registered = await ensureSipReady();
           if (!registered) {
@@ -244,11 +261,6 @@ function CallButton({ phone, name, entityType, entityId, size = 'middle', type =
         }
 
         const audioElement = audioRef.current;
-        const dialNumber = normalizePhone(phone).replace(/^\+/, '');
-        if (!dialNumber) {
-          throw new Error('Неверный формат номера');
-        }
-
         await sipClient.call(dialNumber, audioElement, {
           uiCallToken: callToken,
           relatedEntity: entityType,
