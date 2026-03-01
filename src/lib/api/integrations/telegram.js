@@ -5,6 +5,14 @@
 
 import { api } from '../client.js';
 
+const normalizeBotPayload = (data = {}) => {
+  const payload = { ...data };
+  if (!payload.webhook_url) {
+    delete payload.webhook_url;
+  }
+  return payload;
+};
+
 export const getTelegramBots = (params = {}) =>
   api.get('/api/settings/telegram/bots/', { params });
 
@@ -18,7 +26,7 @@ export const getTelegramBot = (id) =>
  * @returns {Promise<Object>}
  */
 export const connectTelegramBot = (data) =>
-  api.post('/api/settings/telegram/bots/', { body: data });
+  api.post('/api/settings/telegram/bots/', { body: normalizeBotPayload(data) });
 
 /**
  * Update Telegram bot settings
@@ -34,8 +42,13 @@ export const updateTelegramBot = (id, data) =>
  * @param {string|number} id
  * @returns {Promise<void>}
  */
-export const disconnectTelegramBot = (id) =>
-  api.delete(`/api/settings/telegram/bots/${id}/`);
+export const disconnectTelegramBot = async (id) => {
+  try {
+    return await api.post(`/api/settings/telegram/bots/${id}/disconnect/`, { body: {} });
+  } catch {
+    return api.delete(`/api/settings/telegram/bots/${id}/`);
+  }
+};
 
 /**
  * Test Telegram bot connection

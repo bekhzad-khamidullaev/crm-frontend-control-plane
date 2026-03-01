@@ -74,6 +74,16 @@ export default function IntegrationsPage() {
   const [webhookSaving, setWebhookSaving] = useState(false);
   const [webhookForm] = Form.useForm();
 
+  const getErrorText = (error, fallback) => {
+    const details = error?.details || {};
+    if (typeof details === 'string') return details;
+    if (typeof details?.message === 'string') return details.message;
+    if (typeof details?.error === 'string') return details.error;
+    if (typeof details?.detail === 'string') return details.detail;
+    if (typeof error?.message === 'string' && !error.message.startsWith('HTTP ')) return error.message;
+    return fallback;
+  };
+
   useEffect(() => {
     loadAllStatuses();
   }, []);
@@ -333,7 +343,7 @@ export default function IntegrationsPage() {
       loadTelegramStatus();
     } catch (error) {
       if (error?.errorFields) return;
-      message.error('Не удалось обновить webhook');
+      message.error(getErrorText(error, 'Не удалось обновить webhook'));
     } finally {
       setWebhookSaving(false);
     }
@@ -611,9 +621,9 @@ export default function IntegrationsPage() {
           <Form.Item
             label="Webhook URL"
             name="webhook_url"
-            rules={[{ required: true, message: 'Укажите URL' }]}
+            rules={[{ type: 'url', message: 'Укажите корректный URL' }]}
           >
-            <Input placeholder="https://crm.example.com/api/telegram/webhook/" />
+            <Input placeholder="Оставьте пустым для автогенерации URL" />
           </Form.Item>
         </Form>
       </Modal>

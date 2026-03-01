@@ -15,6 +15,16 @@ export default function FacebookConnect({ onSuccess, onCancel }) {
   const [form] = Form.useForm();
   const [loading, setLoading] = useState(false);
 
+  const getErrorText = (error, fallback) => {
+    const details = error?.details || {};
+    if (typeof details === 'string') return details;
+    if (typeof details?.message === 'string') return details.message;
+    if (typeof details?.error === 'string') return details.error;
+    if (typeof details?.detail === 'string') return details.detail;
+    if (typeof error?.message === 'string' && !error.message.startsWith('HTTP ')) return error.message;
+    return fallback;
+  };
+
   const handleConnect = async (values) => {
     setLoading(true);
     try {
@@ -23,7 +33,7 @@ export default function FacebookConnect({ onSuccess, onCancel }) {
       onSuccess?.(result);
     } catch (error) {
       console.error('Error connecting Facebook:', error);
-      message.error(error?.message || 'Ошибка подключения Facebook Messenger');
+      message.error(getErrorText(error, 'Ошибка подключения Facebook Messenger'));
     } finally {
       setLoading(false);
     }
