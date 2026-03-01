@@ -25,7 +25,7 @@ import dayjs from 'dayjs';
 import React from 'react';
 // @ts-ignore
 import { useLead } from '@/entities/lead/api/queries';
-import { convertLead } from '@/lib/api/leads.js';
+import { LeadsService } from '@/shared/api/generated/services/LeadsService';
 import { navigate } from '@/router.js';
 
 const { Title, Text } = Typography;
@@ -55,11 +55,14 @@ export const LeadDetailPage: React.FC<LeadDetailPageProps> = ({ id }) => {
       onOk: async () => {
         try {
           setIsConverting(true);
-          const result = await convertLead(id, { create_deal: true });
+          const result = await LeadsService.leadsConvertCreate({
+            id,
+            requestBody: { create_deal: true } as any,
+          });
           message.success('Лид успешно конвертирован');
 
-          if (result?.deal) {
-            navigate(`/deals/${result.deal}`);
+          if ((result as any)?.deal) {
+            navigate(`/deals/${(result as any).deal}`);
             return;
           }
 

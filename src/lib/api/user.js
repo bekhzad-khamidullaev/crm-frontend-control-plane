@@ -11,10 +11,18 @@ import { api } from './client';
  * @returns {Promise<Object>}
  */
 export async function getProfile() {
-  const [user, profile] = await Promise.all([
+  const [userRes, profileRes] = await Promise.allSettled([
     api.get('/api/users/me/'),
     api.get('/api/profiles/me/'),
   ]);
+
+  const user = userRes.status === 'fulfilled' ? userRes.value : {};
+  const profile = profileRes.status === 'fulfilled' ? profileRes.value : {};
+
+  if (userRes.status === 'rejected' && profileRes.status === 'rejected') {
+    throw userRes.reason || profileRes.reason || new Error('Failed to load profile');
+  }
+
   return { ...user, ...profile };
 }
 
