@@ -166,37 +166,85 @@ class SIPClient {
       throw new Error('Not registered to SIP server');
     }
 
+    const buildDialCandidates = (rawDestination, realm) => {
+      const input = String(rawDestination || '').trim();
+      const compact = input.replace(/[^\d+]/g, '');
+      const digitsOnly = compact.replace(/\D/g, '');
+      const compactNoPlus = compact.startsWith('+') ? compact.slice(1) : compact;
+      const list = [];
+
+      const add = (value) => {
+        const v = String(value || '').trim();
+        if (!v) return;
+        if (!list.includes(v)) list.push(v);
+      };
+
+      add(input);
+      add(compact);
+      add(compactNoPlus);
+      add(digitsOnly);
+
+      if (realm) {
+        [input, compact, compactNoPlus, digitsOnly]
+          .filter(Boolean)
+          .forEach((candidate) => {
+            if (candidate.startsWith('sip:')) {
+              add(candidate);
+              return;
+            }
+            add(`sip:${candidate}@${realm}`);
+          });
+      }
+
+      return list.filter(Boolean);
+    };
+
     return new Promise((resolve, reject) => {
       try {
-        const callConfig = {
-          audio_remote: audioElement,
-          events_listener: { events: '*', listener: this.handleCallEvent.bind(this) }
-        };
+        const candidates = buildDialCandidates(destination, this.config.realm);
+        if (candidates.length === 0) {
+          reject(new Error('Dial destination is empty'));
+          return;
+        }
 
-        this.callSession = this.stack.newSession('call-audio', callConfig);
-        
-        // Initialize call metadata
-        this.currentCall = {
-          id: null, // Will be set after API call
-          phoneNumber: destination,
-          direction: 'outbound',
-          status: 'initiated',
-          startedAt: new Date().toISOString(),
-          answeredAt: null,
-          endedAt: null,
-          duration: 0,
-          ...metadata
-        };
-        
-        const result = this.callSession.call(destination);
-        
-        if (result !== 0) {
+        let initiated = false;
+        for (const target of candidates) {
+          const callConfig = {
+            audio_remote: audioElement,
+            events_listener: { events: '*', listener: this.handleCallEvent.bind(this) }
+          };
+          this.callSession = this.stack.newSession('call-audio', callConfig);
+
+          // Initialize call metadata
+          this.currentCall = {
+            id: null, // Will be set after API call
+            phoneNumber: destination,
+            dialTarget: target,
+            direction: 'outbound',
+            status: 'initiated',
+            startedAt: new Date().toISOString(),
+            answeredAt: null,
+            endedAt: null,
+            duration: 0,
+            ...metadata
+          };
+
+          const result = this.callSession.call(target);
+          if (result === 0) {
+            initiated = true;
+            console.log('[SIPClient] Outbound call initiated:', target);
+            // Emit call started event
+            this.emit('callStarted', { ...this.currentCall });
+            resolve(this.callSession);
+            break;
+          }
+
+          this.callSession = null;
           this.currentCall = null;
+        }
+
+        if (!initiated) {
           reject(new Error('Failed to initiate call'));
-        } else {
-          // Emit call started event
-          this.emit('callStarted', { ...this.currentCall });
-          resolve(this.callSession);
         }
       } catch (error) {
         console.error('[SIPClient] Call error:', error);
