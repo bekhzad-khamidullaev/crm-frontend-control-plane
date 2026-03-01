@@ -15,6 +15,7 @@ import {
   SwapOutlined,
   LockOutlined,
 } from '@ant-design/icons';
+import { canWrite as canWriteByRole } from '../lib/rbac.js';
 
 /**
  * QuickActions component - Dropdown menu for common row actions using Ant Design 5.x
@@ -52,6 +53,15 @@ export default function QuickActions({
   onConvert,
   onArchive,
   customActions = [],
+  canManage,
+  canEdit,
+  canDelete,
+  canDuplicate,
+  canChangeStatus,
+  canAssign,
+  canConvert,
+  canArchive,
+  canAddNote,
   icon = <MoreOutlined />,
   size = 'small',
   type = 'text',
@@ -59,8 +69,19 @@ export default function QuickActions({
 }) {
   const { message, modal } = App.useApp();
   const [deleteModalOpen, setDeleteModalOpen] = React.useState(false);
+  const roleCanWrite = canWriteByRole();
+  const allowManage = canManage ?? roleCanWrite;
+  const allowEdit = canEdit ?? allowManage;
+  const allowDelete = canDelete ?? allowManage;
+  const allowDuplicate = canDuplicate ?? allowManage;
+  const allowChangeStatus = canChangeStatus ?? allowManage;
+  const allowAssign = canAssign ?? allowManage;
+  const allowConvert = canConvert ?? allowManage;
+  const allowArchive = canArchive ?? allowManage;
+  const allowAddNote = canAddNote ?? allowManage;
 
   const handleDelete = async () => {
+    if (!allowDelete) return;
     try {
       await onDelete(record);
       message.success('Удалено успешно');
@@ -130,7 +151,7 @@ export default function QuickActions({
 
   // Management actions section
   const managementActions = [];
-  if (onEdit) {
+  if (onEdit && allowEdit) {
     managementActions.push({
       key: 'edit',
       label: 'Редактировать',
@@ -139,7 +160,7 @@ export default function QuickActions({
     });
   }
 
-  if (onDuplicate) {
+  if (onDuplicate && allowDuplicate) {
     managementActions.push({
       key: 'duplicate',
       label: 'Дублировать',
@@ -148,7 +169,7 @@ export default function QuickActions({
     });
   }
 
-  if (onChangeStatus) {
+  if (onChangeStatus && allowChangeStatus) {
     managementActions.push({
       key: 'status',
       label: 'Изменить статус',
@@ -157,7 +178,7 @@ export default function QuickActions({
     });
   }
 
-  if (onAssign) {
+  if (onAssign && allowAssign) {
     managementActions.push({
       key: 'assign',
       label: 'Назначить ответственного',
@@ -166,7 +187,7 @@ export default function QuickActions({
     });
   }
 
-  if (onConvert) {
+  if (onConvert && allowConvert) {
     managementActions.push({
       key: 'convert',
       label: 'Конвертировать',
@@ -175,7 +196,7 @@ export default function QuickActions({
     });
   }
 
-  if (onArchive) {
+  if (onArchive && allowArchive) {
     managementActions.push({
       key: 'archive',
       label: 'Архивировать',
@@ -184,7 +205,7 @@ export default function QuickActions({
     });
   }
 
-  if (onAddNote) {
+  if (onAddNote && allowAddNote) {
     managementActions.push({
       key: 'note',
       label: 'Добавить заметку',
@@ -205,7 +226,7 @@ export default function QuickActions({
   }
 
   // Delete action (always last and separated)
-  if (onDelete) {
+  if (onDelete && allowDelete) {
     if (items.length > 0) items.push({ type: 'divider' });
     items.push({
       key: 'delete',

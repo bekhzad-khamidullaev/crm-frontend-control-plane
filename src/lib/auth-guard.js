@@ -6,6 +6,7 @@
 
 import { isAuthenticated, isTokenExpired, getToken, clearToken, parseJWT } from './api/auth';
 import { navigate } from '../router';
+import { normalizeRoles, rolesFromTokenPayload } from './roles';
 
 /**
  * Проверяет авторизацию пользователя
@@ -16,10 +17,7 @@ import { navigate } from '../router';
 function getRolesFromToken(token) {
   try {
     const payload = parseJWT(token);
-    const roles = payload?.roles || payload?.role || payload?.permissions || payload?.scopes || [];
-    if (Array.isArray(roles)) return roles.map(String);
-    if (typeof roles === 'string') return roles.split(/[\s,]+/).filter(Boolean);
-    return [];
+    return rolesFromTokenPayload(payload);
   } catch {
     return [];
   }
@@ -30,8 +28,8 @@ function getStoredRoles() {
     const raw = sessionStorage.getItem('contora_roles') || localStorage.getItem('contora_roles');
     if (!raw) return [];
     const parsed = JSON.parse(raw);
-    if (Array.isArray(parsed)) return parsed.map(String);
-    if (parsed && Array.isArray(parsed.roles)) return parsed.roles.map(String);
+    if (Array.isArray(parsed)) return normalizeRoles(parsed);
+    if (parsed && Array.isArray(parsed.roles)) return normalizeRoles(parsed.roles);
     return [];
   } catch {
     return [];
@@ -59,15 +57,17 @@ export function checkAuth(route, requireAuth = true, requiredRoles = []) {
   }
 
   if (requiredRoles && requiredRoles.length) {
+    const normalizedRequiredRoles = normalizeRoles(requiredRoles);
     let roles = getRolesFromToken(token);
     if (!roles || roles.length === 0) {
       roles = getStoredRoles();
     }
     if (!roles || roles.length === 0) {
-      console.warn('[AuthGuard] No roles available from API/token; allowing access to avoid false 403');
-      return true;
+      console.warn('[AuthGuard] No roles available for protected route; denying access');
+      navigate('/forbidden');
+      return false;
     }
-    const ok = roles.some((r) => requiredRoles.includes(r));
+    const ok = roles.some((r) => normalizedRequiredRoles.includes(r));
     if (!ok) {
       navigate('/forbidden');
       return false;

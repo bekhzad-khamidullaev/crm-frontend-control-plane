@@ -4,7 +4,7 @@
  */
 
 import React, { useEffect, useState } from 'react';
-import { Card, Space, Button, Modal, App, Table, Tag, Form, Input } from 'antd';
+import { Card, Space, Button, Modal, App, Table, Tag, Form, Input, InputNumber, Select, Switch, Popconfirm } from 'antd';
 import {
   ApiOutlined,
   MessageOutlined,
@@ -13,6 +13,7 @@ import {
   FacebookOutlined,
   InstagramOutlined,
   SendOutlined,
+  RobotOutlined,
 } from '@ant-design/icons';
 import dayjs from 'dayjs';
 import IntegrationCard from '../components/IntegrationCard';
@@ -39,6 +40,13 @@ import {
   testTelegramBot,
   setTelegramWebhook,
 } from '../lib/api/integrations/telegram.js';
+import {
+  getAIProviders,
+  createAIProvider,
+  updateAIProvider,
+  deleteAIProvider,
+  testAIProviderConnection,
+} from '../lib/api/integrations/ai.js';
 
 const formatDateTime = (value) => {
   if (!value) return '-';
@@ -59,6 +67,7 @@ export default function IntegrationsPage() {
     facebook: { status: 'disconnected', stats: {} },
     instagram: { status: 'disconnected', stats: {} },
     telegram: { status: 'disconnected', stats: {} },
+    ai: { status: 'disconnected', stats: {} },
   });
   const [modalVisible, setModalVisible] = useState({
     sms: false,
@@ -66,10 +75,17 @@ export default function IntegrationsPage() {
     facebook: false,
     instagram: false,
     telegram: false,
+    ai: false,
   });
   const [facebookPages, setFacebookPages] = useState([]);
   const [instagramAccounts, setInstagramAccounts] = useState([]);
   const [telegramBots, setTelegramBots] = useState([]);
+  const [aiProviders, setAIProviders] = useState([]);
+  const [aiModal, setAIModal] = useState({ open: false, record: null });
+  const [aiSaving, setAISaving] = useState(false);
+  const [aiTestingId, setAITestingId] = useState(null);
+  const [aiDefaultingId, setAIDefaultingId] = useState(null);
+  const [aiForm] = Form.useForm();
   const [webhookModal, setWebhookModal] = useState({ open: false, bot: null });
   const [webhookSaving, setWebhookSaving] = useState(false);
   const [webhookForm] = Form.useForm();
@@ -95,6 +111,7 @@ export default function IntegrationsPage() {
       loadFacebookStatus(),
       loadInstagramStatus(),
       loadTelegramStatus(),
+      loadAIStatus(),
     ]);
   };
 
@@ -246,6 +263,37 @@ export default function IntegrationsPage() {
     }
   };
 
+  const loadAIStatus = async () => {
+    setLoading((prev) => ({ ...prev, ai: true }));
+    try {
+      const response = await getAIProviders({ page_size: 50 });
+      const list = normalizeList(response);
+      setAIProviders(list);
+
+      const activeCount = list.filter((item) => item.is_active).length;
+      const defaultProvider = list.find((item) => item.is_default);
+      const stats = {
+        Провайдеров: list.length,
+        Активных: activeCount,
+        'По умолчанию': defaultProvider?.name || '-',
+      };
+
+      setStatuses((prev) => ({
+        ...prev,
+        ai: { status: list.length ? 'connected' : 'disconnected', stats },
+      }));
+    } catch (error) {
+      console.error('Error loading AI providers:', error);
+      setAIProviders([]);
+      setStatuses((prev) => ({
+        ...prev,
+        ai: { status: 'error', stats: {}, error: error.message },
+      }));
+    } finally {
+      setLoading((prev) => ({ ...prev, ai: false }));
+    }
+  };
+
   const openModal = (type) => setModalVisible((prev) => ({ ...prev, [type]: true }));
   const closeModal = (type) => setModalVisible((prev) => ({ ...prev, [type]: false }));
 
@@ -257,6 +305,108 @@ export default function IntegrationsPage() {
     if (type === 'facebook') await loadFacebookStatus();
     if (type === 'instagram') await loadInstagramStatus();
     if (type === 'telegram') await loadTelegramStatus();
+    if (type === 'ai') await loadAIStatus();
+  };
+
+  const openAIModal = (record = null) => {
+    if (record) {
+      aiForm.setFieldsValue({
+        name: record.name,
+        provider: record.provider,
+        model: record.model || '',
+        base_url: record.base_url || '',
+        api_key: '',
+        is_active: !!record.is_active,
+        is_default: !!record.is_default,
+        timeout_seconds: record.timeout_seconds || 45,
+        temperature: Number(record.temperature ?? 0.2),
+        max_tokens: record.max_tokens || 800,
+      });
+    } else {
+      aiForm.setFieldsValue({
+        name: '',
+        provider: 'openai',
+        model: 'gpt-4o-mini',
+        base_url: '',
+        api_key: '',
+        is_active: true,
+        is_default: false,
+        timeout_seconds: 45,
+        temperature: 0.2,
+        max_tokens: 800,
+      });
+    }
+    setAIModal({ open: true, record });
+  };
+
+  const closeAIModal = () => {
+    setAIModal({ open: false, record: null });
+    aiForm.resetFields();
+  };
+
+  const handleAISave = async () => {
+    try {
+      const values = await aiForm.validateFields();
+      setAISaving(true);
+      const payload = { ...values };
+
+      if (aiModal.record && !payload.api_key) {
+        delete payload.api_key;
+      }
+
+      if (aiModal.record?.id) {
+        await updateAIProvider(aiModal.record.id, payload);
+        message.success('AI провайдер обновлен');
+      } else {
+        await createAIProvider(payload);
+        message.success('AI провайдер добавлен');
+      }
+
+      closeAIModal();
+      loadAIStatus();
+    } catch (error) {
+      if (error?.errorFields) return;
+      message.error(getErrorText(error, 'Не удалось сохранить AI провайдера'));
+    } finally {
+      setAISaving(false);
+    }
+  };
+
+  const handleAITest = async (record) => {
+    setAITestingId(record.id);
+    try {
+      const result = await testAIProviderConnection(record.id);
+      message.success(result?.output_text ? `Тест OK: ${result.output_text}` : 'Подключение проверено');
+      loadAIStatus();
+    } catch (error) {
+      message.error(getErrorText(error, 'Не удалось проверить AI провайдера'));
+    } finally {
+      setAITestingId(null);
+    }
+  };
+
+  const handleAIDelete = async (record) => {
+    try {
+      await deleteAIProvider(record.id);
+      message.success('AI провайдер удален');
+      loadAIStatus();
+    } catch (error) {
+      message.error(getErrorText(error, 'Не удалось удалить AI провайдера'));
+    }
+  };
+
+  const handleAIMakeDefault = async (record) => {
+    if (!record?.id) return;
+    setAIDefaultingId(record.id);
+    try {
+      await updateAIProvider(record.id, { is_default: true, is_active: true });
+      message.success(`Провайдер "${record.name}" установлен по умолчанию`);
+      loadAIStatus();
+    } catch (error) {
+      message.error(getErrorText(error, 'Не удалось установить провайдера по умолчанию'));
+    } finally {
+      setAIDefaultingId(null);
+    }
   };
 
   const handleFacebookTest = async (record) => {
@@ -555,6 +705,88 @@ export default function IntegrationsPage() {
               />
             )}
           </IntegrationCard>
+
+          <IntegrationCard
+            title="AI Провайдеры"
+            description="OpenAI, Gemini, Claude и совместимые модели для AI-функций CRM"
+            icon={<RobotOutlined style={{ fontSize: 24, color: '#722ed1' }} />}
+            type="ai"
+            status={statuses.ai.status}
+            stats={statuses.ai.stats}
+            error={statuses.ai.error}
+            loading={loading.ai}
+            onConnect={() => openAIModal()}
+            onRefresh={loadAIStatus}
+          >
+            {aiProviders.length > 0 && (
+              <Table
+                size="small"
+                rowKey={(record) => record.id}
+                columns={[
+                  { title: 'Название', dataIndex: 'name', key: 'name' },
+                  { title: 'Провайдер', dataIndex: 'provider', key: 'provider' },
+                  { title: 'Модель', dataIndex: 'model', key: 'model', render: (value) => value || '-' },
+                  {
+                    title: 'Статус',
+                    key: 'status',
+                    render: (_, record) => (
+                      <Space>
+                        <Tag color={record.is_active ? 'green' : 'default'}>
+                          {record.is_active ? 'Активен' : 'Пауза'}
+                        </Tag>
+                        {record.is_default && <Tag color="blue">По умолчанию</Tag>}
+                      </Space>
+                    ),
+                  },
+                  {
+                    title: 'Ключ',
+                    dataIndex: 'api_key_preview',
+                    key: 'api_key_preview',
+                    render: (value) => value || '-',
+                  },
+                  {
+                    title: 'Действия',
+                    key: 'actions',
+                    render: (_, record) => (
+                      <Space>
+                        <Button
+                          type="link"
+                          loading={aiTestingId === record.id}
+                          onClick={() => handleAITest(record)}
+                        >
+                          Тест
+                        </Button>
+                        <Button type="link" onClick={() => openAIModal(record)}>
+                          Редактировать
+                        </Button>
+                        {!record.is_default && (
+                          <Button
+                            type="link"
+                            loading={aiDefaultingId === record.id}
+                            onClick={() => handleAIMakeDefault(record)}
+                          >
+                            По умолчанию
+                          </Button>
+                        )}
+                        <Popconfirm
+                          title="Удалить AI провайдера?"
+                          onConfirm={() => handleAIDelete(record)}
+                          okText="Удалить"
+                          cancelText="Отмена"
+                        >
+                          <Button type="link" danger>
+                            Удалить
+                          </Button>
+                        </Popconfirm>
+                      </Space>
+                    ),
+                  },
+                ]}
+                dataSource={aiProviders}
+                pagination={false}
+              />
+            )}
+          </IntegrationCard>
         </Space>
       </Card>
 
@@ -625,6 +857,79 @@ export default function IntegrationsPage() {
           >
             <Input placeholder="Оставьте пустым для автогенерации URL" />
           </Form.Item>
+        </Form>
+      </Modal>
+
+      <Modal
+        title={aiModal.record ? 'Редактирование AI провайдера' : 'Добавление AI провайдера'}
+        open={aiModal.open}
+        onCancel={closeAIModal}
+        onOk={handleAISave}
+        okText="Сохранить"
+        confirmLoading={aiSaving}
+        width={760}
+      >
+        <Form form={aiForm} layout="vertical">
+          <Form.Item
+            label="Название"
+            name="name"
+            rules={[{ required: true, message: 'Введите название провайдера' }]}
+          >
+            <Input placeholder="OpenAI Prod" />
+          </Form.Item>
+
+          <Form.Item
+            label="Провайдер"
+            name="provider"
+            rules={[{ required: true, message: 'Выберите провайдера' }]}
+          >
+            <Select
+              options={[
+                { value: 'openai', label: 'OpenAI' },
+                { value: 'gemini', label: 'Google Gemini' },
+                { value: 'claude', label: 'Anthropic Claude' },
+                { value: 'openai_compatible', label: 'OpenAI Compatible' },
+                { value: 'custom', label: 'Custom HTTP' },
+              ]}
+            />
+          </Form.Item>
+
+          <Form.Item label="Модель" name="model">
+            <Input placeholder="gpt-4o-mini / gemini-1.5-flash / claude-3-5-sonnet-20241022" />
+          </Form.Item>
+
+          <Form.Item label="Base URL" name="base_url">
+            <Input placeholder="https://api.openai.com" />
+          </Form.Item>
+
+          <Form.Item
+            label={aiModal.record ? 'API Key (оставьте пустым, чтобы не менять)' : 'API Key'}
+            name="api_key"
+            rules={aiModal.record ? [] : [{ required: true, message: 'Введите API ключ' }]}
+          >
+            <Input.Password placeholder="sk-..." />
+          </Form.Item>
+
+          <Space style={{ width: '100%' }} size="large">
+            <Form.Item label="Timeout (sec)" name="timeout_seconds">
+              <InputNumber min={5} max={300} />
+            </Form.Item>
+            <Form.Item label="Temperature" name="temperature">
+              <InputNumber min={0} max={2} step={0.1} />
+            </Form.Item>
+            <Form.Item label="Max tokens" name="max_tokens">
+              <InputNumber min={1} max={8000} />
+            </Form.Item>
+          </Space>
+
+          <Space style={{ width: '100%' }} size="large">
+            <Form.Item label="Активен" name="is_active" valuePropName="checked">
+              <Switch />
+            </Form.Item>
+            <Form.Item label="По умолчанию" name="is_default" valuePropName="checked">
+              <Switch />
+            </Form.Item>
+          </Space>
         </Form>
       </Modal>
     </div>

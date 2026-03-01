@@ -11,6 +11,7 @@ import {
   AppstoreOutlined,
   BarsOutlined,
 } from '@ant-design/icons';
+import { canWrite as canWriteByRole } from '../lib/rbac.js';
 
 const { Search } = Input;
 const { Title, Text } = Typography;
@@ -34,6 +35,7 @@ export default function TableToolbar({
   showFilters = true,
   showSettings = false,
   showCreate = true,
+  canCreate,
   showViewModeSwitch = false,
   viewMode = 'table', // 'table' | 'kanban'
   onViewModeChange,
@@ -47,6 +49,7 @@ export default function TableToolbar({
     if (onSearch) onSearch(val);
     if (onSearchChange) onSearchChange(val);
   };
+  const allowCreate = showCreate && onCreate && (canCreate ?? canWriteByRole());
 
   return (
     <div style={{ marginBottom: 16 }}>
@@ -72,7 +75,7 @@ export default function TableToolbar({
 
           {children}
 
-          {showCreate && onCreate && (
+          {allowCreate && (
             <Button
               type="primary"
               icon={<PlusOutlined />}

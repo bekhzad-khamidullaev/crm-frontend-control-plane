@@ -29,6 +29,8 @@ import dayjs from 'dayjs';
 import { navigate } from '@/router.js';
 import { useCompany, useCompanyContacts, useCompanyDeals } from '@/entities/company/api/queries';
 import { useClientTypes, useIndustries } from '@/features/reference';
+// @ts-ignore
+import { canWrite } from '@/lib/rbac.js';
 
 const { Title, Text } = Typography;
 
@@ -38,6 +40,7 @@ export interface CompanyDetailPageProps {
 
 export const CompanyDetailPage: React.FC<CompanyDetailPageProps> = ({ id }) => {
   const { token } = antdTheme.useToken();
+  const canManage = canWrite();
   const formatAmount = (value: number) =>
     new Intl.NumberFormat('ru-RU', {
       style: 'currency',
@@ -192,13 +195,15 @@ export const CompanyDetailPage: React.FC<CompanyDetailPageProps> = ({ id }) => {
         <Button icon={<ArrowLeftOutlined />} onClick={() => navigate('/companies')}>
           Назад
         </Button>
-        <Button
-          type="primary"
-          icon={<EditOutlined />}
-          onClick={() => navigate(`/companies/${id}/edit`)}
-        >
-          Редактировать
-        </Button>
+        {canManage && (
+          <Button
+            type="primary"
+            icon={<EditOutlined />}
+            onClick={() => navigate(`/companies/${id}/edit`)}
+          >
+            Редактировать
+          </Button>
+        )}
       </Space>
 
       <Title level={2}>{companyName}</Title>

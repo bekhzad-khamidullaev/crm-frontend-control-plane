@@ -1,0 +1,20 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-labelledby="title desc">
+  <title id="title">Enterprise CRM Favicon</title>
+  <desc id="desc">Rounded square logo mark with abstract C and data path</desc>
+  <defs>
+    <linearGradient id="bg" x1="8" y1="8" x2="56" y2="56" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#0f172a"/>
+      <stop offset="1" stop-color="#1e293b"/>
+    </linearGradient>
+    <linearGradient id="accent" x1="18" y1="14" x2="46" y2="50" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#22d3ee"/>
+      <stop offset="1" stop-color="#34d399"/>
+    </linearGradient>
+  </defs>
+
+  <rect x="4" y="4" width="56" height="56" rx="16" fill="url(#bg)"/>
+  <path d="M45 18C41.2 14.3 36.7 12.5 31.5 12.5C20.8 12.5 12.5 20.9 12.5 31.5C12.5 42.1 20.8 50.5 31.5 50.5C36.9 50.5 41.3 48.7 45 45"
+        fill="none" stroke="url(#accent)" stroke-width="5" stroke-linecap="round"/>
+  <path d="M27 23L37.5 32L27 41" fill="none" stroke="url(#accent)" stroke-width="4.5" stroke-linecap="round" stroke-linejoin="round"/>
+  <circle cx="47.5" cy="31.5" r="3" fill="#f8fafc"/>
+</svg>

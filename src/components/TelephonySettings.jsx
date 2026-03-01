@@ -13,19 +13,44 @@ import {
   deleteVoIPConnection,
   patchVoIPConnection
 } from '../lib/api/telephony';
+import { getProfile, updateProfile } from '../lib/api/user';
 
 export default function TelephonySettings({ onSuccess }) {
   const { message } = App.useApp();
   const [form] = Form.useForm();
+  const [settingsForm] = Form.useForm();
   const [loading, setLoading] = useState(false);
+  const [settingsLoading, setSettingsLoading] = useState(false);
   const [connections, setConnections] = useState([]);
   const [modalVisible, setModalVisible] = useState(false);
   const [editingConnection, setEditingConnection] = useState(null);
   const [tableLoading, setTableLoading] = useState(false);
 
   useEffect(() => {
+    loadProfileSettings();
     loadConnections();
   }, []);
+
+  const loadProfileSettings = async () => {
+    setSettingsLoading(true);
+    try {
+      const profile = await getProfile();
+      settingsForm.setFieldsValue({
+        telephony_route_mode: profile.telephony_route_mode || 'auto',
+        telephony_provider: profile.telephony_provider || 'Asterisk',
+        webrtc_stun_servers: profile.webrtc_stun_servers || 'stun:stun.l.google.com:19302',
+        webrtc_turn_enabled: !!profile.webrtc_turn_enabled,
+        webrtc_turn_server: profile.webrtc_turn_server || '',
+        webrtc_turn_username: profile.webrtc_turn_username || '',
+        webrtc_turn_password: profile.webrtc_turn_password || '',
+      });
+    } catch (error) {
+      console.error('Error loading telephony profile settings:', error);
+      message.error('Ошибка загрузки настроек телефонии');
+    } finally {
+      setSettingsLoading(false);
+    }
+  };
 
   const loadConnections = async () => {
     setTableLoading(true);
@@ -99,6 +124,28 @@ export default function TelephonySettings({ onSuccess }) {
     } catch (error) {
       console.error('Error toggling connection:', error);
       message.error('Ошибка изменения статуса');
+    }
+  };
+
+  const handleSaveSettings = async (values) => {
+    setSettingsLoading(true);
+    try {
+      await updateProfile({
+        telephony_route_mode: values.telephony_route_mode || 'auto',
+        telephony_provider: values.telephony_provider || 'Asterisk',
+        webrtc_stun_servers: values.webrtc_stun_servers || '',
+        webrtc_turn_enabled: !!values.webrtc_turn_enabled,
+        webrtc_turn_server: values.webrtc_turn_enabled ? (values.webrtc_turn_server || '') : '',
+        webrtc_turn_username: values.webrtc_turn_enabled ? (values.webrtc_turn_username || '') : '',
+        webrtc_turn_password: values.webrtc_turn_enabled ? (values.webrtc_turn_password || '') : '',
+      });
+      message.success('Настройки телефонии сохранены');
+      onSuccess?.();
+    } catch (error) {
+      console.error('Error saving telephony profile settings:', error);
+      message.error('Ошибка сохранения настроек телефонии');
+    } finally {
+      setSettingsLoading(false);
     }
   };
 
@@ -196,6 +243,96 @@ export default function TelephonySettings({ onSuccess }) {
         style={{ marginBottom: 24 }}
       />
 
+      <Divider orientation="left">Маршрутизация и WebRTC (STUN/TURN)</Divider>
+      <Form
+        form={settingsForm}
+        layout="vertical"
+        onFinish={handleSaveSettings}
+        style={{ marginBottom: 24 }}
+      >
+        <Form.Item
+          label="Режим маршрутизации звонков"
+          name="telephony_route_mode"
+          rules={[{ required: true, message: 'Выберите режим' }]}
+        >
+          <Select
+            options={[
+              { value: 'auto', label: 'Auto (SIP + fallback)' },
+              { value: 'internal', label: 'Внутренние номера' },
+              { value: 'external', label: 'Внешние номера' },
+              { value: 'provider', label: 'Через API провайдера' },
+              { value: 'asterisk', label: 'Через Asterisk сервер' },
+            ]}
+          />
+        </Form.Item>
+
+        <Form.Item
+          label="Предпочитаемый провайдер"
+          name="telephony_provider"
+          rules={[{ required: true, message: 'Выберите провайдера' }]}
+        >
+          <Select
+            options={[
+              { value: 'Asterisk', label: 'Asterisk' },
+              { value: 'OnlinePBX', label: 'OnlinePBX' },
+              { value: 'Zadarma', label: 'Zadarma' },
+              { value: 'FreeSWITCH', label: 'FreeSWITCH' },
+            ]}
+          />
+        </Form.Item>
+
+        <Form.Item
+          label="STUN серверы (по одному в строке или через запятую)"
+          name="webrtc_stun_servers"
+          tooltip="Пример: stun:stun.l.google.com:19302"
+        >
+          <Input.TextArea rows={3} placeholder="stun:stun.l.google.com:19302" />
+        </Form.Item>
+
+        <Form.Item label="Включить TURN" name="webrtc_turn_enabled" valuePropName="checked">
+          <Switch />
+        </Form.Item>
+
+        <Form.Item noStyle dependencies={['webrtc_turn_enabled']}>
+          {({ getFieldValue }) => (
+            <>
+              {getFieldValue('webrtc_turn_enabled') ? (
+                <>
+                  <Form.Item
+                    label="TURN сервер"
+                    name="webrtc_turn_server"
+                    rules={[{ required: true, message: 'Введите TURN сервер' }]}
+                  >
+                    <Input placeholder="turn:turn.example.com:3478?transport=udp" />
+                  </Form.Item>
+                  <Form.Item
+                    label="TURN username"
+                    name="webrtc_turn_username"
+                    rules={[{ required: true, message: 'Введите TURN username' }]}
+                  >
+                    <Input placeholder="turn-user" />
+                  </Form.Item>
+                  <Form.Item
+                    label="TURN password"
+                    name="webrtc_turn_password"
+                    rules={[{ required: true, message: 'Введите TURN password' }]}
+                  >
+                    <Input.Password placeholder="********" />
+                  </Form.Item>
+                </>
+              ) : null}
+            </>
+          )}
+        </Form.Item>
+
+        <Form.Item>
+          <Button type="primary" htmlType="submit" loading={settingsLoading}>
+            Сохранить маршрутизацию и ICE
+          </Button>
+        </Form.Item>
+      </Form>
+
+      <Divider orientation="left">VoIP подключения</Divider>
       <div style={{ marginBottom: 16 }}>
         <Button
           type="primary"

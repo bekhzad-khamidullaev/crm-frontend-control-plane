@@ -29,6 +29,31 @@ function CallButton({ phone, name, entityType, entityId, size = 'middle', type =
     const digits = String(value || '').replace(/\D/g, '');
     return digits.length > 0 && digits.length <= 5;
   };
+  const normalizeProvider = (value) => String(value || '').trim();
+  const parseStunServers = (raw) =>
+    String(raw || '')
+      .split(/[\n,]/)
+      .map((item) => item.trim())
+      .filter(Boolean);
+  const buildIceServers = (profile) => {
+    const stunServers = parseStunServers(profile?.webrtc_stun_servers);
+    const iceServers = stunServers.map((url) => ({ urls: url }));
+
+    if (profile?.webrtc_turn_enabled && profile?.webrtc_turn_server) {
+      const turnServer = {
+        urls: String(profile.webrtc_turn_server).trim(),
+      };
+      if (profile?.webrtc_turn_username) turnServer.username = String(profile.webrtc_turn_username).trim();
+      if (profile?.webrtc_turn_password) turnServer.credential = String(profile.webrtc_turn_password).trim();
+      iceServers.push(turnServer);
+    }
+
+    if (!iceServers.length) {
+      iceServers.push({ urls: 'stun:stun.l.google.com:19302' });
+    }
+
+    return iceServers;
+  };
 
   const isOwnCall = (callData) => {
     if (!callData || typeof callData !== 'object') return false;
@@ -59,13 +84,13 @@ function CallButton({ phone, name, entityType, entityId, size = 'middle', type =
     return false;
   };
 
-  const tryServerOriginateFallback = async () => {
+  const startServerOriginateCall = async (profile) => {
     if (fallbackAttemptedRef.current) return false;
     fallbackAttemptedRef.current = true;
 
-    const profile = await getProfile().catch(() => null);
     const fromNumber = String(profile?.pbx_number || '').trim();
     const toNumber = normalizePhone(phone).replace(/^\+/, '');
+    const provider = normalizeProvider(profile?.telephony_provider);
     if (!toNumber) return false;
 
     await initiateCall({
@@ -73,9 +98,10 @@ function CallButton({ phone, name, entityType, entityId, size = 'middle', type =
       from_number: fromNumber || undefined,
       contact_id: entityType === 'contact' ? entityId : undefined,
       lead_id: entityType === 'lead' ? entityId : undefined,
+      provider: provider || undefined,
     });
 
-    message.success('Звонок отправлен через сервер телефонии');
+    message.success(`Звонок отправлен через сервер телефонии${provider ? ` (${provider})` : ''}`);
     closeModal();
     return true;
   };
@@ -152,8 +178,9 @@ function CallButton({ phone, name, entityType, entityId, size = 'middle', type =
       if (failed) {
         const isNotFound = /not found/i.test(String(reason));
         if (isNotFound) {
+          const profile = await getProfile().catch(() => null);
           try {
-            const started = await tryServerOriginateFallback();
+            const started = await startServerOriginateCall(profile);
             if (started) return;
           } catch (fallbackError) {
             console.error('[CallButton] Fallback originate failed after SIP Not Found:', fallbackError);
@@ -211,6 +238,7 @@ function CallButton({ phone, name, entityType, entityId, size = 'middle', type =
       profile?.jssip_ws_uri || import.meta.env.VITE_SIP_SERVER || runtimeConfig.pbxServer || '';
     const displayName =
       profile?.jssip_display_name || profile?.full_name || import.meta.env.VITE_SIP_DISPLAY_NAME || 'CRM User';
+    const iceServers = buildIceServers(profile);
 
     if (!username || !password || !websocketProxyUrl) {
       return false;
@@ -223,6 +251,7 @@ function CallButton({ phone, name, entityType, entityId, size = 'middle', type =
       password,
       display_name: displayName,
       websocket_proxy_url: websocketProxyUrl,
+      ice_servers: iceServers,
     });
 
     await sipClient.init();
@@ -239,11 +268,25 @@ function CallButton({ phone, name, entityType, entityId, size = 'middle', type =
     fallbackAttemptedRef.current = false;
 
     if (mode === 'browser') {
-      // Try SIP call first (with dialplan-friendly normalization), then fallback to backend originate.
+      // Route call based on user's telephony settings.
       try {
+        const profile = await getProfile().catch(() => null);
+        const routeMode = String(profile?.telephony_route_mode || 'auto').toLowerCase();
+        if (routeMode === 'provider' || routeMode === 'asterisk') {
+          const started = await startServerOriginateCall(profile);
+          if (!started) throw new Error('Не удалось отправить звонок через сервер');
+          return;
+        }
+
         const dialNumber = normalizeDialForSip(phone);
         if (!dialNumber) {
           throw new Error('Неверный формат номера');
+        }
+        if (routeMode === 'internal' && !isLikelyInternalExtension(dialNumber)) {
+          throw new Error('В режиме "Внутренний" разрешены только короткие внутренние номера');
+        }
+        if (routeMode === 'external' && isLikelyInternalExtension(dialNumber)) {
+          throw new Error('В режиме "Внешний" используйте внешний номер');
         }
         if (!sipClient.isRegistered) {
           const registered = await ensureSipReady();
@@ -269,8 +312,9 @@ function CallButton({ phone, name, entityType, entityId, size = 'middle', type =
         console.error('[CallButton] Error starting call:', error);
         const reason = String(error?.message || '').trim();
         if (/not found/i.test(reason)) {
+          const profile = await getProfile().catch(() => null);
           try {
-            const started = await tryServerOriginateFallback();
+            const started = await startServerOriginateCall(profile);
             if (started) return;
           } catch (fallbackError) {
             console.error('[CallButton] Fallback originate failed:', fallbackError);

@@ -27,6 +27,8 @@ import React from 'react';
 import { useLead } from '@/entities/lead/api/queries';
 import { LeadsService } from '@/shared/api/generated/services/LeadsService';
 import { navigate } from '@/router.js';
+// @ts-ignore
+import { canWrite } from '@/lib/rbac.js';
 
 const { Title, Text } = Typography;
 
@@ -41,11 +43,12 @@ export const LeadDetailPage: React.FC<LeadDetailPageProps> = ({ id }) => {
   const { message } = App.useApp();
   const { data: lead, isLoading } = useLead(id!);
   const [isConverting, setIsConverting] = React.useState(false);
+  const canManage = canWrite();
 
   const isConverted = Boolean(lead?.contact || lead?.company || lead?.was_in_touch);
 
   const handleConvertToDeal = () => {
-    if (!id || isConverting || isConverted) return;
+    if (!id || isConverting || isConverted || !canManage) return;
 
     Modal.confirm({
       title: 'Конвертировать лид в сделку?',
@@ -165,22 +168,26 @@ export const LeadDetailPage: React.FC<LeadDetailPageProps> = ({ id }) => {
         <Button icon={<ArrowLeftOutlined />} onClick={() => navigate('/leads')} block={isMobile}>
           Назад
         </Button>
-        <Button
-          type="primary"
-          icon={<EditOutlined />}
-          onClick={() => navigate(`/leads/${id}/edit`)}
-          block={isMobile}
-        >
-          Редактировать
-        </Button>
-        <Button
-          onClick={handleConvertToDeal}
-          loading={isConverting}
-          disabled={isConverted}
-          block={isMobile}
-        >
-          {isConverted ? 'Уже конвертирован' : 'Конвертировать в сделку'}
-        </Button>
+        {canManage && (
+          <Button
+            type="primary"
+            icon={<EditOutlined />}
+            onClick={() => navigate(`/leads/${id}/edit`)}
+            block={isMobile}
+          >
+            Редактировать
+          </Button>
+        )}
+        {canManage && (
+          <Button
+            onClick={handleConvertToDeal}
+            loading={isConverting}
+            disabled={isConverted}
+            block={isMobile}
+          >
+            {isConverted ? 'Уже конвертирован' : 'Конвертировать в сделку'}
+          </Button>
+        )}
       </Space>
 
       <Title level={isMobile ? 3 : 2}>{lead.full_name}</Title>

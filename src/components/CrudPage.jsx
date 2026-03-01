@@ -9,6 +9,7 @@ import { PlusOutlined, EditOutlined, DeleteOutlined, EyeOutlined } from '@ant-de
 import dayjs from 'dayjs';
 import EntitySelect from './EntitySelect.jsx';
 import EnhancedTable from './ui-EnhancedTable.jsx';
+import { canWrite as canWriteByRole } from '../lib/rbac.js';
 
 const { TextArea } = Input;
 const { Option } = Select;
@@ -19,6 +20,10 @@ export default function CrudPage({
   columns = [],
   fields = [],
   readOnly = false,
+  canCreate,
+  canEdit,
+  canDelete,
+  canView = true,
   initialValues = {},
   pageSize = 20,
 }) {
@@ -32,6 +37,11 @@ export default function CrudPage({
   const [editing, setEditing] = useState(false);
   const [currentId, setCurrentId] = useState(null);
   const [viewRecord, setViewRecord] = useState(null);
+  const roleCanWrite = canWriteByRole();
+  const allowCreate = !readOnly && (canCreate ?? roleCanWrite);
+  const allowEdit = !readOnly && (canEdit ?? roleCanWrite);
+  const allowDelete = !readOnly && (canDelete ?? roleCanWrite);
+  const allowView = canView !== false;
 
   const fetchList = async () => {
     if (!api?.list) return;
@@ -56,6 +66,7 @@ export default function CrudPage({
   }, [pagination.current, pagination.pageSize]);
 
   const openCreate = () => {
+    if (!allowCreate) return;
     setEditing(false);
     setCurrentId(null);
     form.resetFields();
@@ -64,6 +75,7 @@ export default function CrudPage({
   };
 
   const openEdit = async (record) => {
+    if (!allowEdit) return;
     setEditing(true);
     setCurrentId(record?.id);
     try {
@@ -81,6 +93,7 @@ export default function CrudPage({
   };
 
   const openView = async (record) => {
+    if (!allowView) return;
     try {
       if (api?.retrieve && record?.id) {
         const full = await api.retrieve(record.id);
@@ -95,6 +108,7 @@ export default function CrudPage({
   };
 
   const handleDelete = (record) => {
+    if (!allowDelete) return;
     modal.confirm({
       title: 'Удалить запись?',
       content: 'Это действие нельзя отменить',
@@ -121,6 +135,10 @@ export default function CrudPage({
       const payload = preparePayload(fields, values);
 
       if (editing && currentId) {
+        if (!allowEdit) {
+          message.error('Недостаточно прав для редактирования');
+          return;
+        }
         if (!api?.update) {
           message.error('Update API не определён');
           return;
@@ -128,6 +146,10 @@ export default function CrudPage({
         await api.update(currentId, payload);
         message.success('Запись обновлена');
       } else {
+        if (!allowCreate) {
+          message.error('Недостаточно прав для создания');
+          return;
+        }
         if (!api?.create) {
           message.error('Create API не определён');
           return;
@@ -153,47 +175,52 @@ export default function CrudPage({
     setPagination({ ...pagination });
   };
 
-  const actionColumn = {
-    title: 'Действия',
-    key: 'actions',
-    fixed: 'right',
-    width: 150,
-    render: (_, record) => (
-      <Space size="small">
-        <Button
-          type="link"
-          size="small"
-          icon={<EyeOutlined />}
-          onClick={() => openView(record)}
-        />
-        {!readOnly && (
-          <>
-            <Button
-              type="link"
-              size="small"
-              icon={<EditOutlined />}
-              onClick={() => openEdit(record)}
-            />
-            <Button
-              type="link"
-              size="small"
-              danger
-              icon={<DeleteOutlined />}
-              onClick={() => handleDelete(record)}
-            />
-          </>
-        )}
-      </Space>
-    ),
-  };
+  const hasAnyAction = allowView || allowEdit || allowDelete;
+  const actionColumn = hasAnyAction
+    ? {
+        title: 'Действия',
+        key: 'actions',
+        fixed: 'right',
+        width: 150,
+        render: (_, record) => (
+          <Space size="small">
+            {allowView && (
+              <Button
+                type="link"
+                size="small"
+                icon={<EyeOutlined />}
+                onClick={() => openView(record)}
+              />
+            )}
+            {allowEdit && (
+              <Button
+                type="link"
+                size="small"
+                icon={<EditOutlined />}
+                onClick={() => openEdit(record)}
+              />
+            )}
+            {allowDelete && (
+              <Button
+                type="link"
+                size="small"
+                danger
+                icon={<DeleteOutlined />}
+                onClick={() => handleDelete(record)}
+              />
+            )}
+          </Space>
+        ),
+      }
+    : null;
 
-  const tableColumns = [...columns, actionColumn];
+  const tableColumns = actionColumn ? [...columns, actionColumn] : columns;
 
   return (
     <Card
       title={title}
       extra={
-        !readOnly && (
+        allowCreate && (
           <Button type="primary" icon={<PlusOutlined />} onClick={openCreate}>
             Создать
           </Button>

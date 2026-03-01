@@ -18,10 +18,13 @@ import { DealsTableFilters } from './ui/DealsTableFilters';
 import { navigate } from '@/router.js';
 // @ts-ignore
 import { formatCurrency } from '@/lib/utils/format.js';
+// @ts-ignore
+import { canWrite } from '@/lib/rbac.js';
 
 export const DealsTable: React.FC = () => {
   const screens = Grid.useBreakpoint();
   const isMobile = !screens.md;
+  const canManage = canWrite();
 
   const { data, isLoading, pagination, handleTableChange, params, handleFilterChange } =
     useServerTable<Deal>({
@@ -143,17 +146,21 @@ export const DealsTable: React.FC = () => {
           <Tooltip title="Просмотр">
             <Button icon={<EyeOutlined />} onClick={() => navigate(`/deals/${record.id}`)} />
           </Tooltip>
-          <Tooltip title="Редактировать">
-            <Button icon={<EditOutlined />} onClick={() => navigate(`/deals/${record.id}/edit`)} />
-          </Tooltip>
-          <Popconfirm
-            title="Удалить сделку?"
-            onConfirm={() => handleDelete(record.id)}
-            okText="Да"
-            cancelText="Нет"
-          >
-            <Button icon={<DeleteOutlined />} danger loading={deleteMutation.isPending} />
-          </Popconfirm>
+          {canManage && (
+            <Tooltip title="Редактировать">
+              <Button icon={<EditOutlined />} onClick={() => navigate(`/deals/${record.id}/edit`)} />
+            </Tooltip>
+          )}
+          {canManage && (
+            <Popconfirm
+              title="Удалить сделку?"
+              onConfirm={() => handleDelete(record.id)}
+              okText="Да"
+              cancelText="Нет"
+            >
+              <Button icon={<DeleteOutlined />} danger loading={deleteMutation.isPending} />
+            </Popconfirm>
+          )}
         </Space>
       ),
     },

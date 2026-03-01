@@ -1,5 +1,6 @@
 import { App, Button, Card, Form, Input, Space, Typography } from 'antd';
 import { useState } from 'react';
+import brandLogo from '../assets/brand/logo.svg';
 import '../styles/login-page.css';
 
 import {
@@ -10,6 +11,7 @@ import {
     setToken,
 } from '../lib/api/auth';
 import { authApi } from '../lib/api/client';
+import { mergeRoles, rolesFromProfile, rolesFromTokenPayload } from '../lib/roles';
 import { navigate } from '../router';
 
 const { Title, Text } = Typography;
@@ -41,15 +43,11 @@ function LoginPage({ onLogin }) {
       try {
         const { usersApi } = await import('../lib/api/client');
         const me = await usersApi.me();
-        const roles = Array.isArray(me?.roles)
-          ? me.roles
-          : Array.isArray(me?.permissions)
-          ? me.permissions
-          : [];
+        const roles = mergeRoles(
+          rolesFromProfile(me),
+          rolesFromTokenPayload(getUserFromToken() || {}),
+        );
         sessionStorage.setItem('contora_roles', JSON.stringify(roles));
-        if (!roles || roles.length === 0) {
-          sessionStorage.setItem('contora_roles', JSON.stringify(['admin']));
-        }
       } catch (e) {
         console.warn('Failed to fetch user roles on login:', e);
       }
@@ -79,6 +77,7 @@ function LoginPage({ onLogin }) {
         <Space direction="vertical" size="large" style={{ width: '100%' }}>
           {/* Header */}
           <div style={{ textAlign: 'center', marginBottom: '8px' }}>
+            <img src={brandLogo} alt="Enterprise CRM" className="login-logo" />
             <h1 className="login-title">Enterprise CRM</h1>
             <p className="login-subtitle">Введите свои данные для входа в систему</p>
           </div>

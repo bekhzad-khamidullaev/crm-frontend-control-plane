@@ -23,8 +23,11 @@ import { CompaniesTableFilters } from './ui/CompaniesTableFilters';
 // @ts-ignore
 import CallButton from '@/components/CallButton';
 import { navigate } from '@/router.js';
+// @ts-ignore
+import { canWrite } from '@/lib/rbac.js';
 
 export const CompaniesTable: React.FC = () => {
+  const canManage = canWrite();
   // Use shared hook for server-side table logic
   const {
     data,
@@ -135,20 +138,24 @@ export const CompaniesTable: React.FC = () => {
             icon={<EyeOutlined />}
             onClick={() => navigate(`/companies/${record.id}`)}
           />
-          <Button
-            type="link"
-            icon={<EditOutlined />}
-            onClick={() => navigate(`/companies/${record.id}/edit`)}
-          />
-          <Popconfirm
-            title="Удалить эту компанию?"
-            description="Это действие нельзя отменить"
-            onConfirm={() => handleDelete(record.id)}
-            okText="Да"
-            cancelText="Нет"
-          >
-            <Button type="link" danger icon={<DeleteOutlined />} loading={deleteMutation.isPending} />
-          </Popconfirm>
+          {canManage && (
+            <Button
+              type="link"
+              icon={<EditOutlined />}
+              onClick={() => navigate(`/companies/${record.id}/edit`)}
+            />
+          )}
+          {canManage && (
+            <Popconfirm
+              title="Удалить эту компанию?"
+              description="Это действие нельзя отменить"
+              onConfirm={() => handleDelete(record.id)}
+              okText="Да"
+              cancelText="Нет"
+            >
+              <Button type="link" danger icon={<DeleteOutlined />} loading={deleteMutation.isPending} />
+            </Popconfirm>
+          )}
         </Space>
       ),
     },

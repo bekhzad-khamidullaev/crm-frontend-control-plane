@@ -6,6 +6,8 @@ import React from 'react';
 import { navigate } from '@/router.js';
 // @ts-ignore
 import { formatCurrency } from '@/lib/utils/format.js';
+// @ts-ignore
+import { canWrite } from '@/lib/rbac.js';
 
 const { Title, Text } = Typography;
 
@@ -18,6 +20,7 @@ export const DealDetailPage: React.FC<DealDetailPageProps> = ({ id }) => {
   const isMobile = !screens.md;
   const dealId = Number(id);
   const { data: deal, isLoading } = useDeal(dealId);
+  const canManage = canWrite();
 
   if (isLoading) {
     return <Spin size="large" style={{ display: 'block', margin: '50px auto' }} />;
@@ -114,14 +117,16 @@ export const DealDetailPage: React.FC<DealDetailPageProps> = ({ id }) => {
         <Button icon={<ArrowLeftOutlined />} onClick={() => navigate('/deals')} block={isMobile}>
           Список
         </Button>
-        <Button
-          icon={<EditOutlined />}
-          type="primary"
-          onClick={() => navigate(`/deals/${dealId}/edit`)}
-          block={isMobile}
-        >
-          Редактировать
-        </Button>
+        {canManage && (
+          <Button
+            icon={<EditOutlined />}
+            type="primary"
+            onClick={() => navigate(`/deals/${dealId}/edit`)}
+            block={isMobile}
+          >
+            Редактировать
+          </Button>
+        )}
       </Space>
 
       <Card bodyStyle={{ padding: isMobile ? 12 : 24 }}>

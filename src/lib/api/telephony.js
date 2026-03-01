@@ -23,6 +23,7 @@ export async function initiateCall(data) {
       lead_id: data.lead_id,
       contact_id: data.contact_id,
       campaign_id: data.campaign_id,
+      provider: data.provider,
     },
   });
 }

@@ -21,10 +21,13 @@ import { ContactsTableFilters } from './ui/ContactsTableFilters';
 // @ts-ignore
 import CallButton from '@/components/CallButton'; // Legacy
 import { navigate } from '@/router.js';
+// @ts-ignore
+import { canWrite } from '@/lib/rbac.js';
 
 export const ContactsTable: React.FC = () => {
   const screens = Grid.useBreakpoint();
   const isMobile = !screens.md;
+  const canManage = canWrite();
 
   const {
     data,
@@ -138,19 +141,23 @@ export const ContactsTable: React.FC = () => {
             icon={<EyeOutlined />}
             onClick={() => navigate(`/contacts/${record.id}`)}
           />
-          <Button
-            type="link"
-            icon={<EditOutlined />}
-            onClick={() => navigate(`/contacts/${record.id}/edit`)}
-          />
-          <Popconfirm
-            title="Удалить контакт?"
-            onConfirm={() => handleDelete(record.id)}
-            okText="Да"
-            cancelText="Нет"
-          >
-            <Button type="link" danger icon={<DeleteOutlined />} loading={deleteMutation.isPending} />
-          </Popconfirm>
+          {canManage && (
+            <Button
+              type="link"
+              icon={<EditOutlined />}
+              onClick={() => navigate(`/contacts/${record.id}/edit`)}
+            />
+          )}
+          {canManage && (
+            <Popconfirm
+              title="Удалить контакт?"
+              onConfirm={() => handleDelete(record.id)}
+              okText="Да"
+              cancelText="Нет"
+            >
+              <Button type="link" danger icon={<DeleteOutlined />} loading={deleteMutation.isPending} />
+            </Popconfirm>
+          )}
         </Space>
       ),
     },

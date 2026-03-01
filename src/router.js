@@ -67,8 +67,90 @@ export const routeMeta = {
  'settings': { auth: true, title: 'Settings' },
  'integrations': { auth: true, title: 'Integrations' },
  'forbidden': { auth: false, title: 'Forbidden' },
- 'not-found': { auth: false, title: 'Not Found' }
+ 'not-found': { auth: false, title: 'Not Found' },
+ 'chat-thread': { auth: true, title: 'Chat Thread' }
 };
+
+const READ_ROLES = ['admin', 'manager', 'sales'];
+const WRITE_ROLES = ['admin', 'manager'];
+const ADMIN_ROLES = ['admin', 'manager'];
+
+[
+  'dashboard',
+  'leads-list',
+  'leads-detail',
+  'contacts-list',
+  'contacts-detail',
+  'companies-list',
+  'companies-detail',
+  'deals-list',
+  'deals-detail',
+  'tasks-list',
+  'tasks-detail',
+  'projects-list',
+  'projects-detail',
+  'chat',
+  'chat-list',
+  'chat-thread',
+  'calls-list',
+  'calls-dashboard',
+  'payments-list',
+  'payments-detail',
+  'reminders-list',
+  'reminders-detail',
+  'campaigns-list',
+  'campaigns-detail',
+  'memos-list',
+  'memos-detail',
+  'products-list',
+  'products-detail',
+  'crm-emails',
+  'massmail',
+  'help-center',
+  'analytics',
+  'sms-center',
+  'telephony',
+  'profile',
+].forEach((route) => {
+  if (routeMeta[route]) routeMeta[route].roles = READ_ROLES;
+});
+
+[
+  'leads-new',
+  'leads-edit',
+  'contacts-new',
+  'contacts-edit',
+  'companies-new',
+  'companies-edit',
+  'deals-new',
+  'deals-edit',
+  'tasks-new',
+  'tasks-edit',
+  'projects-new',
+  'projects-edit',
+  'payments-new',
+  'payments-edit',
+  'reminders-new',
+  'reminders-edit',
+  'campaigns-new',
+  'campaigns-edit',
+  'memos-new',
+  'memos-edit',
+  'products-new',
+  'products-edit',
+].forEach((route) => {
+  if (routeMeta[route]) routeMeta[route].roles = WRITE_ROLES;
+});
+
+[
+  'operations',
+  'reference-data',
+  'users',
+  'settings',
+  'integrations',
+].forEach((route) => {
+  if (routeMeta[route]) routeMeta[route].roles = ADMIN_ROLES;
+});
 
 export function getRouteMeta(name) {
  return routeMeta[name] || { auth: false };
@@ -81,6 +163,8 @@ export function parseHash() {
   const segments = path.split('/').filter(Boolean);
   // routes: /login, /dashboard, /leads, /leads/new, /leads/:id, /leads/:id/edit
   if (segments[0] === 'login') return { name: 'login', params: {} };
+  if (segments[0] === 'forbidden') return { name: 'forbidden', params: {} };
+  if (segments[0] === '404') return { name: 'not-found', params: {} };
   if (segments[0] === 'dashboard') return { name: 'dashboard', params: {} };
   if (segments[0] === 'leads') {
     if (!segments[1]) return { name: 'leads-list', params: {} };
@@ -188,8 +272,8 @@ export function parseHash() {
   if (segments[0] === 'profile') return { name: 'profile', params: {} };
   if (segments[0] === 'settings') return { name: 'settings', params: {} };
   if (segments[0] === 'integrations') return { name: 'integrations', params: {} };
-  // Default: require login if not authenticated
-  return isAuthenticated() ? { name: 'dashboard', params: {} } : { name: 'login', params: {} };
+  // Unknown route
+  return isAuthenticated() ? { name: 'not-found', params: {} } : { name: 'login', params: {} };
 }
 
 function scheduleNotify() {

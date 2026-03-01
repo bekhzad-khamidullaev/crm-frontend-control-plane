@@ -29,6 +29,17 @@
   border: 1px solid #2d3343;
 }
 
+.login-logo {
+  width: min(280px, 100%);
+  height: auto;
+  color: #0f172a;
+  margin-bottom: 8px;
+}
+
+.dark .login-logo {
+  color: #f1f5f9;
+}
+
 /* Radix-style headings and texts */
 .login-title {
   font-size: 1.5rem;

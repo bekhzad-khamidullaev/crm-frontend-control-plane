@@ -10,6 +10,8 @@ vi.mock('../../src/router');
 describe('Auth Guard', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    sessionStorage.clear();
+    localStorage.clear();
   });
 
   describe('checkAuth', () => {
@@ -52,6 +54,30 @@ describe('Auth Guard', () => {
       expect(result).toBe(false);
       expect(auth.clearToken).toHaveBeenCalled();
       expect(router.navigate).toHaveBeenCalledWith('/login');
+    });
+
+    it('redirects to forbidden when required role is missing', () => {
+      auth.isAuthenticated.mockReturnValue(true);
+      auth.getToken.mockReturnValue('valid-token');
+      auth.isTokenExpired.mockReturnValue(false);
+      auth.parseJWT.mockReturnValue({ roles: ['sales'] });
+
+      const result = checkAuth({ name: 'leads-edit' }, true, ['manager']);
+
+      expect(result).toBe(false);
+      expect(router.navigate).toHaveBeenCalledWith('/forbidden');
+    });
+
+    it('denies access when protected route has no resolvable roles', () => {
+      auth.isAuthenticated.mockReturnValue(true);
+      auth.getToken.mockReturnValue('valid-token');
+      auth.isTokenExpired.mockReturnValue(false);
+      auth.parseJWT.mockReturnValue({});
+
+      const result = checkAuth({ name: 'leads-edit' }, true, ['admin']);
+
+      expect(result).toBe(false);
+      expect(router.navigate).toHaveBeenCalledWith('/forbidden');
     });
   });
 

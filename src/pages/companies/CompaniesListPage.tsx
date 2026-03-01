@@ -4,8 +4,11 @@ import { PlusOutlined } from '@ant-design/icons';
 import { PageHeader } from '@/shared/ui/PageHeader';
 import { CompaniesTable } from '@/widgets/companies-table';
 import { navigate } from '@/router.js';
+// @ts-ignore
+import { canWrite } from '@/lib/rbac.js';
 
 export const CompaniesListPage: React.FC = () => {
+  const canManage = canWrite();
   return (
     <>
       <PageHeader
@@ -14,13 +17,15 @@ export const CompaniesListPage: React.FC = () => {
           { title: 'Компании', href: '#/companies' }
         ]}
         extra={
-          <Button
-            type="primary"
-            icon={<PlusOutlined />}
-            onClick={() => navigate('/companies/new')}
-          >
-            Создать компанию
-          </Button>
+          canManage ? (
+            <Button
+              type="primary"
+              icon={<PlusOutlined />}
+              onClick={() => navigate('/companies/new')}
+            >
+              Создать компанию
+            </Button>
+          ) : null
         }
       />
 

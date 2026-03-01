@@ -16,6 +16,7 @@ import {
   MoreOutlined,
 } from '@ant-design/icons';
 import { useTheme } from '../lib/hooks/useTheme';
+import { canWrite as canWriteByRole } from '../lib/rbac.js';
 
 export default function BulkActions({
   selectedRowKeys = [],
@@ -28,10 +29,22 @@ export default function BulkActions({
   onBulkTag,
   customActions = [],
   entityName = 'записей',
+  canDelete,
+  canStatusChange,
+  canExport = true,
+  canSendEmail = true,
+  canSendSMS = true,
+  canBulkTag,
+  canUseCustomActions = true,
 }) {
   const { theme } = useTheme();
   const { message, modal } = App.useApp();
   const count = selectedRowKeys.length;
+  const roleCanWrite = canWriteByRole();
+  const allowDelete = canDelete ?? roleCanWrite;
+  const allowStatusChange = canStatusChange ?? roleCanWrite;
+  const allowBulkTag = canBulkTag ?? roleCanWrite;
+  const allowCustomActions = canUseCustomActions ?? roleCanWrite;
 
   if (count === 0) {
     return null;
@@ -57,37 +70,37 @@ export default function BulkActions({
   };
 
   const menuItems = [
-    onStatusChange && {
+    onStatusChange && allowStatusChange && {
       key: 'status',
       icon: <EditOutlined />,
       label: 'Изменить статус',
       onClick: () => onStatusChange(selectedRowKeys),
     },
-    onExport && {
+    onExport && canExport && {
       key: 'export',
       icon: <DownloadOutlined />,
       label: 'Экспортировать',
       onClick: () => onExport(selectedRowKeys),
     },
-    onSendEmail && {
+    onSendEmail && canSendEmail && {
       key: 'email',
       icon: <MailOutlined />,
       label: 'Отправить Email',
       onClick: () => onSendEmail(selectedRowKeys),
     },
-    onSendSMS && {
+    onSendSMS && canSendSMS && {
       key: 'sms',
       icon: <MessageOutlined />,
       label: 'Отправить SMS',
       onClick: () => onSendSMS(selectedRowKeys),
     },
-    onBulkTag && {
+    onBulkTag && allowBulkTag && {
       key: 'tags',
       icon: <TagsOutlined />,
       label: 'Добавить теги',
       onClick: () => onBulkTag(selectedRowKeys),
     },
-    ...customActions.map((action) => ({
+    ...(allowCustomActions ? customActions : []).map((action) => ({
       key: action.key,
       icon: action.icon,
       label: action.label,
@@ -125,7 +138,7 @@ export default function BulkActions({
             Отменить
           </Button>
 
-          {onDelete && (
+          {onDelete && allowDelete && (
             <Button size="small" danger icon={<DeleteOutlined />} onClick={handleDelete}>
               Удалить
             </Button>

@@ -45,6 +45,7 @@ export function AppLayout({
   wsConnected,
   incomingCallsCount,
   unreadCount,
+  allowedNavKeys,
   onLogout,
   children,
 }) {
@@ -83,6 +84,9 @@ export function AppLayout({
     { key: 'users', label: 'Пользователи', icon: <TeamOutlined />, path: '/users' },
     { key: 'integrations', label: t('nav.integrations') || 'Интеграции', icon: <SettingOutlined />, path: '/integrations' },
   ];
+  const visibleNav = Array.isArray(allowedNavKeys) && allowedNavKeys.length
+    ? baseNav.filter((item) => allowedNavKeys.includes(item.key))
+    : baseNav;
   const selectedNavLabel = baseNav.find((item) => item.key === selectedKey)?.label || t('nav.dashboard') || 'Dashboard';
 
   useEffect(() => {
@@ -103,7 +107,7 @@ export function AppLayout({
   }, [isMobile, mobileMenuOpen]);
 
   // Convert baseNav to Ant Design Menu items
-  const menuItems = baseNav.map((item) => ({
+  const menuItems = visibleNav.map((item) => ({
     key: item.key,
     icon: item.icon,
     label: item.label,

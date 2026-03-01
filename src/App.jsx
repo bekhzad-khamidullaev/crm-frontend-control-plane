@@ -6,6 +6,7 @@ import { Suspense, lazy, useEffect, useState } from 'react';
 import { AppLayout } from './components/AppLayout.jsx';
 import { clearToken, getToken, getUserFromToken, isAuthenticated } from './lib/api/auth.js';
 import { getProfile } from './lib/api/user.js';
+import { mergeRoles, normalizeRoles, rolesFromProfile, rolesFromTokenPayload } from './lib/roles.js';
 import { useTheme } from './lib/hooks/useTheme.js';
 import { setLocale } from './lib/i18n/index.js';
 import {
@@ -21,7 +22,7 @@ import sipClient from './lib/telephony/SIPClient.js';
 import callsWebSocket from './lib/websocket/CallsWebSocket.js';
 import chatWebSocket from './lib/websocket/ChatWebSocket.js';
 import IncomingCallModal from './modules/calls/IncomingCallModal.jsx';
-import { navigate, onRouteChange, parseHash } from './router.js';
+import { getRouteMeta, navigate, onRouteChange, parseHash } from './router.js';
 
 // Lazy load all page components for better code splitting
 const Dashboard = lazy(() => import('./pages/dashboard.jsx'));
@@ -194,15 +195,11 @@ function App() {
       (async () => {
         try {
           const me = await getProfile();
-          const roles = Array.isArray(me?.roles)
-            ? me.roles
-            : Array.isArray(me?.permissions)
-              ? me.permissions
-              : [];
+          const roles = mergeRoles(
+            rolesFromProfile(me),
+            rolesFromTokenPayload(getUserFromToken() || {}),
+          );
           sessionStorage.setItem('contora_roles', JSON.stringify(roles));
-          if (!roles || roles.length === 0) {
-            sessionStorage.setItem('contora_roles', JSON.stringify(['admin']));
-          }
           setUser((prev) => normalizeUser(me || {}, prev || tokenUser));
           // Sync locale from profile only when user did not explicitly choose one in localStorage.
           if (!localStorage.getItem('contora_locale') && me?.language_code) {
@@ -271,6 +268,14 @@ function App() {
       sipClient.stop();
     };
   }, []);
+
+  useEffect(() => {
+    if (!isAuthenticated()) return;
+    if (route.name === 'login' || route.name === 'forbidden' || route.name === 'not-found') return;
+    if (!canAccessRoute(route.name)) {
+      navigate('/forbidden');
+    }
+  }, [route.name]);
 
   const initializeSipClient = async () => {
     try {
@@ -395,6 +400,64 @@ function App() {
     setCurrentIncomingCall(null);
   };
 
+  const getCurrentRoles = () => {
+    const tokenRoles = rolesFromTokenPayload(getUserFromToken() || {});
+    let storedRoles = [];
+    try {
+      const raw = sessionStorage.getItem('contora_roles') || localStorage.getItem('contora_roles');
+      if (raw) {
+        const parsed = JSON.parse(raw);
+        storedRoles = Array.isArray(parsed) ? parsed : Array.isArray(parsed?.roles) ? parsed.roles : [];
+      }
+    } catch {
+      storedRoles = [];
+    }
+    return mergeRoles(tokenRoles, storedRoles);
+  };
+
+  const canAccessRoute = (routeName) => {
+    const meta = getRouteMeta(routeName);
+    if (!meta || meta.auth === false) return true;
+    if (!isAuthenticated()) return false;
+    const required = normalizeRoles(Array.isArray(meta.roles) ? meta.roles : []);
+    if (required.length === 0) return true;
+    const currentRoles = getCurrentRoles();
+    return currentRoles.some((role) => required.includes(role));
+  };
+
+  const navAccessMap = {
+    dashboard: 'dashboard',
+    leads: 'leads-list',
+    contacts: 'contacts-list',
+    companies: 'companies-list',
+    deals: 'deals-list',
+    tasks: 'tasks-list',
+    projects: 'projects-list',
+    products: 'products-list',
+    chat: 'chat-list',
+    calls: 'calls-list',
+    payments: 'payments-list',
+    reminders: 'reminders-list',
+    campaigns: 'campaigns-list',
+    segments: 'marketing-segments',
+    templates: 'marketing-templates',
+    memos: 'memos-list',
+    'crm-emails': 'crm-emails',
+    massmail: 'massmail',
+    'sms-center': 'sms-center',
+    operations: 'operations',
+    'reference-data': 'reference-data',
+    analytics: 'analytics',
+    'help-center': 'help-center',
+    telephony: 'telephony',
+    users: 'users',
+    integrations: 'integrations',
+  };
+
+  const allowedNavKeys = Object.entries(navAccessMap)
+    .filter(([, routeName]) => canAccessRoute(routeName))
+    .map(([key]) => key);
+
   const getSelectedKey = () => {
     const name = route.name;
     if (name.startsWith('leads')) return 'leads';
@@ -422,6 +485,26 @@ function App() {
   };
 
   const renderContent = () => {
+    if (route.name === 'forbidden') {
+      return (
+        <div style={{ padding: 24 }}>
+          <h2>Access denied</h2>
+          <p>You do not have permission to view this page.</p>
+        </div>
+      );
+    }
+    if (route.name === 'not-found') {
+      return (
+        <div style={{ padding: 24 }}>
+          <h2>Page not found</h2>
+          <p>The page you are looking for does not exist.</p>
+        </div>
+      );
+    }
+    if (!canAccessRoute(route.name)) {
+      return null;
+    }
+
     switch (route.name) {
       case 'dashboard':
         return <Dashboard />;
@@ -549,7 +632,7 @@ function App() {
       case 'integrations':
         return <IntegrationsPage />;
       default:
-        return <Dashboard />;
+        return null;
     }
   };
 
@@ -574,6 +657,7 @@ function App() {
       localeInitialized={localeInitialized}
       onLocaleChange={handleLocaleChange}
       selectedKey={getSelectedKey()}
+      allowedNavKeys={allowedNavKeys}
       user={user}
       wsConnected={wsConnected}
       incomingCallsCount={incomingCalls.length}

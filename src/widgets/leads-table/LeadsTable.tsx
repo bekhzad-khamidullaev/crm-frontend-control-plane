@@ -2,6 +2,7 @@ import { leadKeys } from '@/entities/lead/api/keys';
 import { useDeleteLead } from '@/entities/lead/api/mutations';
 import type { LeadListParams } from '@/entities/lead/api/queries';
 import type { Lead } from '@/entities/lead/model/types';
+import { deriveLeadStatus } from '@/entities/lead/model/utils';
 // @ts-ignore
 import { LeadsService } from '@/shared/api/generated/services/LeadsService';
 import { useServerTable } from '@/shared/hooks';
@@ -22,10 +23,13 @@ import { LeadsTableFilters } from './ui/LeadsTableFilters';
 // @ts-ignore
 import CallButton from '@/components/CallButton';
 import { navigate } from '@/router.js';
+// @ts-ignore
+import { canWrite } from '@/lib/rbac.js';
 
 export const LeadsTable: React.FC = () => {
   const screens = Grid.useBreakpoint();
   const isMobile = !screens.md;
+  const canManage = canWrite();
 
   const {
     data,
@@ -56,17 +60,6 @@ export const LeadsTable: React.FC = () => {
     new: { color: 'blue', text: 'Новый' },
     converted: { color: 'green', text: 'Конвертирован' },
     lost: { color: 'red', text: 'Потерян' },
-  };
-
-  const deriveStatus = (record: Lead) => {
-    if (record.disqualified) return 'lost';
-    // Logic for converted? record.contact and record.company exists?
-    // Legacy logic is: if (lead.disqualified) return 'lost';
-    // This part is tricky without the original util utils/leads.js content fully understood,
-    // but looking at legacy code: if (lead.disqualified) return 'lost'; ... converted ... new
-    // I'll stick to 'new' default and 'lost' if disqualified.
-    if (record.disqualified) return 'lost';
-    return 'new'; // Simplify for now, maybe add logic later
   };
 
   const columns: ColumnsType<Lead> = [
@@ -128,7 +121,7 @@ export const LeadsTable: React.FC = () => {
       key: 'status',
       width: 150,
       render: (_, record) => {
-        const s = deriveStatus(record);
+        const s = deriveLeadStatus(record);
         return <Badge color={statusMap[s].color} text={statusMap[s].text} />;
       },
     },
@@ -176,26 +169,30 @@ export const LeadsTable: React.FC = () => {
               onClick={() => navigate(`/leads/${record.id}`)}
             />
           </Tooltip>
-          <Tooltip title="Редактировать">
-            <Button
-              type="link"
-              icon={<EditOutlined />}
-              onClick={() => navigate(`/leads/${record.id}/edit`)}
-            />
-          </Tooltip>
-          <Popconfirm
-            title="Удалить лид?"
-            onConfirm={() => handleDelete(record.id)}
-            okText="Да"
-            cancelText="Нет"
-          >
-            <Button
-              type="link"
-              danger
-              icon={<DeleteOutlined />}
-              loading={deleteMutation.isPending}
-            />
-          </Popconfirm>
+          {canManage && (
+            <Tooltip title="Редактировать">
+              <Button
+                type="link"
+                icon={<EditOutlined />}
+                onClick={() => navigate(`/leads/${record.id}/edit`)}
+              />
+            </Tooltip>
+          )}
+          {canManage && (
+            <Popconfirm
+              title="Удалить лид?"
+              onConfirm={() => handleDelete(record.id)}
+              okText="Да"
+              cancelText="Нет"
+            >
+              <Button
+                type="link"
+                danger
+                icon={<DeleteOutlined />}
+                loading={deleteMutation.isPending}
+              />
+            </Popconfirm>
+          )}
         </Space>
       ),
     },

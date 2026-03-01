@@ -23,6 +23,8 @@ import {
 } from 'antd';
 import dayjs from 'dayjs';
 import React from 'react';
+// @ts-ignore
+import { canWrite } from '@/lib/rbac.js';
 
 const { Title, Text } = Typography;
 
@@ -35,6 +37,7 @@ export const ContactDetailPage: React.FC<ContactDetailPageProps> = ({ id }) => {
   const screens = Grid.useBreakpoint();
   const isMobile = !screens.md;
   const { data: contact, isLoading } = useContact(id!);
+  const canManage = canWrite();
 
   // Conditionally fetch company if exists
   const { data: company } = useCompany(contact?.company || 0, !!contact?.company);
@@ -116,14 +119,16 @@ export const ContactDetailPage: React.FC<ContactDetailPageProps> = ({ id }) => {
         <Button icon={<ArrowLeftOutlined />} onClick={() => navigate('/contacts')} block={isMobile}>
           Назад
         </Button>
-        <Button
-          type="primary"
-          icon={<EditOutlined />}
-          onClick={() => navigate(`/contacts/${id}/edit`)}
-          block={isMobile}
-        >
-          Редактировать
-        </Button>
+        {canManage && (
+          <Button
+            type="primary"
+            icon={<EditOutlined />}
+            onClick={() => navigate(`/contacts/${id}/edit`)}
+            block={isMobile}
+          >
+            Редактировать
+          </Button>
+        )}
       </Space>
 
       <Title level={isMobile ? 3 : 2}>{contact.full_name}</Title>
