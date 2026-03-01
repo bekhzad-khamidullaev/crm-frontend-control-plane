@@ -1,5 +1,7 @@
 import { App as AntApp, ConfigProvider, Skeleton, theme as antdTheme } from 'antd';
+import enUS from 'antd/locale/en_US';
 import ruRU from 'antd/locale/ru_RU';
+import uzUZ from 'antd/locale/uz_UZ';
 import { Suspense, lazy, useEffect, useState } from 'react';
 import { AppLayout } from './components/AppLayout.jsx';
 import { clearToken, getToken, getUserFromToken, isAuthenticated } from './lib/api/auth.js';
@@ -136,6 +138,13 @@ const SmsCenterPage = lazy(() => import('./pages/sms-center.jsx'));
 const TelephonyPage = lazy(() => import('./pages/telephony.jsx'));
 const UsersPage = lazy(() => import('./pages/users.jsx'));
 
+function normalizeLocale(raw) {
+  const value = String(raw || '').toLowerCase().trim();
+  if (value.startsWith('en')) return 'en';
+  if (value.startsWith('uz')) return 'uz';
+  return 'ru';
+}
+
 function normalizeUser(raw, fallback = {}) {
   const firstName = raw?.first_name || fallback?.first_name || '';
   const lastName = raw?.last_name || fallback?.last_name || '';
@@ -170,7 +179,7 @@ function App() {
 
   useEffect(() => {
     // Initialize locale on mount
-    const savedLocale = localStorage.getItem('contora_locale') || 'ru';
+    const savedLocale = normalizeLocale(localStorage.getItem('contora_locale') || 'ru');
     handleLocaleChange(savedLocale).finally(() => setLocaleInitialized(true));
 
     // Check auth on mount
@@ -195,6 +204,13 @@ function App() {
             sessionStorage.setItem('contora_roles', JSON.stringify(['admin']));
           }
           setUser((prev) => normalizeUser(me || {}, prev || tokenUser));
+          // Sync locale from profile only when user did not explicitly choose one in localStorage.
+          if (!localStorage.getItem('contora_locale') && me?.language_code) {
+            const profileLocale = normalizeLocale(me.language_code);
+            if (profileLocale !== savedLocale) {
+              handleLocaleChange(profileLocale);
+            }
+          }
         } catch (e) {
           console.warn('Failed to preload user profile/roles:', e);
         }
@@ -350,9 +366,11 @@ function App() {
   };
 
   const handleLocaleChange = async (lang) => {
-    await setLocale(lang);
-    setLocaleState(lang);
-    localStorage.setItem('contora_locale', lang);
+    const nextLocale = normalizeLocale(lang);
+    await setLocale(nextLocale);
+    setLocaleState(nextLocale);
+    localStorage.setItem('contora_locale', nextLocale);
+    window.dispatchEvent(new CustomEvent('contora:locale-change', { detail: nextLocale }));
   };
 
   const handleLogout = () => {
@@ -587,6 +605,24 @@ function App() {
 // Wrapper component that provides theme to App
 function AppWithTheme() {
   const { theme } = useTheme();
+  const [locale, setLocale] = useState(() => normalizeLocale(localStorage.getItem('contora_locale') || 'ru'));
+  useEffect(() => {
+    const onLocaleChanged = (event) => {
+      setLocale(normalizeLocale(event?.detail));
+    };
+    const onStorage = (event) => {
+      if (event.key === 'contora_locale') {
+        setLocale(normalizeLocale(event.newValue));
+      }
+    };
+    window.addEventListener('contora:locale-change', onLocaleChanged);
+    window.addEventListener('storage', onStorage);
+    return () => {
+      window.removeEventListener('contora:locale-change', onLocaleChanged);
+      window.removeEventListener('storage', onStorage);
+    };
+  }, []);
+  const antdLocale = locale === 'en' ? enUS : locale === 'uz' ? uzUZ : ruRU;
 
   // Ant Design theme configuration for Radix UI aesthetic
   const themeConfig = {
@@ -664,7 +700,7 @@ function AppWithTheme() {
   };
 
   return (
-    <ConfigProvider theme={themeConfig} locale={ruRU}>
+    <ConfigProvider theme={themeConfig} locale={antdLocale}>
       <AntApp>
         <App />
       </AntApp>

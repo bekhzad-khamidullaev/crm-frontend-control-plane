@@ -35,35 +35,6 @@ import { navigate } from '../router.js';
 const { Header, Sider, Content } = Layout;
 const { Text } = Typography;
 
-const baseNav = [
-  { key: 'dashboard', label: t('nav.dashboard') || 'Dashboard', icon: <DashboardOutlined />, path: '/dashboard' },
-  { key: 'leads', label: t('nav.leads') || 'Leads', icon: <TeamOutlined />, path: '/leads' },
-  { key: 'contacts', label: t('nav.contacts') || 'Контакты', icon: <UserOutlined />, path: '/contacts' },
-  { key: 'companies', label: t('nav.companies') || 'Компании', icon: <BankOutlined />, path: '/companies' },
-  { key: 'deals', label: t('nav.deals') || 'Сделки', icon: <DollarOutlined />, path: '/deals' },
-  { key: 'tasks', label: t('nav.tasks') || 'Задачи', icon: <CheckSquareOutlined />, path: '/tasks' },
-  { key: 'projects', label: t('nav.projects') || 'Проекты', icon: <FolderOutlined />, path: '/projects' },
-  { key: 'products', label: 'Продукты', icon: <AppstoreOutlined />, path: '/products' },
-  { key: 'chat', label: t('nav.chat') || 'Чат', icon: <MessageOutlined />, path: '/chat' },
-  { key: 'calls', label: t('nav.calls') || 'Звонки', icon: <PhoneOutlined />, path: '/calls' },
-  { key: 'payments', label: t('nav.payments') || 'Платежи', icon: <DollarOutlined />, path: '/payments' },
-  { key: 'reminders', label: t('nav.reminders') || 'Напоминания', icon: <ClockCircleOutlined />, path: '/reminders' },
-  { key: 'campaigns', label: t('nav.campaigns') || 'Кампании', icon: <CustomerServiceOutlined />, path: '/campaigns' },
-  { key: 'segments', label: 'Сегменты', icon: <TeamOutlined />, path: '/marketing/segments' },
-  { key: 'templates', label: 'Шаблоны', icon: <FileTextOutlined />, path: '/marketing/templates' },
-  { key: 'memos', label: t('nav.memos') || 'Заметки', icon: <FileTextOutlined />, path: '/memos' },
-  { key: 'crm-emails', label: 'Emails', icon: <MailOutlined />, path: '/crm-emails' },
-  { key: 'massmail', label: 'Massmail', icon: <MailOutlined />, path: '/massmail' },
-  { key: 'sms-center', label: 'SMS', icon: <MessageOutlined />, path: '/sms' },
-  { key: 'operations', label: 'Операции', icon: <ToolOutlined />, path: '/operations' },
-  { key: 'reference-data', label: 'Справочники', icon: <DatabaseOutlined />, path: '/reference-data' },
-  { key: 'analytics', label: 'Аналитика', icon: <BarChartOutlined />, path: '/analytics' },
-  { key: 'help-center', label: 'Справка', icon: <QuestionCircleOutlined />, path: '/help' },
-  { key: 'telephony', label: 'Телефония', icon: <CustomerServiceOutlined />, path: '/telephony' },
-  { key: 'users', label: 'Пользователи', icon: <TeamOutlined />, path: '/users' },
-  { key: 'integrations', label: t('nav.integrations') || 'Интеграции', icon: <SettingOutlined />, path: '/integrations' },
-];
-
 export function AppLayout({
   collapsed,
   onToggleCollapsed,
@@ -83,6 +54,35 @@ export function AppLayout({
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const siderWidth = 256;
   const drawerWidth = screens.sm ? 300 : '86vw';
+  // Build nav labels at render time so they react to locale changes.
+  const baseNav = [
+    { key: 'dashboard', label: t('nav.dashboard') || 'Dashboard', icon: <DashboardOutlined />, path: '/dashboard' },
+    { key: 'leads', label: t('nav.leads') || 'Leads', icon: <TeamOutlined />, path: '/leads' },
+    { key: 'contacts', label: t('nav.contacts') || 'Контакты', icon: <UserOutlined />, path: '/contacts' },
+    { key: 'companies', label: t('nav.companies') || 'Компании', icon: <BankOutlined />, path: '/companies' },
+    { key: 'deals', label: t('nav.deals') || 'Сделки', icon: <DollarOutlined />, path: '/deals' },
+    { key: 'tasks', label: t('nav.tasks') || 'Задачи', icon: <CheckSquareOutlined />, path: '/tasks' },
+    { key: 'projects', label: t('nav.projects') || 'Проекты', icon: <FolderOutlined />, path: '/projects' },
+    { key: 'products', label: 'Продукты', icon: <AppstoreOutlined />, path: '/products' },
+    { key: 'chat', label: t('nav.chat') || 'Чат', icon: <MessageOutlined />, path: '/chat' },
+    { key: 'calls', label: t('nav.calls') || 'Звонки', icon: <PhoneOutlined />, path: '/calls' },
+    { key: 'payments', label: t('nav.payments') || 'Платежи', icon: <DollarOutlined />, path: '/payments' },
+    { key: 'reminders', label: t('nav.reminders') || 'Напоминания', icon: <ClockCircleOutlined />, path: '/reminders' },
+    { key: 'campaigns', label: t('nav.campaigns') || 'Кампании', icon: <CustomerServiceOutlined />, path: '/campaigns' },
+    { key: 'segments', label: 'Сегменты', icon: <TeamOutlined />, path: '/marketing/segments' },
+    { key: 'templates', label: 'Шаблоны', icon: <FileTextOutlined />, path: '/marketing/templates' },
+    { key: 'memos', label: t('nav.memos') || 'Заметки', icon: <FileTextOutlined />, path: '/memos' },
+    { key: 'crm-emails', label: 'Emails', icon: <MailOutlined />, path: '/crm-emails' },
+    { key: 'massmail', label: 'Massmail', icon: <MailOutlined />, path: '/massmail' },
+    { key: 'sms-center', label: 'SMS', icon: <MessageOutlined />, path: '/sms' },
+    { key: 'operations', label: 'Операции', icon: <ToolOutlined />, path: '/operations' },
+    { key: 'reference-data', label: 'Справочники', icon: <DatabaseOutlined />, path: '/reference-data' },
+    { key: 'analytics', label: 'Аналитика', icon: <BarChartOutlined />, path: '/analytics' },
+    { key: 'help-center', label: 'Справка', icon: <QuestionCircleOutlined />, path: '/help' },
+    { key: 'telephony', label: 'Телефония', icon: <CustomerServiceOutlined />, path: '/telephony' },
+    { key: 'users', label: 'Пользователи', icon: <TeamOutlined />, path: '/users' },
+    { key: 'integrations', label: t('nav.integrations') || 'Интеграции', icon: <SettingOutlined />, path: '/integrations' },
+  ];
   const selectedNavLabel = baseNav.find((item) => item.key === selectedKey)?.label || t('nav.dashboard') || 'Dashboard';
 
   useEffect(() => {
