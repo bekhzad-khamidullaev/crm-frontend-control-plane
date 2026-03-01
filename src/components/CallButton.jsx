@@ -147,14 +147,6 @@ function CallButton({ phone, name, entityType, entityId, size = 'middle', type =
     setCallStatus('calling');
 
     if (mode === 'browser') {
-      const ua = typeof navigator !== 'undefined' ? navigator.userAgent : '';
-      const isSafari = /Safari/i.test(ua) && !/Chrome|Chromium|Edg|OPR/i.test(ua);
-      if (isSafari) {
-        message.error('Web SIP в Safari не поддерживается. Используйте Chrome/Edge.');
-        setCallStatus('idle');
-        return;
-      }
-
       // WebRTC call via SIP
       try {
         if (!sipClient.isRegistered) {

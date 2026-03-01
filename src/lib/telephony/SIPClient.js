@@ -1,36 +1,19 @@
 /**
- * SIPClient - WebRTC VoIP client wrapper for SIPml5
+ * SIPClient - WebRTC VoIP client wrapper based on JsSIP
  * Handles SIP registration, calls (incoming/outgoing), and call management
  */
 
 class SIPClient {
   constructor() {
-    if (typeof SIPml === 'undefined') {
-      this.isInitialized = false;
-      this.isRegistered = false;
-      this.emit = () => {};
-      this.configure = () => {};
-      this.init = async () => Promise.resolve();
-      this.register = async () => Promise.resolve();
-      this.call = async () => { throw new Error('SIP disabled in demo/offline mode'); };
-      this.stop = () => {};
-      return;
-    }
-    this.stack = null;
-    this.session = null;
+    this.ua = null;
     this.callSession = null;
     this.isRegistered = false;
     this.isInitialized = false;
-    
-    // Call metadata tracking
     this.currentCall = null;
-    
-    // Recording
-    this.mediaRecorder = null;
-    this.recordedChunks = [];
-    this.isRecording = false;
-    
-    // Event listeners
+    this.remoteAudioElement = null;
+    this.JsSIP = null;
+    this._registerPromise = null;
+
     this.listeners = {
       registered: [],
       unregistered: [],
@@ -42,35 +25,20 @@ class SIPClient {
       callFailed: [],
       recordingStarted: [],
       recordingStopped: [],
-      error: []
+      error: [],
     };
 
-    // Configuration
     this.config = {
-      realm: import.meta.env.VITE_SIP_REALM || '109.94.172.194',
-      impi: import.meta.env.VITE_SIP_USERNAME || '1200',
-      impu: null, // Will be set from impi
-      password: import.meta.env.VITE_SIP_PASSWORD || '56789qwe',
+      realm: import.meta.env.VITE_SIP_REALM || 'pbx.evos.uz',
+      impi: import.meta.env.VITE_SIP_USERNAME || '',
+      impu: null,
+      password: import.meta.env.VITE_SIP_PASSWORD || '',
       display_name: import.meta.env.VITE_SIP_DISPLAY_NAME || 'CRM User',
-      websocket_proxy_url: import.meta.env.VITE_SIP_SERVER || 'wss://109.94.172.194:5060',
-      enable_rtcweb_breaker: false,
-      ice_servers: [
-        { urls: import.meta.env.VITE_STUN_SERVER || 'stun:stun.l.google.com:19302' }
-      ],
-      enable_early_ims: true,
-      enable_media_stream_cache: false,
-      bandwidth: { audio: 64, video: 0 },
-      video_size: null,
-      events_listener: { events: '*', listener: this.handleSIPEvent.bind(this) },
-      sip_headers: [
-        { name: 'User-Agent', value: 'CRM-WebRTC-Client/1.0' }
-      ]
+      websocket_proxy_url: import.meta.env.VITE_SIP_SERVER || '',
+      ice_servers: [{ urls: import.meta.env.VITE_STUN_SERVER || 'stun:stun.l.google.com:19302' }],
     };
   }
 
-  /**
-   * Update SIP runtime configuration before register().
-   */
   configure(partialConfig = {}) {
     if (!partialConfig || typeof partialConfig !== 'object') return;
     this.config = {
@@ -79,451 +47,396 @@ class SIPClient {
     };
   }
 
-  /**
-   * Initialize SIPml5 engine
-   */
   async init() {
-    if (this.isInitialized) {
-      return Promise.resolve();
+    if (this.isInitialized && this.JsSIP) return;
+
+    const mod = await import('jssip');
+    this.JsSIP = mod?.default || mod;
+
+    if (!this.JsSIP?.UA || !this.JsSIP?.WebSocketInterface) {
+      throw new Error('JsSIP library not loaded');
     }
 
-    return new Promise((resolve, reject) => {
-      if (typeof SIPml === 'undefined') {
-        reject(new Error('SIPml5 library not loaded'));
-        return;
-      }
+    if (typeof window !== 'undefined' && !window.RTCPeerConnection) {
+      throw new Error('WebRTC is not supported in this browser');
+    }
 
-      SIPml.init(() => {
-        this.isInitialized = true;
-        console.log('[SIPClient] SIPml5 engine initialized');
-        resolve();
-      }, (error) => {
-        console.error('[SIPClient] Failed to initialize SIPml5:', error);
-        reject(error);
-      });
-    });
+    this.isInitialized = true;
   }
 
-  /**
-   * Register to SIP server
-   */
   async register(username, password) {
-    if (!this.isInitialized) {
-      await this.init();
-    }
+    if (this.isRegistered && this.ua) return true;
+    if (this._registerPromise) return this._registerPromise;
 
-    // Update credentials if provided
+    await this.init();
+
     if (username) this.config.impi = username;
     if (password) this.config.password = password;
-    
-    // Set IMPU from IMPI
-    this.config.impu = `sip:${this.config.impi}@${this.config.realm}`;
 
-    return new Promise((resolve, reject) => {
+    const realm = String(this.config.realm || '').trim();
+    const impi = String(this.config.impi || '').trim();
+    const pass = String(this.config.password || '').trim();
+    const ws = String(this.config.websocket_proxy_url || '').trim();
+
+    if (!realm || !impi || !pass || !ws) {
+      throw new Error('SIP credentials are not configured');
+    }
+
+    const impu = this.config.impu || `sip:${impi}@${realm}`;
+
+    if (this.ua) {
       try {
-        // Create SIP stack
-        this.stack = new SIPml.Stack(this.config);
-        
-        this.stack.start();
-        
-        // Wait for stack to start, then create registration session
-        setTimeout(() => {
-          this.session = this.stack.newSession('register', {
-            events_listener: { events: '*', listener: this.handleSessionEvent.bind(this) }
-          });
+        this.ua.stop();
+      } catch {
+        // ignore
+      }
+      this.ua = null;
+      this.isRegistered = false;
+    }
 
-          // Resolve will be called by event handler
-          this._registerResolve = resolve;
-          this._registerReject = reject;
-          this.session.register();
-        }, 500);
+    this._registerPromise = new Promise((resolve, reject) => {
+      try {
+        const socket = new this.JsSIP.WebSocketInterface(ws);
+        this.ua = new this.JsSIP.UA({
+          sockets: [socket],
+          uri: impu,
+          authorization_user: impi,
+          password: pass,
+          realm,
+          display_name: this.config.display_name || 'CRM User',
+          register: true,
+          register_expires: 600,
+          session_timers: false,
+          user_agent: 'CRM-WebRTC-Client/2.0',
+        });
+
+        let settled = false;
+        const finalizeResolve = () => {
+          if (settled) return;
+          settled = true;
+          this._registerPromise = null;
+          resolve(true);
+        };
+        const finalizeReject = (error) => {
+          if (settled) return;
+          settled = true;
+          this._registerPromise = null;
+          reject(error);
+        };
+
+        this.ua.on('registered', () => {
+          this.isRegistered = true;
+          this.emit('registered', { username: impi });
+          finalizeResolve();
+        });
+
+        this.ua.on('unregistered', () => {
+          this.isRegistered = false;
+          this.emit('unregistered');
+        });
+
+        this.ua.on('registrationFailed', (event) => {
+          this.isRegistered = false;
+          const reason = event?.cause || 'SIP registration failed';
+          this.emit('error', { type: 'registration', event, reason });
+          finalizeReject(new Error(reason));
+        });
+
+        this.ua.on('disconnected', () => {
+          this.isRegistered = false;
+          this.emit('unregistered');
+        });
+
+        this.ua.on('newRTCSession', (event) => {
+          const session = event?.session;
+          if (!session) return;
+
+          const originator = event.originator;
+          if (originator === 'remote') {
+            this.callSession = session;
+
+            const fromUri = session?.remote_identity?.uri?.toString?.() || '';
+            const from = String(fromUri || '').replace(/^sip:/, '').replace(/@.*$/, '');
+            const displayName = session?.remote_identity?.display_name || from;
+
+            this.currentCall = {
+              id: null,
+              phoneNumber: from,
+              direction: 'inbound',
+              status: 'ringing',
+              startedAt: new Date().toISOString(),
+              answeredAt: null,
+              endedAt: null,
+              duration: 0,
+            };
+
+            this._bindSessionEvents(session, this.remoteAudioElement);
+
+            this.emit('incomingCall', {
+              from,
+              displayName,
+              session,
+              callMetadata: { ...this.currentCall },
+            });
+          }
+        });
+
+        this.ua.start();
+
+        setTimeout(() => {
+          if (!settled && !this.isRegistered) {
+            finalizeReject(new Error('SIP registration timeout'));
+          }
+        }, 12000);
       } catch (error) {
-        console.error('[SIPClient] Registration error:', error);
-        this.emit('error', { type: 'registration', error });
+        this._registerPromise = null;
         reject(error);
       }
     });
+
+    return this._registerPromise;
   }
 
-  /**
-   * Unregister from SIP server
-   */
   async unregister() {
-    if (this.session) {
-      this.session.unregister();
-      return new Promise((resolve) => {
-        this._unregisterResolve = resolve;
-      });
+    if (!this.ua) return;
+    try {
+      this.ua.unregister();
+      this.ua.stop();
+    } finally {
+      this.isRegistered = false;
+      this.emit('unregistered');
     }
-    return Promise.resolve();
   }
 
-  /**
-   * Make an outgoing call
-   */
+  _buildDialCandidates(rawDestination, realm) {
+    const input = String(rawDestination || '').trim();
+    const compact = input.replace(/[^\d+]/g, '');
+    const digitsOnly = compact.replace(/\D/g, '');
+    const compactNoPlus = compact.startsWith('+') ? compact.slice(1) : compact;
+    const list = [];
+
+    const add = (value) => {
+      const v = String(value || '').trim();
+      if (!v) return;
+      if (!list.includes(v)) list.push(v);
+    };
+
+    add(input);
+    add(compact);
+    add(compactNoPlus);
+    add(digitsOnly);
+
+    if (realm) {
+      [input, compact, compactNoPlus, digitsOnly]
+        .filter(Boolean)
+        .forEach((candidate) => {
+          if (candidate.startsWith('sip:')) {
+            add(candidate);
+            return;
+          }
+          add(`sip:${candidate}@${realm}`);
+        });
+    }
+
+    return list.filter(Boolean);
+  }
+
+  _attachRemoteAudio(session, audioElement) {
+    const target = audioElement || this.remoteAudioElement;
+    if (!target) return;
+
+    session.on('peerconnection', (event) => {
+      const pc = event?.peerconnection;
+      if (!pc) return;
+
+      pc.ontrack = (trackEvent) => {
+        const [stream] = trackEvent.streams || [];
+        if (stream) {
+          target.srcObject = stream;
+          target.play?.().catch(() => {});
+        }
+      };
+
+      pc.onaddstream = (streamEvent) => {
+        const stream = streamEvent?.stream;
+        if (stream) {
+          target.srcObject = stream;
+          target.play?.().catch(() => {});
+        }
+      };
+    });
+  }
+
+  _bindSessionEvents(session, audioElement) {
+    this._attachRemoteAudio(session, audioElement);
+
+    session.on('progress', () => {
+      this.emit('callStateChange', { type: 'progress', status: 'connecting' });
+      if (this.currentCall) this.currentCall.status = 'connecting';
+    });
+
+    const markAnswered = () => {
+      if (!this.currentCall) return;
+      if (!this.currentCall.answeredAt) {
+        this.currentCall.status = 'connected';
+        this.currentCall.answeredAt = new Date().toISOString();
+        this.emit('callAnswered', { ...this.currentCall });
+      }
+      this.emit('callStateChange', { type: 'accepted', status: 'connected' });
+    };
+
+    session.on('accepted', markAnswered);
+    session.on('confirmed', markAnswered);
+
+    session.on('ended', (event) => {
+      this._finishCall('completed', event?.cause || 'ended');
+    });
+
+    session.on('failed', (event) => {
+      const reason = event?.cause || 'failed';
+      this.emit('callFailed', { reason, event, currentCall: this.currentCall ? { ...this.currentCall } : null });
+      this._finishCall('failed', reason);
+    });
+  }
+
+  _finishCall(finalStatus, reason) {
+    if (this.currentCall) {
+      this.currentCall.status = finalStatus;
+      this.currentCall.endedAt = new Date().toISOString();
+
+      const started = new Date(this.currentCall.answeredAt || this.currentCall.startedAt).getTime();
+      const ended = new Date(this.currentCall.endedAt).getTime();
+      this.currentCall.duration = Math.max(0, Math.floor((ended - started) / 1000));
+
+      this.emit('callEnded', { ...this.currentCall, reason });
+    }
+
+    this.emit('callStateChange', { type: finalStatus, status: 'terminated', reason });
+    this.currentCall = null;
+    this.callSession = null;
+  }
+
   async call(destination, audioElement, metadata = {}) {
-    if (!this.isRegistered) {
+    if (!this.isRegistered || !this.ua) {
       throw new Error('Not registered to SIP server');
     }
 
-    const buildDialCandidates = (rawDestination, realm) => {
-      const input = String(rawDestination || '').trim();
-      const compact = input.replace(/[^\d+]/g, '');
-      const digitsOnly = compact.replace(/\D/g, '');
-      const compactNoPlus = compact.startsWith('+') ? compact.slice(1) : compact;
-      const list = [];
+    const candidates = this._buildDialCandidates(destination, this.config.realm);
+    if (!candidates.length) {
+      throw new Error('Dial destination is empty');
+    }
 
-      const add = (value) => {
-        const v = String(value || '').trim();
-        if (!v) return;
-        if (!list.includes(v)) list.push(v);
-      };
-
-      add(input);
-      add(compact);
-      add(compactNoPlus);
-      add(digitsOnly);
-
-      if (realm) {
-        [input, compact, compactNoPlus, digitsOnly]
-          .filter(Boolean)
-          .forEach((candidate) => {
-            if (candidate.startsWith('sip:')) {
-              add(candidate);
-              return;
-            }
-            add(`sip:${candidate}@${realm}`);
-          });
-      }
-
-      return list.filter(Boolean);
-    };
-
-    return new Promise((resolve, reject) => {
+    let lastError = null;
+    for (const target of candidates) {
       try {
-        const candidates = buildDialCandidates(destination, this.config.realm);
-        if (candidates.length === 0) {
-          reject(new Error('Dial destination is empty'));
-          return;
-        }
+        const session = this.ua.call(target, {
+          mediaConstraints: { audio: true, video: false },
+          pcConfig: { iceServers: this.config.ice_servers || [] },
+        });
 
-        let initiated = false;
-        for (const target of candidates) {
-          const callConfig = {
-            audio_remote: audioElement,
-            events_listener: { events: '*', listener: this.handleCallEvent.bind(this) }
-          };
-          this.callSession = this.stack.newSession('call-audio', callConfig);
+        this.callSession = session;
+        this.remoteAudioElement = audioElement || this.remoteAudioElement;
+        this.currentCall = {
+          id: null,
+          phoneNumber: destination,
+          dialTarget: target,
+          direction: 'outbound',
+          status: 'initiated',
+          startedAt: new Date().toISOString(),
+          answeredAt: null,
+          endedAt: null,
+          duration: 0,
+          ...metadata,
+        };
 
-          // Initialize call metadata
-          this.currentCall = {
-            id: null, // Will be set after API call
-            phoneNumber: destination,
-            dialTarget: target,
-            direction: 'outbound',
-            status: 'initiated',
-            startedAt: new Date().toISOString(),
-            answeredAt: null,
-            endedAt: null,
-            duration: 0,
-            ...metadata
-          };
-
-          const result = this.callSession.call(target);
-          if (result === 0) {
-            initiated = true;
-            console.log('[SIPClient] Outbound call initiated:', target);
-            // Emit call started event
-            this.emit('callStarted', { ...this.currentCall });
-            resolve(this.callSession);
-            break;
-          }
-
-          this.callSession = null;
-          this.currentCall = null;
-        }
-
-        if (!initiated) {
-          reject(new Error('Failed to initiate call'));
-        }
+        this._bindSessionEvents(session, this.remoteAudioElement);
+        this.emit('callStarted', { ...this.currentCall });
+        return session;
       } catch (error) {
-        console.error('[SIPClient] Call error:', error);
-        this.currentCall = null;
-        this.emit('error', { type: 'call', error });
-        reject(error);
+        lastError = error;
       }
-    });
+    }
+
+    throw lastError || new Error('Failed to initiate call');
   }
 
-  /**
-   * Answer incoming call
-   */
   answerCall(audioElement) {
-    if (this.callSession && audioElement) {
-      this.callSession.accept({
-        audio_remote: audioElement
-      });
+    if (!this.callSession) return;
+
+    if (audioElement) {
+      this.remoteAudioElement = audioElement;
+      this._attachRemoteAudio(this.callSession, audioElement);
     }
+
+    this.callSession.answer({
+      mediaConstraints: { audio: true, video: false },
+      pcConfig: { iceServers: this.config.ice_servers || [] },
+    });
   }
 
-  /**
-   * Reject incoming call
-   */
   rejectCall() {
-    if (this.callSession) {
-      this.callSession.reject();
-      this.callSession = null;
-    }
+    if (!this.callSession) return;
+    this.callSession.terminate({ status_code: 486, reason_phrase: 'Busy Here' });
+    this.callSession = null;
   }
 
-  /**
-   * Hangup active call
-   */
   hangup() {
-    if (this.callSession) {
-      this.callSession.hangup();
-    }
+    if (!this.callSession) return;
+    this.callSession.terminate();
   }
 
-  /**
-   * Hold/unhold call
-   */
   toggleHold() {
-    if (this.callSession) {
-      const isOnHold = this.callSession.bHeld;
-      if (isOnHold) {
-        this.callSession.resume();
-      } else {
-        this.callSession.hold();
-      }
-      return !isOnHold;
+    if (!this.callSession) return false;
+    const held = this.callSession.isOnHold?.().local === true;
+    if (held) {
+      this.callSession.unhold();
+      return false;
     }
-    return false;
+    this.callSession.hold();
+    return true;
   }
 
-  /**
-   * Mute/unmute microphone
-   */
   toggleMute() {
-    if (this.callSession) {
-      const isMuted = this.callSession.bMute;
-      if (isMuted) {
-        this.callSession.unmute();
-      } else {
-        this.callSession.mute();
-      }
-      return !isMuted;
+    if (!this.callSession) return false;
+    const muted = this.callSession.isMuted?.().audio === true;
+    if (muted) {
+      this.callSession.unmute({ audio: true });
+      return false;
     }
-    return false;
+    this.callSession.mute({ audio: true });
+    return true;
   }
 
-  /**
-   * Send DTMF tones
-   */
   sendDTMF(digit) {
-    if (this.callSession) {
-      this.callSession.dtmf(digit);
-    }
+    if (!this.callSession) return;
+    this.callSession.sendDTMF(String(digit));
   }
 
-  /**
-   * Transfer call
-   */
   transferCall(destination) {
-    if (this.callSession) {
-      return this.callSession.transfer(destination);
-    }
-    return false;
-  }
+    if (!this.callSession || !destination) return false;
+    if (typeof this.callSession.refer !== 'function') return false;
 
-  /**
-   * Handle SIP stack events
-   */
-  handleSIPEvent(event) {
-    console.log('[SIPClient] SIP Event:', event.type);
-    
-    switch (event.type) {
-      case 'started':
-        console.log('[SIPClient] Stack started');
-        break;
-      case 'stopping':
-      case 'stopped':
-        this.isRegistered = false;
-        console.log('[SIPClient] Stack stopped');
-        break;
-      case 'failed_to_start':
-      case 'failed_to_stop':
-        this.emit('error', { type: 'stack', event });
-        break;
-      case 'i_new_call':
-        // Incoming call
-        this.handleIncomingCall(event);
-        break;
+    try {
+      this.callSession.refer(destination);
+      return true;
+    } catch {
+      return false;
     }
   }
 
-  /**
-   * Handle registration session events
-   */
-  handleSessionEvent(event) {
-    console.log('[SIPClient] Session Event:', event.type);
-    
-    switch (event.type) {
-      case 'connected':
-        this.isRegistered = true;
-        console.log('[SIPClient] Registered successfully');
-        this.emit('registered', { username: this.config.impi });
-        if (this._registerResolve) {
-          this._registerResolve();
-          this._registerResolve = null;
-        }
-        break;
-      case 'terminated':
-        this.isRegistered = false;
-        console.log('[SIPClient] Unregistered');
-        this.emit('unregistered');
-        if (this._unregisterResolve) {
-          this._unregisterResolve();
-          this._unregisterResolve = null;
-        }
-        break;
-      case 'i_new_message':
-        // Handle incoming SIP message
-        this.emit('message', event);
-        break;
-    }
-  }
-
-  /**
-   * Handle incoming call
-   */
-  handleIncomingCall(event) {
-    console.log('[SIPClient] Incoming call from:', event.getSipMessage().getFrom().getUri());
-    
-    this.callSession = event.newSession;
-    
-    // Add event listener to incoming call
-    this.callSession.setConfiguration({
-      events_listener: { events: '*', listener: this.handleCallEvent.bind(this) }
-    });
-
-    const from = event.getSipMessage().getFrom().getUri().replace(/^sip:/, '').replace(/@.*$/, '');
-    const displayName = event.getSipMessage().getFrom().getDisplayName();
-    
-    // Initialize call metadata for incoming call
-    this.currentCall = {
-      id: null,
-      phoneNumber: from,
-      direction: 'inbound',
-      status: 'ringing',
-      startedAt: new Date().toISOString(),
-      answeredAt: null,
-      endedAt: null,
-      duration: 0
-    };
-    
-    this.emit('incomingCall', {
-      from,
-      displayName,
-      session: this.callSession,
-      callMetadata: { ...this.currentCall }
-    });
-  }
-
-  /**
-   * Handle call session events
-   */
-  handleCallEvent(event) {
-    console.log('[SIPClient] Call Event:', event.type);
-    
-    const state = {
-      type: event.type,
-      description: event.description
-    };
-
-    switch (event.type) {
-      case 'connecting':
-        state.status = 'connecting';
-        if (this.currentCall) {
-          this.currentCall.status = 'connecting';
-        }
-        break;
-      case 'connected':
-        state.status = 'connected';
-        if (this.currentCall) {
-          this.currentCall.status = 'connected';
-          this.currentCall.answeredAt = new Date().toISOString();
-          // Emit call answered event
-          this.emit('callAnswered', { ...this.currentCall });
-        }
-        break;
-      case 'terminating':
-      case 'terminated':
-        state.status = 'terminated';
-        if (this.currentCall) {
-          this.currentCall.status = 'completed';
-          this.currentCall.endedAt = new Date().toISOString();
-          
-          // Calculate duration
-          const startTime = new Date(this.currentCall.answeredAt || this.currentCall.startedAt);
-          const endTime = new Date(this.currentCall.endedAt);
-          this.currentCall.duration = Math.floor((endTime - startTime) / 1000);
-          
-          // Emit call ended event
-          this.emit('callEnded', { ...this.currentCall });
-          this.currentCall = null;
-        }
-        this.callSession = null;
-        break;
-      case 'i_ao_request':
-        // DTMF or other in-call request
-        break;
-      case 'm_early_media':
-        state.status = 'early_media';
-        break;
-      case 'm_local_hold_ok':
-        state.status = 'held';
-        if (this.currentCall) {
-          this.currentCall.status = 'held';
-        }
-        break;
-      case 'm_local_resume_ok':
-        state.status = 'resumed';
-        if (this.currentCall) {
-          this.currentCall.status = 'connected';
-        }
-        break;
-    }
-
-    this.emit('callStateChange', state);
-  }
-
-  /**
-   * Event listener management
-   */
   on(event, callback) {
-    if (!this.listeners) {
-      console.warn('[SIPClient] Listeners not initialized, initializing now');
-      this.listeners = {};
-    }
-    if (!this.listeners[event]) {
-      this.listeners[event] = [];
-    }
+    if (!this.listeners[event]) this.listeners[event] = [];
     this.listeners[event].push(callback);
   }
 
   off(event, callback) {
-    if (!this.listeners || !this.listeners[event]) {
-      return;
-    }
-    this.listeners[event] = this.listeners[event].filter(cb => cb !== callback);
+    if (!this.listeners[event]) return;
+    this.listeners[event] = this.listeners[event].filter((cb) => cb !== callback);
   }
 
   emit(event, data) {
-    if (!this.listeners || !this.listeners[event]) {
-      return;
-    }
-    this.listeners[event].forEach(callback => {
+    if (!this.listeners[event]) return;
+    this.listeners[event].forEach((callback) => {
       try {
         callback(data);
       } catch (error) {
@@ -532,204 +445,63 @@ class SIPClient {
     });
   }
 
-  /**
-   * Get current state
-   */
   getState() {
     return {
       isInitialized: this.isInitialized,
       isRegistered: this.isRegistered,
       hasActiveCall: !!this.callSession,
       username: this.config.impi,
-      currentCall: this.currentCall ? { ...this.currentCall } : null
+      currentCall: this.currentCall ? { ...this.currentCall } : null,
     };
   }
 
-  /**
-   * Get current call metadata
-   */
   getCurrentCallMetadata() {
     return this.currentCall ? { ...this.currentCall } : null;
   }
 
-  /**
-   * Update current call metadata
-   */
   updateCurrentCallMetadata(updates) {
-    if (this.currentCall) {
-      this.currentCall = { ...this.currentCall, ...updates };
-    }
+    if (!this.currentCall) return;
+    this.currentCall = { ...this.currentCall, ...updates };
   }
 
-  /**
-   * Start recording the call
-   */
   startRecording() {
-    if (this.isRecording || !this.callSession) {
-      console.warn('[SIPClient] Cannot start recording');
-      return false;
-    }
-
-    try {
-      // Get the audio stream from the call session
-      const stream = this.callSession.getLocalStreams()[0];
-      
-      if (!stream) {
-        console.error('[SIPClient] No audio stream available');
-        return false;
-      }
-
-      // Create MediaRecorder
-      this.recordedChunks = [];
-      this.mediaRecorder = new MediaRecorder(stream, {
-        mimeType: 'audio/webm;codecs=opus'
-      });
-
-      this.mediaRecorder.ondataavailable = (event) => {
-        if (event.data && event.data.size > 0) {
-          this.recordedChunks.push(event.data);
-        }
-      };
-
-      this.mediaRecorder.onstop = () => {
-        console.log('[SIPClient] Recording stopped');
-        this.isRecording = false;
-        this.emit('recordingStopped', {
-          chunks: this.recordedChunks.length,
-          blob: this.getRecordingBlob()
-        });
-      };
-
-      this.mediaRecorder.start(1000); // Collect data every second
-      this.isRecording = true;
-      
-      console.log('[SIPClient] Recording started');
-      this.emit('recordingStarted');
-      
-      return true;
-    } catch (error) {
-      console.error('[SIPClient] Error starting recording:', error);
-      this.emit('error', { type: 'recording', error });
-      return false;
-    }
+    // Recording not supported in this implementation
+    this.emit('recordingStarted');
+    return false;
   }
 
-  /**
-   * Stop recording the call
-   */
   stopRecording() {
-    if (!this.isRecording || !this.mediaRecorder) {
-      console.warn('[SIPClient] No active recording');
-      return false;
-    }
-
-    try {
-      this.mediaRecorder.stop();
-      return true;
-    } catch (error) {
-      console.error('[SIPClient] Error stopping recording:', error);
-      return false;
-    }
+    this.emit('recordingStopped');
+    return null;
   }
 
-  /**
-   * Get the recording as a Blob
-   */
-  getRecordingBlob() {
-    if (this.recordedChunks.length === 0) {
-      return null;
-    }
-
-    return new Blob(this.recordedChunks, {
-      type: 'audio/webm;codecs=opus'
-    });
-  }
-
-  /**
-   * Clear recording data
-   */
-  clearRecording() {
-    this.recordedChunks = [];
-    this.mediaRecorder = null;
-    this.isRecording = false;
-  }
-
-  /**
-   * Cleanup and stop SIP stack
-   */
-  stop() {
-    if (this.stack) {
-      this.stack.stop();
-    }
-  }
-
-  /**
-   * Auto-reconnect logic
-   */
   async reconnect() {
-    if (this.reconnecting) return;
-    this.reconnecting = true;
-    
-    const maxAttempts = 5;
-    let attempt = 0;
-    
-    while (attempt < maxAttempts && !this.isRegistered) {
-      attempt++;
-      console.log(`[SIPClient] Reconnection attempt ${attempt}/${maxAttempts}`);
-      
-      try {
-        await new Promise(resolve => setTimeout(resolve, 2000 * attempt)); // Exponential backoff
-        await this.register();
-        break;
-      } catch (error) {
-        console.error(`[SIPClient] Reconnection attempt ${attempt} failed:`, error);
+    const username = this.config.impi;
+    const password = this.config.password;
+    await this.stop();
+    await this.register(username, password);
+  }
+
+  async stop() {
+    try {
+      if (this.callSession) {
+        this.callSession.terminate();
       }
-    }
-    
-    this.reconnecting = false;
-    
-    if (!this.isRegistered) {
-      this.emit('reconnect_failed');
-    }
-  }
+      this.callSession = null;
+      this.currentCall = null;
 
-  /**
-   * Log call to backend API
-   */
-  async logCallToAPI(callData) {
-    try {
-      // Import api from client to use centralized error handling
-      const { api } = await import('../api/client.js');
-      const response = await api.post('/api/voip/call-logs/', { body: callData });
-      
-      console.log('[SIPClient] Call logged to API:', response);
-      return response.id;
+      if (this.ua) {
+        this.ua.stop();
+      }
+      this.ua = null;
+      this.isRegistered = false;
+      this._registerPromise = null;
     } catch (error) {
-      console.error('[SIPClient] Error logging call to API:', error);
-      // Don't throw - graceful degradation for logging errors
-      return null;
-    }
-  }
-
-  /**
-   * Update call log in backend API
-   */
-  async updateCallLogInAPI(callLogId, updates) {
-    try {
-      // Import api from client to use centralized error handling
-      const { api } = await import('../api/client.js');
-      const response = await api.patch(`/api/voip/call-logs/${callLogId}/`, { body: updates });
-      
-      console.log('[SIPClient] Call log updated in API:', response);
-      return true;
-    } catch (error) {
-      console.error('[SIPClient] Error updating call log in API:', error);
-      // Don't throw - graceful degradation for logging errors
-      return false;
+      console.error('[SIPClient] Stop error:', error);
     }
   }
 }
 
-// Singleton instance
-export const sipClient = new SIPClient();
+const sipClient = new SIPClient();
+
 export default sipClient;
