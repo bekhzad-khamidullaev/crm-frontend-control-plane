@@ -198,18 +198,19 @@ export function AppLayout({
           }}
         >
           <Space>
-            <Avatar
-              style={{
-                backgroundColor: theme === 'dark' ? '#2d3343' : '#f1f5f9',
-                color: theme === 'dark' ? '#f1f5f9' : '#09090b',
-                verticalAlign: 'middle',
-              }}
-              size="large"
-              src={brandMark}
-            >
-              E
-            </Avatar>
-            {!collapsed && (
+            {collapsed ? (
+              <Avatar
+                style={{
+                  backgroundColor: theme === 'dark' ? '#2d3343' : '#f1f5f9',
+                  color: theme === 'dark' ? '#f1f5f9' : '#09090b',
+                  verticalAlign: 'middle',
+                }}
+                size="large"
+                src={brandMark}
+              >
+                E
+              </Avatar>
+            ) : (
               <img
                 src={theme === 'dark' ? brandLogoDark : brandLogo}
                 alt="Enterprise CRM"
