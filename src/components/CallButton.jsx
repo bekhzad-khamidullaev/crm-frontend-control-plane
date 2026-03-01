@@ -76,12 +76,20 @@ function CallButton({ phone, name, entityType, entityId, size = 'middle', type =
     const handleCallEnded = async (callData) => {
       console.log('[CallButton] Call ended:', callData);
       stopTimer();
-      setCallDuration(callData.duration);
-      setCallStatus('completed');
-
-      // Clear active call from store
       clearActiveCall();
+      const duration = Number(callData?.duration || 0);
+      const failed = callData?.status === 'failed';
+      const reason = callData?.reason || callData?.cause || '';
 
+      if (failed) {
+        setCallDuration(0);
+        setCallStatus('idle');
+        message.error(`Звонок не установлен${reason ? `: ${reason}` : ''}`);
+        return;
+      }
+
+      setCallDuration(duration);
+      setCallStatus('completed');
       addCallToHistory(callData);
     };
 
