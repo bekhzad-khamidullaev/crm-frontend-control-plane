@@ -133,6 +133,59 @@ function formatScalarValue(value) {
   return String(value);
 }
 
+function prettifyKey(key) {
+  return String(key || '')
+    .replace(/_/g, ' ')
+    .replace(/\b\w/g, (char) => char.toUpperCase());
+}
+
+function normalizePredictionStatus(statusPayload) {
+  if (!statusPayload || typeof statusPayload !== 'object') return [];
+
+  const rows = [];
+
+  Object.entries(statusPayload).forEach(([groupKey, groupValue]) => {
+    if (!groupValue || typeof groupValue !== 'object' || Array.isArray(groupValue)) {
+      rows.push({
+        key: `${groupKey}-value`,
+        groupKey,
+        groupLabel: prettifyKey(groupKey),
+        metricKey: groupKey,
+        metricLabel: prettifyKey(groupKey),
+        count: Number(groupValue),
+        status: typeof groupValue === 'string' ? groupValue : null,
+        rawValue: groupValue,
+      });
+      return;
+    }
+
+    Object.entries(groupValue).forEach(([metricKey, metricValue]) => {
+      const metricObject =
+        metricValue && typeof metricValue === 'object' && !Array.isArray(metricValue)
+          ? metricValue
+          : { value: metricValue };
+      const countCandidate =
+        metricObject.count ??
+        metricObject.total ??
+        metricObject.value ??
+        metricObject.items ??
+        metricObject.records;
+      rows.push({
+        key: `${groupKey}-${metricKey}`,
+        groupKey,
+        groupLabel: prettifyKey(groupKey),
+        metricKey,
+        metricLabel: prettifyKey(metricKey),
+        count: Number(countCandidate),
+        status: metricObject.status || metricObject.state || null,
+        rawValue: metricValue,
+      });
+    });
+  });
+
+  return rows;
+}
+
 function renderGrowthTag(value) {
   if (value === null || value === undefined || Number.isNaN(Number(value))) return null;
   const numeric = Number(value);
@@ -400,6 +453,30 @@ export default function AnalyticsPage() {
 
   const nextActionsClientsColumns = useMemo(() => buildTableColumns(nextActionsClients), [nextActionsClients]);
   const nextActionsDealsColumns = useMemo(() => buildTableColumns(nextActionsDeals), [nextActionsDeals]);
+  const predictionStatusRows = useMemo(
+    () =>
+      normalizePredictionStatus(predictionStatus).filter((row) =>
+        !Number.isNaN(row.count) || row.status || row.rawValue !== null
+      ),
+    [predictionStatus]
+  );
+  const predictionStatusChartData = useMemo(() => {
+    const rowsWithCount = predictionStatusRows.filter((row) => !Number.isNaN(row.count));
+    if (!rowsWithCount.length) return null;
+
+    return {
+      labels: rowsWithCount.map((row) => `${row.groupLabel}: ${row.metricLabel}`),
+      datasets: [
+        {
+          label: 'Количество',
+          data: rowsWithCount.map((row) => row.count),
+          backgroundColor: chartColors.primary,
+          borderColor: chartColors.primaryBorder,
+          borderWidth: 2,
+        },
+      ],
+    };
+  }, [predictionStatusRows]);
 
   const tabs = [
     {
@@ -671,17 +748,47 @@ export default function AnalyticsPage() {
             </Col>
             <Col xs={24} lg={12}>
               <AnalyticsCard title="Статус прогнозов" loading={loadingPredictions} error={predictionError}>
-                {predictionStatus ? (
-                  <List
-                    size="small"
-                    dataSource={Object.entries(predictionStatus)}
-                    renderItem={([key, value]) => (
-                      <List.Item>
-                        <Text strong>{key}</Text>
-                        <Text>{formatScalarValue(value)}</Text>
-                      </List.Item>
-                    )}
-                  />
+                {predictionStatusRows.length ? (
+                  <Space direction="vertical" size="middle" style={{ width: '100%' }}>
+                    {predictionStatusChartData ? (
+                      <AnimatedChart type="bar" data={predictionStatusChartData} height={220} />
+                    ) : null}
+
+                    <Table
+                      size="small"
+                      pagination={false}
+                      dataSource={predictionStatusRows}
+                      columns={[
+                        {
+                          title: 'Группа',
+                          dataIndex: 'groupLabel',
+                          key: 'groupLabel',
+                          render: (value) => <Text strong>{value}</Text>,
+                        },
+                        {
+                          title: 'Метрика',
+                          dataIndex: 'metricLabel',
+                          key: 'metricLabel',
+                        },
+                        {
+                          title: 'Количество',
+                          dataIndex: 'count',
+                          key: 'count',
+                          render: (value) =>
+                            Number.isNaN(value) ? <Text type="secondary">-</Text> : <Text>{value}</Text>,
+                        },
+                        {
+                          title: 'Статус',
+                          dataIndex: 'status',
+                          key: 'status',
+                          render: (value, record) => (
+                            <Text type="secondary">{value || formatScalarValue(record.rawValue)}</Text>
+                          ),
+                        },
+                      ]}
+                      rowKey="key"
+                    />
+                  </Space>
                 ) : (
                   <Empty description="Нет данных" />
                 )}
