@@ -245,25 +245,62 @@ class SIPClient {
     const target = audioElement || this.remoteAudioElement;
     if (!target) return;
 
-    session.on('peerconnection', (event) => {
-      const pc = event?.peerconnection;
+    target.autoplay = true;
+    target.playsInline = true;
+    target.muted = false;
+    target.volume = 1;
+
+    const ensurePlayback = () => {
+      const attemptPlay = () => target.play?.().catch(() => {});
+      attemptPlay();
+      // Safari may block deferred media start until next gesture.
+      if (typeof window === 'undefined') return;
+      const resumeOnGesture = () => {
+        attemptPlay();
+        window.removeEventListener('click', resumeOnGesture, true);
+        window.removeEventListener('touchstart', resumeOnGesture, true);
+      };
+      window.addEventListener('click', resumeOnGesture, true);
+      window.addEventListener('touchstart', resumeOnGesture, true);
+    };
+
+    const bindPeerConnection = (pc) => {
       if (!pc) return;
+
+      const attachFromStream = (stream) => {
+        if (!stream) return;
+        target.srcObject = stream;
+        ensurePlayback();
+      };
+
+      const collectRemoteStream = () => {
+        const receivers = pc.getReceivers?.() || [];
+        const tracks = receivers.map((receiver) => receiver?.track).filter((track) => track && track.kind === 'audio');
+        if (!tracks.length) return;
+        attachFromStream(new MediaStream(tracks));
+      };
 
       pc.ontrack = (trackEvent) => {
         const [stream] = trackEvent.streams || [];
         if (stream) {
-          target.srcObject = stream;
-          target.play?.().catch(() => {});
+          attachFromStream(stream);
+        } else {
+          collectRemoteStream();
         }
       };
 
       pc.onaddstream = (streamEvent) => {
-        const stream = streamEvent?.stream;
-        if (stream) {
-          target.srcObject = stream;
-          target.play?.().catch(() => {});
-        }
+        attachFromStream(streamEvent?.stream);
       };
+
+      collectRemoteStream();
+    };
+
+    // In some browsers the peerconnection event can fire before listeners are attached.
+    bindPeerConnection(session.connection);
+
+    session.on('peerconnection', (event) => {
+      bindPeerConnection(event?.peerconnection);
     });
   }
 
