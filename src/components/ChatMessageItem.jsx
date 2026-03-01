@@ -170,7 +170,7 @@ function ChatMessageItem({
           >
             <Space size={4}>
               <EnterOutlined style={{ fontSize: 10 }} />
-              <Text type="secondary">Ответ на сообщение #{message.answer_to}</Text>
+              <Text type="secondary">Ответ на сообщение</Text>
             </Space>
           </div>
         )}

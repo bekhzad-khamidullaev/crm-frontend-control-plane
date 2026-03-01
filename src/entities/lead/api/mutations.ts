@@ -50,12 +50,17 @@ export const useDeleteLead = () => {
 
 export const useConvertLead = () => {
   const queryClient = useQueryClient();
+  type ConvertLeadPayload = Partial<Lead> & {
+    create_deal?: boolean;
+    owner?: number;
+  };
+
   return useMutation({
-    mutationFn: ({ id, data }: { id: number; data: Lead }) =>
-      LeadsService.leadsConvertCreate({ id, requestBody: data }),
-    onSuccess: (data: Lead) => {
+    mutationFn: ({ id, data }: { id: number; data: ConvertLeadPayload }) =>
+      LeadsService.leadsConvertCreate({ id, requestBody: data as any }),
+    onSuccess: (_data, variables) => {
       queryClient.invalidateQueries({ queryKey: leadKeys.lists() });
-      queryClient.invalidateQueries({ queryKey: leadKeys.detail(data.id) });
+      queryClient.invalidateQueries({ queryKey: leadKeys.detail(variables.id) });
     },
   });
 };

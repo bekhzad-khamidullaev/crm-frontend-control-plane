@@ -233,7 +233,7 @@ function IncomingCallsTab() {
         rowKey="id"
         loading={loading}
         columns={[
-          { title: 'Caller ID', dataIndex: 'caller_id', key: 'caller_id', width: 140 },
+          { title: 'Номер отображения', dataIndex: 'caller_id', key: 'caller_id', width: 160 },
           { title: 'Клиент', dataIndex: 'client_name', key: 'client_name' },
           { title: 'Тип', dataIndex: 'client_type', key: 'client_type', width: 120 },
           { title: 'Пользователь', dataIndex: 'user_name', key: 'user_name' },
@@ -340,13 +340,13 @@ function ColdCallTab() {
           <Form.Item label="From number" name="from_number">
             <Input />
           </Form.Item>
-          <Form.Item label="Lead ID" name="lead_id">
+          <Form.Item label="Лид" name="lead_id">
             <InputNumber style={{ width: '100%' }} />
           </Form.Item>
-          <Form.Item label="Contact ID" name="contact_id">
+          <Form.Item label="Контакт" name="contact_id">
             <InputNumber style={{ width: '100%' }} />
           </Form.Item>
-          <Form.Item label="Campaign ID" name="campaign_id">
+          <Form.Item label="Кампания" name="campaign_id">
             <InputNumber style={{ width: '100%' }} />
           </Form.Item>
           <Button type="primary" htmlType="submit">
@@ -366,13 +366,13 @@ function ColdCallTab() {
           <Form.Item label="Scheduled time (ISO)" name="scheduled_time">
             <Input placeholder="2024-01-15T14:30:00Z" />
           </Form.Item>
-          <Form.Item label="Lead ID" name="lead_id">
+          <Form.Item label="Лид" name="lead_id">
             <InputNumber style={{ width: '100%' }} />
           </Form.Item>
-          <Form.Item label="Contact ID" name="contact_id">
+          <Form.Item label="Контакт" name="contact_id">
             <InputNumber style={{ width: '100%' }} />
           </Form.Item>
-          <Form.Item label="Campaign ID" name="campaign_id">
+          <Form.Item label="Кампания" name="campaign_id">
             <InputNumber style={{ width: '100%' }} />
           </Form.Item>
           <Button type="primary" htmlType="submit">
@@ -389,7 +389,7 @@ function ColdCallTab() {
           <Form.Item label="From number" name="from_number">
             <Input />
           </Form.Item>
-          <Form.Item label="Campaign ID" name="campaign_id">
+          <Form.Item label="Кампания" name="campaign_id">
             <InputNumber style={{ width: '100%' }} />
           </Form.Item>
           <Form.Item label="Delay between calls (сек)" name="delay_between_calls">
@@ -423,14 +423,14 @@ export default function TelephonyPage() {
             { title: 'Провайдер', dataIndex: 'provider', key: 'provider' },
             { title: 'Тип', dataIndex: 'type', key: 'type', width: 120 },
             { title: 'Номер', dataIndex: 'number', key: 'number' },
-            { title: 'Caller ID', dataIndex: 'callerid', key: 'callerid' },
+            { title: 'Номер отображения', dataIndex: 'callerid', key: 'callerid' },
             { title: 'Активно', dataIndex: 'active', key: 'active', render: (value) => value ? 'Да' : 'Нет' },
           ]}
           fields={[
             { name: 'provider', label: 'Провайдер', type: 'select', options: providerOptions, required: true },
             { name: 'type', label: 'Тип', type: 'select', options: typeOptions, required: true },
             { name: 'number', label: 'Номер', type: 'text', required: true },
-            { name: 'callerid', label: 'Caller ID', type: 'text', required: true },
+            { name: 'callerid', label: 'Номер отображения', type: 'text', required: true },
             {
               name: 'owner',
               label: 'Владелец',

@@ -3,6 +3,7 @@
 /* tslint:disable */
 /* eslint-disable */
 import type { BlankEnum } from './BlankEnum';
+import type { LeadStatusEnum } from './LeadStatusEnum';
 import type { NullEnum } from './NullEnum';
 import type { SexEnum } from './SexEnum';
 /**
@@ -47,6 +48,7 @@ export type PatchedLead = {
     region?: string;
     district?: string;
     description?: string;
+    status?: LeadStatusEnum;
     disqualified?: boolean;
     lead_source?: number | null;
     /**

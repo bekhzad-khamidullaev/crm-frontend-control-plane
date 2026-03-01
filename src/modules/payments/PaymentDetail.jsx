@@ -115,7 +115,7 @@ export default function PaymentDetail({ id }) {
         </DetailRow>
 
         <DetailRow label="Сделка">
-          {data.deal_name || (data.deal ? `#${data.deal}` : '-')}
+          {data.deal_name || '-'}
         </DetailRow>
 
         <DetailRow label="Номер договора">{data.contract_number || '-'}</DetailRow>

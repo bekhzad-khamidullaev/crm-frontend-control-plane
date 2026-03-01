@@ -132,13 +132,13 @@ export default function InstagramConnect({ onSuccess, onCancel }) {
           </Form.Item>
 
           <Form.Item
-            label="Instagram Business Account ID"
+            label="Идентификатор Instagram Business аккаунта"
             name="instagram_user_id"
             rules={[
-              { required: true, message: 'Введите ID аккаунта' },
-              { pattern: /^\d+$/, message: 'ID должен содержать только цифры' },
+              { required: true, message: 'Введите идентификатор аккаунта' },
+              { pattern: /^\d+$/, message: 'Идентификатор должен содержать только цифры' },
             ]}
-            extra="Числовой ID вашего Instagram Business аккаунта"
+            extra="Числовой идентификатор вашего Instagram Business аккаунта"
           >
             <Input
               placeholder="17841400008460056"

@@ -127,7 +127,7 @@ function ProjectDetail({ id }) {
 
   const userMap = useMemo(() => {
     return users.reduce((acc, user) => {
-      acc[user.id] = user.username || user.email || `#${user.id}`;
+      acc[user.id] = user.username || user.email || '-';
       return acc;
     }, {});
   }, [users]);
@@ -242,11 +242,11 @@ function ProjectDetail({ id }) {
                 value={
                   <div className="flex items-center gap-2">
                     <User className="h-4 w-4 text-muted-foreground" />
-                    {project.owner ? userMap[project.owner] || `#${project.owner}` : '-'}
+                    {project.owner ? userMap[project.owner] || '-' : '-'}
                   </div>
                 }
               />
-              <DetailRow label="Со-владелец" value={project.co_owner ? userMap[project.co_owner] || `#${project.co_owner}` : '-'} />
+              <DetailRow label="Со-владелец" value={project.co_owner ? userMap[project.co_owner] || '-' : '-'} />
               <DetailRow label="Ответственные" value={responsibleNames.length ? responsibleNames.join(', ') : '-'} span />
               <DetailRow label="Подписчики" value={subscriberNames.length ? subscriberNames.join(', ') : '-'} span />
               <DetailRow

@@ -4,7 +4,7 @@
 /* eslint-disable */
 export type EmlMessage = {
     readonly id: number;
-    owner?: number | null;
+    readonly owner: number | null;
     readonly owner_name: string;
     /**
      * The subject of the message. You can use {{first_name}}, {{last_name}}, {{first_middle_name}} or {{full_name}}

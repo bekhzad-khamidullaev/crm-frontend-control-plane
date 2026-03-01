@@ -103,10 +103,10 @@ export default function CampaignDetail({ id }) {
           {data.name}
         </Descriptions.Item>
         <Descriptions.Item label="Сегмент">
-          {data.segment_name || (data.segment ? `#${data.segment}` : '-')}
+          {data.segment_name || '-'}
         </Descriptions.Item>
         <Descriptions.Item label="Шаблон">
-          {data.template_name || (data.template ? `#${data.template}` : '-')}
+          {data.template_name || '-'}
         </Descriptions.Item>
         <Descriptions.Item label="Дата старта">
           {data.start_at ? new Date(data.start_at).toLocaleString('ru-RU') : '-'}

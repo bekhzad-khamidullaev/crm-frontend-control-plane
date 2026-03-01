@@ -7,4 +7,4 @@
  * * `OnlinePBX` - OnlinePBX
  * * `Asterisk` - Asterisk
  */
-export type ProviderEnum = 'Zadarma' | 'OnlinePBX' | 'Asterisk';
+export type ConnectionProviderEnum = 'Zadarma' | 'OnlinePBX' | 'Asterisk';

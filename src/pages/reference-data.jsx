@@ -67,7 +67,6 @@ function CurrencyRatesTab() {
   };
 
   const columns = [
-    { title: 'ID', dataIndex: 'id', key: 'id', width: 80 },
     { title: 'Код', dataIndex: 'name', key: 'name', width: 120 },
     {
       title: 'Курс',
@@ -163,7 +162,6 @@ export default function ReferenceDataPage() {
           title="Страны"
           api={{ list: getCountries, retrieve: getCountry }}
           columns={[
-            { title: 'ID', dataIndex: 'id', key: 'id', width: 80 },
             { title: 'Название', dataIndex: 'name', key: 'name' },
           ]}
           fields={emptyFields}
@@ -179,7 +177,6 @@ export default function ReferenceDataPage() {
           title="Города"
           api={{ list: getCities, retrieve: getCity }}
           columns={[
-            { title: 'ID', dataIndex: 'id', key: 'id', width: 80 },
             { title: 'Название', dataIndex: 'name', key: 'name' },
             { title: 'Страна', dataIndex: 'country_name', key: 'country_name' },
           ]}
@@ -196,7 +193,6 @@ export default function ReferenceDataPage() {
           title="Отрасли"
           api={{ list: getIndustries, retrieve: getIndustry }}
           columns={[
-            { title: 'ID', dataIndex: 'id', key: 'id', width: 80 },
             { title: 'Название', dataIndex: 'name', key: 'name' },
           ]}
           fields={emptyFields}
@@ -212,7 +208,6 @@ export default function ReferenceDataPage() {
           title="Источники лидов"
           api={{ list: getLeadSources, retrieve: getLeadSource }}
           columns={[
-            { title: 'ID', dataIndex: 'id', key: 'id', width: 80 },
             { title: 'Название', dataIndex: 'name', key: 'name' },
           ]}
           fields={emptyFields}
@@ -228,7 +223,6 @@ export default function ReferenceDataPage() {
           title="Типы клиентов"
           api={{ list: getClientTypes, retrieve: getClientType }}
           columns={[
-            { title: 'ID', dataIndex: 'id', key: 'id', width: 80 },
             { title: 'Название', dataIndex: 'name', key: 'name' },
           ]}
           fields={emptyFields}
@@ -244,7 +238,6 @@ export default function ReferenceDataPage() {
           title="Причины закрытия"
           api={{ list: getClosingReasons, retrieve: getClosingReason }}
           columns={[
-            { title: 'ID', dataIndex: 'id', key: 'id', width: 80 },
             { title: 'Название', dataIndex: 'name', key: 'name' },
           ]}
           fields={emptyFields}
@@ -264,7 +257,6 @@ export default function ReferenceDataPage() {
             { title: 'Индекс', dataIndex: 'index_number', key: 'index_number', width: 90 },
             { title: 'По умолчанию', dataIndex: 'default', key: 'default', render: (value) => value ? 'Да' : 'Нет' },
             { title: 'Успешная', dataIndex: 'success_stage', key: 'success_stage', render: (value) => value ? 'Да' : 'Нет' },
-            { title: 'Отдел', dataIndex: 'department', key: 'department', width: 90 },
           ]}
           fields={emptyFields}
           readOnly={readOnly}
@@ -318,8 +310,6 @@ export default function ReferenceDataPage() {
           api={{ list: getCrmTags, retrieve: getCrmTag }}
           columns={[
             { title: 'Название', dataIndex: 'name', key: 'name' },
-            { title: 'Отдел', dataIndex: 'department', key: 'department', width: 100 },
-            { title: 'Владелец', dataIndex: 'owner', key: 'owner', width: 100 },
           ]}
           fields={emptyFields}
           readOnly={readOnly}
@@ -398,7 +388,6 @@ export default function ReferenceDataPage() {
           title="Категории продуктов"
           api={{ list: getProductCategories, retrieve: getProductCategory }}
           columns={[
-            { title: 'ID', dataIndex: 'id', key: 'id', width: 80 },
             { title: 'Название', dataIndex: 'name', key: 'name' },
           ]}
           fields={emptyFields}

@@ -24,6 +24,7 @@ export class DealsService {
         ordering,
         owner,
         page,
+        pageSize,
         relevant,
         search,
         stage,
@@ -43,6 +44,10 @@ export class DealsService {
          * A page number within the paginated result set.
          */
         page?: number,
+        /**
+         * Number of results to return per page.
+         */
+        pageSize?: number,
         relevant?: boolean,
         /**
          * A search term.
@@ -63,6 +68,7 @@ export class DealsService {
                 'ordering': ordering,
                 'owner': owner,
                 'page': page,
+                'page_size': pageSize,
                 'relevant': relevant,
                 'search': search,
                 'stage': stage,
@@ -176,6 +182,23 @@ export class DealsService {
             path: {
                 'id': id,
             },
+        });
+    }
+    /**
+     * CRUD for CRM deals with ownership rules.
+     * @returns Deal
+     * @throws ApiError
+     */
+    public static dealsBulkTagCreate({
+        requestBody,
+    }: {
+        requestBody: Deal,
+    }): CancelablePromise<Deal> {
+        return __request(OpenAPI, {
+            method: 'POST',
+            url: '/api/deals/bulk_tag/',
+            body: requestBody,
+            mediaType: 'application/json',
         });
     }
 }

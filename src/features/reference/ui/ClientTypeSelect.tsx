@@ -1,6 +1,9 @@
 import React from 'react';
 import { Select, SelectProps } from 'antd';
 import { useClientTypes } from '../api/queries';
+import { getClientTypeLabel } from '../lib/clientTypeLabel';
+// @ts-ignore
+import { getLocale } from '@/lib/i18n';
 
 export interface ClientTypeSelectProps extends SelectProps {
   // extended props if needed
@@ -8,13 +11,14 @@ export interface ClientTypeSelectProps extends SelectProps {
 
 export const ClientTypeSelect: React.FC<ClientTypeSelectProps> = (props) => {
   const { data, isLoading } = useClientTypes();
+  const locale = getLocale();
 
   const options = React.useMemo(() => {
     return data?.results?.map((type) => ({
-      label: type.name,
+      label: getClientTypeLabel(type.name, locale),
       value: type.id,
     })) || [];
-  }, [data]);
+  }, [data, locale]);
 
   return (
     <Select

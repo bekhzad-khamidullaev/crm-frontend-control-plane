@@ -29,8 +29,11 @@ import dayjs from 'dayjs';
 import { navigate } from '@/router.js';
 import { useCompany, useCompanyContacts, useCompanyDeals } from '@/entities/company/api/queries';
 import { useClientTypes, useIndustries } from '@/features/reference';
+import { getClientTypeLabel } from '@/features/reference/lib/clientTypeLabel';
 // @ts-ignore
 import { canWrite } from '@/lib/rbac.js';
+// @ts-ignore
+import { getLocale } from '@/lib/i18n';
 
 const { Title, Text } = Typography;
 
@@ -59,13 +62,14 @@ export const CompanyDetailPage: React.FC<CompanyDetailPageProps> = ({ id }) => {
 
   const contacts = contactsData?.results || [];
   const deals = dealsData?.results || [];
+  const locale = getLocale();
 
   const companyName = company?.full_name || 'Компания';
 
   // Derived Values
   const clientTypeName = useMemo(() =>
-    clientTypes?.results?.find(t => t.id === company?.type)?.name || company?.type,
-  [clientTypes, company]);
+    getClientTypeLabel(clientTypes?.results?.find(t => t.id === company?.type)?.name, locale),
+  [clientTypes, company, locale]);
 
   const industryNames = useMemo(() =>
     company?.industry?.map((indId: number) =>

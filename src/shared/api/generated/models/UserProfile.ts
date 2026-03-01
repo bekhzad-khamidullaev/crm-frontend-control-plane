@@ -3,6 +3,8 @@
 /* tslint:disable */
 /* eslint-disable */
 import type { BlankEnum } from './BlankEnum';
+import type { TelephonyProviderEnum } from './TelephonyProviderEnum';
+import type { TelephonyRouteModeEnum } from './TelephonyRouteModeEnum';
 import type { UtcTimezoneEnum } from './UtcTimezoneEnum';
 /**
  * Serializer for UserProfile model
@@ -32,5 +34,35 @@ export type UserProfile = {
      * Name shown to the callee
      */
     jssip_display_name?: string;
+    /**
+     * How outbound calls should be routed from the CRM UI
+     *
+     * * `auto` - Auto
+     * * `internal` - Internal extension
+     * * `external` - External number
+     * * `provider` - Provider API
+     * * `asterisk` - Asterisk server
+     */
+    telephony_route_mode?: (TelephonyRouteModeEnum | BlankEnum);
+    /**
+     * Used by server originate mode
+     *
+     * * `Asterisk` - Asterisk
+     * * `OnlinePBX` - OnlinePBX
+     * * `Zadarma` - Zadarma
+     * * `FreeSWITCH` - FreeSWITCH
+     */
+    telephony_provider?: (TelephonyProviderEnum | BlankEnum);
+    /**
+     * Comma or newline separated STUN URLs
+     */
+    webrtc_stun_servers?: string;
+    webrtc_turn_enabled?: boolean;
+    /**
+     * Example: turn:turn.example.com:3478?transport=udp
+     */
+    webrtc_turn_server?: string;
+    webrtc_turn_username?: string;
+    webrtc_turn_password?: string;
 };
 

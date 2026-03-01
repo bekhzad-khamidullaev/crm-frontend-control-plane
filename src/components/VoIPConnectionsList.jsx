@@ -85,12 +85,6 @@ export default function VoIPConnectionsList({ onEdit, onRefresh }) {
 
   const columns = [
     {
-      title: 'ID',
-      dataIndex: 'id',
-      key: 'id',
-      width: 60,
-    },
-    {
       title: 'Провайдер',
       dataIndex: 'provider',
       key: 'provider',
@@ -122,7 +116,7 @@ export default function VoIPConnectionsList({ onEdit, onRefresh }) {
       key: 'number',
     },
     {
-      title: 'Caller ID',
+      title: 'Номер отображения',
       dataIndex: 'callerid',
       key: 'callerid',
     },

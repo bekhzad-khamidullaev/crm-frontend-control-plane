@@ -130,14 +130,14 @@ export default function RemindersList() {
       ),
     },
     {
-      title: 'Content Type',
+      title: 'Тип объекта',
       dataIndex: 'content_type',
       key: 'content_type',
       width: 120,
       render: (value) => value ?? '-',
     },
     {
-      title: 'Object ID',
+      title: 'Связанный объект',
       dataIndex: 'object_id',
       key: 'object_id',
       width: 120,
@@ -223,7 +223,7 @@ export default function RemindersList() {
           type="number"
           min={1}
           className="h-9 w-[160px] rounded-md border border-border bg-background px-2 text-sm"
-          placeholder="Content type ID"
+          placeholder="Тип объекта"
           value={contentTypeFilter || ''}
           onChange={(e) => setContentTypeFilter(e.target.value ? Number(e.target.value) : null)}
         />

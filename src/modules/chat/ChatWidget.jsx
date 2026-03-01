@@ -217,7 +217,7 @@ function ChatWidget({ entityType, entityId, entityName, entityPhone }) {
             <List.Item.Meta
               title={
                 <Space>
-                  <Text strong>{msg.owner_name || msg.sender?.name || `#${msg.owner || msg.sender?.id}`}</Text>
+                  <Text strong>{msg.owner_name || msg.sender?.name || '-'}</Text>
                   <Text type="secondary" style={{ fontSize: 12 }}>
                     {msg.creation_date || msg.created_at
                       ? new Date(msg.creation_date || msg.created_at).toLocaleString('ru-RU')
@@ -440,7 +440,7 @@ function ChatWidget({ entityType, entityId, entityName, entityPhone }) {
       </Modal>
 
       <Modal
-        title={threadModal.message ? `Тред сообщения #${threadModal.message.id}` : 'Тред сообщения'}
+        title="Тред сообщения"
         open={threadModal.open}
         onCancel={closeThreadModal}
         footer={null}

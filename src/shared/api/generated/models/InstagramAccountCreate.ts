@@ -6,6 +6,7 @@
  * Serializer for creating Instagram Account with OAuth.
  */
 export type InstagramAccountCreate = {
+    readonly id: string;
     instagram_user_id: string;
     username: string;
     access_token: string;

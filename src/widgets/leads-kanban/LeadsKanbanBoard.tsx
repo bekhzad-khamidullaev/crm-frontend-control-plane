@@ -29,6 +29,8 @@ type KanbanStatusConfig = {
 
 const STATUS_CONFIG: Record<LeadStatus, KanbanStatusConfig> = {
   new: { title: 'Новые', color: '#1677ff' },
+  contacted: { title: 'Связались', color: '#faad14' },
+  qualified: { title: 'Квалифицированы', color: '#722ed1' },
   converted: { title: 'Конвертированы', color: '#13c2c2' },
   lost: { title: 'Потеряны', color: '#ff4d4f' },
 };
@@ -43,8 +45,22 @@ const parseCardId = (value: string | number): number | null => {
 };
 
 const updateLeadForStatus = (lead: Lead, status: LeadStatus): Lead => {
-  if (status === 'lost') return { ...lead, disqualified: true };
-  return { ...lead, disqualified: false };
+  if (status === 'converted') {
+    return { ...lead, status: 'converted', disqualified: false, was_in_touch: new Date().toISOString() };
+  }
+  if (status === 'qualified') {
+    return { ...lead, status: 'qualified', disqualified: false };
+  }
+  if (status === 'contacted') {
+    return { ...lead, status: 'contacted', disqualified: false };
+  }
+  if (status === 'lost') return { ...lead, status: 'lost', disqualified: true };
+  return {
+    ...lead,
+    status: 'new',
+    disqualified: false,
+    was_in_touch: null,
+  };
 };
 
 const LeadCard: React.FC<{ lead: Lead; readOnly?: boolean }> = ({ lead, readOnly = false }) => {
@@ -177,7 +193,7 @@ export const LeadsKanbanBoard: React.FC<{ readOnly?: boolean }> = ({ readOnly = 
         acc[deriveLeadStatus(lead)].push(lead);
         return acc;
       },
-      { new: [], converted: [], lost: [] }
+      { new: [], contacted: [], qualified: [], converted: [], lost: [] }
     );
   }, [boardLeads]);
 
@@ -188,8 +204,8 @@ export const LeadsKanbanBoard: React.FC<{ readOnly?: boolean }> = ({ readOnly = 
     const fromStatus = deriveLeadStatus(currentLead);
     if (fromStatus === toStatus) return;
 
-    if (fromStatus === 'converted' && toStatus === 'new') {
-      message.warning('Вернуть конвертированный лид в "Новые" нельзя');
+    if (fromStatus === 'converted' && toStatus !== 'converted') {
+      message.warning('Из колонки "Конвертированы" лид переносить нельзя');
       return;
     }
 
@@ -199,11 +215,18 @@ export const LeadsKanbanBoard: React.FC<{ readOnly?: boolean }> = ({ readOnly = 
 
     try {
       if (toStatus === 'converted') {
-        await convertLead.mutateAsync({ id: leadId, data: currentLead });
+        await convertLead.mutateAsync({ id: leadId, data: { create_deal: true } });
       } else if (toStatus === 'lost') {
         await disqualifyLead.mutateAsync({ id: leadId, data: currentLead });
       } else {
-        await patchLead.mutateAsync({ id: leadId, data: { disqualified: false } });
+        await patchLead.mutateAsync({
+          id: leadId,
+          data: {
+            status: toStatus,
+            disqualified: false,
+            ...(toStatus === 'new' ? { was_in_touch: null } : {}),
+          },
+        });
       }
       message.success(`Лид перемещён: ${STATUS_CONFIG[toStatus].title}`);
     } catch (error) {
@@ -218,7 +241,9 @@ export const LeadsKanbanBoard: React.FC<{ readOnly?: boolean }> = ({ readOnly = 
   const getDropStatus = (event: DragEndEvent): LeadStatus | null => {
     if (!event.over) return null;
     const overId = String(event.over.id);
-    if (overId === 'new' || overId === 'converted' || overId === 'lost') return overId;
+    if (overId === 'new' || overId === 'contacted' || overId === 'qualified' || overId === 'converted' || overId === 'lost') {
+      return overId;
+    }
     return null;
   };
 
@@ -250,6 +275,8 @@ export const LeadsKanbanBoard: React.FC<{ readOnly?: boolean }> = ({ readOnly = 
         <div style={{ overflowX: 'auto', paddingBottom: 8 }}>
           <Space align="start" size={16}>
             <KanbanColumn status="new" leads={groupedLeads.new} loading={isLoading} readOnly={readOnly} />
+            <KanbanColumn status="contacted" leads={groupedLeads.contacted} loading={isLoading} readOnly={readOnly} />
+            <KanbanColumn status="qualified" leads={groupedLeads.qualified} loading={isLoading} readOnly={readOnly} />
             <KanbanColumn status="converted" leads={groupedLeads.converted} loading={isLoading} readOnly={readOnly} />
             <KanbanColumn status="lost" leads={groupedLeads.lost} loading={isLoading} readOnly={readOnly} />
           </Space>

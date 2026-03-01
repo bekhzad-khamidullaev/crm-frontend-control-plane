@@ -102,7 +102,7 @@ function ChatPage() {
             id: key,
             entityType,
             entityId,
-            entityName: msg.content_type_name ? `${msg.content_type_name} #${entityId}` : `Чат #${entityId}`,
+            entityName: msg.content_type_name || 'Чат',
             entityPhone: msg.related_phone,
             lastMessage: msg.content || msg.message || '',
             lastMessageTime: msg.creation_date || msg.created_at,

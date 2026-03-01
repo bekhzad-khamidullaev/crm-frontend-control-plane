@@ -34,7 +34,7 @@ export const leadSchema = z.object({
   district: z.string().optional(),
 
   // Management
-  status: z.number().nullable().optional(), // Check if this is actually supported by API
+  status: z.enum(['new', 'contacted', 'qualified', 'converted', 'lost']).optional(),
   lead_source: z.number().nullable().optional(),
   tags: z.array(z.number()).optional(),
   owner: z.number().nullable().optional(),

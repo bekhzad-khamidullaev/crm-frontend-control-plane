@@ -73,7 +73,7 @@ function TaskDetail({ id }) {
 
   const userMap = useMemo(() => {
     return users.reduce((acc, user) => {
-      acc[user.id] = user.username || user.email || `#${user.id}`;
+      acc[user.id] = user.username || user.email || '-';
       return acc;
     }, {});
   }, [users]);
@@ -174,11 +174,11 @@ function TaskDetail({ id }) {
                 value={
                   <div className="flex items-center gap-2">
                     <User className="h-4 w-4 text-muted-foreground" />
-                    {task.owner ? userMap[task.owner] || `#${task.owner}` : '-'}
+                    {task.owner ? userMap[task.owner] || '-' : '-'}
                   </div>
                 }
               />
-              <DetailRow label="Со-владелец" value={task.co_owner ? userMap[task.co_owner] || `#${task.co_owner}` : '-'} />
+              <DetailRow label="Со-владелец" value={task.co_owner ? userMap[task.co_owner] || '-' : '-'} />
               <DetailRow label="Ответственные" value={responsibleNames.length ? responsibleNames.join(', ') : '-'} span />
               <DetailRow label="Подписчики" value={subscriberNames.length ? subscriberNames.join(', ') : '-'} span />
               <DetailRow

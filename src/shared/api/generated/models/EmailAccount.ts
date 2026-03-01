@@ -4,7 +4,7 @@
 /* eslint-disable */
 export type EmailAccount = {
     readonly id: number;
-    owner?: number | null;
+    readonly owner: number | null;
     readonly owner_name: string;
     /**
      * The username to use to authenticate to the SMTP server.

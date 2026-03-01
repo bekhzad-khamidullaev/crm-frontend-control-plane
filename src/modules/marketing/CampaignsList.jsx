@@ -115,13 +115,13 @@ function CampaignsList() {
       title: 'Сегмент',
       dataIndex: 'segment_name',
       key: 'segment_name',
-      render: (value, record) => value || (record.segment ? `#${record.segment}` : '-'),
+      render: (value) => value || '-',
     },
     {
       title: 'Шаблон',
       dataIndex: 'template_name',
       key: 'template_name',
-      render: (value, record) => value || (record.template ? `#${record.template}` : '-'),
+      render: (value) => value || '-',
     },
     {
       title: 'Дата старта',

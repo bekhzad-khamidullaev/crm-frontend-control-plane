@@ -135,7 +135,7 @@ function PaymentsList() {
             <div className="font-medium">
               {formatCurrency(record.amount, record.currency_name || 'RUB')}
             </div>
-            <div className="text-xs text-muted-foreground">#{record.id}</div>
+            <div className="text-xs text-muted-foreground">{record.payment_date ? new Date(record.payment_date).toLocaleDateString('ru-RU') : ''}</div>
           </div>
         </div>
       ),
@@ -160,7 +160,7 @@ function PaymentsList() {
       title: 'Сделка',
       dataIndex: 'deal_name',
       key: 'deal_name',
-      render: (value, record) => value || (record.deal ? `#${record.deal}` : '-'),
+      render: (value) => value || '-',
     },
     {
       title: 'Действия',

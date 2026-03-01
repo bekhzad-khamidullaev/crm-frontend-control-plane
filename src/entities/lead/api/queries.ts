@@ -7,6 +7,7 @@ export interface LeadListParams {
   country?: number;
   department?: number;
   disqualified?: boolean;
+  status?: 'new' | 'contacted' | 'qualified' | 'converted' | 'lost';
   leadSource?: number;
   ordering?: string;
   owner?: number;

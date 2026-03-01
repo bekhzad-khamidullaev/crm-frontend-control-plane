@@ -139,7 +139,7 @@ function DealDetail({ id }) {
   const stageLabel =
     deal.stage_name ||
     sortedStages.find((stage) => stage.id === deal.stage)?.name ||
-    (deal.stage ? `Этап #${deal.stage}` : '-');
+    '-';
   const closeDate = deal.closing_date ? new Date(deal.closing_date) : null;
   const today = new Date();
   const daysLeft = closeDate ? Math.ceil((closeDate - today) / (1000 * 60 * 60 * 24)) : null;
@@ -314,10 +314,10 @@ function DealDetail({ id }) {
                   company ? (
                     <button className="flex items-center gap-2 text-left text-primary" onClick={() => navigate(`/companies/${company.id}`)}>
                       <Building2 className="h-4 w-4" />
-                      {company.full_name || company.name || `#${company.id}`}
+                      {company.full_name || company.name || '-'}
                     </button>
                   ) : deal.company ? (
-                    `#${deal.company}`
+                    '-'
                   ) : (
                     '-'
                   )
@@ -329,18 +329,18 @@ function DealDetail({ id }) {
                   contact ? (
                     <div className="space-y-1">
                       <button className="text-left text-primary" onClick={() => navigate(`/contacts/${contact.id}`)}>
-                        {contact.full_name || `${contact.first_name || ''} ${contact.last_name || ''}`.trim() || `#${contact.id}`}
+                        {contact.full_name || `${contact.first_name || ''} ${contact.last_name || ''}`.trim() || '-'}
                       </button>
                       {contact.title && <div className="text-xs text-muted-foreground">{contact.title}</div>}
                     </div>
                   ) : deal.contact ? (
-                    `#${deal.contact}`
+                    '-'
                   ) : (
                     '-'
                   )
                 }
               />
-              <DetailRow label="Ответственный" value={deal.owner_name || deal.owner || '-'} />
+              <DetailRow label="Ответственный" value={deal.owner_name || '-'} />
               <DetailRow label="Дата создания" value={deal.creation_date ? new Date(deal.creation_date).toLocaleString('ru-RU') : '-'} />
               <DetailRow label="Последнее обновление" value={deal.update_date ? new Date(deal.update_date).toLocaleString('ru-RU') : '-'} />
               {deal.description && <DetailRow label="Описание" value={deal.description} span />}
@@ -355,7 +355,7 @@ function DealDetail({ id }) {
             <ChatWidget
               entityType="deal"
               entityId={deal.id}
-              entityName={`Сделка #${deal.id}`}
+              entityName={deal.name || 'Сделка'}
               entityPhone={contact?.phone}
             />
           </TabsContent>

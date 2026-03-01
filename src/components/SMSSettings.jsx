@@ -63,7 +63,7 @@ export default function SMSSettings({ onSuccess }) {
     () =>
       providers.map((provider) => ({
         value: provider.channel_id || provider.id,
-        label: provider.name || provider.provider || provider.title || `Канал ${provider.channel_id || provider.id}`,
+        label: provider.name || provider.provider || provider.title || 'Канал',
       })),
     [providers]
   );
@@ -73,7 +73,7 @@ export default function SMSSettings({ onSuccess }) {
       title: 'Канал',
       dataIndex: 'channel_id',
       key: 'channel_id',
-      render: (value, record) => value || record.id || '-',
+      render: (value) => value || '-',
     },
     {
       title: 'Название',

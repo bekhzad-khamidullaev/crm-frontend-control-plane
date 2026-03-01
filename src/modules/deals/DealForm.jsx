@@ -320,7 +320,7 @@ function DealForm({ id }) {
                   placeholder="Выберите запрос"
                   fetchOptions={getRequests}
                   fetchById={getRequest}
-                  optionLabel={(item) => item?.ticket || item?.description || `#${item?.id}`}
+                  optionLabel={(item) => item?.ticket || item?.description || '-'}
                   onChange={(val) => setValue('request', val)}
                 />
               </div>

@@ -92,7 +92,7 @@ export default function ProductDetail({ id }) {
           {data.name}
         </Descriptions.Item>
         <Descriptions.Item label="Категория">
-          {data.category_name || (data.product_category ? `#${data.product_category}` : '-')}
+          {data.category_name || '-'}
         </Descriptions.Item>
         <Descriptions.Item label="Цена">
           {formatCurrency(data.price, data.currency_name || 'RUB')}

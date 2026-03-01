@@ -26,6 +26,8 @@ import { navigate } from '../../router';
 import { getCompanies, deleteCompany } from '../../lib/api/client';
 import { getIndustries, getClientTypes } from '../../lib/api/reference';
 import CallButton from '../../components/CallButton';
+import { getLocale } from '../../lib/i18n';
+import { getClientTypeLabel } from '../../features/reference/lib/clientTypeLabel';
 
 const { Title } = Typography;
 
@@ -154,12 +156,14 @@ function CompaniesList() {
     }, {});
   }, [industries]);
 
+  const locale = getLocale();
+
   const clientTypeMap = useMemo(() => {
     return clientTypes.reduce((acc, item) => {
-      acc[item.id] = item.name;
+      acc[item.id] = getClientTypeLabel(item.name, locale);
       return acc;
     }, {});
-  }, [clientTypes]);
+  }, [clientTypes, locale]);
 
   const columns = [
     {
@@ -213,8 +217,8 @@ function CompaniesList() {
       key: 'type',
       render: (type) => {
         if (!type) return '-';
-        const label = clientTypeMap[type] || `Тип #${type}`;
-        return <Tag color="blue">{label}</Tag>;
+        const label = clientTypeMap[type];
+        return <Tag color="blue">{label || '-'}</Tag>;
       },
     },
     {

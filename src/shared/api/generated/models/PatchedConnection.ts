@@ -2,8 +2,8 @@
 /* istanbul ignore file */
 /* tslint:disable */
 /* eslint-disable */
+import type { ConnectionProviderEnum } from './ConnectionProviderEnum';
 import type { ConnectionTypeEnum } from './ConnectionTypeEnum';
-import type { ProviderEnum } from './ProviderEnum';
 export type PatchedConnection = {
     readonly id?: number;
     /**
@@ -13,7 +13,7 @@ export type PatchedConnection = {
      * * `OnlinePBX` - OnlinePBX
      * * `Asterisk` - Asterisk
      */
-    provider?: ProviderEnum;
+    provider?: ConnectionProviderEnum;
     type?: ConnectionTypeEnum;
     number?: string;
     owner?: number | null;

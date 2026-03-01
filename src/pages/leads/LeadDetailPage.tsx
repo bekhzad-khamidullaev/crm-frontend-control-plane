@@ -1,28 +1,35 @@
 import {
     ArrowLeftOutlined,
     BankOutlined,
+    CheckCircleOutlined,
+    ClockCircleOutlined,
     EditOutlined,
+    LinkOutlined,
     MailOutlined,
     PhoneOutlined,
     UserOutlined
 } from '@ant-design/icons';
 import {
+    Alert,
     App,
     Avatar,
     Button,
     Card,
     Descriptions,
+    Empty,
     Grid,
     Modal,
     Space,
     Spin,
     Tabs,
     Tag,
+    Timeline,
     theme as antdTheme,
     Typography
 } from 'antd';
 import dayjs from 'dayjs';
 import React from 'react';
+import { useDeals } from '@/entities/deal';
 // @ts-ignore
 import { useLead } from '@/entities/lead/api/queries';
 import { LeadsService } from '@/shared/api/generated/services/LeadsService';
@@ -42,10 +49,16 @@ export const LeadDetailPage: React.FC<LeadDetailPageProps> = ({ id }) => {
   const isMobile = !screens.md;
   const { message } = App.useApp();
   const { data: lead, isLoading } = useLead(id!);
+  const { data: leadDealsResponse, isLoading: isLeadDealsLoading } = useDeals({
+    lead: id,
+    page: 1,
+    ordering: '-creation_date',
+  } as any);
   const [isConverting, setIsConverting] = React.useState(false);
   const canManage = canWrite();
 
   const isConverted = Boolean(lead?.contact || lead?.company || lead?.was_in_touch);
+  const leadDeal = leadDealsResponse?.results?.[0];
 
   const handleConvertToDeal = () => {
     if (!id || isConverting || isConverted || !canManage) return;
@@ -89,6 +102,68 @@ export const LeadDetailPage: React.FC<LeadDetailPageProps> = ({ id }) => {
   if (!lead) {
     return <div>Лид не найден</div>;
   }
+
+  const activityEvents = [
+    lead.creation_date
+      ? {
+          key: 'created',
+          timestamp: lead.creation_date,
+          color: 'green',
+          icon: <ClockCircleOutlined />,
+          title: 'Лид создан',
+          description: 'Лид добавлен в CRM',
+        }
+      : null,
+    lead.was_in_touch
+      ? {
+          key: 'converted',
+          timestamp: lead.was_in_touch,
+          color: 'blue',
+          icon: <CheckCircleOutlined />,
+          title: 'Лид конвертирован',
+          description: leadDeal ? `Создана сделка #${leadDeal.id}` : 'Лид отмечен как конвертированный',
+        }
+      : null,
+    leadDeal?.creation_date
+      ? {
+          key: 'deal-created',
+          timestamp: leadDeal.creation_date,
+          color: 'cyan',
+          icon: <LinkOutlined />,
+          title: `Сделка #${leadDeal.id}`,
+          description: leadDeal.name || 'Связанная сделка',
+        }
+      : null,
+    lead.disqualified
+      ? {
+          key: 'disqualified',
+          timestamp: lead.update_date || lead.creation_date,
+          color: 'red',
+          icon: <ClockCircleOutlined />,
+          title: 'Лид дисквалифицирован',
+          description: 'Лид переведен в статус "Потерян"',
+        }
+      : null,
+    lead.update_date && lead.update_date !== lead.creation_date
+      ? {
+          key: 'updated',
+          timestamp: lead.update_date,
+          color: 'gray',
+          icon: <ClockCircleOutlined />,
+          title: 'Последнее обновление',
+          description: 'Изменены данные лида',
+        }
+      : null,
+  ]
+    .filter(Boolean)
+    .sort((a: any, b: any) => dayjs(a.timestamp).valueOf() - dayjs(b.timestamp).valueOf()) as Array<{
+    key: string;
+    timestamp: string;
+    color: string;
+    icon: React.ReactNode;
+    title: string;
+    description: string;
+  }>;
 
   const tabItems = [
     {
@@ -149,6 +224,20 @@ export const LeadDetailPage: React.FC<LeadDetailPageProps> = ({ id }) => {
             {(lead.tags || []).map(tag => <Tag key={tag}>{tag}</Tag>)}
           </Descriptions.Item>
 
+          <Descriptions.Item label="Сделка" span={2}>
+            {isConverted ? (
+              leadDeal ? (
+                <Button type="link" onClick={() => navigate(`/deals/${leadDeal.id}`)} style={{ paddingInline: 0 }}>
+                  {leadDeal.name || `Сделка #${leadDeal.id}`}
+                </Button>
+              ) : (
+                <Text type="secondary">{isLeadDealsLoading ? 'Поиск сделки...' : 'Сделка не найдена'}</Text>
+              )
+            ) : (
+              '-'
+            )}
+          </Descriptions.Item>
+
           <Descriptions.Item label="Описание" span={2}>
             {lead.description || '-'}
           </Descriptions.Item>
@@ -158,7 +247,27 @@ export const LeadDetailPage: React.FC<LeadDetailPageProps> = ({ id }) => {
     {
       key: 'activity',
       label: 'История',
-      children: <div>История взаимодействий (В разработке)</div>
+      children: (
+        <Card bordered={false} bodyStyle={{ padding: 0 }}>
+          {activityEvents.length ? (
+            <Timeline
+              items={activityEvents.map((event) => ({
+                color: event.color,
+                dot: event.icon,
+                children: (
+                  <Space direction="vertical" size={2}>
+                    <Text strong>{event.title}</Text>
+                    <Text>{event.description}</Text>
+                    <Text type="secondary">{dayjs(event.timestamp).format('DD.MM.YYYY HH:mm')}</Text>
+                  </Space>
+                ),
+              }))}
+            />
+          ) : (
+            <Empty description="История взаимодействий пока пуста" />
+          )}
+        </Card>
+      )
     }
   ];
 
@@ -188,9 +297,33 @@ export const LeadDetailPage: React.FC<LeadDetailPageProps> = ({ id }) => {
             {isConverted ? 'Уже конвертирован' : 'Конвертировать в сделку'}
           </Button>
         )}
+        {leadDeal && (
+          <Button icon={<LinkOutlined />} onClick={() => navigate(`/deals/${leadDeal.id}`)} block={isMobile}>
+            Открыть сделку
+          </Button>
+        )}
       </Space>
 
       <Title level={isMobile ? 3 : 2}>{lead.full_name}</Title>
+      {isConverted && (
+        <Alert
+          type="success"
+          showIcon
+          style={{ marginBottom: 16 }}
+          message={
+            leadDeal ? (
+              <Space size={4}>
+                Лид конвертирован.
+                <Button type="link" onClick={() => navigate(`/deals/${leadDeal.id}`)} style={{ paddingInline: 0 }}>
+                  Открыть сделку
+                </Button>
+              </Space>
+            ) : (
+              'Лид конвертирован'
+            )
+          }
+        />
+      )}
 
       <Card bodyStyle={{ padding: isMobile ? 12 : 24 }}>
         <Tabs items={tabItems} defaultActiveKey="details" size={isMobile ? 'small' : 'middle'} />

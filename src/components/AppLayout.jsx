@@ -28,6 +28,9 @@ import {
 } from '@ant-design/icons';
 import { Avatar, Badge, Button, ConfigProvider, Drawer, Dropdown, Grid, Layout, Menu, Space, Switch, Typography } from 'antd';
 import { useEffect, useState } from 'react';
+import brandMark from '../assets/brand/favicon.svg';
+import brandLogo from '../assets/brand/logo.svg';
+import brandLogoDark from '../assets/brand/logo-dark.svg';
 import { useTheme } from '../lib/hooks/useTheme.js';
 import { t } from '../lib/i18n/index.js';
 import { navigate } from '../router.js';
@@ -202,13 +205,16 @@ export function AppLayout({
                 verticalAlign: 'middle',
               }}
               size="large"
+              src={brandMark}
             >
               E
             </Avatar>
             {!collapsed && (
-              <Text strong style={{ color: theme === 'dark' ? '#f1f5f9' : '#09090b', fontSize: 16 }}>
-                Enterprise CRM
-              </Text>
+              <img
+                src={theme === 'dark' ? brandLogoDark : brandLogo}
+                alt="Enterprise CRM"
+                style={{ width: 168, height: 'auto' }}
+              />
             )}
           </Space>
           {!collapsed && (

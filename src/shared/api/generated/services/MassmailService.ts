@@ -27,6 +27,7 @@ export class MassmailService {
         massmail,
         owner,
         page,
+        pageSize,
         search,
     }: {
         doImport?: boolean,
@@ -37,6 +38,10 @@ export class MassmailService {
          * A page number within the paginated result set.
          */
         page?: number,
+        /**
+         * Number of results to return per page.
+         */
+        pageSize?: number,
         /**
          * A search term.
          */
@@ -51,6 +56,7 @@ export class MassmailService {
                 'massmail': massmail,
                 'owner': owner,
                 'page': page,
+                'page_size': pageSize,
                 'search': search,
             },
         });
@@ -166,6 +172,7 @@ export class MassmailService {
     public static massmailMailingsList({
         owner,
         page,
+        pageSize,
         status,
     }: {
         owner?: number,
@@ -173,6 +180,10 @@ export class MassmailService {
          * A page number within the paginated result set.
          */
         page?: number,
+        /**
+         * Number of results to return per page.
+         */
+        pageSize?: number,
         /**
          * * `A` - Active
          * * `E` - Active but Error
@@ -188,6 +199,7 @@ export class MassmailService {
             query: {
                 'owner': owner,
                 'page': page,
+                'page_size': pageSize,
                 'status': status,
             },
         });
@@ -219,6 +231,7 @@ export class MassmailService {
     public static massmailMessagesList({
         owner,
         page,
+        pageSize,
         search,
     }: {
         owner?: number,
@@ -226,6 +239,10 @@ export class MassmailService {
          * A page number within the paginated result set.
          */
         page?: number,
+        /**
+         * Number of results to return per page.
+         */
+        pageSize?: number,
         /**
          * A search term.
          */
@@ -237,6 +254,7 @@ export class MassmailService {
             query: {
                 'owner': owner,
                 'page': page,
+                'page_size': pageSize,
                 'search': search,
             },
         });
@@ -352,6 +370,7 @@ export class MassmailService {
     public static massmailSignaturesList({
         ordering,
         page,
+        pageSize,
         search,
     }: {
         /**
@@ -363,6 +382,10 @@ export class MassmailService {
          */
         page?: number,
         /**
+         * Number of results to return per page.
+         */
+        pageSize?: number,
+        /**
          * A search term.
          */
         search?: string,
@@ -373,6 +396,7 @@ export class MassmailService {
             query: {
                 'ordering': ordering,
                 'page': page,
+                'page_size': pageSize,
                 'search': search,
             },
         });

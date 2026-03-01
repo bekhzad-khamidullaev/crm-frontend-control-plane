@@ -4,7 +4,7 @@
 /* eslint-disable */
 export type Signature = {
     readonly id: number;
-    owner?: number | null;
+    readonly owner: number | null;
     readonly owner_name: string;
     /**
      * The name of the signature.

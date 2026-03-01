@@ -84,7 +84,7 @@ export default function MemoDetail({ id }) {
     );
   }
 
-  const stage = stageLabels[data.stage] || { text: data.stage || '—', className: 'bg-muted text-muted-foreground' };
+  const stage = stageLabels[data.stage] || { text: '—', className: 'bg-muted text-muted-foreground' };
 
   return (
     <div className="space-y-4">

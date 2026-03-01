@@ -272,9 +272,9 @@ function DealsList() {
       render: (name, record) => (
         <div>
           <div className="font-medium">{name}</div>
-          {(record.company_name || record.company) && (
+          {record.company_name && (
             <div className="text-xs text-muted-foreground">
-              <Building2 className="mr-1 inline h-3 w-3" /> {record.company_name || record.company}
+              <Building2 className="mr-1 inline h-3 w-3" /> {record.company_name || '-'}
             </div>
           )}
         </div>
@@ -303,7 +303,7 @@ function DealsList() {
       width: 140,
       render: (stage, record) => {
         const label = record.stage_name || stageMap[stage];
-        const display = label || (stage ? `Этап #${stage}` : '-');
+        const display = label || '-';
         return stage ? (
           <span className="inline-flex items-center rounded-full bg-sky-100 px-2 py-0.5 text-xs text-sky-700">
             {display}
@@ -347,7 +347,7 @@ function DealsList() {
           </div>
           <div>
             <div className="text-sm">
-              {record.contact_name || record.contact_full_name || (record.contact ? `#${record.contact}` : '-')}
+              {record.contact_name || record.contact_full_name || '-'}
             </div>
             {record.contact_phone && (
               <div className="text-xs text-muted-foreground">{record.contact_phone}</div>
@@ -361,11 +361,11 @@ function DealsList() {
       dataIndex: 'owner',
       key: 'owner',
       width: 140,
-      render: (owner, record) => record.owner_name || owner || '-',
+      render: (_owner, record) => record.owner_name || '-',
       sorter: (a, b) =>
-        (a.owner_name || a.owner || '')
+        (a.owner_name || '')
           .toString()
-          .localeCompare((b.owner_name || b.owner || '').toString()),
+          .localeCompare((b.owner_name || '').toString()),
     },
     {
       title: 'Закрытие',
@@ -402,7 +402,7 @@ function DealsList() {
           {record.contact_phone && (
             <CallButton
               phone={record.contact_phone}
-              name={record.contact}
+              name={record.contact_name || record.contact_full_name || record.name}
               entityType="deal"
               entityId={record.id}
               size="small"

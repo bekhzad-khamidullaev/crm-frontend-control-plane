@@ -111,7 +111,7 @@ function ContactDetail({ id }) {
 
   const companyMap = useMemo(() => {
     return companies.reduce((acc, company) => {
-      acc[company.id] = company.full_name || company.name || `#${company.id}`;
+      acc[company.id] = company.full_name || company.name || '-';
       return acc;
     }, {});
   }, [companies]);
@@ -153,7 +153,7 @@ function ContactDetail({ id }) {
 
   const userMap = useMemo(() => {
     return users.reduce((acc, user) => {
-      acc[user.id] = user.username || user.email || `#${user.id}`;
+      acc[user.id] = user.username || user.email || '-';
       return acc;
     }, {});
   }, [users]);
@@ -276,18 +276,18 @@ function ContactDetail({ id }) {
               <DetailRow label="Доп. Email" value={contact.secondary_email || '-'} />
               <DetailRow label="Доп. телефон" value={contact.other_phone || '-'} />
               <DetailRow label="Мобильный" value={contact.mobile || '-'} />
-              <DetailRow label="Компания" value={contact.company ? companyMap[contact.company] || `#${contact.company}` : '-'} />
+              <DetailRow label="Компания" value={contact.company ? companyMap[contact.company] || '-' : '-'} />
               <DetailRow label="Должность" value={contact.title || '-'} />
               <DetailRow label="Пол" value={contact.sex || '-'} />
               <DetailRow label="Дата рождения" value={contact.birth_date ? dayjs(contact.birth_date).format('DD.MM.YYYY') : '-'} />
-              <DetailRow label="Источник" value={contact.lead_source ? leadSourceMap[contact.lead_source] || `#${contact.lead_source}` : '-'} />
-              <DetailRow label="Страна" value={contact.country ? countryMap[contact.country] || `#${contact.country}` : '-'} />
-              <DetailRow label="Город" value={contact.city ? cityMap[contact.city] || `#${contact.city}` : contact.city_name || '-'} />
+              <DetailRow label="Источник" value={contact.lead_source ? leadSourceMap[contact.lead_source] || '-' : '-'} />
+              <DetailRow label="Страна" value={contact.country ? countryMap[contact.country] || '-' : '-'} />
+              <DetailRow label="Город" value={contact.city ? cityMap[contact.city] || '-' : contact.city_name || '-'} />
               <DetailRow label="Регион" value={contact.region || '-'} />
               <DetailRow label="Район" value={contact.district || '-'} />
               <DetailRow label="Адрес" icon={<Home className="h-4 w-4" />} value={contact.address || '-'} span />
-              <DetailRow label="Ответственный" value={contact.owner ? userMap[contact.owner] || `#${contact.owner}` : '-'} />
-              <DetailRow label="Отдел" value={contact.department ? departmentMap[contact.department] || `#${contact.department}` : '-'} />
+              <DetailRow label="Ответственный" value={contact.owner ? userMap[contact.owner] || '-' : '-'} />
+              <DetailRow label="Отдел" value={contact.department ? departmentMap[contact.department] || '-' : '-'} />
               <DetailRow label="Массовая рассылка" value={<Badge variant={contact.massmail ? 'default' : 'secondary'}>{contact.massmail ? 'Да' : 'Нет'}</Badge>} />
               <DetailRow label="Дисквалифицирован" value={<Badge variant={contact.disqualified ? 'destructive' : 'secondary'}>{contact.disqualified ? 'Да' : 'Нет'}</Badge>} />
               <DetailRow label="Последний контакт" value={contact.was_in_touch ? dayjs(contact.was_in_touch).format('DD.MM.YYYY') : '-'} />
@@ -313,7 +313,7 @@ function ContactDetail({ id }) {
             <ChatWidget
               entityType="contact"
               entityId={contact.id}
-              entityName={fullName || `Контакт #${contact.id}`}
+              entityName={fullName || 'Контакт'}
               entityPhone={contact.phone}
             />
           </TabsContent>

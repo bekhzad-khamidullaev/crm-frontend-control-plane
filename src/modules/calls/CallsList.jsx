@@ -404,7 +404,7 @@ function CallsList() {
       title: 'Контакт',
       dataIndex: 'contact_name',
       key: 'contact_name',
-      render: (value, record) => value || (record.contact ? `#${record.contact}` : '-'),
+      render: (value) => value || '-',
     },
     {
       title: 'Длительность',

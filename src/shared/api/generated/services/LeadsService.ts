@@ -23,7 +23,9 @@ export class LeadsService {
         ordering,
         owner,
         page,
+        pageSize,
         search,
+        status,
         wasInTouch,
     }: {
         company?: number,
@@ -41,9 +43,21 @@ export class LeadsService {
          */
         page?: number,
         /**
+         * Number of results to return per page.
+         */
+        pageSize?: number,
+        /**
          * A search term.
          */
         search?: string,
+        /**
+         * * `new` - New
+         * * `contacted` - Contacted
+         * * `qualified` - Qualified
+         * * `converted` - Converted
+         * * `lost` - Lost
+         */
+        status?: 'contacted' | 'converted' | 'lost' | 'new' | 'qualified',
         wasInTouch?: string,
     }): CancelablePromise<PaginatedLeadList> {
         return __request(OpenAPI, {
@@ -58,7 +72,9 @@ export class LeadsService {
                 'ordering': ordering,
                 'owner': owner,
                 'page': page,
+                'page_size': pageSize,
                 'search': search,
+                'status': status,
                 'was_in_touch': wasInTouch,
             },
         });

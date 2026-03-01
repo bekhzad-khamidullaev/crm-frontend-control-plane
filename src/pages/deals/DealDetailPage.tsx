@@ -65,7 +65,7 @@ export const DealDetailPage: React.FC<DealDetailPageProps> = ({ id }) => {
 
           <Descriptions.Item label="Ответственный">{d.owner_name}</Descriptions.Item>
           <Descriptions.Item label="Отдел">
-            {d.department ? `#${d.department}` : '-'}
+            {d.department_name || '-'}
           </Descriptions.Item>
 
           <Descriptions.Item label="Следующий шаг" span={2}>
@@ -84,7 +84,7 @@ export const DealDetailPage: React.FC<DealDetailPageProps> = ({ id }) => {
             {deal.closing_date ? new Date(deal.closing_date).toLocaleDateString('ru-RU') : '-'}
           </Descriptions.Item>
           <Descriptions.Item label="Причина закрытия">
-            {deal.closing_reason ? `#${deal.closing_reason}` : '-'}
+            {d.closing_reason_name || '-'}
           </Descriptions.Item>
 
           <Descriptions.Item label="Теги" span={2}>

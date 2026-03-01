@@ -15,12 +15,17 @@ export class DepartmentsService {
      */
     public static departmentsList({
         page,
+        pageSize,
         search,
     }: {
         /**
          * A page number within the paginated result set.
          */
         page?: number,
+        /**
+         * Number of results to return per page.
+         */
+        pageSize?: number,
         /**
          * A search term.
          */
@@ -31,6 +36,7 @@ export class DepartmentsService {
             url: '/api/departments/',
             query: {
                 'page': page,
+                'page_size': pageSize,
                 'search': search,
             },
         });

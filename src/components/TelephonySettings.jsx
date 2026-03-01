@@ -152,12 +152,6 @@ export default function TelephonySettings({ onSuccess }) {
 
   const columns = [
     {
-      title: 'ID',
-      dataIndex: 'id',
-      key: 'id',
-      width: 60,
-    },
-    {
       title: 'Провайдер',
       dataIndex: 'provider',
       key: 'provider',
@@ -178,7 +172,7 @@ export default function TelephonySettings({ onSuccess }) {
       key: 'number',
     },
     {
-      title: 'Caller ID',
+      title: 'Номер отображения',
       dataIndex: 'callerid',
       key: 'callerid',
     },
@@ -399,9 +393,9 @@ export default function TelephonySettings({ onSuccess }) {
           </Form.Item>
 
           <Form.Item
-            label="Caller ID"
+            label="Номер отображения"
             name="callerid"
-            rules={[{ required: true, message: 'Введите Caller ID' }]}
+            rules={[{ required: true, message: 'Введите номер отображения' }]}
             tooltip="Номер, который будет отображаться при исходящих звонках"
           >
             <Input placeholder="+1234567890" />

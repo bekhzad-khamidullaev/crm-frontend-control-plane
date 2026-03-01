@@ -559,7 +559,6 @@ export default function IntegrationsPage() {
                 rowKey={(record) => record.id || record.facebook_page_id}
                 columns={[
                   { title: 'Страница', dataIndex: 'page_name', key: 'page_name' },
-                  { title: 'ID', dataIndex: 'facebook_page_id', key: 'facebook_page_id' },
                   {
                     title: 'Статус',
                     dataIndex: 'is_active',
@@ -613,7 +612,6 @@ export default function IntegrationsPage() {
                 rowKey={(record) => record.id || record.instagram_user_id}
                 columns={[
                   { title: 'Username', dataIndex: 'username', key: 'username' },
-                  { title: 'ID', dataIndex: 'instagram_user_id', key: 'instagram_user_id' },
                   {
                     title: 'Статус',
                     dataIndex: 'is_active',

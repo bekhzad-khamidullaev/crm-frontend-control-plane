@@ -63,7 +63,7 @@ function DealAnalyticsCard({
   const orderedStages = stageOrder.filter(stage => stageCount[stage]);
 
   const stageData = {
-    labels: orderedStages.map(stage => stageLabels[stage] || stage),
+    labels: orderedStages.map(stage => stageLabels[stage] || 'Без этапа'),
     datasets: [
       {
         label: 'Количество сделок',
@@ -84,7 +84,7 @@ function DealAnalyticsCard({
 
   // Сделки по менеджерам
   const managerCount = deals.reduce((acc, deal) => {
-    const manager = deal.assigned_to_name || deal.owner || 'Не назначен';
+    const manager = deal.assigned_to_name || deal.owner_name || 'Не назначен';
     acc[manager] = acc[manager] || { count: 0, amount: 0 };
     acc[manager].count++;
     acc[manager].amount += parseFloat(deal.amount) || 0;

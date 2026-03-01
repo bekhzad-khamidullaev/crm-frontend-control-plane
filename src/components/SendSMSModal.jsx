@@ -104,7 +104,7 @@ export default function SendSMSModal({
             placeholder="Выберите канал"
             options={providers.map((provider) => ({
               value: provider.channel_id || provider.id,
-              label: provider.name || provider.provider || provider.title || `Канал ${provider.channel_id || provider.id}`,
+              label: provider.name || provider.provider || provider.title || 'Канал',
             }))}
           />
         </Form.Item>

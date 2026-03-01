@@ -11,6 +11,20 @@ info:
     name: MIT License
     url: https://opensource.org/licenses/MIT
 paths:
+  /api/ai/assist/:
+    post:
+      operationId: ai_assist_create
+      description: Unified AI assistant endpoint for CRM use-cases.
+      tags:
+      - ai
+      security:
+      - jwtAuth: []
+      - tokenAuth: []
+      - jwtAuth: []
+      - tokenAuth: []
+      responses:
+        '201':
+          description: No response body
   /api/analytics/overview/:
     get:
       operationId: analytics_overview_retrieve
@@ -104,6 +118,12 @@ paths:
         required: false
         in: query
         description: A page number within the paginated result set.
+        schema:
+          type: integer
+      - name: page_size
+        required: false
+        in: query
+        description: Number of results to return per page.
         schema:
           type: integer
       - name: search
@@ -294,6 +314,12 @@ paths:
         required: false
         in: query
         description: A page number within the paginated result set.
+        schema:
+          type: integer
+      - name: page_size
+        required: false
+        in: query
+        description: Number of results to return per page.
         schema:
           type: integer
       - name: search
@@ -532,6 +558,12 @@ paths:
         description: A page number within the paginated result set.
         schema:
           type: integer
+      - name: page_size
+        required: false
+        in: query
+        description: Number of results to return per page.
+        schema:
+          type: integer
       - name: search
         required: false
         in: query
@@ -588,6 +620,12 @@ paths:
         description: A page number within the paginated result set.
         schema:
           type: integer
+      - name: page_size
+        required: false
+        in: query
+        description: Number of results to return per page.
+        schema:
+          type: integer
       - name: search
         required: false
         in: query
@@ -642,6 +680,12 @@ paths:
         required: false
         in: query
         description: A page number within the paginated result set.
+        schema:
+          type: integer
+      - name: page_size
+        required: false
+        in: query
+        description: Number of results to return per page.
         schema:
           type: integer
       - name: search
@@ -724,6 +768,12 @@ paths:
         required: false
         in: query
         description: A page number within the paginated result set.
+        schema:
+          type: integer
+      - name: page_size
+        required: false
+        in: query
+        description: Number of results to return per page.
         schema:
           type: integer
       - name: search
@@ -895,6 +945,73 @@ paths:
       responses:
         '204':
           description: No response body
+  /api/companies/{id}/tags/:
+    post:
+      operationId: companies_tags_create
+      description: CRUD for companies with search and filters.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this Company.
+        required: true
+      tags:
+      - Companies
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Company'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/Company'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/Company'
+        required: true
+      security:
+      - jwtAuth: []
+      - tokenAuth: []
+      - jwtAuth: []
+      - tokenAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Company'
+          description: ''
+  /api/companies/bulk_tag/:
+    post:
+      operationId: companies_bulk_tag_create
+      description: CRUD for companies with search and filters.
+      tags:
+      - Companies
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Company'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/Company'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/Company'
+        required: true
+      security:
+      - jwtAuth: []
+      - tokenAuth: []
+      - jwtAuth: []
+      - tokenAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Company'
+          description: ''
   /api/contacts/:
     get:
       operationId: contacts_list
@@ -930,6 +1047,12 @@ paths:
         required: false
         in: query
         description: A page number within the paginated result set.
+        schema:
+          type: integer
+      - name: page_size
+        required: false
+        in: query
+        description: Number of results to return per page.
         schema:
           type: integer
       - name: search
@@ -1118,6 +1241,12 @@ paths:
         description: A page number within the paginated result set.
         schema:
           type: integer
+      - name: page_size
+        required: false
+        in: query
+        description: Number of results to return per page.
+        schema:
+          type: integer
       - name: search
         required: false
         in: query
@@ -1202,6 +1331,12 @@ paths:
         required: false
         in: query
         description: A page number within the paginated result set.
+        schema:
+          type: integer
+      - name: page_size
+        required: false
+        in: query
+        description: Number of results to return per page.
         schema:
           type: integer
       - in: query
@@ -1398,6 +1533,12 @@ paths:
         description: A page number within the paginated result set.
         schema:
           type: integer
+      - name: page_size
+        required: false
+        in: query
+        description: Number of results to return per page.
+        schema:
+          type: integer
       - name: search
         required: false
         in: query
@@ -1458,6 +1599,12 @@ paths:
         required: false
         in: query
         description: A page number within the paginated result set.
+        schema:
+          type: integer
+      - name: page_size
+        required: false
+        in: query
+        description: Number of results to return per page.
         schema:
           type: integer
       - name: search
@@ -1526,6 +1673,12 @@ paths:
         required: false
         in: query
         description: A page number within the paginated result set.
+        schema:
+          type: integer
+      - name: page_size
+        required: false
+        in: query
+        description: Number of results to return per page.
         schema:
           type: integer
       - name: search
@@ -1641,6 +1794,12 @@ paths:
         required: false
         in: query
         description: A page number within the paginated result set.
+        schema:
+          type: integer
+      - name: page_size
+        required: false
+        in: query
+        description: Number of results to return per page.
         schema:
           type: integer
       - in: query
@@ -1816,6 +1975,36 @@ paths:
       responses:
         '204':
           description: No response body
+  /api/deals/bulk_tag/:
+    post:
+      operationId: deals_bulk_tag_create
+      description: CRUD for CRM deals with ownership rules.
+      tags:
+      - Deals
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Deal'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/Deal'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/Deal'
+        required: true
+      security:
+      - jwtAuth: []
+      - tokenAuth: []
+      - jwtAuth: []
+      - tokenAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Deal'
+          description: ''
   /api/departments/:
     get:
       operationId: departments_list
@@ -1825,6 +2014,12 @@ paths:
         required: false
         in: query
         description: A page number within the paginated result set.
+        schema:
+          type: integer
+      - name: page_size
+        required: false
+        in: query
+        description: Number of results to return per page.
         schema:
           type: integer
       - name: search
@@ -1960,6 +2155,12 @@ paths:
         description: A page number within the paginated result set.
         schema:
           type: integer
+      - name: page_size
+        required: false
+        in: query
+        description: Number of results to return per page.
+        schema:
+          type: integer
       - name: search
         required: false
         in: query
@@ -2071,6 +2272,12 @@ paths:
         description: A page number within the paginated result set.
         schema:
           type: integer
+      - name: page_size
+        required: false
+        in: query
+        description: Number of results to return per page.
+        schema:
+          type: integer
       tags:
       - Help
       security:
@@ -2118,6 +2325,12 @@ paths:
         required: false
         in: query
         description: A page number within the paginated result set.
+        schema:
+          type: integer
+      - name: page_size
+        required: false
+        in: query
+        description: Number of results to return per page.
         schema:
           type: integer
       - name: search
@@ -2174,6 +2387,12 @@ paths:
         required: false
         in: query
         description: A page number within the paginated result set.
+        schema:
+          type: integer
+      - name: page_size
+        required: false
+        in: query
+        description: Number of results to return per page.
         schema:
           type: integer
       - name: search
@@ -2262,12 +2481,34 @@ paths:
         description: A page number within the paginated result set.
         schema:
           type: integer
+      - name: page_size
+        required: false
+        in: query
+        description: Number of results to return per page.
+        schema:
+          type: integer
       - name: search
         required: false
         in: query
         description: A search term.
         schema:
           type: string
+      - in: query
+        name: status
+        schema:
+          type: string
+          enum:
+          - contacted
+          - converted
+          - lost
+          - new
+          - qualified
+        description: |-
+          * `new` - New
+          * `contacted` - Contacted
+          * `qualified` - Qualified
+          * `converted` - Converted
+          * `lost` - Lost
       - in: query
         name: was_in_touch
         schema:
@@ -2587,6 +2828,12 @@ paths:
         description: A page number within the paginated result set.
         schema:
           type: integer
+      - name: page_size
+        required: false
+        in: query
+        description: Number of results to return per page.
+        schema:
+          type: integer
       - name: search
         required: false
         in: query
@@ -2763,6 +3010,12 @@ paths:
         required: false
         in: query
         description: A page number within the paginated result set.
+        schema:
+          type: integer
+      - name: page_size
+        required: false
+        in: query
+        description: Number of results to return per page.
         schema:
           type: integer
       - name: search
@@ -2947,6 +3200,12 @@ paths:
         required: false
         in: query
         description: A page number within the paginated result set.
+        schema:
+          type: integer
+      - name: page_size
+        required: false
+        in: query
+        description: Number of results to return per page.
         schema:
           type: integer
       - name: search
@@ -3135,6 +3394,12 @@ paths:
         description: A page number within the paginated result set.
         schema:
           type: integer
+      - name: page_size
+        required: false
+        in: query
+        description: Number of results to return per page.
+        schema:
+          type: integer
       - name: search
         required: false
         in: query
@@ -3309,6 +3574,12 @@ paths:
         description: A page number within the paginated result set.
         schema:
           type: integer
+      - name: page_size
+        required: false
+        in: query
+        description: Number of results to return per page.
+        schema:
+          type: integer
       - in: query
         name: status
         schema:
@@ -3375,6 +3646,12 @@ paths:
         required: false
         in: query
         description: A page number within the paginated result set.
+        schema:
+          type: integer
+      - name: page_size
+        required: false
+        in: query
+        description: Number of results to return per page.
         schema:
           type: integer
       - name: search
@@ -3551,6 +3828,12 @@ paths:
         required: false
         in: query
         description: A page number within the paginated result set.
+        schema:
+          type: integer
+      - name: page_size
+        required: false
+        in: query
+        description: Number of results to return per page.
         schema:
           type: integer
       - name: search
@@ -3736,6 +4019,12 @@ paths:
         required: false
         in: query
         description: A page number within the paginated result set.
+        schema:
+          type: integer
+      - name: page_size
+        required: false
+        in: query
+        description: Number of results to return per page.
         schema:
           type: integer
       - in: query
@@ -4026,6 +4315,12 @@ paths:
         description: A page number within the paginated result set.
         schema:
           type: integer
+      - name: page_size
+        required: false
+        in: query
+        description: Number of results to return per page.
+        schema:
+          type: integer
       - in: query
         name: product
         schema:
@@ -4222,6 +4517,12 @@ paths:
         required: false
         in: query
         description: A page number within the paginated result set.
+        schema:
+          type: integer
+      - name: page_size
+        required: false
+        in: query
+        description: Number of results to return per page.
         schema:
           type: integer
       - name: search
@@ -4601,6 +4902,12 @@ paths:
         description: A page number within the paginated result set.
         schema:
           type: integer
+      - name: page_size
+        required: false
+        in: query
+        description: Number of results to return per page.
+        schema:
+          type: integer
       - name: search
         required: false
         in: query
@@ -4669,6 +4976,12 @@ paths:
         required: false
         in: query
         description: A page number within the paginated result set.
+        schema:
+          type: integer
+      - name: page_size
+        required: false
+        in: query
+        description: Number of results to return per page.
         schema:
           type: integer
       - in: query
@@ -4858,6 +5171,12 @@ paths:
         required: false
         in: query
         description: A page number within the paginated result set.
+        schema:
+          type: integer
+      - name: page_size
+        required: false
+        in: query
+        description: Number of results to return per page.
         schema:
           type: integer
       - name: search
@@ -5160,6 +5479,12 @@ paths:
         description: A page number within the paginated result set.
         schema:
           type: integer
+      - name: page_size
+        required: false
+        in: query
+        description: Number of results to return per page.
+        schema:
+          type: integer
       - name: search
         required: false
         in: query
@@ -5232,6 +5557,12 @@ paths:
         required: false
         in: query
         description: A page number within the paginated result set.
+        schema:
+          type: integer
+      - name: page_size
+        required: false
+        in: query
+        description: Number of results to return per page.
         schema:
           type: integer
       - name: search
@@ -5591,6 +5922,12 @@ paths:
         description: A page number within the paginated result set.
         schema:
           type: integer
+      - name: page_size
+        required: false
+        in: query
+        description: Number of results to return per page.
+        schema:
+          type: integer
       - name: search
         required: false
         in: query
@@ -5815,6 +6152,12 @@ paths:
         description: A page number within the paginated result set.
         schema:
           type: integer
+      - name: page_size
+        required: false
+        in: query
+        description: Number of results to return per page.
+        schema:
+          type: integer
       - name: search
         required: false
         in: query
@@ -5980,6 +6323,236 @@ paths:
       responses:
         '204':
           description: No response body
+  /api/settings/ai/providers/:
+    get:
+      operationId: settings_ai_providers_list
+      description: CRUD for AI provider configurations.
+      parameters:
+      - name: ordering
+        required: false
+        in: query
+        description: Which field to use when ordering the results.
+        schema:
+          type: string
+      - name: page
+        required: false
+        in: query
+        description: A page number within the paginated result set.
+        schema:
+          type: integer
+      - name: page_size
+        required: false
+        in: query
+        description: Number of results to return per page.
+        schema:
+          type: integer
+      - name: search
+        required: false
+        in: query
+        description: A search term.
+        schema:
+          type: string
+      tags:
+      - settings
+      security:
+      - jwtAuth: []
+      - tokenAuth: []
+      - jwtAuth: []
+      - tokenAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedAIProviderSettingsList'
+          description: ''
+    post:
+      operationId: settings_ai_providers_create
+      description: CRUD for AI provider configurations.
+      tags:
+      - settings
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AIProviderSettings'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/AIProviderSettings'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/AIProviderSettings'
+        required: true
+      security:
+      - jwtAuth: []
+      - tokenAuth: []
+      - jwtAuth: []
+      - tokenAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AIProviderSettings'
+          description: ''
+  /api/settings/ai/providers/{id}/:
+    get:
+      operationId: settings_ai_providers_retrieve
+      description: CRUD for AI provider configurations.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        description: A UUID string identifying this AI Provider Settings.
+        required: true
+      tags:
+      - settings
+      security:
+      - jwtAuth: []
+      - tokenAuth: []
+      - jwtAuth: []
+      - tokenAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AIProviderSettings'
+          description: ''
+    put:
+      operationId: settings_ai_providers_update
+      description: CRUD for AI provider configurations.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        description: A UUID string identifying this AI Provider Settings.
+        required: true
+      tags:
+      - settings
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AIProviderSettings'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/AIProviderSettings'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/AIProviderSettings'
+        required: true
+      security:
+      - jwtAuth: []
+      - tokenAuth: []
+      - jwtAuth: []
+      - tokenAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AIProviderSettings'
+          description: ''
+    patch:
+      operationId: settings_ai_providers_partial_update
+      description: CRUD for AI provider configurations.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        description: A UUID string identifying this AI Provider Settings.
+        required: true
+      tags:
+      - settings
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedAIProviderSettings'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PatchedAIProviderSettings'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PatchedAIProviderSettings'
+      security:
+      - jwtAuth: []
+      - tokenAuth: []
+      - jwtAuth: []
+      - tokenAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AIProviderSettings'
+          description: ''
+    delete:
+      operationId: settings_ai_providers_destroy
+      description: CRUD for AI provider configurations.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        description: A UUID string identifying this AI Provider Settings.
+        required: true
+      tags:
+      - settings
+      security:
+      - jwtAuth: []
+      - tokenAuth: []
+      - jwtAuth: []
+      - tokenAuth: []
+      responses:
+        '204':
+          description: No response body
+  /api/settings/ai/providers/{id}/test_connection/:
+    post:
+      operationId: settings_ai_providers_test_connection_create
+      description: Perform a lightweight generation call to validate provider setup.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        description: A UUID string identifying this AI Provider Settings.
+        required: true
+      tags:
+      - settings
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AIProviderSettings'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/AIProviderSettings'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/AIProviderSettings'
+        required: true
+      security:
+      - jwtAuth: []
+      - tokenAuth: []
+      - jwtAuth: []
+      - tokenAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AIProviderSettings'
+          description: ''
   /api/settings/api-keys/:
     get:
       operationId: settings_api_keys_list
@@ -6004,6 +6577,12 @@ paths:
         required: false
         in: query
         description: A page number within the paginated result set.
+        schema:
+          type: integer
+      - name: page_size
+        required: false
+        in: query
+        description: Number of results to return per page.
         schema:
           type: integer
       - name: search
@@ -6300,6 +6879,12 @@ paths:
         required: false
         in: query
         description: A page number within the paginated result set.
+        schema:
+          type: integer
+      - name: page_size
+        required: false
+        in: query
+        description: Number of results to return per page.
         schema:
           type: integer
       - name: search
@@ -6652,6 +7237,12 @@ paths:
         description: A page number within the paginated result set.
         schema:
           type: integer
+      - name: page_size
+        required: false
+        in: query
+        description: Number of results to return per page.
+        schema:
+          type: integer
       - name: search
         required: false
         in: query
@@ -6964,6 +7555,12 @@ paths:
         required: false
         in: query
         description: A page number within the paginated result set.
+        schema:
+          type: integer
+      - name: page_size
+        required: false
+        in: query
+        description: Number of results to return per page.
         schema:
           type: integer
       - name: search
@@ -7339,6 +7936,12 @@ paths:
         description: A page number within the paginated result set.
         schema:
           type: integer
+      - name: page_size
+        required: false
+        in: query
+        description: Number of results to return per page.
+        schema:
+          type: integer
       - name: search
         required: false
         in: query
@@ -7549,6 +8152,41 @@ paths:
       responses:
         '204':
           description: No response body
+  /api/settings/telegram/bots/{id}/disconnect/:
+    post:
+      operationId: settings_telegram_bots_disconnect_create
+      description: Disconnect Telegram bot without deleting record.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+        required: true
+      tags:
+      - settings
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TelegramBot'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/TelegramBot'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/TelegramBot'
+      security:
+      - jwtAuth: []
+      - tokenAuth: []
+      - jwtAuth: []
+      - tokenAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TelegramBot'
+          description: ''
   /api/settings/telegram/bots/{id}/set_webhook/:
     post:
       operationId: settings_telegram_bots_set_webhook_create
@@ -7651,6 +8289,12 @@ paths:
         required: false
         in: query
         description: A page number within the paginated result set.
+        schema:
+          type: integer
+      - name: page_size
+        required: false
+        in: query
+        description: Number of results to return per page.
         schema:
           type: integer
       - name: search
@@ -8011,6 +8655,12 @@ paths:
         description: A page number within the paginated result set.
         schema:
           type: integer
+      - name: page_size
+        required: false
+        in: query
+        description: Number of results to return per page.
+        schema:
+          type: integer
       - in: query
         name: product
         schema:
@@ -8297,6 +8947,12 @@ paths:
         description: A page number within the paginated result set.
         schema:
           type: integer
+      - name: page_size
+        required: false
+        in: query
+        description: Number of results to return per page.
+        schema:
+          type: integer
       - name: search
         required: false
         in: query
@@ -8367,6 +9023,12 @@ paths:
         description: A page number within the paginated result set.
         schema:
           type: integer
+      - name: page_size
+        required: false
+        in: query
+        description: Number of results to return per page.
+        schema:
+          type: integer
       - name: search
         required: false
         in: query
@@ -8431,6 +9093,12 @@ paths:
         required: false
         in: query
         description: A page number within the paginated result set.
+        schema:
+          type: integer
+      - name: page_size
+        required: false
+        in: query
+        description: Number of results to return per page.
         schema:
           type: integer
       - name: search
@@ -8505,6 +9173,12 @@ paths:
         required: false
         in: query
         description: A page number within the paginated result set.
+        schema:
+          type: integer
+      - name: page_size
+        required: false
+        in: query
+        description: Number of results to return per page.
         schema:
           type: integer
       - in: query
@@ -8680,6 +9354,36 @@ paths:
       responses:
         '204':
           description: No response body
+  /api/tasks/bulk_tag/:
+    post:
+      operationId: tasks_bulk_tag_create
+      description: CRUD for tasks with filtering and ordering.
+      tags:
+      - Tasks
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Task'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/Task'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/Task'
+        required: true
+      security:
+      - jwtAuth: []
+      - tokenAuth: []
+      - jwtAuth: []
+      - tokenAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Task'
+          description: ''
   /api/token/:
     post:
       operationId: token_create
@@ -8783,6 +9487,12 @@ paths:
         required: false
         in: query
         description: A page number within the paginated result set.
+        schema:
+          type: integer
+      - name: page_size
+        required: false
+        in: query
+        description: Number of results to return per page.
         schema:
           type: integer
       - name: search
@@ -9135,6 +9845,12 @@ paths:
         description: A page number within the paginated result set.
         schema:
           type: integer
+      - name: page_size
+        required: false
+        in: query
+        description: Number of results to return per page.
+        schema:
+          type: integer
       - in: query
         name: provider
         schema:
@@ -9321,6 +10037,12 @@ paths:
         description: A page number within the paginated result set.
         schema:
           type: integer
+      - name: page_size
+        required: false
+        in: query
+        description: Number of results to return per page.
+        schema:
+          type: integer
       - name: search
         required: false
         in: query
@@ -9385,6 +10107,84 @@ paths:
           description: No response body
 components:
   schemas:
+    AIProviderSettings:
+      type: object
+      description: Serializer for AI provider settings.
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        name:
+          type: string
+          description: Human-readable provider name for UI and routing
+          maxLength: 100
+        provider:
+          $ref: '#/components/schemas/AIProviderSettingsProviderEnum'
+        api_key:
+          type: string
+          writeOnly: true
+        api_key_preview:
+          type: string
+          readOnly: true
+        base_url:
+          type: string
+          format: uri
+          description: Optional custom base URL for self-hosted or compatible APIs
+          maxLength: 200
+        model:
+          type: string
+          maxLength: 120
+        is_active:
+          type: boolean
+        is_default:
+          type: boolean
+          description: Used as fallback when request does not specify provider
+        timeout_seconds:
+          type: integer
+          maximum: 9223372036854775807
+          minimum: 0
+          format: int64
+        temperature:
+          type: number
+          format: double
+        max_tokens:
+          type: integer
+          maximum: 9223372036854775807
+          minimum: 0
+          format: int64
+        extra_headers: {}
+        extra_config:
+          description: Provider-specific options (e.g., anthropic_version, endpoint)
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+        updated_at:
+          type: string
+          format: date-time
+          readOnly: true
+      required:
+      - api_key_preview
+      - created_at
+      - id
+      - name
+      - provider
+      - updated_at
+    AIProviderSettingsProviderEnum:
+      enum:
+      - openai
+      - gemini
+      - claude
+      - openai_compatible
+      - custom
+      type: string
+      description: |-
+        * `openai` - OpenAI
+        * `gemini` - Google Gemini
+        * `claude` - Anthropic Claude
+        * `openai_compatible` - OpenAI Compatible
+        * `custom` - Custom HTTP
     APIKey:
       type: object
       description: Serializer for API keys (list/retrieve).
@@ -9790,7 +10590,7 @@ components:
           readOnly: true
         provider:
           allOf:
-          - $ref: '#/components/schemas/ProviderEnum'
+          - $ref: '#/components/schemas/ConnectionProviderEnum'
           description: |-
             Specify VoIP service provider
 
@@ -9822,6 +10622,16 @@ components:
       - number
       - owner_name
       - provider
+    ConnectionProviderEnum:
+      enum:
+      - Zadarma
+      - OnlinePBX
+      - Asterisk
+      type: string
+      description: |-
+        * `Zadarma` - Zadarma
+        * `OnlinePBX` - OnlinePBX
+        * `Asterisk` - Asterisk
     ConnectionTypeEnum:
       enum:
       - pbx
@@ -10294,6 +11104,7 @@ components:
           readOnly: true
         owner:
           type: integer
+          readOnly: true
           nullable: true
         owner_name:
           type: string
@@ -10333,6 +11144,7 @@ components:
       - from_email
       - id
       - name
+      - owner
       - owner_name
     EmlMessage:
       type: object
@@ -10342,6 +11154,7 @@ components:
           readOnly: true
         owner:
           type: integer
+          readOnly: true
           nullable: true
         owner_name:
           type: string
@@ -10373,6 +11186,7 @@ components:
       - content
       - creation_date
       - id
+      - owner
       - owner_name
       - subject
       - update_date
@@ -10466,6 +11280,10 @@ components:
       type: object
       description: Serializer for creating Facebook Page with OAuth.
       properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
         facebook_page_id:
           type: string
           maxLength: 100
@@ -10496,6 +11314,7 @@ components:
       required:
       - access_token
       - facebook_page_id
+      - id
       - page_name
     IncomingCall:
       type: object
@@ -10631,6 +11450,10 @@ components:
       type: object
       description: Serializer for creating Instagram Account with OAuth.
       properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
         instagram_user_id:
           type: string
           maxLength: 100
@@ -10658,6 +11481,7 @@ components:
           description: Automatically sync post comments
       required:
       - access_token
+      - id
       - instagram_user_id
       - username
     IntegrationLog:
@@ -10851,6 +11675,8 @@ components:
           maxLength: 100
         description:
           type: string
+        status:
+          $ref: '#/components/schemas/LeadStatusEnum'
         disqualified:
           type: boolean
         lead_source:
@@ -10945,6 +11771,20 @@ components:
       required:
       - id
       - name
+    LeadStatusEnum:
+      enum:
+      - new
+      - contacted
+      - qualified
+      - converted
+      - lost
+      type: string
+      description: |-
+        * `new` - New
+        * `contacted` - Contacted
+        * `qualified` - Qualified
+        * `converted` - Converted
+        * `lost` - Lost
     MailingOut:
       type: object
       properties:
@@ -11220,6 +12060,29 @@ components:
       required:
       - id
       - paragraphs
+    PaginatedAIProviderSettingsList:
+      type: object
+      required:
+      - count
+      - results
+      properties:
+        count:
+          type: integer
+          example: 123
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=4
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=2
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/AIProviderSettings'
     PaginatedAPIKeyList:
       type: object
       required:
@@ -12396,6 +13259,63 @@ components:
       required:
       - id
       - language_code
+    PatchedAIProviderSettings:
+      type: object
+      description: Serializer for AI provider settings.
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        name:
+          type: string
+          description: Human-readable provider name for UI and routing
+          maxLength: 100
+        provider:
+          $ref: '#/components/schemas/AIProviderSettingsProviderEnum'
+        api_key:
+          type: string
+          writeOnly: true
+        api_key_preview:
+          type: string
+          readOnly: true
+        base_url:
+          type: string
+          format: uri
+          description: Optional custom base URL for self-hosted or compatible APIs
+          maxLength: 200
+        model:
+          type: string
+          maxLength: 120
+        is_active:
+          type: boolean
+        is_default:
+          type: boolean
+          description: Used as fallback when request does not specify provider
+        timeout_seconds:
+          type: integer
+          maximum: 9223372036854775807
+          minimum: 0
+          format: int64
+        temperature:
+          type: number
+          format: double
+        max_tokens:
+          type: integer
+          maximum: 9223372036854775807
+          minimum: 0
+          format: int64
+        extra_headers: {}
+        extra_config:
+          description: Provider-specific options (e.g., anthropic_version, endpoint)
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+        updated_at:
+          type: string
+          format: date-time
+          readOnly: true
     PatchedAPIKey:
       type: object
       description: Serializer for API keys (list/retrieve).
@@ -12642,7 +13562,7 @@ components:
           readOnly: true
         provider:
           allOf:
-          - $ref: '#/components/schemas/ProviderEnum'
+          - $ref: '#/components/schemas/ConnectionProviderEnum'
           description: |-
             Specify VoIP service provider
 
@@ -12988,6 +13908,7 @@ components:
           readOnly: true
         owner:
           type: integer
+          readOnly: true
           nullable: true
         owner_name:
           type: string
@@ -13029,6 +13950,7 @@ components:
           readOnly: true
         owner:
           type: integer
+          readOnly: true
           nullable: true
         owner_name:
           type: string
@@ -13280,6 +14202,8 @@ components:
           maxLength: 100
         description:
           type: string
+        status:
+          $ref: '#/components/schemas/LeadStatusEnum'
         disqualified:
           type: boolean
         lead_source:
@@ -13866,6 +14790,7 @@ components:
           readOnly: true
         owner:
           type: integer
+          readOnly: true
           nullable: true
         owner_name:
           type: string
@@ -14085,6 +15010,46 @@ components:
         jssip_display_name:
           type: string
           description: Name shown to the callee
+          maxLength: 255
+        telephony_route_mode:
+          description: |-
+            How outbound calls should be routed from the CRM UI
+
+            * `auto` - Auto
+            * `internal` - Internal extension
+            * `external` - External number
+            * `provider` - Provider API
+            * `asterisk` - Asterisk server
+          oneOf:
+          - $ref: '#/components/schemas/TelephonyRouteModeEnum'
+          - $ref: '#/components/schemas/BlankEnum'
+        telephony_provider:
+          title: Preferred provider
+          description: |-
+            Used by server originate mode
+
+            * `Asterisk` - Asterisk
+            * `OnlinePBX` - OnlinePBX
+            * `Zadarma` - Zadarma
+            * `FreeSWITCH` - FreeSWITCH
+          oneOf:
+          - $ref: '#/components/schemas/TelephonyProviderEnum'
+          - $ref: '#/components/schemas/BlankEnum'
+        webrtc_stun_servers:
+          type: string
+          description: Comma or newline separated STUN URLs
+        webrtc_turn_enabled:
+          type: boolean
+        webrtc_turn_server:
+          type: string
+          description: 'Example: turn:turn.example.com:3478?transport=udp'
+          maxLength: 255
+        webrtc_turn_username:
+          type: string
+          maxLength: 128
+        webrtc_turn_password:
+          type: string
+          writeOnly: true
           maxLength: 255
     PatchedWebhook:
       type: object
@@ -14372,16 +15337,6 @@ components:
       required:
       - id
       - name
-    ProviderEnum:
-      enum:
-      - Zadarma
-      - OnlinePBX
-      - Asterisk
-      type: string
-      description: |-
-        * `Zadarma` - Zadarma
-        * `OnlinePBX` - OnlinePBX
-        * `Asterisk` - Asterisk
     Rate:
       type: object
       description: Serializer for Currency Rate model
@@ -14662,6 +15617,7 @@ components:
           readOnly: true
         owner:
           type: integer
+          readOnly: true
           nullable: true
         owner_name:
           type: string
@@ -14684,6 +15640,7 @@ components:
       - content
       - id
       - name
+      - owner
       - owner_name
     Stage:
       type: object
@@ -14957,14 +15914,29 @@ components:
       type: object
       description: Serializer for creating Telegram Bot.
       properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
         bot_token:
           type: string
           writeOnly: true
+        bot_username:
+          type: string
+          readOnly: true
+        bot_name:
+          type: string
+          readOnly: true
         welcome_message:
           type: string
           description: Welcome message for new users
         commands:
           description: Custom bot commands configuration
+        webhook_url:
+          type: string
+          format: uri
+          description: Telegram webhook URL for receiving updates
+          maxLength: 200
         auto_reply:
           type: boolean
           description: Enable automatic replies
@@ -14974,7 +15946,36 @@ components:
         allowed_chat_ids:
           description: List of allowed Telegram chat IDs
       required:
+      - bot_name
       - bot_token
+      - bot_username
+      - id
+    TelephonyProviderEnum:
+      enum:
+      - Asterisk
+      - OnlinePBX
+      - Zadarma
+      - FreeSWITCH
+      type: string
+      description: |-
+        * `Asterisk` - Asterisk
+        * `OnlinePBX` - OnlinePBX
+        * `Zadarma` - Zadarma
+        * `FreeSWITCH` - FreeSWITCH
+    TelephonyRouteModeEnum:
+      enum:
+      - auto
+      - internal
+      - external
+      - provider
+      - asterisk
+      type: string
+      description: |-
+        * `auto` - Auto
+        * `internal` - Internal extension
+        * `external` - External number
+        * `provider` - Provider API
+        * `asterisk` - Asterisk server
     TokenRefresh:
       type: object
       properties:
@@ -15017,8 +16018,25 @@ components:
           format: email
           title: Email address
           maxLength: 254
+        is_staff:
+          type: boolean
+          title: Staff status
+          description: Designates whether the user can log into this admin site.
+        is_superuser:
+          type: boolean
+          title: Superuser status
+          description: Designates that this user has all permissions without explicitly
+            assigning them.
+        groups:
+          type: string
+          readOnly: true
+        roles:
+          type: string
+          readOnly: true
       required:
+      - groups
       - id
+      - roles
       - username
     UserProfile:
       type: object
@@ -15069,6 +16087,46 @@ components:
         jssip_display_name:
           type: string
           description: Name shown to the callee
+          maxLength: 255
+        telephony_route_mode:
+          description: |-
+            How outbound calls should be routed from the CRM UI
+
+            * `auto` - Auto
+            * `internal` - Internal extension
+            * `external` - External number
+            * `provider` - Provider API
+            * `asterisk` - Asterisk server
+          oneOf:
+          - $ref: '#/components/schemas/TelephonyRouteModeEnum'
+          - $ref: '#/components/schemas/BlankEnum'
+        telephony_provider:
+          title: Preferred provider
+          description: |-
+            Used by server originate mode
+
+            * `Asterisk` - Asterisk
+            * `OnlinePBX` - OnlinePBX
+            * `Zadarma` - Zadarma
+            * `FreeSWITCH` - FreeSWITCH
+          oneOf:
+          - $ref: '#/components/schemas/TelephonyProviderEnum'
+          - $ref: '#/components/schemas/BlankEnum'
+        webrtc_stun_servers:
+          type: string
+          description: Comma or newline separated STUN URLs
+        webrtc_turn_enabled:
+          type: boolean
+        webrtc_turn_server:
+          type: string
+          description: 'Example: turn:turn.example.com:3478?transport=udp'
+          maxLength: 255
+        webrtc_turn_username:
+          type: string
+          maxLength: 128
+        webrtc_turn_password:
+          type: string
+          writeOnly: true
           maxLength: 255
       required:
       - email

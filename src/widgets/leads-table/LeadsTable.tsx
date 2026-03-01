@@ -3,6 +3,7 @@ import { useDeleteLead } from '@/entities/lead/api/mutations';
 import type { LeadListParams } from '@/entities/lead/api/queries';
 import type { Lead } from '@/entities/lead/model/types';
 import { deriveLeadStatus } from '@/entities/lead/model/utils';
+import { useTags } from '@/features/reference';
 // @ts-ignore
 import { LeadsService } from '@/shared/api/generated/services/LeadsService';
 import { useServerTable } from '@/shared/hooks';
@@ -30,6 +31,7 @@ export const LeadsTable: React.FC = () => {
   const screens = Grid.useBreakpoint();
   const isMobile = !screens.md;
   const canManage = canWrite();
+  const { data: tagsData } = useTags();
 
   const {
     data,
@@ -58,9 +60,19 @@ export const LeadsTable: React.FC = () => {
 
   const statusMap: Record<string, { color: string; text: string }> = {
     new: { color: 'blue', text: 'Новый' },
+    contacted: { color: 'gold', text: 'Связались' },
+    qualified: { color: 'purple', text: 'Квалифицирован' },
     converted: { color: 'green', text: 'Конвертирован' },
     lost: { color: 'red', text: 'Потерян' },
   };
+
+  const tagsMap = React.useMemo(() => {
+    const map = new Map<number, string>();
+    (tagsData?.results || []).forEach((tag) => {
+      map.set(tag.id, tag.name || '-');
+    });
+    return map;
+  }, [tagsData]);
 
   const columns: ColumnsType<Lead> = [
     {
@@ -133,7 +145,7 @@ export const LeadsTable: React.FC = () => {
       render: (_, record) => (
         <Space wrap>
           {(record.tags || []).map((tagId) => (
-            <Badge key={tagId} count={tagId} style={{ backgroundColor: '#52c41a' }} />
+            <Badge key={tagId} count={tagsMap.get(tagId) || '-'} style={{ backgroundColor: '#52c41a' }} />
           ))}
         </Space>
       ),

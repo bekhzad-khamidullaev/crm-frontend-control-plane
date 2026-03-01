@@ -6,6 +6,7 @@
  * Serializer for creating Facebook Page with OAuth.
  */
 export type FacebookPageCreate = {
+    readonly id: string;
     facebook_page_id: string;
     page_name: string;
     page_category?: string;

@@ -23,7 +23,7 @@ export async function exportData(entityType, params = {}) {
 
   const { fields, filters, format = 'csv' } = params;
   
-  const response = await api.get(`/api/${entityType}/export/`, {
+  const response = await api.get('/api/projects/export/', {
     params: {
       fields: fields?.join(','),
       format,

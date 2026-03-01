@@ -171,23 +171,23 @@ function ReminderForm({ id }) {
 
           <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
             <div>
-              <Label htmlFor="content_type">Content type ID *</Label>
+              <Label htmlFor="content_type">Тип объекта *</Label>
               <Input
                 id="content_type"
                 type="number"
                 min={1}
-                placeholder="Например: 12"
+                placeholder="Код типа объекта"
                 {...register('content_type', { valueAsNumber: true })}
               />
               {errors.content_type && <p className="text-xs text-destructive">{errors.content_type.message}</p>}
             </div>
             <div>
-              <Label htmlFor="object_id">Object ID *</Label>
+              <Label htmlFor="object_id">Связанный объект *</Label>
               <Input
                 id="object_id"
                 type="number"
                 min={1}
-                placeholder="ID связанного объекта"
+                placeholder="Код связанного объекта"
                 {...register('object_id', { valueAsNumber: true })}
               />
               {errors.object_id && <p className="text-xs text-destructive">{errors.object_id.message}</p>}

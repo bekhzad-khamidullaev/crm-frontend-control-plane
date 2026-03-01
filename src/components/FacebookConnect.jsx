@@ -113,12 +113,12 @@ export default function FacebookConnect({ onSuccess, onCancel }) {
         </Form.Item>
 
         <Form.Item
-          label="Facebook Page ID"
+          label="Идентификатор Facebook страницы"
           name="facebook_page_id"
           rules={[
-            { required: true, message: 'Введите ID страницы' },
+            { required: true, message: 'Введите идентификатор страницы' },
           ]}
-          extra="ID вашей Facebook страницы (можно найти в настройках страницы)"
+          extra="Идентификатор вашей Facebook страницы (можно найти в настройках страницы)"
         >
           <Input
             placeholder="123456789012345"

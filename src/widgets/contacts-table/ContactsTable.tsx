@@ -105,11 +105,8 @@ export const ContactsTable: React.FC = () => {
       responsive: ['sm'],
       width: 160,
       render: (companyId: number) => companyId ? (
-        // Ideally fetch company name or store in Redux/Cache. For now linking by ID.
-        // Or could fetch company name if API included it.
-        // The API model has `company` as number.
         <Button type="link" size="small" icon={<BankOutlined />} onClick={() => navigate(`/companies/${companyId}`)}>
-           #{companyId}
+          Компания
         </Button>
       ) : '-',
     },

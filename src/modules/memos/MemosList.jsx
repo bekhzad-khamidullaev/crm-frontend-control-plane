@@ -111,7 +111,7 @@ export default function MemosList() {
       title: 'Статус',
       key: 'status',
       render: (_, record) => {
-        const stage = stageLabels[record.stage] || { text: record.stage || '—', className: 'bg-muted text-muted-foreground' };
+        const stage = stageLabels[record.stage] || { text: '—', className: 'bg-muted text-muted-foreground' };
         return (
           <div className="flex flex-wrap gap-2">
             <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs ${stage.className}`}>

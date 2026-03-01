@@ -19,6 +19,7 @@ export class StagesService {
         department,
         ordering,
         page,
+        pageSize,
         search,
         secondDefault,
         successStage,
@@ -35,6 +36,10 @@ export class StagesService {
          */
         page?: number,
         /**
+         * Number of results to return per page.
+         */
+        pageSize?: number,
+        /**
          * A search term.
          */
         search?: string,
@@ -50,6 +55,7 @@ export class StagesService {
                 'department': department,
                 'ordering': ordering,
                 'page': page,
+                'page_size': pageSize,
                 'search': search,
                 'second_default': secondDefault,
                 'success_stage': successStage,

@@ -93,7 +93,7 @@ export default function ContactsList() {
   // Logic
   const companyNameById = useMemo(() => {
     return companies.reduce((acc, company) => {
-      acc[company.id] = company.full_name || company.name || `#${company.id}`;
+      acc[company.id] = company.full_name || company.name || '-';
       return acc;
     }, {});
   }, [companies]);

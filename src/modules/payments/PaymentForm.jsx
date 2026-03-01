@@ -179,7 +179,7 @@ function PaymentForm({ id }) {
               value={dealValue || ''}
               fetchOptions={getDeals}
               fetchById={getDeal}
-              optionLabel={(item) => item?.name || `#${item?.id}`}
+              optionLabel={(item) => item?.name || '-'}
               onChange={(val) => setValue('deal', val)}
             />
             {errors.deal && <p className="text-xs text-destructive">{errors.deal.message}</p>}

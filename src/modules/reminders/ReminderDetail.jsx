@@ -127,8 +127,8 @@ export default function ReminderDetail({ id }) {
           )}
         </DetailRow>
 
-        <DetailRow label="Content type ID">{data.content_type ?? '-'}</DetailRow>
-        <DetailRow label="Object ID">{data.object_id ?? '-'}</DetailRow>
+        <DetailRow label="Тип объекта">{data.content_type ?? '-'}</DetailRow>
+        <DetailRow label="Связанный объект">{data.object_id ?? '-'}</DetailRow>
         <DetailRow label="Владелец">{data.owner_name || '-'}</DetailRow>
         <DetailRow label="Email уведомление">{data.send_notification_email ? 'Да' : 'Нет'}</DetailRow>
         <DetailRow label="Описание">{data.description || '-'} </DetailRow>

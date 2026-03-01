@@ -49,7 +49,7 @@ function normalizeSeries(data) {
         item?.name ||
         item?.stage ||
         item?.month ||
-        `#${index + 1}`
+        `Серия ${index + 1}`
     );
     const values = data.map((item) =>
       Number(item?.value ?? item?.count ?? item?.total ?? item?.amount ?? item?.y ?? 0)
@@ -508,7 +508,7 @@ export default function AnalyticsPage() {
                   item?.action ||
                   item?.event ||
                   item?.message ||
-                  `Событие #${item?.id || ''}`;
+                  'Событие';
                 const description = item?.description || item?.details || item?.summary || '';
                 const timestamp =
                   item?.timestamp || item?.created_at || item?.date || item?.created || '';

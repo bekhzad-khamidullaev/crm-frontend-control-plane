@@ -67,7 +67,7 @@ export const DealsTable: React.FC = () => {
       render: (stageName: string, record: Deal) => (
         <Badge
           color={record.stage ? 'blue' : 'default'}
-          text={stageName || (record.stage ? `Этап #${record.stage}` : '-')}
+          text={stageName || '-'}
         />
       ),
     },

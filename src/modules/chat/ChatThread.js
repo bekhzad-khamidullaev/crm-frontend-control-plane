@@ -228,7 +228,7 @@ function getEntityTitle(entityType, entityId) {
     deal: 'Deal',
   };
   
-  return `${titles[entityType] || 'Entity'} #${entityId}`;
+  return titles[entityType] || 'Entity';
 }
 
 /**

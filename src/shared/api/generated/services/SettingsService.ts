@@ -2,6 +2,7 @@
 /* istanbul ignore file */
 /* tslint:disable */
 /* eslint-disable */
+import type { AIProviderSettings } from '../models/AIProviderSettings';
 import type { APIKey } from '../models/APIKey';
 import type { APIKeyCreate } from '../models/APIKeyCreate';
 import type { FacebookPage } from '../models/FacebookPage';
@@ -9,12 +10,14 @@ import type { FacebookPageCreate } from '../models/FacebookPageCreate';
 import type { InstagramAccount } from '../models/InstagramAccount';
 import type { InstagramAccountCreate } from '../models/InstagramAccountCreate';
 import type { IntegrationLog } from '../models/IntegrationLog';
+import type { PaginatedAIProviderSettingsList } from '../models/PaginatedAIProviderSettingsList';
 import type { PaginatedAPIKeyList } from '../models/PaginatedAPIKeyList';
 import type { PaginatedFacebookPageList } from '../models/PaginatedFacebookPageList';
 import type { PaginatedInstagramAccountList } from '../models/PaginatedInstagramAccountList';
 import type { PaginatedIntegrationLogList } from '../models/PaginatedIntegrationLogList';
 import type { PaginatedTelegramBotList } from '../models/PaginatedTelegramBotList';
 import type { PaginatedWebhookList } from '../models/PaginatedWebhookList';
+import type { PatchedAIProviderSettings } from '../models/PatchedAIProviderSettings';
 import type { PatchedAPIKey } from '../models/PatchedAPIKey';
 import type { PatchedFacebookPage } from '../models/PatchedFacebookPage';
 import type { PatchedInstagramAccount } from '../models/PatchedInstagramAccount';
@@ -28,6 +31,179 @@ import type { CancelablePromise } from '../core/CancelablePromise';
 import { OpenAPI } from '../core/OpenAPI';
 import { request as __request } from '../core/request';
 export class SettingsService {
+    /**
+     * CRUD for AI provider configurations.
+     * @returns PaginatedAIProviderSettingsList
+     * @throws ApiError
+     */
+    public static settingsAiProvidersList({
+        ordering,
+        page,
+        pageSize,
+        search,
+    }: {
+        /**
+         * Which field to use when ordering the results.
+         */
+        ordering?: string,
+        /**
+         * A page number within the paginated result set.
+         */
+        page?: number,
+        /**
+         * Number of results to return per page.
+         */
+        pageSize?: number,
+        /**
+         * A search term.
+         */
+        search?: string,
+    }): CancelablePromise<PaginatedAIProviderSettingsList> {
+        return __request(OpenAPI, {
+            method: 'GET',
+            url: '/api/settings/ai/providers/',
+            query: {
+                'ordering': ordering,
+                'page': page,
+                'page_size': pageSize,
+                'search': search,
+            },
+        });
+    }
+    /**
+     * CRUD for AI provider configurations.
+     * @returns AIProviderSettings
+     * @throws ApiError
+     */
+    public static settingsAiProvidersCreate({
+        requestBody,
+    }: {
+        requestBody: AIProviderSettings,
+    }): CancelablePromise<AIProviderSettings> {
+        return __request(OpenAPI, {
+            method: 'POST',
+            url: '/api/settings/ai/providers/',
+            body: requestBody,
+            mediaType: 'application/json',
+        });
+    }
+    /**
+     * CRUD for AI provider configurations.
+     * @returns AIProviderSettings
+     * @throws ApiError
+     */
+    public static settingsAiProvidersRetrieve({
+        id,
+    }: {
+        /**
+         * A UUID string identifying this AI Provider Settings.
+         */
+        id: string,
+    }): CancelablePromise<AIProviderSettings> {
+        return __request(OpenAPI, {
+            method: 'GET',
+            url: '/api/settings/ai/providers/{id}/',
+            path: {
+                'id': id,
+            },
+        });
+    }
+    /**
+     * CRUD for AI provider configurations.
+     * @returns AIProviderSettings
+     * @throws ApiError
+     */
+    public static settingsAiProvidersUpdate({
+        id,
+        requestBody,
+    }: {
+        /**
+         * A UUID string identifying this AI Provider Settings.
+         */
+        id: string,
+        requestBody: AIProviderSettings,
+    }): CancelablePromise<AIProviderSettings> {
+        return __request(OpenAPI, {
+            method: 'PUT',
+            url: '/api/settings/ai/providers/{id}/',
+            path: {
+                'id': id,
+            },
+            body: requestBody,
+            mediaType: 'application/json',
+        });
+    }
+    /**
+     * CRUD for AI provider configurations.
+     * @returns AIProviderSettings
+     * @throws ApiError
+     */
+    public static settingsAiProvidersPartialUpdate({
+        id,
+        requestBody,
+    }: {
+        /**
+         * A UUID string identifying this AI Provider Settings.
+         */
+        id: string,
+        requestBody?: PatchedAIProviderSettings,
+    }): CancelablePromise<AIProviderSettings> {
+        return __request(OpenAPI, {
+            method: 'PATCH',
+            url: '/api/settings/ai/providers/{id}/',
+            path: {
+                'id': id,
+            },
+            body: requestBody,
+            mediaType: 'application/json',
+        });
+    }
+    /**
+     * CRUD for AI provider configurations.
+     * @returns void
+     * @throws ApiError
+     */
+    public static settingsAiProvidersDestroy({
+        id,
+    }: {
+        /**
+         * A UUID string identifying this AI Provider Settings.
+         */
+        id: string,
+    }): CancelablePromise<void> {
+        return __request(OpenAPI, {
+            method: 'DELETE',
+            url: '/api/settings/ai/providers/{id}/',
+            path: {
+                'id': id,
+            },
+        });
+    }
+    /**
+     * Perform a lightweight generation call to validate provider setup.
+     * @returns AIProviderSettings
+     * @throws ApiError
+     */
+    public static settingsAiProvidersTestConnectionCreate({
+        id,
+        requestBody,
+    }: {
+        /**
+         * A UUID string identifying this AI Provider Settings.
+         */
+        id: string,
+        requestBody: AIProviderSettings,
+    }): CancelablePromise<AIProviderSettings> {
+        return __request(OpenAPI, {
+            method: 'POST',
+            url: '/api/settings/ai/providers/{id}/test_connection/',
+            path: {
+                'id': id,
+            },
+            body: requestBody,
+            mediaType: 'application/json',
+        });
+    }
     /**
      * ViewSet for API key management.
      *
@@ -44,6 +220,7 @@ export class SettingsService {
     public static settingsApiKeysList({
         ordering,
         page,
+        pageSize,
         search,
     }: {
         /**
@@ -55,6 +232,10 @@ export class SettingsService {
          */
         page?: number,
         /**
+         * Number of results to return per page.
+         */
+        pageSize?: number,
+        /**
          * A search term.
          */
         search?: string,
@@ -65,6 +246,7 @@ export class SettingsService {
             query: {
                 'ordering': ordering,
                 'page': page,
+                'page_size': pageSize,
                 'search': search,
             },
         });
@@ -273,6 +455,7 @@ export class SettingsService {
     public static settingsFacebookPagesList({
         ordering,
         page,
+        pageSize,
         search,
     }: {
         /**
@@ -284,6 +467,10 @@ export class SettingsService {
          */
         page?: number,
         /**
+         * Number of results to return per page.
+         */
+        pageSize?: number,
+        /**
          * A search term.
          */
         search?: string,
@@ -294,6 +481,7 @@ export class SettingsService {
             query: {
                 'ordering': ordering,
                 'page': page,
+                'page_size': pageSize,
                 'search': search,
             },
         });
@@ -534,6 +722,7 @@ export class SettingsService {
     public static settingsInstagramAccountsList({
         ordering,
         page,
+        pageSize,
         search,
     }: {
         /**
@@ -545,6 +734,10 @@ export class SettingsService {
          */
         page?: number,
         /**
+         * Number of results to return per page.
+         */
+        pageSize?: number,
+        /**
          * A search term.
          */
         search?: string,
@@ -555,6 +748,7 @@ export class SettingsService {
             query: {
                 'ordering': ordering,
                 'page': page,
+                'page_size': pageSize,
                 'search': search,
             },
         });
@@ -764,6 +958,7 @@ export class SettingsService {
     public static settingsIntegrationLogsList({
         ordering,
         page,
+        pageSize,
         search,
     }: {
         /**
@@ -775,6 +970,10 @@ export class SettingsService {
          */
         page?: number,
         /**
+         * Number of results to return per page.
+         */
+        pageSize?: number,
+        /**
          * A search term.
          */
         search?: string,
@@ -785,6 +984,7 @@ export class SettingsService {
             query: {
                 'ordering': ordering,
                 'page': page,
+                'page_size': pageSize,
                 'search': search,
             },
         });
@@ -1009,6 +1209,7 @@ export class SettingsService {
     public static settingsTelegramBotsList({
         ordering,
         page,
+        pageSize,
         search,
     }: {
         /**
@@ -1020,6 +1221,10 @@ export class SettingsService {
          */
         page?: number,
         /**
+         * Number of results to return per page.
+         */
+        pageSize?: number,
+        /**
          * A search term.
          */
         search?: string,
@@ -1030,6 +1235,7 @@ export class SettingsService {
             query: {
                 'ordering': ordering,
                 'page': page,
+                'page_size': pageSize,
                 'search': search,
             },
         });
@@ -1177,6 +1383,28 @@ export class SettingsService {
         });
     }
     /**
+     * Disconnect Telegram bot without deleting record.
+     * @returns TelegramBot
+     * @throws ApiError
+     */
+    public static settingsTelegramBotsDisconnectCreate({
+        id,
+        requestBody,
+    }: {
+        id: string,
+        requestBody?: TelegramBot,
+    }): CancelablePromise<TelegramBot> {
+        return __request(OpenAPI, {
+            method: 'POST',
+            url: '/api/settings/telegram/bots/{id}/disconnect/',
+            path: {
+                'id': id,
+            },
+            body: requestBody,
+            mediaType: 'application/json',
+        });
+    }
+    /**
      * Setup or update Telegram webhook.
      *
      * Configures the webhook URL for receiving updates from Telegram.
@@ -1242,6 +1470,7 @@ export class SettingsService {
     public static settingsWebhooksList({
         ordering,
         page,
+        pageSize,
         search,
     }: {
         /**
@@ -1253,6 +1482,10 @@ export class SettingsService {
          */
         page?: number,
         /**
+         * Number of results to return per page.
+         */
+        pageSize?: number,
+        /**
          * A search term.
          */
         search?: string,
@@ -1263,6 +1496,7 @@ export class SettingsService {
             query: {
                 'ordering': ordering,
                 'page': page,
+                'page_size': pageSize,
                 'search': search,
             },
         });

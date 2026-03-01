@@ -6,7 +6,10 @@
  * Serializer for creating Telegram Bot.
  */
 export type TelegramBotCreate = {
+    readonly id: string;
     bot_token: string;
+    readonly bot_username: string;
+    readonly bot_name: string;
     /**
      * Welcome message for new users
      */
@@ -15,6 +18,10 @@ export type TelegramBotCreate = {
      * Custom bot commands configuration
      */
     commands?: any;
+    /**
+     * Telegram webhook URL for receiving updates
+     */
+    webhook_url?: string;
     /**
      * Enable automatic replies
      */

@@ -19,6 +19,7 @@ export class OutputsService {
         deal,
         ordering,
         page,
+        pageSize,
         product,
         productIsShipped,
         search,
@@ -33,6 +34,10 @@ export class OutputsService {
          * A page number within the paginated result set.
          */
         page?: number,
+        /**
+         * Number of results to return per page.
+         */
+        pageSize?: number,
         product?: number,
         productIsShipped?: boolean,
         /**
@@ -48,6 +53,7 @@ export class OutputsService {
                 'deal': deal,
                 'ordering': ordering,
                 'page': page,
+                'page_size': pageSize,
                 'product': product,
                 'product_is_shipped': productIsShipped,
                 'search': search,

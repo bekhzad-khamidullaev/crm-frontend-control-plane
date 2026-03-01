@@ -379,7 +379,7 @@ function LeadDetail({ id }) {
                </CardDescription>
                <div className="text-sm text-muted-foreground flex items-center justify-center gap-1 mt-1">
                   <Building2 className="h-3 w-3" />
-                  {lead.company_name || lead.company || 'Компания не указана'}
+                  {lead.company_name || 'Компания не указана'}
                </div>
             </CardHeader>
             <CardContent>
@@ -411,8 +411,8 @@ function LeadDetail({ id }) {
                <InfoRow icon={Mail} label="Email" value={lead.email} href={`mailto:${lead.email}`} />
                <InfoRow icon={Globe} label="Сайт" value={lead.website} href={lead.website} />
                <Separator className="my-2" />
-               <InfoRow icon={MapPin} label="Страна" value={lead.country_name || lead.country} />
-               <InfoRow icon={MapPin} label="Город" value={lead.city_name || lead.city} />
+               <InfoRow icon={MapPin} label="Страна" value={lead.country_name || '-'} />
+               <InfoRow icon={MapPin} label="Город" value={lead.city_name || '-'} />
                <InfoRow icon={MapPin} label="Адрес" value={lead.address} />
              </CardContent>
           </Card>
@@ -455,8 +455,8 @@ function LeadDetail({ id }) {
                            {getInitials(lead.owner_name?.split(' ')[0], lead.owner_name?.split(' ')[1])}
                          </AvatarFallback>
                        </Avatar>
-                       <p className="text-sm truncate max-w-[100px]" title={lead.owner_name || lead.owner}>
-                         {lead.owner_name || lead.owner || '-'}
+                       <p className="text-sm truncate max-w-[100px]" title={lead.owner_name || '-'}>
+                         {lead.owner_name || '-'}
                        </p>
                     </div>
                   </div>

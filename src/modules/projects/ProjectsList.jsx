@@ -201,7 +201,7 @@ function ProjectsList() {
 
   const userNameById = useMemo(() => {
     return users.reduce((acc, user) => {
-      acc[user.id] = user.username || user.email || `#${user.id}`;
+      acc[user.id] = user.username || user.email || '-';
       return acc;
     }, {});
   }, [users]);
@@ -301,7 +301,7 @@ function ProjectsList() {
       render: (responsible, record) => {
         const ids = Array.isArray(responsible) ? responsible : [];
         const names = ids.map((id) => userNameById[id]).filter(Boolean);
-        const ownerLabel = record.owner ? userNameById[record.owner] || `#${record.owner}` : null;
+        const ownerLabel = record.owner ? userNameById[record.owner] || '-' : null;
         return <span className="text-sm">{names.length ? names.join(', ') : ownerLabel || '-'}</span>;
       },
     },

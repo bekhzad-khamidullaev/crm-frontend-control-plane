@@ -11,5 +11,15 @@ export type User = {
     first_name?: string;
     last_name?: string;
     email?: string;
+    /**
+     * Designates whether the user can log into this admin site.
+     */
+    is_staff?: boolean;
+    /**
+     * Designates that this user has all permissions without explicitly assigning them.
+     */
+    is_superuser?: boolean;
+    readonly groups: string;
+    readonly roles: string;
 };
 

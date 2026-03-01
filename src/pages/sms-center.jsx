@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { Tabs, Card, Table, Form, Input, InputNumber, Button, Switch, message } from 'antd';
+import { Tabs, Card, Table, Form, Input, Button, Switch, message, Select } from 'antd';
 import smsApi from '../lib/api/sms.js';
 
 const { TextArea } = Input;
@@ -29,7 +29,6 @@ function ProvidersTab() {
         rowKey={(record) => record.id || record.name || record.channel_id || Math.random()}
         loading={loading}
         columns={[
-          { title: 'ID', dataIndex: 'id', key: 'id', width: 100 },
           { title: 'Название', dataIndex: 'name', key: 'name' },
           { title: 'Канал', dataIndex: 'channel_id', key: 'channel_id', width: 120 },
         ]}
@@ -42,16 +41,27 @@ function ProvidersTab() {
 function HistoryTab() {
   const [data, setData] = useState([]);
   const [loading, setLoading] = useState(false);
+  const [providers, setProviders] = useState([]);
 
   const load = async () => {
     setLoading(true);
     try {
       const res = await smsApi.history({ page_size: 50 });
       setData(res?.results || res || []);
+      const providersRes = await smsApi.providers();
+      setProviders(providersRes?.results || providersRes || []);
     } finally {
       setLoading(false);
     }
   };
+
+  const providerNameByChannel = providers.reduce((acc, provider) => {
+    const key = provider.channel_id || provider.id;
+    if (key !== undefined) {
+      acc[key] = provider.name || provider.provider || provider.title || '-';
+    }
+    return acc;
+  }, {});
 
   useEffect(() => {
     load();
@@ -64,7 +74,13 @@ function HistoryTab() {
         rowKey={(record) => record.id || record.message_id || Math.random()}
         loading={loading}
         columns={[
-          { title: 'Канал', dataIndex: 'channel_id', key: 'channel_id', width: 120 },
+          {
+            title: 'Канал',
+            dataIndex: 'channel_id',
+            key: 'channel_id',
+            width: 140,
+            render: (value) => providerNameByChannel[value] || '-',
+          },
           { title: 'Получатель', dataIndex: 'to', key: 'to' },
           { title: 'Текст', dataIndex: 'text', key: 'text' },
           { title: 'Статус', dataIndex: 'status', key: 'status', width: 120 },
@@ -103,6 +119,21 @@ function StatusTab() {
 
 function SendTab({ bulk = false }) {
   const [form] = Form.useForm();
+  const [providers, setProviders] = useState([]);
+  const [providersLoading, setProvidersLoading] = useState(false);
+
+  useEffect(() => {
+    const loadProviders = async () => {
+      setProvidersLoading(true);
+      try {
+        const res = await smsApi.providers();
+        setProviders(res?.results || res || []);
+      } finally {
+        setProvidersLoading(false);
+      }
+    };
+    loadProviders();
+  }, []);
 
   const handleSubmit = async (values) => {
     try {
@@ -134,8 +165,15 @@ function SendTab({ bulk = false }) {
   return (
     <Card title={bulk ? 'Отправка SMS (Bulk)' : 'Отправка SMS'}>
       <Form form={form} layout="vertical" onFinish={handleSubmit} initialValues={{ async: true }}>
-        <Form.Item label="Channel ID" name="channel_id" rules={[{ required: true, message: 'Укажите канал' }]}>
-          <InputNumber style={{ width: '100%' }} min={1} />
+        <Form.Item label="Канал" name="channel_id" rules={[{ required: true, message: 'Укажите канал' }]}>
+          <Select
+            loading={providersLoading}
+            placeholder="Выберите канал"
+            options={(providers || []).map((provider) => ({
+              value: provider.channel_id || provider.id,
+              label: provider.name || provider.provider || provider.title || 'Канал',
+            }))}
+          />
         </Form.Item>
         {bulk ? (
           <Form.Item label="Телефоны (по одному на строку)" name="phone_numbers" rules={[{ required: true, message: 'Укажите номера' }]}>

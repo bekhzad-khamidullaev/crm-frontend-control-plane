@@ -22,6 +22,7 @@ export class MarketingService {
     public static marketingCampaignsList({
         isActive,
         page,
+        pageSize,
         search,
         segment,
         template,
@@ -31,6 +32,10 @@ export class MarketingService {
          * A page number within the paginated result set.
          */
         page?: number,
+        /**
+         * Number of results to return per page.
+         */
+        pageSize?: number,
         /**
          * A search term.
          */
@@ -44,6 +49,7 @@ export class MarketingService {
             query: {
                 'is_active': isActive,
                 'page': page,
+                'page_size': pageSize,
                 'search': search,
                 'segment': segment,
                 'template': template,
@@ -160,12 +166,17 @@ export class MarketingService {
      */
     public static marketingSegmentsList({
         page,
+        pageSize,
         search,
     }: {
         /**
          * A page number within the paginated result set.
          */
         page?: number,
+        /**
+         * Number of results to return per page.
+         */
+        pageSize?: number,
         /**
          * A search term.
          */
@@ -176,6 +187,7 @@ export class MarketingService {
             url: '/api/marketing/segments/',
             query: {
                 'page': page,
+                'page_size': pageSize,
                 'search': search,
             },
         });
@@ -291,6 +303,7 @@ export class MarketingService {
     public static marketingTemplatesList({
         channel,
         page,
+        pageSize,
         search,
     }: {
         /**
@@ -305,6 +318,10 @@ export class MarketingService {
          */
         page?: number,
         /**
+         * Number of results to return per page.
+         */
+        pageSize?: number,
+        /**
          * A search term.
          */
         search?: string,
@@ -315,6 +332,7 @@ export class MarketingService {
             query: {
                 'channel': channel,
                 'page': page,
+                'page_size': pageSize,
                 'search': search,
             },
         });

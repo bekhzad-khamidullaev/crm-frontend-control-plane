@@ -22,6 +22,7 @@ export class CompaniesService {
         ordering,
         owner,
         page,
+        pageSize,
         search,
         type,
     }: {
@@ -39,6 +40,10 @@ export class CompaniesService {
          */
         page?: number,
         /**
+         * Number of results to return per page.
+         */
+        pageSize?: number,
+        /**
          * A search term.
          */
         search?: string,
@@ -55,6 +60,7 @@ export class CompaniesService {
                 'ordering': ordering,
                 'owner': owner,
                 'page': page,
+                'page_size': pageSize,
                 'search': search,
                 'type': type,
             },
@@ -167,6 +173,48 @@ export class CompaniesService {
             path: {
                 'id': id,
             },
+        });
+    }
+    /**
+     * CRUD for companies with search and filters.
+     * @returns Company
+     * @throws ApiError
+     */
+    public static companiesTagsCreate({
+        id,
+        requestBody,
+    }: {
+        /**
+         * A unique integer value identifying this Company.
+         */
+        id: number,
+        requestBody: Company,
+    }): CancelablePromise<Company> {
+        return __request(OpenAPI, {
+            method: 'POST',
+            url: '/api/companies/{id}/tags/',
+            path: {
+                'id': id,
+            },
+            body: requestBody,
+            mediaType: 'application/json',
+        });
+    }
+    /**
+     * CRUD for companies with search and filters.
+     * @returns Company
+     * @throws ApiError
+     */
+    public static companiesBulkTagCreate({
+        requestBody,
+    }: {
+        requestBody: Company,
+    }): CancelablePromise<Company> {
+        return __request(OpenAPI, {
+            method: 'POST',
+            url: '/api/companies/bulk_tag/',
+            body: requestBody,
+            mediaType: 'application/json',
         });
     }
 }

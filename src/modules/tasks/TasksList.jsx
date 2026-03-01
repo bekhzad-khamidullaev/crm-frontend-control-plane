@@ -146,7 +146,7 @@ function TasksList() {
 
   const userNameById = useMemo(() => {
     return users.reduce((acc, user) => {
-      acc[user.id] = user.username || user.email || `#${user.id}`;
+      acc[user.id] = user.username || user.email || '-';
       return acc;
     }, {});
   }, [users]);
@@ -234,7 +234,7 @@ function TasksList() {
       render: (responsible, record) => {
         const ids = Array.isArray(responsible) ? responsible : [];
         const names = ids.map((id) => userNameById[id]).filter(Boolean);
-        const ownerLabel = record.owner ? userNameById[record.owner] || `#${record.owner}` : null;
+        const ownerLabel = record.owner ? userNameById[record.owner] || '-' : null;
         const display = names.length ? names.join(', ') : ownerLabel;
         return (
           <div className="flex items-center gap-2">

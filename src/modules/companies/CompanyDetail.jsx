@@ -48,6 +48,8 @@ import ActivityLog from '../../components/ActivityLog';
 import CallButton from '../../components/CallButton';
 import ChatWidget from '../../modules/chat/ChatWidget';
 import dayjs from 'dayjs';
+import { getLocale } from '../../lib/i18n';
+import { getClientTypeLabel } from '../../features/reference/lib/clientTypeLabel';
 
 const { Title, Text } = Typography;
 
@@ -199,14 +201,15 @@ function CompanyDetail({ id }) {
     return <div>Компания не найдена</div>;
   }
 
+  const locale = getLocale();
   const clientType = clientTypes.find((item) => item.id === company.type);
-  const typeLabel = clientType?.name || (company.type ? `Тип #${company.type}` : '-');
+  const typeLabel = getClientTypeLabel(clientType?.name, locale) || '-';
   const companyName = company.full_name || company.name || company.company_name || 'Компания';
-  const ownerName = users.find((u) => u.id === company.owner)?.username || company.owner;
-  const departmentName = departments.find((d) => d.id === company.department)?.name || company.department;
-  const countryName = countries.find((c) => c.id === company.country)?.name || company.country;
-  const cityName = cities.find((c) => c.id === company.city)?.name || company.city || company.city_name;
-  const leadSourceName = leadSources.find((ls) => ls.id === company.lead_source)?.name || company.lead_source;
+  const ownerName = users.find((u) => u.id === company.owner)?.username || '-';
+  const departmentName = departments.find((d) => d.id === company.department)?.name || '-';
+  const countryName = countries.find((c) => c.id === company.country)?.name || '-';
+  const cityName = cities.find((c) => c.id === company.city)?.name || company.city_name || '-';
+  const leadSourceName = leadSources.find((ls) => ls.id === company.lead_source)?.name || '-';
   const industryNames = Array.isArray(company.industry)
     ? company.industry.map((id) => industries.find((ind) => ind.id === id)?.name).filter(Boolean)
     : [];

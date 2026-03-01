@@ -1,6 +1,8 @@
 import { companyKeys } from '@/entities/company/api/keys';
 import { useDeleteCompany } from '@/entities/company/api/mutations';
 import type { Company } from '@/entities/company/model/types';
+import { useClientTypes, useIndustries } from '@/features/reference';
+import { getClientTypeLabel } from '@/features/reference/lib/clientTypeLabel';
 // @ts-ignore
 import { CompaniesService } from '@/shared/api/generated/services/CompaniesService';
 import { useServerTable } from '@/shared/hooks';
@@ -25,6 +27,8 @@ import CallButton from '@/components/CallButton';
 import { navigate } from '@/router.js';
 // @ts-ignore
 import { canWrite } from '@/lib/rbac.js';
+// @ts-ignore
+import { getLocale } from '@/lib/i18n';
 
 export const CompaniesTable: React.FC = () => {
   const canManage = canWrite();
@@ -41,6 +45,25 @@ export const CompaniesTable: React.FC = () => {
   });
 
   const deleteMutation = useDeleteCompany();
+  const { data: clientTypesData } = useClientTypes();
+  const { data: industriesData } = useIndustries();
+  const locale = getLocale();
+
+  const clientTypeMap = React.useMemo(() => {
+    const map = new Map<number, string>();
+    (clientTypesData?.results || []).forEach((item) => {
+      map.set(item.id, getClientTypeLabel(item.name, locale));
+    });
+    return map;
+  }, [clientTypesData, locale]);
+
+  const industryMap = React.useMemo(() => {
+    const map = new Map<number, string>();
+    (industriesData?.results || []).forEach((item) => {
+      map.set(item.id, item.name);
+    });
+    return map;
+  }, [industriesData]);
 
   const handleDelete = async (id: number) => {
     try {
@@ -69,7 +92,10 @@ export const CompaniesTable: React.FC = () => {
             <div style={{ fontWeight: 500 }}>{record.full_name}</div>
             {Array.isArray(record.industry) && record.industry.length > 0 && (
               <div style={{ fontSize: 12, color: '#999' }}>
-                 ID: {record.industry.join(', ')} {/* Ideally map IDs to names if not available in record */}
+                {record.industry
+                  .map((industryId) => industryMap.get(industryId))
+                  .filter(Boolean)
+                  .join(', ') || '-'}
               </div>
             )}
           </div>
@@ -109,7 +135,11 @@ export const CompaniesTable: React.FC = () => {
       dataIndex: 'type',
       key: 'type',
       width: 150,
-      render: (type) => type ? <StatusTag status="info" text={`Тип #${type}`} /> : '-',
+      render: (type) => {
+        if (!type) return '-';
+        const label = clientTypeMap.get(type);
+        return <StatusTag status="info" text={label || '-'} />;
+      },
     },
     {
       title: 'Дата создания',

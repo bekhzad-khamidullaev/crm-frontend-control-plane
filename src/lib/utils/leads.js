@@ -55,7 +55,10 @@ export function deriveLeadStatus(lead) {
   if (!lead) return 'new';
   if (lead.status) return lead.status;
   if (lead.disqualified) return 'lost';
-  if (lead.contact || lead.company) return 'converted';
+  if (lead.contact || lead.company || lead.was_in_touch) return 'converted';
+  const description = String(lead.description || '');
+  if (description.includes('[KANBAN:QUALIFIED]')) return 'qualified';
+  if (description.includes('[KANBAN:CONTACTED]')) return 'contacted';
   return 'new';
 }
 

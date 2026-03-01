@@ -61,9 +61,11 @@ function LeadAnalyticsCard({
   const [drillDownData, setDrillDownData] = useState([]);
   const [drillDownTitle, setDrillDownTitle] = useState('');
   const [drillDownSegment, setDrillDownSegment] = useState('');
-  const statusOrder = ['new', 'converted', 'lost'];
+  const statusOrder = ['new', 'contacted', 'qualified', 'converted', 'lost'];
   const statusLabels = {
     new: 'Новые',
+    contacted: 'Связались',
+    qualified: 'Квалифицированы',
     converted: 'Конвертированы',
     lost: 'Потеряны',
   };
@@ -93,11 +95,15 @@ function LeadAnalyticsCard({
         data: statusOrder.map((key) => statusCounts[key] || 0),
         backgroundColor: [
           'rgba(24, 144, 255, 0.8)',
+          'rgba(250, 173, 20, 0.8)',
+          'rgba(114, 46, 209, 0.8)',
           'rgba(19, 194, 194, 0.8)',
           'rgba(255, 77, 79, 0.8)',
         ],
         borderColor: [
           'rgba(24, 144, 255, 1)',
+          'rgba(250, 173, 20, 1)',
+          'rgba(114, 46, 209, 1)',
           'rgba(19, 194, 194, 1)',
           'rgba(255, 77, 79, 1)',
         ],
@@ -126,7 +132,7 @@ function LeadAnalyticsCard({
 
   const resolveSourceLabel = (key) => {
     if (sourceLabels[key]) return sourceLabels[key];
-    if (/^\\d+$/.test(key)) return `#${key}`;
+    if (/^\\d+$/.test(key)) return 'Не указан';
     return key;
   };
 
@@ -308,11 +314,15 @@ function LeadAnalyticsCard({
         const status = deriveLeadStatus(record);
         const statusColors = {
           new: 'blue',
+          contacted: 'gold',
+          qualified: 'purple',
           converted: 'cyan',
           lost: 'red',
         };
         const statusNames = {
           new: 'Новый',
+          contacted: 'Связались',
+          qualified: 'Квалифицирован',
           converted: 'Конвертирован',
           lost: 'Потерян',
         };
@@ -326,7 +336,7 @@ function LeadAnalyticsCard({
     {
       title: 'Источник',
       key: 'source',
-      render: (_, record) => record.lead_source_name || record.lead_source || '-',
+      render: (_, record) => resolveSourceLabel(String(record.lead_source_name || record.lead_source || 'other')),
     },
     {
       title: 'Дата создания',
