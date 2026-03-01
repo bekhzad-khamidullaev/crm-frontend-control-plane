@@ -16,13 +16,14 @@ function CallButton({ phone, name, entityType, entityId, size = 'middle', type =
   const audioRef = useRef(null);
   const timerRef = useRef(null);
   const currentCallTokenRef = useRef(null);
+  const fallbackAttemptedRef = useRef(false);
   const normalizePhone = (value) => String(value || '').replace(/[^\d+]/g, '');
 
   const isOwnCall = (callData) => {
     if (!callData || typeof callData !== 'object') return false;
 
     const token = callData.uiCallToken;
-    if (token && currentCallTokenRef.current) {
+    if (token) {
       return token === currentCallTokenRef.current;
     }
 
@@ -45,6 +46,27 @@ function CallButton({ phone, name, entityType, entityId, size = 'middle', type =
     }
 
     return false;
+  };
+
+  const tryServerOriginateFallback = async () => {
+    if (fallbackAttemptedRef.current) return false;
+    fallbackAttemptedRef.current = true;
+
+    const profile = await getProfile().catch(() => null);
+    const fromNumber = String(profile?.pbx_number || '').trim();
+    const toNumber = normalizePhone(phone).replace(/^\+/, '');
+    if (!toNumber) return false;
+
+    await initiateCall({
+      to_number: toNumber,
+      from_number: fromNumber || undefined,
+      contact_id: entityType === 'contact' ? entityId : undefined,
+      lead_id: entityType === 'lead' ? entityId : undefined,
+    });
+
+    message.success('Звонок отправлен через сервер телефонии');
+    closeModal();
+    return true;
   };
 
   const ensureSipRegistration = async () => {
@@ -117,9 +139,21 @@ function CallButton({ phone, name, entityType, entityId, size = 'middle', type =
       const reason = callData?.reason || callData?.cause || '';
 
       if (failed) {
+        const isNotFound = /not found/i.test(String(reason));
+        if (isNotFound) {
+          try {
+            const started = await tryServerOriginateFallback();
+            if (started) return;
+          } catch (fallbackError) {
+            console.error('[CallButton] Fallback originate failed after SIP Not Found:', fallbackError);
+          }
+        }
         setCallDuration(0);
         setCallStatus('idle');
-        message.error(`Звонок не установлен${reason ? `: ${reason}` : ''}`);
+        message.error({
+          key: `call-error-${currentCallTokenRef.current || 'unknown'}`,
+          content: `Звонок не установлен${reason ? `: ${reason}` : ''}`,
+        });
         return;
       }
 
@@ -144,6 +178,7 @@ function CallButton({ phone, name, entityType, entityId, size = 'middle', type =
       message.error('Номер телефона не указан');
       return;
     }
+    fallbackAttemptedRef.current = false;
     setModalVisible(true);
     setCallStatus('idle');
   };
@@ -190,6 +225,7 @@ function CallButton({ phone, name, entityType, entityId, size = 'middle', type =
     setCallStatus('calling');
     const callToken = `${Date.now()}-${Math.random().toString(36).slice(2, 10)}`;
     currentCallTokenRef.current = callToken;
+    fallbackAttemptedRef.current = false;
 
     if (mode === 'browser') {
       // WebRTC call via SIP
@@ -208,7 +244,12 @@ function CallButton({ phone, name, entityType, entityId, size = 'middle', type =
         }
 
         const audioElement = audioRef.current;
-        await sipClient.call(phone, audioElement, {
+        const dialNumber = normalizePhone(phone).replace(/^\+/, '');
+        if (!dialNumber) {
+          throw new Error('Неверный формат номера');
+        }
+
+        await sipClient.call(dialNumber, audioElement, {
           uiCallToken: callToken,
           relatedEntity: entityType,
           relatedEntityId: entityId,
@@ -219,22 +260,16 @@ function CallButton({ phone, name, entityType, entityId, size = 'middle', type =
         const reason = String(error?.message || '').trim();
         if (/not found/i.test(reason)) {
           try {
-            const profile = await getProfile().catch(() => null);
-            const fromNumber = String(profile?.pbx_number || '').trim();
-            await initiateCall({
-              to_number: normalizePhone(phone),
-              from_number: fromNumber || undefined,
-              contact_id: entityType === 'contact' ? entityId : undefined,
-              lead_id: entityType === 'lead' ? entityId : undefined,
-            });
-            message.success('Звонок отправлен через сервер телефонии');
-            closeModal();
-            return;
+            const started = await tryServerOriginateFallback();
+            if (started) return;
           } catch (fallbackError) {
             console.error('[CallButton] Fallback originate failed:', fallbackError);
           }
         }
-        message.error('Ошибка при звонке: ' + reason);
+        message.error({
+          key: `call-error-${currentCallTokenRef.current || 'unknown'}`,
+          content: 'Ошибка при звонке: ' + reason,
+        });
         setCallStatus('idle');
         currentCallTokenRef.current = null;
       }
@@ -290,6 +325,7 @@ function CallButton({ phone, name, entityType, entityId, size = 'middle', type =
     setCallStatus('idle');
     setCallDuration(0);
     currentCallTokenRef.current = null;
+    fallbackAttemptedRef.current = false;
   };
 
   const formatDuration = (seconds) => {
