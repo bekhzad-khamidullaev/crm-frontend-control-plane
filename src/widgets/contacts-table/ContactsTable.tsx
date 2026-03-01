@@ -9,11 +9,12 @@ import {
     UserOutlined
 } from '@ant-design/icons';
 import { Avatar, Button, Grid, Popconfirm, Space, Table } from 'antd';
-import React from 'react';
+import React, { useMemo } from 'react';
 // @ts-ignore
 import { contactKeys } from '@/entities/contact/api/keys';
 import { useDeleteContact } from '@/entities/contact/api/mutations';
 import type { Contact } from '@/entities/contact/model/types';
+import { useCompanies } from '@/entities/company/api/queries';
 import { ContactsService } from '@/shared/api/generated/services/ContactsService';
 import type { ColumnsType } from 'antd/es/table';
 import { ContactsTableFilters } from './ui/ContactsTableFilters';
@@ -28,6 +29,14 @@ export const ContactsTable: React.FC = () => {
   const screens = Grid.useBreakpoint();
   const isMobile = !screens.md;
   const canManage = canWrite();
+  const { data: companiesResponse } = useCompanies({ page: 1, pageSize: 1000 });
+  const companyNameById = useMemo(() => {
+    const map: Record<number, string> = {};
+    for (const company of companiesResponse?.results ?? []) {
+      map[company.id] = company.full_name || '-';
+    }
+    return map;
+  }, [companiesResponse?.results]);
 
   const {
     data,
@@ -106,7 +115,7 @@ export const ContactsTable: React.FC = () => {
       width: 160,
       render: (companyId: number) => companyId ? (
         <Button type="link" size="small" icon={<BankOutlined />} onClick={() => navigate(`/companies/${companyId}`)}>
-          Компания
+          {companyNameById[companyId] || `Компания #${companyId}`}
         </Button>
       ) : '-',
     },

@@ -16,7 +16,7 @@ import {
   UserOutlined,
 } from '@ant-design/icons';
 import { DndContext, type DragEndEvent, PointerSensor, useDraggable, useDroppable, useSensor, useSensors } from '@dnd-kit/core';
-import { Avatar, Badge, Button, Card, Empty, Flex, Input, message, Skeleton, Space, Typography } from 'antd';
+import { Avatar, Badge, Button, Card, Empty, Flex, Input, message, Skeleton, Space, Typography, theme } from 'antd';
 import React, { useEffect, useMemo, useState } from 'react';
 
 const { Text } = Typography;
@@ -64,6 +64,7 @@ const updateLeadForStatus = (lead: Lead, status: LeadStatus): Lead => {
 };
 
 const LeadCard: React.FC<{ lead: Lead; readOnly?: boolean }> = ({ lead, readOnly = false }) => {
+  const { token } = theme.useToken();
   const { attributes, listeners, setNodeRef, transform, isDragging } = useDraggable({
     id: toCardId(lead.id),
     disabled: readOnly,
@@ -73,6 +74,9 @@ const LeadCard: React.FC<{ lead: Lead; readOnly?: boolean }> = ({ lead, readOnly
     transform: transform ? `translate3d(${transform.x}px, ${transform.y}px, 0)` : undefined,
     opacity: isDragging ? 0.65 : 1,
     cursor: readOnly ? 'pointer' : 'grab',
+    borderRadius: token.borderRadiusLG,
+    border: `1px solid ${isDragging ? token.colorPrimaryBorder : token.colorBorderSecondary}`,
+    boxShadow: isDragging ? token.boxShadowSecondary : undefined,
   };
 
   return (
@@ -119,6 +123,7 @@ const KanbanColumn: React.FC<{
   loading?: boolean;
   readOnly?: boolean;
 }> = ({ status, leads, loading = false, readOnly = false }) => {
+  const { token } = theme.useToken();
   const { setNodeRef, isOver } = useDroppable({ id: status });
   const config = STATUS_CONFIG[status];
 
@@ -128,8 +133,8 @@ const KanbanColumn: React.FC<{
       style={{
         minWidth: 280,
         width: 320,
-        background: isOver ? '#f0f5ff' : '#fafafa',
-        border: `1px solid ${isOver ? '#91caff' : '#f0f0f0'}`,
+        background: isOver ? token.colorPrimaryBg : token.colorFillQuaternary,
+        border: `1px solid ${isOver ? token.colorPrimaryBorder : token.colorBorderSecondary}`,
         borderRadius: 12,
         padding: 12,
         transition: 'all 0.2s ease',
