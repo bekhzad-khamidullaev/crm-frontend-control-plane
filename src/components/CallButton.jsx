@@ -152,7 +152,11 @@ function CallButton({ phone, name, entityType, entityId, size = 'middle', type =
         if (!sipClient.isRegistered) {
           const registered = await ensureSipReady();
           if (!registered) {
-            message.error('SIP клиент не настроен для пользователя');
+            if (typeof window !== 'undefined' && !window.SIPml) {
+              message.error('SIP библиотека не загружена');
+            } else {
+              message.error('SIP клиент не настроен для пользователя');
+            }
             setCallStatus('idle');
             return;
           }
