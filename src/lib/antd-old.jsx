@@ -17,110 +17,24 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigge
 import { ScrollArea } from '../components/ui/scroll-area.jsx';
 import { FileUpload } from '../components/ui-FileUpload.jsx';
 
-const showToast = (type, msg) => {
-  const titleMap = {
-    info: 'Info',
-    success: 'Success',
-    warning: 'Warning',
-    error: 'Error',
-    loading: 'Loading',
-  };
-
-  try {
-    toast({
-      title: titleMap[type] || 'Info',
-      description: msg,
-      variant: type === 'error' ? 'destructive' : 'default',
-    });
-  } catch (_error) {
-    console.log(`[${titleMap[type] || 'Info'}]`, msg);
-  }
-};
-
 const message = {
-  info: (msg) => showToast('info', msg),
-  success: (msg) => showToast('success', msg),
-  warning: (msg) => showToast('warning', msg),
-  error: (msg) => showToast('error', msg),
-  loading: (msg) => showToast('loading', msg),
+  info: (msg) => toast({ title: 'Info', description: msg }),
+  success: (msg) => toast({ title: 'Success', description: msg }),
+  warning: (msg) => toast({ title: 'Warning', description: msg }),
+  error: (msg) => toast({ title: 'Error', description: msg, variant: 'destructive' }),
+  loading: (msg) => toast({ title: 'Loading', description: msg }),
 };
 
 const notification = message;
 
-const modal = {
-  confirm: ({ title, content, onOk, onCancel }) => {
-    const text = [title, content].filter(Boolean).join('\n\n');
-    const confirmed = window.confirm(text || 'Are you sure?');
-    if (confirmed) {
-      return onOk?.();
-    }
-    return onCancel?.();
-  },
-};
-
 const App = {
-  useApp: () => ({ message, notification, modal }),
+  useApp: () => ({ message, notification }),
 };
 
-const ConfigProvider = ({ children }) => <>{children}</>;
-
-const theme = {
-  defaultAlgorithm: 'default',
-  darkAlgorithm: 'dark',
-  useToken: () => ({
-    token: {
-      colorBgContainer: 'var(--card, #ffffff)',
-      colorBorder: 'var(--border, #e4e4e7)',
-      colorText: 'var(--foreground, #09090b)',
-      colorTextSecondary: 'var(--muted-foreground, #71717a)',
-      colorPrimary: 'var(--primary, #18181b)',
-      borderRadius: 8,
-      boxShadowSecondary: '0 4px 12px rgba(0,0,0,0.08)',
-    },
-  }),
-};
-
-const Grid = {
-  useBreakpoint: () => {
-    if (typeof window === 'undefined') {
-      return { xs: false, sm: true, md: true, lg: true, xl: true, xxl: true };
-    }
-    const width = window.innerWidth;
-    return {
-      xs: width >= 480,
-      sm: width >= 576,
-      md: width >= 768,
-      lg: width >= 992,
-      xl: width >= 1200,
-      xxl: width >= 1600,
-    };
-  },
-};
-
-function Flex({ children, justify = 'flex-start', align = 'stretch', gap = 0, wrap = false, vertical = false, style = {}, className = '' }) {
-  return (
-    <div
-      className={className}
-      style={{
-        display: 'flex',
-        flexDirection: vertical ? 'column' : 'row',
-        justifyContent: justify,
-        alignItems: align,
-        gap: typeof gap === 'number' ? `${gap}px` : gap,
-        flexWrap: wrap ? 'wrap' : 'nowrap',
-        ...style,
-      }}
-    >
-      {children}
-    </div>
-  );
-}
-
-function Space({ children, size = 8, direction = 'horizontal', align = 'center', className = '', style = {}, wrap = false }) {
+function Space({ children, size = 8, direction = 'horizontal', align = 'center', className = '', style = {} }) {
   const gapStyle = {
     gap: typeof size === 'number' ? `${size}px` : size,
     ...(direction === 'vertical' ? { flexDirection: 'column', alignItems: align } : { alignItems: align }),
-    flexWrap: wrap ? 'wrap' : 'nowrap',
     ...style,
   };
   return (
@@ -131,12 +45,10 @@ function Space({ children, size = 8, direction = 'horizontal', align = 'center',
 }
 
 function Row({ children, gutter = 16, className = '', style = {} }) {
-  const horizontal = Array.isArray(gutter) ? gutter[0] : gutter;
-  const vertical = Array.isArray(gutter) ? gutter[1] : gutter;
   return (
-    <div className={`flex flex-wrap ${className}`} style={{ marginLeft: -(horizontal / 2), marginRight: -(horizontal / 2), ...style }}>
+    <div className={`flex flex-wrap -m-2 ${className}`} style={style}>
       {React.Children.map(children, (child) => (
-        <div style={{ paddingLeft: horizontal / 2, paddingRight: horizontal / 2, paddingTop: vertical / 2, paddingBottom: vertical / 2, width: '100%' }}>
+        <div className="p-2" style={{ width: '100%' }}>
           {child}
         </div>
       ))}
@@ -153,11 +65,10 @@ function Col({ children, span = 24, className = '', style = {} }) {
   );
 }
 
-function Button({ children, type, icon, ...props }) {
+function Button({ children, type, ...props }) {
   const variant = type === 'primary' ? 'default' : type === 'link' ? 'link' : 'secondary';
   return (
     <ShadButton variant={variant} {...props}>
-      {icon}
       {children}
     </ShadButton>
   );
@@ -177,31 +88,25 @@ function Card({ title, extra, children, className = '' }) {
   );
 }
 
-function Tabs({ items = [], defaultActiveKey, activeKey, onChange, children }) {
-  if (items.length > 0) {
-    const initial = activeKey || defaultActiveKey || items[0]?.key;
-    return (
-      <ShadTabs defaultValue={initial} value={activeKey} onValueChange={onChange}>
-        <TabsList>
-          {items.map((item) => (
-            <TabsTrigger key={item.key} value={item.key}>
-              {item.label}
-            </TabsTrigger>
-          ))}
-        </TabsList>
+function Tabs({ items = [], defaultActiveKey, activeKey, onChange }) {
+  const initial = activeKey || defaultActiveKey || items[0]?.key;
+  return (
+    <ShadTabs defaultValue={initial} value={activeKey} onValueChange={onChange}>
+      <TabsList>
         {items.map((item) => (
-          <TabsContent key={item.key} value={item.key}>
-            {item.children}
-          </TabsContent>
+          <TabsTrigger key={item.key} value={item.key}>
+            {item.label}
+          </TabsTrigger>
         ))}
-      </ShadTabs>
-    );
-  }
-
-  return <div>{children}</div>;
+      </TabsList>
+      {items.map((item) => (
+        <TabsContent key={item.key} value={item.key}>
+          {item.children}
+        </TabsContent>
+      ))}
+    </ShadTabs>
+  );
 }
-
-Tabs.TabPane = ({ children }) => <>{children}</>;
 
 const Input = Object.assign(
   function Input({ ...props }) {
@@ -217,20 +122,9 @@ function InputNumber({ ...props }) {
   return <ShadInput type="number" {...props} />;
 }
 
-function Select({ options = [], value, onChange, placeholder, children, ...props }) {
-  if (children) {
-    return (
-      <ShadSelect value={value !== undefined ? String(value) : value} onValueChange={onChange} {...props}>
-        <SelectTrigger>
-          <SelectValue placeholder={placeholder} />
-        </SelectTrigger>
-        <SelectContent>{children}</SelectContent>
-      </ShadSelect>
-    );
-  }
-
+function Select({ options = [], value, onChange, placeholder, ...props }) {
   return (
-    <ShadSelect value={value !== undefined ? String(value) : value} onValueChange={onChange} {...props}>
+    <ShadSelect value={value} onValueChange={onChange} {...props}>
       <SelectTrigger>
         <SelectValue placeholder={placeholder} />
       </SelectTrigger>
@@ -244,8 +138,6 @@ function Select({ options = [], value, onChange, placeholder, children, ...props
     </ShadSelect>
   );
 }
-
-Select.Option = ({ value, children }) => <SelectItem value={String(value)}>{children}</SelectItem>;
 
 function Switch({ checked, onChange, ...props }) {
   return <ShadSwitch checked={checked} onCheckedChange={onChange} {...props} />;
@@ -268,19 +160,6 @@ function Modal({ open, visible, onCancel, title, children, footer, width }) {
   );
 }
 
-function Drawer({ open, onClose, title, children, width = 420 }) {
-  if (!open) return null;
-  return (
-    <div className="fixed inset-0 z-50 flex">
-      <button className="absolute inset-0 bg-black/40" onClick={onClose} aria-label="Close drawer" />
-      <aside className="relative ml-auto h-full bg-background border-l border-border p-4" style={{ width }}>
-        {title && <div className="mb-4 text-lg font-semibold">{title}</div>}
-        {children}
-      </aside>
-    </div>
-  );
-}
-
 function Alert({ message: msg, description, type = 'default' }) {
   const variant = type === 'error' ? 'destructive' : 'default';
   return (
@@ -291,12 +170,8 @@ function Alert({ message: msg, description, type = 'default' }) {
   );
 }
 
-function Tag({ children, color, className = '', style = {} }) {
-  return (
-    <Badge className={className} style={style}>
-      {children}
-    </Badge>
-  );
+function Tag({ children, color }) {
+  return <Badge className={color ? `bg-${color}-500` : ''}>{children}</Badge>;
 }
 
 const Typography = ({ children, className = '', ...props }) => (
@@ -348,58 +223,28 @@ function Tooltip({ title, children }) {
   );
 }
 
-function Table({ columns = [], dataSource = [], rowKey = 'id', rowSelection, pagination, footer }) {
-  const getRowKey = (row, index) => {
-    if (typeof rowKey === 'function') return rowKey(row);
-    return row?.[rowKey] ?? index;
-  };
-
+function Table({ columns = [], dataSource = [], rowKey = 'id' }) {
   return (
-    <div className="space-y-3">
-      <ShadTable>
-        <TableHeader>
-          <TableRow>
-            {rowSelection ? <TableHead style={{ width: 44 }} /> : null}
+    <ShadTable>
+      <TableHeader>
+        <TableRow>
+          {columns.map((col) => (
+            <TableHead key={col.key || col.dataIndex}>{col.title}</TableHead>
+          ))}
+        </TableRow>
+      </TableHeader>
+      <TableBody>
+        {dataSource.map((row, index) => (
+          <TableRow key={row[rowKey] ?? index}>
             {columns.map((col) => (
-              <TableHead key={col.key || col.dataIndex}>{col.title}</TableHead>
+              <TableCell key={col.key || col.dataIndex}>
+                {col.render ? col.render(row[col.dataIndex], row, index) : row[col.dataIndex]}
+              </TableCell>
             ))}
           </TableRow>
-        </TableHeader>
-        <TableBody>
-          {dataSource.map((row, index) => (
-            <TableRow key={getRowKey(row, index)}>
-              {rowSelection ? (
-                <TableCell>
-                  <input
-                    type="checkbox"
-                    checked={rowSelection?.selectedRowKeys?.includes(getRowKey(row, index))}
-                    onChange={(event) => {
-                      const checked = event.target.checked;
-                      const key = getRowKey(row, index);
-                      const next = checked
-                        ? [...(rowSelection?.selectedRowKeys || []), key]
-                        : (rowSelection?.selectedRowKeys || []).filter((item) => item !== key);
-                      rowSelection?.onChange?.(next);
-                    }}
-                  />
-                </TableCell>
-              ) : null}
-              {columns.map((col) => (
-                <TableCell key={col.key || col.dataIndex}>
-                  {col.render ? col.render(row[col.dataIndex], row, index) : row[col.dataIndex]}
-                </TableCell>
-              ))}
-            </TableRow>
-          ))}
-        </TableBody>
-      </ShadTable>
-      {pagination ? (
-        <div className="text-xs text-muted-foreground">
-          {pagination.showTotal?.(pagination.total || 0, [1, (dataSource || []).length])}
-        </div>
-      ) : null}
-      {footer ? <div>{footer(dataSource)}</div> : null}
-    </div>
+        ))}
+      </TableBody>
+    </ShadTable>
   );
 }
 
@@ -533,7 +378,7 @@ const Slider = ({ value, onChange, min = 0, max = 100, step = 1, className = '' 
   />
 );
 
-const Popconfirm = ({ title, onConfirm, onCancel, children }) => {
+const Popconfirm = ({ title, onConfirm, onCancel, okText = 'OK', cancelText = 'Cancel', children }) => {
   const handleClick = (event) => {
     event.preventDefault();
     const confirmed = window.confirm(typeof title === 'string' ? title : 'Are you sure?');
@@ -565,7 +410,7 @@ const Upload = ({ children, beforeUpload, onChange, showUploadList = true }) => 
 };
 
 Upload.Dragger = ({ children, beforeUpload, onChange }) => (
-  <FileUpload variant="dropzone" onUpload={(file) => beforeUpload?.(file) !== false && onChange?.({ file, fileList: [file] })}>
+  <FileUpload variant="dropzone" onUpload={(file) => beforeUpload?.(file) && onChange?.({ file, fileList: [file] })}>
     {children}
   </FileUpload>
 );
@@ -579,100 +424,14 @@ function Popover({ content, children }) {
   );
 }
 
-function Dropdown({ overlay, menu, children }) {
-  const items = menu?.items || [];
-  const body = overlay || (
-    <div className="min-w-[180px]">
-      {items.map((item) => (
-        <DropdownMenuItem key={item.key} onClick={() => item.onClick?.()} disabled={item.disabled}>
-          {item.label}
-        </DropdownMenuItem>
-      ))}
-    </div>
-  );
-
+function Dropdown({ overlay, children }) {
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>{children}</DropdownMenuTrigger>
-      <DropdownMenuContent>{body}</DropdownMenuContent>
+      <DropdownMenuContent>{overlay}</DropdownMenuContent>
     </DropdownMenu>
   );
 }
-
-const Menu = ({ items = [], selectedKeys = [], onClick, className = '' }) => {
-  const renderItems = (menuItems, level = 0) => (
-    <ul className={`space-y-1 ${level ? 'ml-4' : ''}`}>
-      {menuItems.map((item) => {
-        if (item.type === 'divider') {
-          return <li key={item.key || `divider-${level}`} className="my-2 border-t border-border" />;
-        }
-
-        const selected = selectedKeys.includes(item.key);
-
-        return (
-          <li key={item.key}>
-            <button
-              className={`w-full rounded-md px-3 py-2 text-left text-sm ${selected ? 'bg-muted font-semibold' : 'hover:bg-muted/70'}`}
-              onClick={() => onClick?.({ key: item.key })}
-            >
-              <span className="inline-flex items-center gap-2">
-                {item.icon}
-                {item.label}
-              </span>
-            </button>
-            {item.children ? renderItems(item.children, level + 1) : null}
-          </li>
-        );
-      })}
-    </ul>
-  );
-
-  return <nav className={className}>{renderItems(items)}</nav>;
-};
-
-const Breadcrumb = ({ children, style }) => (
-  <nav style={style} className="text-sm text-muted-foreground">
-    <ol className="flex items-center gap-2">{children}</ol>
-  </nav>
-);
-
-Breadcrumb.Item = ({ href, children }) => (
-  <li className="inline-flex items-center gap-2">
-    {href ? <a href={href}>{children}</a> : <span>{children}</span>}
-    <span>/</span>
-  </li>
-);
-
-const Segmented = ({ options = [], value, onChange, block }) => {
-  return (
-    <div className={`inline-flex rounded-md border border-border p-1 ${block ? 'w-full' : ''}`}>
-      {options.map((option) => {
-        const opt = typeof option === 'object' ? option : { label: option, value: option };
-        const active = opt.value === value;
-        return (
-          <button
-            key={String(opt.value)}
-            className={`rounded px-3 py-1 text-sm ${active ? 'bg-primary text-primary-foreground' : 'text-muted-foreground'}`}
-            onClick={() => onChange?.(opt.value)}
-          >
-            {opt.label}
-          </button>
-        );
-      })}
-    </div>
-  );
-};
-
-const FloatButton = ({ icon, onClick, description, style = {} }) => (
-  <button
-    className="fixed z-50 right-6 bottom-6 inline-flex items-center gap-2 rounded-full bg-primary text-primary-foreground px-4 py-3 shadow-lg"
-    onClick={onClick}
-    style={style}
-  >
-    {icon}
-    {description}
-  </button>
-);
 
 const FormContext = React.createContext({});
 
@@ -712,96 +471,93 @@ Form.useForm = () => {
         store.values = {};
       },
       validateFields: async () => store.values,
-      submit: () => store.values,
     },
   ];
 };
 
-Form.useWatch = (name, form) => {
-  if (!form?.getFieldValue) return undefined;
-  return form.getFieldValue(name);
-};
-
-const DatePicker = Object.assign(
-  function CompatDatePicker({ value, onChange, ...props }) {
-    return (
-      <ShadInput
-        type="date"
-        value={value}
-        onChange={(event) => onChange?.(event.target.value, event.target.value)}
-        {...props}
-      />
-    );
-  },
-  {
-    RangePicker: ({ value = [], onChange, ...props }) => (
-      <div className="flex items-center gap-2">
-        <ShadInput
-          type="date"
-          value={value?.[0] || ''}
-          onChange={(event) => onChange?.([event.target.value, value?.[1] || ''], [event.target.value, value?.[1] || ''])}
-          {...props}
-        />
-        <span>-</span>
-        <ShadInput
-          type="date"
-          value={value?.[1] || ''}
-          onChange={(event) => onChange?.([value?.[0] || '', event.target.value], [value?.[0] || '', event.target.value])}
-          {...props}
-        />
-      </div>
-    ),
-  },
-);
+const DatePicker = ShadInput;
 
 export {
   App,
   Alert,
   Avatar,
   Badge,
-  Breadcrumb,
   Button,
   Card,
   Col,
-  ConfigProvider,
   DatePicker,
   Descriptions,
-  Divider,
-  Drawer,
   Dropdown,
   Empty,
-  Flex,
-  FloatButton,
   Form,
-  Grid,
   Input,
   InputNumber,
-  Layout,
   List,
-  Menu,
   Modal,
-  Popconfirm,
   Popover,
   Progress,
   Row,
-  Segmented,
   Select,
-  Skeleton,
-  Slider,
   Space,
   Spin,
   Statistic,
-  Steps,
   Switch,
   Table,
   Tabs,
   Tag,
-  Timeline,
   Tooltip,
   Typography,
+  Layout,
+  Divider,
+  Timeline,
+  Steps,
+  Slider,
+  Popconfirm,
   Upload,
   ScrollArea,
+  Skeleton,
   message,
   notification,
-  theme,
+};
+
+export default {
+  App,
+  Alert,
+  Avatar,
+  Button,
+  Card,
+  Col,
+  DatePicker,
+  Descriptions,
+  Dropdown,
+  Empty,
+  Form,
+  Input,
+  InputNumber,
+  List,
+  Modal,
+  Popover,
+  Progress,
+  Row,
+  Select,
+  Space,
+  Spin,
+  Statistic,
+  Switch,
+  Table,
+  Tabs,
+  Tag,
+  Tooltip,
+  Typography,
+  Layout,
+  Divider,
+  Timeline,
+  Steps,
+  Slider,
+  Popconfirm,
+  Upload,
+  ScrollArea,
+  Skeleton,
+  message,
+  notification,
 };

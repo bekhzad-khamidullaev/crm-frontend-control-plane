@@ -1,26 +1,30 @@
 import {
-  AudioMutedOutlined,
-  AudioOutlined,
-  CheckCircleOutlined,
-  CloseCircleOutlined,
   DeleteOutlined,
-  InfoCircleOutlined,
-  PauseCircleOutlined,
   PhoneFilled,
   PhoneOutlined,
-  PlayCircleOutlined,
   ReloadOutlined,
   StopOutlined,
 } from '@ant-design/icons';
-import { App, Badge, Button, Col, Divider, Input, Modal, Row, Space, Tag, Tooltip, Typography } from 'antd';
+import { App, Button, Input, Modal, Space, Typography } from 'antd';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { initiateCall } from '../lib/api/telephony.js';
 import sipClient from '../lib/telephony/SIPClient.js';
 import { loadTelephonyRuntimeConfig } from '../lib/telephony/runtimeConfig.js';
+import '../styles/telephony-dialer.css';
 
 const { Text } = Typography;
 
 const DTMF_KEYS = ['1', '2', '3', '4', '5', '6', '7', '8', '9', '*', '0', '#'];
+const DTMF_HINTS = {
+  '2': 'ABC',
+  '3': 'DEF',
+  '4': 'GHI',
+  '5': 'JKL',
+  '6': 'MNO',
+  '7': 'PQRS',
+  '8': 'TUV',
+  '9': 'WXYZ',
+};
 
 function normalizeDialForSip(value) {
   const digits = String(value || '').replace(/\D/g, '');
@@ -132,13 +136,10 @@ export default function TelephonyDialerModal({ visible, onClose, initialNumber =
   const [loadingConfig, setLoadingConfig] = useState(false);
   const [registering, setRegistering] = useState(false);
   const [sipStatus, setSipStatus] = useState(sipClient.isRegistered ? 'registered' : 'offline');
-  const [numberStatus, setNumberStatus] = useState('unknown');
   const [numberLabel, setNumberLabel] = useState('-');
   const [routeMode, setRouteMode] = useState('auto');
-  const [provider, setProvider] = useState('');
   const [callStatus, setCallStatus] = useState('idle');
   const [muted, setMuted] = useState(false);
-  const [onHold, setOnHold] = useState(false);
   const [callDuration, setCallDuration] = useState(0);
   const [transportStatus, setTransportStatus] = useState(sipClient.ua ? 'connected' : 'disconnected');
 
@@ -184,7 +185,6 @@ export default function TelephonyDialerModal({ visible, onClose, initialNumber =
       if (!ownCall(data)) return;
       setCallStatus('calling');
       setMuted(false);
-      setOnHold(false);
       setCallDuration(0);
     };
 
@@ -199,7 +199,6 @@ export default function TelephonyDialerModal({ visible, onClose, initialNumber =
       const duration = Number(data?.duration || 0);
       setCallDuration(duration);
       setMuted(false);
-      setOnHold(false);
       callTokenRef.current = null;
     };
 
@@ -249,11 +248,9 @@ export default function TelephonyDialerModal({ visible, onClose, initialNumber =
       const runtime = await loadTelephonyRuntimeConfig();
       runtimeRef.current = runtime;
       setRouteMode(runtime?.sipConfig?.routeMode || 'auto');
-      setProvider(runtime?.sipConfig?.provider || '');
 
       const activeNumber = String(runtime?.sipConfig?.phoneNumber || '').trim();
       setNumberLabel(activeNumber || '-');
-      setNumberStatus(activeNumber ? 'active' : 'missing');
 
       setSipStatus(sipClient.isRegistered ? 'registered' : runtime?.sipReady ? 'ready' : 'missing-config');
       setTransportStatus(sipClient.ua ? 'connected' : 'disconnected');
@@ -261,7 +258,6 @@ export default function TelephonyDialerModal({ visible, onClose, initialNumber =
     } catch (error) {
       runtimeRef.current = null;
       setSipStatus('error');
-      setNumberStatus('error');
       message.error('Не удалось загрузить настройки телефонии из бэкенда');
       return null;
     } finally {
@@ -385,11 +381,6 @@ export default function TelephonyDialerModal({ visible, onClose, initialNumber =
     setMuted(next);
   };
 
-  const handleHold = () => {
-    const next = sipClient.toggleHold();
-    setOnHold(next);
-  };
-
   const appendDial = (value) => {
     if (callStatus === 'connected' || callStatus === 'calling') {
       sipClient.sendDTMF(value);
@@ -409,28 +400,6 @@ export default function TelephonyDialerModal({ visible, onClose, initialNumber =
   const dialValidation = useMemo(() => validateDialInput(dialNumber, routeMode), [dialNumber, routeMode]);
   const canStartCall =
     dialValidation.isValid && callStatus !== 'calling' && callStatus !== 'connected' && !loadingConfig && !registering;
-
-  const sipTag = useMemo(() => {
-    const map = {
-      registered: { color: 'success', text: 'SIP: зарегистрирован' },
-      ready: { color: 'processing', text: 'SIP: готов к регистрации' },
-      connecting: { color: 'processing', text: 'SIP: подключение...' },
-      offline: { color: 'default', text: 'SIP: оффлайн' },
-      'missing-config': { color: 'warning', text: 'SIP: нет backend-конфига' },
-      error: { color: 'error', text: 'SIP: ошибка' },
-    };
-    return map[sipStatus] || map.offline;
-  }, [sipStatus]);
-
-  const numberTag = useMemo(() => {
-    const map = {
-      active: { color: 'success', text: `Номер: ${numberLabel}` },
-      missing: { color: 'warning', text: 'Номер: не настроен в backend' },
-      unknown: { color: 'default', text: 'Номер: неизвестно' },
-      error: { color: 'error', text: 'Номер: ошибка загрузки' },
-    };
-    return map[numberStatus] || map.unknown;
-  }, [numberLabel, numberStatus]);
 
   const transportTag = useMemo(() => {
     const map = {
@@ -463,7 +432,6 @@ export default function TelephonyDialerModal({ visible, onClose, initialNumber =
     }
     setCallStatus('idle');
     setMuted(false);
-    setOnHold(false);
     setCallDuration(0);
     callTokenRef.current = null;
     onClose?.();
@@ -471,125 +439,100 @@ export default function TelephonyDialerModal({ visible, onClose, initialNumber =
 
   return (
     <Modal
-      title="Звонилка (JsSIP)"
+      title="MicroSIP - Telephony"
       open={visible}
       onCancel={closeAndReset}
       footer={null}
-      width={430}
+      width={300}
+      className="dialer-retro-modal"
       destroyOnClose
       centered
     >
-      <Space direction="vertical" style={{ width: '100%' }} size="middle">
-        <Space wrap>
-          <Tag color={transportTag.color}>{transportTag.text}</Tag>
-          <Tag color={sipTag.color}>{sipTag.text}</Tag>
-          <Tag color={numberTag.color}>{numberTag.text}</Tag>
-          <Tag color={callTag.color}>{callTag.text}</Tag>
-          <Tag color="blue">Маршрут: {routeMode}</Tag>
-          {provider ? <Tag color="purple">Провайдер: {provider}</Tag> : null}
-        </Space>
-
-        <Space direction="vertical" size={4} style={{ width: '100%' }}>
-          <Space size="large" wrap>
-            <Badge status={transportTag.color === 'success' ? 'success' : transportTag.color === 'processing' ? 'processing' : 'default'} text={transportTag.text} />
-            <Badge status={sipTag.color === 'success' ? 'success' : sipTag.color === 'processing' ? 'processing' : sipTag.color === 'error' ? 'error' : 'default'} text={sipTag.text} />
-          </Space>
-          <Space size="large" wrap>
-            <Badge status={numberTag.color === 'success' ? 'success' : numberTag.color === 'error' ? 'error' : 'warning'} text={numberTag.text} />
-            <Badge status={callTag.color === 'success' ? 'success' : callTag.color === 'processing' ? 'processing' : callTag.color === 'error' ? 'error' : 'default'} text={callTag.text} />
-          </Space>
-        </Space>
+      <div className="dialer-retro">
+        <div className="dialer-retro__tabs">
+          <button type="button" className="dialer-retro__tab dialer-retro__tab--active">Phone</button>
+          <button type="button" className="dialer-retro__tab">Logs</button>
+          <button type="button" className="dialer-retro__tab">Contacts</button>
+          <button type="button" className="dialer-retro__tab dialer-retro__tab--caret">▾</button>
+        </div>
 
         <Input
           value={dialNumber}
           onChange={(e) => setDialNumber(sanitizeDialInput(e.target.value))}
-          placeholder="Введите номер"
+          placeholder=""
           prefix={<PhoneOutlined />}
-          size="large"
           disabled={callStatus === 'connected'}
           status={dialNumber && !dialValidation.isValid ? 'error' : ''}
+          className="dialer-retro__input"
           suffix={
             <Space size={2}>
-              <Tooltip title="Удалить символ">
-                <Button type="text" icon={<DeleteOutlined />} onClick={backspaceDial} disabled={!dialNumber || callStatus === 'connected'} />
-              </Tooltip>
-              <Tooltip title="Очистить поле">
-                <Button type="text" icon={<CloseCircleOutlined />} onClick={clearDial} disabled={!dialNumber || callStatus === 'connected'} />
-              </Tooltip>
-              <Tooltip title="Обновить статусы телефонии">
-                <Button
-                  type="text"
-                  icon={<ReloadOutlined />}
-                  loading={loadingConfig}
-                  onClick={loadBackendTelephony}
-                />
-              </Tooltip>
+              <Button type="text" icon={<DeleteOutlined />} onClick={backspaceDial} disabled={!dialNumber || callStatus === 'connected'} />
             </Space>
           }
         />
-        {dialNumber && !dialValidation.isValid ? (
-          <Text type="danger">
-            <InfoCircleOutlined /> {dialValidation.message}
-          </Text>
-        ) : (
-          <Text type="secondary">
-            <CheckCircleOutlined /> Готовый набор: {dialValidation.sipDial || '-'}
-          </Text>
-        )}
 
-        <Row gutter={[8, 8]}>
+        <div className="dialer-retro__grid">
           {DTMF_KEYS.map((digit) => (
-            <Col span={8} key={digit}>
-              <Button block size="large" onClick={() => appendDial(digit)}>
-                {digit}
-              </Button>
-            </Col>
+            <button key={digit} type="button" className="dialer-retro__key" onClick={() => appendDial(digit)}>
+              <span className="dialer-retro__digit">{digit}</span>
+              <span className="dialer-retro__hint">{DTMF_HINTS[digit] || ''}</span>
+            </button>
           ))}
-        </Row>
+          <button type="button" className="dialer-retro__key dialer-retro__key--muted" onClick={loadBackendTelephony}>
+            R
+          </button>
+          <button type="button" className="dialer-retro__key dialer-retro__key--muted" onClick={() => appendDial('+')}>
+            +
+          </button>
+          <button type="button" className="dialer-retro__key dialer-retro__key--muted" onClick={clearDial}>
+            C
+          </button>
+        </div>
 
-        <Divider style={{ margin: '8px 0' }} />
-
-        <Space style={{ width: '100%', justifyContent: 'space-between' }}>
-          <Button
-            type="primary"
-            icon={<PhoneFilled />}
-            loading={registering}
+        <div className="dialer-retro__actions">
+          <button
+            type="button"
+            className="dialer-retro__action dialer-retro__action--hangup"
+            disabled={callStatus !== 'calling' && callStatus !== 'connected'}
+            onClick={handleHangup}
+            aria-label="hangup"
+          >
+            <StopOutlined />
+          </button>
+          <button
+            type="button"
+            className="dialer-retro__action dialer-retro__action--call"
             disabled={!canStartCall}
             onClick={handleCall}
           >
-            Позвонить
-          </Button>
-
-          <Button
-            danger
-            icon={<StopOutlined />}
-            disabled={callStatus !== 'calling' && callStatus !== 'connected'}
-            onClick={handleHangup}
+            <PhoneFilled /> {registering ? '...' : 'Call'}
+          </button>
+          <button
+            type="button"
+            className={`dialer-retro__action ${muted ? 'dialer-retro__action--active' : ''}`}
+            onClick={callStatus === 'connected' ? handleMute : loadBackendTelephony}
+            aria-label="utility"
           >
-            Завершить
-          </Button>
+            {callStatus === 'connected' ? 'M' : <ReloadOutlined />}
+          </button>
+        </div>
 
-          <Button
-            icon={muted ? <AudioMutedOutlined /> : <AudioOutlined />}
-            disabled={callStatus !== 'connected'}
-            onClick={handleMute}
-          >
-            {muted ? 'Без звука' : 'Микрофон'}
-          </Button>
+        <div className="dialer-retro__footer">
+          <Text className={`dialer-retro__online ${transportTag.color === 'success' ? 'is-online' : ''}`}>
+            ● {transportTag.color === 'success' ? 'Online' : 'Offline'}
+          </Text>
+          <div className="dialer-retro__footer-right">
+            <Text className="dialer-retro__meta">{numberLabel !== '-' ? numberLabel : 'extension'}</Text>
+            <Text className="dialer-retro__meta dialer-retro__meta--sub">SIP: {sipStatus} · {callTag.text}</Text>
+          </div>
+        </div>
 
-          <Button
-            icon={onHold ? <PlayCircleOutlined /> : <PauseCircleOutlined />}
-            disabled={callStatus !== 'connected'}
-            onClick={handleHold}
-          >
-            {onHold ? 'Снять hold' : 'Hold'}
-          </Button>
-        </Space>
-
-        <Text type="secondary">Статус звонка: {callTag.text}</Text>
+        {dialNumber && !dialValidation.isValid ? (
+          <Text type="danger" className="dialer-retro__error">{dialValidation.message}</Text>
+        ) : null}
 
         <audio ref={audioRef} autoPlay style={{ display: 'none' }} />
-      </Space>
+      </div>
     </Modal>
   );
 }

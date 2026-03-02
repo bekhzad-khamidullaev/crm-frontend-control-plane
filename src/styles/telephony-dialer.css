@@ -1,0 +1,186 @@
+.dialer-retro-modal .ant-modal-content {
+  background: #dcdcdc;
+  border: 1px solid #a9a9a9;
+  border-radius: 0;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.28);
+}
+
+.dialer-retro-modal .ant-modal-header {
+  background: #dcdcdc;
+  border-bottom: 1px solid #b4b4b4;
+  margin-bottom: 8px;
+  padding-bottom: 6px;
+}
+
+.dialer-retro-modal .ant-modal-title {
+  font-size: 14px;
+  font-weight: 500;
+}
+
+.dialer-retro-modal .ant-modal-body {
+  padding-top: 4px;
+}
+
+.dialer-retro {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.dialer-retro__tabs {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr 28px;
+  border: 1px solid #9e9e9e;
+  background: #efefef;
+}
+
+.dialer-retro__tab {
+  border: 0;
+  border-right: 1px solid #bcbcbc;
+  background: #efefef;
+  color: #111;
+  font-size: 12px;
+  padding: 4px 0;
+  cursor: pointer;
+}
+
+.dialer-retro__tab:last-child {
+  border-right: 0;
+}
+
+.dialer-retro__tab--active {
+  background: #f8f8f8;
+  font-weight: 600;
+}
+
+.dialer-retro__tab--caret {
+  font-size: 10px;
+}
+
+.dialer-retro__input.ant-input-affix-wrapper {
+  border-radius: 0;
+  border: 1px solid #9e9e9e;
+  background: #fff;
+}
+
+.dialer-retro__grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 2px;
+}
+
+.dialer-retro__key {
+  min-height: 38px;
+  border: 1px solid #a9a9a9;
+  border-radius: 0;
+  background: #d6d6d6;
+  color: #000;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+}
+
+.dialer-retro__key:hover {
+  background: #cecece;
+}
+
+.dialer-retro__key:active {
+  background: #c0c0c0;
+}
+
+.dialer-retro__digit {
+  font-size: 29px;
+  line-height: 1;
+  font-weight: 500;
+}
+
+.dialer-retro__hint {
+  font-size: 11px;
+  color: #5f5f5f;
+  min-width: 26px;
+  text-align: left;
+  line-height: 1;
+}
+
+.dialer-retro__key--muted {
+  color: #4b6072;
+  font-size: 28px;
+  font-weight: 500;
+}
+
+.dialer-retro__actions {
+  display: grid;
+  grid-template-columns: 40px 1fr 40px;
+  gap: 2px;
+}
+
+.dialer-retro__action {
+  min-height: 34px;
+  border: 1px solid #a9a9a9;
+  border-radius: 0;
+  background: #d2d2d2;
+  color: #4a4a4a;
+  font-size: 15px;
+  cursor: pointer;
+}
+
+.dialer-retro__action:disabled,
+.dialer-retro__key:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.dialer-retro__action--call {
+  font-size: 14px;
+}
+
+.dialer-retro__action--active {
+  background: #c8d7e9;
+  border-color: #8ea3bb;
+}
+
+.dialer-retro__action--hangup {
+  color: #7b2b2b;
+}
+
+.dialer-retro__footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  border-top: 1px solid #b4b4b4;
+  padding-top: 6px;
+}
+
+.dialer-retro__footer-right {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  line-height: 1.2;
+}
+
+.dialer-retro__online {
+  font-size: 12px;
+  color: #555;
+}
+
+.dialer-retro__online.is-online {
+  color: #0f7d2d;
+}
+
+.dialer-retro__meta {
+  font-size: 12px;
+  color: #555;
+}
+
+.dialer-retro__meta--sub {
+  font-size: 10px;
+  max-width: 165px;
+  text-align: right;
+}
+
+.dialer-retro__error {
+  font-size: 12px;
+  margin-top: -2px;
+}

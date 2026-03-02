@@ -236,21 +236,12 @@ h1, h2, h3, h4, h5, h6, .ant-typography {
   border-color: #2d3343 !important;
 }
 
-/* Light backdrop darkening for modal-like overlays across Ant Design */
+/* Disable backdrop darkening for modal-like overlays across Ant Design */
 .ant-modal-mask,
 .ant-image-preview-mask,
 .ant-tour-mask,
-.ant-drawer-mask,
 .ant-modal-root .ant-modal-mask {
-  background: rgba(15, 23, 42, 0.16) !important;
-}
-
-.dark .ant-modal-mask,
-.dark .ant-image-preview-mask,
-.dark .ant-tour-mask,
-.dark .ant-drawer-mask,
-.dark .ant-modal-root .ant-modal-mask {
-  background: rgba(2, 6, 23, 0.32) !important;
+  background: transparent !important;
 }
 
 /* Mobile-friendly defaults */
