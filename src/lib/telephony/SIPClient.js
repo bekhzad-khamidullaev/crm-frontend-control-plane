@@ -17,6 +17,7 @@ class SIPClient {
     this.listeners = {
       registered: [],
       unregistered: [],
+      transportStateChange: [],
       incomingCall: [],
       callStateChange: [],
       callStarted: [],
@@ -127,6 +128,7 @@ class SIPClient {
         this.ua.on('registered', () => {
           this.isRegistered = true;
           this.emit('registered', { username: impi });
+          this.emit('transportStateChange', { status: 'connected' });
           finalizeResolve();
         });
 
@@ -139,12 +141,22 @@ class SIPClient {
           this.isRegistered = false;
           const reason = event?.cause || 'SIP registration failed';
           this.emit('error', { type: 'registration', event, reason });
+          this.emit('transportStateChange', { status: 'disconnected', reason });
           finalizeReject(new Error(reason));
+        });
+
+        this.ua.on('connecting', () => {
+          this.emit('transportStateChange', { status: 'connecting' });
+        });
+
+        this.ua.on('connected', () => {
+          this.emit('transportStateChange', { status: 'connected' });
         });
 
         this.ua.on('disconnected', () => {
           this.isRegistered = false;
           this.emit('unregistered');
+          this.emit('transportStateChange', { status: 'disconnected' });
         });
 
         this.ua.on('newRTCSession', (event) => {
@@ -181,6 +193,7 @@ class SIPClient {
           }
         });
 
+        this.emit('transportStateChange', { status: 'connecting' });
         this.ua.start();
 
         setTimeout(() => {
@@ -205,6 +218,7 @@ class SIPClient {
     } finally {
       this.isRegistered = false;
       this.emit('unregistered');
+      this.emit('transportStateChange', { status: 'disconnected' });
     }
   }
 
@@ -533,6 +547,7 @@ class SIPClient {
       this.ua = null;
       this.isRegistered = false;
       this._registerPromise = null;
+      this.emit('transportStateChange', { status: 'disconnected' });
     } catch (error) {
       console.error('[SIPClient] Stop error:', error);
     }

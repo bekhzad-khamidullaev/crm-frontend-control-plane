@@ -14,8 +14,15 @@ export const ContactCreatePage: React.FC = () => {
       await createMutation.mutateAsync(values);
       message.success('Контакт создан');
       navigate('/contacts');
-    } catch (error) {
-      // Error handled globally
+    } catch (error: any) {
+      const details = error?.body?.details;
+      const firstDetail = details && typeof details === 'object'
+        ? Object.values(details)[0]
+        : null;
+      const detailText = Array.isArray(firstDetail) ? firstDetail[0] : firstDetail;
+      message.error(
+        detailText || error?.body?.message || 'Ошибка создания контакта'
+      );
     }
   };
 

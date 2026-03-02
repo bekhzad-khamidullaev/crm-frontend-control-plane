@@ -15,7 +15,10 @@ export type Webhook = {
      * List of events that trigger this webhook
      */
     events?: any;
-    readonly secret_preview: string;
+    /**
+     * Return masked preview of secret.
+     */
+    readonly secret_preview: string | null;
     is_active?: boolean;
     readonly created_at: string;
     readonly last_triggered: string | null;

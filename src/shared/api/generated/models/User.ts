@@ -19,7 +19,7 @@ export type User = {
      * Designates that this user has all permissions without explicitly assigning them.
      */
     is_superuser?: boolean;
-    readonly groups: string;
-    readonly roles: string;
+    readonly groups: Array<string>;
+    readonly roles: Array<string>;
 };
 

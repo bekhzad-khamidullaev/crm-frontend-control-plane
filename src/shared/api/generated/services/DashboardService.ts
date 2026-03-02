@@ -2,46 +2,110 @@
 /* istanbul ignore file */
 /* tslint:disable */
 /* eslint-disable */
+import type { DashboardActivityItem } from '../models/DashboardActivityItem';
+import type { DashboardAnalyticsResponse } from '../models/DashboardAnalyticsResponse';
+import type { DashboardFunnelItem } from '../models/DashboardFunnelItem';
 import type { CancelablePromise } from '../core/CancelablePromise';
 import { OpenAPI } from '../core/OpenAPI';
 import { request as __request } from '../core/request';
 export class DashboardService {
     /**
-     * Provides a real-time activity feed showing recent changes across the CRM.
-     * Returns a list of activities sorted by timestamp.
-     * @returns any No response body
+     * Returns recent activity feed. Supports filters: owner, department, limit.
+     * @returns DashboardActivityItem
      * @throws ApiError
      */
-    public static dashboardActivityRetrieve(): CancelablePromise<any> {
+    public static dashboardActivityList({
+        department,
+        limit,
+        owner,
+    }: {
+        /**
+         * Filter by department id
+         */
+        department?: number,
+        /**
+         * Max items to return
+         */
+        limit?: number,
+        /**
+         * Filter by owner id
+         */
+        owner?: number,
+    }): CancelablePromise<Array<DashboardActivityItem>> {
         return __request(OpenAPI, {
             method: 'GET',
             url: '/api/dashboard/activity/',
+            query: {
+                'department': department,
+                'limit': limit,
+                'owner': owner,
+            },
         });
     }
     /**
-     * Provides analytics data for the dashboard including monthly growth stats
-     * and task metrics.
-     * Supports filters: period(7d|30d|90d), owner, department.
-     * @returns any No response body
+     * Returns KPI metrics for dashboard. Filters: period(7d|30d|90d), owner, department.
+     * @returns DashboardAnalyticsResponse
      * @throws ApiError
      */
-    public static dashboardAnalyticsRetrieve(): CancelablePromise<any> {
+    public static dashboardAnalyticsRetrieve({
+        department,
+        owner,
+        period,
+    }: {
+        /**
+         * Filter by department id
+         */
+        department?: number,
+        /**
+         * Filter by owner id
+         */
+        owner?: number,
+        /**
+         * Time window
+         */
+        period?: string,
+    }): CancelablePromise<DashboardAnalyticsResponse> {
         return __request(OpenAPI, {
             method: 'GET',
             url: '/api/dashboard/analytics/',
+            query: {
+                'department': department,
+                'owner': owner,
+                'period': period,
+            },
         });
     }
     /**
-     * Returns sales funnel data as a list of {label, value} by deal stage.
-     * Supports filters: period(7d|30d|90d), owner, department.
-     * RBAC: non-staff users see only owned/co-owned deals.
-     * @returns any No response body
+     * Returns sales funnel data grouped by stage. Filters: period(7d|30d|90d), owner, department.
+     * @returns DashboardFunnelItem
      * @throws ApiError
      */
-    public static dashboardFunnelRetrieve(): CancelablePromise<any> {
+    public static dashboardFunnelList({
+        department,
+        owner,
+        period,
+    }: {
+        /**
+         * Filter by department id
+         */
+        department?: number,
+        /**
+         * Filter by owner id
+         */
+        owner?: number,
+        /**
+         * Time window
+         */
+        period?: string,
+    }): CancelablePromise<Array<DashboardFunnelItem>> {
         return __request(OpenAPI, {
             method: 'GET',
             url: '/api/dashboard/funnel/',
+            query: {
+                'department': department,
+                'owner': owner,
+                'period': period,
+            },
         });
     }
 }

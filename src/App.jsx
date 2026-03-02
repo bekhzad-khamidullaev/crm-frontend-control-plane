@@ -4,6 +4,7 @@ import ruRU from 'antd/locale/ru_RU';
 import uzUZ from 'antd/locale/uz_UZ';
 import { Suspense, lazy, useEffect, useState } from 'react';
 import { AppLayout } from './components/AppLayout.jsx';
+import TelephonyDialerModal from './components/TelephonyDialerModal.jsx';
 import { clearToken, getToken, getUserFromToken, isAuthenticated } from './lib/api/auth.js';
 import { getProfile } from './lib/api/user.js';
 import { mergeRoles, normalizeRoles, rolesFromProfile, rolesFromTokenPayload } from './lib/roles.js';
@@ -19,6 +20,7 @@ import {
     subscribe,
 } from './lib/store/index.js';
 import sipClient from './lib/telephony/SIPClient.js';
+import { loadTelephonyRuntimeConfig } from './lib/telephony/runtimeConfig.js';
 import callsWebSocket from './lib/websocket/CallsWebSocket.js';
 import chatWebSocket from './lib/websocket/ChatWebSocket.js';
 import IncomingCallModal from './modules/calls/IncomingCallModal.jsx';
@@ -178,6 +180,7 @@ function App() {
   const [unreadCount, setUnreadCount] = useState(0);
   const [locale, setLocaleState] = useState('ru');
   const [localeInitialized, setLocaleInitialized] = useState(false);
+  const [dialerVisible, setDialerVisible] = useState(false);
 
   useEffect(() => {
     // Initialize locale on mount
@@ -280,39 +283,26 @@ function App() {
 
   const initializeSipClient = async () => {
     try {
-      const profile = await getProfile().catch(() => null);
-
-      const sipUri = profile?.jssip_sip_uri || '';
-      const sipUserFromUri = sipUri.startsWith('sip:') ? sipUri.split(':')[1]?.split('@')[0] : '';
-      const sipRealmFromUri = sipUri.includes('@') ? sipUri.split('@')[1] : '';
-
-      const runtimeConfig = typeof window !== 'undefined' ? window.__APP_CONFIG__ || {} : {};
-
-      const username = sipUserFromUri || profile?.pbx_number || import.meta.env.VITE_SIP_USERNAME;
-      const realm = sipRealmFromUri || import.meta.env.VITE_SIP_REALM || 'pbx.windevs.uz';
-      const password = profile?.jssip_sip_password || import.meta.env.VITE_SIP_PASSWORD;
-      const websocketProxyUrl =
-        profile?.jssip_ws_uri || import.meta.env.VITE_SIP_SERVER || runtimeConfig.pbxServer || '';
-      const displayName =
-        profile?.jssip_display_name || profile?.full_name || import.meta.env.VITE_SIP_DISPLAY_NAME || 'CRM User';
-
-      if (!username || !password || !websocketProxyUrl) {
+      const runtime = await loadTelephonyRuntimeConfig().catch(() => null);
+      const sip = runtime?.sipConfig;
+      if (!sip?.username || !sip?.realm || !sip?.password || !sip?.websocketProxyUrl) {
         console.warn('[App] SIP config incomplete. Skipping SIP registration.');
         return;
       }
 
       sipClient.configure({
-        realm,
-        impi: username,
-        impu: `sip:${username}@${realm}`,
-        password,
-        display_name: displayName,
-        websocket_proxy_url: websocketProxyUrl,
+        realm: sip.realm,
+        impi: sip.username,
+        impu: sip.impu,
+        password: sip.password,
+        display_name: sip.displayName,
+        websocket_proxy_url: sip.websocketProxyUrl,
+        ice_servers: sip.iceServers,
       });
 
       await sipClient.init();
       if (!sipClient.isRegistered) {
-        await sipClient.register(username, password);
+        await sipClient.register(sip.username, sip.password);
       }
     } catch (error) {
       console.error('[App] SIP initialization failed:', error);
@@ -669,6 +659,7 @@ function App() {
       wsConnected={wsConnected}
       incomingCallsCount={incomingCalls.length}
       unreadCount={unreadCount}
+      onOpenDialer={() => setDialerVisible(true)}
       onLogout={handleLogout}
     >
       <Suspense
@@ -688,6 +679,11 @@ function App() {
         callData={currentIncomingCall}
         onAnswer={handleAnswerCall}
         onReject={handleRejectCall}
+      />
+
+      <TelephonyDialerModal
+        visible={dialerVisible}
+        onClose={() => setDialerVisible(false)}
       />
     </AppLayout>
   );

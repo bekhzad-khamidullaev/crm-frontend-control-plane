@@ -2,6 +2,7 @@
 /* istanbul ignore file */
 /* tslint:disable */
 /* eslint-disable */
+import type { AuthStatusResponse } from '../models/AuthStatusResponse';
 import type { CancelablePromise } from '../core/CancelablePromise';
 import { OpenAPI } from '../core/OpenAPI';
 import { request as __request } from '../core/request';
@@ -15,6 +16,17 @@ export class AuthenticationService {
         return __request(OpenAPI, {
             method: 'GET',
             url: '/api/auth-stats/',
+        });
+    }
+    /**
+     * Check authentication status with JWT token info
+     * @returns AuthStatusResponse
+     * @throws ApiError
+     */
+    public static authStatusRetrieve(): CancelablePromise<AuthStatusResponse> {
+        return __request(OpenAPI, {
+            method: 'GET',
+            url: '/api/auth/status/',
         });
     }
 }

@@ -2,7 +2,7 @@ import { z } from 'zod';
 
 export const contactSchema = z.object({
   first_name: z.string().min(1, 'Имя обязательно'),
-  last_name: z.string().optional(),
+  last_name: z.string().min(1, 'Фамилия обязательна'),
   middle_name: z.string().optional(),
   email: z.string().email('Некорректный email').min(1, 'Email обязателен'),
   phone: z.string().optional(),
@@ -17,7 +17,6 @@ export const contactSchema = z.object({
   // Meta
   lead_source: z.number().nullable().optional(),
   description: z.string().optional(),
-  is_active: z.boolean().optional(),
 
   // Arrays
   tags: z.array(z.number()).optional(),

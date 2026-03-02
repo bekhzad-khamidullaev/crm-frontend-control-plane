@@ -5,6 +5,7 @@ import { initiateCall } from '../lib/api/telephony.js';
 import { getProfile } from '../lib/api/user.js';
 import { addCallToHistory, clearActiveCall, setActiveCall } from '../lib/store/index.js';
 import sipClient from '../lib/telephony/SIPClient.js';
+import { loadTelephonyRuntimeConfig } from '../lib/telephony/runtimeConfig.js';
 
 const { Text, Title } = Typography;
 
@@ -30,30 +31,6 @@ function CallButton({ phone, name, entityType, entityId, size = 'middle', type =
     return digits.length > 0 && digits.length <= 5;
   };
   const normalizeProvider = (value) => String(value || '').trim();
-  const parseStunServers = (raw) =>
-    String(raw || '')
-      .split(/[\n,]/)
-      .map((item) => item.trim())
-      .filter(Boolean);
-  const buildIceServers = (profile) => {
-    const stunServers = parseStunServers(profile?.webrtc_stun_servers);
-    const iceServers = stunServers.map((url) => ({ urls: url }));
-
-    if (profile?.webrtc_turn_enabled && profile?.webrtc_turn_server) {
-      const turnServer = {
-        urls: String(profile.webrtc_turn_server).trim(),
-      };
-      if (profile?.webrtc_turn_username) turnServer.username = String(profile.webrtc_turn_username).trim();
-      if (profile?.webrtc_turn_password) turnServer.credential = String(profile.webrtc_turn_password).trim();
-      iceServers.push(turnServer);
-    }
-
-    if (!iceServers.length) {
-      iceServers.push({ urls: 'stun:stun.l.google.com:19302' });
-    }
-
-    return iceServers;
-  };
 
   const isOwnCall = (callData) => {
     if (!callData || typeof callData !== 'object') return false;
@@ -103,41 +80,6 @@ function CallButton({ phone, name, entityType, entityId, size = 'middle', type =
 
     message.success(`Звонок отправлен через сервер телефонии${provider ? ` (${provider})` : ''}`);
     closeModal();
-    return true;
-  };
-
-  const ensureSipRegistration = async () => {
-    if (sipClient.isRegistered) return true;
-
-    const profile = await getProfile().catch(() => null);
-    const sipUri = profile?.jssip_sip_uri || '';
-    const sipUserFromUri = sipUri.startsWith('sip:') ? sipUri.split(':')[1]?.split('@')[0] : '';
-    const sipRealmFromUri = sipUri.includes('@') ? sipUri.split('@')[1] : '';
-    const runtimeConfig = typeof window !== 'undefined' ? window.__APP_CONFIG__ || {} : {};
-
-    const username = sipUserFromUri || profile?.pbx_number || import.meta.env.VITE_SIP_USERNAME;
-    const realm = sipRealmFromUri || import.meta.env.VITE_SIP_REALM || 'pbx.windevs.uz';
-    const password = profile?.jssip_sip_password || import.meta.env.VITE_SIP_PASSWORD;
-    const websocketProxyUrl =
-      profile?.jssip_ws_uri || import.meta.env.VITE_SIP_SERVER || runtimeConfig.pbxServer || '';
-    const displayName =
-      profile?.jssip_display_name || profile?.full_name || import.meta.env.VITE_SIP_DISPLAY_NAME || 'CRM User';
-
-    if (!username || !password || !websocketProxyUrl) {
-      throw new Error('SIP credentials are not configured');
-    }
-
-    sipClient.configure({
-      realm,
-      impi: username,
-      impu: `sip:${username}@${realm}`,
-      password,
-      display_name: displayName,
-      websocket_proxy_url: websocketProxyUrl,
-    });
-
-    await sipClient.init();
-    await sipClient.register(username, password);
     return true;
   };
 
@@ -224,39 +166,26 @@ function CallButton({ phone, name, entityType, entityId, size = 'middle', type =
   const ensureSipReady = async () => {
     if (sipClient.isRegistered) return true;
 
-    const profile = await getProfile().catch(() => null);
-    const runtimeConfig = typeof window !== 'undefined' ? window.__APP_CONFIG__ || {} : {};
+    const runtime = await loadTelephonyRuntimeConfig().catch(() => null);
+    const sip = runtime?.sipConfig;
 
-    const sipUri = (profile?.jssip_sip_uri || '').trim();
-    const sipUserFromUri = sipUri.startsWith('sip:') ? sipUri.slice(4).split('@')[0] : '';
-    const sipRealmFromUri = sipUri.includes('@') ? sipUri.split('@')[1] : '';
-
-    const username = sipUserFromUri || profile?.pbx_number || import.meta.env.VITE_SIP_USERNAME;
-    const realm = sipRealmFromUri || import.meta.env.VITE_SIP_REALM || 'pbx.windevs.uz';
-    const password = profile?.jssip_sip_password || import.meta.env.VITE_SIP_PASSWORD;
-    const websocketProxyUrl =
-      profile?.jssip_ws_uri || import.meta.env.VITE_SIP_SERVER || runtimeConfig.pbxServer || '';
-    const displayName =
-      profile?.jssip_display_name || profile?.full_name || import.meta.env.VITE_SIP_DISPLAY_NAME || 'CRM User';
-    const iceServers = buildIceServers(profile);
-
-    if (!username || !password || !websocketProxyUrl) {
+    if (!sip?.username || !sip?.realm || !sip?.password || !sip?.websocketProxyUrl) {
       return false;
     }
 
     sipClient.configure({
-      realm,
-      impi: username,
-      impu: `sip:${username}@${realm}`,
-      password,
-      display_name: displayName,
-      websocket_proxy_url: websocketProxyUrl,
-      ice_servers: iceServers,
+      realm: sip.realm,
+      impi: sip.username,
+      impu: sip.impu,
+      password: sip.password,
+      display_name: sip.displayName,
+      websocket_proxy_url: sip.websocketProxyUrl,
+      ice_servers: sip.iceServers,
     });
 
     await sipClient.init();
     if (!sipClient.isRegistered) {
-      await sipClient.register(username, password);
+      await sipClient.register(sip.username, sip.password);
     }
     return sipClient.isRegistered;
   };

@@ -45,6 +45,7 @@ export function AppLayout({
   incomingCallsCount,
   unreadCount,
   allowedNavKeys,
+  onOpenDialer,
   onLogout,
   children,
 }) {
@@ -417,6 +418,12 @@ export function AppLayout({
             </Dropdown>
 
             {/* User Menu */}
+            <Button
+              size={isMobile ? 'small' : 'middle'}
+              icon={<PhoneOutlined />}
+              onClick={onOpenDialer}
+            />
+
             <Dropdown menu={{ items: userMenuItems }} placement="bottomRight">
               <Space style={{ cursor: 'pointer' }}>
                 <Badge dot={wsConnected} color={wsConnected ? 'green' : 'red'}>

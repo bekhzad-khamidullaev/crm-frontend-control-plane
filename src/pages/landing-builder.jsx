@@ -1557,7 +1557,7 @@ export default function LandingBuilderPage() {
     <div style={{ padding: 24 }}>
       <Space direction="vertical" size="large" style={{ width: '100%' }}>
         <Title level={3} style={{ margin: 0 }}>
-          Landing Builder (React + craft.js)
+          Landing Builder
         </Title>
 
         <Card title="Новый лендинг">

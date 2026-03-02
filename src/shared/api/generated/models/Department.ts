@@ -8,6 +8,6 @@
 export type Department = {
     readonly id: number;
     name: string;
-    readonly member_count: string;
+    readonly member_count: number;
 };
 

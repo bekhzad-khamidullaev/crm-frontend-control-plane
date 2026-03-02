@@ -73,7 +73,10 @@ export class CallLogsService {
     public static callLogsRetrieve({
         id,
     }: {
-        id: string,
+        /**
+         * A unique integer value identifying this call log.
+         */
+        id: number,
     }): CancelablePromise<CallLog> {
         return __request(OpenAPI, {
             method: 'GET',
@@ -92,7 +95,10 @@ export class CallLogsService {
         id,
         requestBody,
     }: {
-        id: string,
+        /**
+         * A unique integer value identifying this call log.
+         */
+        id: number,
         requestBody: CallLog,
     }): CancelablePromise<CallLog> {
         return __request(OpenAPI, {
@@ -114,7 +120,10 @@ export class CallLogsService {
         id,
         requestBody,
     }: {
-        id: string,
+        /**
+         * A unique integer value identifying this call log.
+         */
+        id: number,
         requestBody?: PatchedCallLog,
     }): CancelablePromise<CallLog> {
         return __request(OpenAPI, {
@@ -135,7 +144,10 @@ export class CallLogsService {
     public static callLogsDestroy({
         id,
     }: {
-        id: string,
+        /**
+         * A unique integer value identifying this call log.
+         */
+        id: number,
     }): CancelablePromise<void> {
         return __request(OpenAPI, {
             method: 'DELETE',

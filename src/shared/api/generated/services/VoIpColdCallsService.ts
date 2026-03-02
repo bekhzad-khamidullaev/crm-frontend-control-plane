@@ -18,7 +18,7 @@ export class VoIpColdCallsService {
      * @returns any No response body
      * @throws ApiError
      */
-    public static voipCallLogsRetrieve(): CancelablePromise<any> {
+    public static voipCallLogsList(): CancelablePromise<any> {
         return __request(OpenAPI, {
             method: 'GET',
             url: '/api/voip/call-logs/',
@@ -29,7 +29,7 @@ export class VoIpColdCallsService {
      * @returns any No response body
      * @throws ApiError
      */
-    public static voipCallLogsRetrieve2({
+    public static voipCallLogsRetrieveById({
         logId,
     }: {
         logId: string,

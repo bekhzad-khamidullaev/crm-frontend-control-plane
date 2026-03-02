@@ -120,15 +120,19 @@ export default defineConfig(({ mode }) => {
 
     // Optimize deps
     resolve: {
-      alias: {
-        '@': '/src',
-        '@/shared': '/src/shared',
-        '@/entities': '/src/entities',
-        '@/features': '/src/features',
-        '@/widgets': '/src/widgets',
-        '@/pages': '/src/pages',
-        '@/app': '/src/app',
-      },
+      alias: [
+        { find: /^antd$/, replacement: '/src/lib/radix-compat.jsx' },
+        { find: /^antd\/locale\/en_US$/, replacement: '/src/lib/antd-shim/locale/en_US.js' },
+        { find: /^antd\/locale\/ru_RU$/, replacement: '/src/lib/antd-shim/locale/ru_RU.js' },
+        { find: /^antd\/locale\/uz_UZ$/, replacement: '/src/lib/antd-shim/locale/uz_UZ.js' },
+        { find: '@/shared', replacement: '/src/shared' },
+        { find: '@/entities', replacement: '/src/entities' },
+        { find: '@/features', replacement: '/src/features' },
+        { find: '@/widgets', replacement: '/src/widgets' },
+        { find: '@/pages', replacement: '/src/pages' },
+        { find: '@/app', replacement: '/src/app' },
+        { find: '@', replacement: '/src' },
+      ],
     },
     optimizeDeps: {
       entries: ['index.html'],

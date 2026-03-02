@@ -8,10 +8,10 @@ import { request as __request } from '../core/request';
 export class AnalyticsService {
     /**
      * Get overview analytics for dashboard
-     * @returns any No response body
+     * @returns any
      * @throws ApiError
      */
-    public static analyticsOverviewRetrieve(): CancelablePromise<any> {
+    public static analyticsOverviewRetrieve(): CancelablePromise<Record<string, any>> {
         return __request(OpenAPI, {
             method: 'GET',
             url: '/api/analytics/overview/',

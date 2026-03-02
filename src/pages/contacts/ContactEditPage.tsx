@@ -21,8 +21,15 @@ export const ContactEditPage: React.FC<ContactEditPageProps> = ({ id }) => {
       await updateMutation.mutateAsync({ id, data: values });
       message.success('Контакт обновлен');
       navigate('/contacts');
-    } catch (error) {
-       // Handled
+    } catch (error: any) {
+      const details = error?.body?.details;
+      const firstDetail = details && typeof details === 'object'
+        ? Object.values(details)[0]
+        : null;
+      const detailText = Array.isArray(firstDetail) ? firstDetail[0] : firstDetail;
+      message.error(
+        detailText || error?.body?.message || 'Ошибка обновления контакта'
+      );
     }
   };
 

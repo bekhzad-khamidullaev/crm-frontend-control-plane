@@ -10,7 +10,7 @@ export type ChatMessage = {
     answer_to?: number | null;
     topic?: number | null;
     recipients?: Array<number>;
-    readonly recipient_names: string;
+    readonly recipient_names: Array<string>;
     to?: Array<number>;
     content_type: number;
     readonly content_type_name: string;

@@ -98,7 +98,11 @@ export const ContactForm: React.FC<ContactFormProps> = ({
               </Form.Item>
             </Col>
              <Col xs={24} md={8}>
-              <Form.Item label="Фамилия" name="last_name">
+              <Form.Item
+                label="Фамилия"
+                name="last_name"
+                rules={[{ required: true, message: 'Введите фамилию' }]}
+              >
                 <Input placeholder="Петров" />
               </Form.Item>
             </Col>
@@ -190,11 +194,6 @@ export const ContactForm: React.FC<ContactFormProps> = ({
            </Row>
 
            <Row gutter={16}>
-              <Col xs={24} md={12}>
-                 <Form.Item label="Активен" name="is_active" valuePropName="checked">
-                   <Switch />
-                 </Form.Item>
-              </Col>
               <Col xs={24} md={12}>
                  <Form.Item label="Массовая рассылка" name="massmail" valuePropName="checked">
                    <Switch />

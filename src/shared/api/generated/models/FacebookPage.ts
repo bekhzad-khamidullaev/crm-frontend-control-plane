@@ -36,7 +36,10 @@ export type FacebookPage = {
      */
     granted_permissions?: any;
     readonly connected_by_username: string;
-    readonly is_token_valid: string;
+    /**
+     * Check if token is still valid.
+     */
+    readonly is_token_valid: boolean;
     readonly created_at: string;
     readonly updated_at: string;
 };

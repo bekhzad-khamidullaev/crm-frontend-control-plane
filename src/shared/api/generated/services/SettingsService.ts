@@ -529,6 +529,9 @@ export class SettingsService {
     public static settingsFacebookPagesRetrieve({
         id,
     }: {
+        /**
+         * A UUID string identifying this Facebook Page.
+         */
         id: string,
     }): CancelablePromise<FacebookPage> {
         return __request(OpenAPI, {
@@ -557,6 +560,9 @@ export class SettingsService {
         id,
         requestBody,
     }: {
+        /**
+         * A UUID string identifying this Facebook Page.
+         */
         id: string,
         requestBody: FacebookPage,
     }): CancelablePromise<FacebookPage> {
@@ -588,6 +594,9 @@ export class SettingsService {
         id,
         requestBody,
     }: {
+        /**
+         * A UUID string identifying this Facebook Page.
+         */
         id: string,
         requestBody?: PatchedFacebookPage,
     }): CancelablePromise<FacebookPage> {
@@ -618,6 +627,9 @@ export class SettingsService {
     public static settingsFacebookPagesDestroy({
         id,
     }: {
+        /**
+         * A UUID string identifying this Facebook Page.
+         */
         id: string,
     }): CancelablePromise<void> {
         return __request(OpenAPI, {
@@ -639,6 +651,9 @@ export class SettingsService {
         id,
         requestBody,
     }: {
+        /**
+         * A UUID string identifying this Facebook Page.
+         */
         id: string,
         requestBody: FacebookPage,
     }): CancelablePromise<FacebookPage> {
@@ -663,6 +678,9 @@ export class SettingsService {
         id,
         requestBody,
     }: {
+        /**
+         * A UUID string identifying this Facebook Page.
+         */
         id: string,
         requestBody: FacebookPage,
     }): CancelablePromise<FacebookPage> {
@@ -681,7 +699,7 @@ export class SettingsService {
      * @returns any No response body
      * @throws ApiError
      */
-    public static settingsGeneralRetrieve(): CancelablePromise<any> {
+    public static settingsGeneralList(): CancelablePromise<any> {
         return __request(OpenAPI, {
             method: 'GET',
             url: '/api/settings/general/',
@@ -796,6 +814,9 @@ export class SettingsService {
     public static settingsInstagramAccountsRetrieve({
         id,
     }: {
+        /**
+         * A UUID string identifying this Instagram Account.
+         */
         id: string,
     }): CancelablePromise<InstagramAccount> {
         return __request(OpenAPI, {
@@ -824,6 +845,9 @@ export class SettingsService {
         id,
         requestBody,
     }: {
+        /**
+         * A UUID string identifying this Instagram Account.
+         */
         id: string,
         requestBody: InstagramAccount,
     }): CancelablePromise<InstagramAccount> {
@@ -855,6 +879,9 @@ export class SettingsService {
         id,
         requestBody,
     }: {
+        /**
+         * A UUID string identifying this Instagram Account.
+         */
         id: string,
         requestBody?: PatchedInstagramAccount,
     }): CancelablePromise<InstagramAccount> {
@@ -885,6 +912,9 @@ export class SettingsService {
     public static settingsInstagramAccountsDestroy({
         id,
     }: {
+        /**
+         * A UUID string identifying this Instagram Account.
+         */
         id: string,
     }): CancelablePromise<void> {
         return __request(OpenAPI, {
@@ -906,6 +936,9 @@ export class SettingsService {
         id,
         requestBody,
     }: {
+        /**
+         * A UUID string identifying this Instagram Account.
+         */
         id: string,
         requestBody: InstagramAccount,
     }): CancelablePromise<InstagramAccount> {
@@ -930,6 +963,9 @@ export class SettingsService {
         id,
         requestBody,
     }: {
+        /**
+         * A UUID string identifying this Instagram Account.
+         */
         id: string,
         requestBody: InstagramAccount,
     }): CancelablePromise<InstagramAccount> {
@@ -1055,7 +1091,7 @@ export class SettingsService {
      * @returns any No response body
      * @throws ApiError
      */
-    public static settingsNotificationsRetrieve(): CancelablePromise<any> {
+    public static settingsNotificationsList(): CancelablePromise<any> {
         return __request(OpenAPI, {
             method: 'GET',
             url: '/api/settings/notifications/',
@@ -1117,7 +1153,7 @@ export class SettingsService {
      * @returns any No response body
      * @throws ApiError
      */
-    public static settingsSecurityRetrieve(): CancelablePromise<any> {
+    public static settingsSecurityList(): CancelablePromise<any> {
         return __request(OpenAPI, {
             method: 'GET',
             url: '/api/settings/security/',
@@ -1283,6 +1319,9 @@ export class SettingsService {
     public static settingsTelegramBotsRetrieve({
         id,
     }: {
+        /**
+         * A UUID string identifying this Telegram Bot.
+         */
         id: string,
     }): CancelablePromise<TelegramBot> {
         return __request(OpenAPI, {
@@ -1311,6 +1350,9 @@ export class SettingsService {
         id,
         requestBody,
     }: {
+        /**
+         * A UUID string identifying this Telegram Bot.
+         */
         id: string,
         requestBody?: TelegramBot,
     }): CancelablePromise<TelegramBot> {
@@ -1342,6 +1384,9 @@ export class SettingsService {
         id,
         requestBody,
     }: {
+        /**
+         * A UUID string identifying this Telegram Bot.
+         */
         id: string,
         requestBody?: PatchedTelegramBot,
     }): CancelablePromise<TelegramBot> {
@@ -1372,6 +1417,9 @@ export class SettingsService {
     public static settingsTelegramBotsDestroy({
         id,
     }: {
+        /**
+         * A UUID string identifying this Telegram Bot.
+         */
         id: string,
     }): CancelablePromise<void> {
         return __request(OpenAPI, {
@@ -1391,6 +1439,9 @@ export class SettingsService {
         id,
         requestBody,
     }: {
+        /**
+         * A UUID string identifying this Telegram Bot.
+         */
         id: string,
         requestBody?: TelegramBot,
     }): CancelablePromise<TelegramBot> {
@@ -1415,6 +1466,9 @@ export class SettingsService {
         id,
         requestBody,
     }: {
+        /**
+         * A UUID string identifying this Telegram Bot.
+         */
         id: string,
         requestBody?: TelegramBot,
     }): CancelablePromise<TelegramBot> {
@@ -1439,6 +1493,9 @@ export class SettingsService {
         id,
         requestBody,
     }: {
+        /**
+         * A UUID string identifying this Telegram Bot.
+         */
         id: string,
         requestBody?: TelegramBot,
     }): CancelablePromise<TelegramBot> {

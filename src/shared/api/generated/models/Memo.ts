@@ -34,7 +34,7 @@ export type Memo = {
     readonly owner: number | null;
     readonly owner_name: string;
     tags?: Array<number>;
-    readonly tag_names: string;
+    readonly tag_names: Array<string>;
     readonly creation_date: string;
     readonly update_date: string;
 };

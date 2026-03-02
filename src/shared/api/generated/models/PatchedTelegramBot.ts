@@ -39,6 +39,9 @@ export type PatchedTelegramBot = {
      */
     allowed_chat_ids?: any;
     readonly connected_by_username?: string;
+    /**
+     * Get Telegram bot URL.
+     */
     readonly bot_info_url?: string;
     readonly created_at?: string;
     readonly updated_at?: string;
