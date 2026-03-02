@@ -7,7 +7,7 @@ import { z } from 'zod';
 
 export const companySchema = z.object({
   name: z.string().optional(), // Used in frontend form, mapped to full_name
-  full_name: z.string().optional(), // API field
+  full_name: z.string().min(1, 'Название компании обязательно'), // API field
   // We'll enforce at least one is present in form logic or refining schema
 
   email: z.string().email('Неверный формат email').optional().or(z.literal('')),

@@ -1,10 +1,10 @@
 import { z } from 'zod';
 
 export const contactSchema = z.object({
-  first_name: z.string().min(1, 'Имя обязательно'),
+  first_name: z.string().optional(),
   last_name: z.string().min(1, 'Фамилия обязательна'),
   middle_name: z.string().optional(),
-  email: z.string().email('Некорректный email').min(1, 'Email обязателен'),
+  email: z.string().email('Некорректный email').optional().or(z.literal('')),
   phone: z.string().optional(),
   title: z.string().optional(), // Position
   company: z.number().nullable().optional(),

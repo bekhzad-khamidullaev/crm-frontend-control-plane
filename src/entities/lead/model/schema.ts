@@ -1,10 +1,10 @@
 import { z } from 'zod';
 
 export const leadSchema = z.object({
-  first_name: z.string().min(1, 'Имя обязательно'),
+  first_name: z.string().optional(),
   last_name: z.string().optional(),
   middle_name: z.string().optional(),
-  email: z.string().email('Некорректный email').min(1, 'Email обязателен'),
+  email: z.string().email('Некорректный email').optional().or(z.literal('')),
   phone: z.string().optional(),
   title: z.string().optional(), // Position
   sex: z.enum(['M', 'F', 'O']).nullable().optional(),
@@ -47,6 +47,9 @@ export const leadSchema = z.object({
   disqualified: z.boolean().optional(),
   was_in_touch: z.any().nullable().optional(),
   description: z.string().optional(),
+}).refine((data) => data.first_name || data.company_name, {
+  message: 'Имя или название компании обязательно',
+  path: ['first_name'],
 });
 
 export type LeadFormData = z.infer<typeof leadSchema>;

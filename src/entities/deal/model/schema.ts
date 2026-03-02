@@ -11,7 +11,7 @@ export const dealSchema = z.object({
   closing_reason: z.number().nullable().optional(),
 
   next_step: z.string().min(1, 'Введите следующий шаг'),
-  next_step_date: z.any().nullable().optional(),
+  next_step_date: z.any().refine((val) => val !== null && val !== undefined, 'Выберите дату следующего шага'),
 
   description: z.string().optional(),
 
