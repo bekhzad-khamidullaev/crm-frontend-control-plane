@@ -24,6 +24,7 @@ import {
 } from '@/features/reference';
 import { ContactFormData } from '@/entities/contact/model/schema';
 import type { Contact } from '@/entities/contact/model/types';
+import { PhoneInput } from '@/shared/ui';
 
 const { Title } = Typography;
 const { TextArea } = Input;
@@ -118,7 +119,7 @@ export const ContactForm: React.FC<ContactFormProps> = ({
             </Col>
             <Col xs={24} md={12}>
               <Form.Item label="Телефон" name="phone">
-                <Input placeholder="+7 999 123-45-67" />
+                <PhoneInput />
               </Form.Item>
             </Col>
           </Row>

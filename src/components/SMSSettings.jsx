@@ -7,6 +7,7 @@ import React, { useEffect, useMemo, useState } from 'react';
 import { Alert, App, Button, Card, Descriptions, Form, Input, Select, Space, Table } from 'antd';
 import { MessageOutlined, ReloadOutlined } from '@ant-design/icons';
 import smsApi from '../lib/api/sms.js';
+import { PhoneInput } from '@/shared/ui';
 
 const { TextArea } = Input;
 
@@ -184,7 +185,7 @@ export default function SMSSettings({ onSuccess }) {
               { pattern: /^\+?[\d\s\-\(\)]+$/, message: 'Неверный формат номера' },
             ]}
           >
-            <Input placeholder="+998 90 123 45 67" />
+            <PhoneInput />
           </Form.Item>
 
           <Form.Item

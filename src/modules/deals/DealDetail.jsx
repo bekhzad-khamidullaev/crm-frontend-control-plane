@@ -12,6 +12,7 @@ import {
 import { useEffect, useState } from 'react';
 
 import ActivityLog from '../../components/ActivityLog';
+import AIAssistantPanel from '../../components/AIAssistantPanel.jsx';
 import CallButton from '../../components/CallButton';
 import EnhancedTable from '../../components/ui-EnhancedTable.jsx';
 import { Badge } from '../../components/ui/badge.jsx';
@@ -226,6 +227,7 @@ function DealDetail({ id }) {
             <TabsTrigger value="activity">История активности</TabsTrigger>
             <TabsTrigger value="messages">Сообщения</TabsTrigger>
             <TabsTrigger value="calls">История звонков ({callLogs.length})</TabsTrigger>
+            <TabsTrigger value="ai">AI ассистент</TabsTrigger>
           </TabsList>
 
           <TabsContent value="details">
@@ -369,6 +371,26 @@ function DealDetail({ id }) {
               onChange={() => {}}
               emptyText="Звонков по этой сделке пока не было"
               emptyDescription=""
+            />
+          </TabsContent>
+
+          <TabsContent value="ai">
+            <AIAssistantPanel
+              entityType="deal"
+              entityId={deal.id}
+              defaultUseCase="deal_analysis"
+              initialInput={`Проанализируй сделку "${deal.name}" и предложи следующие действия.`}
+              contextData={{
+                deal_name: deal.name,
+                amount: deal.amount,
+                currency: deal.currency_name,
+                probability: deal.probability,
+                stage_name: stageLabel,
+                closing_date: deal.closing_date,
+                company_name: company?.full_name || company?.name || '',
+                contact_name: contact?.full_name || '',
+                description: deal.description || '',
+              }}
             />
           </TabsContent>
         </Tabs>

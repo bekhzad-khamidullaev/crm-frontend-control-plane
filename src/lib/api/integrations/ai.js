@@ -22,3 +22,9 @@ export const deleteAIProvider = (id) =>
 
 export const testAIProviderConnection = (id, payload = {}) =>
   api.post(`/api/settings/ai/providers/${id}/test_connection/`, { body: payload });
+
+export const getAIAssistProviders = () =>
+  api.get('/api/ai/assist/providers/');
+
+export const runAIAssist = (payload) =>
+  api.post('/api/ai/assist/', { body: payload });

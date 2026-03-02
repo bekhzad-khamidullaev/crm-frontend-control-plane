@@ -36,6 +36,7 @@ import {
   TagSelect,
   CompanySelect,
 } from '@/features/reference';
+import { PhoneInput } from '@/shared/ui';
 
 const { Title } = Typography;
 const { TextArea } = Input;
@@ -194,17 +195,17 @@ export const LeadForm: React.FC<LeadFormProps> = ({ id }) => {
           <Row gutter={16}>
             <Col xs={24} md={8}>
               <Form.Item label="Телефон" name="phone">
-                <Input placeholder="+7 999 123-45-67" />
+                <PhoneInput />
               </Form.Item>
             </Col>
             <Col xs={24} md={8}>
               <Form.Item label="Доп. телефон" name="other_phone">
-                <Input placeholder="+7 999 111-22-33" />
+                <PhoneInput />
               </Form.Item>
             </Col>
             <Col xs={24} md={8}>
               <Form.Item label="Мобильный" name="mobile">
-                <Input placeholder="+7 999 333-44-55" />
+                <PhoneInput />
               </Form.Item>
             </Col>
           </Row>
@@ -228,7 +229,7 @@ export const LeadForm: React.FC<LeadFormProps> = ({ id }) => {
           <Row gutter={16}>
             <Col xs={24} md={8}>
               <Form.Item label="Телефон компании" name="company_phone">
-                <Input placeholder="+7 495 123-45-67" />
+                <PhoneInput />
               </Form.Item>
             </Col>
             <Col xs={24} md={8}>

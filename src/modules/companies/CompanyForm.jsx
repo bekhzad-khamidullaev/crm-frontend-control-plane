@@ -19,6 +19,7 @@ import { navigate } from '../../router';
 import { getCompany, createCompany, updateCompany, getUsers, getUser } from '../../lib/api/client';
 import ReferenceSelect from '../../components/ui-ReferenceSelect';
 import EntitySelect from '../../components/EntitySelect';
+import { PhoneInput } from '@/shared/ui';
 
 const { Title } = Typography;
 const { TextArea } = Input;
@@ -136,7 +137,7 @@ function CompanyForm({ id }) {
           <Row gutter={16}>
             <Col xs={24} md={12}>
               <Form.Item label="Телефон" name="phone">
-                <Input placeholder="+7 495 123-45-67" />
+                <PhoneInput />
               </Form.Item>
             </Col>
             <Col xs={24} md={12}>

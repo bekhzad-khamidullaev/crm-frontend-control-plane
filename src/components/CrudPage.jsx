@@ -4,7 +4,7 @@
  */
 
 import React, { useEffect, useState } from 'react';
-import { Form, Modal, Button, Table, Card, Space, Input, InputNumber, Switch, DatePicker, Select, App } from 'antd';
+import { Form, Modal, Button, Card, Space, Input, InputNumber, Switch, DatePicker, Select, App } from 'antd';
 import { PlusOutlined, EditOutlined, DeleteOutlined, EyeOutlined } from '@ant-design/icons';
 import dayjs from 'dayjs';
 import EntitySelect from './EntitySelect.jsx';
@@ -272,10 +272,12 @@ export default function CrudPage({
       >
         {viewRecord && (
           <div>
-            {fields.map((field) => (
+            {getViewFields(fields, columns, viewRecord).map((field) => (
               <div key={field.name} style={{ marginBottom: 16 }}>
                 <div style={{ fontWeight: 500, marginBottom: 4 }}>{field.label}:</div>
-                <div>{formatValue(field, viewRecord[field.name])}</div>
+                <div style={{ whiteSpace: 'pre-wrap', wordBreak: 'break-word' }}>
+                  {formatValue(field, viewRecord[field.name])}
+                </div>
               </div>
             ))}
           </div>
@@ -348,6 +350,9 @@ function preparePayload(fields, values) {
 
 function formatValue(field, value) {
   if (value === null || value === undefined) return '-';
+  if (typeof value === 'object' && !Array.isArray(value) && field.type !== 'date') {
+    return JSON.stringify(value, null, 2);
+  }
   
   switch (field.type) {
     case 'boolean':
@@ -360,10 +365,54 @@ function formatValue(field, value) {
       }
       return '-';
     case 'array':
-      return Array.isArray(value) ? value.join(', ') : '-';
+      if (!Array.isArray(value)) return '-';
+      if (value.some((item) => typeof item === 'object' && item !== null)) {
+        return JSON.stringify(value, null, 2);
+      }
+      return value.join(', ');
     default:
       return String(value);
   }
+}
+
+function getViewFields(fields, columns, record) {
+  if (Array.isArray(fields) && fields.length > 0) return fields;
+  if (!record || typeof record !== 'object') return [];
+
+  const used = new Set();
+  const inferred = [];
+
+  const addField = (name, label = toLabel(name), type = inferType(record[name], name)) => {
+    if (!name || used.has(name) || !(name in record)) return;
+    used.add(name);
+    inferred.push({ name, label, type });
+  };
+
+  columns.forEach((column) => {
+    if (!column || typeof column !== 'object') return;
+    if (typeof column.dataIndex === 'string') {
+      addField(column.dataIndex, column.title || toLabel(column.dataIndex));
+    }
+  });
+
+  ['id', 'created_at', 'updated_at', 'created', 'modified'].forEach((key) => addField(key));
+
+  Object.keys(record).forEach((key) => addField(key));
+  return inferred;
+}
+
+function inferType(value, key = '') {
+  if (typeof value === 'boolean') return 'boolean';
+  if (typeof value === 'number') return 'number';
+  if (Array.isArray(value)) return 'array';
+  if (typeof value === 'string' && /(date|_at)$/i.test(key)) return 'date';
+  return 'text';
+}
+
+function toLabel(name = '') {
+  return String(name)
+    .replace(/_/g, ' ')
+    .replace(/\b\w/g, (char) => char.toUpperCase());
 }
 
 function renderField(field) {

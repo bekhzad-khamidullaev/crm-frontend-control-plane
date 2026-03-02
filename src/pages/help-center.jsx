@@ -1,5 +1,5 @@
 import React from 'react';
-import { Tabs } from 'antd';
+import { Alert, Tabs } from 'antd';
 import CrudPage from '../components/CrudPage.jsx';
 import { getHelpPages, getHelpPage, getHelpParagraphs, getHelpParagraph } from '../lib/api/help.js';
 
@@ -40,5 +40,16 @@ export default function HelpCenterPage() {
     },
   ];
 
-  return <Tabs items={tabs} />;
+  return (
+    <>
+      <Alert
+        showIcon
+        type="info"
+        style={{ marginBottom: 16 }}
+        message="Справка"
+        description="Раздел с инструкциями и подсказками для пользователей CRM. Здесь хранится только справочный контент, а не справочные данные системы."
+      />
+      <Tabs items={tabs} />
+    </>
+  );
 }

@@ -26,6 +26,7 @@ import {
 } from '@/features/reference';
 import { CompanyFormData } from '@/entities/company/model/schema';
 import type { Company } from '@/entities/company/model/types';
+import { PhoneInput } from '@/shared/ui';
 
 const { Title } = Typography;
 const { TextArea } = Input;
@@ -127,7 +128,7 @@ export const CompanyForm: React.FC<CompanyFormProps> = ({
           <Row gutter={16}>
             <Col xs={24} md={12}>
               <Form.Item label="Телефон" name="phone">
-                <Input placeholder="+7 495 123-45-67" />
+                <PhoneInput />
               </Form.Item>
             </Col>
             <Col xs={24} md={12}>

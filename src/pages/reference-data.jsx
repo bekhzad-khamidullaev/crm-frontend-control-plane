@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Button, Grid, Modal, Table, Tabs, Tag, Spin } from 'antd';
+import { Alert, Button, Grid, Modal, Table, Tabs, Tag, Spin } from 'antd';
 import CrudPage from '../components/CrudPage.jsx';
 import {
   getCountries,
@@ -399,6 +399,13 @@ export default function ReferenceDataPage() {
 
   return (
     <>
+      <Alert
+        showIcon
+        type="info"
+        style={{ marginBottom: 16 }}
+        message="Справочники"
+        description="Раздел с системными справочными списками (статусы, типы, страны, теги и т.д.), которые используются в карточках и бизнес-процессах CRM."
+      />
       <Tabs
         items={tabs}
         tabPosition={isMobile ? 'top' : 'left'}

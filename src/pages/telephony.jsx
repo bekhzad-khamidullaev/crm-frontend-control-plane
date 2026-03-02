@@ -1,6 +1,7 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { Tabs, Card, Button, Form, Input, InputNumber, Switch, Table, App, Space, Modal, Spin, Row, Col, Statistic, Descriptions, Tag } from 'antd';
 import CrudPage from '../components/CrudPage.jsx';
+import { PhoneInput } from '@/shared/ui';
 import {
   getVoIPConnections,
   getVoIPConnection,
@@ -335,10 +336,10 @@ function ColdCallTab() {
       <Card title="Инициировать звонок">
         <Form form={form} layout="vertical" onFinish={submitImmediate}>
           <Form.Item label="To number" name="to_number" rules={[{ required: true, message: 'Введите номер' }]}>
-            <Input />
+            <PhoneInput />
           </Form.Item>
           <Form.Item label="From number" name="from_number">
-            <Input />
+            <PhoneInput />
           </Form.Item>
           <Form.Item label="Лид" name="lead_id">
             <InputNumber style={{ width: '100%' }} />
@@ -358,10 +359,10 @@ function ColdCallTab() {
       <Card title="Запланировать звонок">
         <Form form={scheduleForm} layout="vertical" onFinish={submitSchedule}>
           <Form.Item label="To number" name="to_number">
-            <Input />
+            <PhoneInput />
           </Form.Item>
           <Form.Item label="From number" name="from_number">
-            <Input />
+            <PhoneInput />
           </Form.Item>
           <Form.Item label="Scheduled time (ISO)" name="scheduled_time">
             <Input placeholder="2024-01-15T14:30:00Z" />
@@ -387,7 +388,7 @@ function ColdCallTab() {
             <Input.TextArea rows={4} />
           </Form.Item>
           <Form.Item label="From number" name="from_number">
-            <Input />
+            <PhoneInput />
           </Form.Item>
           <Form.Item label="Кампания" name="campaign_id">
             <InputNumber style={{ width: '100%' }} />

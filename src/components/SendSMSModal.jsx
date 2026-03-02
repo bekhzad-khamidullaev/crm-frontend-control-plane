@@ -7,6 +7,7 @@ import React, { useState, useEffect } from 'react';
 import { Modal, Form, Input, Select, Button, Space, App, Typography, Alert, Divider } from 'antd';
 import { MessageOutlined, SendOutlined, EyeOutlined } from '@ant-design/icons';
 import smsApi from '../lib/api/sms.js';
+import { PhoneInput } from '@/shared/ui';
 
 const { TextArea } = Input;
 const { Text, Paragraph } = Typography;
@@ -117,10 +118,7 @@ export default function SendSMSModal({
             { pattern: /^\+?[\d\s\-\(\)]+$/, message: 'Неверный формат номера' },
           ]}
         >
-          <Input
-            placeholder="+7 (999) 123-45-67"
-            disabled={!!phoneNumber}
-          />
+          <PhoneInput disabled={!!phoneNumber} />
         </Form.Item>
 
         {contactName && (

@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { Tabs, Card, Table, Form, Input, Button, Switch, message, Select } from 'antd';
 import smsApi from '../lib/api/sms.js';
+import { PhoneInput } from '@/shared/ui';
 
 const { TextArea } = Input;
 
@@ -181,7 +182,7 @@ function SendTab({ bulk = false }) {
           </Form.Item>
         ) : (
           <Form.Item label="Телефон" name="to" rules={[{ required: true, message: 'Укажите номер' }]}>
-            <Input />
+            <PhoneInput />
           </Form.Item>
         )}
         <Form.Item label="Текст" name="text" rules={[{ required: true, message: 'Введите текст' }]}>

@@ -6,6 +6,7 @@ import { navigate } from '../../router';
 import { getContact, deleteContact, getCompanies, getUsers } from '../../lib/api/client';
 import { getEntityCallLogs } from '../../lib/api/calls';
 import { getLeadSources, getCrmTags, getCountries, getCities, getDepartments } from '../../lib/api/reference';
+import AIAssistantPanel from '../../components/AIAssistantPanel.jsx';
 import CallButton from '../../components/CallButton';
 import ChatWidget from '../../modules/chat/ChatWidget';
 import ActivityLog from '../../components/ActivityLog';
@@ -258,6 +259,7 @@ function ContactDetail({ id }) {
             <TabsTrigger value="activity">История активности</TabsTrigger>
             <TabsTrigger value="messages">Сообщения</TabsTrigger>
             <TabsTrigger value="calls">История звонков ({callLogs.length})</TabsTrigger>
+            <TabsTrigger value="ai">AI ассистент</TabsTrigger>
           </TabsList>
 
           <TabsContent value="details">
@@ -327,6 +329,25 @@ function ContactDetail({ id }) {
               onChange={() => {}}
               emptyText="Звонков по этому контакту пока не было"
               emptyDescription=""
+            />
+          </TabsContent>
+
+          <TabsContent value="ai">
+            <AIAssistantPanel
+              entityType="contact"
+              entityId={contact.id}
+              defaultUseCase="email_reply"
+              initialInput={`Составь короткий и вежливый follow-up для контакта "${fullName}".`}
+              contextData={{
+                full_name: fullName,
+                email: contact.email || '',
+                phone: contact.phone || '',
+                title: contact.title || '',
+                company_name: contact.company ? companyMap[contact.company] || '' : '',
+                lead_source: contact.lead_source ? leadSourceMap[contact.lead_source] || '' : '',
+                tags: tagNames,
+                description: contact.description || '',
+              }}
             />
           </TabsContent>
         </Tabs>

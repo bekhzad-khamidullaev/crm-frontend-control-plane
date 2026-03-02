@@ -65,6 +65,7 @@ import { toast } from '../../components/ui/use-toast';
 
 // Custom / Domain Components
 import CallButton from '../../components/CallButton';
+import AIAssistantPanel from '../../components/AIAssistantPanel.jsx';
 import EntitySelect from '../../components/EntitySelect.jsx';
 import ChatWidget from '../../modules/chat/ChatWidget';
 
@@ -490,6 +491,9 @@ function LeadDetail({ id }) {
                     <Phone className="h-4 w-4 mr-2" /> Звонки
                     <Badge variant="secondary" className="ml-2 h-5 min-w-5 px-1 py-0 text-[10px]">{callLogs.length}</Badge>
                  </TabsTrigger>
+                 <TabsTrigger value="ai" className="data-[state=active]:bg-background data-[state=active]:shadow-sm">
+                    <MessageSquare className="h-4 w-4 mr-2" /> AI
+                 </TabsTrigger>
               </TabsList>
 
               <div className="mt-6">
@@ -612,6 +616,27 @@ function LeadDetail({ id }) {
                          )}
                       </CardContent>
                    </Card>
+                 </TabsContent>
+
+                 <TabsContent value="ai">
+                   <AIAssistantPanel
+                     entityType="lead"
+                     entityId={lead.id}
+                     defaultUseCase="next_action"
+                     initialInput={`Подскажи 3 следующих шага по лиду "${fullName}".`}
+                     contextData={{
+                       full_name: fullName,
+                       status: leadStatus,
+                       title: lead.title || '',
+                       company_name: lead.company_name || '',
+                       source: sourceLabel,
+                       owner_name: lead.owner_name || '',
+                       phone: lead.phone || '',
+                       email: lead.email || '',
+                       budget: lead.budget || '',
+                       description: lead.description || '',
+                     }}
+                   />
                  </TabsContent>
               </div>
            </Tabs>
