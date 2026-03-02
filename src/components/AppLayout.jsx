@@ -98,6 +98,7 @@ export function AppLayout({
       icon: <SettingOutlined />,
       children: [
         { key: 'settings', label: t('nav.settings') || 'Настройки', path: '/settings' },
+        { key: 'landing-builder', label: 'Landing Builder', path: '/landing-builder' },
         { key: 'operations', label: 'Операции', path: '/operations' },
         { key: 'reference-data', label: 'Справочники', path: '/reference-data' },
         { key: 'telephony', label: 'Телефония', path: '/telephony' },

@@ -420,6 +420,29 @@ export const contactsApi = { ...crudResource('/api/contacts/') };
 export const companiesApi = { ...crudResource('/api/companies/') };
 export const dealsApi = { ...crudResource('/api/deals/') };
 export const tasksApi = { ...crudResource('/api/tasks/') };
+export const landingsApi = {
+  ...crudResource('/api/landings/'),
+  getDraft: (id) => api.get(`/api/landings/${id}/draft/`),
+  putDraft: (id, payload) => api.put(`/api/landings/${id}/draft/`, { body: payload }),
+  getBindings: (id) => api.get(`/api/landings/${id}/bindings/`),
+  putBindings: (id, items) => api.put(`/api/landings/${id}/bindings/`, { body: items }),
+  publish: (id) => api.post(`/api/landings/${id}/publish/`),
+  revisions: (id) => api.get(`/api/landings/${id}/revisions/`),
+  rollback: (id, revisionId) => api.post(`/api/landings/${id}/rollback/${revisionId}/`),
+  previewToken: (id) => api.get(`/api/landings/${id}/preview_token/`),
+  report: (id, params) => api.get(`/api/landings/${id}/report/`, { params }),
+  lookups: (params) => api.get('/api/crm/lookups/', { params }),
+  crmStages: (params) => api.get('/api/crm/stages/', { params }),
+  crmLeadSources: (params) => api.get('/api/crm/lead-sources/', { params }),
+  commonDepartments: () => api.get('/api/common/departments/'),
+  usersByDepartment: (department) => api.get('/api/users/', { params: { department } }),
+  publicSchema: (slug) => api.get(`/api/public/landings/${slug}/`, { skipAuth: true }),
+  publicPreview: (slug, token) =>
+    api.get(`/api/public/landings/${slug}/preview/`, { skipAuth: true, params: { token } }),
+  trackEvent: (payload) => api.post('/api/public/funnel-events/', { body: payload, skipAuth: true }),
+  submitLead: (slug, payload) =>
+    api.post(`/api/public/landings/${slug}/lead/`, { body: payload, skipAuth: true }),
+};
 
 export const projectsApi = {
   ...crudResource('/api/projects/'),

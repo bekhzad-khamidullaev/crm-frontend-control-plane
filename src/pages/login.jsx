@@ -90,10 +90,6 @@ function LoginPage({ onLogin }) {
             layout="vertical"
             size="large"
             className="radix-form"
-            initialValues={{
-              username: 'admin',
-              password: 'admin123',
-            }}
           >
             <Form.Item
               name="username"

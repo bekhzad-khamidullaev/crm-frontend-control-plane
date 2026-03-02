@@ -77,6 +77,7 @@ const ChatPage = lazy(() => import('./pages/chat-page.jsx'));
 const ProfilePage = lazy(() => import('./pages/profile.jsx'));
 const SettingsPage = lazy(() => import('./pages/settings.jsx'));
 const IntegrationsPage = lazy(() => import('./pages/integrations.jsx'));
+const LandingBuilderPage = lazy(() => import('./pages/landing-builder.jsx'));
 
 // Lazy load sub-modules
 const PaymentsList = lazy(() =>
@@ -453,6 +454,7 @@ function App() {
     users: 'users',
     settings: 'settings',
     integrations: 'integrations',
+    'landing-builder': 'landing-builder',
   };
 
   const allowedNavKeys = Object.entries(navAccessMap)
@@ -483,6 +485,7 @@ function App() {
     if (name === 'help-center') return 'help-center';
     if (name === 'telephony') return 'telephony';
     if (name === 'users') return 'users';
+    if (name === 'landing-builder') return 'landing-builder';
     return name;
   };
 
@@ -633,6 +636,8 @@ function App() {
         return <SettingsPage />;
       case 'integrations':
         return <IntegrationsPage />;
+      case 'landing-builder':
+        return <LandingBuilderPage />;
       default:
         return null;
     }

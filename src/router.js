@@ -66,6 +66,7 @@ export const routeMeta = {
  'profile': { auth: true, title: 'Profile' },
  'settings': { auth: true, title: 'Settings' },
  'integrations': { auth: true, title: 'Integrations' },
+ 'landing-builder': { auth: true, roles: ['admin', 'manager'], title: 'Landing Builder' },
  'forbidden': { auth: false, title: 'Forbidden' },
  'not-found': { auth: false, title: 'Not Found' },
  'chat-thread': { auth: true, title: 'Chat Thread' }
@@ -272,6 +273,7 @@ export function parseHash() {
   if (segments[0] === 'profile') return { name: 'profile', params: {} };
   if (segments[0] === 'settings') return { name: 'settings', params: {} };
   if (segments[0] === 'integrations') return { name: 'integrations', params: {} };
+  if (segments[0] === 'landing-builder') return { name: 'landing-builder', params: {} };
   // Unknown route
   return isAuthenticated() ? { name: 'not-found', params: {} } : { name: 'login', params: {} };
 }
