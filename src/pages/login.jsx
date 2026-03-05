@@ -16,6 +16,19 @@ import { navigate } from '../router';
 
 const { Title, Text } = Typography;
 
+function readStoredRoles() {
+  try {
+    const raw = sessionStorage.getItem('enterprise_crm_roles') || localStorage.getItem('enterprise_crm_roles');
+    if (!raw) return [];
+    const parsed = JSON.parse(raw);
+    if (Array.isArray(parsed)) return parsed;
+    if (parsed && Array.isArray(parsed.roles)) return parsed.roles;
+  } catch {
+    // ignore malformed role storage
+  }
+  return [];
+}
+
 function LoginPage({ onLogin }) {
   const [loading, setLoading] = useState(false);
   const [form] = Form.useForm();
@@ -44,10 +57,15 @@ function LoginPage({ onLogin }) {
         const { usersApi } = await import('../lib/api/client');
         const me = await usersApi.me();
         const roles = mergeRoles(
+          readStoredRoles(),
           rolesFromProfile(me),
           rolesFromTokenPayload(getUserFromToken() || {}),
         );
-        sessionStorage.setItem('contora_roles', JSON.stringify(roles));
+        if (roles.length > 0) {
+          const serializedRoles = JSON.stringify(roles);
+          sessionStorage.setItem('enterprise_crm_roles', serializedRoles);
+          localStorage.setItem('enterprise_crm_roles', serializedRoles);
+        }
       } catch (e) {
         console.warn('Failed to fetch user roles on login:', e);
       }

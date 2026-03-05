@@ -1,7 +1,7 @@
 {
-  "name": "contora",
+  "name": "enterprise_crm",
   "version": "1.0.0",
-  "description": "Contora - Modern CRM System",
+  "description": "Enterprise CRM - Modern CRM System",
   "private": true,
   "type": "module",
   "scripts": {

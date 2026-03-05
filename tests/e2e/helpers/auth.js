@@ -24,8 +24,8 @@ export async function login(page) {
         localStorage.setItem('crm_refresh_token', refresh);
       }
       const roles = JSON.stringify(['admin']);
-      sessionStorage.setItem('contora_roles', roles);
-      localStorage.setItem('contora_roles', roles);
+      sessionStorage.setItem('enterprise_crm_roles', roles);
+      localStorage.setItem('enterprise_crm_roles', roles);
     }, payload);
     await page.goto('/#/dashboard', { waitUntil: 'domcontentloaded' });
     await expect(page).toHaveURL(/#\/dashboard/, { timeout: 30000 });

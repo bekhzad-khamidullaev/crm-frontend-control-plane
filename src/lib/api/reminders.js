@@ -1,7 +1,7 @@
 /**
  * Reminders API
  *
- * CRUD for reminders aligned with Contora API.yaml.
+ * CRUD for reminders aligned with enterprise-crm-api.yaml.
  */
 
 import { api } from './client.js';

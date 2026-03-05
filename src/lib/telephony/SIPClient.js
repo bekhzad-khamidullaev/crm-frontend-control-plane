@@ -291,7 +291,9 @@ class SIPClient {
         const receivers = pc.getReceivers?.() || [];
         const tracks = receivers.map((receiver) => receiver?.track).filter((track) => track && track.kind === 'audio');
         if (!tracks.length) return;
-        attachFromStream(new MediaStream(tracks));
+        if (typeof window !== 'undefined' && window.MediaStream) {
+          attachFromStream(new window.MediaStream(tracks));
+        }
       };
 
       pc.ontrack = (trackEvent) => {

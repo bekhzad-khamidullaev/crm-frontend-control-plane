@@ -194,4 +194,4 @@ When adding new tests:
 
 ## License
 
-Part of the Contora CRM project.
+Part of the Enterprise CRM project.

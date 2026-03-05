@@ -1,6 +1,6 @@
 # Leads Module - 100% Functional Coverage ✅
 
-Полнофункциональный модуль управления лидами с интеграцией к Contora API.
+Полнофункциональный модуль управления лидами с интеграцией к Enterprise CRM API.
 
 ## 📋 Оглавление
 
@@ -12,7 +12,7 @@
 
 ## 🔗 API Endpoints
 
-Все эндпоинты полностью подключены к Contora API без fallback на mock-данные:
+Все эндпоинты полностью подключены к Enterprise CRM API без fallback на mock-данные:
 
 - `GET /api/leads/` - список лидов с фильтрами (`search`, `owner`, `disqualified`, `ordering`, `page`)
 - `POST /api/leads/` - создание лида

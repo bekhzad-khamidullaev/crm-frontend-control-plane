@@ -1927,7 +1927,7 @@ index 208b7dd..a5eabed 100644
 -      if (refresh) {
 -        localStorage.setItem('crm_refresh_token', refresh);
 -      }
--      localStorage.setItem('contora-theme', 'light');
+-      localStorage.setItem('enterprise_crm-theme', 'light');
 -    }, { access: accessTokenItem.value, refresh: refreshTokenItem?.value });
 +    if (accessTokenItem?.value) {
 +      await page.addInitScript(({ access, refresh }) => {
@@ -1935,7 +1935,7 @@ index 208b7dd..a5eabed 100644
 +        if (refresh) {
 +          localStorage.setItem('crm_refresh_token', refresh);
 +        }
-+        localStorage.setItem('contora-theme', 'light');
++        localStorage.setItem('enterprise_crm-theme', 'light');
 +      }, { access: accessTokenItem.value, refresh: refreshTokenItem?.value });
  
 -    await page.goto(`${BASE_URL}/#/dashboard`);
@@ -1943,7 +1943,7 @@ index 208b7dd..a5eabed 100644
 +    } else {
 +      await login(page);
 +      await page.goto('/#/dashboard');
-+      await page.evaluate(() => localStorage.setItem('contora-theme', 'light'));
++      await page.evaluate(() => localStorage.setItem('enterprise_crm-theme', 'light'));
 +    }
  
      const hasLayout = await page

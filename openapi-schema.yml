@@ -1,11 +1,11 @@
 openapi: 3.0.3
 info:
-  title: Contora API
+  title: Enterprise CRM API
   version: 1.0.0 (api)
   description: Versioned API for frontend consumption
   contact:
-    name: Contora API Team
-    url: https://contora.io/
+    name: Enterprise CRM API Team
+    url: https://enterprise-crm.io/
     email: support@example.com
   license:
     name: MIT License

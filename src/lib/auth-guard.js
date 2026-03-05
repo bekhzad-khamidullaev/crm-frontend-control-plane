@@ -25,7 +25,7 @@ function getRolesFromToken(token) {
 
 function getStoredRoles() {
   try {
-    const raw = sessionStorage.getItem('contora_roles') || localStorage.getItem('contora_roles');
+    const raw = sessionStorage.getItem('enterprise_crm_roles') || localStorage.getItem('enterprise_crm_roles');
     if (!raw) return [];
     const parsed = JSON.parse(raw);
     if (Array.isArray(parsed)) return normalizeRoles(parsed);

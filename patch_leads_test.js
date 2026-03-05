@@ -1,4 +1,4 @@
-const fs = require('fs');
+import fs from 'node:fs';
 
 let content = fs.readFileSync('tests/unit/leads-detail.test.jsx', 'utf8');
 

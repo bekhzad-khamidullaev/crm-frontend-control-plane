@@ -130,7 +130,7 @@ const MarketingSegmentsPage = lazy(() => import('./pages/marketing-segments.jsx'
 const MarketingTemplatesPage = lazy(() => import('./pages/marketing-templates.jsx'));
 
 // Admin/system pages
-const ContoraEmailsPage = lazy(() => import('./pages/crm-emails.jsx'));
+const EnterpriseCRMEmailsPage = lazy(() => import('./pages/crm-emails.jsx'));
 const MassmailPage = lazy(() => import('./pages/massmail.jsx'));
 const OperationsPage = lazy(() => import('./pages/operations.jsx'));
 const ReferenceDataPage = lazy(() => import('./pages/reference-data.jsx'));
@@ -167,6 +167,19 @@ function normalizeUser(raw, fallback = {}) {
   };
 }
 
+function readStoredRoles() {
+  try {
+    const raw = sessionStorage.getItem('enterprise_crm_roles') || localStorage.getItem('enterprise_crm_roles');
+    if (!raw) return [];
+    const parsed = JSON.parse(raw);
+    if (Array.isArray(parsed)) return parsed;
+    if (parsed && Array.isArray(parsed.roles)) return parsed.roles;
+  } catch {
+    // ignore malformed storage and fallback to token/profile roles
+  }
+  return [];
+}
+
 function App() {
   const [collapsed, setCollapsed] = useState(false);
   const [route, setRoute] = useState(parseHash());
@@ -182,7 +195,7 @@ function App() {
 
   useEffect(() => {
     // Initialize locale on mount
-    const savedLocale = normalizeLocale(localStorage.getItem('contora_locale') || 'ru');
+    const savedLocale = normalizeLocale(localStorage.getItem('enterprise_crm_locale') || 'ru');
     handleLocaleChange(savedLocale).finally(() => setLocaleInitialized(true));
 
     // Check auth on mount
@@ -198,13 +211,18 @@ function App() {
         try {
           const me = await getProfile();
           const roles = mergeRoles(
+            readStoredRoles(),
             rolesFromProfile(me),
             rolesFromTokenPayload(getUserFromToken() || {}),
           );
-          sessionStorage.setItem('contora_roles', JSON.stringify(roles));
+          if (roles.length > 0) {
+            const serializedRoles = JSON.stringify(roles);
+            sessionStorage.setItem('enterprise_crm_roles', serializedRoles);
+            localStorage.setItem('enterprise_crm_roles', serializedRoles);
+          }
           setUser((prev) => normalizeUser(me || {}, prev || tokenUser));
           // Sync locale from profile only when user did not explicitly choose one in localStorage.
-          if (!localStorage.getItem('contora_locale') && me?.language_code) {
+          if (!localStorage.getItem('enterprise_crm_locale') && me?.language_code) {
             const profileLocale = normalizeLocale(me.language_code);
             if (profileLocale !== savedLocale) {
               handleLocaleChange(profileLocale);
@@ -363,8 +381,8 @@ function App() {
     const nextLocale = normalizeLocale(lang);
     await setLocale(nextLocale);
     setLocaleState(nextLocale);
-    localStorage.setItem('contora_locale', nextLocale);
-    window.dispatchEvent(new CustomEvent('contora:locale-change', { detail: nextLocale }));
+    localStorage.setItem('enterprise_crm_locale', nextLocale);
+    window.dispatchEvent(new CustomEvent('enterprise_crm:locale-change', { detail: nextLocale }));
   };
 
   const handleLogout = () => {
@@ -393,7 +411,7 @@ function App() {
     const tokenRoles = rolesFromTokenPayload(getUserFromToken() || {});
     let storedRoles = [];
     try {
-      const raw = sessionStorage.getItem('contora_roles') || localStorage.getItem('contora_roles');
+      const raw = sessionStorage.getItem('enterprise_crm_roles') || localStorage.getItem('enterprise_crm_roles');
       if (raw) {
         const parsed = JSON.parse(raw);
         storedRoles = Array.isArray(parsed) ? parsed : Array.isArray(parsed?.roles) ? parsed.roles : [];
@@ -598,7 +616,7 @@ function App() {
       case 'marketing-templates':
         return <MarketingTemplatesPage />;
       case 'crm-emails':
-        return <ContoraEmailsPage />;
+        return <EnterpriseCRMEmailsPage />;
       case 'massmail':
         return <MassmailPage />;
       case 'operations':
@@ -690,20 +708,20 @@ function App() {
 // Wrapper component that provides theme to App
 function AppWithTheme() {
   const { theme } = useTheme();
-  const [locale, setLocale] = useState(() => normalizeLocale(localStorage.getItem('contora_locale') || 'ru'));
+  const [locale, setLocale] = useState(() => normalizeLocale(localStorage.getItem('enterprise_crm_locale') || 'ru'));
   useEffect(() => {
     const onLocaleChanged = (event) => {
       setLocale(normalizeLocale(event?.detail));
     };
     const onStorage = (event) => {
-      if (event.key === 'contora_locale') {
+      if (event.key === 'enterprise_crm_locale') {
         setLocale(normalizeLocale(event.newValue));
       }
     };
-    window.addEventListener('contora:locale-change', onLocaleChanged);
+    window.addEventListener('enterprise_crm:locale-change', onLocaleChanged);
     window.addEventListener('storage', onStorage);
     return () => {
-      window.removeEventListener('contora:locale-change', onLocaleChanged);
+      window.removeEventListener('enterprise_crm:locale-change', onLocaleChanged);
       window.removeEventListener('storage', onStorage);
     };
   }, []);

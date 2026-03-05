@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useState } from 'react';
 
-const STORAGE_KEY = 'contora-theme';
-const EVENT_KEY = 'contora-theme-change';
+const STORAGE_KEY = 'enterprise_crm-theme';
+const EVENT_KEY = 'enterprise_crm-theme-change';
 
 const getInitialTheme = () => {
   if (typeof window === 'undefined') return 'light';
@@ -44,7 +44,7 @@ export function useTheme() {
           root.classList.remove('dark');
         }
         window.localStorage.setItem(STORAGE_KEY, nextTheme);
-        window.dispatchEvent(new CustomEvent(EVENT_KEY, { detail: nextTheme }));
+        window.dispatchEvent(new window.CustomEvent(EVENT_KEY, { detail: nextTheme }));
       }
       return nextTheme;
     });

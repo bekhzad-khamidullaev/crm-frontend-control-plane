@@ -393,7 +393,7 @@ function readonlyResource(basePath) {
   };
 }
 
-// Authentication (JWT + Token) — per Contora API.yaml
+// Authentication (JWT + Token) — per enterprise-crm-api.yaml
 async function loginWithFallback(credentials) {
   // Use only the correct endpoint: /api/token/
   return await api.post('/api/token/', { body: credentials, skipAuth: true });

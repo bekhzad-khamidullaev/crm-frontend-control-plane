@@ -1,4 +1,5 @@
 import { fireEvent, render, screen, waitFor } from '@testing-library/react';
+import dayjs from 'dayjs';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import * as api from '../../src/lib/api';
 import * as remindersAPI from '../../src/lib/api/reminders';
@@ -26,7 +27,6 @@ vi.mock('../../src/components/EntitySelect', () => ({
 }));
 
 vi.mock('../../src/components/ui-DatePicker', () => {
-  const dayjs = require('dayjs');
   return {
     DatePicker: ({ value, onChange, id }) => (
       <input

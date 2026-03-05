@@ -14,7 +14,7 @@
 import { test, expect } from '@playwright/test';
 import { login } from './helpers/auth.js';
 
-const BASE_URL = process.env.BASE_URL || 'http://localhost:3000';
+const BASE_URL = process.env.PLAYWRIGHT_BASE_URL || process.env.BASE_URL || 'http://localhost:3000';
 const ADMIN_USERNAME = 'admin';
 const ADMIN_PASSWORD = 't3sl@admin';
 
@@ -73,44 +73,35 @@ function getContrastRatio(rgb1, rgb2) {
   return (lighter + 0.05) / (darker + 0.05);
 }
 
+function getThemeSwitch(page) {
+  return page.locator('[role="switch"], .ant-switch').first();
+}
+
+async function isThemeSwitchChecked(switchLocator) {
+  const ariaChecked = await switchLocator.getAttribute('aria-checked');
+  if (ariaChecked === 'true' || ariaChecked === 'false') {
+    return ariaChecked === 'true';
+  }
+  return switchLocator.evaluate((el) => el.classList.contains('ant-switch-checked'));
+}
+
 test.describe('Theme Switching Tests', () => {
   test.describe.configure({ mode: 'serial' });
 
-  const THEME_STATE_FILE = 'tests/e2e/.auth/user.json';
-
   test.beforeEach(async ({ page }) => {
-    const fs = await import('fs/promises');
-    const storageState = await fs.readFile(THEME_STATE_FILE, 'utf8');
-    const state = JSON.parse(storageState);
-    const localStorageEntry = state.origins?.find((o) => o.localStorage)?.localStorage || [];
-    const accessTokenItem = localStorageEntry.find((item) => item.name === 'crm_access_token');
-    const refreshTokenItem = localStorageEntry.find((item) => item.name === 'crm_refresh_token');
+    await login(page);
+    await page.goto('/#/dashboard');
+    await page.evaluate(() => localStorage.setItem('enterprise_crm-theme', 'light'));
 
-    if (accessTokenItem?.value) {
-      await page.addInitScript(({ access, refresh }) => {
-        localStorage.setItem('crm_access_token', access);
-        if (refresh) {
-          localStorage.setItem('crm_refresh_token', refresh);
-        }
-        localStorage.setItem('contora-theme', 'light');
-      }, { access: accessTokenItem.value, refresh: refreshTokenItem?.value });
-
-      await page.goto(`${BASE_URL}/#/dashboard`);
-    } else {
-      await login(page);
-      await page.goto('/#/dashboard');
-      await page.evaluate(() => localStorage.setItem('contora-theme', 'light'));
-    }
-
-    const hasLayout = await page
+    const layoutAfterRecovery = await page
       .locator('.ant-layout')
       .first()
-      .isVisible({ timeout: 15000 })
+      .isVisible({ timeout: 10000 })
       .catch(() => false);
 
-    if (!hasLayout) {
-      const currentHash = await page.evaluate(() => window.location.hash);
-      throw new Error(`Dashboard not available (hash: ${currentHash})`);
+    if (!layoutAfterRecovery) {
+      const hashAfterRecovery = await page.evaluate(() => window.location.hash);
+      throw new Error(`Dashboard not available (hash: ${hashAfterRecovery})`);
     }
 
     await page.waitForTimeout(1000); // Wait for theme to initialize
@@ -145,11 +136,11 @@ test.describe('Theme Switching Tests', () => {
 
   test('2. Dark theme switches and persists in localStorage', async ({ page }) => {
     // Find and click theme toggle switch
-    const themeSwitch = page.locator('.ant-switch').first();
+    const themeSwitch = getThemeSwitch(page);
     await expect(themeSwitch).toBeVisible({ timeout: 5000 });
     
     // Verify initially unchecked (light theme)
-    const isCheckedBefore = await themeSwitch.evaluate(el => el.classList.contains('ant-switch-checked'));
+    const isCheckedBefore = await isThemeSwitchChecked(themeSwitch);
     expect(isCheckedBefore).toBe(false);
     
     // Toggle to dark theme
@@ -157,11 +148,11 @@ test.describe('Theme Switching Tests', () => {
     await page.waitForTimeout(500); // Wait for theme transition
     
     // Verify switch is now checked
-    const isCheckedAfter = await themeSwitch.evaluate(el => el.classList.contains('ant-switch-checked'));
+    const isCheckedAfter = await isThemeSwitchChecked(themeSwitch);
     expect(isCheckedAfter).toBe(true);
     
     // Verify localStorage was updated
-    const themeInStorage = await page.evaluate(() => localStorage.getItem('contora-theme'));
+    const themeInStorage = await page.evaluate(() => localStorage.getItem('enterprise_crm-theme'));
     expect(themeInStorage).toBe('dark');
     
     // Verify dark class was added to root element
@@ -173,7 +164,7 @@ test.describe('Theme Switching Tests', () => {
 
   test('3. Theme applies to all pages (Leads, Contacts, Deals, Tasks)', async ({ page }) => {
     // Switch to dark theme
-    const themeSwitch = page.locator('.ant-switch').first();
+    const themeSwitch = getThemeSwitch(page);
     await themeSwitch.click();
     await page.waitForTimeout(500);
     
@@ -240,7 +231,7 @@ test.describe('Theme Switching Tests', () => {
     }
     
     // Switch to Dark Theme
-    const themeSwitch = page.locator('.ant-switch').first();
+    const themeSwitch = getThemeSwitch(page);
     await themeSwitch.click();
     await page.waitForTimeout(1000);
     
@@ -276,7 +267,7 @@ test.describe('Theme Switching Tests', () => {
 
   test('5. Modals and forms display correctly in dark theme', async ({ page }) => {
     // Switch to dark theme
-    const themeSwitch = page.locator('.ant-switch').first();
+    const themeSwitch = getThemeSwitch(page);
     await themeSwitch.click();
     await page.waitForTimeout(500);
     
@@ -326,12 +317,12 @@ test.describe('Theme Switching Tests', () => {
 
   test('6. Theme persists after page reload', async ({ page }) => {
     // Switch to dark theme
-    const themeSwitch = page.locator('.ant-switch').first();
+    const themeSwitch = getThemeSwitch(page);
     await themeSwitch.click();
     await page.waitForTimeout(500);
     
     // Verify dark theme is active
-    let themeInStorage = await page.evaluate(() => localStorage.getItem('contora-theme'));
+    let themeInStorage = await page.evaluate(() => localStorage.getItem('enterprise_crm-theme'));
     expect(themeInStorage).toBe('dark');
     
     let hasDarkClass = await page.evaluate(() => document.documentElement.classList.contains('dark'));
@@ -344,15 +335,15 @@ test.describe('Theme Switching Tests', () => {
     await page.waitForTimeout(1000);
     
     // Verify theme persisted
-    themeInStorage = await page.evaluate(() => localStorage.getItem('contora-theme'));
+    themeInStorage = await page.evaluate(() => localStorage.getItem('enterprise_crm-theme'));
     expect(themeInStorage).toBe('dark');
     
     hasDarkClass = await page.evaluate(() => document.documentElement.classList.contains('dark'));
     expect(hasDarkClass).toBe(true);
     
     // Verify switch is still checked
-    const themeSwitchAfter = page.locator('.ant-switch').first();
-    const isChecked = await themeSwitchAfter.evaluate(el => el.classList.contains('ant-switch-checked'));
+    const themeSwitchAfter = getThemeSwitch(page);
+    const isChecked = await isThemeSwitchChecked(themeSwitchAfter);
     expect(isChecked).toBe(true);
     
     console.log('After reload: Dark theme persisted ✓');
@@ -383,7 +374,7 @@ test.describe('Theme Switching Tests', () => {
     console.log('Light - Header background:', lightHeaderBg);
     
     // Switch to Dark Theme
-    const themeSwitch = page.locator('.ant-switch').first();
+    const themeSwitch = getThemeSwitch(page);
     await themeSwitch.click();
     await page.waitForTimeout(1000);
     
@@ -446,7 +437,7 @@ test.describe('Theme Switching Tests', () => {
       await page.waitForTimeout(500);
       
       // Find theme switch
-      const themeSwitch = page.locator('.ant-switch').first();
+      const themeSwitch = getThemeSwitch(page);
       await expect(themeSwitch).toBeVisible({ timeout: 3000 });
       
       // Toggle theme
@@ -454,7 +445,7 @@ test.describe('Theme Switching Tests', () => {
       await page.waitForTimeout(300);
       
       // Verify theme changed
-      const theme = await page.evaluate(() => localStorage.getItem('contora-theme'));
+      const theme = await page.evaluate(() => localStorage.getItem('enterprise_crm-theme'));
       const hasDarkClass = await page.evaluate(() => document.documentElement.classList.contains('dark'));
       
       console.log(`${pageInfo.name}: Theme=${theme}, darkClass=${hasDarkClass}`);
@@ -469,7 +460,7 @@ test.describe('Theme Switching Tests', () => {
 
   test('9. Dark theme - Table rows and hover states', async ({ page }) => {
     // Switch to dark theme
-    const themeSwitch = page.locator('.ant-switch').first();
+    const themeSwitch = getThemeSwitch(page);
     await themeSwitch.click();
     await page.waitForTimeout(500);
     
@@ -505,7 +496,7 @@ test.describe('Theme Switching Tests', () => {
 
   test('10. Dark theme - Dropdown and menu colors', async ({ page }) => {
     // Switch to dark theme
-    const themeSwitch = page.locator('.ant-switch').first();
+    const themeSwitch = getThemeSwitch(page);
     await themeSwitch.click();
     await page.waitForTimeout(500);
     

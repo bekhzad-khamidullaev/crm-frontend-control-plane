@@ -12,11 +12,11 @@ const ISO_CURRENCY_CODES = new Set([
 
 /**
  * Единая валюта отображения по всему приложению.
- * При необходимости можно переопределить через localStorage: contora_currency.
+ * При необходимости можно переопределить через localStorage: enterprise_crm_currency.
  */
 export const APP_CURRENCY_CODE = (() => {
   try {
-    const stored = (typeof window !== 'undefined' && window.localStorage.getItem('contora_currency')) || '';
+    const stored = (typeof window !== 'undefined' && window.localStorage.getItem('enterprise_crm_currency')) || '';
     const normalized = stored.trim().toUpperCase();
     return ISO_CURRENCY_CODES.has(normalized) ? normalized : 'RUB';
   } catch {

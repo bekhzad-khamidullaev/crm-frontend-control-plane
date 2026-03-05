@@ -1,4 +1,5 @@
 import fs from 'node:fs/promises';
+import { Buffer } from 'node:buffer';
 import path from 'node:path';
 import { chromium } from 'playwright';
 
@@ -92,10 +93,10 @@ try {
   await page.evaluate(({ accessToken, refreshToken, roleSet }) => {
     localStorage.setItem('crm_access_token', accessToken);
     if (refreshToken) localStorage.setItem('crm_refresh_token', refreshToken);
-    localStorage.setItem('contora_locale', 'ru');
-    localStorage.setItem('contora-theme', 'light');
-    localStorage.setItem('contora_roles', JSON.stringify(roleSet));
-    sessionStorage.setItem('contora_roles', JSON.stringify(roleSet));
+    localStorage.setItem('enterprise_crm_locale', 'ru');
+    localStorage.setItem('enterprise_crm-theme', 'light');
+    localStorage.setItem('enterprise_crm_roles', JSON.stringify(roleSet));
+    sessionStorage.setItem('enterprise_crm_roles', JSON.stringify(roleSet));
   }, { accessToken: access, refreshToken: refresh, roleSet: roles });
 
   for (const [name, route] of routes) {

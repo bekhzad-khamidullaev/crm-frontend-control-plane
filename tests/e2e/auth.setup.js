@@ -55,8 +55,8 @@ setup('authenticate', async ({ page, request }) => {
       if (refreshToken) {
         localStorage.setItem('crm_refresh_token', refreshToken);
       }
-      localStorage.setItem('contora_locale', 'ru');
-      localStorage.setItem('contora-theme', 'light');
+      localStorage.setItem('enterprise_crm_locale', 'ru');
+      localStorage.setItem('enterprise_crm-theme', 'light');
     },
     { accessToken: access, refreshToken: refresh }
   );

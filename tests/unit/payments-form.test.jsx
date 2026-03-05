@@ -1,4 +1,5 @@
 import { fireEvent, render, screen, waitFor } from '@testing-library/react';
+import dayjs from 'dayjs';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import * as client from '../../src/lib/api/client';
 import * as paymentsApi from '../../src/lib/api/payments';
@@ -48,7 +49,7 @@ vi.mock('../../src/components/ui-DatePicker.jsx', () => ({
       id={id}
       type="date"
       value={value ? value.format('YYYY-MM-DD') : ''}
-      onChange={(e) => onChange(require('dayjs')(e.target.value))}
+      onChange={(e) => onChange(dayjs(e.target.value))}
     />
   ),
 }));
