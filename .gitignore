@@ -49,3 +49,12 @@ tmp_*
 *.bak
 *.old
 .cache/
+
+# Test results and reports
+*-test-results.json
+playwright-report/
+test-results/
+coverage/
+all-test-results.json
+tasks-detail-results.json
+task-test-results.json
