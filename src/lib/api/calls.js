@@ -182,6 +182,79 @@ export async function getCallStatistics(params = {}) {
 }
 
 /**
+ * Get contact center KPI economics
+ * @param {Object} params
+ * @returns {Promise<Object>}
+ */
+export async function getContactCenterKpi(params = {}) {
+  return apiClient.get('/api/voip/contact-center-kpi/', { params });
+}
+
+/**
+ * Get contact center drilldown by teams and agents
+ * @param {Object} params
+ * @returns {Promise<Object>}
+ */
+export async function getContactCenterDrilldown(params = {}) {
+  return apiClient.get('/api/voip/contact-center-drilldown/', { params });
+}
+
+/**
+ * List QA scores for calls
+ * @param {Object} params
+ * @returns {Promise<{results: Array, count: number}>}
+ */
+export async function getCallQaScores(params = {}) {
+  return apiClient.get('/api/voip/qa-scores/', { params });
+}
+
+/**
+ * Create/update current reviewer QA score for a call
+ * @param {Object} data
+ * @returns {Promise<Object>}
+ */
+export async function upsertCallQaScore(data) {
+  return apiClient.post('/api/voip/qa-scores/', { body: data });
+}
+
+/**
+ * Get QA summary
+ * @param {Object} params
+ * @returns {Promise<Object>}
+ */
+export async function getCallQaSummary(params = {}) {
+  return apiClient.get('/api/voip/qa-summary/', { params });
+}
+
+/**
+ * Generate weekly pilot board report
+ * @param {Object} data
+ * @returns {Promise<Object>}
+ */
+export async function generatePilotWeeklyReport(data = {}) {
+  return apiClient.post('/api/voip/pilot-weekly-reports/generate/', { body: data });
+}
+
+/**
+ * List pilot weekly reports
+ * @param {Object} params
+ * @returns {Promise<{results: Array, count: number}>}
+ */
+export async function getPilotWeeklyReports(params = {}) {
+  return apiClient.get('/api/voip/pilot-weekly-reports/', { params });
+}
+
+/**
+ * Export pilot weekly report
+ * @param {number|string} reportId
+ * @param {Object} params
+ * @returns {Promise<Object>}
+ */
+export async function exportPilotWeeklyReport(reportId, params = { export_format: 'md' }) {
+  return apiClient.get(`/api/voip/pilot-weekly-reports/${reportId}/export/`, { params });
+}
+
+/**
  * Get CRM call statistics (client-side aggregation)
  * @param {Object} params - Query parameters
  * @returns {Promise<Object>}

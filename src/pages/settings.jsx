@@ -1,8 +1,15 @@
 import React, { useEffect, useState } from 'react';
-import { Card, Tabs, Form, Input, Button, Space, message, Table, Alert, Upload } from 'antd';
+import { Card, Tabs, Form, Input, Button, Space, message, Table, Alert, Upload, Tag } from 'antd';
 import { SettingOutlined, MailOutlined, BellOutlined, GlobalOutlined, ReloadOutlined, DatabaseOutlined, UploadOutlined, DownloadOutlined } from '@ant-design/icons';
 import settingsApi from '../lib/api/settings.js';
 import { exportCrmDataExcel, importCrmDataExcel } from '../lib/api/crmData.js';
+import {
+  getComplianceReport,
+  getDsrRequests,
+  executeDsrRequest,
+  getRetentionPolicies,
+  runRetentionPolicies,
+} from '../lib/api/compliance.js';
 
 const { TextArea } = Input;
 
@@ -15,11 +22,16 @@ function SettingsPage() {
   const [dataExchangeLoading, setDataExchangeLoading] = useState(false);
   const [importFile, setImportFile] = useState(null);
   const [importResult, setImportResult] = useState(null);
+  const [complianceLoading, setComplianceLoading] = useState(false);
+  const [complianceReport, setComplianceReport] = useState(null);
+  const [dsrItems, setDsrItems] = useState([]);
+  const [retentionItems, setRetentionItems] = useState([]);
 
   useEffect(() => {
     loadMassmailSettings();
     loadReminderSettings();
     loadPublicDomains();
+    loadComplianceData();
   }, []);
 
   const loadMassmailSettings = async () => {
@@ -54,6 +66,55 @@ function SettingsPage() {
       setDomains([]);
     } finally {
       setDomainsLoading(false);
+    }
+  };
+
+  const normalizeList = (response) => {
+    if (Array.isArray(response)) return response;
+    return Array.isArray(response?.results) ? response.results : [];
+  };
+
+  const loadComplianceData = async () => {
+    setComplianceLoading(true);
+    try {
+      const [reportResp, dsrResp, retentionResp] = await Promise.all([
+        getComplianceReport(),
+        getDsrRequests({ page_size: 50 }),
+        getRetentionPolicies({ page_size: 50 }),
+      ]);
+      setComplianceReport(reportResp || null);
+      setDsrItems(normalizeList(dsrResp));
+      setRetentionItems(normalizeList(retentionResp));
+    } catch (error) {
+      console.error('Error loading compliance data:', error);
+      message.error('Не удалось загрузить compliance данные');
+    } finally {
+      setComplianceLoading(false);
+    }
+  };
+
+  const handleExecuteDsr = async (record) => {
+    try {
+      await executeDsrRequest(record.id);
+      message.success('DSR выполнен');
+      loadComplianceData();
+    } catch (error) {
+      console.error('Error executing DSR:', error);
+      message.error('Не удалось выполнить DSR');
+    }
+  };
+
+  const handleRunRetention = async () => {
+    try {
+      setComplianceLoading(true);
+      const result = await runRetentionPolicies();
+      message.success(`Retention выполнен: ${result?.count || 0} политик`);
+      await loadComplianceData();
+    } catch (error) {
+      console.error('Error running retention:', error);
+      message.error('Не удалось выполнить retention политики');
+    } finally {
+      setComplianceLoading(false);
     }
   };
 
@@ -291,6 +352,116 @@ function SettingsPage() {
             pagination={{ pageSize: 10 }}
           />
         </Card>
+      ),
+    },
+    {
+      key: 'compliance',
+      label: (
+        <span>
+          <SettingOutlined />
+          Compliance
+        </span>
+      ),
+      children: (
+        <Space direction="vertical" style={{ width: '100%' }} size="large">
+          <Card
+            title="Compliance Report"
+            extra={
+              <Button icon={<ReloadOutlined />} onClick={loadComplianceData} loading={complianceLoading}>
+                Обновить
+              </Button>
+            }
+          >
+            <Space direction="vertical" style={{ width: '100%' }}>
+              <Alert
+                type="info"
+                showIcon
+                message="Сводка по согласию, DSR и retention"
+                description="Данные формируются из /api/settings/compliance/audit/report/"
+              />
+              <pre style={{ margin: 0, whiteSpace: 'pre-wrap' }}>
+                {JSON.stringify(complianceReport || {}, null, 2)}
+              </pre>
+            </Space>
+          </Card>
+
+          <Card
+            title="DSR Requests"
+            extra={
+              <Button icon={<ReloadOutlined />} onClick={loadComplianceData} loading={complianceLoading}>
+                Обновить
+              </Button>
+            }
+          >
+            <Table
+              rowKey={(record) => record.id}
+              loading={complianceLoading}
+              dataSource={dsrItems}
+              pagination={false}
+              columns={[
+                { title: 'ID', dataIndex: 'id', key: 'id', width: 220 },
+                { title: 'Тип', dataIndex: 'request_type', key: 'request_type' },
+                {
+                  title: 'Статус',
+                  dataIndex: 'status',
+                  key: 'status',
+                  render: (value) => {
+                    const color = value === 'completed' ? 'green' : value === 'failed' ? 'red' : 'blue';
+                    return <Tag color={color}>{value}</Tag>;
+                  },
+                },
+                { title: 'Причина', dataIndex: 'reason', key: 'reason' },
+                {
+                  title: 'Действия',
+                  key: 'actions',
+                  render: (_, record) => (
+                    <Button
+                      type="link"
+                      disabled={record.status === 'completed' || record.status === 'in_progress'}
+                      onClick={() => handleExecuteDsr(record)}
+                    >
+                      Выполнить
+                    </Button>
+                  ),
+                },
+              ]}
+            />
+          </Card>
+
+          <Card
+            title="Retention Policies"
+            extra={
+              <Space>
+                <Button icon={<ReloadOutlined />} onClick={loadComplianceData} loading={complianceLoading}>
+                  Обновить
+                </Button>
+                <Button type="primary" onClick={handleRunRetention} loading={complianceLoading}>
+                  Run Retention
+                </Button>
+              </Space>
+            }
+          >
+            <Table
+              rowKey={(record) => record.id}
+              loading={complianceLoading}
+              dataSource={retentionItems}
+              pagination={false}
+              columns={[
+                { title: 'Название', dataIndex: 'name', key: 'name' },
+                { title: 'Entity', dataIndex: 'entity', key: 'entity' },
+                { title: 'Action', dataIndex: 'action', key: 'action' },
+                { title: 'Retention (days)', dataIndex: 'retention_days', key: 'retention_days' },
+                {
+                  title: 'Активность',
+                  dataIndex: 'is_active',
+                  key: 'is_active',
+                  render: (value) => (value ? <Tag color="green">active</Tag> : <Tag>inactive</Tag>),
+                },
+                { title: 'Last run', dataIndex: 'last_run_at', key: 'last_run_at' },
+              ]}
+            />
+          </Card>
+        </Space>
       ),
     },
   ];

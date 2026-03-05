@@ -12,6 +12,10 @@ import {
   Typography,
   Space,
   Button,
+  Modal,
+  Form,
+  Input,
+  InputNumber,
   DatePicker,
   Select,
   Table,
@@ -22,14 +26,23 @@ import {
 import {
   PhoneOutlined,
   ClockCircleOutlined,
-  RiseOutlined,
-  FallOutlined,
   ReloadOutlined,
   PhoneTwoTone,
   CheckCircleOutlined,
   CloseCircleOutlined,
 } from '@ant-design/icons';
-import { getCallStatistics, getVoipCallLogs } from '../lib/api/calls.js';
+import {
+  getCallStatistics,
+  getVoipCallLogs,
+  getContactCenterKpi,
+  getContactCenterDrilldown,
+  getCallQaSummary,
+  getCallQaScores,
+  upsertCallQaScore,
+  generatePilotWeeklyReport,
+  getPilotWeeklyReports,
+  exportPilotWeeklyReport,
+} from '../lib/api/calls.js';
 import {
   CallsActivityChart,
   CallsDistributionChart,
@@ -44,14 +57,24 @@ const { Option } = Select;
 
 function CallsDashboard() {
   const [loading, setLoading] = useState(false);
+  const [qaSubmitting, setQaSubmitting] = useState(false);
+  const [reportGenerating, setReportGenerating] = useState(false);
   const [statistics, setStatistics] = useState(null);
+  const [contactCenterKpi, setContactCenterKpi] = useState(null);
+  const [contactCenterDrilldown, setContactCenterDrilldown] = useState({ teams: [], agents: [] });
+  const [qaSummary, setQaSummary] = useState(null);
+  const [qaScores, setQaScores] = useState([]);
+  const [weeklyReports, setWeeklyReports] = useState([]);
   const [recentCalls, setRecentCalls] = useState([]);
+  const [qaModalVisible, setQaModalVisible] = useState(false);
+  const [selectedQaCall, setSelectedQaCall] = useState(null);
   const [chartData, setChartData] = useState(null);
   const [dateRange, setDateRange] = useState([
     dayjs().subtract(7, 'days'),
     dayjs(),
   ]);
   const [period, setPeriod] = useState('week'); // week, month, year
+  const [qaForm] = Form.useForm();
 
   useEffect(() => {
     loadData();
@@ -68,21 +91,24 @@ function CallsDashboard() {
       }
 
       const stats = await getCallStatistics(params);
+      const [kpiResponse, drilldownResponse, qaSummaryResponse, qaScoresResponse, reportsResponse, callsResponse, allCallsResponse] = await Promise.all([
+        getContactCenterKpi({ ...params, period }),
+        getContactCenterDrilldown({ ...params, period }),
+        getCallQaSummary({ ...params, period }),
+        getCallQaScores({ ...params, period, limit: 50 }),
+        getPilotWeeklyReports({ limit: 20 }),
+        getVoipCallLogs({ ...params, limit: 10 }),
+        getVoipCallLogs({ ...params, limit: 1000 }),
+      ]);
       setStatistics(stats);
+      setContactCenterKpi(kpiResponse);
+      setContactCenterDrilldown(drilldownResponse || { teams: [], agents: [] });
+      setQaSummary(qaSummaryResponse || null);
+      setQaScores(qaScoresResponse?.results || []);
+      setWeeklyReports(reportsResponse?.results || []);
 
-      // Load recent calls
-      const callsResponse = await getVoipCallLogs({
-        ...params,
-        limit: 10,
-      });
       const recent = callsResponse?.results || callsResponse || [];
       setRecentCalls(recent);
-
-      // Load all calls for chart data
-      const allCallsResponse = await getVoipCallLogs({
-        ...params,
-        limit: 1000,
-      });
       
       // Process data for charts
       const allCalls = allCallsResponse?.results || allCallsResponse || [];
@@ -91,6 +117,11 @@ function CallsDashboard() {
       console.error('Error loading dashboard data:', error);
       message.error('Не удалось загрузить данные телефонии');
       setStatistics(null);
+      setContactCenterKpi(null);
+      setContactCenterDrilldown({ teams: [], agents: [] });
+      setQaSummary(null);
+      setQaScores([]);
+      setWeeklyReports([]);
       setRecentCalls([]);
       setChartData(null);
     } finally {
@@ -134,6 +165,11 @@ function CallsDashboard() {
     const hours = Math.floor(seconds / 3600);
     const mins = Math.floor((seconds % 3600) / 60);
     return `${hours}ч ${mins}м`;
+  };
+
+  const formatSeconds = (seconds) => {
+    if (!seconds) return '0 c';
+    return `${Math.round(seconds)} c`;
   };
 
   const calculateSuccessRate = () => {
@@ -241,6 +277,230 @@ function CallsDashboard() {
       key: 'duration',
       render: (duration) => formatDuration(duration),
     },
+    {
+      title: 'QA',
+      key: 'qa_action',
+      width: 120,
+      render: (_, record) => (
+        <Button
+          size="small"
+          onClick={() => openQaModal(record)}
+        >
+          Оценить
+        </Button>
+      ),
+    },
+  ];
+
+  const teamColumns = [
+    { title: 'Команда', dataIndex: 'group_name', key: 'group_name' },
+    { title: 'Всего', dataIndex: 'total_calls', key: 'total_calls', width: 90 },
+    { title: 'Answer rate', dataIndex: 'answer_rate', key: 'answer_rate', width: 110, render: (v) => `${v}%` },
+    { title: 'Abandon rate', dataIndex: 'abandon_rate', key: 'abandon_rate', width: 120, render: (v) => `${v}%` },
+    { title: 'AHT', dataIndex: 'aht_seconds', key: 'aht_seconds', width: 100, render: formatSeconds },
+    { title: 'ASA', dataIndex: 'asa_seconds', key: 'asa_seconds', width: 100, render: formatSeconds },
+    { title: 'SLA breach', dataIndex: 'sla_breach_rate', key: 'sla_breach_rate', width: 120, render: (v) => `${v}%` },
+  ];
+
+  const agentColumns = [
+    { title: 'Агент', dataIndex: 'agent_name', key: 'agent_name' },
+    { title: 'Ext', dataIndex: 'extension', key: 'extension', width: 100 },
+    { title: 'Всего', dataIndex: 'total_calls', key: 'total_calls', width: 90 },
+    { title: 'Answer rate', dataIndex: 'answer_rate', key: 'answer_rate', width: 110, render: (v) => `${v}%` },
+    { title: 'Abandon rate', dataIndex: 'abandon_rate', key: 'abandon_rate', width: 120, render: (v) => `${v}%` },
+    { title: 'AHT', dataIndex: 'aht_seconds', key: 'aht_seconds', width: 100, render: formatSeconds },
+    { title: 'ASA', dataIndex: 'asa_seconds', key: 'asa_seconds', width: 100, render: formatSeconds },
+    { title: 'SLA breach', dataIndex: 'sla_breach_rate', key: 'sla_breach_rate', width: 120, render: (v) => `${v}%` },
+  ];
+
+  const currentKpi = contactCenterKpi?.current || null;
+  const previousKpi = contactCenterKpi?.previous || null;
+  const currentQaSummary = qaSummary?.summary || null;
+  const answerRateDelta = currentKpi && previousKpi
+    ? (currentKpi.answer_rate - previousKpi.answer_rate).toFixed(2)
+    : null;
+
+  const outcomeLabelMap = {
+    converted: 'Converted',
+    follow_up: 'Follow-up',
+    escalated: 'Escalated',
+    callback_scheduled: 'Callback',
+    unresolved: 'Unresolved',
+    wrong_number: 'Wrong Number',
+    do_not_call: 'Do Not Call',
+  };
+
+  const qaColumns = [
+    {
+      title: 'Сессия',
+      dataIndex: 'call_session_id',
+      key: 'call_session_id',
+      width: 180,
+    },
+    {
+      title: 'Reviewer',
+      dataIndex: 'reviewer_name',
+      key: 'reviewer_name',
+      width: 130,
+    },
+    {
+      title: 'Outcome',
+      dataIndex: 'outcome_tag',
+      key: 'outcome_tag',
+      render: (value) => outcomeLabelMap[value] || value,
+    },
+    {
+      title: 'Total',
+      dataIndex: 'total_score',
+      key: 'total_score',
+      width: 90,
+    },
+    {
+      title: 'Status',
+      dataIndex: 'qa_passed',
+      key: 'qa_passed',
+      width: 120,
+      render: (value) => (
+        <Tag color={value ? 'success' : 'error'}>
+          {value ? 'Passed' : 'Failed'}
+        </Tag>
+      ),
+    },
+    {
+      title: 'Дата',
+      dataIndex: 'reviewed_at',
+      key: 'reviewed_at',
+      width: 160,
+      render: (value) => dayjs(value).format('DD.MM HH:mm'),
+    },
+  ];
+
+  const openQaModal = (call) => {
+    setSelectedQaCall(call);
+    qaForm.setFieldsValue({
+      script_adherence_score: 80,
+      communication_score: 80,
+      resolution_quality_score: 80,
+      outcome_tag: 'follow_up',
+      strengths: '',
+      improvements: '',
+    });
+    setQaModalVisible(true);
+  };
+
+  const closeQaModal = () => {
+    setQaModalVisible(false);
+    setSelectedQaCall(null);
+    qaForm.resetFields();
+  };
+
+  const handleSubmitQa = async () => {
+    try {
+      const values = await qaForm.validateFields();
+      if (!selectedQaCall?.id) {
+        message.error('Не выбран звонок для QA');
+        return;
+      }
+      setQaSubmitting(true);
+      await upsertCallQaScore({
+        call_log: selectedQaCall.id,
+        ...values,
+      });
+      message.success('QA оценка сохранена');
+      closeQaModal();
+      loadData();
+    } catch (error) {
+      if (error?.errorFields) return;
+      console.error('Failed to save QA score', error);
+      message.error('Не удалось сохранить QA оценку');
+    } finally {
+      setQaSubmitting(false);
+    }
+  };
+
+  const handleGenerateWeeklyReport = async () => {
+    try {
+      setReportGenerating(true);
+      const payload = {
+        period: 'week',
+        baseline_weeks: 4,
+      };
+      if (dateRange && dateRange.length === 2) {
+        payload.date_from = dateRange[0].format('YYYY-MM-DD');
+        payload.date_to = dateRange[1].format('YYYY-MM-DD');
+      }
+      await generatePilotWeeklyReport(payload);
+      message.success('Weekly board report сгенерирован');
+      loadData();
+    } catch (error) {
+      console.error('Failed to generate weekly report', error);
+      message.error('Не удалось сгенерировать weekly report');
+    } finally {
+      setReportGenerating(false);
+    }
+  };
+
+  const handleExportWeeklyReport = async (reportId) => {
+    try {
+      const data = await exportPilotWeeklyReport(reportId, { export_format: 'md' });
+      const markdown = data?.markdown || '';
+      const title = (data?.title || `weekly-report-${reportId}`).replace(/[^\w.-]+/g, '_');
+      const blob = new Blob([markdown], { type: 'text/markdown;charset=utf-8' });
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `${title}.md`;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      window.URL.revokeObjectURL(url);
+    } catch (error) {
+      console.error('Failed to export weekly report', error);
+      message.error('Не удалось экспортировать weekly report');
+    }
+  };
+
+  const weeklyReportColumns = [
+    {
+      title: 'Период',
+      key: 'period',
+      render: (_, record) => `${record.week_start_date} - ${record.week_end_date}`,
+    },
+    {
+      title: 'Answer Δ',
+      key: 'answer_delta',
+      width: 120,
+      render: (_, record) => `${record?.payload?.delta?.answer_rate ?? 0} pp`,
+    },
+    {
+      title: 'Abandon Δ',
+      key: 'abandon_delta',
+      width: 120,
+      render: (_, record) => `${record?.payload?.delta?.abandon_rate ?? 0} pp`,
+    },
+    {
+      title: 'QA Pass Δ',
+      key: 'qa_delta',
+      width: 120,
+      render: (_, record) => `${record?.payload?.delta?.qa_pass_rate ?? 0} pp`,
+    },
+    {
+      title: 'Создан',
+      dataIndex: 'created_at',
+      key: 'created_at',
+      width: 170,
+      render: (value) => dayjs(value).format('DD.MM.YYYY HH:mm'),
+    },
+    {
+      title: 'Экспорт',
+      key: 'export',
+      width: 130,
+      render: (_, record) => (
+        <Button size="small" onClick={() => handleExportWeeklyReport(record.id)}>
+          Markdown
+        </Button>
+      ),
+    },
   ];
 
   return (
@@ -248,6 +508,9 @@ function CallsDashboard() {
       <div style={{ marginBottom: 24, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
         <Title level={2} style={{ margin: 0 }}>Дашборд телефонии</Title>
         <Space>
+          <Button type="primary" loading={reportGenerating} onClick={handleGenerateWeeklyReport}>
+            Weekly Report
+          </Button>
           <Select
             value={period}
             onChange={handlePeriodChange}
@@ -310,6 +573,120 @@ function CallsDashboard() {
               prefix={<CheckCircleOutlined />}
               valueStyle={{ color: '#52c41a' }}
             />
+          </Card>
+        </Col>
+      </Row>
+
+      {/* QA Summary */}
+      <Row gutter={[16, 16]} style={{ marginBottom: 24 }}>
+        <Col xs={24} sm={12} lg={6}>
+          <Card loading={loading}>
+            <Statistic
+              title="QA Pass Rate"
+              value={currentQaSummary?.pass_rate || 0}
+              suffix="%"
+              valueStyle={{ color: '#52c41a' }}
+            />
+          </Card>
+        </Col>
+        <Col xs={24} sm={12} lg={6}>
+          <Card loading={loading}>
+            <Statistic
+              title="Avg Script Adherence"
+              value={currentQaSummary?.avg_script_adherence || 0}
+            />
+          </Card>
+        </Col>
+        <Col xs={24} sm={12} lg={6}>
+          <Card loading={loading}>
+            <Statistic
+              title="Avg Communication"
+              value={currentQaSummary?.avg_communication || 0}
+            />
+          </Card>
+        </Col>
+        <Col xs={24} sm={12} lg={6}>
+          <Card loading={loading}>
+            <Statistic
+              title="Avg Resolution Quality"
+              value={currentQaSummary?.avg_resolution_quality || 0}
+            />
+          </Card>
+        </Col>
+      </Row>
+
+      {/* Contact Center KPI Economics */}
+      <Row gutter={[16, 16]} style={{ marginBottom: 24 }}>
+        <Col xs={24} sm={12} lg={6}>
+          <Card loading={loading}>
+            <Statistic
+              title="AHT"
+              value={formatSeconds(currentKpi?.aht_seconds || 0)}
+              prefix={<ClockCircleOutlined />}
+            />
+          </Card>
+        </Col>
+        <Col xs={24} sm={12} lg={6}>
+          <Card loading={loading}>
+            <Statistic
+              title="ASA"
+              value={formatSeconds(currentKpi?.asa_seconds || 0)}
+              prefix={<ClockCircleOutlined />}
+            />
+          </Card>
+        </Col>
+        <Col xs={24} sm={12} lg={6}>
+          <Card loading={loading}>
+            <Statistic
+              title="FCR"
+              value={currentKpi?.fcr_rate || 0}
+              suffix="%"
+              prefix={<CheckCircleOutlined />}
+              valueStyle={{ color: '#52c41a' }}
+            />
+          </Card>
+        </Col>
+        <Col xs={24} sm={12} lg={6}>
+          <Card loading={loading}>
+            <Statistic
+              title="Abandon Rate"
+              value={currentKpi?.abandon_rate || 0}
+              suffix="%"
+              prefix={<CloseCircleOutlined />}
+              valueStyle={{ color: '#ff4d4f' }}
+            />
+          </Card>
+        </Col>
+      </Row>
+
+      <Row gutter={[16, 16]} style={{ marginBottom: 24 }}>
+        <Col xs={24} sm={12} lg={8}>
+          <Card loading={loading}>
+            <Statistic
+              title="SLA Breach Rate"
+              value={currentKpi?.sla_breach_rate || 0}
+              suffix="%"
+              valueStyle={{ color: '#fa8c16' }}
+            />
+          </Card>
+        </Col>
+        <Col xs={24} sm={12} lg={8}>
+          <Card loading={loading}>
+            <Statistic
+              title="Answer Rate Delta vs Previous"
+              value={answerRateDelta ?? 0}
+              suffix="%"
+              valueStyle={{ color: Number(answerRateDelta || 0) >= 0 ? '#52c41a' : '#ff4d4f' }}
+            />
+          </Card>
+        </Col>
+        <Col xs={24} sm={24} lg={8}>
+          <Card loading={loading} title="Conversion by Direction">
+            <Space direction="vertical" style={{ width: '100%' }}>
+              <Text>Inbound: {contactCenterKpi?.conversion_by_direction?.inbound?.conversion_rate || 0}%</Text>
+              <Text>Outbound: {contactCenterKpi?.conversion_by_direction?.outbound?.conversion_rate || 0}%</Text>
+              <Text>Internal: {contactCenterKpi?.conversion_by_direction?.internal?.conversion_rate || 0}%</Text>
+            </Space>
           </Card>
         </Col>
       </Row>
@@ -392,6 +769,108 @@ function CallsDashboard() {
           }}
         />
       </Card>
+
+      <Row gutter={[16, 16]} style={{ marginTop: 24 }}>
+        <Col xs={24} lg={12}>
+          <Card title="Drilldown по командам" loading={loading}>
+            <Table
+              dataSource={contactCenterDrilldown?.teams || []}
+              columns={teamColumns}
+              rowKey="group_id"
+              pagination={false}
+              size="small"
+            />
+          </Card>
+        </Col>
+        <Col xs={24} lg={12}>
+          <Card title="Drilldown по агентам" loading={loading}>
+            <Table
+              dataSource={contactCenterDrilldown?.agents || []}
+              columns={agentColumns}
+              rowKey="agent_id"
+              pagination={false}
+              size="small"
+            />
+          </Card>
+        </Col>
+      </Row>
+
+      <Row gutter={[16, 16]} style={{ marginTop: 24 }}>
+        <Col xs={24}>
+          <Card title="Weekly Pilot Board Reports" loading={loading}>
+            <Table
+              dataSource={weeklyReports}
+              columns={weeklyReportColumns}
+              rowKey="id"
+              pagination={{ pageSize: 5 }}
+              size="small"
+            />
+          </Card>
+        </Col>
+      </Row>
+
+      <Row gutter={[16, 16]} style={{ marginTop: 24 }}>
+        <Col xs={24}>
+          <Card title="QA Reviews" loading={loading}>
+            <Table
+              dataSource={qaScores}
+              columns={qaColumns}
+              rowKey="id"
+              pagination={{ pageSize: 10 }}
+              size="small"
+            />
+          </Card>
+        </Col>
+      </Row>
+
+      <Modal
+        title={`QA оценка звонка ${selectedQaCall?.session_id || ''}`}
+        open={qaModalVisible}
+        onOk={handleSubmitQa}
+        onCancel={closeQaModal}
+        confirmLoading={qaSubmitting}
+        okText="Сохранить"
+        cancelText="Отмена"
+      >
+        <Form layout="vertical" form={qaForm}>
+          <Form.Item
+            name="script_adherence_score"
+            label="Script Adherence (0-100)"
+            rules={[{ required: true, message: 'Укажите оценку скрипта' }]}
+          >
+            <InputNumber min={0} max={100} style={{ width: '100%' }} />
+          </Form.Item>
+          <Form.Item
+            name="communication_score"
+            label="Communication (0-100)"
+            rules={[{ required: true, message: 'Укажите оценку коммуникации' }]}
+          >
+            <InputNumber min={0} max={100} style={{ width: '100%' }} />
+          </Form.Item>
+          <Form.Item
+            name="resolution_quality_score"
+            label="Resolution Quality (0-100)"
+            rules={[{ required: true, message: 'Укажите оценку результата' }]}
+          >
+            <InputNumber min={0} max={100} style={{ width: '100%' }} />
+          </Form.Item>
+          <Form.Item
+            name="outcome_tag"
+            label="Outcome"
+            rules={[{ required: true, message: 'Выберите outcome' }]}
+          >
+            <Select
+              options={Object.entries(outcomeLabelMap).map(([value, label]) => ({ value, label }))}
+            />
+          </Form.Item>
+          <Form.Item name="strengths" label="Strengths">
+            <Input.TextArea rows={2} />
+          </Form.Item>
+          <Form.Item name="improvements" label="Improvements">
+            <Input.TextArea rows={2} />
+          </Form.Item>
+        </Form>
+      </Modal>
     </div>
   );
 }

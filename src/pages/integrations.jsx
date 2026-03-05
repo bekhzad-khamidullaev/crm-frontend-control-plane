@@ -14,6 +14,7 @@ import {
   InstagramOutlined,
   SendOutlined,
   RobotOutlined,
+  WhatsAppOutlined,
 } from '@ant-design/icons';
 import dayjs from 'dayjs';
 import IntegrationCard from '../components/IntegrationCard';
@@ -22,6 +23,7 @@ import TelephonySettings from '../components/TelephonySettings';
 import FacebookConnect from '../components/FacebookConnect.jsx';
 import InstagramConnect from '../components/InstagramConnect.jsx';
 import TelegramConnect from '../components/TelegramConnect.jsx';
+import WhatsAppConnect from '../components/WhatsAppConnect.jsx';
 import smsApi from '../lib/api/sms.js';
 import { getTelephonyStats, getVoIPConnections } from '../lib/api/telephony';
 import {
@@ -47,6 +49,11 @@ import {
   deleteAIProvider,
   testAIProviderConnection,
 } from '../lib/api/integrations/ai.js';
+import {
+  getWhatsAppAccounts,
+  testWhatsAppAccount,
+  disconnectWhatsAppAccount,
+} from '../lib/api/integrations/whatsapp.js';
 
 const formatDateTime = (value) => {
   if (!value) return '-';
@@ -64,6 +71,7 @@ export default function IntegrationsPage() {
   const [statuses, setStatuses] = useState({
     sms: { status: 'disconnected', stats: {} },
     telephony: { status: 'disconnected', stats: {} },
+    whatsapp: { status: 'disconnected', stats: {} },
     facebook: { status: 'disconnected', stats: {} },
     instagram: { status: 'disconnected', stats: {} },
     telegram: { status: 'disconnected', stats: {} },
@@ -72,12 +80,14 @@ export default function IntegrationsPage() {
   const [modalVisible, setModalVisible] = useState({
     sms: false,
     telephony: false,
+    whatsapp: false,
     facebook: false,
     instagram: false,
     telegram: false,
     ai: false,
   });
   const [facebookPages, setFacebookPages] = useState([]);
+  const [whatsAppAccounts, setWhatsAppAccounts] = useState([]);
   const [instagramAccounts, setInstagramAccounts] = useState([]);
   const [telegramBots, setTelegramBots] = useState([]);
   const [aiProviders, setAIProviders] = useState([]);
@@ -108,6 +118,7 @@ export default function IntegrationsPage() {
     await Promise.all([
       loadSMSStatus(),
       loadTelephonyStatus(),
+      loadWhatsAppStatus(),
       loadFacebookStatus(),
       loadInstagramStatus(),
       loadTelegramStatus(),
@@ -200,6 +211,35 @@ export default function IntegrationsPage() {
       }));
     } finally {
       setLoading((prev) => ({ ...prev, facebook: false }));
+    }
+  };
+
+  const loadWhatsAppStatus = async () => {
+    setLoading((prev) => ({ ...prev, whatsapp: true }));
+    try {
+      const response = await getWhatsAppAccounts({ page_size: 50 });
+      const list = normalizeList(response);
+      setWhatsAppAccounts(list);
+
+      const stats = {
+        Аккаунтов: list.length,
+        'Сообщений получено': list.reduce((sum, item) => sum + (item.messages_received || 0), 0),
+        'Сообщений отправлено': list.reduce((sum, item) => sum + (item.messages_sent || 0), 0),
+      };
+
+      setStatuses((prev) => ({
+        ...prev,
+        whatsapp: { status: list.length ? 'connected' : 'disconnected', stats },
+      }));
+    } catch (error) {
+      console.error('Error loading WhatsApp status:', error);
+      setWhatsAppAccounts([]);
+      setStatuses((prev) => ({
+        ...prev,
+        whatsapp: { status: 'error', stats: {}, error: error.message },
+      }));
+    } finally {
+      setLoading((prev) => ({ ...prev, whatsapp: false }));
     }
   };
 
@@ -302,6 +342,7 @@ export default function IntegrationsPage() {
     message.success('Настройки сохранены');
     if (type === 'sms') await loadSMSStatus();
     if (type === 'telephony') await loadTelephonyStatus();
+    if (type === 'whatsapp') await loadWhatsAppStatus();
     if (type === 'facebook') await loadFacebookStatus();
     if (type === 'instagram') await loadInstagramStatus();
     if (type === 'telegram') await loadTelegramStatus();
@@ -469,6 +510,26 @@ export default function IntegrationsPage() {
     }
   };
 
+  const handleWhatsAppTest = async (record) => {
+    try {
+      await testWhatsAppAccount(record.id);
+      message.success('WhatsApp подключение проверено');
+      loadWhatsAppStatus();
+    } catch (error) {
+      message.error(getErrorText(error, 'Не удалось проверить WhatsApp подключение'));
+    }
+  };
+
+  const handleWhatsAppDisconnect = async (record) => {
+    try {
+      await disconnectWhatsAppAccount(record.id);
+      message.success('WhatsApp аккаунт отключен');
+      loadWhatsAppStatus();
+    } catch (error) {
+      message.error(getErrorText(error, 'Не удалось отключить WhatsApp аккаунт'));
+    }
+  };
+
   const openWebhookModal = (bot) => {
     webhookForm.setFieldsValue({ webhook_url: bot?.webhook_url || '' });
     setWebhookModal({ open: true, bot });
@@ -540,6 +601,61 @@ export default function IntegrationsPage() {
             onConnect={() => openModal('telephony')}
             onRefresh={loadTelephonyStatus}
           />
+
+          <IntegrationCard
+            title="WhatsApp Business"
+            description="Cloud API аккаунты для омниканала поддержки и продаж"
+            icon={<WhatsAppOutlined style={{ fontSize: 24, color: '#25D366' }} />}
+            type="whatsapp"
+            status={statuses.whatsapp.status}
+            stats={statuses.whatsapp.stats}
+            error={statuses.whatsapp.error}
+            loading={loading.whatsapp}
+            onConnect={() => openModal('whatsapp')}
+            onRefresh={loadWhatsAppStatus}
+          >
+            {whatsAppAccounts.length > 0 && (
+              <Table
+                size="small"
+                rowKey={(record) => record.id || record.phone_number_id}
+                columns={[
+                  { title: 'Аккаунт', dataIndex: 'business_name', key: 'business_name' },
+                  { title: 'Номер', dataIndex: 'phone_number', key: 'phone_number' },
+                  { title: 'Phone ID', dataIndex: 'phone_number_id', key: 'phone_number_id' },
+                  {
+                    title: 'Статус',
+                    dataIndex: 'is_active',
+                    key: 'is_active',
+                    render: (value) => (
+                      <Tag color={value ? 'green' : 'default'}>{value ? 'Активен' : 'Пауза'}</Tag>
+                    ),
+                  },
+                  {
+                    title: 'Последняя активность',
+                    dataIndex: 'last_activity_at',
+                    key: 'last_activity_at',
+                    render: formatDateTime,
+                  },
+                  {
+                    title: 'Действия',
+                    key: 'actions',
+                    render: (_, record) => (
+                      <Space>
+                        <Button type="link" onClick={() => handleWhatsAppTest(record)}>
+                          Тест
+                        </Button>
+                        <Button type="link" danger onClick={() => handleWhatsAppDisconnect(record)}>
+                          Отключить
+                        </Button>
+                      </Space>
+                    ),
+                  },
+                ]}
+                dataSource={whatsAppAccounts}
+                pagination={false}
+              />
+            )}
+          </IntegrationCard>
 
           <IntegrationCard
             title="Facebook Messenger"
@@ -807,6 +923,16 @@ export default function IntegrationsPage() {
         width={700}
       >
         <TelephonySettings onSuccess={() => handleIntegrationSuccess('telephony')} />
+      </Modal>
+
+      <Modal
+        title="Подключение WhatsApp Business"
+        open={modalVisible.whatsapp}
+        onCancel={() => closeModal('whatsapp')}
+        footer={null}
+        width={720}
+      >
+        <WhatsAppConnect onSuccess={() => handleIntegrationSuccess('whatsapp')} onCancel={() => closeModal('whatsapp')} />
       </Modal>
 
       <Modal
