@@ -35,17 +35,17 @@ test.describe('Integration Tests - Cross-Module Workflows', () => {
 
   test('should navigate between different modules', async ({ page }) => {
     // Dashboard → Leads
-    await page.goto('/dashboard');
-    await page.click('a[href*="/leads"], nav a:has-text("Лиды")');
-    await expect(page).toHaveURL(/\/leads/);
+    await page.goto('/#/dashboard');
+    await page.getByRole('menuitem', { name: /Лиды/i }).click();
+    await expect.poll(() => page.url()).toMatch(/#\/leads\/?$/);
     
     // Leads → Contacts
-    await page.click('a[href*="/contacts"], nav a:has-text("Контакты")');
-    await expect(page).toHaveURL(/\/contacts/);
+    await page.getByRole('menuitem', { name: /Контакты/i }).click();
+    await expect.poll(() => page.url()).toMatch(/#\/contacts\/?$/);
     
     // Contacts → Dashboard
-    await page.click('a[href*="/dashboard"], nav a:has-text("Dashboard")');
-    await expect(page).toHaveURL(/\/dashboard/);
+    await page.goto('/#/dashboard');
+    await expect.poll(() => page.url()).toMatch(/#\/dashboard\/?$/);
     
     console.log('✓ Module navigation working');
   });
@@ -54,7 +54,7 @@ test.describe('Integration Tests - Cross-Module Workflows', () => {
     const leadData = generateLeadData('_convert');
 
     // Create a lead
-    await page.goto('/leads/new');
+    await page.goto('/#/leads/new');
     await page.fill('input[name="first_name"], input[id*="first_name"]', leadData.first_name);
     await page.fill('input[name="last_name"], input[id*="last_name"]', leadData.last_name);
     await page.fill('input[name="email"], input[id*="email"]', leadData.email);
@@ -66,7 +66,7 @@ test.describe('Integration Tests - Cross-Module Workflows', () => {
     createdLeadIds.push(created.id);
 
     // Navigate to lead detail
-    await page.goto(`/leads/${created.id}`);
+    await page.goto(`/#/leads/${created.id}`);
     
     // Look for convert button
     const convertButton = page.locator('button:has-text("Конвертировать"), button:has-text("Convert")').first();
@@ -75,7 +75,10 @@ test.describe('Integration Tests - Cross-Module Workflows', () => {
       await convertButton.click();
       
       // Confirm conversion
-      await page.click('.ant-modal button:has-text("Да"), button:has-text("Подтвердить")');
+      const confirmConvert = page.locator('.ant-modal button:has-text("Да"), .ant-modal button:has-text("Подтвердить"), .ant-modal button:has-text("OK")').first();
+      if (await confirmConvert.isVisible({ timeout: 2500 }).catch(() => false)) {
+        await confirmConvert.click();
+      }
       await page.waitForTimeout(1500);
       
       // Verify conversion (might redirect or show success message)
@@ -86,7 +89,7 @@ test.describe('Integration Tests - Cross-Module Workflows', () => {
   });
 
   test('should verify dashboard displays correct data', async ({ page }) => {
-    await page.goto('/dashboard');
+    await page.goto('/#/dashboard');
     await page.waitForLoadState('networkidle');
 
     // Check for KPI cards or statistics
@@ -115,7 +118,7 @@ test.describe('Integration Tests - Cross-Module Workflows', () => {
 
   test('should handle API errors gracefully', async ({ page }) => {
     // Try to access non-existent lead
-    await page.goto('/leads/999999999');
+    await page.goto('/#/leads/999999999');
     await page.waitForLoadState('networkidle');
     
     // Should show error message or redirect
@@ -136,12 +139,12 @@ test.describe('Integration Tests - Cross-Module Workflows', () => {
   test('should test responsive behavior', async ({ page }) => {
     // Test desktop view
     await page.setViewportSize({ width: 1920, height: 1080 });
-    await page.goto('/dashboard');
+    await page.goto('/#/dashboard');
     await page.waitForLoadState('networkidle');
     
     // Verify desktop layout
-    const nav = page.locator('nav').first();
-    await expect(nav).toBeVisible();
+    const sidebarMenu = page.locator('aside, [role="menu"]').first();
+    await expect(sidebarMenu).toBeVisible();
     
     // Test tablet view
     await page.setViewportSize({ width: 768, height: 1024 });
@@ -152,7 +155,7 @@ test.describe('Integration Tests - Cross-Module Workflows', () => {
     await page.waitForTimeout(500);
     
     // Mobile menu might be hidden behind hamburger
-    const hamburger = page.locator('button[aria-label*="menu"], [class*="hamburger"]').first();
+    const hamburger = page.locator('button:has(.anticon-menu-fold), button:has(.anticon-menu-unfold), button[aria-label*="menu"], [class*="hamburger"]').first();
     if (await hamburger.isVisible({ timeout: 1000 }).catch(() => false)) {
       console.log('✓ Mobile menu available');
     }

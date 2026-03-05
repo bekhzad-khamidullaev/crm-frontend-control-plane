@@ -3270,7 +3270,6 @@ paths:
           multipart/form-data:
             schema:
               $ref: '#/components/schemas/Lead'
-        required: true
       security:
       - jwtAuth: []
       - tokenAuth: []
@@ -3331,7 +3330,6 @@ paths:
           multipart/form-data:
             schema:
               $ref: '#/components/schemas/Lead'
-        required: true
       security:
       - jwtAuth: []
       - tokenAuth: []
@@ -3423,7 +3421,6 @@ paths:
           multipart/form-data:
             schema:
               $ref: '#/components/schemas/Lead'
-        required: true
       security:
       - jwtAuth: []
       - tokenAuth: []
@@ -3460,7 +3457,6 @@ paths:
           multipart/form-data:
             schema:
               $ref: '#/components/schemas/Lead'
-        required: true
       security:
       - jwtAuth: []
       - tokenAuth: []
@@ -3497,7 +3493,6 @@ paths:
           multipart/form-data:
             schema:
               $ref: '#/components/schemas/Lead'
-        required: true
       security:
       - jwtAuth: []
       - tokenAuth: []
@@ -3527,7 +3522,6 @@ paths:
           multipart/form-data:
             schema:
               $ref: '#/components/schemas/Lead'
-        required: true
       security:
       - jwtAuth: []
       - tokenAuth: []
@@ -11553,9 +11547,7 @@ components:
           format: date-time
           readOnly: true
       required:
-      - country
       - creation_date
-      - email
       - full_name
       - id
       - update_date
@@ -11740,10 +11732,9 @@ components:
           readOnly: true
       required:
       - creation_date
-      - email
-      - first_name
       - full_name
       - id
+      - last_name
       - update_date
     Country:
       type: object
@@ -12955,8 +12946,6 @@ components:
           readOnly: true
       required:
       - creation_date
-      - email
-      - first_name
       - full_name
       - id
       - update_date

@@ -56,6 +56,7 @@ export function generateCompanyData(suffix = '') {
   const randomChars = Array.from({ length: 4 }, () => alphabet[Math.floor(Math.random() * alphabet.length)]).join('');
 
   return {
+    name: `TestCompany${randomChars}${suffix}`,
     full_name: `TestCompany${randomChars}${suffix}`,
     email: `e2e.company.${timestamp}@test.com`,
     phone: `+7495123${String(timestamp).slice(-4)}`,

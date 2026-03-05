@@ -1146,6 +1146,7 @@ export default function LandingBuilderPage() {
   const [previewToken, setPreviewToken] = useState('');
   const [report, setReport] = useState(null);
   const [reportLoading, setReportLoading] = useState(false);
+  const [shareCampaign, setShareCampaign] = useState('');
   const [reportFilters, setReportFilters] = useState({
     date_from: null,
     date_to: null,
@@ -1394,10 +1395,13 @@ export default function LandingBuilderPage() {
       ['deal_created', report?.metrics?.deal_created || 0],
       ['dedup_hit', report?.metrics?.dedup_hit || 0],
       ['sla_breached', report?.metrics?.sla_breached || 0],
+      ['share_link_copied', report?.metrics?.share_link_copied || 0],
+      ['share_link_opened', report?.metrics?.share_link_opened || 0],
       ['view_to_start_pct', report?.conversions?.view_to_start_pct || 0],
       ['start_to_submit_pct', report?.conversions?.start_to_submit_pct || 0],
       ['submit_to_lead_pct', report?.conversions?.submit_to_lead_pct || 0],
       ['lead_to_deal_pct', report?.conversions?.lead_to_deal_pct || 0],
+      ['share_copy_to_open_pct', report?.conversions?.share_copy_to_open_pct || 0],
     ];
     const csv = rows.map((row) => row.join(',')).join('\n');
     const filename = suffix
@@ -1510,6 +1514,8 @@ export default function LandingBuilderPage() {
         { label: 'Deal Created', value: formatNumber(report?.metrics?.deal_created) },
         { label: 'Dedup Hit', value: formatNumber(report?.metrics?.dedup_hit) },
         { label: 'SLA Breached', value: formatNumber(report?.metrics?.sla_breached) },
+        { label: 'Share Link Copied', value: formatNumber(report?.metrics?.share_link_copied) },
+        { label: 'Share Link Opened', value: formatNumber(report?.metrics?.share_link_opened) },
       ]);
 
       drawTable('Step Conversion', [
@@ -1517,6 +1523,7 @@ export default function LandingBuilderPage() {
         { label: 'Start -> Submit', value: formatPercent(report?.conversions?.start_to_submit_pct) },
         { label: 'Submit -> Lead', value: formatPercent(report?.conversions?.submit_to_lead_pct) },
         { label: 'Lead -> Deal', value: formatPercent(report?.conversions?.lead_to_deal_pct) },
+        { label: 'Share Copy -> Open', value: formatPercent(report?.conversions?.share_copy_to_open_pct) },
       ]);
 
       const totalPages = doc.getNumberOfPages();
@@ -1552,6 +1559,43 @@ export default function LandingBuilderPage() {
   const publicUrl = selectedLandingItem
     ? `${window.location.origin}/api/public/landings/${selectedLandingItem.slug}/`
     : '';
+  const shareUrl = selectedLandingItem
+    ? `${publicUrl}?via=share&utm_source=crm_landing_builder&utm_medium=copy_link${shareCampaign.trim() ? `&utm_campaign=${encodeURIComponent(shareCampaign.trim())}` : ''}`
+    : '';
+
+  const handleCopyShareLink = async () => {
+    if (!selectedLandingItem || !shareUrl) return;
+    const utmCampaign = shareCampaign.trim();
+    try {
+      if (navigator?.clipboard?.writeText) {
+        await navigator.clipboard.writeText(shareUrl);
+      } else {
+        const textarea = document.createElement('textarea');
+        textarea.value = shareUrl;
+        document.body.appendChild(textarea);
+        textarea.select();
+        document.execCommand('copy');
+        document.body.removeChild(textarea);
+      }
+
+      await landingsApi.trackEvent({
+        landing_slug: selectedLandingItem.slug,
+        event_type: 'share_link_copied',
+        meta: {
+          via: 'share',
+          channel: 'copy_link',
+          utm: {
+            source: 'crm_landing_builder',
+            medium: 'copy_link',
+            campaign: utmCampaign,
+          },
+        },
+      });
+      message.success('Share-ссылка скопирована');
+    } catch {
+      message.error('Не удалось скопировать share-ссылку');
+    }
+  };
 
   return (
     <div style={{ padding: 24 }}>
@@ -1643,6 +1687,24 @@ export default function LandingBuilderPage() {
                 message={`Public: ${publicUrl}`}
                 description={`Preview: ${previewUrl}`}
               />
+            )}
+            {selectedLandingItem && (
+              <Card size="small" title="Share link">
+                <Space direction="vertical" size="small" style={{ width: '100%' }}>
+                  <Space wrap>
+                    <Input
+                      placeholder="utm_campaign (optional)"
+                      value={shareCampaign}
+                      onChange={(e) => setShareCampaign(e.target.value)}
+                      style={{ width: 260 }}
+                    />
+                    <Button type="primary" onClick={handleCopyShareLink}>
+                      Copy share link
+                    </Button>
+                  </Space>
+                  <Input value={shareUrl} readOnly />
+                </Space>
+              </Card>
             )}
 
             <CraftBuilder
@@ -1747,6 +1809,11 @@ export default function LandingBuilderPage() {
               <Col xs={12} md={6}><Statistic title="Dedup hit" value={report?.metrics?.dedup_hit || 0} /></Col>
               <Col xs={12} md={6}><Statistic title="SLA breached" value={report?.metrics?.sla_breached || 0} /></Col>
               <Col xs={12} md={6}><Statistic title="Submit->Lead %" value={report?.conversions?.submit_to_lead_pct || 0} /></Col>
+            </Row>
+            <Row gutter={12} style={{ marginTop: 12 }}>
+              <Col xs={12} md={6}><Statistic title="Share copied" value={report?.metrics?.share_link_copied || 0} /></Col>
+              <Col xs={12} md={6}><Statistic title="Share opened" value={report?.metrics?.share_link_opened || 0} /></Col>
+              <Col xs={12} md={6}><Statistic title="Copy->Open %" value={report?.conversions?.share_copy_to_open_pct || 0} /></Col>
             </Row>
           </Card>
         )}

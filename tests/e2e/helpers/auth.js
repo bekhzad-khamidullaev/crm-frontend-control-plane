@@ -1,64 +1,85 @@
 import { expect } from '@playwright/test';
 
 /**
- * Robust login helper with retry logic for handling rate limits (429) and network flakyiness.
+ * Shared login helper for E2E tests.
+ * Handles rate limits, stale sessions, and supports credentials via env vars.
  * @param {import('@playwright/test').Page} page
  */
 export async function login(page) {
-  // If already logged in and on dashboard, skip
-  if (page.url().includes('/#/dashboard')) {
+  const username = process.env.E2E_USERNAME || 'admin';
+  const password = process.env.E2E_PASSWORD || 't3sl@admin';
+  const apiBase = process.env.PLAYWRIGHT_API_BASE_URL || process.env.VITE_API_BASE_URL || '';
+
+  // API-first auth: faster and more stable than UI typing in CI/headless.
+  const tokenResponse = await page.request.post(
+    apiBase ? `${apiBase}/api/token/` : '/api/token/',
+    { data: { username, password } }
+  );
+  if (tokenResponse.ok()) {
+    const payload = await tokenResponse.json();
+    await page.goto('/#/login', { waitUntil: 'domcontentloaded' });
+    await page.evaluate(({ access, refresh }) => {
+      localStorage.setItem('crm_access_token', access);
+      if (refresh) {
+        localStorage.setItem('crm_refresh_token', refresh);
+      }
+      const roles = JSON.stringify(['admin']);
+      sessionStorage.setItem('contora_roles', roles);
+      localStorage.setItem('contora_roles', roles);
+    }, payload);
+    await page.goto('/#/dashboard', { waitUntil: 'domcontentloaded' });
+    await expect(page).toHaveURL(/#\/dashboard/, { timeout: 30000 });
     return;
   }
 
-  await page.goto('/#/login');
+  await page.goto('/#/dashboard', { waitUntil: 'domcontentloaded' });
 
-  // Check if we are unexpectedly redirected to dashboard (session reuse)
-  try {
-    await page.waitForSelector('#login_username', { state: 'visible', timeout: 5000 });
-  } catch (e) {
-    if (page.url().includes('/#/dashboard')) {
-      return;
-    }
+  const passwordVisible = await page
+    .locator('input[type="password"]')
+    .first()
+    .isVisible({ timeout: 3000 })
+    .catch(() => false);
+  const isLoginScreen = page.url().includes('/#/login') || passwordVisible;
+
+  if (!isLoginScreen) {
+    await expect(page).toHaveURL(/#\/dashboard/, { timeout: 30000 });
+    return;
   }
 
-  // Fill credentials
-  await page.fill('#login_username', 'admin');
-  await page.fill('#login_password', 't3sl@admin');
+  await page.waitForSelector('input[type="password"]', { timeout: 15000 });
 
-  // Retry logic for login submission with aggressive backoff
+  const usernameInput = page.locator('#login_username, input[name="username"], input[placeholder="admin"]').first();
+  const passwordInput = page.locator('#login_password, input[type="password"]').first();
+  await usernameInput.fill(username);
+  await passwordInput.fill(password);
+
   const maxAttempts = 5;
   for (let attempt = 1; attempt <= maxAttempts; attempt++) {
     try {
-      // Setup listener before clicking
       const responsePromise = page.waitForResponse(
         (response) =>
           response.url().includes('/api/token/') &&
           response.request().method() === 'POST',
-        { timeout: 10000 }
+        { timeout: 20000 }
       );
 
-      // Click login
       await page.click('button[type="submit"]:has-text("Войти")');
-
       const response = await responsePromise;
 
       if (response.status() >= 200 && response.status() < 300) {
-        // Success
-        await page.waitForURL('**/#/dashboard', { timeout: 30000 });
-        await expect(page).toHaveURL(/.*\/#\/dashboard/);
+        await expect(page).toHaveURL(/#\/dashboard/, { timeout: 30000 });
         return;
-      } else if (response.status() === 429) {
-        // Rate limited - use aggressive backoff: 5s, 10s, 15s, 20s, 25s
+      }
+
+      if (response.status() === 429) {
         console.warn(`Login rate limited (Attempt ${attempt}/${maxAttempts}). Waiting ${attempt * 5}s...`);
         await page.waitForTimeout(attempt * 5000);
-        continue; // Try again
-      } else {
-        // Other error
-        console.error(`Login failed with status ${response.status()}`);
-        // Can't easily recover from 401 without changing creds, but maybe temporary server error
+        continue;
       }
+
+      const body = await response.text().catch(() => '');
+      throw new Error(`Login failed with status ${response.status()}: ${body.slice(0, 250)}`);
     } catch (error) {
-      // Network error or timeout
       console.warn(`Login attempt ${attempt} warning: ${error.message}`);
       if (attempt === maxAttempts) {
         throw new Error(`Login failed after ${maxAttempts} attempts: ${error.message}`);
@@ -67,5 +88,5 @@ export async function login(page) {
     }
   }
 
-  throw new Error(`Login failed after ${maxAttempts} attempts due to persistent rate limiting.`);
+  throw new Error(`Login failed after ${maxAttempts} attempts.`);
 }

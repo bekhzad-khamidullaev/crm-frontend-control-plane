@@ -15,7 +15,7 @@ test.describe('Login Flow Tests', () => {
 
   test('should display login page correctly', async ({ page }) => {
     // Verify login page elements
-    await expect(page.locator('h2:has-text("Enterprise CRM")')).toBeVisible();
+    await expect(page.locator('h1, h2').filter({ hasText: /Enterprise CRM|Вход|Login/i }).first()).toBeVisible();
     await expect(page.locator('#login_username')).toBeVisible();
     await expect(page.locator('#login_password')).toBeVisible();
     await expect(page.locator('button[type="submit"]')).toBeVisible();

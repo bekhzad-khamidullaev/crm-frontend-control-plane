@@ -217,7 +217,7 @@ timeout: 120 * 1000,
 lsof -ti:3000 | xargs kill -9
 
 # Or change port in playwright.config.cjs
-baseURL: 'http://localhost:3001',
+baseURL: 'http://localhost:3000',
 ```
 
 ### Issue: Login fails
@@ -227,7 +227,7 @@ Username: admin
 Password: t3sl@admin
 
 # Check if backend API is accessible
-curl -X POST https://api.crm.windevs.uz/api/auth/login/ \
+curl -X POST https://api.crm.windevs.uz/api/token/ \
   -H "Content-Type: application/json" \
   -d '{"username":"admin","password":"t3sl@admin"}'
 ```

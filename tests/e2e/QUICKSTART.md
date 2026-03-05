@@ -153,7 +153,7 @@ timeout: 120 * 1000
 ```bash
 # Change port in playwright.config.cjs
 webServer: {
-  url: 'http://localhost:3001',
+  url: 'http://localhost:3000',
 }
 ```
 

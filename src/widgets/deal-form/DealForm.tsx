@@ -78,12 +78,11 @@ export const DealForm: React.FC<DealFormProps> = ({ id }) => {
 
       if (isEdit) {
         await updateMutation.mutateAsync({ id: id!, data: payload });
-        message.success('Сделка обновлена');
       } else {
         await createMutation.mutateAsync(payload);
-        message.success('Сделка создана');
       }
       navigate('/deals');
+      message.success(isEdit ? 'Сделка обновлена' : 'Сделка создана');
     } catch (error: any) {
       if (error?.body?.details) {
         const fields = Object.entries(error.body.details).map(([name, errors]: [string, any]) => ({

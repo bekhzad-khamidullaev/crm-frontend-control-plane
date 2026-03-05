@@ -128,7 +128,7 @@ Tests automatically:
 Tests interact with real API endpoints:
 - `/api/leads/` - Leads CRUD operations
 - `/api/contacts/` - Contacts CRUD operations
-- `/api/auth/login/` - Authentication
+- `/api/token/` - Authentication (JWT)
 
 The proxy configuration in `vite.config.js` routes `/api` requests to `https://api.crm.windevs.uz`.
 

@@ -45,10 +45,8 @@ const ContactDetailPage = lazy(() => import('./pages/contacts/ContactDetailPage'
 
 // Companies module
 const CompaniesList = lazy(() => import('./pages/companies/CompaniesListPage'));
-const CompanyForm = lazy(() => import('./pages/companies/CompanyCreatePage')); // Mapped to create route
-const CompanyEdit = lazy(() => import('./pages/companies/CompanyEditPage')); // Need to add edit route support if not exists, or replace CompanyForm usage
-// Existing App.jsx uses CompanyForm for both create and edit likely?
-// Check routes in App.jsx to see how they map.
+const CompanyForm = lazy(() => import('./pages/companies/CompanyCreatePage'));
+const CompanyEdit = lazy(() => import('./pages/companies/CompanyEditPage'));
 const CompanyDetailPage = lazy(() => import('./pages/companies/CompanyDetailPage'));
 
 // Deals module
@@ -524,7 +522,7 @@ function App() {
       case 'companies-new':
         return <CompanyForm />;
       case 'companies-edit':
-        return <CompanyForm id={route.params.id} />;
+        return <CompanyEdit id={Number(route.params.id)} />;
       case 'companies-detail':
         return <CompanyDetailPage id={route.params.id} />;
       case 'deals-list':
