@@ -42,6 +42,8 @@ import {
   generatePilotWeeklyReport,
   getPilotWeeklyReports,
   exportPilotWeeklyReport,
+  getPilotReportAutomationHealth,
+  runPilotReportAutomationNow,
 } from '../lib/api/calls.js';
 import {
   CallsActivityChart,
@@ -59,12 +61,14 @@ function CallsDashboard() {
   const [loading, setLoading] = useState(false);
   const [qaSubmitting, setQaSubmitting] = useState(false);
   const [reportGenerating, setReportGenerating] = useState(false);
+  const [automationRunning, setAutomationRunning] = useState(false);
   const [statistics, setStatistics] = useState(null);
   const [contactCenterKpi, setContactCenterKpi] = useState(null);
   const [contactCenterDrilldown, setContactCenterDrilldown] = useState({ teams: [], agents: [] });
   const [qaSummary, setQaSummary] = useState(null);
   const [qaScores, setQaScores] = useState([]);
   const [weeklyReports, setWeeklyReports] = useState([]);
+  const [automationHealth, setAutomationHealth] = useState(null);
   const [recentCalls, setRecentCalls] = useState([]);
   const [qaModalVisible, setQaModalVisible] = useState(false);
   const [selectedQaCall, setSelectedQaCall] = useState(null);
@@ -91,12 +95,13 @@ function CallsDashboard() {
       }
 
       const stats = await getCallStatistics(params);
-      const [kpiResponse, drilldownResponse, qaSummaryResponse, qaScoresResponse, reportsResponse, callsResponse, allCallsResponse] = await Promise.all([
+      const [kpiResponse, drilldownResponse, qaSummaryResponse, qaScoresResponse, reportsResponse, automationHealthResponse, callsResponse, allCallsResponse] = await Promise.all([
         getContactCenterKpi({ ...params, period }),
         getContactCenterDrilldown({ ...params, period }),
         getCallQaSummary({ ...params, period }),
         getCallQaScores({ ...params, period, limit: 50 }),
         getPilotWeeklyReports({ limit: 20 }),
+        getPilotReportAutomationHealth({ limit: 10 }),
         getVoipCallLogs({ ...params, limit: 10 }),
         getVoipCallLogs({ ...params, limit: 1000 }),
       ]);
@@ -106,6 +111,7 @@ function CallsDashboard() {
       setQaSummary(qaSummaryResponse || null);
       setQaScores(qaScoresResponse?.results || []);
       setWeeklyReports(reportsResponse?.results || []);
+      setAutomationHealth(automationHealthResponse || null);
 
       const recent = callsResponse?.results || callsResponse || [];
       setRecentCalls(recent);
@@ -122,6 +128,7 @@ function CallsDashboard() {
       setQaSummary(null);
       setQaScores([]);
       setWeeklyReports([]);
+      setAutomationHealth(null);
       setRecentCalls([]);
       setChartData(null);
     } finally {
@@ -460,6 +467,20 @@ function CallsDashboard() {
     }
   };
 
+  const handleRunAutomationNow = async () => {
+    try {
+      setAutomationRunning(true);
+      await runPilotReportAutomationNow({ async: false });
+      message.success('Automation run completed');
+      loadData();
+    } catch (error) {
+      console.error('Failed to run automation now', error);
+      message.error('Не удалось запустить automation');
+    } finally {
+      setAutomationRunning(false);
+    }
+  };
+
   const weeklyReportColumns = [
     {
       title: 'Период',
@@ -500,6 +521,53 @@ function CallsDashboard() {
           Markdown
         </Button>
       ),
+    },
+  ];
+
+  const automationRunColumns = [
+    {
+      title: 'Старт',
+      dataIndex: 'started_at',
+      key: 'started_at',
+      width: 170,
+      render: (value) => dayjs(value).format('DD.MM.YYYY HH:mm'),
+    },
+    {
+      title: 'Статус',
+      dataIndex: 'status',
+      key: 'status',
+      width: 110,
+      render: (value) => (
+        <Tag color={value === 'success' ? 'success' : 'error'}>
+          {value}
+        </Tag>
+      ),
+    },
+    {
+      title: 'Created',
+      dataIndex: 'created_reports',
+      key: 'created_reports',
+      width: 90,
+    },
+    {
+      title: 'Notified',
+      dataIndex: 'notified',
+      key: 'notified',
+      width: 100,
+      render: (value) => (value ? 'Yes' : 'No'),
+    },
+    {
+      title: 'TG Sent',
+      key: 'telegram_sent',
+      width: 90,
+      render: (_, record) => record?.run_context?.telegram?.sent ?? 0,
+    },
+    {
+      title: 'Ошибка',
+      dataIndex: 'error_message',
+      key: 'error_message',
+      ellipsis: true,
+      render: (value) => value || '-',
     },
   ];
 
@@ -789,6 +857,42 @@ function CallsDashboard() {
               columns={agentColumns}
               rowKey="agent_id"
               pagination={false}
+              size="small"
+            />
+          </Card>
+        </Col>
+      </Row>
+
+      <Row gutter={[16, 16]} style={{ marginTop: 24 }}>
+        <Col xs={24}>
+          <Card
+            title="Automation Health"
+            loading={loading}
+            extra={
+              <Button loading={automationRunning} onClick={handleRunAutomationNow}>
+                Run Now
+              </Button>
+            }
+          >
+            <Row gutter={[16, 16]} style={{ marginBottom: 16 }}>
+              <Col xs={24} sm={12} lg={6}>
+                <Statistic title="Total Runs" value={automationHealth?.summary?.total_runs || 0} />
+              </Col>
+              <Col xs={24} sm={12} lg={6}>
+                <Statistic title="Success Runs" value={automationHealth?.summary?.success_runs || 0} />
+              </Col>
+              <Col xs={24} sm={12} lg={6}>
+                <Statistic title="Failed Runs" value={automationHealth?.summary?.failed_runs || 0} />
+              </Col>
+              <Col xs={24} sm={12} lg={6}>
+                <Statistic title="Failure Rate" value={automationHealth?.summary?.failure_rate || 0} suffix="%" />
+              </Col>
+            </Row>
+            <Table
+              dataSource={automationHealth?.runs || []}
+              columns={automationRunColumns}
+              rowKey="id"
+              pagination={{ pageSize: 5 }}
               size="small"
             />
           </Card>

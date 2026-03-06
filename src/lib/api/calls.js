@@ -255,6 +255,24 @@ export async function exportPilotWeeklyReport(reportId, params = { export_format
 }
 
 /**
+ * Get report automation health and runs
+ * @param {Object} params
+ * @returns {Promise<Object>}
+ */
+export async function getPilotReportAutomationHealth(params = {}) {
+  return apiClient.get('/api/voip/pilot-weekly-reports/automation-health/', { params });
+}
+
+/**
+ * Trigger report automation now
+ * @param {Object} data
+ * @returns {Promise<Object>}
+ */
+export async function runPilotReportAutomationNow(data = { async: false }) {
+  return apiClient.post('/api/voip/pilot-weekly-reports/run-automation-now/', { body: data });
+}
+
+/**
  * Get CRM call statistics (client-side aggregation)
  * @param {Object} params - Query parameters
  * @returns {Promise<Object>}
