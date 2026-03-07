@@ -1,5 +1,4 @@
 import {
-    ArrowLeftOutlined,
     BankOutlined,
     CheckCircleOutlined,
     ClockCircleOutlined,
@@ -17,11 +16,9 @@ import {
     Card,
     Descriptions,
     Empty,
-    Grid,
     Modal,
     Space,
     Spin,
-    Tabs,
     Tag,
     Timeline,
     theme as antdTheme,
@@ -33,11 +30,12 @@ import { useDeals } from '@/entities/deal';
 // @ts-ignore
 import { useLead } from '@/entities/lead/api/queries';
 import { LeadsService } from '@/shared/api/generated/services/LeadsService';
+import { EntityDetailShell } from '@/shared/ui';
 import { navigate } from '@/router.js';
 // @ts-ignore
 import { canWrite } from '@/lib/rbac.js';
 
-const { Title, Text } = Typography;
+const { Text } = Typography;
 
 interface LeadDetailPageProps {
   id?: number;
@@ -45,8 +43,6 @@ interface LeadDetailPageProps {
 
 export const LeadDetailPage: React.FC<LeadDetailPageProps> = ({ id }) => {
   const { token } = antdTheme.useToken();
-  const screens = Grid.useBreakpoint();
-  const isMobile = !screens.md;
   const { message } = App.useApp();
   const { data: lead, isLoading } = useLead(id!);
   const { data: leadDealsResponse, isLoading: isLeadDealsLoading } = useDeals({
@@ -248,7 +244,7 @@ export const LeadDetailPage: React.FC<LeadDetailPageProps> = ({ id }) => {
       key: 'activity',
       label: 'История',
       children: (
-        <Card bordered={false} bodyStyle={{ padding: 0 }}>
+        <Card variant="borderless" styles={{ body: { padding: 0 } }}>
           {activityEvents.length ? (
             <Timeline
               items={activityEvents.map((event) => ({
@@ -272,39 +268,7 @@ export const LeadDetailPage: React.FC<LeadDetailPageProps> = ({ id }) => {
   ];
 
   return (
-    <div className="detail-page">
-      <Space wrap style={{ marginBottom: 16 }}>
-        <Button icon={<ArrowLeftOutlined />} onClick={() => navigate('/leads')} block={isMobile}>
-          Назад
-        </Button>
-        {canManage && (
-          <Button
-            type="primary"
-            icon={<EditOutlined />}
-            onClick={() => navigate(`/leads/${id}/edit`)}
-            block={isMobile}
-          >
-            Редактировать
-          </Button>
-        )}
-        {canManage && (
-          <Button
-            onClick={handleConvertToDeal}
-            loading={isConverting}
-            disabled={isConverted}
-            block={isMobile}
-          >
-            {isConverted ? 'Уже конвертирован' : 'Конвертировать в сделку'}
-          </Button>
-        )}
-        {leadDeal && (
-          <Button icon={<LinkOutlined />} onClick={() => navigate(`/deals/${leadDeal.id}`)} block={isMobile}>
-            Открыть сделку
-          </Button>
-        )}
-      </Space>
-
-      <Title level={isMobile ? 3 : 2}>{lead.full_name}</Title>
+    <div>
       {isConverted && (
         <Alert
           type="success"
@@ -325,9 +289,56 @@ export const LeadDetailPage: React.FC<LeadDetailPageProps> = ({ id }) => {
         />
       )}
 
-      <Card bodyStyle={{ padding: isMobile ? 12 : 24 }}>
-        <Tabs items={tabItems} defaultActiveKey="details" size={isMobile ? 'small' : 'middle'} />
-      </Card>
+      <EntityDetailShell
+        onBack={() => navigate('/leads')}
+        title={lead.full_name}
+        subtitle={lead.email || lead.phone || lead.title || 'Карточка лида'}
+        statusTag={
+          lead.disqualified ? <Tag color="red">Потерян</Tag> : (
+            isConverted ? <Tag color="success">Конвертирован</Tag> : <Tag color="processing">В работе</Tag>
+          )
+        }
+        primaryActions={
+          <Space wrap>
+            {canManage && (
+              <Button
+                type="primary"
+                icon={<EditOutlined />}
+                onClick={() => navigate(`/leads/${id}/edit`)}
+              >
+                Редактировать
+              </Button>
+            )}
+            {canManage && (
+              <Button
+                onClick={handleConvertToDeal}
+                loading={isConverting}
+                disabled={isConverted}
+              >
+                {isConverted ? 'Уже конвертирован' : 'Конвертировать в сделку'}
+              </Button>
+            )}
+          </Space>
+        }
+        secondaryActions={
+          leadDeal ? (
+            <Button icon={<LinkOutlined />} onClick={() => navigate(`/deals/${leadDeal.id}`)}>
+              Открыть сделку
+            </Button>
+          ) : null
+        }
+        stats={[
+          { key: 'source', label: 'Источник', value: String(lead.lead_source || 'Не указан') },
+          { key: 'owner', label: 'Ответственный', value: String(lead.owner || 'Не назначен') },
+          {
+            key: 'created',
+            label: 'Создан',
+            value: lead.creation_date ? dayjs(lead.creation_date).format('DD.MM.YYYY') : '-',
+          },
+        ]}
+        tabs={tabItems}
+        defaultTabKey="details"
+      />
     </div>
   );
 };

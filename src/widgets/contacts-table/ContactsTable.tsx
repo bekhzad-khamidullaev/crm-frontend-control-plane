@@ -8,7 +8,7 @@ import {
     PhoneOutlined,
     UserOutlined
 } from '@ant-design/icons';
-import { Avatar, Button, Grid, Popconfirm, Space, Table } from 'antd';
+import { Alert, Avatar, Button, Grid, Popconfirm, Space, Table, Tooltip } from 'antd';
 import React, { useMemo } from 'react';
 // @ts-ignore
 import { contactKeys } from '@/entities/contact/api/keys';
@@ -41,7 +41,11 @@ export const ContactsTable: React.FC = () => {
   const {
     data,
     isLoading,
+    isFetching,
+    error,
+    refetch,
     pagination,
+    params,
     handleTableChange,
     handleFilterChange,
   } = useServerTable<Contact>({
@@ -147,14 +151,18 @@ export const ContactsTable: React.FC = () => {
             icon={<EyeOutlined />}
             onClick={() => navigate(`/contacts/${record.id}`)}
           />
-          {canManage && (
+          {canManage ? (
             <Button
               type="link"
               icon={<EditOutlined />}
               onClick={() => navigate(`/contacts/${record.id}/edit`)}
             />
+          ) : (
+            <Tooltip title="Недостаточно прав">
+              <Button type="link" icon={<EditOutlined />} disabled />
+            </Tooltip>
           )}
-          {canManage && (
+          {canManage ? (
             <Popconfirm
               title="Удалить контакт?"
               onConfirm={() => handleDelete(record.id)}
@@ -163,6 +171,10 @@ export const ContactsTable: React.FC = () => {
             >
               <Button type="link" danger icon={<DeleteOutlined />} loading={deleteMutation.isPending} />
             </Popconfirm>
+          ) : (
+            <Tooltip title="Недостаточно прав">
+              <Button type="link" danger icon={<DeleteOutlined />} disabled />
+            </Tooltip>
           )}
         </Space>
       ),
@@ -172,14 +184,24 @@ export const ContactsTable: React.FC = () => {
   return (
     <div>
       <ContactsTableFilters
+        filters={params}
         onFilterChange={handleFiltersApply}
         loading={isLoading}
       />
+      {error && (
+        <Alert
+          type="error"
+          showIcon
+          style={{ marginBottom: 16 }}
+          message="Не удалось загрузить список контактов"
+          action={<Button size="small" onClick={() => refetch()}>Повторить</Button>}
+        />
+      )}
       <Table
         columns={columns}
         dataSource={data}
         rowKey="id"
-        loading={isLoading}
+        loading={isLoading || isFetching}
         size={isMobile ? 'small' : 'middle'}
         pagination={pagination}
         onChange={handleTableChange}

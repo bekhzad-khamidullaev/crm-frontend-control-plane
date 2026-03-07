@@ -2,26 +2,20 @@ import React, { useEffect, useState } from 'react';
 import {
   Form,
   Input,
-  Button,
   Card,
-  Space,
   App,
-  Typography,
-  Spin,
   Row,
   Col,
   InputNumber,
   Switch,
   Select,
 } from 'antd';
-import { SaveOutlined, ArrowLeftOutlined } from '@ant-design/icons';
 import { navigate } from '../../router';
 import { getProduct, createProduct, updateProduct, getProductCategories, getProductCategory } from '../../lib/api/products';
 import ReferenceSelect from '../../components/ui-ReferenceSelect';
 import EntitySelect from '../../components/EntitySelect';
 import { normalizePayload } from '../../lib/utils/payload';
-
-const { Title } = Typography;
+import { EntityFormSection, EntityFormShell, LegacyErrorState, LegacyLoadingState } from '../../shared/ui';
 const { TextArea } = Input;
 
 const typeOptions = [
@@ -33,8 +27,10 @@ function ProductForm({ id }) {
   const [form] = Form.useForm();
   const { message } = App.useApp();
   const [loading, setLoading] = useState(false);
+  const [loadError, setLoadError] = useState(false);
   const [saving, setSaving] = useState(false);
   const isEdit = !!id;
+  const formId = 'product-form';
 
   useEffect(() => {
     if (isEdit) {
@@ -44,10 +40,12 @@ function ProductForm({ id }) {
 
   const loadProduct = async () => {
     setLoading(true);
+    setLoadError(false);
     try {
       const data = await getProduct(id);
       form.setFieldsValue(data);
     } catch (error) {
+      setLoadError(true);
       message.error('Ошибка загрузки продукта');
     } finally {
       setLoading(false);
@@ -81,26 +79,40 @@ function ProductForm({ id }) {
 
   if (loading) {
     return (
-      <div style={{ textAlign: 'center', padding: '50px' }}>
-        <Spin size="large" />
-      </div>
+      <LegacyLoadingState
+        title="Загрузка продукта"
+        description="Подготавливаем форму редактирования продукта."
+      />
+    );
+  }
+
+  if (isEdit && loadError) {
+    return (
+      <LegacyErrorState
+        title="Не удалось загрузить продукт для редактирования"
+        description="Попробуйте повторить загрузку или вернитесь к каталогу продуктов."
+        onAction={loadProduct}
+      />
     );
   }
 
   return (
-    <div>
-      <Space style={{ marginBottom: 16 }}>
-        <Button icon={<ArrowLeftOutlined />} onClick={() => navigate('/products')}>
-          Назад
-        </Button>
-      </Space>
-
-      <Title level={2}>
-        {isEdit ? 'Редактировать продукт' : 'Создать новый продукт'}
-      </Title>
-
+    <EntityFormShell
+      title={isEdit ? 'Редактировать продукт' : 'Новый продукт'}
+      subtitle="Настройка карточки товара или услуги в едином CRM-паттерне."
+      hint="Сначала заполните коммерчески важные поля: название, цену, категорию и тип продукта."
+      formId={formId}
+      submitText={isEdit ? 'Сохранить продукт' : 'Создать продукт'}
+      isSubmitting={saving}
+      onBack={() => navigate('/products')}
+      onCancel={() => navigate('/products')}
+    >
       <Card>
-        <Form form={form} layout="vertical" onFinish={onFinish} autoComplete="off">
+        <Form id={formId} form={form} layout="vertical" onFinish={onFinish} autoComplete="off">
+          <EntityFormSection
+            title="Основное"
+            description="Базовые данные, по которым продукт будет найден и использован в сделках."
+          />
           <Row gutter={16}>
             <Col xs={24} md={12}>
               <Form.Item
@@ -126,6 +138,10 @@ function ProductForm({ id }) {
             <TextArea rows={4} placeholder="Описание продукта" />
           </Form.Item>
 
+          <EntityFormSection
+            title="Коммерческие параметры"
+            description="Цена, валюта и тип определяют, как продукт выглядит в каталоге и расчётах."
+          />
           <Row gutter={16}>
             <Col xs={24} md={8}>
               <Form.Item label="Цена" name="price">
@@ -156,17 +172,9 @@ function ProductForm({ id }) {
             </Col>
           </Row>
 
-          <Form.Item>
-            <Space>
-              <Button type="primary" htmlType="submit" icon={<SaveOutlined />} loading={saving}>
-                {isEdit ? 'Обновить' : 'Создать'}
-              </Button>
-              <Button onClick={() => navigate('/products')}>Отмена</Button>
-            </Space>
-          </Form.Item>
         </Form>
       </Card>
-    </div>
+    </EntityFormShell>
   );
 }
 

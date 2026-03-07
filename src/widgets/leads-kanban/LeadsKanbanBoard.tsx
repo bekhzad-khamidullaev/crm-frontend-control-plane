@@ -16,7 +16,7 @@ import {
   UserOutlined,
 } from '@ant-design/icons';
 import { DndContext, type DragEndEvent, PointerSensor, useDraggable, useDroppable, useSensor, useSensors } from '@dnd-kit/core';
-import { Avatar, Badge, Button, Card, Empty, Flex, Input, message, Skeleton, Space, Typography, theme } from 'antd';
+import { Alert, Avatar, Badge, Button, Card, Empty, Flex, Input, message, Skeleton, Space, Typography, theme } from 'antd';
 import React, { useEffect, useMemo, useState } from 'react';
 
 const { Text } = Typography;
@@ -160,6 +160,7 @@ const KanbanColumn: React.FC<{
 };
 
 export const LeadsKanbanBoard: React.FC<{ readOnly?: boolean }> = ({ readOnly = false }) => {
+  const maxItems = 200;
   const [search, setSearch] = useState('');
   const [debouncedSearch, setDebouncedSearch] = useState('');
   const [boardLeads, setBoardLeads] = useState<Lead[]>([]);
@@ -179,7 +180,7 @@ export const LeadsKanbanBoard: React.FC<{ readOnly?: boolean }> = ({ readOnly = 
     refetch,
   } = useLeads({
     page: 1,
-    page_size: 200,
+    page_size: maxItems,
     ordering: '-creation_date',
     search: debouncedSearch || undefined,
   } as any);
@@ -201,6 +202,8 @@ export const LeadsKanbanBoard: React.FC<{ readOnly?: boolean }> = ({ readOnly = 
       { new: [], contacted: [], qualified: [], converted: [], lost: [] }
     );
   }, [boardLeads]);
+  const totalCount = response?.count ?? boardLeads.length;
+  const isTruncated = totalCount > boardLeads.length;
 
   const handleStatusChange = async (leadId: number, toStatus: LeadStatus) => {
     const currentLead = boardLeads.find((lead) => lead.id === leadId);
@@ -277,6 +280,14 @@ export const LeadsKanbanBoard: React.FC<{ readOnly?: boolean }> = ({ readOnly = 
       </Flex>
 
       <DndContext sensors={sensors} onDragEnd={handleDragEnd}>
+        {isTruncated && (
+          <Alert
+            type="info"
+            showIcon
+            style={{ marginBottom: 12 }}
+            message={`Показаны первые ${boardLeads.length} из ${totalCount} лидов. Уточните фильтр для полной выборки.`}
+          />
+        )}
         <div style={{ overflowX: 'auto', paddingBottom: 8 }}>
           <Space align="start" size={16}>
             <KanbanColumn status="new" leads={groupedLeads.new} loading={isLoading} readOnly={readOnly} />

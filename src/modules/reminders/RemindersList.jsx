@@ -1,11 +1,12 @@
 import dayjs from 'dayjs';
 import { Check, Edit, Eye, Trash2, X } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
+import { Button as AntButton } from 'antd';
+import { PlusOutlined } from '@ant-design/icons';
 
 import EntitySelect from '../../components/EntitySelect.jsx';
 import { DatePicker } from '../../components/ui-DatePicker.jsx';
 import EnhancedTable from '../../components/ui-EnhancedTable.jsx';
-import TableToolbar from '../../components/ui-TableToolbar.jsx';
 import { AlertDialog, AlertDialogContent, AlertDialogHeader, AlertDialogTitle } from '../../components/ui/alert-dialog.jsx';
 import { Badge } from '../../components/ui/badge.jsx';
 import { Button } from '../../components/ui/button.jsx';
@@ -13,10 +14,12 @@ import { toast } from '../../components/ui/use-toast.js';
 import { getUser, getUsers } from '../../lib/api';
 import { deleteReminder, getReminders, updateReminder } from '../../lib/api/reminders';
 import { navigate } from '../../router';
+import { EntityListPageShell, EntityListToolbar } from '../../shared/ui';
 
 export default function RemindersList() {
   const [data, setData] = useState([]);
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(null);
   const [pagination, setPagination] = useState({ current: 1, pageSize: 10, total: 0 });
   const [searchText, setSearchText] = useState('');
   const [activeFilter, setActiveFilter] = useState(null);
@@ -31,6 +34,7 @@ export default function RemindersList() {
 
   const fetchData = async () => {
     setLoading(true);
+    setError(null);
     try {
       const params = {
         page: pagination.current,
@@ -54,9 +58,10 @@ export default function RemindersList() {
 
       setData(filteredByDate);
       setPagination((prev) => ({ ...prev, total: res.count || filteredByDate.length }));
-    } catch (error) {
+    } catch (fetchError) {
+      setError(fetchError?.message || 'Не удалось загрузить напоминания');
       toast({ title: 'Ошибка', description: 'Не удалось загрузить напоминания', variant: 'destructive' });
-      console.error(error);
+      console.error(fetchError);
     } finally {
       setLoading(false);
     }
@@ -67,7 +72,7 @@ export default function RemindersList() {
       await deleteReminder(id);
       toast({ title: 'Напоминание удалено', description: 'Напоминание удалено' });
       fetchData();
-    } catch (error) {
+    } catch (deleteError) {
       toast({ title: 'Ошибка', description: 'Не удалось удалить напоминание', variant: 'destructive' });
     } finally {
       setConfirmDelete(null);
@@ -82,7 +87,7 @@ export default function RemindersList() {
         description: !currentActive ? 'Напоминание активировано' : 'Напоминание деактивировано',
       });
       fetchData();
-    } catch (error) {
+    } catch (updateError) {
       toast({ title: 'Ошибка', description: 'Не удалось обновить напоминание', variant: 'destructive' });
     }
   };
@@ -163,96 +168,98 @@ export default function RemindersList() {
             <Edit className="mr-1 h-4 w-4" />
             Ред.
           </Button>
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={() => handleToggleActive(record.id, record.active)}
-          >
+          <Button variant="ghost" size="sm" onClick={() => handleToggleActive(record.id, record.active)}>
             {record.active ? <X className="mr-1 h-4 w-4" /> : <Check className="mr-1 h-4 w-4" />}
             {record.active ? 'Откл.' : 'Вкл.'}
           </Button>
-          <Button
-            variant="ghost"
-            size="sm"
-            className="text-destructive"
-            onClick={() => setConfirmDelete(record)}
-          >
+          <Button variant="ghost" size="sm" className="text-destructive" onClick={() => setConfirmDelete(record)}>
             <Trash2 className="mr-1 h-4 w-4" />
             Удалить
           </Button>
         </div>
       ),
     },
-  ]), [activeFilter]);
+  ]), []);
+
+  const headerActions = (
+    <AntButton type="primary" icon={<PlusOutlined />} onClick={() => navigate('/reminders/new')}>
+      Новое напоминание
+    </AntButton>
+  );
 
   return (
-    <div>
-      <TableToolbar
+    <>
+      <EntityListPageShell
         title="Напоминания"
-        total={pagination.total}
-        loading={loading}
-        searchPlaceholder="Поиск по теме или описанию"
-        placeholder="Поиск по теме или описанию"
-        onSearch={setSearchText}
-        onCreate={() => navigate('/reminders/new')}
-        createButtonText="Новое напоминание"
-        showViewModeSwitch={false}
-        showExportButton={false}
-      />
-
-      <div className="mb-4 flex flex-wrap gap-3">
-        <select
-          aria-label="Фильтр активности"
-          className="h-9 w-[160px] rounded-md border border-border bg-background px-2 text-sm"
-          value={activeFilter ?? ''}
-          onChange={(e) => setActiveFilter(e.target.value === '' ? null : e.target.value === 'true')}
-        >
-          <option value="">Активность</option>
-          <option value="true">Активные</option>
-          <option value="false">Неактивные</option>
-        </select>
-        <EntitySelect
-          placeholder="Владелец"
-          value={ownerFilter}
-          onChange={setOwnerFilter}
-          fetchList={getUsers}
-          fetchById={getUser}
-          allowClear
-        />
-        <input
-          type="number"
-          min={1}
-          className="h-9 w-[160px] rounded-md border border-border bg-background px-2 text-sm"
-          placeholder="Тип объекта"
-          value={contentTypeFilter || ''}
-          onChange={(e) => setContentTypeFilter(e.target.value ? Number(e.target.value) : null)}
-        />
-        <div className="flex items-center gap-2">
-          <DatePicker
-            value={dateRange?.[0] || null}
-            onChange={(val) => setDateRange((prev) => [val, prev?.[1] || null])}
-            format="DD.MM.YYYY"
+        subtitle="Единый список напоминаний с поиском и фильтрами"
+        extra={headerActions}
+        toolbar={
+          <EntityListToolbar
+            searchValue={searchText}
+            searchPlaceholder="Поиск по теме или описанию"
+            onSearchChange={setSearchText}
+            onRefresh={fetchData}
+            loading={loading}
+            resultSummary={pagination.total ? `${pagination.total} записей` : undefined}
           />
-          <span className="text-sm text-muted-foreground">—</span>
-          <DatePicker
-            value={dateRange?.[1] || null}
-            onChange={(val) => setDateRange((prev) => [prev?.[0] || null, val])}
-            format="DD.MM.YYYY"
+        }
+        error={error}
+        onRetry={fetchData}
+      >
+        <div className="mb-4 flex flex-wrap gap-3">
+          <select
+            aria-label="Фильтр активности"
+            className="h-9 w-[160px] rounded-md border border-border bg-background px-2 text-sm"
+            value={activeFilter ?? ''}
+            onChange={(e) => setActiveFilter(e.target.value === '' ? null : e.target.value === 'true')}
+          >
+            <option value="">Активность</option>
+            <option value="true">Активные</option>
+            <option value="false">Неактивные</option>
+          </select>
+          <EntitySelect
+            placeholder="Владелец"
+            value={ownerFilter}
+            onChange={setOwnerFilter}
+            fetchList={getUsers}
+            fetchById={getUser}
+            allowClear
           />
+          <input
+            type="number"
+            min={1}
+            className="h-9 w-[160px] rounded-md border border-border bg-background px-2 text-sm"
+            placeholder="Тип объекта"
+            value={contentTypeFilter || ''}
+            onChange={(e) => setContentTypeFilter(e.target.value ? Number(e.target.value) : null)}
+          />
+          <div className="flex items-center gap-2">
+            <DatePicker
+              value={dateRange?.[0] || null}
+              onChange={(val) => setDateRange((prev) => [val, prev?.[1] || null])}
+              format="DD.MM.YYYY"
+            />
+            <span className="text-sm text-muted-foreground">-</span>
+            <DatePicker
+              value={dateRange?.[1] || null}
+              onChange={(val) => setDateRange((prev) => [prev?.[0] || null, val])}
+              format="DD.MM.YYYY"
+            />
+          </div>
         </div>
-      </div>
 
-      <EnhancedTable
-        columns={columns}
-        dataSource={data}
-        loading={loading}
-        rowKey="id"
-        pagination={pagination}
-        onChange={handleTableChange}
-        scroll={{ x: 1200 }}
-        emptyText="Нет напоминаний"
-        emptyDescription="Создайте новое напоминание"
-      />
+        <EnhancedTable
+          columns={columns}
+          dataSource={data}
+          loading={loading}
+          rowKey="id"
+          pagination={pagination}
+          onChange={handleTableChange}
+          scroll={{ x: 1200 }}
+          emptyText="Нет напоминаний"
+          emptyDescription="Создайте новое напоминание"
+        />
+      </EntityListPageShell>
 
       <AlertDialog open={!!confirmDelete} onOpenChange={(open) => !open && setConfirmDelete(null)}>
         <AlertDialogContent>
@@ -270,6 +277,6 @@ export default function RemindersList() {
           </div>
         </AlertDialogContent>
       </AlertDialog>
-    </div>
+    </>
   );
 }

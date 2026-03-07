@@ -2,16 +2,13 @@ import React, { useEffect } from 'react';
 import {
   Form,
   Input,
-  Button,
   Card,
-  Space,
   Row,
   Col,
   Switch,
   DatePicker,
-  Typography,
+  Modal,
 } from 'antd';
-import { SaveOutlined, ArrowLeftOutlined } from '@ant-design/icons';
 import dayjs from 'dayjs';
 import { navigate } from '@/router.js';
 import {
@@ -26,9 +23,7 @@ import {
 } from '@/features/reference';
 import { CompanyFormData } from '@/entities/company/model/schema';
 import type { Company } from '@/entities/company/model/types';
-import { PhoneInput } from '@/shared/ui';
-
-const { Title } = Typography;
+import { EntityFormSection, EntityFormShell, PhoneInput } from '@/shared/ui';
 const { TextArea } = Input;
 
 export interface CompanyFormProps {
@@ -46,6 +41,7 @@ export const CompanyForm: React.FC<CompanyFormProps> = ({
 }) => {
   const [form] = Form.useForm();
   const country = Form.useWatch('country', form);
+  const formId = 'company-form';
 
   useEffect(() => {
     if (initialValues) {
@@ -67,27 +63,46 @@ export const CompanyForm: React.FC<CompanyFormProps> = ({
     onSubmit(payload);
   };
 
+  const handleLeave = () => {
+    if (!form.isFieldsTouched()) {
+      navigate('/companies');
+      return;
+    }
+
+    Modal.confirm({
+      title: 'Есть несохраненные изменения',
+      content: 'Выйти без сохранения?',
+      okText: 'Выйти',
+      cancelText: 'Остаться',
+      okButtonProps: { danger: true },
+      onOk: () => navigate('/companies'),
+    });
+  };
+
   return (
-    <div>
-      <Space style={{ marginBottom: 16 }}>
-        <Button icon={<ArrowLeftOutlined />} onClick={() => navigate('/companies')}>
-          Назад
-        </Button>
-      </Space>
-
-      <Title level={2}>
-        {isEdit ? 'Редактировать компанию' : 'Создать новую компанию'}
-      </Title>
-
+    <EntityFormShell
+      title={isEdit ? 'Редактировать компанию' : 'Создать новую компанию'}
+      subtitle={isEdit ? 'Обновите ключевые данные компании и ответственных.' : 'Заполните основные данные компании, чтобы добавить ее в CRM.'}
+      hint="Сначала внесите ключевые поля. Детализация статуса и локации идет ниже."
+      formId={formId}
+      submitText={isEdit ? 'Сохранить изменения' : 'Создать компанию'}
+      isSubmitting={isLoading}
+      onBack={handleLeave}
+      onCancel={handleLeave}
+    >
       <Card>
         <Form
+          id={formId}
           form={form}
           layout="vertical"
           onFinish={handleFinish}
           autoComplete="off"
           disabled={isLoading}
         >
-          <Title level={4}>Основная информация</Title>
+          <EntityFormSection
+            title="Основная информация"
+            description="Название, основные контакты и тип клиента."
+          />
           <Row gutter={16}>
             <Col xs={24} md={12}>
               <Form.Item
@@ -103,7 +118,6 @@ export const CompanyForm: React.FC<CompanyFormProps> = ({
                 label="Email"
                 name="email"
                 rules={[
-                  { required: true, message: 'Введите email' },
                   { type: 'email', message: 'Некорректный email' },
                 ]}
               >
@@ -164,16 +178,13 @@ export const CompanyForm: React.FC<CompanyFormProps> = ({
             </Col>
           </Row>
 
-          <Title level={4} style={{ marginTop: 24 }}>
-            Локация
-          </Title>
+          <EntityFormSection
+            title="Локация"
+            description="Заполните только те поля адреса, которые действительно нужны в работе."
+          />
           <Row gutter={16}>
             <Col xs={24} md={12}>
-              <Form.Item
-                label="Страна"
-                name="country"
-                rules={[{ required: true, message: 'Выберите страну' }]}
-              >
+              <Form.Item label="Страна" name="country">
                 <CountrySelect style={{ width: '100%' }} />
               </Form.Item>
             </Col>
@@ -210,9 +221,10 @@ export const CompanyForm: React.FC<CompanyFormProps> = ({
             </Col>
           </Row>
 
-          <Title level={4} style={{ marginTop: 24 }}>
-            Управление и статус
-          </Title>
+          <EntityFormSection
+            title="Управление и статус"
+            description="Статус, ответственные и коммуникационные настройки компании."
+          />
           <Row gutter={16}>
             <Col xs={24} md={8}>
               <Form.Item label="Активна" name="active" valuePropName="checked">
@@ -237,11 +249,13 @@ export const CompanyForm: React.FC<CompanyFormProps> = ({
                 <DatePicker style={{ width: '100%' }} format="DD.MM.YYYY" />
               </Form.Item>
             </Col>
-            <Col xs={24} md={12}>
-              <Form.Item label="Токен" name="token">
-                <Input placeholder="Авто" />
-              </Form.Item>
-            </Col>
+            {isEdit && (
+              <Col xs={24} md={12}>
+                <Form.Item label="Токен" name="token">
+                  <Input placeholder="Авто" readOnly />
+                </Form.Item>
+              </Col>
+            )}
           </Row>
 
           <Row gutter={16}>
@@ -257,23 +271,15 @@ export const CompanyForm: React.FC<CompanyFormProps> = ({
             </Col>
           </Row>
 
-          <Title level={4} style={{ marginTop: 24 }}>
-            Описание
-          </Title>
+          <EntityFormSection
+            title="Описание"
+            description="Короткий рабочий контекст для команды продаж и аккаунтинга."
+          />
           <Form.Item label="Описание" name="description">
             <TextArea rows={4} placeholder="Краткое описание компании" />
           </Form.Item>
-
-          <Form.Item>
-            <Space>
-              <Button type="primary" htmlType="submit" icon={<SaveOutlined />} loading={isLoading}>
-                {isEdit ? 'Обновить' : 'Создать'}
-              </Button>
-              <Button onClick={() => navigate('/companies')}>Отмена</Button>
-            </Space>
-          </Form.Item>
         </Form>
       </Card>
-    </div>
+    </EntityFormShell>
   );
 };

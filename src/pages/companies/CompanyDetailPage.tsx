@@ -2,40 +2,33 @@ import React, { useMemo } from 'react';
 import {
   Space,
   Button,
-  Tabs,
   Typography,
   Descriptions,
   Tag,
   Avatar,
-  Card,
   Spin,
-  Row,
-  Col,
-  Statistic,
   List,
   Table,
   theme as antdTheme,
 } from 'antd';
 import {
-  ArrowLeftOutlined,
   EditOutlined,
   ShopOutlined,
   PhoneOutlined,
   TeamOutlined,
-  RiseOutlined,
-  DollarOutlined,
 } from '@ant-design/icons';
 import dayjs from 'dayjs';
 import { navigate } from '@/router.js';
 import { useCompany, useCompanyContacts, useCompanyDeals } from '@/entities/company/api/queries';
 import { useClientTypes, useIndustries } from '@/features/reference';
 import { getClientTypeLabel } from '@/features/reference/lib/clientTypeLabel';
+import { EntityDetailShell } from '@/shared/ui';
 // @ts-ignore
 import { canWrite } from '@/lib/rbac.js';
 // @ts-ignore
 import { getLocale } from '@/lib/i18n';
 
-const { Title, Text } = Typography;
+const { Text } = Typography;
 
 export interface CompanyDetailPageProps {
   id?: number;
@@ -194,12 +187,13 @@ export const CompanyDetailPage: React.FC<CompanyDetailPageProps> = ({ id }) => {
   ];
 
   return (
-    <div className="detail-page">
-      <Space wrap style={{ marginBottom: 16 }}>
-        <Button icon={<ArrowLeftOutlined />} onClick={() => navigate('/companies')}>
-          Назад
-        </Button>
-        {canManage && (
+    <EntityDetailShell
+      onBack={() => navigate('/companies')}
+      title={companyName}
+      subtitle={company.email || company.phone || company.website || 'Карточка компании'}
+      statusTag={company.active ? <Tag color="success">Активна</Tag> : <Tag>Неактивна</Tag>}
+      primaryActions={
+        canManage ? (
           <Button
             type="primary"
             icon={<EditOutlined />}
@@ -207,49 +201,16 @@ export const CompanyDetailPage: React.FC<CompanyDetailPageProps> = ({ id }) => {
           >
             Редактировать
           </Button>
-        )}
-      </Space>
-
-      <Title level={2}>{companyName}</Title>
-
-      <Row gutter={16} style={{ marginBottom: 24 }}>
-        <Col xs={24} md={8}>
-          <Card>
-            <Statistic
-              title="Контактов"
-              value={contacts.length}
-              prefix={<TeamOutlined />}
-              valueStyle={{ color: '#3f8600' }}
-            />
-          </Card>
-        </Col>
-        <Col xs={24} md={8}>
-          <Card>
-            <Statistic
-              title="Сделок"
-              value={deals.length}
-              prefix={<RiseOutlined />}
-              valueStyle={{ color: '#1890ff' }}
-            />
-          </Card>
-        </Col>
-        <Col xs={24} md={8}>
-          <Card>
-             <Statistic
-              title="Сумма сделок"
-              value={dealsAmount}
-              prefix={<DollarOutlined />}
-              formatter={(value) => formatAmount(Number(value || 0))}
-              valueStyle={{ color: '#cf1322' }}
-            />
-          </Card>
-        </Col>
-      </Row>
-
-      <Card>
-        <Tabs items={tabItems} defaultActiveKey="details" />
-      </Card>
-    </div>
+        ) : null
+      }
+      stats={[
+        { key: 'contacts', label: 'Контакты', value: contacts.length },
+        { key: 'deals', label: 'Сделки', value: deals.length },
+        { key: 'amount', label: 'Сумма сделок', value: formatAmount(dealsAmount) },
+      ]}
+      tabs={tabItems}
+      defaultTabKey="details"
+    />
   );
 };
 

@@ -4,7 +4,7 @@
  */
 
 import React, { useEffect, useMemo, useState } from 'react';
-import { Alert, App, Button, Card, Descriptions, Form, Input, Select, Space, Table } from 'antd';
+import { Alert, App, Button, Card, Col, Descriptions, Empty, Form, Input, Row, Select, Space, Statistic, Table, Tag } from 'antd';
 import { MessageOutlined, ReloadOutlined } from '@ant-design/icons';
 import smsApi from '../lib/api/sms.js';
 import { PhoneInput } from '@/shared/ui';
@@ -93,7 +93,7 @@ export default function SMSSettings({ onSuccess }) {
   const statusEntries = useMemo(() => {
     if (!status) return [];
     if (Array.isArray(status)) {
-      return status.map((item, index) => [`Статус ${index + 1}`, JSON.stringify(item)]);
+      return status.map((item, index) => [`Статус ${index + 1}`, item]);
     }
     return Object.entries(status);
   }, [status]);
@@ -155,15 +155,36 @@ export default function SMSSettings({ onSuccess }) {
         style={{ marginBottom: 24 }}
       >
         {statusEntries.length === 0 ? (
-          <div>Нет данных</div>
+          <Empty description="Нет данных" />
         ) : (
-          <Descriptions column={1} size="small" bordered>
+          <Row gutter={[16, 16]}>
             {statusEntries.map(([key, value]) => (
-              <Descriptions.Item key={key} label={key}>
-                {typeof value === 'object' ? JSON.stringify(value) : String(value)}
-              </Descriptions.Item>
+              <Col xs={24} md={12} key={key}>
+                <Card size="small">
+                  {typeof value === 'number' ? (
+                    <Statistic title={key} value={value} />
+                  ) : typeof value === 'boolean' ? (
+                    <>
+                      <div style={{ marginBottom: 8, color: '#71717a' }}>{key}</div>
+                      <Tag color={value ? 'green' : 'default'}>{value ? 'Да' : 'Нет'}</Tag>
+                    </>
+                  ) : value && typeof value === 'object' ? (
+                    <Descriptions column={1} size="small" bordered>
+                      {Object.entries(value).map(([nestedKey, nestedValue]) => (
+                        <Descriptions.Item key={nestedKey} label={nestedKey}>
+                          {String(nestedValue ?? '-')}
+                        </Descriptions.Item>
+                      ))}
+                    </Descriptions>
+                  ) : (
+                    <Descriptions column={1} size="small" bordered>
+                      <Descriptions.Item label={key}>{String(value ?? '-')}</Descriptions.Item>
+                    </Descriptions>
+                  )}
+                </Card>
+              </Col>
             ))}
-          </Descriptions>
+          </Row>
         )}
       </Card>
 

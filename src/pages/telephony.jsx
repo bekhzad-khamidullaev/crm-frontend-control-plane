@@ -1,5 +1,6 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { Tabs, Card, Button, Form, Input, InputNumber, Switch, Table, App, Space, Modal, Spin, Row, Col, Statistic, Descriptions, Tag } from 'antd';
+import dayjs from 'dayjs';
+import { Tabs, Card, Button, Form, Input, InputNumber, Switch, Table, App, Space, Modal, Spin, Row, Col, Statistic, Descriptions, Tag, DatePicker, Empty } from 'antd';
 import CrudPage from '../components/CrudPage.jsx';
 import { PhoneInput } from '@/shared/ui';
 import {
@@ -37,7 +38,7 @@ const formatLabel = (value) =>
 const formatDetailValue = (value) => {
   if (value === null || value === undefined || value === '') return '-';
   if (Array.isArray(value)) return value.length ? value.join(', ') : '-';
-  if (typeof value === 'object') return JSON.stringify(value);
+  if (typeof value === 'object') return '[сложное значение]';
   return String(value);
 };
 
@@ -181,13 +182,30 @@ function CallQueueTab() {
         footer={null}
       >
         {detailModal.record ? (
-          <Descriptions size="small" column={1}>
-            {Object.entries(detailModal.record).map(([key, value]) => (
-              <Descriptions.Item key={key} label={formatLabel(key)}>
-                {formatDetailValue(value)}
-              </Descriptions.Item>
-            ))}
-          </Descriptions>
+          <Space direction="vertical" size="middle" style={{ width: '100%' }}>
+            <Descriptions size="small" column={1}>
+              {Object.entries(detailModal.record)
+                .filter(([, value]) => !value || typeof value !== 'object' || Array.isArray(value))
+                .map(([key, value]) => (
+                  <Descriptions.Item key={key} label={formatLabel(key)}>
+                    {formatDetailValue(value)}
+                  </Descriptions.Item>
+                ))}
+            </Descriptions>
+            {Object.entries(detailModal.record)
+              .filter(([, value]) => value && typeof value === 'object' && !Array.isArray(value))
+              .map(([key, value]) => (
+                <Card key={key} size="small" title={formatLabel(key)}>
+                  <Descriptions size="small" column={1}>
+                    {Object.entries(value || {}).map(([childKey, childValue]) => (
+                      <Descriptions.Item key={childKey} label={formatLabel(childKey)}>
+                        {formatDetailValue(childValue)}
+                      </Descriptions.Item>
+                    ))}
+                  </Descriptions>
+                </Card>
+              ))}
+          </Space>
         ) : (
           <Spin />
         )}
@@ -261,18 +279,33 @@ function IncomingCallsTab() {
       >
         {detailModal.loading ? (
           <Spin />
-        ) : (
-          detailModal.data ? (
+        ) : detailModal.data ? (
+          <Space direction="vertical" size="middle" style={{ width: '100%' }}>
             <Descriptions size="small" column={1}>
-              {Object.entries(detailModal.data).map(([key, value]) => (
-                <Descriptions.Item key={key} label={formatLabel(key)}>
-                  {formatDetailValue(value)}
-                </Descriptions.Item>
-              ))}
+              {Object.entries(detailModal.data)
+                .filter(([, value]) => !value || typeof value !== 'object' || Array.isArray(value))
+                .map(([key, value]) => (
+                  <Descriptions.Item key={key} label={formatLabel(key)}>
+                    {formatDetailValue(value)}
+                  </Descriptions.Item>
+                ))}
             </Descriptions>
-          ) : (
-            'Нет данных'
-          )
+            {Object.entries(detailModal.data)
+              .filter(([, value]) => value && typeof value === 'object' && !Array.isArray(value))
+              .map(([key, value]) => (
+                <Card key={key} size="small" title={formatLabel(key)}>
+                  <Descriptions size="small" column={1}>
+                    {Object.entries(value || {}).map(([childKey, childValue]) => (
+                      <Descriptions.Item key={childKey} label={formatLabel(childKey)}>
+                        {formatDetailValue(childValue)}
+                      </Descriptions.Item>
+                    ))}
+                  </Descriptions>
+                </Card>
+              ))}
+          </Space>
+        ) : (
+          <Empty description="Нет данных" />
         )}
       </Modal>
     </Card>
@@ -300,7 +333,7 @@ function ColdCallTab() {
       await scheduleColdCall({
         to_number: values.to_number,
         from_number: values.from_number,
-        scheduled_time: values.scheduled_time,
+        scheduled_time: values.scheduled_time ? dayjs(values.scheduled_time).toISOString() : null,
         lead_id: values.lead_id,
         contact_id: values.contact_id,
         campaign_id: values.campaign_id,
@@ -364,8 +397,13 @@ function ColdCallTab() {
           <Form.Item label="From number" name="from_number">
             <PhoneInput />
           </Form.Item>
-          <Form.Item label="Scheduled time (ISO)" name="scheduled_time">
-            <Input placeholder="2024-01-15T14:30:00Z" />
+          <Form.Item label="Дата и время" name="scheduled_time">
+            <DatePicker
+              showTime
+              format="DD.MM.YYYY HH:mm"
+              style={{ width: '100%' }}
+              placeholder="Выберите дату и время"
+            />
           </Form.Item>
           <Form.Item label="Лид" name="lead_id">
             <InputNumber style={{ width: '100%' }} />

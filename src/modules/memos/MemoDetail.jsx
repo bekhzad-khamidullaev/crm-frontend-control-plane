@@ -9,6 +9,7 @@ import { Button } from '../../components/ui/button.jsx';
 import { Badge } from '../../components/ui/badge.jsx';
 import { toast } from '../../components/ui/use-toast.js';
 import { AlertDialog, AlertDialogContent, AlertDialogHeader, AlertDialogTitle } from '../../components/ui/alert-dialog.jsx';
+import { LegacyEmptyState, LegacyErrorState, LegacyLoadingState } from '../../shared/ui';
 
 const stageLabels = {
   pen: { text: 'В ожидании', className: 'bg-sky-100 text-sky-700' },
@@ -19,6 +20,7 @@ const stageLabels = {
 export default function MemoDetail({ id }) {
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState(false);
   const [confirmOpen, setConfirmOpen] = useState(false);
 
   useEffect(() => {
@@ -27,10 +29,13 @@ export default function MemoDetail({ id }) {
 
   const fetchData = async () => {
     setLoading(true);
+    setLoadError(false);
     try {
       const res = await getMemo(id);
       setData(res);
     } catch (error) {
+      setData(null);
+      setLoadError(true);
       toast({ title: 'Ошибка', description: 'Не удалось загрузить мемо', variant: 'destructive' });
       console.error(error);
     } finally {
@@ -70,17 +75,31 @@ export default function MemoDetail({ id }) {
 
   if (loading) {
     return (
-      <Card className="p-6">
-        <div className="text-center text-sm text-muted-foreground">Загрузка...</div>
-      </Card>
+      <LegacyLoadingState
+        title="Загрузка мемо"
+        description="Подгружаем карточку мемо и связанные данные."
+      />
+    );
+  }
+
+  if (loadError) {
+    return (
+      <LegacyErrorState
+        title="Не удалось открыть мемо"
+        description="Попробуйте повторить загрузку или вернитесь к списку мемо."
+        onAction={fetchData}
+      />
     );
   }
 
   if (!data) {
     return (
-      <Card className="p-6">
-        <div className="text-center text-sm text-muted-foreground">Мемо не найдено</div>
-      </Card>
+      <LegacyEmptyState
+        title="Мемо не найдено"
+        description="Возможно, запись была удалена или ещё недоступна в системе."
+        actionLabel="К списку мемо"
+        onAction={() => navigate('/memos')}
+      />
     );
   }
 

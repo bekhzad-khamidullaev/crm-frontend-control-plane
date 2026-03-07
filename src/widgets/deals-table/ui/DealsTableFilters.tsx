@@ -1,4 +1,5 @@
-import React from 'react';
+import { useDebounce } from '@/shared/hooks';
+import React, { useEffect, useState } from 'react';
 import { Input, Row, Col } from 'antd';
 import { StageSelect, UserSelect, CompanySelect } from '@/features/reference';
 import { DealListParams } from '@/entities/deal';
@@ -12,9 +13,19 @@ export const DealsTableFilters: React.FC<DealsTableFiltersProps> = ({
   filters,
   onFilterChange,
 }) => {
-  const handleSearch = (value: string) => {
-    onFilterChange('search', value || undefined);
-  };
+  const [search, setSearch] = useState(filters.search || '');
+  const debouncedSearch = useDebounce(search, 400);
+
+  useEffect(() => {
+    setSearch(filters.search || '');
+  }, [filters.search]);
+
+  useEffect(() => {
+    const nextValue = debouncedSearch.trim();
+    const currentValue = String(filters.search || '').trim();
+    if (nextValue === currentValue) return;
+    onFilterChange('search', nextValue || undefined);
+  }, [debouncedSearch, filters.search, onFilterChange]);
 
   const handleChange = (key: keyof DealListParams, value: any) => {
     onFilterChange(String(key), value || undefined);
@@ -26,10 +37,9 @@ export const DealsTableFilters: React.FC<DealsTableFiltersProps> = ({
         <Col xs={24} sm={12} lg={6}>
           <Input.Search
             placeholder="Поиск по названию..."
-            onSearch={handleSearch}
-            defaultValue={filters.search}
+            value={search}
+            onChange={(event) => setSearch(event.target.value)}
             allowClear
-            onClear={() => handleSearch('')}
           />
         </Col>
         <Col xs={24} sm={12} lg={6}>

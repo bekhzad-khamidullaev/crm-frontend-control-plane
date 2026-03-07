@@ -1,15 +1,17 @@
 import React, { useEffect, useState } from 'react';
 import { Button, Space, Tag, message } from 'antd';
+import { PlusOutlined } from '@ant-design/icons';
 import { navigate } from '../../router';
 import { getCampaigns, deleteCampaign, patchCampaign } from '../../lib/api/marketing';
 import EnhancedTable from '../../components/ui-EnhancedTable.jsx';
-import TableToolbar from '../../components/ui-TableToolbar.jsx';
 import QuickActions from '../../components/QuickActions.jsx';
+import { EntityListPageShell, EntityListToolbar } from '../../shared/ui';
 
 function CampaignsList() {
   const [campaigns, setCampaigns] = useState([]);
   const [allCampaignsCache, setAllCampaignsCache] = useState(null);
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(null);
   const [searchText, setSearchText] = useState('');
   const [pagination, setPagination] = useState({
     current: 1,
@@ -23,6 +25,7 @@ function CampaignsList() {
 
   const fetchCampaigns = async (page = 1, search = '', pageSize = pagination.pageSize) => {
     setLoading(true);
+    setError(null);
     try {
       const response = await getCampaigns({
         page,
@@ -49,6 +52,7 @@ function CampaignsList() {
         total: totalCount,
       }));
     } catch (error) {
+      setError(error?.message || 'Не удалось загрузить кампании');
       message.error('Ошибка загрузки кампаний');
       setCampaigns([]);
       setPagination((prev) => ({ ...prev, current: 1, total: 0 }));
@@ -157,20 +161,30 @@ function CampaignsList() {
     },
   ];
 
-  return (
-    <div>
-      <TableToolbar
-        title="Кампании"
-        total={pagination.total}
-        loading={loading}
-        searchPlaceholder="Поиск по названию..."
-        onSearch={handleSearch}
-        onCreate={() => navigate('/campaigns/new')}
-        onRefresh={() => fetchCampaigns(pagination.current, searchText)}
-        createButtonText="Создать кампанию"
-        showViewModeSwitch={false}
-      />
+  const headerActions = (
+    <Button type="primary" icon={<PlusOutlined />} onClick={() => navigate('/campaigns/new')}>
+      Создать кампанию
+    </Button>
+  );
 
+  return (
+    <EntityListPageShell
+      title="Кампании"
+      subtitle="Список маркетинговых кампаний в едином UI-паттерне"
+      extra={headerActions}
+      toolbar={
+        <EntityListToolbar
+          searchValue={searchText}
+          searchPlaceholder="Поиск по названию..."
+          onSearchChange={handleSearch}
+          onRefresh={() => fetchCampaigns(pagination.current, searchText)}
+          loading={loading}
+          resultSummary={pagination.total ? `${pagination.total} записей` : undefined}
+        />
+      }
+      error={error}
+      onRetry={() => fetchCampaigns(pagination.current, searchText)}
+    >
       <EnhancedTable
         columns={columns}
         dataSource={campaigns}
@@ -183,7 +197,7 @@ function CampaignsList() {
         emptyText="Нет кампаний"
         emptyDescription="Создайте первую кампанию"
       />
-    </div>
+    </EntityListPageShell>
   );
 }
 

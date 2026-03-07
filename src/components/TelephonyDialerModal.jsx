@@ -445,7 +445,7 @@ export default function TelephonyDialerModal({ visible, onClose, initialNumber =
       footer={null}
       width={300}
       className="dialer-retro-modal"
-      destroyOnClose
+      destroyOnHidden
       centered
     >
       <div className="dialer-retro">

@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { Alert, Button, Grid, Modal, Table, Tabs, Tag, Spin } from 'antd';
+import React, { useMemo, useState } from 'react';
+import { Alert, Button, Descriptions, Empty, Grid, Modal, Table, Tabs, Tag, Spin } from 'antd';
 import CrudPage from '../components/CrudPage.jsx';
 import {
   getCountries,
@@ -91,6 +91,18 @@ function CurrencyRatesTab() {
     },
   ];
 
+  const rateRows = useMemo(() => {
+    const payload = ratesModal.data;
+    if (!payload || typeof payload !== 'object') return [];
+    return Object.entries(payload)
+      .filter(([key, value]) => !Array.isArray(value) && typeof value !== 'object')
+      .map(([key, value]) => ({
+        key,
+        label: key.replace(/_/g, ' '),
+        value: value ?? '-',
+      }));
+  }, [ratesModal.data]);
+
   return (
     <>
       <Table
@@ -106,9 +118,17 @@ function CurrencyRatesTab() {
         onCancel={() => setRatesModal({ open: false, data: null, title: '' })}
         footer={null}
       >
-        <pre style={{ whiteSpace: 'pre-wrap' }}>
-          {ratesModal.data ? JSON.stringify(ratesModal.data, null, 2) : ''}
-        </pre>
+        {rateRows.length ? (
+          <Descriptions column={1} bordered size="small">
+            {rateRows.map((row) => (
+              <Descriptions.Item key={row.key} label={row.label}>
+                {String(row.value)}
+              </Descriptions.Item>
+            ))}
+          </Descriptions>
+        ) : (
+          <Empty description="Нет доступных данных по курсам" />
+        )}
       </Modal>
     </>
   );
@@ -126,6 +146,25 @@ export default function ReferenceDataPage() {
     data: [],
     title: '',
   });
+
+  const departmentMemberColumns = [
+    {
+      title: 'Пользователь',
+      key: 'name',
+      render: (_, record) => record.full_name || record.username || record.email || `#${record.id}`,
+    },
+    {
+      title: 'Email',
+      dataIndex: 'email',
+      key: 'email',
+      render: (value) => value || '-',
+    },
+    {
+      title: 'Роль',
+      key: 'role',
+      render: (_, record) => record.role_name || record.role || '-',
+    },
+  ];
 
   const openDepartmentMembers = async (department) => {
     setMembersModal({
@@ -420,13 +459,20 @@ export default function ReferenceDataPage() {
         open={membersModal.open}
         onCancel={() => setMembersModal({ open: false, loading: false, data: [], title: '' })}
         footer={null}
+        width={720}
       >
         {membersModal.loading ? (
           <Spin />
+        ) : membersModal.data.length ? (
+          <Table
+            dataSource={membersModal.data}
+            columns={departmentMemberColumns}
+            rowKey={(record) => record.id || record.email || record.username}
+            pagination={false}
+            size="small"
+          />
         ) : (
-          <pre style={{ whiteSpace: 'pre-wrap' }}>
-            {membersModal.data.length ? JSON.stringify(membersModal.data, null, 2) : 'Нет данных'}
-          </pre>
+          <Empty description="Нет сотрудников в этом отделе" />
         )}
       </Modal>
     </>

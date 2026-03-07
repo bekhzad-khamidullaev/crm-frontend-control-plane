@@ -1,6 +1,7 @@
 import { useDeal } from '@/entities/deal/api/queries';
-import { ArrowLeftOutlined, EditOutlined } from '@ant-design/icons';
-import { Badge, Button, Card, Descriptions, Grid, Space, Spin, Tabs, Tag, Typography } from 'antd';
+import { EntityDetailShell } from '@/shared/ui';
+import { EditOutlined } from '@ant-design/icons';
+import { Badge, Button, Descriptions, Spin, Space, Tag, Typography } from 'antd';
 import React from 'react';
 // @ts-ignore
 import { navigate } from '@/router.js';
@@ -9,15 +10,13 @@ import { formatCurrency } from '@/lib/utils/format.js';
 // @ts-ignore
 import { canWrite } from '@/lib/rbac.js';
 
-const { Title, Text } = Typography;
+const { Text } = Typography;
 
 interface DealDetailPageProps {
   id?: number | string;
 }
 
 export const DealDetailPage: React.FC<DealDetailPageProps> = ({ id }) => {
-  const screens = Grid.useBreakpoint();
-  const isMobile = !screens.md;
   const dealId = Number(id);
   const { data: deal, isLoading } = useDeal(dealId);
   const canManage = canWrite();
@@ -112,50 +111,37 @@ export const DealDetailPage: React.FC<DealDetailPageProps> = ({ id }) => {
   ];
 
   return (
-    <div>
-      <Space wrap style={{ marginBottom: 16 }}>
-        <Button icon={<ArrowLeftOutlined />} onClick={() => navigate('/deals')} block={isMobile}>
-          Список
-        </Button>
-        {canManage && (
+    <EntityDetailShell
+      backLabel="Сделки"
+      onBack={() => navigate('/deals')}
+      title={deal.name}
+      subtitle={`Создано: ${new Date(deal.creation_date).toLocaleDateString('ru-RU')}`}
+      statusTag={<Tag color={deal.active ? 'green' : 'red'}>{deal.active ? 'Активна' : 'Неактивна'}</Tag>}
+      primaryActions={
+        canManage ? (
           <Button
             icon={<EditOutlined />}
             type="primary"
             onClick={() => navigate(`/deals/${dealId}/edit`)}
-            block={isMobile}
           >
             Редактировать
           </Button>
-        )}
-      </Space>
-
-      <Card bodyStyle={{ padding: isMobile ? 12 : 24 }}>
-        <div
-          style={{
-            marginBottom: 24,
-            display: 'flex',
-            justifyContent: 'space-between',
-            alignItems: isMobile ? 'flex-start' : 'center',
-            flexDirection: isMobile ? 'column' : 'row',
-            gap: isMobile ? 8 : 0,
-          }}
-        >
-          <Space direction="vertical">
-            <Title level={isMobile ? 4 : 3} style={{ margin: 0 }}>
-              {deal.name}
-            </Title>
-            <Text type="secondary">
-              Создано: {new Date(deal.creation_date).toLocaleDateString('ru-RU')}
-            </Text>
-          </Space>
-          <Space>
-            <Tag color={deal.active ? 'green' : 'red'}>{deal.active ? 'Активна' : 'Неактивна'}</Tag>
-          </Space>
-        </div>
-
-        <Tabs defaultActiveKey="1" items={items} size={isMobile ? 'small' : 'middle'} />
-      </Card>
-    </div>
+        ) : null
+      }
+      stats={[
+        { key: 'amount', label: 'Сумма', value: formatCurrency(d.amount, d.currency_name || 'RUB') },
+        { key: 'probability', label: 'Вероятность', value: `${d.probability || 0}%` },
+        {
+          key: 'nextStepDate',
+          label: 'Следующий шаг',
+          value: deal.next_step_date
+            ? new Date(deal.next_step_date).toLocaleDateString('ru-RU')
+            : 'Не назначен',
+        },
+      ]}
+      tabs={items}
+      defaultTabKey="1"
+    />
   );
 };
 

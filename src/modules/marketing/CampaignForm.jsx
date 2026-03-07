@@ -2,30 +2,27 @@ import React, { useState, useEffect } from 'react';
 import {
   Form,
   Input,
-  Button,
   Card,
-  Space,
   message,
-  Typography,
-  Spin,
   DatePicker,
   Row,
   Col,
   Switch,
 } from 'antd';
-import { SaveOutlined, ArrowLeftOutlined, RocketOutlined } from '@ant-design/icons';
+import { RocketOutlined } from '@ant-design/icons';
 import dayjs from 'dayjs';
 import { navigate } from '../../router';
 import { getCampaign, createCampaign, updateCampaign, getSegments, getSegment, getTemplates, getTemplate } from '../../lib/api/marketing';
 import EntitySelect from '../../components/EntitySelect';
-
-const { Title } = Typography;
+import { EntityFormSection, EntityFormShell, LegacyErrorState, LegacyLoadingState } from '../../shared/ui';
 
 function CampaignForm({ id }) {
   const [form] = Form.useForm();
   const [loading, setLoading] = useState(false);
+  const [loadError, setLoadError] = useState(false);
   const [saving, setSaving] = useState(false);
   const isEdit = !!id;
+  const formId = 'campaign-form';
 
   useEffect(() => {
     if (isEdit) {
@@ -35,6 +32,7 @@ function CampaignForm({ id }) {
 
   const loadCampaign = async () => {
     setLoading(true);
+    setLoadError(false);
     try {
       const data = await getCampaign(id);
       form.setFieldsValue({
@@ -42,6 +40,7 @@ function CampaignForm({ id }) {
         start_at: data.start_at ? dayjs(data.start_at) : null,
       });
     } catch (error) {
+      setLoadError(true);
       message.error('Ошибка загрузки кампании');
       console.error('Error loading campaign:', error);
     } finally {
@@ -79,39 +78,50 @@ function CampaignForm({ id }) {
 
   if (loading) {
     return (
-      <div style={{ textAlign: 'center', padding: '50px' }}>
-        <Spin size="large" tip="Загрузка данных..." spinning={true}>
-          <div style={{ minHeight: '200px' }}></div>
-        </Spin>
-      </div>
+      <LegacyLoadingState
+        title="Загрузка кампании"
+        description="Подготавливаем форму маркетинговой кампании."
+      />
+    );
+  }
+
+  if (isEdit && loadError) {
+    return (
+      <LegacyErrorState
+        title="Не удалось загрузить кампанию для редактирования"
+        description="Попробуйте повторить загрузку или вернитесь к списку кампаний."
+        onAction={loadCampaign}
+      />
     );
   }
 
   return (
-    <div>
-      <div style={{ marginBottom: 16 }}>
-        <Space>
-          <Button icon={<ArrowLeftOutlined />} onClick={handleBack}>
-            Назад
-          </Button>
-          <Title level={2} style={{ margin: 0 }}>
-            {isEdit ? 'Редактирование кампании' : 'Новая кампания'}
-          </Title>
-        </Space>
-      </div>
-
+    <EntityFormShell
+      title={isEdit ? 'Редактирование кампании' : 'Новая кампания'}
+      subtitle="Создание и настройка маркетинговой кампании в едином CRM-паттерне."
+      hint="Сначала заполните название и целевой сегмент, затем настройте шаблон и дату запуска."
+      formId={formId}
+      submitText={isEdit ? 'Сохранить кампанию' : 'Создать кампанию'}
+      isSubmitting={saving}
+      onBack={handleBack}
+      onCancel={handleBack}
+    >
       <Card>
-        <Form form={form} layout="vertical" onFinish={handleSubmit}>
+        <Form id={formId} form={form} layout="vertical" onFinish={handleSubmit}>
+          <EntityFormSection
+            title="Основное"
+            description="Ключевые параметры кампании, которые определяют её назначение и момент запуска."
+          />
           <Form.Item
             label="Название кампании"
             name="name"
             rules={[{ required: true, message: 'Введите название кампании' }]}
           >
-            <Input prefix={<RocketOutlined />} placeholder="Например: Летняя акция 2024" />
+            <Input prefix={<RocketOutlined />} placeholder="Например: Летняя акция 2026" />
           </Form.Item>
 
           <Row gutter={16}>
-            <Col span={12}>
+            <Col xs={24} md={12}>
               <Form.Item label="Сегмент" name="segment">
                 <EntitySelect
                   placeholder="Выберите сегмент"
@@ -120,7 +130,7 @@ function CampaignForm({ id }) {
                 />
               </Form.Item>
             </Col>
-            <Col span={12}>
+            <Col xs={24} md={12}>
               <Form.Item label="Шаблон" name="template">
                 <EntitySelect
                   placeholder="Выберите шаблон"
@@ -131,8 +141,12 @@ function CampaignForm({ id }) {
             </Col>
           </Row>
 
+          <EntityFormSection
+            title="Запуск и статус"
+            description="Определите время старта и текущую активность кампании."
+          />
           <Row gutter={16}>
-            <Col span={12}>
+            <Col xs={24} md={12}>
               <Form.Item label="Дата старта" name="start_at">
                 <DatePicker
                   format="DD.MM.YYYY HH:mm"
@@ -142,24 +156,15 @@ function CampaignForm({ id }) {
                 />
               </Form.Item>
             </Col>
-            <Col span={12}>
+            <Col xs={24} md={12}>
               <Form.Item label="Активна" name="is_active" valuePropName="checked">
                 <Switch />
               </Form.Item>
             </Col>
           </Row>
-
-          <Form.Item>
-            <Space>
-              <Button type="primary" htmlType="submit" icon={<SaveOutlined />} loading={saving}>
-                {isEdit ? 'Сохранить' : 'Создать'}
-              </Button>
-              <Button onClick={handleBack}>Отмена</Button>
-            </Space>
-          </Form.Item>
         </Form>
       </Card>
-    </div>
+    </EntityFormShell>
   );
 }
 

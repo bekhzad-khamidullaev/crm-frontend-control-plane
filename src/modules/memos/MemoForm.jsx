@@ -18,6 +18,7 @@ import { Label } from '../../components/ui/label.jsx';
 import { Switch } from '../../components/ui/switch.jsx';
 import { DatePicker } from '../../components/ui-DatePicker.jsx';
 import { toast } from '../../components/ui/use-toast.js';
+import { LegacyErrorState, LegacyLoadingState } from '../../shared/ui';
 
 const schema = z.object({
   name: z.string().min(1, 'Введите название'),
@@ -37,6 +38,7 @@ const schema = z.object({
 
 export default function MemoForm({ id }) {
   const [loading, setLoading] = useState(false);
+  const [loadError, setLoadError] = useState(false);
   const [saving, setSaving] = useState(false);
   const isEdit = !!id;
 
@@ -85,6 +87,7 @@ export default function MemoForm({ id }) {
 
   const fetchData = async () => {
     setLoading(true);
+    setLoadError(false);
     try {
       const res = await getMemo(id);
       reset({
@@ -92,6 +95,7 @@ export default function MemoForm({ id }) {
         review_date: res.review_date ? dayjs(res.review_date) : null,
       });
     } catch (error) {
+      setLoadError(true);
       toast({ title: 'Ошибка', description: 'Не удалось загрузить мемо', variant: 'destructive' });
     } finally {
       setLoading(false);
@@ -122,9 +126,20 @@ export default function MemoForm({ id }) {
 
   if (loading) {
     return (
-      <Card className="p-6">
-        <div className="text-center text-sm text-muted-foreground">Загрузка...</div>
-      </Card>
+      <LegacyLoadingState
+        title="Загрузка мемо"
+        description="Подготавливаем форму редактирования мемо."
+      />
+    );
+  }
+
+  if (isEdit && loadError) {
+    return (
+      <LegacyErrorState
+        title="Не удалось загрузить мемо для редактирования"
+        description="Попробуйте повторить загрузку или вернитесь к списку мемо."
+        onAction={fetchData}
+      />
     );
   }
 

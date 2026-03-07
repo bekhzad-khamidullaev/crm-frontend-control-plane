@@ -16,7 +16,7 @@ import {
     PhoneOutlined,
     ShopOutlined
 } from '@ant-design/icons';
-import { Avatar, Button, Popconfirm, Space, Table } from 'antd';
+import { Alert, Avatar, Button, Popconfirm, Space, Table, Tooltip } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
 import React from 'react';
 import { CompaniesTableFilters } from './ui/CompaniesTableFilters';
@@ -36,9 +36,13 @@ export const CompaniesTable: React.FC = () => {
   const {
     data,
     isLoading,
+    isFetching,
+    error,
+    refetch,
     pagination,
+    params,
     handleTableChange,
-    handleFilterChange,
+    applyFilters,
   } = useServerTable<Company>({
     queryKey: companyKeys.lists() as unknown as unknown[],
     queryFn: (params) => CompaniesService.companiesList(params as any),
@@ -74,10 +78,7 @@ export const CompaniesTable: React.FC = () => {
   };
 
   const handleFiltersApply = (filters: Record<string, unknown>) => {
-    // Process filters from the filter component
-    Object.entries(filters).forEach(([key, value]) => {
-      handleFilterChange(key, value);
-    });
+    applyFilters(filters);
   };
 
   const columns: ColumnsType<Company> = [
@@ -168,14 +169,18 @@ export const CompaniesTable: React.FC = () => {
             icon={<EyeOutlined />}
             onClick={() => navigate(`/companies/${record.id}`)}
           />
-          {canManage && (
+          {canManage ? (
             <Button
               type="link"
               icon={<EditOutlined />}
               onClick={() => navigate(`/companies/${record.id}/edit`)}
             />
+          ) : (
+            <Tooltip title="Недостаточно прав">
+              <Button type="link" icon={<EditOutlined />} disabled />
+            </Tooltip>
           )}
-          {canManage && (
+          {canManage ? (
             <Popconfirm
               title="Удалить эту компанию?"
               description="Это действие нельзя отменить"
@@ -185,6 +190,10 @@ export const CompaniesTable: React.FC = () => {
             >
               <Button type="link" danger icon={<DeleteOutlined />} loading={deleteMutation.isPending} />
             </Popconfirm>
+          ) : (
+            <Tooltip title="Недостаточно прав">
+              <Button type="link" danger icon={<DeleteOutlined />} disabled />
+            </Tooltip>
           )}
         </Space>
       ),
@@ -194,15 +203,26 @@ export const CompaniesTable: React.FC = () => {
   return (
     <div>
       <CompaniesTableFilters
+        filters={params}
         onFilterChange={handleFiltersApply}
-        loading={isLoading}
+        onRefresh={() => refetch()}
+        loading={isLoading || isFetching}
       />
+      {error && (
+        <Alert
+          type="error"
+          showIcon
+          style={{ marginBottom: 16 }}
+          message="Не удалось загрузить список компаний"
+          action={<Button size="small" onClick={() => refetch()}>Повторить</Button>}
+        />
+      )}
 
       <Table
         columns={columns}
         dataSource={data}
         rowKey="id"
-        loading={isLoading}
+        loading={isLoading || isFetching}
         pagination={pagination}
         onChange={handleTableChange}
         scroll={{ x: 1000 }}

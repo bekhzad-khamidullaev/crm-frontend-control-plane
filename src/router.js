@@ -159,8 +159,9 @@ export function getRouteMeta(name) {
 
 export function parseHash() {
   const raw = (location.hash || '').replace(/^#/, '');
+  const [rawPath = ''] = raw.split('?');
   // Require authentication - redirect to login if no hash
-  const path = raw || (isAuthenticated() ? '/dashboard' : '/login');
+  const path = rawPath || (isAuthenticated() ? '/dashboard' : '/login');
   const segments = path.split('/').filter(Boolean);
   // routes: /login, /dashboard, /leads, /leads/new, /leads/:id, /leads/:id/edit
   if (segments[0] === 'login') return { name: 'login', params: {} };

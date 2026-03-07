@@ -1,5 +1,7 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { Folder, Calendar, Clock, Eye, Edit, Trash2 } from 'lucide-react';
+import { Button as AntButton, Dropdown, Space } from 'antd';
+import { DownloadOutlined, PlusOutlined } from '@ant-design/icons';
 
 import { navigate } from '../../router';
 import {
@@ -12,18 +14,19 @@ import {
   completeProject,
 } from '../../lib/api';
 import EnhancedTable from '../../components/ui-EnhancedTable.jsx';
-import TableToolbar from '../../components/ui-TableToolbar.jsx';
 import BulkActions from '../../components/ui-BulkActions.jsx';
 import ReferenceSelect from '../../components/ui-ReferenceSelect.jsx';
 import { exportAndDownload } from '../../lib/api/export.js';
 import { toast } from '../../components/ui/use-toast.js';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '../../components/ui/dialog.jsx';
 import { Button } from '../../components/ui/button.jsx';
+import { EntityListPageShell, EntityListToolbar } from '../../shared/ui';
 
 function ProjectsList() {
   const [projects, setProjects] = useState([]);
   const [allProjectsCache, setAllProjectsCache] = useState(null);
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(null);
   const [searchText, setSearchText] = useState('');
   const [pagination, setPagination] = useState({
     current: 1,
@@ -71,6 +74,7 @@ function ProjectsList() {
 
   const fetchProjects = async (page = 1, search = '', pageSize = pagination.pageSize) => {
     setLoading(true);
+    setError(null);
     try {
       const response = await getProjects({
         page,
@@ -97,6 +101,7 @@ function ProjectsList() {
         total: totalCount,
       }));
     } catch (error) {
+      setError(error?.message || 'Не удалось загрузить список проектов');
       toast({ title: 'Ошибка', description: 'Ошибка загрузки проектов', variant: 'destructive' });
       setProjects([]);
       setPagination((prev) => ({
@@ -363,45 +368,67 @@ function ProjectsList() {
     onChange: (keys) => setSelectedRowKeys(keys),
   };
 
+  const headerActions = (
+    <Space wrap>
+      <Dropdown
+        menu={{
+          items: [
+            { key: 'csv', label: 'CSV', onClick: () => handleExport('csv') },
+            { key: 'excel', label: 'Excel', onClick: () => handleExport('excel') },
+          ],
+        }}
+      >
+        <AntButton icon={<DownloadOutlined />}>Экспорт</AntButton>
+      </Dropdown>
+      <AntButton type="primary" icon={<PlusOutlined />} onClick={() => navigate('/projects/new')}>
+        Создать проект
+      </AntButton>
+    </Space>
+  );
+
   return (
-    <div>
-      <TableToolbar
+    <>
+      <EntityListPageShell
         title="Проекты"
-        total={pagination.total}
-        loading={loading}
-        searchPlaceholder="Поиск по названию, описанию..."
-        onSearch={handleSearch}
-        onCreate={() => navigate('/projects/new')}
-        onRefresh={() => fetchProjects(pagination.current, searchText)}
-        onExport={handleExport}
-        createButtonText="Создать проект"
-        showViewModeSwitch={false}
-        showExportButton={true}
-      />
-
-      <EnhancedTable
-        columns={columns}
-        dataSource={projects}
-        loading={loading}
-        pagination={pagination}
-        onChange={handleTableChange}
-        rowSelection={rowSelection}
-        rowClassName={(record) =>
-          doneStage && record.stage === doneStage.id ? 'row-completed' : ''
+        subtitle="Список проектов в том же page-shell, что и новые CRM-страницы"
+        extra={headerActions}
+        toolbar={
+          <EntityListToolbar
+            searchValue={searchText}
+            searchPlaceholder="Поиск по названию, описанию..."
+            onSearchChange={handleSearch}
+            onRefresh={() => fetchProjects(pagination.current, searchText)}
+            loading={loading}
+            resultSummary={pagination.total ? `${pagination.total} записей` : undefined}
+          />
         }
-        showTotal={true}
-        showSizeChanger={true}
-        emptyText="Нет проектов"
-        emptyDescription="Создайте первый проект"
-      />
+        error={error}
+        onRetry={() => fetchProjects(pagination.current, searchText)}
+      >
+        <EnhancedTable
+          columns={columns}
+          dataSource={projects}
+          loading={loading}
+          pagination={pagination}
+          onChange={handleTableChange}
+          rowSelection={rowSelection}
+          rowClassName={(record) =>
+            doneStage && record.stage === doneStage.id ? 'row-completed' : ''
+          }
+          showTotal={true}
+          showSizeChanger={true}
+          emptyText="Нет проектов"
+          emptyDescription="Создайте первый проект"
+        />
 
-      <BulkActions
-        selectedRowKeys={selectedRowKeys}
-        onClearSelection={() => setSelectedRowKeys([])}
-        onDelete={handleBulkDelete}
-        onBulkTag={handleBulkTag}
-        entityName="проектов"
-      />
+        <BulkActions
+          selectedRowKeys={selectedRowKeys}
+          onClearSelection={() => setSelectedRowKeys([])}
+          onDelete={handleBulkDelete}
+          onBulkTag={handleBulkTag}
+          entityName="проектов"
+        />
+      </EntityListPageShell>
 
       <Dialog open={bulkTagModalVisible} onOpenChange={setBulkTagModalVisible}>
         <DialogContent>
@@ -439,7 +466,7 @@ function ProjectsList() {
           text-decoration: line-through;
         }
       `}</style>
-    </div>
+    </>
   );
 }
 

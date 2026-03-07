@@ -11,6 +11,7 @@ import { Button } from '../../components/ui/button.jsx';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '../../components/ui/tabs.jsx';
 import { Badge } from '../../components/ui/badge.jsx';
 import { toast } from '../../components/ui/use-toast.js';
+import { LegacyEmptyState, LegacyLoadingState } from '../../shared/ui';
 
 function TaskDetail({ id }) {
   const [task, setTask] = useState(null);
@@ -86,11 +87,23 @@ function TaskDetail({ id }) {
   }, [tags]);
 
   if (loading) {
-    return <div className="py-12 text-center text-sm text-muted-foreground">Загрузка...</div>;
+    return (
+      <LegacyLoadingState
+        title="Загрузка задачи"
+        description="Получаем карточку задачи, связанные этапы, теги и пользователей."
+      />
+    );
   }
 
   if (!task) {
-    return <div>Задача не найдена</div>;
+    return (
+      <LegacyEmptyState
+        title="Задача не найдена"
+        description="Запись могла быть удалена или больше не доступна текущему пользователю."
+        actionLabel="Вернуться к задачам"
+        onAction={() => navigate('/tasks')}
+      />
+    );
   }
 
   const stage = stageMap[task.stage];

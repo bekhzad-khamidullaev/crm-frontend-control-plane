@@ -1,4 +1,4 @@
-import { PageHeader } from '@/shared/ui/PageHeader';
+import { EntityListPageShell } from '@/shared/ui';
 import { DealsTable } from '@/widgets/deals-table';
 import { PlusOutlined } from '@ant-design/icons';
 import { Button, Grid } from 'antd';
@@ -14,27 +14,26 @@ export const DealsListPage: React.FC = () => {
   const canManage = canWrite();
 
   return (
-    <>
-      <PageHeader
-        title="Сделки"
-        extra={
-          canManage
-            ? [
-                <Button
-                  key="create"
-                  type="primary"
-                  icon={<PlusOutlined />}
-                  onClick={() => navigate('/deals/new')}
-                  block={isMobile}
-                >
-                  {isMobile ? 'Создать' : 'Создать сделку'}
-                </Button>,
-              ]
-            : []
-        }
-      />
+    <EntityListPageShell
+      title="Сделки"
+      extra={
+        canManage
+          ? [
+              <Button
+                key="create"
+                type="primary"
+                icon={<PlusOutlined />}
+                onClick={() => navigate('/deals/new')}
+                block={isMobile}
+              >
+                {isMobile ? 'Создать' : 'Создать сделку'}
+              </Button>,
+            ]
+          : []
+      }
+    >
       <DealsTable />
-    </>
+    </EntityListPageShell>
   );
 };
 

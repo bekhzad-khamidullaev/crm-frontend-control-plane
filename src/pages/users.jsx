@@ -1,5 +1,5 @@
-import React, { useEffect, useState } from 'react';
-import { Tabs, Card, Button, Table, message, Space } from 'antd';
+import React, { useEffect, useMemo, useState } from 'react';
+import { Tabs, Card, Button, Table, message, Space, Empty, Row, Col, Statistic, Tag, Descriptions } from 'antd';
 import CrudPage from '../components/CrudPage.jsx';
 import { getUsers, getUser } from '../lib/api/client.js';
 import { getProfiles, getProfileByUser, getUserSessions, revokeAllSessions, get2FAStatus } from '../lib/api/user.js';
@@ -7,6 +7,10 @@ import { getProfiles, getProfileByUser, getUserSessions, revokeAllSessions, get2
 function SecurityTab() {
   const [sessions, setSessions] = useState([]);
   const [twoFA, setTwoFA] = useState(null);
+  const twoFaEntries = useMemo(() => {
+    if (!twoFA || typeof twoFA !== 'object') return [];
+    return Object.entries(twoFA);
+  }, [twoFA]);
 
   const load = async () => {
     try {
@@ -38,7 +42,32 @@ function SecurityTab() {
   return (
     <Space direction="vertical" size="middle" style={{ width: '100%' }}>
       <Card title="2FA статус" extra={<Button onClick={load}>Обновить</Button>}>
-        <pre style={{ whiteSpace: 'pre-wrap' }}>{JSON.stringify(twoFA, null, 2)}</pre>
+        {!twoFaEntries.length ? (
+          <Empty description="Нет данных по 2FA" />
+        ) : (
+          <Row gutter={[16, 16]}>
+            {twoFaEntries.map(([key, value]) => (
+              <Col xs={24} md={8} key={key}>
+                <Card size="small">
+                  {typeof value === 'number' ? (
+                    <Statistic title={key.replace(/_/g, ' ')} value={value} />
+                  ) : typeof value === 'boolean' ? (
+                    <>
+                      <div style={{ marginBottom: 8, color: '#71717a' }}>{key.replace(/_/g, ' ')}</div>
+                      <Tag color={value ? 'green' : 'default'}>{value ? 'Да' : 'Нет'}</Tag>
+                    </>
+                  ) : (
+                    <Descriptions size="small" column={1}>
+                      <Descriptions.Item label={key.replace(/_/g, ' ')}>
+                        {String(value ?? '-')}
+                      </Descriptions.Item>
+                    </Descriptions>
+                  )}
+                </Card>
+              </Col>
+            ))}
+          </Row>
+        )}
       </Card>
       <Card title="Сессии" extra={<Button danger onClick={handleRevoke}>Отозвать все</Button>}>
         <Table

@@ -1,7 +1,8 @@
 import { message } from 'antd';
 import axios, { AxiosError, InternalAxiosRequestConfig } from 'axios';
+import resolveApiBase from './resolveApiBase';
 
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'https://api.crm.windevs.uz';
+const API_BASE_URL = resolveApiBase(import.meta.env.VITE_API_BASE_URL);
 
 /**
  * Central Axios instance for all API calls

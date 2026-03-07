@@ -17,7 +17,7 @@ export default function EnhancedTable({
   rowSelection,
   expandable,
   scroll,
-  size = 'middle',
+  size = 'small',
   bordered = false,
   showHeader = true,
   sticky = false,
@@ -34,9 +34,13 @@ export default function EnhancedTable({
       <Empty
         image={<InboxOutlined style={{ fontSize: 48, color: '#bfbfbf' }} />}
         description={
-          <div>
-            <div style={{ marginBottom: 4, fontWeight: 500 }}>{emptyText}</div>
-            <div style={{ fontSize: 12, color: '#999' }}>{emptyDescription}</div>
+          <div style={{ padding: '8px 0' }}>
+            <div style={{ marginBottom: 6, fontWeight: 600, fontSize: 15, color: '#18181b' }}>
+              {emptyText}
+            </div>
+            <div style={{ fontSize: 13, lineHeight: 1.5, color: '#71717a', maxWidth: 320, margin: '0 auto' }}>
+              {emptyDescription}
+            </div>
           </div>
         }
       />
@@ -67,8 +71,7 @@ export default function EnhancedTable({
       showSizeChanger: showSizeChanger,
       showQuickJumper: showQuickJumper,
       pageSizeOptions: ['10', '20', '50', '100'],
-      // Don't show pagination if there's only one page or less
-      hideOnSinglePage: false,
+      hideOnSinglePage: true,
     };
   }, [pagination, showTotal, showSizeChanger, showQuickJumper]);
 
@@ -88,6 +91,7 @@ export default function EnhancedTable({
       showHeader={showHeader}
       sticky={sticky}
       locale={locale || emptyLocale}
+      style={{ borderRadius: 16, overflow: 'hidden' }}
       {...rest}
     />
   );

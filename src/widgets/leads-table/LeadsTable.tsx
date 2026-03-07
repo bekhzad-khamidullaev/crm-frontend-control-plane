@@ -16,7 +16,7 @@ import {
     PhoneOutlined,
     UserOutlined,
 } from '@ant-design/icons';
-import { Avatar, Badge, Button, Grid, Popconfirm, Space, Table, Tooltip } from 'antd';
+import { Alert, Avatar, Badge, Button, Grid, Popconfirm, Space, Table, Tooltip } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
 import React from 'react';
 import { LeadsTableFilters } from './ui/LeadsTableFilters';
@@ -36,9 +36,12 @@ export const LeadsTable: React.FC = () => {
   const {
     data,
     isLoading,
+    isFetching,
+    error,
+    refetch,
     pagination,
     handleTableChange,
-    handleFilterChange,
+    applyFilters,
     params: filters,
   } = useServerTable<Lead>({
     queryKey: leadKeys.lists() as unknown as unknown[],
@@ -181,7 +184,7 @@ export const LeadsTable: React.FC = () => {
               onClick={() => navigate(`/leads/${record.id}`)}
             />
           </Tooltip>
-          {canManage && (
+          {canManage ? (
             <Tooltip title="Редактировать">
               <Button
                 type="link"
@@ -189,8 +192,12 @@ export const LeadsTable: React.FC = () => {
                 onClick={() => navigate(`/leads/${record.id}/edit`)}
               />
             </Tooltip>
+          ) : (
+            <Tooltip title="Недостаточно прав">
+              <Button type="link" icon={<EditOutlined />} disabled />
+            </Tooltip>
           )}
-          {canManage && (
+          {canManage ? (
             <Popconfirm
               title="Удалить лид?"
               onConfirm={() => handleDelete(record.id)}
@@ -204,6 +211,10 @@ export const LeadsTable: React.FC = () => {
                 loading={deleteMutation.isPending}
               />
             </Popconfirm>
+          ) : (
+            <Tooltip title="Недостаточно прав">
+              <Button type="link" danger icon={<DeleteOutlined />} disabled />
+            </Tooltip>
           )}
         </Space>
       ),
@@ -214,16 +225,24 @@ export const LeadsTable: React.FC = () => {
     <div>
       <LeadsTableFilters
         filters={listFilters}
-        onChange={(newFilters) => {
-          // Mapping filters manually since useServerTable might handle it differently
-          Object.entries(newFilters).forEach(([k, v]) => handleFilterChange(k, v));
-        }}
+        onChange={(newFilters) => applyFilters(newFilters as Record<string, unknown>)}
+        onRefresh={() => refetch()}
+        loading={isLoading || isFetching}
       />
+      {error && (
+        <Alert
+          type="error"
+          showIcon
+          style={{ marginBottom: 16 }}
+          message="Не удалось загрузить список лидов"
+          action={<Button size="small" onClick={() => refetch()}>Повторить</Button>}
+        />
+      )}
       <Table
         columns={columns}
         dataSource={data}
         rowKey="id"
-        loading={isLoading}
+        loading={isLoading || isFetching}
         size={isMobile ? 'small' : 'middle'}
         pagination={pagination}
         onChange={handleTableChange}

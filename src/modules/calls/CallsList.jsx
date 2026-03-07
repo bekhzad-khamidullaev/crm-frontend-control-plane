@@ -20,7 +20,7 @@ import {
   PlayCircleOutlined,
   ReloadOutlined
 } from '@ant-design/icons';
-import { Form, Space, Tag, Tooltip } from 'antd';
+import { Button as AntButton, Form, Space, Tag, Tooltip } from 'antd';
 import { DatePicker } from '../../components/ui-DatePicker.jsx';
 import EnhancedTable from '../../components/ui-EnhancedTable.jsx';
 import { Button } from '../../components/ui/button.jsx';
@@ -32,6 +32,7 @@ import { toast } from '../../components/ui/use-toast.js';
 import AudioPlayer from '../../components/AudioPlayer.jsx';
 import CallButton from '../../components/CallButton.jsx';
 import CrudPage from '../../components/CrudPage.jsx';
+import { EntityListPageShell, EntityListToolbar, LegacyEmptyState, LegacyLoadingState, LegacyStatePanel } from '../../shared/ui';
 import { getContact, getContacts } from '../../lib/api';
 import {
   addCallNote,
@@ -53,6 +54,7 @@ const RangePicker = DatePicker.RangePicker;
 function CallsList() {
   const [calls, setCalls] = useState([]);
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(null);
   const [searchText, setSearchText] = useState('');
   const [statistics, setStatistics] = useState(null);
   const [selectedRecording, setSelectedRecording] = useState(null);
@@ -76,6 +78,7 @@ function CallsList() {
 
   const fetchCalls = async () => {
     setLoading(true);
+    setError(null);
     try {
       const params = {
         limit: 500,
@@ -101,6 +104,7 @@ function CallsList() {
         total: filtered.length,
       }));
     } catch (error) {
+      setError(error?.message || 'Не удалось загрузить историю звонков');
       console.error('Error fetching calls:', error);
       toast({ title: 'Ошибка', description: 'Ошибка загрузки истории звонков', variant: 'destructive' });
       setCalls([]);
@@ -467,106 +471,103 @@ function CallsList() {
 
   const voipTabContent = (
     <div>
-      <div style={{ marginBottom: 16, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-        <Title level={2} style={{ margin: 0 }}>История звонков</Title>
-        <Button icon={<ReloadOutlined />} onClick={() => { fetchCalls(); fetchStatistics(); }}>
-          Обновить
-        </Button>
-      </div>
-
-      {/* Statistics Cards */}
-      {statistics && (
-        <div className="mb-4 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
-          <Card className="p-4">
-            <div className="flex items-center gap-3 text-sm">
-              <div className="rounded-md bg-muted p-2"><Phone className="h-4 w-4" /></div>
-              <div>
-                <div className="text-xs text-muted-foreground">Всего звонков</div>
-                <div className="text-lg font-semibold">{statistics.total ?? statistics.total_calls ?? 0}</div>
-              </div>
-            </div>
-          </Card>
-          <Card className="p-4">
-            <div className="flex items-center gap-3 text-sm">
-              <div className="rounded-md bg-emerald-100 p-2 text-emerald-700"><PhoneCall className="h-4 w-4" /></div>
-              <div>
-                <div className="text-xs text-muted-foreground">Входящие</div>
-                <div className="text-lg font-semibold">{statistics.inbound ?? statistics.incoming ?? statistics.incoming_calls ?? 0}</div>
-              </div>
-            </div>
-          </Card>
-          <Card className="p-4">
-            <div className="flex items-center gap-3 text-sm">
-              <div className="rounded-md bg-sky-100 p-2 text-sky-700"><PhoneCall className="h-4 w-4" /></div>
-              <div>
-                <div className="text-xs text-muted-foreground">Исходящие</div>
-                <div className="text-lg font-semibold">{statistics.outbound ?? statistics.outgoing ?? statistics.outgoing_calls ?? 0}</div>
-              </div>
-            </div>
-          </Card>
-          <Card className="p-4">
-            <div className="flex items-center gap-3 text-sm">
-              <div className="rounded-md bg-muted p-2"><Clock className="h-4 w-4" /></div>
-              <div>
-                <div className="text-xs text-muted-foreground">Средняя длительность</div>
-                <div className="text-lg font-semibold">{formatDuration(Math.round(statistics.averageDuration || statistics.average_duration || 0))}</div>
-              </div>
-            </div>
-          </Card>
-        </div>
-      )}
-
-      {/* Filters */}
-      <Card className="mb-4 p-4">
-        <div className="flex w-full flex-wrap items-center gap-3">
-          <div className="relative w-full max-w-xs">
-            <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-            <Input
-              placeholder="Поиск по номеру телефона..."
-              onKeyDown={(e) => e.key === 'Enter' && handleSearch(e.currentTarget.value)}
-              className="pl-9"
-            />
-          </div>
-          <select
-            className="h-9 w-[150px] rounded-md border border-border bg-background px-2 text-sm"
-            value={filters.direction || ''}
-            onChange={(e) => handleFilterChange('direction', e.target.value || null)}
-          >
-            <option value="">Направление</option>
-            <option value="inbound">Входящие</option>
-            <option value="outbound">Исходящие</option>
-          </select>
-          <select
-            className="h-9 w-[150px] rounded-md border border-border bg-background px-2 text-sm"
-            value={filters.status || ''}
-            onChange={(e) => handleFilterChange('status', e.target.value || null)}
-          >
-            <option value="">Статус</option>
-            <option value="answered">Отвечен</option>
-            <option value="ringing">Звонит</option>
-            <option value="busy">Занято</option>
-            <option value="no_answer">Нет ответа</option>
-            <option value="failed">Ошибка</option>
-          </select>
-          <RangePicker
-            value={filters.dateRange}
-            onChange={(dates) => handleFilterChange('dateRange', dates)}
-            format="DD.MM.YYYY"
-          />
-          {(filters.direction || filters.status || filters.dateRange || searchText) && (
-            <Button variant="outline" onClick={handleClearFilters}>
-              Сбросить фильтры
-            </Button>
-          )}
-          <Button variant="outline" onClick={() => { fetchCalls(); fetchStatistics(); }}>
-            <RefreshCcw className="mr-2 h-4 w-4" />
+      <EntityListPageShell
+        title="История звонков"
+        subtitle="VoIP-звонки в общем CRM list-shell"
+        extra={
+          <AntButton icon={<ReloadOutlined />} onClick={() => { fetchCalls(); fetchStatistics(); }}>
             Обновить
-          </Button>
-        </div>
-      </Card>
+          </AntButton>
+        }
+        toolbar={
+          <EntityListToolbar
+            searchValue={searchText}
+            searchPlaceholder="Поиск по номеру телефона..."
+            onSearchChange={handleSearch}
+            filters={
+              <>
+                <select
+                  className="h-9 w-[150px] rounded-md border border-border bg-background px-2 text-sm"
+                  value={filters.direction || ''}
+                  onChange={(e) => handleFilterChange('direction', e.target.value || null)}
+                >
+                  <option value="">Направление</option>
+                  <option value="inbound">Входящие</option>
+                  <option value="outbound">Исходящие</option>
+                </select>
+                <select
+                  className="h-9 w-[150px] rounded-md border border-border bg-background px-2 text-sm"
+                  value={filters.status || ''}
+                  onChange={(e) => handleFilterChange('status', e.target.value || null)}
+                >
+                  <option value="">Статус</option>
+                  <option value="answered">Отвечен</option>
+                  <option value="ringing">Звонит</option>
+                  <option value="busy">Занято</option>
+                  <option value="no_answer">Нет ответа</option>
+                  <option value="failed">Ошибка</option>
+                </select>
+                <RangePicker
+                  value={filters.dateRange}
+                  onChange={(dates) => handleFilterChange('dateRange', dates)}
+                  format="DD.MM.YYYY"
+                />
+                {(filters.direction || filters.status || filters.dateRange || searchText) ? (
+                  <AntButton onClick={handleClearFilters}>
+                    Сбросить
+                  </AntButton>
+                ) : null}
+              </>
+            }
+            onRefresh={() => { fetchCalls(); fetchStatistics(); }}
+            loading={loading}
+            resultSummary={pagination.total ? `${pagination.total} звонков` : undefined}
+          />
+        }
+        error={error}
+        onRetry={() => { fetchCalls(); fetchStatistics(); }}
+      >
+        {statistics && (
+          <div className="mb-4 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+            <Card className="p-4">
+              <div className="flex items-center gap-3 text-sm">
+                <div className="rounded-md bg-muted p-2"><Phone className="h-4 w-4" /></div>
+                <div>
+                  <div className="text-xs text-muted-foreground">Всего звонков</div>
+                  <div className="text-lg font-semibold">{statistics.total ?? statistics.total_calls ?? 0}</div>
+                </div>
+              </div>
+            </Card>
+            <Card className="p-4">
+              <div className="flex items-center gap-3 text-sm">
+                <div className="rounded-md bg-emerald-100 p-2 text-emerald-700"><PhoneCall className="h-4 w-4" /></div>
+                <div>
+                  <div className="text-xs text-muted-foreground">Входящие</div>
+                  <div className="text-lg font-semibold">{statistics.inbound ?? statistics.incoming ?? statistics.incoming_calls ?? 0}</div>
+                </div>
+              </div>
+            </Card>
+            <Card className="p-4">
+              <div className="flex items-center gap-3 text-sm">
+                <div className="rounded-md bg-sky-100 p-2 text-sky-700"><PhoneCall className="h-4 w-4" /></div>
+                <div>
+                  <div className="text-xs text-muted-foreground">Исходящие</div>
+                  <div className="text-lg font-semibold">{statistics.outbound ?? statistics.outgoing ?? statistics.outgoing_calls ?? 0}</div>
+                </div>
+              </div>
+            </Card>
+            <Card className="p-4">
+              <div className="flex items-center gap-3 text-sm">
+                <div className="rounded-md bg-muted p-2"><Clock className="h-4 w-4" /></div>
+                <div>
+                  <div className="text-xs text-muted-foreground">Средняя длительность</div>
+                  <div className="text-lg font-semibold">{formatDuration(Math.round(statistics.averageDuration || statistics.average_duration || 0))}</div>
+                </div>
+              </div>
+            </Card>
+          </div>
+        )}
 
-      {/* Calls Table */}
-      <Card className="p-0">
         <EnhancedTable
           columns={columns}
           dataSource={calls}
@@ -575,9 +576,8 @@ function CallsList() {
           onChange={handleTableChange}
           emptyText="Звонков не найдено"
         />
-      </Card>
+      </EntityListPageShell>
 
-      {/* Recording Player Modal */}
       {recordingModalVisible && selectedRecording && (
         <div className="mt-4 space-y-3 rounded-md border border-border p-4">
           <div className="text-sm font-semibold">Запись звонка</div>
@@ -657,18 +657,40 @@ function CallsList() {
       )}
 
       {detailModal.open && (
-        <div className="mt-4 rounded-md border border-border p-4">
-          <div className="text-sm font-semibold">Детали звонка</div>
+        <div className="mt-4">
           {detailModal.loading ? (
-            <div>Загрузка...</div>
+            <LegacyLoadingState
+              title="Загрузка деталей звонка"
+              description="Получаем расширенную информацию по выбранному звонку."
+            />
+          ) : detailModal.data ? (
+            <LegacyStatePanel
+              title="Детали звонка"
+              description="Расширенная техническая информация по выбранному звонку."
+              actionLabel="Закрыть"
+              onAction={handleCloseDetailModal}
+            >
+              <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+                {Object.entries(detailModal.data).map(([key, value]) => (
+                  <div key={key} className="rounded-md border border-border p-3">
+                    <div className="text-xs text-muted-foreground">{key}</div>
+                    <div className="mt-1 text-sm whitespace-pre-wrap break-words">
+                      {typeof value === 'object' && value !== null
+                        ? JSON.stringify(value, null, 2)
+                        : String(value ?? '-')}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </LegacyStatePanel>
           ) : (
-            <pre className="whitespace-pre-wrap">
-              {detailModal.data ? JSON.stringify(detailModal.data, null, 2) : 'Нет данных'}
-            </pre>
+            <LegacyEmptyState
+              title="Детали звонка недоступны"
+              description="Для этого звонка не удалось получить расширенные данные."
+              actionLabel="Закрыть"
+              onAction={handleCloseDetailModal}
+            />
           )}
-          <div className="text-right">
-            <Button variant="outline" onClick={handleCloseDetailModal}>Закрыть</Button>
-          </div>
         </div>
       )}
     </>

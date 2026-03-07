@@ -1,6 +1,18 @@
+export { EntityDetailShell } from './EntityDetailShell';
+export { EntityFormSection } from './EntityFormSection';
+export { EntityFormShell } from './EntityFormShell';
+export { LegacyEmptyState, LegacyErrorState, LegacyLoadingState, LegacyStatePanel } from './LegacyStatePanel';
+export { EntityListPageShell } from './EntityListPageShell';
+export { EntityListToolbar } from './EntityListToolbar';
 export { PageHeader } from './PageHeader';
 export { PhoneInput } from './PhoneInput';
 export { StatusTag } from './StatusTag';
+export { compactFilterChips } from './filterChips';
+export type { EntityDetailShellProps, EntityDetailStat, EntityDetailTab } from './EntityDetailShell';
+export type { EntityFormSectionProps } from './EntityFormSection';
+export type { EntityFormShellProps } from './EntityFormShell';
+export type { EntityListPageShellProps } from './EntityListPageShell';
+export type { ActiveFilterChip, EntityListToolbarProps } from './EntityListToolbar';
 export type { PageHeaderProps } from './PageHeader';
 export type { PhoneInputProps } from './PhoneInput';
 export type { StatusTagProps } from './StatusTag';

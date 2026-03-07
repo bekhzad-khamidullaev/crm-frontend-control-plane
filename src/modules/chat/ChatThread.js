@@ -8,6 +8,38 @@ import ChatMessage from '../../components/ui-ChatMessage.jsx';
 import ChatInput from '../../components/ui-ChatInput.jsx';
 import { Spinner, Toast } from '../../components/index.js';
 
+function createThreadState(type, title, description, actionLabel, onAction) {
+  const state = document.createElement('div');
+  state.className = `chat-thread__state chat-thread__state--${type}`;
+
+  const icon = document.createElement('i');
+  icon.className = 'material-icons';
+  icon.textContent =
+    type === 'error' ? 'error_outline' : type === 'loading' ? 'hourglass_empty' : 'chat_bubble_outline';
+
+  const heading = document.createElement('p');
+  heading.className = 'chat-thread__state-title';
+  heading.textContent = title;
+
+  const text = document.createElement('p');
+  text.className = 'chat-thread__state-description';
+  text.textContent = description;
+
+  state.appendChild(icon);
+  state.appendChild(heading);
+  state.appendChild(text);
+
+  if (actionLabel && onAction) {
+    const button = document.createElement('button');
+    button.className = 'mdc-button mdc-button--raised';
+    button.textContent = actionLabel;
+    button.onclick = onAction;
+    state.appendChild(button);
+  }
+
+  return state;
+}
+
 /**
  * Create chat thread view
  * @param {Object} options
@@ -36,7 +68,9 @@ export function ChatThread({ entityType, entityId, threadId } = {}) {
   // Messages container
   const messagesContainer = document.createElement('div');
   messagesContainer.className = 'chat-thread__messages';
-  messagesContainer.appendChild(Spinner());
+  messagesContainer.appendChild(
+    createThreadState('loading', 'Загрузка переписки', 'Подгружаем сообщения и ответы.')
+  );
 
   // Input container
   const inputContainer = document.createElement('div');
@@ -144,13 +178,13 @@ async function loadMessages(container, entityType, entityId, threadId, silent = 
     }
 
     if (data.results.length === 0) {
-      const empty = document.createElement('div');
-      empty.className = 'chat-thread__empty';
-      empty.innerHTML = `
-        <i class="material-icons">chat_bubble_outline</i>
-        <p>No messages yet. Start the conversation!</p>
-      `;
-      container.appendChild(empty);
+      container.appendChild(
+        createThreadState(
+          'empty',
+          'Сообщений пока нет',
+          'Начните разговор, чтобы история переписки появилась здесь.'
+        )
+      );
       return;
     }
 
@@ -202,16 +236,19 @@ async function loadMessages(container, entityType, entityId, threadId, silent = 
 
   } catch (error) {
     console.error('Error loading messages:', error);
-    Toast.error(error.message || 'Failed to load messages');
+    Toast.error(error.message || 'Не удалось загрузить сообщения');
     
     if (!silent) {
-      container.innerHTML = `
-        <div class="chat-thread__error">
-          <i class="material-icons">error_outline</i>
-          <p>Failed to load messages</p>
-          <button class="mdc-button mdc-button--raised" onclick="location.reload()">Retry</button>
-        </div>
-      `;
+      container.innerHTML = '';
+      container.appendChild(
+        createThreadState(
+          'error',
+          'Не удалось загрузить переписку',
+          'Попробуйте повторить запрос и проверьте доступность чата.',
+          'Повторить',
+          () => loadMessages(container, entityType, entityId, threadId, false, replyingToSetter)
+        )
+      );
     }
   }
 }

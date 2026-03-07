@@ -9,10 +9,12 @@ import { Button } from '../../components/ui/button.jsx';
 import { Badge } from '../../components/ui/badge.jsx';
 import { toast } from '../../components/ui/use-toast.js';
 import { AlertDialog, AlertDialogContent, AlertDialogHeader, AlertDialogTitle } from '../../components/ui/alert-dialog.jsx';
+import { LegacyEmptyState, LegacyErrorState, LegacyLoadingState } from '../../shared/ui';
 
 export default function ReminderDetail({ id }) {
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState(false);
   const [confirmOpen, setConfirmOpen] = useState(false);
 
   useEffect(() => {
@@ -21,10 +23,13 @@ export default function ReminderDetail({ id }) {
 
   const fetchData = async () => {
     setLoading(true);
+    setLoadError(false);
     try {
       const res = await getReminder(id);
       setData(res);
     } catch (error) {
+      setData(null);
+      setLoadError(true);
       toast({ title: 'Ошибка', description: 'Не удалось загрузить напоминание', variant: 'destructive' });
       console.error(error);
     } finally {
@@ -57,17 +62,31 @@ export default function ReminderDetail({ id }) {
 
   if (loading) {
     return (
-      <Card className="p-6">
-        <div className="text-center text-sm text-muted-foreground">Загрузка...</div>
-      </Card>
+      <LegacyLoadingState
+        title="Загрузка напоминания"
+        description="Подгружаем карточку напоминания и его параметры."
+      />
+    );
+  }
+
+  if (loadError) {
+    return (
+      <LegacyErrorState
+        title="Не удалось открыть напоминание"
+        description="Попробуйте повторить загрузку или вернитесь к списку напоминаний."
+        onAction={fetchData}
+      />
     );
   }
 
   if (!data) {
     return (
-      <Card className="p-6">
-        <div className="text-center text-sm text-muted-foreground">Напоминание не найдено</div>
-      </Card>
+      <LegacyEmptyState
+        title="Напоминание не найдено"
+        description="Возможно, запись была удалена или вам недоступен этот объект."
+        actionLabel="К списку напоминаний"
+        onAction={() => navigate('/reminders')}
+      />
     );
   }
 

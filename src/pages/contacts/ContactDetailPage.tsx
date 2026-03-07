@@ -1,8 +1,8 @@
 import { useCompany } from '@/entities/company/api/queries';
 import { useContact } from '@/entities/contact/api/queries';
 import { navigate } from '@/router.js';
+import { EntityDetailShell } from '@/shared/ui';
 import {
-    ArrowLeftOutlined,
     BankOutlined,
     EditOutlined,
     MailOutlined,
@@ -12,12 +12,9 @@ import {
 import {
     Avatar,
     Button,
-    Card,
     Descriptions,
-    Grid,
     Space,
     Spin,
-    Tabs,
     theme as antdTheme,
     Typography
 } from 'antd';
@@ -26,7 +23,7 @@ import React from 'react';
 // @ts-ignore
 import { canWrite } from '@/lib/rbac.js';
 
-const { Title, Text } = Typography;
+const { Text } = Typography;
 
 export interface ContactDetailPageProps {
   id?: number;
@@ -34,8 +31,6 @@ export interface ContactDetailPageProps {
 
 export const ContactDetailPage: React.FC<ContactDetailPageProps> = ({ id }) => {
   const { token } = antdTheme.useToken();
-  const screens = Grid.useBreakpoint();
-  const isMobile = !screens.md;
   const { data: contact, isLoading } = useContact(id!);
   const canManage = canWrite();
 
@@ -114,29 +109,34 @@ export const ContactDetailPage: React.FC<ContactDetailPageProps> = ({ id }) => {
   ];
 
   return (
-    <div className="detail-page">
-      <Space wrap style={{ marginBottom: 16 }}>
-        <Button icon={<ArrowLeftOutlined />} onClick={() => navigate('/contacts')} block={isMobile}>
-          Назад
-        </Button>
-        {canManage && (
+    <EntityDetailShell
+      onBack={() => navigate('/contacts')}
+      title={contact.full_name}
+      subtitle={contact.email || contact.phone || contact.title || 'Карточка контакта'}
+      statusTag={contact.massmail ? <Button size="small">В рассылке</Button> : undefined}
+      primaryActions={
+        canManage ? (
           <Button
             type="primary"
             icon={<EditOutlined />}
             onClick={() => navigate(`/contacts/${id}/edit`)}
-            block={isMobile}
           >
             Редактировать
           </Button>
-        )}
-      </Space>
-
-      <Title level={isMobile ? 3 : 2}>{contact.full_name}</Title>
-
-      <Card bodyStyle={{ padding: isMobile ? 12 : 24 }}>
-        <Tabs items={tabItems} defaultActiveKey="details" size={isMobile ? 'small' : 'middle'} />
-      </Card>
-    </div>
+        ) : null
+      }
+      stats={[
+        { key: 'company', label: 'Компания', value: company?.full_name || 'Не указана' },
+        { key: 'owner', label: 'Ответственный', value: String(contact.owner || 'Не назначен') },
+        {
+          key: 'created',
+          label: 'Создан',
+          value: contact.creation_date ? dayjs(contact.creation_date).format('DD.MM.YYYY') : '-',
+        },
+      ]}
+      tabs={tabItems}
+      defaultTabKey="details"
+    />
   );
 };
 

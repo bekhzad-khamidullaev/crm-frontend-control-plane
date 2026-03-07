@@ -24,7 +24,7 @@ export type Company = {
     /**
      * Company Country
      */
-    country: number | null;
+    country?: number | null;
     type?: number | null;
     industry?: Array<number>;
     address?: string;
@@ -35,7 +35,7 @@ export type Company = {
     /**
      * Use comma to separate Emails.
      */
-    email: string;
+    email?: string;
     lead_source?: number | null;
     /**
      * Mailing list recipient.
@@ -49,4 +49,3 @@ export type Company = {
     readonly creation_date: string;
     readonly update_date: string;
 };
-

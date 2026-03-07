@@ -2,20 +2,16 @@ import React, { useEffect } from 'react';
 import {
   Form,
   Input,
-  Button,
   Card,
-  Space,
   App,
-  Typography,
   Row,
   Col,
   Select,
   Switch,
   DatePicker,
-  Grid,
   Spin,
+  Modal,
 } from 'antd';
-import { SaveOutlined, ArrowLeftOutlined } from '@ant-design/icons';
 import dayjs from 'dayjs';
 import { useCreateLead, useUpdateLead } from '@/entities/lead/api/mutations'; // Note: useLead is query, imported below
 import { useLead as useLeadQuery } from '@/entities/lead/api/queries';
@@ -36,9 +32,7 @@ import {
   TagSelect,
   CompanySelect,
 } from '@/features/reference';
-import { PhoneInput } from '@/shared/ui';
-
-const { Title } = Typography;
+import { EntityFormSection, EntityFormShell, PhoneInput } from '@/shared/ui';
 const { TextArea } = Input;
 
 interface LeadFormProps {
@@ -49,8 +43,7 @@ export const LeadForm: React.FC<LeadFormProps> = ({ id }) => {
   const [form] = Form.useForm();
   const { message } = App.useApp();
   const isEdit = !!id;
-  const screens = Grid.useBreakpoint();
-  const isMobile = !screens.md;
+  const formId = 'lead-form';
 
   const { data: lead, isLoading: isLoadingLead } = useLeadQuery(id!, !!id);
   const createMutation = useCreateLead();
@@ -95,22 +88,40 @@ export const LeadForm: React.FC<LeadFormProps> = ({ id }) => {
     }
   };
 
+  const handleLeave = () => {
+    if (!form.isFieldsTouched()) {
+      navigate('/leads');
+      return;
+    }
+
+    Modal.confirm({
+      title: 'Есть несохраненные изменения',
+      content: 'Выйти без сохранения?',
+      okText: 'Выйти',
+      cancelText: 'Остаться',
+      okButtonProps: { danger: true },
+      onOk: () => navigate('/leads'),
+    });
+  };
+
   if (isEdit && isLoadingLead) {
     return <Spin size="large" style={{ display: 'block', margin: '50px auto' }} />;
   }
 
   return (
-    <div>
-      <Space wrap style={{ marginBottom: 16 }}>
-        <Button icon={<ArrowLeftOutlined />} onClick={() => navigate('/leads')} block={isMobile}>
-          Назад
-        </Button>
-      </Space>
-
-      <Title level={isMobile ? 3 : 2}>{isEdit ? 'Редактировать лид' : 'Создать новый лид'}</Title>
-
+    <EntityFormShell
+      title={isEdit ? 'Редактировать лид' : 'Создать новый лид'}
+      subtitle={isEdit ? 'Обновите данные лида и подготовьте его к следующему шагу воронки.' : 'Соберите минимум данных, чтобы не терять скорость входящей обработки.'}
+      hint="Для первичного захвата достаточно контактов, источника и ответственного. Остальные поля можно заполнить позже."
+      formId={formId}
+      submitText={isEdit ? 'Сохранить изменения' : 'Создать лид'}
+      isSubmitting={createMutation.isPending || updateMutation.isPending}
+      onBack={handleLeave}
+      onCancel={handleLeave}
+    >
       <Card>
         <Form
+          id={formId}
           form={form}
           layout="vertical"
           onFinish={onFinish}
@@ -121,13 +132,15 @@ export const LeadForm: React.FC<LeadFormProps> = ({ id }) => {
             disqualified: false,
           }}
         >
-          <Title level={4}>Основная информация</Title>
+          <EntityFormSection
+            title="Основная информация"
+            description="Кто это, чем занимается и какие данные уже известны."
+          />
           <Row gutter={16}>
             <Col xs={24} md={8}>
               <Form.Item
                 label="Имя"
                 name="first_name"
-                rules={[{ required: true, message: 'Введите имя' }]}
               >
                 <Input placeholder="Иван" />
               </Form.Item>
@@ -169,16 +182,16 @@ export const LeadForm: React.FC<LeadFormProps> = ({ id }) => {
             </Col>
           </Row>
 
-          <Title level={4} style={{ marginTop: 24 }}>
-            Контакты
-          </Title>
+          <EntityFormSection
+            title="Контакты"
+            description="Минимальный набор каналов связи для быстрого первого контакта."
+          />
           <Row gutter={16}>
             <Col xs={24} md={12}>
               <Form.Item
                 label="Email"
                 name="email"
                 rules={[
-                  { required: true, message: 'Введите email' },
                   { type: 'email', message: 'Некорректный email' },
                 ]}
               >
@@ -210,9 +223,10 @@ export const LeadForm: React.FC<LeadFormProps> = ({ id }) => {
             </Col>
           </Row>
 
-          <Title level={4} style={{ marginTop: 24 }}>
-            Компания
-          </Title>
+          <EntityFormSection
+            title="Компания"
+            description="Если компания уже есть в базе, лучше привязать её сразу."
+          />
           <Row gutter={16}>
             <Col xs={24} md={12}>
               <Form.Item label="Компания (из базы)" name="company">
@@ -261,9 +275,10 @@ export const LeadForm: React.FC<LeadFormProps> = ({ id }) => {
             </Col>
           </Row>
 
-          <Title level={4} style={{ marginTop: 24 }}>
-            Локация
-          </Title>
+          <EntityFormSection
+            title="Локация"
+            description="Адресные поля нужны только если влияют на маршрутизацию, доставку или региональную аналитику."
+          />
           <Row gutter={16}>
             <Col xs={24} md={12}>
               <Form.Item label="Страна" name="country">
@@ -316,9 +331,10 @@ export const LeadForm: React.FC<LeadFormProps> = ({ id }) => {
             </Col>
           </Row>
 
-          <Title level={4} style={{ marginTop: 24 }}>
-            Управление
-          </Title>
+          <EntityFormSection
+            title="Управление"
+            description="Источник, ответственный и статус обработки лида."
+          />
           <Row gutter={16}>
             <Col xs={24} md={8}>
               <Form.Item label="Источник" name="lead_source">
@@ -363,31 +379,15 @@ export const LeadForm: React.FC<LeadFormProps> = ({ id }) => {
             </Col>
           </Row>
 
-          <Title level={4} style={{ marginTop: 24 }}>
-            Дополнительно
-          </Title>
+          <EntityFormSection
+            title="Дополнительно"
+            description="Любая информация, которая поможет следующему касанию."
+          />
           <Form.Item label="Описание" name="description">
             <TextArea rows={4} placeholder="Дополнительная информация о лиде" />
           </Form.Item>
-
-          <Form.Item>
-            <Space wrap style={{ width: '100%' }}>
-              <Button
-                type="primary"
-                htmlType="submit"
-                icon={<SaveOutlined />}
-                loading={createMutation.isPending || updateMutation.isPending}
-                block={isMobile}
-              >
-                {isEdit ? 'Обновить' : 'Создать'}
-              </Button>
-              <Button onClick={() => navigate('/leads')} block={isMobile}>
-                Отмена
-              </Button>
-            </Space>
-          </Form.Item>
         </Form>
       </Card>
-    </div>
+    </EntityFormShell>
   );
 };

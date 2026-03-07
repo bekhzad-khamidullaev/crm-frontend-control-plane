@@ -18,6 +18,7 @@ import { Label } from '../../components/ui/label.jsx';
 import { Switch } from '../../components/ui/switch.jsx';
 import { DatePicker } from '../../components/ui-DatePicker.jsx';
 import { toast } from '../../components/ui/use-toast.js';
+import { LegacyErrorState, LegacyLoadingState } from '../../shared/ui';
 
 const schema = z.object({
   name: z.string().min(1, 'Введите название'),
@@ -41,6 +42,7 @@ const schema = z.object({
 
 function ProjectForm({ id }) {
   const [loading, setLoading] = useState(false);
+  const [loadError, setLoadError] = useState(false);
   const [saving, setSaving] = useState(false);
   const isEdit = !!id;
 
@@ -96,6 +98,7 @@ function ProjectForm({ id }) {
 
   const loadProject = async () => {
     setLoading(true);
+    setLoadError(false);
     try {
       const project = await getProject(id);
       reset({
@@ -106,6 +109,7 @@ function ProjectForm({ id }) {
         next_step_date: project.next_step_date ? dayjs(project.next_step_date) : null,
       });
     } catch (error) {
+      setLoadError(true);
       toast({ title: 'Ошибка', description: 'Ошибка загрузки данных проекта', variant: 'destructive' });
     } finally {
       setLoading(false);
@@ -142,7 +146,22 @@ function ProjectForm({ id }) {
   };
 
   if (loading) {
-    return <div className="py-12 text-center text-sm text-muted-foreground">Загрузка...</div>;
+    return (
+      <LegacyLoadingState
+        title="Загрузка проекта"
+        description="Подготавливаем форму редактирования проекта."
+      />
+    );
+  }
+
+  if (isEdit && loadError) {
+    return (
+      <LegacyErrorState
+        title="Не удалось загрузить проект для редактирования"
+        description="Форма не может быть заполнена, пока данные проекта не подгружены."
+        onAction={loadProject}
+      />
+    );
   }
 
   return (

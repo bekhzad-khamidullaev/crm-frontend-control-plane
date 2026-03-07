@@ -83,7 +83,7 @@ function DrillDownModal({
       ]}
       width={900}
       style={{ top: 20 }}
-      bodyStyle={{ maxHeight: '70vh', overflowY: 'auto' }}
+      styles={{ body: { maxHeight: '70vh', overflowY: 'auto' } }}
     >
       {/* Активные фильтры */}
       {Object.keys(filters).length > 0 && (

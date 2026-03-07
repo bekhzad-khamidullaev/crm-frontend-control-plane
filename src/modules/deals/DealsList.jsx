@@ -1,11 +1,12 @@
 import { Building2, DollarSign, User } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
+import { Button as AntButton, Dropdown, Select as AntSelect, Space } from 'antd';
+import { DownloadOutlined, PlusOutlined } from '@ant-design/icons';
 
 import CallButton from '../../components/CallButton';
 import QuickActions from '../../components/QuickActions';
 import BulkActions from '../../components/ui-BulkActions';
 import EnhancedTable from '../../components/ui-EnhancedTable.jsx';
-import TableToolbar from '../../components/ui-TableToolbar.jsx';
 import { Button } from '../../components/ui/button.jsx';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '../../components/ui/dialog.jsx';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../../components/ui/select.jsx';
@@ -15,11 +16,13 @@ import { getStages } from '../../lib/api/reference';
 import { exportToCSV, exportToExcel } from '../../lib/utils/export';
 import { formatCurrency } from '../../lib/utils/format';
 import { navigate } from '../../router';
+import { EntityListPageShell, EntityListToolbar } from '../../shared/ui';
 
 function DealsList() {
   const [deals, setDeals] = useState([]);
   const [allDealsCache, setAllDealsCache] = useState(null);
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(null);
   const [searchText, setSearchText] = useState('');
   const [pagination, setPagination] = useState({
     current: 1,
@@ -35,6 +38,7 @@ function DealsList() {
 
   const fetchDeals = async (page = 1, search = '', stage = stageFilter, pageSize = pagination.pageSize) => {
     setLoading(true);
+    setError(null);
     try {
       const response = await getDeals({
         page,
@@ -64,6 +68,7 @@ function DealsList() {
         total: totalCount,
       }));
     } catch (error) {
+      setError(error?.message || 'Не удалось загрузить список сделок');
       toast({ title: 'Ошибка', description: 'Ошибка загрузки сделок', variant: 'destructive' });
       setDeals([]);
       setPagination((prev) => ({
@@ -427,59 +432,82 @@ function DealsList() {
     performExport(format, selectedRowKeys);
   };
 
-  const stageFilters = stageOptions;
+  const handleStageFilterChange = (value) => {
+    const normalizedValue = value || null;
+    setStageFilter(normalizedValue);
+    fetchDeals(1, searchText, normalizedValue);
+  };
+
+  const headerActions = (
+    <Space wrap>
+      <Dropdown
+        menu={{
+          items: [
+            { key: 'csv', label: 'CSV', onClick: () => handleExport('csv') },
+            { key: 'excel', label: 'Excel', onClick: () => handleExport('excel') },
+          ],
+        }}
+      >
+        <AntButton icon={<DownloadOutlined />}>Экспорт</AntButton>
+      </Dropdown>
+      <AntButton type="primary" icon={<PlusOutlined />} onClick={() => navigate('/deals/new')}>
+        Создать сделку
+      </AntButton>
+    </Space>
+  );
 
   return (
-    <div className="space-y-4">
-      <TableToolbar
+    <>
+      <EntityListPageShell
         title="Сделки"
-        total={pagination.total}
-        loading={loading}
-        searchPlaceholder="Поиск по названию, компании, контакту..."
-        onSearch={handleSearch}
-        onCreate={() => navigate('/deals/new')}
-        onExport={handleExport}
-        onRefresh={() => fetchDeals(pagination.current, searchText, stageFilter)}
-        filters={[
-          {
-            key: 'stage',
-            placeholder: 'Стадия',
-            options: stageFilters,
-            width: 150,
-          },
-        ]}
-        onFilterChange={(key, value) => {
-          if (key === 'stage') {
-            setStageFilter(value || null);
-            fetchDeals(1, searchText, value || null);
-          }
-        }}
-        createButtonText="Создать сделку"
-        showViewModeSwitch={false}
-      />
+        subtitle="Единый список сделок с поиском, фильтрами и bulk-действиями"
+        extra={headerActions}
+        toolbar={
+          <EntityListToolbar
+            searchValue={searchText}
+            searchPlaceholder="Поиск по названию, компании, контакту..."
+            onSearchChange={handleSearch}
+            filters={
+              <AntSelect
+                allowClear
+                placeholder="Стадия"
+                style={{ minWidth: 180 }}
+                value={stageFilter}
+                options={stageOptions}
+                onChange={handleStageFilterChange}
+              />
+            }
+            onRefresh={() => fetchDeals(pagination.current, searchText, stageFilter)}
+            loading={loading}
+            resultSummary={pagination.total ? `${pagination.total} записей` : undefined}
+          />
+        }
+        error={error}
+        onRetry={() => fetchDeals(pagination.current, searchText, stageFilter)}
+      >
+        <EnhancedTable
+          columns={columns}
+          dataSource={deals}
+          loading={loading}
+          pagination={pagination}
+          onChange={handleTableChange}
+          rowSelection={rowSelection}
+          showTotal
+          showSizeChanger
+          showQuickJumper
+          emptyText="Нет сделок"
+          emptyDescription="Создайте первую сделку или измените параметры поиска"
+        />
 
-      <EnhancedTable
-        columns={columns}
-        dataSource={deals}
-        loading={loading}
-        pagination={pagination}
-        onChange={handleTableChange}
-        rowSelection={rowSelection}
-        showTotal
-        showSizeChanger
-        showQuickJumper
-        emptyText="Нет сделок"
-        emptyDescription="Создайте первую сделку или измените параметры поиска"
-      />
-
-      <BulkActions
-        selectedRowKeys={selectedRowKeys}
-        onClearSelection={() => setSelectedRowKeys([])}
-        onDelete={handleBulkDelete}
-        onStatusChange={handleBulkStageChange}
-        onExport={handleBulkExport}
-        entityName="сделок"
-      />
+        <BulkActions
+          selectedRowKeys={selectedRowKeys}
+          onClearSelection={() => setSelectedRowKeys([])}
+          onDelete={handleBulkDelete}
+          onStatusChange={handleBulkStageChange}
+          onExport={handleBulkExport}
+          entityName="сделок"
+        />
+      </EntityListPageShell>
 
       <Dialog open={stageChangeModalVisible} onOpenChange={setStageChangeModalVisible}>
         <DialogContent>
@@ -548,7 +576,7 @@ function DealsList() {
           </div>
         </DialogContent>
       </Dialog>
-    </div>
+    </>
   );
 }
 

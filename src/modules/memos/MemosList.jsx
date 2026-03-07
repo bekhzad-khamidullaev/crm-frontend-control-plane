@@ -1,18 +1,19 @@
 import { useEffect, useMemo, useState } from 'react';
-import { FileText, Eye, Edit, Trash2, Clock, Check } from 'lucide-react';
+import { Eye, Edit, Trash2, Clock, Check } from 'lucide-react';
 import dayjs from 'dayjs';
+import { Button as AntButton } from 'antd';
+import { PlusOutlined } from '@ant-design/icons';
 
 import { getMemos, deleteMemo, markMemoReviewed, markMemoPostponed } from '../../lib/api/memos';
 import { navigate } from '../../router';
 import EntitySelect from '../../components/EntitySelect.jsx';
 import { getUsers, getUser } from '../../lib/api';
 import EnhancedTable from '../../components/ui-EnhancedTable.jsx';
-import TableToolbar from '../../components/ui-TableToolbar.jsx';
-import { Badge } from '../../components/ui/badge.jsx';
 import { Button } from '../../components/ui/button.jsx';
 import { DatePicker } from '../../components/ui-DatePicker.jsx';
 import { toast } from '../../components/ui/use-toast.js';
 import { AlertDialog, AlertDialogContent, AlertDialogHeader, AlertDialogTitle } from '../../components/ui/alert-dialog.jsx';
+import { EntityListPageShell, EntityListToolbar } from '../../shared/ui';
 
 const stageLabels = {
   pen: { text: 'В ожидании', className: 'bg-sky-100 text-sky-700' },
@@ -23,6 +24,7 @@ const stageLabels = {
 export default function MemosList() {
   const [data, setData] = useState([]);
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(null);
   const [pagination, setPagination] = useState({ current: 1, pageSize: 10, total: 0 });
   const [searchText, setSearchText] = useState('');
   const [draftFilter, setDraftFilter] = useState(null);
@@ -37,6 +39,7 @@ export default function MemosList() {
 
   const fetchData = async () => {
     setLoading(true);
+    setError(null);
     try {
       const params = {
         page: pagination.current,
@@ -60,9 +63,10 @@ export default function MemosList() {
 
       setData(filtered);
       setPagination((prev) => ({ ...prev, total: res.count || filtered.length }));
-    } catch (error) {
+    } catch (fetchError) {
+      setError(fetchError?.message || 'Не удалось загрузить список мемо');
       toast({ title: 'Ошибка', description: 'Не удалось загрузить мемо', variant: 'destructive' });
-      console.error(error);
+      console.error(fetchError);
     } finally {
       setLoading(false);
     }
@@ -73,7 +77,7 @@ export default function MemosList() {
       await deleteMemo(id);
       toast({ title: 'Мемо удалено', description: 'Мемо удалено' });
       fetchData();
-    } catch (error) {
+    } catch (deleteError) {
       toast({ title: 'Ошибка', description: 'Не удалось удалить мемо', variant: 'destructive' });
     } finally {
       setConfirmDelete(null);
@@ -85,7 +89,7 @@ export default function MemosList() {
       await markMemoReviewed(id);
       toast({ title: 'Мемо рассмотрено', description: 'Мемо отмечено как рассмотренное' });
       fetchData();
-    } catch (error) {
+    } catch (updateError) {
       toast({ title: 'Ошибка', description: 'Не удалось обновить мемо', variant: 'destructive' });
     }
   };
@@ -95,7 +99,7 @@ export default function MemosList() {
       await markMemoPostponed(id);
       toast({ title: 'Мемо отложено', description: 'Мемо отложено' });
       fetchData();
-    } catch (error) {
+    } catch (updateError) {
       toast({ title: 'Ошибка', description: 'Не удалось обновить мемо', variant: 'destructive' });
     }
   };
@@ -111,7 +115,7 @@ export default function MemosList() {
       title: 'Статус',
       key: 'status',
       render: (_, record) => {
-        const stage = stageLabels[record.stage] || { text: '—', className: 'bg-muted text-muted-foreground' };
+        const stage = stageLabels[record.stage] || { text: '-', className: 'bg-muted text-muted-foreground' };
         return (
           <div className="flex flex-wrap gap-2">
             <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs ${stage.className}`}>
@@ -197,85 +201,90 @@ export default function MemosList() {
     },
   ]), []);
 
+  const headerActions = (
+    <AntButton type="primary" icon={<PlusOutlined />} onClick={() => navigate('/memos/new')}>
+      Новое мемо
+    </AntButton>
+  );
+
   return (
-    <div>
-      <TableToolbar
+    <>
+      <EntityListPageShell
         title="Мемо"
-        total={pagination.total}
-        loading={loading}
-        searchPlaceholder="Поиск по названию или тексту"
-        onSearch={setSearchText}
-        onCreate={() => navigate('/memos/new')}
-        createButtonText="Новое мемо"
-        showViewModeSwitch={false}
-        showExportButton={false}
-      />
-
-      <div className="mb-4 flex flex-wrap gap-3">
-        <input
-          type="text"
-          placeholder="Поиск по названию или тексту"
-          className="h-9 w-[260px] rounded-md border border-border bg-background px-2 text-sm"
-          value={searchText}
-          onChange={(e) => setSearchText(e.target.value)}
-        />
-        <select
-          className="h-9 w-[160px] rounded-md border border-border bg-background px-2 text-sm"
-          value={draftFilter ?? ''}
-          onChange={(e) => setDraftFilter(e.target.value === '' ? null : e.target.value === 'true')}
-        >
-          <option value="">Черновики</option>
-          <option value="true">Черновик</option>
-          <option value="false">Опубликованные</option>
-        </select>
-        <select
-          className="h-9 w-[180px] rounded-md border border-border bg-background px-2 text-sm"
-          value={stageFilter ?? ''}
-          onChange={(e) => setStageFilter(e.target.value || null)}
-        >
-          <option value="">Стадия</option>
-          <option value="pen">В ожидании</option>
-          <option value="pos">Отложено</option>
-          <option value="rev">Рассмотрено</option>
-        </select>
-        <EntitySelect
-          placeholder="Получатель"
-          value={recipientFilter}
-          onChange={setRecipientFilter}
-          fetchList={getUsers}
-          fetchById={getUser}
-          allowClear
-        />
-        <div className="flex items-center gap-2">
-          <DatePicker
-            value={dateRange?.[0] || null}
-            onChange={(val) => setDateRange((prev) => [val, prev?.[1] || null])}
-            format="DD.MM.YYYY"
+        subtitle="Список внутренних мемо в общем CRM shell"
+        extra={headerActions}
+        toolbar={
+          <EntityListToolbar
+            searchValue={searchText}
+            searchPlaceholder="Поиск по названию или тексту"
+            onSearchChange={setSearchText}
+            onRefresh={fetchData}
+            loading={loading}
+            resultSummary={pagination.total ? `${pagination.total} записей` : undefined}
           />
-          <span className="text-sm text-muted-foreground">—</span>
-          <DatePicker
-            value={dateRange?.[1] || null}
-            onChange={(val) => setDateRange((prev) => [prev?.[0] || null, val])}
-            format="DD.MM.YYYY"
+        }
+        error={error}
+        onRetry={fetchData}
+      >
+        <div className="mb-4 flex flex-wrap gap-3">
+          <select
+            className="h-9 w-[160px] rounded-md border border-border bg-background px-2 text-sm"
+            value={draftFilter ?? ''}
+            onChange={(e) => setDraftFilter(e.target.value === '' ? null : e.target.value === 'true')}
+          >
+            <option value="">Черновики</option>
+            <option value="true">Черновик</option>
+            <option value="false">Опубликованные</option>
+          </select>
+          <select
+            className="h-9 w-[180px] rounded-md border border-border bg-background px-2 text-sm"
+            value={stageFilter ?? ''}
+            onChange={(e) => setStageFilter(e.target.value || null)}
+          >
+            <option value="">Стадия</option>
+            <option value="pen">В ожидании</option>
+            <option value="pos">Отложено</option>
+            <option value="rev">Рассмотрено</option>
+          </select>
+          <EntitySelect
+            placeholder="Получатель"
+            value={recipientFilter}
+            onChange={setRecipientFilter}
+            fetchList={getUsers}
+            fetchById={getUser}
+            allowClear
           />
+          <div className="flex items-center gap-2">
+            <DatePicker
+              value={dateRange?.[0] || null}
+              onChange={(val) => setDateRange((prev) => [val, prev?.[1] || null])}
+              format="DD.MM.YYYY"
+            />
+            <span className="text-sm text-muted-foreground">-</span>
+            <DatePicker
+              value={dateRange?.[1] || null}
+              onChange={(val) => setDateRange((prev) => [prev?.[0] || null, val])}
+              format="DD.MM.YYYY"
+            />
+          </div>
         </div>
-      </div>
 
-      <EnhancedTable
-        columns={columns}
-        dataSource={data}
-        loading={loading}
-        rowKey="id"
-        pagination={pagination}
-        onChange={(newPagination) => setPagination((prev) => ({
-          ...prev,
-          current: newPagination.current,
-          pageSize: newPagination.pageSize,
-        }))}
-        scroll={{ x: 1200 }}
-        emptyText="Нет мемо"
-        emptyDescription="Создайте новое мемо"
-      />
+        <EnhancedTable
+          columns={columns}
+          dataSource={data}
+          loading={loading}
+          rowKey="id"
+          pagination={pagination}
+          onChange={(newPagination) => setPagination((prev) => ({
+            ...prev,
+            current: newPagination.current,
+            pageSize: newPagination.pageSize,
+          }))}
+          scroll={{ x: 1200 }}
+          emptyText="Нет мемо"
+          emptyDescription="Создайте новое мемо"
+        />
+      </EntityListPageShell>
 
       <AlertDialog open={!!confirmDelete} onOpenChange={(open) => !open && setConfirmDelete(null)}>
         <AlertDialogContent>
@@ -293,6 +302,6 @@ export default function MemosList() {
           </div>
         </AlertDialogContent>
       </AlertDialog>
-    </div>
+    </>
   );
 }

@@ -1,10 +1,11 @@
 import { DollarSign, Edit, Eye, Trash2 } from 'lucide-react';
 import { useEffect, useState } from 'react';
+import { Button as AntButton, Dropdown, Select as AntSelect, Space } from 'antd';
+import { DownloadOutlined, PlusOutlined } from '@ant-design/icons';
 
 import { formatCurrency } from '../../lib/utils/format';
 
 import EnhancedTable from '../../components/ui-EnhancedTable.jsx';
-import TableToolbar from '../../components/ui-TableToolbar.jsx';
 import { Button } from '../../components/ui/button.jsx';
 import { toast } from '../../components/ui/use-toast.js';
 import {
@@ -13,6 +14,7 @@ import {
 } from '../../lib/api/payments';
 import { exportToCSV, exportToExcel } from '../../lib/utils/export';
 import { navigate } from '../../router';
+import { EntityListPageShell, EntityListToolbar } from '../../shared/ui';
 
 const statusOptions = [
   { value: 'r', label: 'Получен' },
@@ -32,6 +34,7 @@ function PaymentsList() {
   const [payments, setPayments] = useState([]);
   const [allPaymentsCache, setAllPaymentsCache] = useState(null);
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(null);
   const [pagination, setPagination] = useState({ current: 1, pageSize: 10, total: 0 });
   const [searchText, setSearchText] = useState('');
   const [statusFilter, setStatusFilter] = useState(null);
@@ -42,6 +45,7 @@ function PaymentsList() {
 
   const fetchPayments = async (page = 1, search = '', status = statusFilter, pageSize = pagination.pageSize) => {
     setLoading(true);
+    setError(null);
     try {
       const response = await getPayments({
         page,
@@ -69,6 +73,7 @@ function PaymentsList() {
         total: totalCount,
       }));
     } catch (error) {
+      setError(error?.message || 'Не удалось загрузить список платежей');
       toast({ title: 'Ошибка', description: 'Ошибка загрузки платежей', variant: 'destructive' });
       setPayments([]);
       setPagination((prev) => ({ ...prev, current: 1, total: 0 }));
@@ -185,35 +190,55 @@ function PaymentsList() {
     },
   ];
 
-  return (
-    <div>
-      <TableToolbar
-        title="Платежи"
-        total={pagination.total}
-        loading={loading}
-        searchPlaceholder="Поиск по платежам..."
-        onSearch={handleSearch}
-        onCreate={() => navigate('/payments/new')}
-        onExport={handleExport}
-        onRefresh={() => fetchPayments(pagination.current, searchText, statusFilter)}
-        filters={[
-          {
-            key: 'status',
-            placeholder: 'Статус',
-            options: statusOptions,
-            width: 150,
-          },
-        ]}
-        onFilterChange={(key, value) => {
-          if (key === 'status') {
-            setStatusFilter(value || null);
-            fetchPayments(1, searchText, value || null);
-          }
+  const headerActions = (
+    <Space wrap>
+      <Dropdown
+        menu={{
+          items: [
+            { key: 'csv', label: 'CSV', onClick: () => handleExport('csv') },
+            { key: 'excel', label: 'Excel', onClick: () => handleExport('excel') },
+          ],
         }}
-        createButtonText="Создать платеж"
-        showViewModeSwitch={false}
-      />
+      >
+        <AntButton icon={<DownloadOutlined />}>Экспорт</AntButton>
+      </Dropdown>
+      <AntButton type="primary" icon={<PlusOutlined />} onClick={() => navigate('/payments/new')}>
+        Создать платеж
+      </AntButton>
+    </Space>
+  );
 
+  return (
+    <EntityListPageShell
+      title="Платежи"
+      subtitle="Список платежей в едином list-shell"
+      extra={headerActions}
+      toolbar={
+        <EntityListToolbar
+          searchValue={searchText}
+          searchPlaceholder="Поиск по платежам..."
+          onSearchChange={handleSearch}
+          filters={
+            <AntSelect
+              allowClear
+              placeholder="Статус"
+              style={{ minWidth: 180 }}
+              value={statusFilter}
+              options={statusOptions}
+              onChange={(value) => {
+                setStatusFilter(value || null);
+                fetchPayments(1, searchText, value || null);
+              }}
+            />
+          }
+          onRefresh={() => fetchPayments(pagination.current, searchText, statusFilter)}
+          loading={loading}
+          resultSummary={pagination.total ? `${pagination.total} записей` : undefined}
+        />
+      }
+      error={error}
+      onRetry={() => fetchPayments(pagination.current, searchText, statusFilter)}
+    >
       <EnhancedTable
         columns={columns}
         dataSource={payments}
@@ -225,7 +250,7 @@ function PaymentsList() {
         emptyText="Нет платежей"
         emptyDescription="Создайте первый платеж"
       />
-    </div>
+    </EntityListPageShell>
   );
 }
 

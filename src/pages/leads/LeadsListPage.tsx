@@ -1,4 +1,4 @@
-import { PageHeader } from '@/shared/ui/PageHeader';
+import { EntityListPageShell } from '@/shared/ui';
 import { LeadsKanbanBoard } from '@/widgets/leads-kanban';
 import { LeadsTable } from '@/widgets/leads-table';
 import { AppstoreOutlined, PlusOutlined, UnorderedListOutlined } from '@ant-design/icons';
@@ -23,34 +23,33 @@ export const LeadsListPage: React.FC = () => {
   const canManage = canWrite();
 
   return (
-    <>
-      <PageHeader
-        title="Лиды"
-        extra={
-          <Space direction={isMobile ? 'vertical' : 'horizontal'} size="middle">
-            <Segmented
-              value={viewMode}
-              options={[
-                { label: 'Таблица', value: 'table', icon: <UnorderedListOutlined /> },
-                { label: 'Канбан', value: 'kanban', icon: <AppstoreOutlined /> },
-              ]}
-              onChange={(value) => setViewMode(value as 'table' | 'kanban')}
-            />
-            {canManage && (
-              <Button
-                type="primary"
-                icon={<PlusOutlined />}
-                onClick={() => navigate('/leads/new')}
-                block={isMobile}
-              >
-                {isMobile ? 'Создать' : 'Создать лид'}
-              </Button>
-            )}
-          </Space>
-        }
-      />
+    <EntityListPageShell
+      title="Лиды"
+      extra={
+        <Space direction={isMobile ? 'vertical' : 'horizontal'} size="middle">
+          <Segmented
+            value={viewMode}
+            options={[
+              { label: 'Таблица', value: 'table', icon: <UnorderedListOutlined /> },
+              { label: 'Канбан', value: 'kanban', icon: <AppstoreOutlined /> },
+            ]}
+            onChange={(value) => setViewMode(value as 'table' | 'kanban')}
+          />
+          {canManage && (
+            <Button
+              type="primary"
+              icon={<PlusOutlined />}
+              onClick={() => navigate('/leads/new')}
+              block={isMobile}
+            >
+              {isMobile ? 'Создать' : 'Создать лид'}
+            </Button>
+          )}
+        </Space>
+      }
+    >
       {viewMode === 'table' ? <LeadsTable /> : <LeadsKanbanBoard readOnly={!canManage} />}
-    </>
+    </EntityListPageShell>
   );
 };
 

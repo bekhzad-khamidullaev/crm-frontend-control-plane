@@ -38,11 +38,12 @@ import ChatMessageComposer from '../../components/ChatMessageComposer.jsx';
 import CallButton from '../../components/CallButton.jsx';
 import { getUserFromToken } from '../../lib/api/auth.js';
 
-const { Title, Text } = Typography;
+const { Text } = Typography;
 
 function ChatWidget({ entityType, entityId, entityName, entityPhone }) {
   const [messages, setMessages] = useState([]);
   const [loading, setLoading] = useState(false);
+  const [loadError, setLoadError] = useState(false);
   const [replyTo, setReplyTo] = useState(null);
   const [typingUsers, setTypingUsers] = useState([]);
   const [contentTypeId, setContentTypeId] = useState(null);
@@ -134,6 +135,7 @@ function ChatWidget({ entityType, entityId, entityName, entityPhone }) {
 
   const loadMessages = async () => {
     setLoading(true);
+    setLoadError(false);
     try {
       const response = await getEntityChatMessages(entityType, entityId, { page_size: 50 });
       const msgs = response?.results || [];
@@ -146,6 +148,9 @@ function ChatWidget({ entityType, entityId, entityName, entityPhone }) {
 
       scrollToBottom();
     } catch (error) {
+      setMessages([]);
+      setLoadError(true);
+      antMessage.error('Не удалось загрузить сообщения');
       console.error('Error loading messages:', error);
     } finally {
       setLoading(false);
@@ -206,7 +211,12 @@ function ChatWidget({ entityType, entityId, entityName, entityPhone }) {
 
   const renderThreadList = (items) => {
     if (!items || items.length === 0) {
-      return <Empty description="Нет сообщений" image={Empty.PRESENTED_IMAGE_SIMPLE} />;
+      return (
+        <Empty
+          description="В этой ветке пока нет сообщений"
+          image={Empty.PRESENTED_IMAGE_SIMPLE}
+        />
+      );
     }
 
     return (
@@ -307,22 +317,33 @@ function ChatWidget({ entityType, entityId, entityName, entityPhone }) {
 
   return (
     <Card
-      style={{ height: 600, display: 'flex', flexDirection: 'column' }}
+      style={{
+        height: 600,
+        display: 'flex',
+        flexDirection: 'column',
+        borderRadius: 18,
+        overflow: 'hidden',
+      }}
       styles={{ body: { flex: 1, display: 'flex', flexDirection: 'column', padding: 0 } }}
       title={
-        <Space>
-          <MessageOutlined />
-          <span>Сообщения</span>
-          {entityPhone && (
-            <CallButton
-              phone={entityPhone}
-              name={entityName}
-              entityType={entityType}
-              entityId={entityId}
-              size="small"
-              type="link"
-            />
-          )}
+        <Space direction="vertical" size={2}>
+          <Space>
+            <MessageOutlined />
+            <span>Сообщения</span>
+            {entityPhone && (
+              <CallButton
+                phone={entityPhone}
+                name={entityName}
+                entityType={entityType}
+                entityId={entityId}
+                size="small"
+                type="link"
+              />
+            )}
+          </Space>
+          <Text type="secondary">
+            {entityName ? `История общения по "${entityName}"` : 'История общения по текущей сущности'}
+          </Text>
         </Space>
       }
       extra={
@@ -340,19 +361,34 @@ function ChatWidget({ entityType, entityId, entityName, entityPhone }) {
         style={{
           flex: 1,
           overflowY: 'auto',
-          padding: 16,
-          backgroundColor: '#fafafa',
+          padding: 20,
+          background:
+            'linear-gradient(180deg, rgba(248,250,252,0.95) 0%, rgba(255,255,255,1) 100%)',
         }}
       >
         {loading ? (
           <div style={{ textAlign: 'center', padding: 40 }}>
-            <Spin />
+            <Space direction="vertical" size={12}>
+              <Spin />
+              <Text type="secondary">Загружаем сообщения чата...</Text>
+            </Space>
           </div>
+        ) : loadError ? (
+          <Empty
+            description="Не удалось загрузить сообщения"
+            image={Empty.PRESENTED_IMAGE_SIMPLE}
+          >
+            <Button icon={<ReloadOutlined />} onClick={loadMessages}>
+              Повторить
+            </Button>
+          </Empty>
         ) : messages.length === 0 ? (
           <Empty
-            description="Пока нет сообщений"
+            description={entityName ? `Для ${entityName} пока нет сообщений` : 'Пока нет сообщений'}
             image={Empty.PRESENTED_IMAGE_SIMPLE}
-          />
+          >
+            <Text type="secondary">Начните диалог, чтобы история общения появилась здесь.</Text>
+          </Empty>
         ) : (
           <>
             {messages.map(msg => (
@@ -369,7 +405,18 @@ function ChatWidget({ entityType, entityId, entityName, entityPhone }) {
             
             {/* Typing indicator */}
             {typingUsers.length > 0 && (
-              <div style={{ marginTop: 8, color: '#999', fontSize: 12 }}>
+              <div
+                style={{
+                  marginTop: 12,
+                  color: '#64748b',
+                  fontSize: 12,
+                  background: '#f8fafc',
+                  border: '1px solid #e2e8f0',
+                  borderRadius: 999,
+                  display: 'inline-flex',
+                  padding: '6px 10px',
+                }}
+              >
                 <Space size={4}>
                   <span>{typingUsers.map(u => u.userName).join(', ')}</span>
                   <span>печатает...</span>
@@ -448,7 +495,10 @@ function ChatWidget({ entityType, entityId, entityName, entityPhone }) {
       >
         {threadModal.loading ? (
           <div style={{ textAlign: 'center', padding: 24 }}>
-            <Spin />
+            <Space direction="vertical" size={12}>
+              <Spin />
+              <Text type="secondary">Загружаем ветку обсуждения...</Text>
+            </Space>
           </div>
         ) : (
           <Tabs

@@ -21,7 +21,7 @@ export type Contact = {
     /**
      * The last name of the contact person (one word).
      */
-    last_name?: string;
+    last_name: string;
     readonly full_name: string;
     /**
      * The title (position) of the contact person.
@@ -32,7 +32,7 @@ export type Contact = {
     /**
      * Use comma to separate Emails.
      */
-    email: string;
+    email?: string;
     secondary_email?: string;
     phone?: string;
     other_phone?: string;
@@ -62,4 +62,3 @@ export type Contact = {
     readonly creation_date: string;
     readonly update_date: string;
 };
-

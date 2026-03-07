@@ -10,7 +10,7 @@ import {
     EyeOutlined,
     UserOutlined,
 } from '@ant-design/icons';
-import { Badge, Button, Grid, Popconfirm, Space, Table, Tooltip } from 'antd';
+import { Alert, Badge, Button, Grid, Popconfirm, Space, Table, Tooltip } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
 import React from 'react';
 import { DealsTableFilters } from './ui/DealsTableFilters';
@@ -26,7 +26,7 @@ export const DealsTable: React.FC = () => {
   const isMobile = !screens.md;
   const canManage = canWrite();
 
-  const { data, isLoading, pagination, handleTableChange, params, handleFilterChange } =
+  const { data, isLoading, isFetching, error, refetch, pagination, handleTableChange, params, handleFilterChange } =
     useServerTable<Deal>({
       queryKey: dealKeys.list({}) as unknown as unknown[],
       queryFn: DealsService.dealsList,
@@ -146,12 +146,16 @@ export const DealsTable: React.FC = () => {
           <Tooltip title="Просмотр">
             <Button icon={<EyeOutlined />} onClick={() => navigate(`/deals/${record.id}`)} />
           </Tooltip>
-          {canManage && (
+          {canManage ? (
             <Tooltip title="Редактировать">
               <Button icon={<EditOutlined />} onClick={() => navigate(`/deals/${record.id}/edit`)} />
             </Tooltip>
+          ) : (
+            <Tooltip title="Недостаточно прав">
+              <Button icon={<EditOutlined />} disabled />
+            </Tooltip>
           )}
-          {canManage && (
+          {canManage ? (
             <Popconfirm
               title="Удалить сделку?"
               onConfirm={() => handleDelete(record.id)}
@@ -160,6 +164,10 @@ export const DealsTable: React.FC = () => {
             >
               <Button icon={<DeleteOutlined />} danger loading={deleteMutation.isPending} />
             </Popconfirm>
+          ) : (
+            <Tooltip title="Недостаточно прав">
+              <Button icon={<DeleteOutlined />} danger disabled />
+            </Tooltip>
           )}
         </Space>
       ),
@@ -169,9 +177,18 @@ export const DealsTable: React.FC = () => {
   return (
     <div>
       <DealsTableFilters filters={params} onFilterChange={handleFilterChange} />
+      {error && (
+        <Alert
+          type="error"
+          showIcon
+          style={{ marginBottom: 16 }}
+          message="Не удалось загрузить список сделок"
+          action={<Button size="small" onClick={() => refetch()}>Повторить</Button>}
+        />
+      )}
       <Table
         dataSource={data}
-        loading={isLoading}
+        loading={isLoading || isFetching}
         size={isMobile ? 'small' : 'middle'}
         pagination={pagination}
         onChange={handleTableChange}

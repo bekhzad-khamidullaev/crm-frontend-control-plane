@@ -11,6 +11,7 @@ import { Card } from '../../components/ui/card.jsx';
 import { toast } from '../../components/ui/use-toast.js';
 import { deletePayment, getPayment } from '../../lib/api/payments';
 import { navigate } from '../../router';
+import { LegacyEmptyState, LegacyLoadingState } from '../../shared/ui';
 
 const statusOptions = {
   r: 'Получен',
@@ -59,17 +60,21 @@ export default function PaymentDetail({ id }) {
 
   if (loading) {
     return (
-      <Card className="p-6">
-        <div className="text-center text-sm text-muted-foreground">Загрузка...</div>
-      </Card>
+      <LegacyLoadingState
+        title="Загрузка платежа"
+        description="Получаем сумму, статус и связь со сделкой."
+      />
     );
   }
 
   if (!data) {
     return (
-      <Card className="p-6">
-        <div className="text-center text-sm text-muted-foreground">Платеж не найден</div>
-      </Card>
+      <LegacyEmptyState
+        title="Платеж не найден"
+        description="Возможно, запись была удалена или у вас нет к ней доступа."
+        actionLabel="Вернуться к платежам"
+        onAction={() => navigate('/payments')}
+      />
     );
   }
 

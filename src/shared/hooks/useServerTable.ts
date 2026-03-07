@@ -14,7 +14,7 @@
 import { useQuery } from '@tanstack/react-query';
 import type { TablePaginationConfig } from 'antd';
 import type { FilterValue, SorterResult } from 'antd/es/table/interface';
-import { useCallback, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 
 export interface PaginatedResponse<T> {
   count: number;
@@ -37,6 +37,7 @@ export interface UseServerTableOptions<T> {
   initialPageSize?: number;
   enableSearch?: boolean;
   defaultFilters?: Record<string, unknown>;
+  syncWithUrl?: boolean;
 }
 
 export function useServerTable<T extends { id: number | string }>({
@@ -45,19 +46,78 @@ export function useServerTable<T extends { id: number | string }>({
   initialPageSize = 20,
   enableSearch = true,
   defaultFilters = {},
+  syncWithUrl = true,
 }: UseServerTableOptions<T>) {
-  const [params, setParams] = useState<TableParams>({
+  const readHashParams = useCallback((): TableParams => {
+    if (typeof window === 'undefined') return {};
+    const rawHash = (window.location.hash || '').replace(/^#/, '');
+    const [, rawQuery = ''] = rawHash.split('?');
+    const searchParams = new URLSearchParams(rawQuery);
+    const parsed: TableParams = {};
+
+    searchParams.forEach((value, key) => {
+      if (!value) return;
+      if (key === 'page' || key === 'pageSize') {
+        const num = Number(value);
+        if (Number.isFinite(num) && num > 0) {
+          parsed[key] = num;
+        }
+        return;
+      }
+      parsed[key] = value;
+    });
+
+    return parsed;
+  }, []);
+
+  const [params, setParams] = useState<TableParams>(() => ({
     page: 1,
     pageSize: initialPageSize,
     ...defaultFilters,
-  });
+    ...(syncWithUrl ? readHashParams() : {}),
+  }));
 
   // Fetch data with React Query
-  const { data, isLoading, isFetching, error } = useQuery({
+  const { data, isLoading, isFetching, error, refetch } = useQuery({
     queryKey: [...queryKey, params],
     queryFn: () => queryFn(params),
     placeholderData: (previousData) => previousData, // Keep previous data while fetching new page (v5 API)
   });
+
+  useEffect(() => {
+    if (!syncWithUrl || typeof window === 'undefined') return;
+
+    const rawHash = (window.location.hash || '').replace(/^#/, '');
+    const [rawPath = ''] = rawHash.split('?');
+    const path = rawPath || '/';
+    const nextQuery = new URLSearchParams();
+
+    Object.entries(params).forEach(([key, value]) => {
+      if (value === undefined || value === null || value === '') return;
+      nextQuery.set(key, String(value));
+    });
+
+    const nextHash = nextQuery.toString() ? `#${path}?${nextQuery.toString()}` : `#${path}`;
+    if (window.location.hash !== nextHash) {
+      window.history.replaceState(null, '', nextHash);
+    }
+  }, [params, syncWithUrl]);
+
+  useEffect(() => {
+    if (!syncWithUrl || typeof window === 'undefined') return;
+
+    const handleHashChange = () => {
+      setParams({
+        page: 1,
+        pageSize: initialPageSize,
+        ...defaultFilters,
+        ...readHashParams(),
+      });
+    };
+
+    window.addEventListener('hashchange', handleHashChange);
+    return () => window.removeEventListener('hashchange', handleHashChange);
+  }, [defaultFilters, initialPageSize, readHashParams, syncWithUrl]);
 
   // Handle table changes (pagination, filters, sorting)
   const handleTableChange = useCallback(
@@ -114,6 +174,26 @@ export function useServerTable<T extends { id: number | string }>({
     }));
   }, []);
 
+  const applyFilters = useCallback((filters: Record<string, unknown>) => {
+    const nextParams: TableParams = {
+      page: 1,
+      pageSize: params.pageSize || initialPageSize,
+      ...defaultFilters,
+    };
+
+    if (params.ordering) {
+      nextParams.ordering = params.ordering;
+    }
+
+    Object.entries(filters).forEach(([key, value]) => {
+      if (['page', 'pageSize', 'ordering'].includes(key)) return;
+      if (value === undefined || value === null || value === '') return;
+      nextParams[key] = value;
+    });
+
+    setParams(nextParams);
+  }, [defaultFilters, initialPageSize, params.ordering, params.pageSize]);
+
   // Reset filters
   const handleResetFilters = useCallback(() => {
     setParams({
@@ -145,6 +225,8 @@ export function useServerTable<T extends { id: number | string }>({
     handleTableChange,
     handleSearch: enableSearch ? handleSearch : undefined,
     handleFilterChange,
+    applyFilters,
     handleResetFilters,
+    refetch,
   };
 }

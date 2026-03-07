@@ -13,10 +13,12 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '../../components/ui/ta
 import { Badge } from '../../components/ui/badge.jsx';
 import { toast } from '../../components/ui/use-toast.js';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '../../components/ui/dialog.jsx';
+import { LegacyEmptyState, LegacyErrorState, LegacyLoadingState } from '../../shared/ui';
 
 function ProjectDetail({ id }) {
   const [project, setProject] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState(false);
   const [stages, setStages] = useState([]);
   const [tags, setTags] = useState([]);
   const [users, setUsers] = useState([]);
@@ -36,10 +38,13 @@ function ProjectDetail({ id }) {
 
   const loadProject = async () => {
     setLoading(true);
+    setLoadError(false);
     try {
       const data = await getProject(id);
       setProject(data);
     } catch (error) {
+      setProject(null);
+      setLoadError(true);
       toast({ title: 'Ошибка', description: 'Ошибка загрузки данных проекта', variant: 'destructive' });
     } finally {
       setLoading(false);
@@ -140,11 +145,33 @@ function ProjectDetail({ id }) {
   }, [tags]);
 
   if (loading) {
-    return <div className="py-12 text-center text-sm text-muted-foreground">Загрузка...</div>;
+    return (
+      <LegacyLoadingState
+        title="Загрузка проекта"
+        description="Подгружаем карточку проекта и связанные справочники."
+      />
+    );
+  }
+
+  if (loadError) {
+    return (
+      <LegacyErrorState
+        title="Не удалось открыть проект"
+        description="Попробуйте повторить загрузку или вернитесь к списку проектов."
+        onAction={loadProject}
+      />
+    );
   }
 
   if (!project) {
-    return <div>Проект не найден</div>;
+    return (
+      <LegacyEmptyState
+        title="Проект не найден"
+        description="Возможно, запись была удалена или у вас больше нет к ней доступа."
+        actionLabel="К списку проектов"
+        onAction={() => navigate('/projects')}
+      />
+    );
   }
 
   const stage = stageMap[project.stage];

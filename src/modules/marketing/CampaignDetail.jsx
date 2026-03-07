@@ -1,12 +1,14 @@
 import { useState, useEffect } from 'react';
-import { Card, Descriptions, Button, Space, Tag, message, Modal, Spin } from 'antd';
-import { EditOutlined, DeleteOutlined, ArrowLeftOutlined, RocketOutlined } from '@ant-design/icons';
+import { Card, Descriptions, Button, Space, Tag, message, Modal } from 'antd';
+import { EditOutlined, DeleteOutlined } from '@ant-design/icons';
 import { getCampaign, deleteCampaign, patchCampaign } from '../../lib/api/marketing';
 import { navigate } from '../../router';
+import { EntityDetailShell, LegacyEmptyState, LegacyErrorState, LegacyLoadingState } from '../../shared/ui';
 
 export default function CampaignDetail({ id }) {
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState(false);
 
   useEffect(() => {
     fetchData();
@@ -14,10 +16,13 @@ export default function CampaignDetail({ id }) {
 
   const fetchData = async () => {
     setLoading(true);
+    setLoadError(false);
     try {
       const res = await getCampaign(id);
       setData(res);
     } catch (error) {
+      setData(null);
+      setLoadError(true);
       message.error('Не удалось загрузить кампанию');
       console.error(error);
     } finally {
@@ -55,37 +60,46 @@ export default function CampaignDetail({ id }) {
 
   if (loading) {
     return (
-      <Card>
-        <div style={{ textAlign: 'center', padding: '50px' }}>
-          <Spin size="large" />
-        </div>
-      </Card>
+      <LegacyLoadingState
+        title="Загрузка кампании"
+        description="Подгружаем карточку маркетинговой кампании."
+      />
+    );
+  }
+
+  if (loadError) {
+    return (
+      <LegacyErrorState
+        title="Не удалось открыть кампанию"
+        description="Попробуйте повторить загрузку или вернитесь к списку кампаний."
+        onAction={fetchData}
+      />
     );
   }
 
   if (!data) {
     return (
-      <Card>
-        <div style={{ textAlign: 'center', padding: '50px' }}>
-          Кампания не найдена
-        </div>
-      </Card>
+      <LegacyEmptyState
+        title="Кампания не найдена"
+        description="Возможно, запись была удалена или больше недоступна."
+        actionLabel="К списку кампаний"
+        onAction={() => navigate('/campaigns')}
+      />
     );
   }
 
   return (
-    <Card
-      title={
-        <Space>
-          <RocketOutlined />
-          <span>Кампания</span>
-        </Space>
+    <EntityDetailShell
+      onBack={() => navigate('/campaigns')}
+      title={data.name || 'Кампания'}
+      subtitle="Карточка маркетинговой кампании с основными параметрами и быстрыми действиями."
+      statusTag={
+        <Tag color={data.is_active ? 'green' : 'default'}>
+          {data.is_active ? 'Активна' : 'Неактивна'}
+        </Tag>
       }
-      extra={
-        <Space>
-          <Button icon={<ArrowLeftOutlined />} onClick={() => navigate('/campaigns')}>
-            Назад
-          </Button>
+      primaryActions={
+        <Space wrap>
           <Button type="primary" icon={<EditOutlined />} onClick={() => navigate(`/campaigns/${id}/edit`)}>
             Редактировать
           </Button>
@@ -97,29 +111,55 @@ export default function CampaignDetail({ id }) {
           </Button>
         </Space>
       }
-    >
-      <Descriptions bordered column={2}>
-        <Descriptions.Item label="Название" span={2}>
-          {data.name}
-        </Descriptions.Item>
-        <Descriptions.Item label="Сегмент">
-          {data.segment_name || '-'}
-        </Descriptions.Item>
-        <Descriptions.Item label="Шаблон">
-          {data.template_name || '-'}
-        </Descriptions.Item>
-        <Descriptions.Item label="Дата старта">
-          {data.start_at ? new Date(data.start_at).toLocaleString('ru-RU') : '-'}
-        </Descriptions.Item>
-        <Descriptions.Item label="Статус">
-          <Tag color={data.is_active ? 'green' : 'default'}>
-            {data.is_active ? 'Активна' : 'Неактивна'}
-          </Tag>
-        </Descriptions.Item>
-        <Descriptions.Item label="Дата создания">
-          {data.created_at ? new Date(data.created_at).toLocaleString('ru-RU') : '-'}
-        </Descriptions.Item>
-      </Descriptions>
-    </Card>
+      stats={[
+        {
+          key: 'segment',
+          label: 'Сегмент',
+          value: data.segment_name || '-',
+        },
+        {
+          key: 'template',
+          label: 'Шаблон',
+          value: data.template_name || '-',
+        },
+        {
+          key: 'start',
+          label: 'Дата старта',
+          value: data.start_at ? new Date(data.start_at).toLocaleString('ru-RU') : '-',
+        },
+      ]}
+      tabs={[
+        {
+          key: 'details',
+          label: 'Детали',
+          children: (
+            <Card variant="borderless" styles={{ body: { padding: 0 } }}>
+              <Descriptions bordered column={2}>
+                <Descriptions.Item label="Название" span={2}>
+                  {data.name}
+                </Descriptions.Item>
+                <Descriptions.Item label="Сегмент">
+                  {data.segment_name || '-'}
+                </Descriptions.Item>
+                <Descriptions.Item label="Шаблон">
+                  {data.template_name || '-'}
+                </Descriptions.Item>
+                <Descriptions.Item label="Дата старта">
+                  {data.start_at ? new Date(data.start_at).toLocaleString('ru-RU') : '-'}
+                </Descriptions.Item>
+                <Descriptions.Item label="Статус">
+                  <Tag color={data.is_active ? 'green' : 'default'}>
+                    {data.is_active ? 'Активна' : 'Неактивна'}
+                  </Tag>
+                </Descriptions.Item>
+                <Descriptions.Item label="Дата создания">
+                  {data.created_at ? new Date(data.created_at).toLocaleString('ru-RU') : '-'}
+                </Descriptions.Item>
+              </Descriptions>
+            </Card>
+          ),
+        },
+      ]}
+    />
   );
 }

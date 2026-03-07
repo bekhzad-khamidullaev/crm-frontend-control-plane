@@ -405,6 +405,69 @@ function Dashboard() {
     return `${diffDays} дн назад`;
   };
 
+  const overdueTasks = Number(analytics?.tasks_by_status?.overdue || 0);
+  const pendingTasks = Number(analytics?.tasks_by_status?.pending || 0);
+  const staleLeadThreshold = Date.now() - 7 * 24 * 60 * 60 * 1000;
+  const staleLeads = leads.filter((lead) => {
+    const lastTouch = lead?.was_in_touch || lead?.update_date || lead?.creation_date;
+    return !lead?.disqualified && !lead?.was_in_touch && lastTouch && new Date(lastTouch).getTime() < staleLeadThreshold;
+  }).length;
+  const inactiveDeals = deals.filter((deal) => deal?.active === false).length;
+  const todayFocusCards = [
+    {
+      key: 'leads',
+      title: 'Новые лиды',
+      value: overview?.total_leads || 0,
+      description: 'Проверьте входящий поток и закрепите ответственных.',
+      actionLabel: 'Открыть лиды',
+      onClick: () => navigate('/leads'),
+    },
+    {
+      key: 'tasks',
+      title: 'Задачи в ожидании',
+      value: pendingTasks,
+      description: 'Очистите хвост задач, которые тормозят воронку.',
+      actionLabel: 'Открыть задачи',
+      onClick: () => navigate('/tasks'),
+    },
+    {
+      key: 'deals',
+      title: 'Активные сделки',
+      value: deals.filter((deal) => deal?.active).length,
+      description: 'Посмотрите сделки, которым нужен следующий шаг.',
+      actionLabel: 'Открыть сделки',
+      onClick: () => navigate('/deals'),
+    },
+  ];
+  const riskCards = [
+    {
+      key: 'stale-leads',
+      title: 'Лиды без движения',
+      value: staleLeads,
+      tone: staleLeads > 0 ? 'warning' : 'neutral',
+      description: 'Лиды без касания более 7 дней.',
+    },
+    {
+      key: 'overdue-tasks',
+      title: 'Просроченные задачи',
+      value: overdueTasks,
+      tone: overdueTasks > 0 ? 'danger' : 'neutral',
+      description: 'Требуют реакции команды сегодня.',
+    },
+    {
+      key: 'inactive-deals',
+      title: 'Неактивные сделки',
+      value: inactiveDeals,
+      tone: inactiveDeals > 0 ? 'warning' : 'neutral',
+      description: 'Сделки, выпавшие из активной работы.',
+    },
+  ];
+  const prioritiesSummary = [
+    overdueTasks > 0 ? `Просрочено задач: ${overdueTasks}` : null,
+    staleLeads > 0 ? `Лидов без движения: ${staleLeads}` : null,
+    overview?.conversion_rate ? `Конверсия: ${overview.conversion_rate}%` : null,
+  ].filter(Boolean).join(' • ');
+
   return (
     <div className="space-y-6 p-6">
       <div className="flex flex-wrap items-center justify-between gap-4">
@@ -466,143 +529,185 @@ function Dashboard() {
             />
           )}
 
-          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-            <StatCard
-              title="Всего лидов"
-              value={overview?.total_leads || 0}
-              icon={<User className="h-4 w-4" />}
-              suffix={overview?.leads_growth > 0 ? `+${overview.leads_growth}%` : null}
-              loading={loadingOverview}
-            />
-            <StatCard
-              title="Всего контактов"
-              value={overview?.total_contacts || 0}
-              icon={<Users className="h-4 w-4" />}
-              loading={loadingOverview}
-            />
-            <StatCard
-              title="Всего сделок"
-              value={overview?.total_deals || 0}
-              icon={<Trophy className="h-4 w-4" />}
-              suffix={overview?.deals_growth > 0 ? `+${overview.deals_growth}%` : null}
-              loading={loadingOverview}
-            />
-            <StatCard
-              title="Выручка"
-              value={formatCurrency(overview?.total_revenue || 0)}
-              icon={<DollarSign className="h-4 w-4" />}
-              suffix={overview?.revenue_growth > 0 ? `+${overview.revenue_growth}%` : null}
-              loading={loadingOverview}
-            />
-          </div>
-
-          {!analyticsError && (
-            <div className="grid gap-4 lg:grid-cols-2">
-              <AnalyticsCard title="Динамика выручки" loading={loadingAnalytics} error={undefined}>
-                <div className="h-[300px]">
-                  <canvas ref={chartRefs.revenue}></canvas>
-                </div>
-              </AnalyticsCard>
-              <AnalyticsCard title="Рост лидов и сделок" loading={loadingAnalytics} error={undefined}>
-                <div className="h-[300px]">
-                  <canvas ref={chartRefs.monthlyGrowth}></canvas>
-                </div>
-              </AnalyticsCard>
-            </div>
-          )}
-
-          {!analyticsError && (
-            <AnalyticsCard
-              title={
-                <div className="flex items-center gap-2">
-                  <CalendarClock className="h-4 w-4" />
-                  <span>{t('dashboard.analytics.predictionTitle')}</span>
-                </div>
-              }
-              loading={loadingAnalytics}
-              error={undefined}
-            >
-              {analytics?.prediction && (
-                <PredictionChart
-                  labels={analytics.prediction.labels}
-                  predictedData={analytics.prediction.predicted_revenue}
-                  confidenceLower={analytics.prediction.confidence_lower}
-                  confidenceUpper={analytics.prediction.confidence_upper}
-                  title="Прогнозируемая выручка на следующие 6 месяцев"
-                  height={350}
-                />
-              )}
-            </AnalyticsCard>
-          )}
-
-          {!analyticsError && (
-            <div className="grid gap-4 lg:grid-cols-3">
-              <AnalyticsCard title="Источники лидов" loading={loadingAnalytics} error={undefined}>
-                <div className="h-[300px]">
-                  <canvas ref={chartRefs.leadSource}></canvas>
-                </div>
-              </AnalyticsCard>
-              <AnalyticsCard title="Статус лидов" loading={loadingAnalytics} error={undefined}>
-                <div className="h-[300px]">
-                  <canvas ref={chartRefs.leadStatus}></canvas>
-                </div>
-              </AnalyticsCard>
-              <AnalyticsCard title="Воронка продаж" loading={loadingFunnel} error={funnelError}>
-                <div className="h-[300px]">
-                  <canvas ref={chartRefs.funnelChart}></canvas>
-                </div>
-              </AnalyticsCard>
-            </div>
-          )}
-
-          <div className="grid gap-4 lg:grid-cols-3">
-            <MemosWidget />
-            <CampaignsWidget />
-            <RevenueChart />
-          </div>
-
-          <div className="grid gap-4 lg:grid-cols-2">
-            <AnalyticsCard title="Последняя активность" loading={loadingActivity} error={activityError}>
-              <div className="space-y-4">
-                {activity.length === 0 && (
-                <div className="text-center text-sm text-muted-foreground py-4">Нет активности</div>
-              )}
-              {activity.map((item) => (
-                  <div key={item.id || item.timestamp} className="flex items-start gap-3">
-                    <Avatar className="h-8 w-8">
-                      <AvatarFallback>{getActivityIcon(item.type)}</AvatarFallback>
-                    </Avatar>
-                    <div className="flex-1 space-y-1">
-                      <div className="text-sm font-medium">{item.title || item.message || item.type}</div>
-                      {item.description && (
-                        <div className="text-xs text-muted-foreground">{item.description}</div>
-                      )}
-                      <div className="text-xs text-muted-foreground">
-                        {item.user ? `${item.user} • ` : ''}{formatTimeAgo(item.timestamp)}
-                      </div>
-                    </div>
-                  </div>
+          <DashboardSection
+            title="Фокус на сегодня"
+            description={prioritiesSummary || 'Сначала закройте горящие задачи и проверьте новый входящий поток.'}
+          >
+            <div className="grid gap-4 lg:grid-cols-[1.6fr_1fr]">
+              <div className="grid gap-4 md:grid-cols-3">
+                {todayFocusCards.map((item) => (
+                  <OperationalCard key={item.key} {...item} />
                 ))}
               </div>
-            </AnalyticsCard>
-
-            <AnalyticsCard title="Статистика задач" loading={loadingAnalytics} error={analyticsError}>
-              {!analyticsError && analytics?.tasks_by_status && (
-                <div className="space-y-4">
-                  <div className="grid gap-4 sm:grid-cols-2">
-                    <StatBadge label="В ожидании" value={analytics.tasks_by_status.pending} />
-                    <StatBadge label="В работе" value={analytics.tasks_by_status.in_progress} />
-                    <StatBadge label="Завершено" value={analytics.tasks_by_status.completed} />
-                    <StatBadge label="Просрочено" value={analytics.tasks_by_status.overdue} />
-                  </div>
-                  <Separator />
-                  <div className="text-center text-sm font-medium">
-                    Конверсия: {overview?.conversion_rate ?? 0}%
-                  </div>
+              <AnalyticsCard
+                title="Зоны риска"
+                loading={loadingAnalytics || loadingLeads || loadingDeals}
+                error={analyticsError || leadsError || dealsError}
+              >
+                <div className="space-y-3">
+                  {riskCards.map((risk) => (
+                    <RiskRow key={risk.key} {...risk} />
+                  ))}
                 </div>
-              )}
-            </AnalyticsCard>
-          </div>
+              </AnalyticsCard>
+            </div>
+          </DashboardSection>
+
+          <DashboardSection
+            title="Общий снимок"
+            description="Базовые показатели, которые помогают быстро оценить состояние продаж."
+          >
+            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+              <StatCard
+                title="Всего лидов"
+                value={overview?.total_leads || 0}
+                icon={<User className="h-4 w-4" />}
+                suffix={overview?.leads_growth > 0 ? `+${overview.leads_growth}%` : null}
+                loading={loadingOverview}
+              />
+              <StatCard
+                title="Всего контактов"
+                value={overview?.total_contacts || 0}
+                icon={<Users className="h-4 w-4" />}
+                loading={loadingOverview}
+              />
+              <StatCard
+                title="Всего сделок"
+                value={overview?.total_deals || 0}
+                icon={<Trophy className="h-4 w-4" />}
+                suffix={overview?.deals_growth > 0 ? `+${overview.deals_growth}%` : null}
+                loading={loadingOverview}
+              />
+              <StatCard
+                title="Выручка"
+                value={formatCurrency(overview?.total_revenue || 0)}
+                icon={<DollarSign className="h-4 w-4" />}
+                suffix={overview?.revenue_growth > 0 ? `+${overview.revenue_growth}%` : null}
+                loading={loadingOverview}
+              />
+            </div>
+          </DashboardSection>
+
+          {!analyticsError && (
+            <DashboardSection
+              title="Тренды и прогноз"
+              description="Показывает динамику выручки, движения по воронке и ближайший прогноз."
+            >
+              <div className="grid gap-4 lg:grid-cols-2">
+                <AnalyticsCard title="Динамика выручки" loading={loadingAnalytics} error={undefined}>
+                  <div className="h-[300px]">
+                    <canvas ref={chartRefs.revenue}></canvas>
+                  </div>
+                </AnalyticsCard>
+                <AnalyticsCard title="Рост лидов и сделок" loading={loadingAnalytics} error={undefined}>
+                  <div className="h-[300px]">
+                    <canvas ref={chartRefs.monthlyGrowth}></canvas>
+                  </div>
+                </AnalyticsCard>
+              </div>
+
+              <div style={{ marginTop: 16 }}>
+                <AnalyticsCard
+                  title={
+                    <div className="flex items-center gap-2">
+                      <CalendarClock className="h-4 w-4" />
+                      <span>{t('dashboard.analytics.predictionTitle')}</span>
+                    </div>
+                  }
+                  loading={loadingAnalytics}
+                  error={undefined}
+                >
+                  {analytics?.prediction && (
+                    <PredictionChart
+                      labels={analytics.prediction.labels}
+                      predictedData={analytics.prediction.predicted_revenue}
+                      confidenceLower={analytics.prediction.confidence_lower}
+                      confidenceUpper={analytics.prediction.confidence_upper}
+                      title="Прогнозируемая выручка на следующие 6 месяцев"
+                      height={350}
+                    />
+                  )}
+                </AnalyticsCard>
+              </div>
+
+              <div className="grid gap-4 lg:grid-cols-3" style={{ marginTop: 16 }}>
+                <AnalyticsCard title="Источники лидов" loading={loadingAnalytics} error={undefined}>
+                  <div className="h-[300px]">
+                    <canvas ref={chartRefs.leadSource}></canvas>
+                  </div>
+                </AnalyticsCard>
+                <AnalyticsCard title="Статус лидов" loading={loadingAnalytics} error={undefined}>
+                  <div className="h-[300px]">
+                    <canvas ref={chartRefs.leadStatus}></canvas>
+                  </div>
+                </AnalyticsCard>
+                <AnalyticsCard title="Воронка продаж" loading={loadingFunnel} error={funnelError}>
+                  <div className="h-[300px]">
+                    <canvas ref={chartRefs.funnelChart}></canvas>
+                  </div>
+                </AnalyticsCard>
+              </div>
+            </DashboardSection>
+          )}
+
+          <DashboardSection
+            title="Рабочий контекст"
+            description="Дополнительные сигналы по заметкам, кампаниям и выручке."
+          >
+            <div className="grid gap-4 lg:grid-cols-3">
+              <MemosWidget />
+              <CampaignsWidget />
+              <RevenueChart />
+            </div>
+          </DashboardSection>
+
+          <DashboardSection
+            title="Активность команды"
+            description="Показывает, что произошло недавно и где может потребоваться вмешательство."
+          >
+            <div className="grid gap-4 lg:grid-cols-2">
+              <AnalyticsCard title="Последняя активность" loading={loadingActivity} error={activityError}>
+                <div className="space-y-4">
+                  {activity.length === 0 && (
+                    <div className="text-center text-sm text-muted-foreground py-4">Нет активности</div>
+                  )}
+                  {activity.map((item) => (
+                    <div key={item.id || item.timestamp} className="flex items-start gap-3">
+                      <Avatar className="h-8 w-8">
+                        <AvatarFallback>{getActivityIcon(item.type)}</AvatarFallback>
+                      </Avatar>
+                      <div className="flex-1 space-y-1">
+                        <div className="text-sm font-medium">{item.title || item.message || item.type}</div>
+                        {item.description && (
+                          <div className="text-xs text-muted-foreground">{item.description}</div>
+                        )}
+                        <div className="text-xs text-muted-foreground">
+                          {item.user ? `${item.user} • ` : ''}{formatTimeAgo(item.timestamp)}
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </AnalyticsCard>
+
+              <AnalyticsCard title="Статистика задач" loading={loadingAnalytics} error={analyticsError}>
+                {!analyticsError && analytics?.tasks_by_status && (
+                  <div className="space-y-4">
+                    <div className="grid gap-4 sm:grid-cols-2">
+                      <StatBadge label="В ожидании" value={analytics.tasks_by_status.pending} />
+                      <StatBadge label="В работе" value={analytics.tasks_by_status.in_progress} />
+                      <StatBadge label="Завершено" value={analytics.tasks_by_status.completed} />
+                      <StatBadge label="Просрочено" value={analytics.tasks_by_status.overdue} />
+                    </div>
+                    <Separator />
+                    <div className="text-center text-sm font-medium">
+                      Конверсия: {overview?.conversion_rate ?? 0}%
+                    </div>
+                  </div>
+                )}
+              </AnalyticsCard>
+            </div>
+          </DashboardSection>
         </TabsContent>
 
         <TabsContent value="leads">
@@ -742,6 +847,54 @@ function Dashboard() {
           </AnalyticsWrapper>
         </TabsContent>
       </Tabs>
+    </div>
+  );
+}
+
+function DashboardSection({ title, description, children }) {
+  return (
+    <div className="space-y-4">
+      <div className="space-y-1">
+        <h2 className="text-lg font-semibold">{title}</h2>
+        {description ? <p className="text-sm text-muted-foreground">{description}</p> : null}
+      </div>
+      {children}
+    </div>
+  );
+}
+
+function OperationalCard({ title, value, description, actionLabel, onClick }) {
+  return (
+    <Card className="p-4">
+      <div className="space-y-3">
+        <div>
+          <div className="text-xs text-muted-foreground">{title}</div>
+          <div className="text-2xl font-semibold">{value}</div>
+        </div>
+        <div className="text-sm text-muted-foreground">{description}</div>
+        <Button onClick={onClick}>{actionLabel}</Button>
+      </div>
+    </Card>
+  );
+}
+
+function RiskRow({ title, value, description, tone }) {
+  const toneClass =
+    tone === 'danger'
+      ? 'border-red-200 bg-red-50'
+      : tone === 'warning'
+        ? 'border-amber-200 bg-amber-50'
+        : 'border-border bg-background';
+
+  return (
+    <div className={`rounded-md border p-3 ${toneClass}`}>
+      <div className="flex items-center justify-between gap-3">
+        <div>
+          <div className="text-sm font-medium">{title}</div>
+          <div className="text-xs text-muted-foreground">{description}</div>
+        </div>
+        <div className="text-xl font-semibold">{value}</div>
+      </div>
     </div>
   );
 }

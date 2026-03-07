@@ -17,6 +17,7 @@ import { toast } from '../../components/ui/use-toast.js';
 import { getUser, getUsers } from '../../lib/api';
 import { createReminder, getReminder, updateReminder } from '../../lib/api/reminders';
 import { navigate } from '../../router';
+import { LegacyErrorState, LegacyLoadingState } from '../../shared/ui';
 
 const schema = z.object({
   subject: z.string().min(1, 'Введите тему напоминания'),
@@ -31,6 +32,7 @@ const schema = z.object({
 
 function ReminderForm({ id }) {
   const [loading, setLoading] = useState(false);
+  const [loadError, setLoadError] = useState(false);
   const [saving, setSaving] = useState(false);
   const isEdit = !!id;
 
@@ -68,6 +70,7 @@ function ReminderForm({ id }) {
 
   const loadReminder = async () => {
     setLoading(true);
+    setLoadError(false);
     try {
       const data = await getReminder(id);
       reset({
@@ -75,6 +78,7 @@ function ReminderForm({ id }) {
         reminder_date: data.reminder_date ? dayjs(data.reminder_date) : null,
       });
     } catch (error) {
+      setLoadError(true);
       toast({ title: 'Ошибка', description: 'Ошибка загрузки напоминания', variant: 'destructive' });
       console.error('Error loading reminder:', error);
     } finally {
@@ -108,7 +112,20 @@ function ReminderForm({ id }) {
 
   if (loading) {
     return (
-      <div className="py-12 text-center text-sm text-muted-foreground">Загрузка...</div>
+      <LegacyLoadingState
+        title="Загрузка напоминания"
+        description="Подготавливаем форму редактирования напоминания."
+      />
+    );
+  }
+
+  if (isEdit && loadError) {
+    return (
+      <LegacyErrorState
+        title="Не удалось загрузить напоминание для редактирования"
+        description="Попробуйте повторить загрузку или вернитесь к списку напоминаний."
+        onAction={loadReminder}
+      />
     );
   }
 

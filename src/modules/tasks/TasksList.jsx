@@ -1,8 +1,9 @@
 import { Calendar, Clock, Edit, Eye, Trash2, User } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
+import { Button as AntButton } from 'antd';
+import { PlusOutlined } from '@ant-design/icons';
 
 import EnhancedTable from '../../components/ui-EnhancedTable.jsx';
-import TableToolbar from '../../components/ui-TableToolbar.jsx';
 import { AlertDialog, AlertDialogContent, AlertDialogHeader, AlertDialogTitle } from '../../components/ui/alert-dialog.jsx';
 import { Avatar, AvatarFallback } from '../../components/ui/avatar.jsx';
 import { Badge } from '../../components/ui/badge.jsx';
@@ -10,11 +11,13 @@ import { Button } from '../../components/ui/button.jsx';
 import { toast } from '../../components/ui/use-toast.js';
 import { deleteTask, getTasks, getTaskStages, getUsers, updateTask } from '../../lib/api';
 import { navigate } from '../../router';
+import { EntityListPageShell, EntityListToolbar } from '../../shared/ui';
 
 function TasksList() {
   const [tasks, setTasks] = useState([]);
   const [allTasksCache, setAllTasksCache] = useState(null);
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(null);
   const [searchText, setSearchText] = useState('');
   const [pagination, setPagination] = useState({
     current: 1,
@@ -64,6 +67,7 @@ function TasksList() {
 
   const fetchTasks = async (page = 1, search = '', pageSize = pagination.pageSize) => {
     setLoading(true);
+    setError(null);
     try {
       const response = await getTasks({
         page,
@@ -90,6 +94,7 @@ function TasksList() {
         total: totalCount,
       }));
     } catch (error) {
+      setError(error?.message || 'Не удалось загрузить список задач');
       toast({ title: 'Ошибка', description: 'Ошибка загрузки задач', variant: 'destructive' });
       setTasks([]);
       setPagination((prev) => ({
@@ -301,33 +306,44 @@ function TasksList() {
     },
   ];
 
-  return (
-    <div>
-      <TableToolbar
-        title="Задачи"
-        total={pagination.total}
-        loading={loading}
-        searchPlaceholder="Поиск по названию, описанию..."
-        onSearch={handleSearch}
-        onCreate={() => navigate('/tasks/new')}
-        onRefresh={() => fetchTasks(pagination.current, searchText)}
-        createButtonText="Создать задачу"
-        showViewModeSwitch={false}
-        showExportButton={false}
-      />
+  const headerActions = (
+    <AntButton type="primary" icon={<PlusOutlined />} onClick={() => navigate('/tasks/new')}>
+      Создать задачу
+    </AntButton>
+  );
 
-      <EnhancedTable
-        columns={columns}
-        dataSource={tasks}
-        loading={loading}
-        pagination={pagination}
-        onChange={handleTableChange}
-        rowClassName={(record) => (doneStage && record.stage === doneStage.id ? 'row-completed' : '')}
-        showTotal={true}
-        showSizeChanger={true}
-        emptyText="Нет задач"
-        emptyDescription="Создайте первую задачу"
-      />
+  return (
+    <>
+      <EntityListPageShell
+        title="Задачи"
+        subtitle="Список задач в едином шаблоне CRM-списков"
+        extra={headerActions}
+        toolbar={
+          <EntityListToolbar
+            searchValue={searchText}
+            searchPlaceholder="Поиск по названию, описанию..."
+            onSearchChange={handleSearch}
+            onRefresh={() => fetchTasks(pagination.current, searchText)}
+            loading={loading}
+            resultSummary={pagination.total ? `${pagination.total} записей` : undefined}
+          />
+        }
+        error={error}
+        onRetry={() => fetchTasks(pagination.current, searchText)}
+      >
+        <EnhancedTable
+          columns={columns}
+          dataSource={tasks}
+          loading={loading}
+          pagination={pagination}
+          onChange={handleTableChange}
+          rowClassName={(record) => (doneStage && record.stage === doneStage.id ? 'row-completed' : '')}
+          showTotal={true}
+          showSizeChanger={true}
+          emptyText="Нет задач"
+          emptyDescription="Создайте первую задачу"
+        />
+      </EntityListPageShell>
 
       <style>{`
         .row-completed {
@@ -359,7 +375,7 @@ function TasksList() {
           </div>
         </AlertDialogContent>
       </AlertDialog>
-    </div>
+    </>
   );
 }
 

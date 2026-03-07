@@ -14,7 +14,7 @@ export type Lead = {
     /**
      * The name of the contact person (one word).
      */
-    first_name: string;
+    first_name?: string;
     /**
      * The middle name of the contact person.
      */
@@ -33,7 +33,7 @@ export type Lead = {
     /**
      * Use comma to separate Emails.
      */
-    email: string;
+    email?: string;
     secondary_email?: string;
     phone?: string;
     other_phone?: string;
@@ -72,4 +72,3 @@ export type Lead = {
     readonly creation_date: string;
     readonly update_date: string;
 };
-

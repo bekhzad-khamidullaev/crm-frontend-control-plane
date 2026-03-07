@@ -10,6 +10,7 @@ import {
     FileTextOutlined,
     FolderOutlined,
     LogoutOutlined,
+    MailOutlined,
     MenuFoldOutlined,
     MenuUnfoldOutlined,
     MessageOutlined,
@@ -57,63 +58,71 @@ export function AppLayout({
   const drawerWidth = screens.sm ? 300 : '86vw';
   // Build nav labels at render time so they react to locale changes.
   const baseNav = [
-    { key: 'leads', label: t('nav.leads') || 'Leads', icon: <TeamOutlined />, path: '/leads' },
-    { key: 'contacts', label: t('nav.contacts') || 'Контакты', icon: <UserOutlined />, path: '/contacts' },
-    { key: 'companies', label: t('nav.companies') || 'Компании', icon: <BankOutlined />, path: '/companies' },
-    { key: 'deals', label: t('nav.deals') || 'Сделки', icon: <DollarOutlined />, path: '/deals' },
-    { key: 'tasks', label: t('nav.tasks') || 'Задачи', icon: <CheckSquareOutlined />, path: '/tasks' },
-    { key: 'projects', label: t('nav.projects') || 'Проекты', icon: <FolderOutlined />, path: '/projects' },
-    { key: 'products', label: 'Продукты', icon: <AppstoreOutlined />, path: '/products' },
-    { key: 'chat', label: t('nav.chat') || 'Чат', icon: <MessageOutlined />, path: '/chat' },
-    { key: 'calls', label: t('nav.calls') || 'Звонки', icon: <PhoneOutlined />, path: '/calls' },
-    { key: 'payments', label: t('nav.payments') || 'Платежи', icon: <DollarOutlined />, path: '/payments' },
-    { key: 'reminders', label: t('nav.reminders') || 'Напоминания', icon: <ClockCircleOutlined />, path: '/reminders' },
-    { key: 'campaigns', label: t('nav.campaigns') || 'Кампании', icon: <CustomerServiceOutlined />, path: '/campaigns' },
-    { key: 'segments', label: 'Сегменты', icon: <TeamOutlined />, path: '/marketing/segments' },
-    { key: 'templates', label: 'Шаблоны', icon: <FileTextOutlined />, path: '/marketing/templates' },
-    { key: 'memos', label: t('nav.memos') || 'Заметки', icon: <FileTextOutlined />, path: '/memos' },
-    { key: 'help-center', label: 'Справка', icon: <QuestionCircleOutlined />, path: '/help' },
     {
-      key: 'reports-analytics',
-      label: 'Отчеты и аналитика',
-      icon: <BarChartOutlined />,
+      key: 'sales-group',
+      label: 'Продажи',
       children: [
-        { key: 'dashboard', label: t('nav.dashboard') || 'Dashboard', path: '/dashboard' },
-        { key: 'analytics', label: 'Аналитика', path: '/analytics' },
+        { key: 'dashboard', label: t('nav.dashboard') || 'Dashboard', icon: <BarChartOutlined />, path: '/dashboard' },
+        { key: 'leads', label: t('nav.leads') || 'Leads', icon: <TeamOutlined />, path: '/leads' },
+        { key: 'contacts', label: t('nav.contacts') || 'Контакты', icon: <UserOutlined />, path: '/contacts' },
+        { key: 'companies', label: t('nav.companies') || 'Компании', icon: <BankOutlined />, path: '/companies' },
+        { key: 'deals', label: t('nav.deals') || 'Сделки', icon: <DollarOutlined />, path: '/deals' },
+        { key: 'tasks', label: t('nav.tasks') || 'Задачи', icon: <CheckSquareOutlined />, path: '/tasks' },
+        { key: 'projects', label: t('nav.projects') || 'Проекты', icon: <FolderOutlined />, path: '/projects' },
+        { key: 'products', label: t('nav.products') || 'Продукты', icon: <AppstoreOutlined />, path: '/products' },
       ],
     },
     {
-      key: 'integrations-hub',
-      label: t('nav.integrations') || 'Интеграции',
-      icon: <SettingOutlined />,
+      key: 'communications-group',
+      label: 'Коммуникации',
       children: [
-        { key: 'integrations', label: t('nav.integrations') || 'Интеграции', path: '/integrations' },
-        { key: 'crm-emails', label: 'Emails', path: '/crm-emails' },
-        { key: 'massmail', label: 'Massmail', path: '/massmail' },
-        { key: 'sms-center', label: 'SMS', path: '/sms' },
+        { key: 'chat', label: t('nav.chat') || 'Чат', icon: <MessageOutlined />, path: '/chat' },
+        { key: 'calls', label: t('nav.calls') || 'Звонки', icon: <PhoneOutlined />, path: '/calls' },
+        { key: 'reminders', label: t('nav.reminders') || 'Напоминания', icon: <ClockCircleOutlined />, path: '/reminders' },
+        { key: 'crm-emails', label: t('nav.crmEmails') || 'Emails', icon: <MailOutlined />, path: '/crm-emails' },
+        { key: 'massmail', label: t('nav.massmail') || 'Massmail', icon: <FileTextOutlined />, path: '/massmail' },
+        { key: 'sms-center', label: t('nav.smsCenter') || 'SMS', icon: <MessageOutlined />, path: '/sms' },
+        { key: 'memos', label: t('nav.memos') || 'Заметки', icon: <FileTextOutlined />, path: '/memos' },
       ],
     },
     {
-      key: 'settings-hub',
-      label: t('nav.settings') || 'Настройки',
-      icon: <SettingOutlined />,
+      key: 'marketing-group',
+      label: 'Маркетинг',
       children: [
-        { key: 'settings', label: t('nav.settings') || 'Настройки', path: '/settings' },
-        { key: 'landing-builder', label: 'Landing Builder', path: '/landing-builder' },
-        { key: 'operations', label: 'Операции', path: '/operations' },
-        { key: 'reference-data', label: 'Справочники', path: '/reference-data' },
-        { key: 'telephony', label: 'Телефония', path: '/telephony' },
-        { key: 'users', label: 'Пользователи', path: '/users' },
+        { key: 'campaigns', label: t('nav.campaigns') || 'Кампании', icon: <CustomerServiceOutlined />, path: '/campaigns' },
+        { key: 'segments', label: t('nav.segments') || 'Сегменты', icon: <TeamOutlined />, path: '/marketing/segments' },
+        { key: 'templates', label: t('nav.templates') || 'Шаблоны', icon: <FileTextOutlined />, path: '/marketing/templates' },
+        { key: 'analytics', label: t('nav.analytics') || 'Аналитика', icon: <BarChartOutlined />, path: '/analytics' },
+      ],
+    },
+    {
+      key: 'operations-group',
+      label: 'Операции',
+      children: [
+        { key: 'payments', label: t('nav.payments') || 'Платежи', icon: <DollarOutlined />, path: '/payments' },
+        { key: 'integrations', label: t('nav.integrations') || 'Интеграции', icon: <SettingOutlined />, path: '/integrations' },
+        { key: 'telephony', label: t('nav.telephony') || 'Телефония', icon: <PhoneOutlined />, path: '/telephony' },
+        { key: 'operations', label: t('nav.operations') || 'Операции', icon: <SettingOutlined />, path: '/operations' },
+      ],
+    },
+    {
+      key: 'system-group',
+      label: 'Система',
+      children: [
+        { key: 'settings', label: t('nav.settings') || 'Настройки', icon: <SettingOutlined />, path: '/settings' },
+        { key: 'reference-data', label: t('nav.referenceData') || 'Справочники', icon: <AppstoreOutlined />, path: '/reference-data' },
+        { key: 'landing-builder', label: t('nav.landingBuilder') || 'Landing Builder', icon: <AppstoreOutlined />, path: '/landing-builder' },
+        { key: 'users', label: t('nav.users') || 'Пользователи', icon: <UserOutlined />, path: '/users' },
+        { key: 'help-center', label: t('nav.helpCenter') || 'Справка', icon: <QuestionCircleOutlined />, path: '/help' },
       ],
     },
   ];
   const visibleNav = Array.isArray(allowedNavKeys) && allowedNavKeys.length
     ? baseNav
       .map((item) => {
-        if (!Array.isArray(item.children)) {
-          return allowedNavKeys.includes(item.key) ? item : null;
-        }
-        const children = item.children.filter((child) => allowedNavKeys.includes(child.key));
+        const children = Array.isArray(item.children)
+          ? item.children.filter((child) => allowedNavKeys.includes(child.key))
+          : [];
         return children.length ? { ...item, children } : null;
       })
       .filter(Boolean)
@@ -151,33 +160,21 @@ export function AppLayout({
 
   // Convert baseNav to Ant Design Menu items (with nested groups)
   const menuItems = visibleNav.map((item) => {
-    if (Array.isArray(item.children)) {
-      return {
-        key: item.key,
-        icon: item.icon,
-        label: item.label,
-        children: item.children.map((child) => ({
-          key: child.key,
-          label: child.label,
-          onClick: () => {
-            navigate(child.path);
-            if (isMobile) {
-              setMobileMenuOpen(false);
-            }
-          },
-        })),
-      };
-    }
     return {
       key: item.key,
-      icon: item.icon,
+      type: 'group',
       label: item.label,
-      onClick: () => {
-        navigate(item.path);
-        if (isMobile) {
-          setMobileMenuOpen(false);
-        }
-      },
+      children: item.children.map((child) => ({
+        key: child.key,
+        icon: child.icon,
+        label: child.label,
+        onClick: () => {
+          navigate(child.path);
+          if (isMobile) {
+            setMobileMenuOpen(false);
+          }
+        },
+      })),
     };
   });
 
@@ -324,7 +321,6 @@ export function AppLayout({
         width={drawerWidth}
         open={isMobile && mobileMenuOpen}
         onClose={() => setMobileMenuOpen(false)}
-        bodyStyle={{ padding: 0 }}
         styles={{
           header: {
             background: theme === 'dark' ? '#161b22' : '#ffffff',
@@ -333,6 +329,7 @@ export function AppLayout({
           },
           body: {
             background: theme === 'dark' ? '#161b22' : '#ffffff',
+            padding: 0,
             paddingBottom: 'env(safe-area-inset-bottom)',
           },
         }}
@@ -432,6 +429,11 @@ export function AppLayout({
                 {incomingCallsCount > 0 && (
                   <Badge count={incomingCallsCount}>
                     <PhoneOutlined />
+                  </Badge>
+                )}
+                {unreadCount > 0 && (
+                  <Badge count={unreadCount}>
+                    <MessageOutlined />
                   </Badge>
                 )}
                 <Avatar size="small">{(user?.name || user?.username || 'U').charAt(0).toUpperCase()}</Avatar>

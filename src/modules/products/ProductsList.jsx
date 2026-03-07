@@ -7,22 +7,18 @@ import {
 import {
     App,
     Button,
-    Card,
-    Input,
     Popconfirm,
     Select,
     Space,
     Table,
     Tag,
-    Typography,
+    Dropdown,
 } from 'antd';
 import { useEffect, useState } from 'react';
 import { deleteProduct, getProductCategories, getProducts } from '../../lib/api/products';
 import { formatCurrency } from '../../lib/utils/format';
 import { navigate } from '../../router';
-
-const { Title } = Typography;
-const { Search } = Input;
+import { EntityListPageShell, EntityListToolbar } from '../../shared/ui';
 const { Option } = Select;
 
 function ProductsList() {
@@ -31,6 +27,7 @@ function ProductsList() {
   const [allProductsCache, setAllProductsCache] = useState(null);
   const [categories, setCategories] = useState([]);
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(null);
   const [searchText, setSearchText] = useState('');
   const [selectedCategory, setSelectedCategory] = useState(null);
   const [pagination, setPagination] = useState({
@@ -56,6 +53,7 @@ function ProductsList() {
 
   const loadProducts = async (page = 1, search = searchText, category = selectedCategory, pageSize = pagination.pageSize) => {
     setLoading(true);
+    setError(null);
     try {
       const params = {
         page,
@@ -94,6 +92,7 @@ function ProductsList() {
         total,
       }));
     } catch (error) {
+      setError(error?.message || 'Не удалось загрузить каталог продуктов');
       message.error('Ошибка загрузки продуктов');
       console.error('Error loading products:', error);
     } finally {
@@ -218,29 +217,36 @@ function ProductsList() {
     },
   ];
 
-  return (
-    <div>
-      <div style={{ marginBottom: 16, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-        <Title level={2} style={{ margin: 0 }}>Каталог продуктов</Title>
-        <Button
-          type="primary"
-          icon={<PlusOutlined />}
-          onClick={() => navigate('/products/new')}
-        >
-          Добавить продукт
-        </Button>
-      </div>
+  const headerActions = (
+    <Space wrap>
+      <Dropdown
+        menu={{
+          items: [{ key: 'refresh', label: 'Обновить', onClick: () => loadProducts(1, searchText, selectedCategory) }],
+        }}
+      >
+        <Button>Действия</Button>
+      </Dropdown>
+      <Button
+        type="primary"
+        icon={<PlusOutlined />}
+        onClick={() => navigate('/products/new')}
+      >
+        Добавить продукт
+      </Button>
+    </Space>
+  );
 
-      <Card>
-        <Space style={{ marginBottom: 16, width: '100%' }} direction="vertical" size="middle">
-          <Space wrap>
-            <Search
-              placeholder="Поиск по названию"
-              allowClear
-              enterButton={<SearchOutlined />}
-              onSearch={handleSearch}
-              style={{ width: 300 }}
-            />
+  return (
+    <EntityListPageShell
+      title="Каталог продуктов"
+      subtitle="Единый список продуктов с поиском и фильтрацией"
+      extra={headerActions}
+      toolbar={
+        <EntityListToolbar
+          searchValue={searchText}
+          searchPlaceholder="Поиск по названию"
+          onSearchChange={handleSearch}
+          filters={
             <Select
               placeholder="Все категории"
               style={{ width: 200 }}
@@ -254,10 +260,15 @@ function ProductsList() {
                 </Option>
               ))}
             </Select>
-            <Button onClick={() => loadProducts(1)}>Обновить</Button>
-          </Space>
-        </Space>
-
+          }
+          onRefresh={() => loadProducts(1, searchText, selectedCategory)}
+          loading={loading}
+          resultSummary={pagination.total ? `${pagination.total} записей` : undefined}
+        />
+      }
+      error={error}
+      onRetry={() => loadProducts(1, searchText, selectedCategory)}
+    >
         <Table
           columns={columns}
           dataSource={products}
@@ -267,8 +278,7 @@ function ProductsList() {
           onChange={handleTableChange}
           scroll={{ x: 1100 }}
         />
-      </Card>
-    </div>
+    </EntityListPageShell>
   );
 }
 

@@ -6,6 +6,38 @@
 import { getChatMessages } from '../../lib/api/chat.js';
 import { Spinner, Toast } from '../../components/index.js';
 
+function createStateBlock(type, title, description, actionLabel, onAction) {
+  const state = document.createElement('div');
+  state.className = `chat-list__state chat-list__state--${type}`;
+
+  const icon = document.createElement('i');
+  icon.className = 'material-icons';
+  icon.textContent =
+    type === 'error' ? 'error_outline' : type === 'loading' ? 'hourglass_empty' : 'chat_bubble_outline';
+
+  const heading = document.createElement('p');
+  heading.className = 'chat-list__state-title';
+  heading.textContent = title;
+
+  const text = document.createElement('p');
+  text.className = 'chat-list__state-description';
+  text.textContent = description;
+
+  state.appendChild(icon);
+  state.appendChild(heading);
+  state.appendChild(text);
+
+  if (actionLabel && onAction) {
+    const button = document.createElement('button');
+    button.className = 'mdc-button mdc-button--raised';
+    button.textContent = actionLabel;
+    button.onclick = onAction;
+    state.appendChild(button);
+  }
+
+  return state;
+}
+
 /**
  * Create chat list view
  * @returns {HTMLElement}
@@ -33,7 +65,9 @@ export function ChatList() {
   // Messages list
   const list = document.createElement('div');
   list.className = 'chat-list__messages';
-  list.appendChild(Spinner());
+  list.appendChild(
+    createStateBlock('loading', 'Загрузка сообщений', 'Подготавливаем список диалогов.')
+  );
 
   container.appendChild(header);
   container.appendChild(list);
@@ -47,7 +81,9 @@ export function ChatList() {
 
   entityTypeFilter.onchange = () => {
     list.innerHTML = '';
-    list.appendChild(Spinner());
+    list.appendChild(
+      createStateBlock('loading', 'Обновляем список', 'Применяем выбранный фильтр.')
+    );
     loadMessages(list, {
       entityType: entityTypeFilter.value,
       search: searchInput.value,
@@ -59,7 +95,9 @@ export function ChatList() {
     clearTimeout(searchTimeout);
     searchTimeout = setTimeout(() => {
       list.innerHTML = '';
-      list.appendChild(Spinner());
+      list.appendChild(
+        createStateBlock('loading', 'Ищем сообщения', 'Подбираем диалоги по вашему запросу.')
+      );
       loadMessages(list, {
         entityType: entityTypeFilter.value,
         search: searchInput.value,
@@ -94,13 +132,15 @@ async function loadMessages(container, filters = {}) {
     container.innerHTML = '';
 
     if (results.length === 0) {
-      const empty = document.createElement('div');
-      empty.className = 'chat-list__empty';
-      empty.innerHTML = `
-        <i class="material-icons">chat_bubble_outline</i>
-        <p>No messages found</p>
-      `;
-      container.appendChild(empty);
+      container.appendChild(
+        createStateBlock(
+          'empty',
+          'Диалоги не найдены',
+          filters.search || filters.entityType
+            ? 'Измените поиск или фильтр, чтобы увидеть подходящие сообщения.'
+            : 'Первые сообщения появятся здесь, когда пользователи начнут переписку.'
+        )
+      );
       return;
     }
 
@@ -114,15 +154,18 @@ async function loadMessages(container, filters = {}) {
 
   } catch (error) {
     console.error('Error loading messages:', error);
-    Toast.error(error.message || 'Failed to load messages');
-    
-    container.innerHTML = `
-      <div class="chat-list__error">
-        <i class="material-icons">error_outline</i>
-        <p>Failed to load messages</p>
-        <button class="mdc-button mdc-button--raised" onclick="location.reload()">Retry</button>
-      </div>
-    `;
+    Toast.error(error.message || 'Не удалось загрузить сообщения');
+
+    container.innerHTML = '';
+    container.appendChild(
+      createStateBlock(
+        'error',
+        'Не удалось загрузить диалоги',
+        'Попробуйте повторить запрос или обновите фильтры.',
+        'Повторить',
+        () => loadMessages(container, filters)
+      )
+    );
   }
 }
 

@@ -2,16 +2,12 @@ import React, { useEffect } from 'react';
 import {
   Form,
   Input,
-  Button,
   Card,
-  Space,
   Row,
   Col,
-  Grid,
   Switch,
-  Typography,
+  Modal,
 } from 'antd';
-import { SaveOutlined, ArrowLeftOutlined } from '@ant-design/icons';
 import { navigate } from '@/router.js';
 import {
   CountrySelect,
@@ -24,9 +20,7 @@ import {
 } from '@/features/reference';
 import { ContactFormData } from '@/entities/contact/model/schema';
 import type { Contact } from '@/entities/contact/model/types';
-import { PhoneInput } from '@/shared/ui';
-
-const { Title } = Typography;
+import { EntityFormSection, EntityFormShell, PhoneInput } from '@/shared/ui';
 const { TextArea } = Input;
 
 export interface ContactFormProps {
@@ -44,8 +38,7 @@ export const ContactForm: React.FC<ContactFormProps> = ({
 }) => {
   const [form] = Form.useForm();
   const country = Form.useWatch('country', form);
-  const screens = Grid.useBreakpoint();
-  const isMobile = !screens.md;
+  const formId = 'contact-form';
 
   useEffect(() => {
     if (initialValues) {
@@ -61,27 +54,46 @@ export const ContactForm: React.FC<ContactFormProps> = ({
     onSubmit(values as ContactFormData);
   };
 
+  const handleLeave = () => {
+    if (!form.isFieldsTouched()) {
+      navigate('/contacts');
+      return;
+    }
+
+    Modal.confirm({
+      title: 'Есть несохраненные изменения',
+      content: 'Выйти без сохранения?',
+      okText: 'Выйти',
+      cancelText: 'Остаться',
+      okButtonProps: { danger: true },
+      onOk: () => navigate('/contacts'),
+    });
+  };
+
   return (
-    <div>
-      <Space wrap style={{ marginBottom: 16 }}>
-        <Button icon={<ArrowLeftOutlined />} onClick={() => navigate('/contacts')} block={isMobile}>
-          Назад
-        </Button>
-      </Space>
-
-      <Title level={isMobile ? 3 : 2}>
-        {isEdit ? 'Редактировать контакт' : 'Создать новый контакт'}
-      </Title>
-
+    <EntityFormShell
+      title={isEdit ? 'Редактировать контакт' : 'Создать новый контакт'}
+      subtitle={isEdit ? 'Уточните контактные данные и рабочий контекст.' : 'Добавьте контакт, чтобы привязать его к компании и ответственному.'}
+      hint="Если компания уже существует в базе, выберите её вместо ручного ввода."
+      formId={formId}
+      submitText={isEdit ? 'Сохранить изменения' : 'Создать контакт'}
+      isSubmitting={isLoading}
+      onBack={handleLeave}
+      onCancel={handleLeave}
+    >
       <Card>
         <Form
+          id={formId}
           form={form}
           layout="vertical"
           onFinish={handleFinish}
           autoComplete="off"
           disabled={isLoading}
         >
-          <Title level={4}>Личные данные</Title>
+          <EntityFormSection
+            title="Личные данные"
+            description="Основные идентификаторы и контактные каналы."
+          />
           <Row gutter={16}>
             <Col xs={24} md={8}>
               <Form.Item
@@ -114,7 +126,6 @@ export const ContactForm: React.FC<ContactFormProps> = ({
                 label="Email"
                 name="email"
                 rules={[
-                  { required: true, message: 'Введите email' },
                   { type: 'email', message: 'Некорректный email' },
                 ]}
               >
@@ -154,9 +165,10 @@ export const ContactForm: React.FC<ContactFormProps> = ({
              </Col>
            </Row>
 
-          <Title level={4} style={{ marginTop: 24 }}>
-            Локация
-          </Title>
+          <EntityFormSection
+            title="Локация"
+            description="Адрес нужен только если он используется в продажах или доставке."
+          />
           <Row gutter={16}>
             <Col xs={24} md={12}>
               <Form.Item label="Страна" name="country">
@@ -177,9 +189,10 @@ export const ContactForm: React.FC<ContactFormProps> = ({
              </Col>
            </Row>
 
-          <Title level={4} style={{ marginTop: 24 }}>
-            Настройки
-          </Title>
+          <EntityFormSection
+            title="Настройки"
+            description="Ответственные и коммуникационные предпочтения по контакту."
+          />
            <Row gutter={16}>
              <Col xs={24} md={12}>
                 <Form.Item label="Ответственный" name="owner">
@@ -204,19 +217,8 @@ export const ContactForm: React.FC<ContactFormProps> = ({
           <Form.Item label="Описание" name="description" style={{ marginTop: 24 }}>
             <TextArea rows={4} />
           </Form.Item>
-
-          <Form.Item>
-            <Space wrap style={{ width: '100%' }}>
-              <Button type="primary" htmlType="submit" icon={<SaveOutlined />} loading={isLoading} block={isMobile}>
-                {isEdit ? 'Обновить' : 'Создать'}
-              </Button>
-              <Button onClick={() => navigate('/contacts')} block={isMobile}>
-                Отмена
-              </Button>
-            </Space>
-          </Form.Item>
         </Form>
       </Card>
-    </div>
+    </EntityFormShell>
   );
 };

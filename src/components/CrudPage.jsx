@@ -4,7 +4,7 @@
  */
 
 import React, { useEffect, useState } from 'react';
-import { Form, Modal, Button, Card, Space, Input, InputNumber, Switch, DatePicker, Select, App } from 'antd';
+import { Form, Modal, Button, Card, Space, Input, InputNumber, Switch, DatePicker, Select, App, Descriptions, Tag } from 'antd';
 import { PlusOutlined, EditOutlined, DeleteOutlined, EyeOutlined } from '@ant-design/icons';
 import dayjs from 'dayjs';
 import EntitySelect from './EntitySelect.jsx';
@@ -276,7 +276,7 @@ export default function CrudPage({
               <div key={field.name} style={{ marginBottom: 16 }}>
                 <div style={{ fontWeight: 500, marginBottom: 4 }}>{field.label}:</div>
                 <div style={{ whiteSpace: 'pre-wrap', wordBreak: 'break-word' }}>
-                  {formatValue(field, viewRecord[field.name])}
+                  {renderViewValue(field, viewRecord[field.name])}
                 </div>
               </div>
             ))}
@@ -350,10 +350,7 @@ function preparePayload(fields, values) {
 
 function formatValue(field, value) {
   if (value === null || value === undefined) return '-';
-  if (typeof value === 'object' && !Array.isArray(value) && field.type !== 'date') {
-    return JSON.stringify(value, null, 2);
-  }
-  
+
   switch (field.type) {
     case 'boolean':
       return value ? 'Да' : 'Нет';
@@ -366,13 +363,57 @@ function formatValue(field, value) {
       return '-';
     case 'array':
       if (!Array.isArray(value)) return '-';
-      if (value.some((item) => typeof item === 'object' && item !== null)) {
-        return JSON.stringify(value, null, 2);
-      }
       return value.join(', ');
     default:
       return String(value);
   }
+}
+
+function renderViewValue(field, value) {
+  if (value === null || value === undefined) return '-';
+
+  if (Array.isArray(value)) {
+    if (value.length === 0) return '-';
+    if (value.every((item) => typeof item !== 'object' || item === null)) {
+      return (
+        <Space wrap>
+          {value.map((item, index) => (
+            <Tag key={`${field.name}-${index}`}>{String(item)}</Tag>
+          ))}
+        </Space>
+      );
+    }
+
+    return (
+      <Space direction="vertical" size="small" style={{ width: '100%' }}>
+        {value.map((item, index) => (
+          <Card key={`${field.name}-${index}`} size="small">
+            <Descriptions size="small" column={1}>
+              {Object.entries(item || {}).map(([key, nestedValue]) => (
+                <Descriptions.Item key={key} label={toLabel(key)}>
+                  {String(nestedValue ?? '-')}
+                </Descriptions.Item>
+              ))}
+            </Descriptions>
+          </Card>
+        ))}
+      </Space>
+    );
+  }
+
+  if (typeof value === 'object' && field.type !== 'date') {
+    return (
+      <Descriptions size="small" column={1} bordered>
+        {Object.entries(value).map(([key, nestedValue]) => (
+          <Descriptions.Item key={key} label={toLabel(key)}>
+            {String(nestedValue ?? '-')}
+          </Descriptions.Item>
+        ))}
+      </Descriptions>
+    );
+  }
+
+  return formatValue(field, value);
 }
 
 function getViewFields(fields, columns, record) {

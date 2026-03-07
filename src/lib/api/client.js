@@ -7,6 +7,7 @@ import {
   MAX_HEADER_SAFE_LENGTH,
   setToken,
 } from './auth.js';
+import resolveApiBase from '../../shared/api/resolveApiBase';
 
 // Runtime config (injected via window.__APP_CONFIG__ for deployments outside Vite)
 const runtimeConfig = typeof window !== 'undefined' ? window.__APP_CONFIG__ || {} : {};
@@ -15,9 +16,7 @@ const rawBase =
   runtimeConfig.apiBaseUrl ||
   runtimeConfig.BASE_URL ||
   '';
-const sanitizedBase = (rawBase || '').replace(/\/$/, '');
-const fallbackBase = typeof window !== 'undefined' ? window.location.origin : 'http://localhost:8000';
-const API_BASE_URL = sanitizedBase || fallbackBase;
+const API_BASE_URL = resolveApiBase(rawBase);
 const API_PREFIX = (import.meta.env.VITE_API_PREFIX || runtimeConfig.apiPrefix || '').replace(/\/$/, '');
 const API_TIMEOUT = Number(import.meta.env.VITE_API_TIMEOUT || runtimeConfig.apiTimeout || 15000);
 const AUTH_MODE = (import.meta.env.VITE_AUTH_MODE || runtimeConfig.authMode || 'jwt').toLowerCase();
