@@ -8,7 +8,9 @@ import { z } from 'zod';
 import EntitySelect from '../../components/EntitySelect.jsx';
 import { getUser, getUsers } from '../../lib/api';
 import { createReminder, getReminder, updateReminder } from '../../lib/api/reminders';
+import { canWrite } from '../../lib/rbac';
 import { navigate } from '../../router';
+import FormPermissionGuard from '../../components/permissions/FormPermissionGuard';
 
 import { App, Button, Card, DatePicker, Input, Result, Skeleton, Switch } from 'antd';
 const { TextArea } = Input;
@@ -36,6 +38,7 @@ function ReminderForm({ id }) {
   const [loadError, setLoadError] = useState(false);
   const [saving, setSaving] = useState(false);
   const isEdit = !!id;
+  const canManage = canWrite('common.change_reminder');
 
   const {
     register,
@@ -88,6 +91,10 @@ function ReminderForm({ id }) {
   };
 
   const handleSubmitForm = async (values) => {
+    if (!canManage) {
+      notify({ title: 'Недостаточно прав', description: 'У вас нет прав для изменения напоминаний', variant: 'destructive' });
+      return;
+    }
     setSaving(true);
     try {
       const payload = {
@@ -127,21 +134,27 @@ function ReminderForm({ id }) {
   }
 
   return (
-    <div>
-      <Button onClick={() => navigate('/reminders')}>
-        <ArrowLeft />
-        Назад
-      </Button>
-
+    <FormPermissionGuard
+      allowed={canManage}
+      listPath="/reminders"
+      listButtonText="К списку напоминаний"
+      description="У вас нет прав для создания или редактирования напоминаний."
+    >
       <div>
-        <Bell />
-        <h2>
-          {isEdit ? 'Редактирование напоминания' : 'Новое напоминание'}
-        </h2>
-      </div>
+        <Button onClick={() => navigate('/reminders')}>
+          <ArrowLeft />
+          Назад
+        </Button>
 
-      <Card>
-        <form onSubmit={handleSubmit(handleSubmitForm)}>
+        <div>
+          <Bell />
+          <h2>
+            {isEdit ? 'Редактирование напоминания' : 'Новое напоминание'}
+          </h2>
+        </div>
+
+        <Card>
+          <form onSubmit={handleSubmit(handleSubmitForm)}>
           <div>
             <Label htmlFor="subject">Тема *</Label>
             <Input id="subject" placeholder="Например: Связаться с клиентом" {...register('subject')} />
@@ -208,18 +221,21 @@ function ReminderForm({ id }) {
             </div>
           </div>
 
-          <div>
-            <Button type="submit" loading={saving}>
-              <Save />
-              {isEdit ? 'Сохранить' : 'Создать'}
-            </Button>
-            <Button onClick={() => navigate('/reminders')}>
-              Отмена
-            </Button>
-          </div>
-        </form>
-      </Card>
-    </div>
+            <div>
+              {canManage && (
+                <Button type="submit" loading={saving}>
+                  <Save />
+                  {isEdit ? 'Сохранить' : 'Создать'}
+                </Button>
+              )}
+              <Button onClick={() => navigate('/reminders')}>
+                Отмена
+              </Button>
+            </div>
+          </form>
+        </Card>
+      </div>
+    </FormPermissionGuard>
   );
 }
 

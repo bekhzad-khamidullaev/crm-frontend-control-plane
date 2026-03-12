@@ -2,12 +2,14 @@ import { useEffect, useState } from 'react';
 import { App, Button, Card, Descriptions, Modal, Result, Skeleton, Space, Tag, Typography } from 'antd';
 import { DeleteOutlined, EditOutlined } from '@ant-design/icons';
 import { getCampaign, deleteCampaign, patchCampaign } from '../../lib/api/marketing';
+import { canWrite } from '../../lib/rbac.js';
 import { navigate } from '../../router';
 
 const { Title, Text } = Typography;
 
 export default function CampaignDetail({ id }) {
   const { message } = App.useApp();
+  const canManage = canWrite('marketing.change_campaign');
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState(false);
@@ -92,9 +94,13 @@ export default function CampaignDetail({ id }) {
           <Tag color={data.is_active ? 'green' : 'default'}>{data.is_active ? 'Активна' : 'Неактивна'}</Tag>
         </Space>
         <Space wrap>
-          <Button type="primary" icon={<EditOutlined />} onClick={() => navigate(`/campaigns/${id}/edit`)}>Редактировать</Button>
-          <Button onClick={handleToggleActive}>{data.is_active ? 'Отключить' : 'Активировать'}</Button>
-          <Button danger icon={<DeleteOutlined />} onClick={handleDelete}>Удалить</Button>
+          {canManage ? (
+            <>
+              <Button type="primary" icon={<EditOutlined />} onClick={() => navigate(`/campaigns/${id}/edit`)}>Редактировать</Button>
+              <Button onClick={handleToggleActive}>{data.is_active ? 'Отключить' : 'Активировать'}</Button>
+              <Button danger icon={<DeleteOutlined />} onClick={handleDelete}>Удалить</Button>
+            </>
+          ) : null}
         </Space>
       </Space>
 

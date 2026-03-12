@@ -8,12 +8,14 @@ import ActivityLog from '../../components/ActivityLog';
 import EntitySelect from '../../components/EntitySelect.jsx';
 import { getProject, deleteProject, getUsers, projectsApi } from '../../lib/api/client';
 import { getProjectStages, getCrmTags } from '../../lib/api/reference';
+import { canWrite } from '../../lib/rbac.js';
 import { navigate } from '../../router';
 
 const { Title } = Typography;
 
 function ProjectDetail({ id }) {
   const { message } = App.useApp();
+  const canManage = canWrite('tasks.change_project');
   const [project, setProject] = useState(null);
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState(false);
@@ -181,24 +183,28 @@ function ProjectDetail({ id }) {
         <Button icon={<ArrowLeft size={14} />} onClick={() => navigate('/projects')}>
           Назад
         </Button>
-        <Button type="primary" icon={<Edit size={14} />} onClick={() => navigate(`/projects/${id}/edit`)}>
-          Редактировать
-        </Button>
-        <Button icon={<User size={14} />} onClick={openAssignModal}>
-          Назначить
-        </Button>
-        {isCompleted ? (
-          <Button icon={<RotateCcw size={14} />} onClick={handleReopen}>
-            Возобновить
-          </Button>
-        ) : (
-          <Button icon={<CheckCircle size={14} />} onClick={handleComplete}>
-            Завершить
-          </Button>
-        )}
-        <Button danger icon={<Trash2 size={14} />} onClick={handleDelete}>
-          Удалить
-        </Button>
+        {canManage ? (
+          <>
+            <Button type="primary" icon={<Edit size={14} />} onClick={() => navigate(`/projects/${id}/edit`)}>
+              Редактировать
+            </Button>
+            <Button icon={<User size={14} />} onClick={openAssignModal}>
+              Назначить
+            </Button>
+            {isCompleted ? (
+              <Button icon={<RotateCcw size={14} />} onClick={handleReopen}>
+                Возобновить
+              </Button>
+            ) : (
+              <Button icon={<CheckCircle size={14} />} onClick={handleComplete}>
+                Завершить
+              </Button>
+            )}
+            <Button danger icon={<Trash2 size={14} />} onClick={handleDelete}>
+              Удалить
+            </Button>
+          </>
+        ) : null}
       </Space>
 
       <Card>
@@ -243,7 +249,7 @@ function ProjectDetail({ id }) {
 
       <Modal
         title="Назначения проекта"
-        open={assignModalOpen}
+        open={assignModalOpen && canManage}
         onCancel={() => setAssignModalOpen(false)}
         onOk={handleAssign}
         okText="Сохранить"

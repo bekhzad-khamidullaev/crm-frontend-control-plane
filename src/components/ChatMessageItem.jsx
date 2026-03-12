@@ -25,6 +25,7 @@ import {
 import dayjs from 'dayjs';
 import relativeTime from 'dayjs/plugin/relativeTime';
 import 'dayjs/locale/ru';
+import { canWrite } from '../lib/rbac.js';
 
 dayjs.extend(relativeTime);
 dayjs.locale('ru');
@@ -42,6 +43,7 @@ function ChatMessageItem({
   showAvatar = true,
 }) {
   const [isHovered, setIsHovered] = useState(false);
+  const canManageOwnMessage = canWrite('chat.change_chatmessage');
 
   const menuItems = [
     {
@@ -68,7 +70,7 @@ function ChatMessageItem({
     },
   ].filter(Boolean);
 
-  if (isCurrentUser) {
+  if (isCurrentUser && canManageOwnMessage) {
     menuItems.push(
       {
         type: 'divider',

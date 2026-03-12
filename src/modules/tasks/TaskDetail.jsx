@@ -7,12 +7,14 @@ import { App, Button, Card, Descriptions, Empty, Result, Skeleton, Space, Tabs, 
 import ActivityLog from '../../components/ActivityLog';
 import { getTask, deleteTask, getUsers } from '../../lib/api/client';
 import { getTaskStages, getTaskTags } from '../../lib/api/reference';
+import { canWrite } from '../../lib/rbac.js';
 import { navigate } from '../../router';
 
 const { Text, Title } = Typography;
 
 function TaskDetail({ id }) {
   const { message } = App.useApp();
+  const canManage = canWrite('tasks.change_task');
   const [task, setTask] = useState(null);
   const [loading, setLoading] = useState(true);
   const [stages, setStages] = useState([]);
@@ -122,12 +124,16 @@ function TaskDetail({ id }) {
         <Button icon={<ArrowLeft size={14} />} onClick={() => navigate('/tasks')}>
           Назад
         </Button>
-        <Button type="primary" icon={<Edit size={14} />} onClick={() => navigate(`/tasks/${id}/edit`)}>
-          Редактировать
-        </Button>
-        <Button danger icon={<Trash2 size={14} />} onClick={handleDelete}>
-          Удалить
-        </Button>
+        {canManage ? (
+          <>
+            <Button type="primary" icon={<Edit size={14} />} onClick={() => navigate(`/tasks/${id}/edit`)}>
+              Редактировать
+            </Button>
+            <Button danger icon={<Trash2 size={14} />} onClick={handleDelete}>
+              Удалить
+            </Button>
+          </>
+        ) : null}
       </Space>
 
       <Card>

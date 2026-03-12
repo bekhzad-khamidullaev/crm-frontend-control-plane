@@ -36,6 +36,7 @@ export default function TableToolbar({
   showSettings = false,
   showCreate = true,
   canCreate,
+  createPermission,
   showViewModeSwitch = false,
   viewMode = 'table', // 'table' | 'kanban'
   onViewModeChange,
@@ -49,7 +50,7 @@ export default function TableToolbar({
     if (onSearch) onSearch(val);
     if (onSearchChange) onSearchChange(val);
   };
-  const allowCreate = showCreate && onCreate && (canCreate ?? canWriteByRole());
+  const allowCreate = showCreate && onCreate && (canCreate ?? (createPermission ? canWriteByRole(createPermission) : canWriteByRole()));
 
   return (
     <div style={{ marginBottom: 16 }}>

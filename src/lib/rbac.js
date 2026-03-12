@@ -1,8 +1,43 @@
 import { getUserFromToken, isAuthenticated } from './api/auth.js';
 import { mergeRoles, normalizeRoles, rolesFromTokenPayload } from './roles.js';
-import { getRouteMeta } from '../router.js';
+import { getRouteMeta, parseHash } from '../router.js';
 
 const WRITE_ROLES = ['admin', 'manager'];
+const ROUTE_WRITE_PERMISSION_MAP = {
+  'leads-list': 'crm.change_lead',
+  'leads-detail': 'crm.change_lead',
+  'contacts-list': 'crm.change_contact',
+  'contacts-detail': 'crm.change_contact',
+  'companies-list': 'crm.change_company',
+  'companies-detail': 'crm.change_company',
+  'deals-list': 'crm.change_deal',
+  'deals-detail': 'crm.change_deal',
+  'tasks-list': 'tasks.change_task',
+  'tasks-detail': 'tasks.change_task',
+  'projects-list': 'tasks.change_project',
+  'projects-detail': 'tasks.change_project',
+  'payments-list': 'crm.change_payment',
+  'payments-detail': 'crm.change_payment',
+  'reminders-list': 'common.change_reminder',
+  'reminders-detail': 'common.change_reminder',
+  'campaigns-list': 'marketing.change_campaign',
+  'campaigns-detail': 'marketing.change_campaign',
+  'memos-list': 'tasks.change_memo',
+  'memos-detail': 'tasks.change_memo',
+  'products-list': 'crm.change_product',
+  'products-detail': 'crm.change_product',
+};
+
+function normalizePermissions(rawPermissions = []) {
+  if (!Array.isArray(rawPermissions)) return [];
+  const normalized = new Set();
+  rawPermissions.forEach((permission) => {
+    const value = String(permission || '').trim().toLowerCase();
+    if (!value) return;
+    normalized.add(value);
+  });
+  return Array.from(normalized);
+}
 
 function getStoredRoles() {
   try {
@@ -17,11 +52,29 @@ function getStoredRoles() {
   return [];
 }
 
+function getStoredPermissions() {
+  try {
+    const raw = sessionStorage.getItem('enterprise_crm_permissions') || localStorage.getItem('enterprise_crm_permissions');
+    if (!raw) return [];
+    const parsed = JSON.parse(raw);
+    if (Array.isArray(parsed)) return normalizePermissions(parsed);
+    if (parsed && Array.isArray(parsed.permissions)) return normalizePermissions(parsed.permissions);
+  } catch {
+    return [];
+  }
+  return [];
+}
+
 export function getCurrentRoles() {
   if (!isAuthenticated()) return [];
   const tokenRoles = rolesFromTokenPayload(getUserFromToken() || {});
   const storedRoles = getStoredRoles();
   return mergeRoles(tokenRoles, storedRoles);
+}
+
+export function getCurrentPermissions() {
+  if (!isAuthenticated()) return [];
+  return getStoredPermissions();
 }
 
 export function hasAnyRole(requiredRoles = []) {
@@ -31,7 +84,24 @@ export function hasAnyRole(requiredRoles = []) {
   return currentRoles.some((role) => normalizedRequired.includes(role));
 }
 
-export function canWrite() {
+export function hasAnyPermission(requiredPermissions = []) {
+  const normalizedRequired = normalizePermissions(
+    Array.isArray(requiredPermissions) ? requiredPermissions : [requiredPermissions],
+  );
+  if (normalizedRequired.length === 0) return true;
+  const currentPermissions = getCurrentPermissions();
+  return currentPermissions.some((permission) => normalizedRequired.includes(permission));
+}
+
+export function canWrite(requiredPermissions = null) {
+  if (requiredPermissions) {
+    return hasAnyPermission(requiredPermissions) || hasAnyRole(WRITE_ROLES);
+  }
+  const currentRoute = parseHash().name;
+  const routePermission = ROUTE_WRITE_PERMISSION_MAP[currentRoute];
+  if (routePermission) {
+    return hasAnyPermission([routePermission]) || hasAnyRole(WRITE_ROLES);
+  }
   return hasAnyRole(WRITE_ROLES);
 }
 
@@ -39,7 +109,9 @@ export function canAccessRoute(routeName) {
   const meta = getRouteMeta(routeName);
   if (!meta || meta.auth === false) return true;
   if (!isAuthenticated()) return false;
-  const required = normalizeRoles(Array.isArray(meta.roles) ? meta.roles : []);
-  if (required.length === 0) return true;
-  return hasAnyRole(required);
+  const requiredRoles = normalizeRoles(Array.isArray(meta.roles) ? meta.roles : []);
+  const requiredPermissions = normalizePermissions(Array.isArray(meta.permissions) ? meta.permissions : []);
+  const hasRoles = requiredRoles.length === 0 || hasAnyRole(requiredRoles);
+  const hasPermissions = requiredPermissions.length === 0 || hasAnyPermission(requiredPermissions);
+  return hasRoles && hasPermissions;
 }

@@ -2,6 +2,7 @@ import { DeleteOutlined, EditOutlined } from '@ant-design/icons';
 import { App, Button, Card, Descriptions, Modal, Result, Skeleton, Space, Tag, Typography } from 'antd';
 import { useEffect, useState } from 'react';
 import { deleteProduct, getProduct } from '../../lib/api/products';
+import { canWrite } from '../../lib/rbac.js';
 import { formatCurrency } from '../../lib/utils/format';
 import { navigate } from '../../router';
 
@@ -9,6 +10,7 @@ const { Title, Text } = Typography;
 
 export default function ProductDetail({ id }) {
   const { message } = App.useApp();
+  const canManage = canWrite('crm.change_product');
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState(false);
@@ -70,8 +72,12 @@ export default function ProductDetail({ id }) {
           <Tag color={data.on_sale ? 'green' : 'default'}>{data.on_sale ? 'В продаже' : 'Скрыт'}</Tag>
         </Space>
         <Space>
-          <Button type="primary" icon={<EditOutlined />} onClick={() => navigate(`/products/${id}/edit`)}>Редактировать</Button>
-          <Button danger icon={<DeleteOutlined />} onClick={handleDelete}>Удалить</Button>
+          {canManage ? (
+            <>
+              <Button type="primary" icon={<EditOutlined />} onClick={() => navigate(`/products/${id}/edit`)}>Редактировать</Button>
+              <Button danger icon={<DeleteOutlined />} onClick={handleDelete}>Удалить</Button>
+            </>
+          ) : null}
         </Space>
       </Space>
 

@@ -2,6 +2,7 @@ declare module '@/router.js' {
   export interface RouteMeta {
     auth: boolean;
     roles?: string[];
+    permissions?: string[];
     title?: string;
     breadcrumbs?: { label: string; href?: string }[];
   }

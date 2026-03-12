@@ -18,7 +18,9 @@ import {
     updateTask
 } from '../../lib/api';
 import { normalizePayload } from '../../lib/utils/payload';
+import { canWrite } from '../../lib/rbac';
 import { navigate } from '../../router';
+import FormPermissionGuard from '../../components/permissions/FormPermissionGuard';
 
 import { App, Button, Card, DatePicker, Input, Switch } from 'antd';
 const { TextArea } = Input;
@@ -57,6 +59,7 @@ function TaskForm({ id }) {
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
   const isEdit = !!id;
+  const canManage = canWrite('tasks.change_task');
 
   const {
     register,
@@ -132,6 +135,10 @@ function TaskForm({ id }) {
   };
 
   const onSubmit = async (values) => {
+    if (!canManage) {
+      notify({ title: 'Недостаточно прав', description: 'У вас нет прав для изменения задач', variant: 'destructive' });
+      return;
+    }
     setSaving(true);
     try {
       const payload = normalizePayload(
@@ -165,18 +172,24 @@ function TaskForm({ id }) {
   }
 
   return (
-    <div>
-      <Button onClick={() => navigate('/tasks')}>
-        <ArrowLeft />
-        Назад
-      </Button>
+    <FormPermissionGuard
+      allowed={canManage}
+      listPath="/tasks"
+      listButtonText="К списку задач"
+      description="У вас нет прав для создания или редактирования задач."
+    >
+      <div>
+        <Button onClick={() => navigate('/tasks')}>
+          <ArrowLeft />
+          Назад
+        </Button>
 
-      <h2>
-        {isEdit ? 'Редактировать задачу' : 'Создать новую задачу'}
-      </h2>
+        <h2>
+          {isEdit ? 'Редактировать задачу' : 'Создать новую задачу'}
+        </h2>
 
-      <Card>
-        <form onSubmit={handleSubmit(onSubmit)}>
+        <Card>
+          <form onSubmit={handleSubmit(onSubmit)}>
           <section>
             <h3>Основная информация</h3>
             <div>
@@ -354,18 +367,21 @@ function TaskForm({ id }) {
             </div>
           </section>
 
-          <div>
-            <Button type="submit" loading={saving}>
-              <Save />
-              {isEdit ? 'Обновить' : 'Создать'}
-            </Button>
-            <Button onClick={() => navigate('/tasks')}>
-              Отмена
-            </Button>
-          </div>
-        </form>
-      </Card>
-    </div>
+            <div>
+              {canManage && (
+                <Button type="submit" loading={saving}>
+                  <Save />
+                  {isEdit ? 'Обновить' : 'Создать'}
+                </Button>
+              )}
+              <Button onClick={() => navigate('/tasks')}>
+                Отмена
+              </Button>
+            </div>
+          </form>
+        </Card>
+      </div>
+    </FormPermissionGuard>
   );
 }
 

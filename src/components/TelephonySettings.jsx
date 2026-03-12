@@ -14,9 +14,11 @@ import {
   patchVoIPConnection
 } from '../lib/api/telephony';
 import { getProfile, updateProfile } from '../lib/api/user';
+import { canWrite } from '../lib/rbac.js';
 
 export default function TelephonySettings({ onSuccess }) {
   const { message } = App.useApp();
+  const canManage = canWrite('voip.change_connection');
   const [form] = Form.useForm();
   const [settingsForm] = Form.useForm();
   const [loading, setLoading] = useState(false);
@@ -197,31 +199,35 @@ export default function TelephonySettings({ onSuccess }) {
       key: 'actions',
       render: (_, record) => (
         <Space>
-          <Button
-            type="link"
-            size="small"
-            icon={<EditOutlined />}
-            onClick={() => handleEdit(record)}
-          >
-            Изменить
-          </Button>
-          <Button
-            type="link"
-            size="small"
-            onClick={() => handleToggleActive(record)}
-          >
-            {record.active ? 'Деактивировать' : 'Активировать'}
-          </Button>
-          <Popconfirm
-            title="Вы уверены?"
-            onConfirm={() => handleDelete(record.id)}
-            okText="Да"
-            cancelText="Нет"
-          >
-            <Button type="link" size="small" danger icon={<DeleteOutlined />}>
-              Удалить
-            </Button>
-          </Popconfirm>
+          {canManage ? (
+            <>
+              <Button
+                type="link"
+                size="small"
+                icon={<EditOutlined />}
+                onClick={() => handleEdit(record)}
+              >
+                Изменить
+              </Button>
+              <Button
+                type="link"
+                size="small"
+                onClick={() => handleToggleActive(record)}
+              >
+                {record.active ? 'Деактивировать' : 'Активировать'}
+              </Button>
+              <Popconfirm
+                title="Вы уверены?"
+                onConfirm={() => handleDelete(record.id)}
+                okText="Да"
+                cancelText="Нет"
+              >
+                <Button type="link" size="small" danger icon={<DeleteOutlined />}>
+                  Удалить
+                </Button>
+              </Popconfirm>
+            </>
+          ) : null}
         </Space>
       ),
     },
@@ -319,26 +325,30 @@ export default function TelephonySettings({ onSuccess }) {
           )}
         </Form.Item>
 
-        <Form.Item>
-          <Button type="primary" htmlType="submit" loading={settingsLoading}>
-            Сохранить маршрутизацию и ICE
-          </Button>
-        </Form.Item>
+        {canManage ? (
+          <Form.Item>
+            <Button type="primary" htmlType="submit" loading={settingsLoading}>
+              Сохранить маршрутизацию и ICE
+            </Button>
+          </Form.Item>
+        ) : null}
       </Form>
 
       <Divider orientation="left">VoIP подключения</Divider>
       <div style={{ marginBottom: 16 }}>
-        <Button
-          type="primary"
-          icon={<PlusOutlined />}
-          onClick={() => {
-            setEditingConnection(null);
-            form.resetFields();
-            setModalVisible(true);
-          }}
-        >
-          Добавить подключение
-        </Button>
+        {canManage ? (
+          <Button
+            type="primary"
+            icon={<PlusOutlined />}
+            onClick={() => {
+              setEditingConnection(null);
+              form.resetFields();
+              setModalVisible(true);
+            }}
+          >
+            Добавить подключение
+          </Button>
+        ) : null}
       </div>
 
       <Table

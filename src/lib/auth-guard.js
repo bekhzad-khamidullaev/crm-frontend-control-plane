@@ -36,7 +36,31 @@ function getStoredRoles() {
   }
 }
 
-export function checkAuth(route, requireAuth = true, requiredRoles = []) {
+function normalizePermissions(rawPermissions = []) {
+  if (!Array.isArray(rawPermissions)) return [];
+  const normalized = new Set();
+  rawPermissions.forEach((permission) => {
+    const value = String(permission || '').trim().toLowerCase();
+    if (!value) return;
+    normalized.add(value);
+  });
+  return Array.from(normalized);
+}
+
+function getStoredPermissions() {
+  try {
+    const raw = sessionStorage.getItem('enterprise_crm_permissions') || localStorage.getItem('enterprise_crm_permissions');
+    if (!raw) return [];
+    const parsed = JSON.parse(raw);
+    if (Array.isArray(parsed)) return normalizePermissions(parsed);
+    if (parsed && Array.isArray(parsed.permissions)) return normalizePermissions(parsed.permissions);
+    return [];
+  } catch {
+    return [];
+  }
+}
+
+export function checkAuth(route, requireAuth = true, requiredRoles = [], requiredPermissions = []) {
   if (!requireAuth) {
     return true;
   }
@@ -74,6 +98,21 @@ export function checkAuth(route, requireAuth = true, requiredRoles = []) {
     }
   }
 
+  if (requiredPermissions && requiredPermissions.length) {
+    const normalizedRequiredPermissions = normalizePermissions(requiredPermissions);
+    const permissions = getStoredPermissions();
+    if (!permissions || permissions.length === 0) {
+      console.warn('[AuthGuard] No permissions available for protected route; denying access');
+      navigate('/forbidden');
+      return false;
+    }
+    const ok = permissions.some((permission) => normalizedRequiredPermissions.includes(permission));
+    if (!ok) {
+      navigate('/forbidden');
+      return false;
+    }
+  }
+
   return true;
 }
 
@@ -86,10 +125,11 @@ export function checkAuth(route, requireAuth = true, requiredRoles = []) {
 export function authGuardMiddleware(route, routeMeta = {}) {
   const requireAuth = routeMeta.auth !== false;
   const requiredRoles = Array.isArray(routeMeta.roles) ? routeMeta.roles : [];
+  const requiredPermissions = Array.isArray(routeMeta.permissions) ? routeMeta.permissions : [];
   
   // Если роут требует авторизацию, проверяем
   if (requireAuth) {
-    return checkAuth(route, true, requiredRoles);
+    return checkAuth(route, true, requiredRoles, requiredPermissions);
   }
   
   // Если пользователь авторизован и пытается попасть на login, редиректим на dashboard

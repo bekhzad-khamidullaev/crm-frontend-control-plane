@@ -28,6 +28,24 @@ function readStoredRoles() {
   return [];
 }
 
+function normalizePermissions(rawPermissions = []) {
+  if (!Array.isArray(rawPermissions)) return [];
+  const normalized = new Set();
+  rawPermissions.forEach((permission) => {
+    const value = String(permission || '').trim().toLowerCase();
+    if (!value) return;
+    normalized.add(value);
+  });
+  return Array.from(normalized);
+}
+
+function persistPermissions(rawPermissions = []) {
+  const permissions = normalizePermissions(rawPermissions);
+  const serialized = JSON.stringify(permissions);
+  sessionStorage.setItem('enterprise_crm_permissions', serialized);
+  localStorage.setItem('enterprise_crm_permissions', serialized);
+}
+
 function LoginPage({ onLogin }) {
   const [loading, setLoading] = useState(false);
   const [form] = Form.useForm();
@@ -52,6 +70,7 @@ function LoginPage({ onLogin }) {
       }
 
       setToken(response.access, response.refresh);
+      persistPermissions(response.all_permissions || response.permissions || []);
 
       try {
         const { usersApi } = await import('../lib/api/client');
@@ -66,6 +85,7 @@ function LoginPage({ onLogin }) {
           sessionStorage.setItem('enterprise_crm_roles', serializedRoles);
           localStorage.setItem('enterprise_crm_roles', serializedRoles);
         }
+        persistPermissions(me?.permissions || response.all_permissions || response.permissions || []);
       } catch (e) {
         console.warn('Failed to fetch user roles on login:', e);
       }

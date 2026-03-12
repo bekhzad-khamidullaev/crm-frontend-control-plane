@@ -75,6 +75,7 @@ export const routeMeta = {
 const READ_ROLES = ['admin', 'manager', 'sales'];
 const WRITE_ROLES = ['admin', 'manager'];
 const ADMIN_ROLES = ['admin', 'manager'];
+const ADMIN_PERMISSIONS = ['auth.view_user', 'settings.view_systemsettings'];
 
 [
   'dashboard',
@@ -151,6 +152,75 @@ const ADMIN_ROLES = ['admin', 'manager'];
   'integrations',
 ].forEach((route) => {
   if (routeMeta[route]) routeMeta[route].roles = ADMIN_ROLES;
+});
+
+[
+  ['leads-list', 'crm.view_lead'],
+  ['leads-detail', 'crm.view_lead'],
+  ['leads-new', 'crm.add_lead'],
+  ['leads-edit', 'crm.change_lead'],
+  ['contacts-list', 'crm.view_contact'],
+  ['contacts-detail', 'crm.view_contact'],
+  ['contacts-new', 'crm.add_contact'],
+  ['contacts-edit', 'crm.change_contact'],
+  ['companies-list', 'crm.view_company'],
+  ['companies-detail', 'crm.view_company'],
+  ['companies-new', 'crm.add_company'],
+  ['companies-edit', 'crm.change_company'],
+  ['deals-list', 'crm.view_deal'],
+  ['deals-detail', 'crm.view_deal'],
+  ['deals-new', 'crm.add_deal'],
+  ['deals-edit', 'crm.change_deal'],
+  ['tasks-list', 'tasks.view_task'],
+  ['tasks-detail', 'tasks.view_task'],
+  ['tasks-new', 'tasks.add_task'],
+  ['tasks-edit', 'tasks.change_task'],
+  ['projects-list', 'tasks.view_project'],
+  ['projects-detail', 'tasks.view_project'],
+  ['projects-new', 'tasks.add_project'],
+  ['projects-edit', 'tasks.change_project'],
+  ['payments-list', 'crm.view_payment'],
+  ['payments-detail', 'crm.view_payment'],
+  ['payments-new', 'crm.add_payment'],
+  ['payments-edit', 'crm.change_payment'],
+  ['reminders-list', 'common.view_reminder'],
+  ['reminders-detail', 'common.view_reminder'],
+  ['reminders-new', 'common.add_reminder'],
+  ['reminders-edit', 'common.change_reminder'],
+  ['campaigns-list', 'marketing.view_campaign'],
+  ['campaigns-detail', 'marketing.view_campaign'],
+  ['campaigns-new', 'marketing.add_campaign'],
+  ['campaigns-edit', 'marketing.change_campaign'],
+  ['marketing-segments', 'marketing.view_segment'],
+  ['marketing-templates', 'marketing.view_messagetemplate'],
+  ['memos-list', 'tasks.view_memo'],
+  ['memos-detail', 'tasks.view_memo'],
+  ['memos-new', 'tasks.add_memo'],
+  ['memos-edit', 'tasks.change_memo'],
+  ['products-list', 'crm.view_product'],
+  ['products-detail', 'crm.view_product'],
+  ['products-new', 'crm.add_product'],
+  ['products-edit', 'crm.change_product'],
+  ['chat', 'chat.view_chatmessage'],
+  ['chat-list', 'chat.view_chatmessage'],
+  ['chat-thread', 'chat.view_chatmessage'],
+  ['calls-list', 'voip.view_calllog'],
+  ['calls-dashboard', 'voip.view_calllog'],
+  ['telephony', 'voip.view_connection'],
+  ['massmail', 'massmail.view_mailingout'],
+  ['analytics', 'analytics.view_incomestat'],
+].forEach(([route, permission]) => {
+  if (routeMeta[route]) routeMeta[route].permissions = [permission];
+});
+
+[
+  'users',
+  'settings',
+  'integrations',
+  'reference-data',
+  'operations',
+].forEach((route) => {
+  if (routeMeta[route]) routeMeta[route].permissions = ADMIN_PERMISSIONS;
 });
 
 export function getRouteMeta(name) {

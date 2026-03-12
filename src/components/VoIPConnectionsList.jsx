@@ -17,9 +17,11 @@ import {
   deleteVoIPConnection,
   patchVoIPConnection
 } from '../lib/api/telephony';
+import { canWrite } from '../lib/rbac.js';
 
 export default function VoIPConnectionsList({ onEdit, onRefresh }) {
   const { message } = App.useApp();
+  const canManage = canWrite('voip.change_connection');
   const [loading, setLoading] = useState(false);
   const [connections, setConnections] = useState([]);
   const [pagination, setPagination] = useState({
@@ -145,38 +147,42 @@ export default function VoIPConnectionsList({ onEdit, onRefresh }) {
       width: 200,
       render: (_, record) => (
         <Space size="small">
-          <Button
-            type="link"
-            size="small"
-            icon={<EditOutlined />}
-            onClick={() => onEdit?.(record)}
-          >
-            Изменить
-          </Button>
-          <Button
-            type="link"
-            size="small"
-            onClick={() => handleToggleActive(record)}
-          >
-            {record.active ? 'Деактивировать' : 'Активировать'}
-          </Button>
-          <Popconfirm
-            title="Удалить подключение?"
-            description="Это действие нельзя отменить"
-            onConfirm={() => handleDelete(record.id)}
-            okText="Да"
-            cancelText="Нет"
-            okButtonProps={{ danger: true }}
-          >
-            <Button 
-              type="link" 
-              size="small" 
-              danger 
-              icon={<DeleteOutlined />}
-            >
-              Удалить
-            </Button>
-          </Popconfirm>
+          {canManage ? (
+            <>
+              <Button
+                type="link"
+                size="small"
+                icon={<EditOutlined />}
+                onClick={() => onEdit?.(record)}
+              >
+                Изменить
+              </Button>
+              <Button
+                type="link"
+                size="small"
+                onClick={() => handleToggleActive(record)}
+              >
+                {record.active ? 'Деактивировать' : 'Активировать'}
+              </Button>
+              <Popconfirm
+                title="Удалить подключение?"
+                description="Это действие нельзя отменить"
+                onConfirm={() => handleDelete(record.id)}
+                okText="Да"
+                cancelText="Нет"
+                okButtonProps={{ danger: true }}
+              >
+                <Button 
+                  type="link" 
+                  size="small" 
+                  danger 
+                  icon={<DeleteOutlined />}
+                >
+                  Удалить
+                </Button>
+              </Popconfirm>
+            </>
+          ) : null}
         </Space>
       ),
     },

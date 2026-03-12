@@ -4,7 +4,9 @@ import { RocketOutlined } from '@ant-design/icons';
 import dayjs from 'dayjs';
 import { navigate } from '../../router';
 import { getCampaign, createCampaign, updateCampaign, getSegments, getSegment, getTemplates, getTemplate } from '../../lib/api/marketing';
+import { canWrite } from '../../lib/rbac';
 import EntitySelect from '../../components/EntitySelect';
+import FormPermissionGuard from '../../components/permissions/FormPermissionGuard';
 
 const { Title, Text } = Typography;
 
@@ -14,6 +16,7 @@ function CampaignForm({ id }) {
   const [loadError, setLoadError] = useState(false);
   const [saving, setSaving] = useState(false);
   const isEdit = !!id;
+  const canManage = canWrite('marketing.change_campaign');
 
   useEffect(() => {
     if (isEdit) loadCampaign();
@@ -36,6 +39,10 @@ function CampaignForm({ id }) {
   };
 
   const handleSubmit = async (values) => {
+    if (!canManage) {
+      message.error('Недостаточно прав для изменения кампаний');
+      return;
+    }
     setSaving(true);
     try {
       const payload = { ...values, start_at: values.start_at ? values.start_at.toISOString() : null };
@@ -69,56 +76,65 @@ function CampaignForm({ id }) {
   }
 
   return (
-    <Space direction="vertical" size={16} style={{ width: '100%' }}>
-      <Space wrap style={{ width: '100%', justifyContent: 'space-between' }}>
-        <Button onClick={() => navigate('/campaigns')}>Назад</Button>
-        <Space>
-          <Button onClick={() => navigate('/campaigns')}>Отмена</Button>
-          <Button type="primary" loading={saving} onClick={() => form.submit()}>
-            {isEdit ? 'Сохранить кампанию' : 'Создать кампанию'}
-          </Button>
+    <FormPermissionGuard
+      allowed={canManage}
+      listPath="/campaigns"
+      listButtonText="К списку кампаний"
+      description="У вас нет прав для создания или редактирования кампаний."
+    >
+      <Space direction="vertical" size={16} style={{ width: '100%' }}>
+        <Space wrap style={{ width: '100%', justifyContent: 'space-between' }}>
+          <Button onClick={() => navigate('/campaigns')}>Назад</Button>
+          <Space>
+            <Button onClick={() => navigate('/campaigns')}>Отмена</Button>
+            {canManage && (
+              <Button type="primary" loading={saving} onClick={() => form.submit()}>
+                {isEdit ? 'Сохранить кампанию' : 'Создать кампанию'}
+              </Button>
+            )}
+          </Space>
         </Space>
+
+        <Card>
+          <Title level={3} style={{ marginTop: 0 }}>{isEdit ? 'Редактирование кампании' : 'Новая кампания'}</Title>
+          <Text type="secondary">Создание и настройка маркетинговой кампании</Text>
+        </Card>
+
+        <Card>
+          <Form form={form} layout="vertical" onFinish={handleSubmit}>
+            <Form.Item label="Название кампании" name="name" rules={[{ required: true, message: 'Введите название кампании' }]}>
+              <Input prefix={<RocketOutlined />} placeholder="Например: Летняя акция 2026" />
+            </Form.Item>
+
+            <Row gutter={16}>
+              <Col xs={24} md={12}>
+                <Form.Item label="Сегмент" name="segment">
+                  <EntitySelect placeholder="Выберите сегмент" fetchOptions={getSegments} fetchById={getSegment} />
+                </Form.Item>
+              </Col>
+              <Col xs={24} md={12}>
+                <Form.Item label="Шаблон" name="template">
+                  <EntitySelect placeholder="Выберите шаблон" fetchOptions={getTemplates} fetchById={getTemplate} />
+                </Form.Item>
+              </Col>
+            </Row>
+
+            <Row gutter={16}>
+              <Col xs={24} md={12}>
+                <Form.Item label="Дата старта" name="start_at">
+                  <DatePicker format="DD.MM.YYYY HH:mm" showTime style={{ width: '100%' }} placeholder="Выберите дату и время" />
+                </Form.Item>
+              </Col>
+              <Col xs={24} md={12}>
+                <Form.Item label="Активна" name="is_active" valuePropName="checked">
+                  <Switch />
+                </Form.Item>
+              </Col>
+            </Row>
+          </Form>
+        </Card>
       </Space>
-
-      <Card>
-        <Title level={3} style={{ marginTop: 0 }}>{isEdit ? 'Редактирование кампании' : 'Новая кампания'}</Title>
-        <Text type="secondary">Создание и настройка маркетинговой кампании</Text>
-      </Card>
-
-      <Card>
-        <Form form={form} layout="vertical" onFinish={handleSubmit}>
-          <Form.Item label="Название кампании" name="name" rules={[{ required: true, message: 'Введите название кампании' }]}>
-            <Input prefix={<RocketOutlined />} placeholder="Например: Летняя акция 2026" />
-          </Form.Item>
-
-          <Row gutter={16}>
-            <Col xs={24} md={12}>
-              <Form.Item label="Сегмент" name="segment">
-                <EntitySelect placeholder="Выберите сегмент" fetchOptions={getSegments} fetchById={getSegment} />
-              </Form.Item>
-            </Col>
-            <Col xs={24} md={12}>
-              <Form.Item label="Шаблон" name="template">
-                <EntitySelect placeholder="Выберите шаблон" fetchOptions={getTemplates} fetchById={getTemplate} />
-              </Form.Item>
-            </Col>
-          </Row>
-
-          <Row gutter={16}>
-            <Col xs={24} md={12}>
-              <Form.Item label="Дата старта" name="start_at">
-                <DatePicker format="DD.MM.YYYY HH:mm" showTime style={{ width: '100%' }} placeholder="Выберите дату и время" />
-              </Form.Item>
-            </Col>
-            <Col xs={24} md={12}>
-              <Form.Item label="Активна" name="is_active" valuePropName="checked">
-                <Switch />
-              </Form.Item>
-            </Col>
-          </Row>
-        </Form>
-      </Card>
-    </Space>
+    </FormPermissionGuard>
   );
 }
 

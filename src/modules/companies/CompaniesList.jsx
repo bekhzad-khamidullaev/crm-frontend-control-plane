@@ -26,12 +26,14 @@ import { navigate } from '../../router';
 import { getCompanies, deleteCompany } from '../../lib/api/client';
 import { getIndustries, getClientTypes } from '../../lib/api/reference';
 import CallButton from '../../components/CallButton';
+import { canWrite } from '../../lib/rbac.js';
 import { getLocale } from '../../lib/i18n';
 import { getClientTypeLabel } from '../../features/reference/lib/clientTypeLabel';
 
 const { Title } = Typography;
 
 function CompaniesList() {
+  const canManage = canWrite('crm.change_company');
   const [companies, setCompanies] = useState([]);
   const [allCompaniesCache, setAllCompaniesCache] = useState(null);
   const [loading, setLoading] = useState(false);
@@ -249,24 +251,28 @@ function CompaniesList() {
           >
             Просмотр
           </Button>
-          <Button
-            type="link"
-            icon={<EditOutlined />}
-            onClick={() => navigate(`/companies/${record.id}/edit`)}
-          >
-            Редактировать
-          </Button>
-          <Popconfirm
-            title="Удалить эту компанию?"
-            description="Это действие нельзя отменить"
-            onConfirm={() => handleDelete(record.id)}
-            okText="Да"
-            cancelText="Нет"
-          >
-            <Button type="link" danger icon={<DeleteOutlined />}>
-              Удалить
-            </Button>
-          </Popconfirm>
+          {canManage ? (
+            <>
+              <Button
+                type="link"
+                icon={<EditOutlined />}
+                onClick={() => navigate(`/companies/${record.id}/edit`)}
+              >
+                Редактировать
+              </Button>
+              <Popconfirm
+                title="Удалить эту компанию?"
+                description="Это действие нельзя отменить"
+                onConfirm={() => handleDelete(record.id)}
+                okText="Да"
+                cancelText="Нет"
+              >
+                <Button type="link" danger icon={<DeleteOutlined />}>
+                  Удалить
+                </Button>
+              </Popconfirm>
+            </>
+          ) : null}
         </Space>
       ),
     },
@@ -276,13 +282,15 @@ function CompaniesList() {
     <div>
       <div style={{ marginBottom: 16, display: 'flex', justifyContent: 'space-between' }}>
         <Title level={2}>Компании</Title>
-        <Button
-          type="primary"
-          icon={<PlusOutlined />}
-          onClick={() => navigate('/companies/new')}
-        >
-          Создать компанию
-        </Button>
+        {canManage ? (
+          <Button
+            type="primary"
+            icon={<PlusOutlined />}
+            onClick={() => navigate('/companies/new')}
+          >
+            Создать компанию
+          </Button>
+        ) : null}
       </div>
 
       <Card>

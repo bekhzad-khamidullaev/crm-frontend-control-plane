@@ -2,6 +2,7 @@ import { DeleteOutlined, EditOutlined, PlusOutlined } from '@ant-design/icons';
 import { App, Button, Card, Input, Popconfirm, Select, Space, Table, Tag, Typography } from 'antd';
 import { useEffect, useState } from 'react';
 import { deleteProduct, getProductCategories, getProducts } from '../../lib/api/products';
+import { canWrite } from '../../lib/rbac.js';
 import { formatCurrency } from '../../lib/utils/format';
 import { navigate } from '../../router';
 
@@ -11,6 +12,7 @@ const { Text, Title } = Typography;
 
 function ProductsList() {
   const { message } = App.useApp();
+  const canManage = canWrite('crm.change_product');
   const [products, setProducts] = useState([]);
   const [allProductsCache, setAllProductsCache] = useState(null);
   const [categories, setCategories] = useState([]);
@@ -153,10 +155,14 @@ function ProductsList() {
       width: 120,
       render: (_, record) => (
         <Space>
-          <Button type="link" size="small" icon={<EditOutlined />} onClick={() => navigate(`/products/${record.id}/edit`)} />
-          <Popconfirm title="Удалить продукт?" description="Это действие нельзя отменить" onConfirm={() => handleDelete(record.id)} okText="Да" cancelText="Нет">
-            <Button type="link" size="small" danger icon={<DeleteOutlined />} />
-          </Popconfirm>
+          {canManage ? (
+            <>
+              <Button type="link" size="small" icon={<EditOutlined />} onClick={() => navigate(`/products/${record.id}/edit`)} />
+              <Popconfirm title="Удалить продукт?" description="Это действие нельзя отменить" onConfirm={() => handleDelete(record.id)} okText="Да" cancelText="Нет">
+                <Button type="link" size="small" danger icon={<DeleteOutlined />} />
+              </Popconfirm>
+            </>
+          ) : null}
         </Space>
       ),
     },
@@ -170,7 +176,9 @@ function ProductsList() {
             <Title level={3} style={{ margin: 0 }}>Каталог продуктов</Title>
             <Text type="secondary">Единый список продуктов с поиском и фильтрацией</Text>
           </div>
-          <Button type="primary" icon={<PlusOutlined />} onClick={() => navigate('/products/new')}>Добавить продукт</Button>
+          {canManage ? (
+            <Button type="primary" icon={<PlusOutlined />} onClick={() => navigate('/products/new')}>Добавить продукт</Button>
+          ) : null}
         </Space>
 
         <Space wrap>

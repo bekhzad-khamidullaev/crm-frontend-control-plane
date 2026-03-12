@@ -2,10 +2,12 @@ import { useState, useEffect } from 'react';
 import { Card, List, Tag, Button, Space, Empty, Spin } from 'antd';
 import { FileTextOutlined, EyeOutlined, CheckOutlined } from '@ant-design/icons';
 import { getMemos, markMemoReviewed } from '../lib/api/memos';
+import { canWrite } from '../lib/rbac.js';
 import { navigate } from '../router';
 import dayjs from 'dayjs';
 
 export default function MemosWidget() {
+  const canManage = canWrite('tasks.change_memo');
   const [data, setData] = useState([]);
   const [loading, setLoading] = useState(true);
 
@@ -73,14 +75,18 @@ export default function MemosWidget() {
                 >
                   View
                 </Button>,
-                <Button
-                  type="link"
-                  size="small"
-                    icon={<CheckOutlined />}
-                    onClick={() => handleReviewed(item.id)}
-                  >
-                  Отметить
-                </Button>,
+                ...(canManage
+                  ? [
+                      <Button
+                        type="link"
+                        size="small"
+                        icon={<CheckOutlined />}
+                        onClick={() => handleReviewed(item.id)}
+                      >
+                        Отметить
+                      </Button>,
+                    ]
+                  : []),
               ]}
             >
               <List.Item.Meta

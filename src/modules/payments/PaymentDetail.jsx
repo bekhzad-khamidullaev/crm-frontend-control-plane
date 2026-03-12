@@ -5,6 +5,7 @@ import { useEffect, useState } from 'react';
 import { App, Button, Card, Descriptions, Modal, Result, Skeleton, Space, Tag, Typography } from 'antd';
 
 import { deletePayment, getPayment } from '../../lib/api/payments';
+import { canWrite } from '../../lib/rbac.js';
 import { formatCurrency } from '../../lib/utils/format';
 import { navigate } from '../../router';
 
@@ -19,6 +20,7 @@ const statusOptions = {
 
 export default function PaymentDetail({ id }) {
   const { message } = App.useApp();
+  const canManage = canWrite('crm.change_payment');
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [confirmOpen, setConfirmOpen] = useState(false);
@@ -77,12 +79,16 @@ export default function PaymentDetail({ id }) {
             <Button icon={<ArrowLeft size={14} />} onClick={() => navigate('/payments')}>
               Назад
             </Button>
-            <Button type="primary" icon={<Edit size={14} />} onClick={() => navigate(`/payments/${id}/edit`)}>
-              Редактировать
-            </Button>
-            <Button danger icon={<Trash2 size={14} />} onClick={() => setConfirmOpen(true)}>
-              Удалить
-            </Button>
+            {canManage ? (
+              <>
+                <Button type="primary" icon={<Edit size={14} />} onClick={() => navigate(`/payments/${id}/edit`)}>
+                  Редактировать
+                </Button>
+                <Button danger icon={<Trash2 size={14} />} onClick={() => setConfirmOpen(true)}>
+                  Удалить
+                </Button>
+              </>
+            ) : null}
           </Space>
         </Space>
 
@@ -101,7 +107,7 @@ export default function PaymentDetail({ id }) {
 
       <Modal
         title="Удалить платеж?"
-        open={confirmOpen}
+        open={confirmOpen && canManage}
         onCancel={() => setConfirmOpen(false)}
         onOk={handleDelete}
         okText="Удалить"

@@ -8,6 +8,7 @@ import { App, Button, Card, DatePicker, Input, Modal, Select, Space, Table, Tag,
 import EntitySelect from '../../components/EntitySelect.jsx';
 import { getUser, getUsers } from '../../lib/api';
 import { deleteReminder, getReminders, updateReminder } from '../../lib/api/reminders';
+import { canWrite } from '../../lib/rbac.js';
 import { navigate } from '../../router';
 
 const { RangePicker } = DatePicker;
@@ -16,6 +17,7 @@ const { Text, Title } = Typography;
 
 export default function RemindersList() {
   const { message } = App.useApp();
+  const canManage = canWrite('common.change_reminder');
   const [data, setData] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
@@ -153,20 +155,24 @@ export default function RemindersList() {
             <Button size="small" icon={<Eye size={14} />} onClick={() => navigate(`/reminders/${record.id}`)}>
               Открыть
             </Button>
-            <Button size="small" icon={<Edit size={14} />} onClick={() => navigate(`/reminders/${record.id}/edit`)}>
-              Ред.
-            </Button>
-            <Button size="small" icon={record.active ? <X size={14} /> : <Check size={14} />} onClick={() => handleToggleActive(record.id, record.active)}>
-              {record.active ? 'Откл.' : 'Вкл.'}
-            </Button>
-            <Button size="small" danger icon={<Trash2 size={14} />} onClick={() => setConfirmDelete(record)}>
-              Удалить
-            </Button>
+            {canManage ? (
+              <>
+                <Button size="small" icon={<Edit size={14} />} onClick={() => navigate(`/reminders/${record.id}/edit`)}>
+                  Ред.
+                </Button>
+                <Button size="small" icon={record.active ? <X size={14} /> : <Check size={14} />} onClick={() => handleToggleActive(record.id, record.active)}>
+                  {record.active ? 'Откл.' : 'Вкл.'}
+                </Button>
+                <Button size="small" danger icon={<Trash2 size={14} />} onClick={() => setConfirmDelete(record)}>
+                  Удалить
+                </Button>
+              </>
+            ) : null}
           </Space>
         ),
       },
     ],
-    [],
+    [canManage],
   );
 
   return (
@@ -178,9 +184,11 @@ export default function RemindersList() {
               <Title level={3} style={{ margin: 0 }}>Напоминания</Title>
               <Text type="secondary">Список напоминаний</Text>
             </div>
-            <Button type="primary" icon={<PlusOutlined />} onClick={() => navigate('/reminders/new')}>
-              Новое напоминание
-            </Button>
+            {canManage ? (
+              <Button type="primary" icon={<PlusOutlined />} onClick={() => navigate('/reminders/new')}>
+                Новое напоминание
+              </Button>
+            ) : null}
           </Space>
 
           <Space wrap>
@@ -243,7 +251,7 @@ export default function RemindersList() {
 
       <Modal
         title="Удалить напоминание?"
-        open={!!confirmDelete}
+        open={!!confirmDelete && canManage}
         onCancel={() => setConfirmDelete(null)}
         onOk={() => confirmDelete && handleDelete(confirmDelete.id)}
         okText="Удалить"

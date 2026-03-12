@@ -17,9 +17,11 @@ import {
   markReminderCompleted,
   snoozeReminder,
 } from '../lib/api/reminders';
+import { canWrite } from '../lib/rbac.js';
 import { navigate } from '../router';
 
 const RemindersWidget = ({ maxItems = 5 }) => {
+  const canManage = canWrite('common.change_reminder');
   const [reminders, setReminders] = useState([]);
   const [loading, setLoading] = useState(false);
 
@@ -115,14 +117,16 @@ const RemindersWidget = ({ maxItems = 5 }) => {
         </Space>
       }
       extra={
-        <Button
-          type="link"
-          size="small"
-          icon={<PlusOutlined />}
-          onClick={() => navigate('/reminders/new')}
-        >
-          Добавить
-        </Button>
+        canManage ? (
+          <Button
+            type="link"
+            size="small"
+            icon={<PlusOutlined />}
+            onClick={() => navigate('/reminders/new')}
+          >
+            Добавить
+          </Button>
+        ) : null
       }
       style={{ height: '100%' }}
     >
@@ -138,22 +142,26 @@ const RemindersWidget = ({ maxItems = 5 }) => {
             <List.Item
               key={reminder.id}
               actions={[
-                <Tooltip title="Отложить">
-                  <Button
-                    type="text"
-                    size="small"
-                    icon={<FieldTimeOutlined />}
-                    onClick={() => handleSnooze(reminder.id)}
-                  />
-                </Tooltip>,
-                <Tooltip title="Завершить">
-                  <Button
-                    type="text"
-                    size="small"
-                    icon={<CheckOutlined />}
-                    onClick={() => handleComplete(reminder.id)}
-                  />
-                </Tooltip>,
+                ...(canManage
+                  ? [
+                      <Tooltip title="Отложить">
+                        <Button
+                          type="text"
+                          size="small"
+                          icon={<FieldTimeOutlined />}
+                          onClick={() => handleSnooze(reminder.id)}
+                        />
+                      </Tooltip>,
+                      <Tooltip title="Завершить">
+                        <Button
+                          type="text"
+                          size="small"
+                          icon={<CheckOutlined />}
+                          onClick={() => handleComplete(reminder.id)}
+                        />
+                      </Tooltip>,
+                    ]
+                  : []),
               ]}
             >
               <List.Item.Meta

@@ -9,7 +9,9 @@ import EntitySelect from '../../components/EntitySelect';
 import ReferenceSelect from '../../components/ReferenceSelect';
 import { getDeal, getDeals } from '../../lib/api/client';
 import { createPayment, getPayment, updatePayment } from '../../lib/api/payments';
+import { canWrite } from '../../lib/rbac';
 import { navigate } from '../../router';
+import FormPermissionGuard from '../../components/permissions/FormPermissionGuard';
 
 import { App, Button, Card, DatePicker, Input } from 'antd';
 const Label = ({ children, ...props }) => <label style={{ display: 'block', marginBottom: 6, fontWeight: 500 }} {...props}>{children}</label>;
@@ -42,6 +44,7 @@ function PaymentForm({ id }) {
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
   const isEdit = !!id;
+  const canManage = canWrite('crm.change_payment');
 
   const {
     register,
@@ -91,6 +94,10 @@ function PaymentForm({ id }) {
   };
 
   const onSubmit = async (values) => {
+    if (!canManage) {
+      notify({ title: 'Недостаточно прав', description: 'У вас нет прав для изменения платежей', variant: 'destructive' });
+      return;
+    }
     setSaving(true);
     try {
       const payload = {
@@ -118,18 +125,24 @@ function PaymentForm({ id }) {
   }
 
   return (
-    <div>
-      <Button onClick={() => navigate('/payments')}>
-        <ArrowLeft />
-        Назад
-      </Button>
+    <FormPermissionGuard
+      allowed={canManage}
+      listPath="/payments"
+      listButtonText="К списку платежей"
+      description="У вас нет прав для создания или редактирования платежей."
+    >
+      <div>
+        <Button onClick={() => navigate('/payments')}>
+          <ArrowLeft />
+          Назад
+        </Button>
 
-      <h2>
-        {isEdit ? 'Редактирование платежа' : 'Новый платеж'}
-      </h2>
+        <h2>
+          {isEdit ? 'Редактирование платежа' : 'Новый платеж'}
+        </h2>
 
-      <Card>
-        <form onSubmit={handleSubmit(onSubmit)}>
+        <Card>
+          <form onSubmit={handleSubmit(onSubmit)}>
           <div>
             <div>
               <Label htmlFor="amount">Сумма *</Label>
@@ -203,18 +216,21 @@ function PaymentForm({ id }) {
             </div>
           </div>
 
-          <div>
-            <Button type="submit" loading={saving}>
-              <Save />
-              {isEdit ? 'Сохранить' : 'Создать'}
-            </Button>
-            <Button onClick={() => navigate('/payments')}>
-              Отмена
-            </Button>
-          </div>
-        </form>
-      </Card>
-    </div>
+            <div>
+              {canManage && (
+                <Button type="submit" loading={saving}>
+                  <Save />
+                  {isEdit ? 'Сохранить' : 'Создать'}
+                </Button>
+              )}
+              <Button onClick={() => navigate('/payments')}>
+                Отмена
+              </Button>
+            </div>
+          </form>
+        </Card>
+      </div>
+    </FormPermissionGuard>
   );
 }
 

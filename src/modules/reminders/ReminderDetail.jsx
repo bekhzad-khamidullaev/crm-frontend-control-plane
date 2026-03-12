@@ -5,12 +5,14 @@ import dayjs from 'dayjs';
 import { App, Button, Card, Descriptions, Modal, Result, Skeleton, Space, Tag, Typography } from 'antd';
 
 import { deleteReminder, getReminder, updateReminder } from '../../lib/api/reminders';
+import { canWrite } from '../../lib/rbac.js';
 import { navigate } from '../../router';
 
 const { Title, Text } = Typography;
 
 export default function ReminderDetail({ id }) {
   const { message } = App.useApp();
+  const canManage = canWrite('common.change_reminder');
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState(false);
@@ -92,11 +94,15 @@ export default function ReminderDetail({ id }) {
           </Title>
           <Space>
             <Button icon={<ArrowLeft size={14} />} onClick={() => navigate('/reminders')}>Назад</Button>
-            <Button icon={data.active ? <X size={14} /> : <Check size={14} />} onClick={handleToggleActive}>
-              {data.active ? 'Отключить' : 'Включить'}
-            </Button>
-            <Button type="primary" icon={<Edit size={14} />} onClick={() => navigate(`/reminders/${id}/edit`)}>Редактировать</Button>
-            <Button danger icon={<Trash2 size={14} />} onClick={() => setConfirmOpen(true)}>Удалить</Button>
+            {canManage ? (
+              <>
+                <Button icon={data.active ? <X size={14} /> : <Check size={14} />} onClick={handleToggleActive}>
+                  {data.active ? 'Отключить' : 'Включить'}
+                </Button>
+                <Button type="primary" icon={<Edit size={14} />} onClick={() => navigate(`/reminders/${id}/edit`)}>Редактировать</Button>
+                <Button danger icon={<Trash2 size={14} />} onClick={() => setConfirmOpen(true)}>Удалить</Button>
+              </>
+            ) : null}
           </Space>
         </Space>
 
@@ -117,7 +123,7 @@ export default function ReminderDetail({ id }) {
 
       <Modal
         title="Удалить напоминание?"
-        open={confirmOpen}
+        open={confirmOpen && canManage}
         onCancel={() => setConfirmOpen(false)}
         onOk={handleDelete}
         okText="Удалить"

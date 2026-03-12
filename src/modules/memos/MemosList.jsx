@@ -8,6 +8,7 @@ import { App, Button, Card, DatePicker, Input, Modal, Select, Space, Table, Tag,
 import EntitySelect from '../../components/EntitySelect.jsx';
 import { getUser, getUsers } from '../../lib/api';
 import { deleteMemo, getMemos, markMemoPostponed, markMemoReviewed } from '../../lib/api/memos';
+import { canWrite } from '../../lib/rbac.js';
 import { navigate } from '../../router';
 
 const { RangePicker } = DatePicker;
@@ -22,6 +23,7 @@ const stageLabels = {
 
 export default function MemosList() {
   const { message } = App.useApp();
+  const canManage = canWrite('tasks.change_memo');
   const [data, setData] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
@@ -165,15 +167,19 @@ export default function MemosList() {
         render: (_, record) => (
           <Space>
             <Button size="small" icon={<Eye size={14} />} onClick={() => navigate(`/memos/${record.id}`)}>Открыть</Button>
-            <Button size="small" icon={<Edit size={14} />} onClick={() => navigate(`/memos/${record.id}/edit`)}>Ред.</Button>
-            <Button size="small" icon={<Clock size={14} />} onClick={() => handleMarkPostponed(record.id)}>Отложить</Button>
-            <Button size="small" icon={<Check size={14} />} onClick={() => handleMarkReviewed(record.id)}>Рассмотрено</Button>
-            <Button size="small" danger icon={<Trash2 size={14} />} onClick={() => setConfirmDelete(record)}>Удалить</Button>
+            {canManage ? (
+              <>
+                <Button size="small" icon={<Edit size={14} />} onClick={() => navigate(`/memos/${record.id}/edit`)}>Ред.</Button>
+                <Button size="small" icon={<Clock size={14} />} onClick={() => handleMarkPostponed(record.id)}>Отложить</Button>
+                <Button size="small" icon={<Check size={14} />} onClick={() => handleMarkReviewed(record.id)}>Рассмотрено</Button>
+                <Button size="small" danger icon={<Trash2 size={14} />} onClick={() => setConfirmDelete(record)}>Удалить</Button>
+              </>
+            ) : null}
           </Space>
         ),
       },
     ],
-    [],
+    [canManage],
   );
 
   return (
@@ -185,7 +191,9 @@ export default function MemosList() {
               <Title level={3} style={{ margin: 0 }}>Мемо</Title>
               <Text type="secondary">Список внутренних мемо</Text>
             </div>
-            <Button type="primary" icon={<PlusOutlined />} onClick={() => navigate('/memos/new')}>Новое мемо</Button>
+            {canManage ? (
+              <Button type="primary" icon={<PlusOutlined />} onClick={() => navigate('/memos/new')}>Новое мемо</Button>
+            ) : null}
           </Space>
 
           <Space wrap>
@@ -248,7 +256,7 @@ export default function MemosList() {
 
       <Modal
         title="Удалить мемо?"
-        open={!!confirmDelete}
+        open={!!confirmDelete && canManage}
         onCancel={() => setConfirmDelete(null)}
         onOk={() => confirmDelete && handleDelete(confirmDelete.id)}
         okText="Удалить"

@@ -7,6 +7,8 @@ import { ArrowLeft, Save, FileText } from 'lucide-react';
 
 import { getMemo, createMemo, updateMemo } from '../../lib/api/memos';
 import { navigate } from '../../router';
+import { canWrite } from '../../lib/rbac';
+import FormPermissionGuard from '../../components/permissions/FormPermissionGuard';
 
 import { App, Button, Card, DatePicker, Input, Result, Skeleton, Switch } from 'antd';
 import EntitySelect from '../../components/EntitySelect.jsx';
@@ -42,6 +44,7 @@ export default function MemoForm({ id }) {
   const [loadError, setLoadError] = useState(false);
   const [saving, setSaving] = useState(false);
   const isEdit = !!id;
+  const canManage = canWrite('tasks.change_memo');
 
   const {
     register,
@@ -104,6 +107,10 @@ export default function MemoForm({ id }) {
   };
 
   const onFinish = async (values) => {
+    if (!canManage) {
+      notify({ title: 'Недостаточно прав', description: 'У вас нет прав для изменения мемо', variant: 'destructive' });
+      return;
+    }
     setSaving(true);
     try {
       const payload = {
@@ -141,145 +148,154 @@ export default function MemoForm({ id }) {
   }
 
   return (
-    <div>
-      <Button onClick={() => navigate('/memos')}>
-        <ArrowLeft />
-        Назад
-      </Button>
+    <FormPermissionGuard
+      allowed={canManage}
+      listPath="/memos"
+      listButtonText="К списку мемо"
+      description="У вас нет прав для создания или редактирования мемо."
+    >
+      <div>
+        <Button onClick={() => navigate('/memos')}>
+          <ArrowLeft />
+          Назад
+        </Button>
 
-      <Card>
-        <div>
-          <FileText />
-          <h2>{isEdit ? 'Редактирование мемо' : 'Новое мемо'}</h2>
-        </div>
-
-        <form onSubmit={handleSubmit(onFinish)}>
+        <Card>
           <div>
-            <Label htmlFor="name">Название *</Label>
-            <Input id="name" placeholder="Например: Итоги встречи" {...register('name')} />
-            {errors.name && <p>{errors.name.message}</p>}
+            <FileText />
+            <h2>{isEdit ? 'Редактирование мемо' : 'Новое мемо'}</h2>
           </div>
 
-          <div>
-            <Label htmlFor="description">Описание</Label>
-            <TextArea id="description" rows={3} placeholder="Краткое описание" {...register('description')} />
-          </div>
-
-          <div>
-            <Label htmlFor="note">Заключение</Label>
-            <TextArea id="note" rows={4} placeholder="Ключевые выводы и договоренности" {...register('note')} />
-          </div>
-
-          <div>
+          <form onSubmit={handleSubmit(onFinish)}>
             <div>
-              <Switch checked={!!draftValue} onChange={(val) => setValue('draft', val)} />
-              <Label>Черновик</Label>
+              <Label htmlFor="name">Название *</Label>
+              <Input id="name" placeholder="Например: Итоги встречи" {...register('name')} />
+              {errors.name && <p>{errors.name.message}</p>}
             </div>
-            <div>
-              <Switch checked={!!notifiedValue} onChange={(val) => setValue('notified', val)} />
-              <Label>Уведомить получателей</Label>
-            </div>
-          </div>
 
-          <div>
             <div>
-              <Label>Стадия</Label>
-              <select
-               
-                value={stageValue || ''}
-                onChange={(e) => setValue('stage', e.target.value)}
-              >
-                <option value="">Выберите стадию</option>
-                <option value="pen">В ожидании</option>
-                <option value="pos">Отложено</option>
-                <option value="rev">Рассмотрено</option>
-              </select>
+              <Label htmlFor="description">Описание</Label>
+              <TextArea id="description" rows={3} placeholder="Краткое описание" {...register('description')} />
             </div>
+
             <div>
-              <Label>Дата обзора</Label>
-              <DatePicker value={reviewDate || null} onChange={(val) => setValue('review_date', val)} format="YYYY-MM-DD" />
+              <Label htmlFor="note">Заключение</Label>
+              <TextArea id="note" rows={4} placeholder="Ключевые выводы и договоренности" {...register('note')} />
             </div>
-          </div>
 
-          <div>
-            <Label>Получатель *</Label>
-            <EntitySelect
-              placeholder="Выберите пользователя"
-              fetchList={getUsers}
-              fetchById={getUser}
-              allowClear
-              value={toValue}
-              onChange={(val) => setValue('to', val)}
-            />
-            {errors.to && <p>{errors.to.message}</p>}
-          </div>
-
-          <div>
             <div>
-              <Label>Сделка</Label>
+              <div>
+                <Switch checked={!!draftValue} onChange={(val) => setValue('draft', val)} />
+                <Label>Черновик</Label>
+              </div>
+              <div>
+                <Switch checked={!!notifiedValue} onChange={(val) => setValue('notified', val)} />
+                <Label>Уведомить получателей</Label>
+              </div>
+            </div>
+
+            <div>
+              <div>
+                <Label>Стадия</Label>
+                <select
+                 
+                  value={stageValue || ''}
+                  onChange={(e) => setValue('stage', e.target.value)}
+                >
+                  <option value="">Выберите стадию</option>
+                  <option value="pen">В ожидании</option>
+                  <option value="pos">Отложено</option>
+                  <option value="rev">Рассмотрено</option>
+                </select>
+              </div>
+              <div>
+                <Label>Дата обзора</Label>
+                <DatePicker value={reviewDate || null} onChange={(val) => setValue('review_date', val)} format="YYYY-MM-DD" />
+              </div>
+            </div>
+
+            <div>
+              <Label>Получатель *</Label>
               <EntitySelect
-                placeholder="Выберите сделку"
-                fetchList={getDeals}
-                fetchById={getDeal}
+                placeholder="Выберите пользователя"
+                fetchList={getUsers}
+                fetchById={getUser}
                 allowClear
-                value={dealValue}
-                onChange={(val) => setValue('deal', val)}
+                value={toValue}
+                onChange={(val) => setValue('to', val)}
+              />
+              {errors.to && <p>{errors.to.message}</p>}
+            </div>
+
+            <div>
+              <div>
+                <Label>Сделка</Label>
+                <EntitySelect
+                  placeholder="Выберите сделку"
+                  fetchList={getDeals}
+                  fetchById={getDeal}
+                  allowClear
+                  value={dealValue}
+                  onChange={(val) => setValue('deal', val)}
+                />
+              </div>
+              <div>
+                <Label>Проект</Label>
+                <EntitySelect
+                  placeholder="Выберите проект"
+                  fetchList={getProjects}
+                  fetchById={getProject}
+                  allowClear
+                  value={projectValue}
+                  onChange={(val) => setValue('project', val)}
+                />
+              </div>
+            </div>
+
+            <div>
+              <div>
+                <Label>Задача</Label>
+                <EntitySelect
+                  placeholder="Выберите задачу"
+                  fetchList={getTasks}
+                  fetchById={getTask}
+                  allowClear
+                  value={taskValue}
+                  onChange={(val) => setValue('task', val)}
+                />
+              </div>
+              <div>
+                <Label>Resolution ID</Label>
+                <Input type="number" min={1} value={resolutionValue || ''} onChange={(e) => setValue('resolution', e.target.value)} />
+              </div>
+            </div>
+
+            <div>
+              <Label>Теги</Label>
+              <ReferenceSelect
+                type="crm-tags"
+                mode="multiple"
+                allowClear
+                placeholder="Выберите теги"
+                value={tagsValue || []}
+                onChange={(val) => setValue('tags', val)}
               />
             </div>
-            <div>
-              <Label>Проект</Label>
-              <EntitySelect
-                placeholder="Выберите проект"
-                fetchList={getProjects}
-                fetchById={getProject}
-                allowClear
-                value={projectValue}
-                onChange={(val) => setValue('project', val)}
-              />
-            </div>
-          </div>
 
-          <div>
             <div>
-              <Label>Задача</Label>
-              <EntitySelect
-                placeholder="Выберите задачу"
-                fetchList={getTasks}
-                fetchById={getTask}
-                allowClear
-                value={taskValue}
-                onChange={(val) => setValue('task', val)}
-              />
+              {canManage && (
+                <Button type="submit" loading={saving}>
+                  <Save />
+                  {isEdit ? 'Сохранить' : 'Создать'}
+                </Button>
+              )}
+              <Button onClick={() => navigate('/memos')}>
+                Отмена
+              </Button>
             </div>
-            <div>
-              <Label>Resolution ID</Label>
-              <Input type="number" min={1} value={resolutionValue || ''} onChange={(e) => setValue('resolution', e.target.value)} />
-            </div>
-          </div>
-
-          <div>
-            <Label>Теги</Label>
-            <ReferenceSelect
-              type="crm-tags"
-              mode="multiple"
-              allowClear
-              placeholder="Выберите теги"
-              value={tagsValue || []}
-              onChange={(val) => setValue('tags', val)}
-            />
-          </div>
-
-          <div>
-            <Button type="submit" loading={saving}>
-              <Save />
-              {isEdit ? 'Сохранить' : 'Создать'}
-            </Button>
-            <Button onClick={() => navigate('/memos')}>
-              Отмена
-            </Button>
-          </div>
-        </form>
-      </Card>
-    </div>
+          </form>
+        </Card>
+      </div>
+    </FormPermissionGuard>
   );
 }

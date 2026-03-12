@@ -22,6 +22,9 @@ export default function CrudPage({
   canCreate,
   canEdit,
   canDelete,
+  createPermission,
+  editPermission,
+  deletePermission,
   canView = true,
   initialValues = {},
   pageSize = 20,
@@ -37,9 +40,9 @@ export default function CrudPage({
   const [currentId, setCurrentId] = useState(null);
   const [viewRecord, setViewRecord] = useState(null);
   const roleCanWrite = canWriteByRole();
-  const allowCreate = !readOnly && (canCreate ?? roleCanWrite);
-  const allowEdit = !readOnly && (canEdit ?? roleCanWrite);
-  const allowDelete = !readOnly && (canDelete ?? roleCanWrite);
+  const allowCreate = !readOnly && (canCreate ?? (createPermission ? canWriteByRole(createPermission) : roleCanWrite));
+  const allowEdit = !readOnly && (canEdit ?? (editPermission ? canWriteByRole(editPermission) : roleCanWrite));
+  const allowDelete = !readOnly && (canDelete ?? (deletePermission ? canWriteByRole(deletePermission) : roleCanWrite));
   const allowView = canView !== false;
 
   const fetchList = async () => {

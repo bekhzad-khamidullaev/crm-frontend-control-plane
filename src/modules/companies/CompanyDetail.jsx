@@ -47,6 +47,7 @@ import {
 import ActivityLog from '../../components/ActivityLog';
 import CallButton from '../../components/CallButton';
 import ChatWidget from '../../modules/chat/ChatWidget';
+import { canWrite } from '../../lib/rbac.js';
 import dayjs from 'dayjs';
 import { getLocale } from '../../lib/i18n';
 import { getClientTypeLabel } from '../../features/reference/lib/clientTypeLabel';
@@ -54,6 +55,7 @@ import { getClientTypeLabel } from '../../features/reference/lib/clientTypeLabel
 const { Title, Text } = Typography;
 
 function CompanyDetail({ id }) {
+  const canManage = canWrite('crm.change_company');
   const [company, setCompany] = useState(null);
   const [loading, setLoading] = useState(true);
   const [callLogs, setCallLogs] = useState([]);
@@ -544,16 +546,20 @@ function CompanyDetail({ id }) {
         <Button icon={<ArrowLeftOutlined />} onClick={() => navigate('/companies')}>
           Назад к списку
         </Button>
-        <Button
-          type="primary"
-          icon={<EditOutlined />}
-          onClick={() => navigate(`/companies/${id}/edit`)}
-        >
-          Редактировать
-        </Button>
-        <Button danger icon={<DeleteOutlined />} onClick={handleDelete}>
-          Удалить
-        </Button>
+        {canManage ? (
+          <>
+            <Button
+              type="primary"
+              icon={<EditOutlined />}
+              onClick={() => navigate(`/companies/${id}/edit`)}
+            >
+              Редактировать
+            </Button>
+            <Button danger icon={<DeleteOutlined />} onClick={handleDelete}>
+              Удалить
+            </Button>
+          </>
+        ) : null}
       </Space>
 
       <Title level={2}>{companyName}</Title>

@@ -3,12 +3,14 @@ import { Button, Card, Input, Space, Table, Tag, Typography, message } from 'ant
 import { PlusOutlined } from '@ant-design/icons';
 import { navigate } from '../../router';
 import { getCampaigns, deleteCampaign, patchCampaign } from '../../lib/api/marketing';
+import { canWrite } from '../../lib/rbac.js';
 import QuickActions from '../../components/QuickActions.jsx';
 
 const { Search } = Input;
 const { Text, Title } = Typography;
 
 function CampaignsList() {
+  const canManage = canWrite('marketing.change_campaign');
   const [campaigns, setCampaigns] = useState([]);
   const [allCampaignsCache, setAllCampaignsCache] = useState(null);
   const [loading, setLoading] = useState(false);
@@ -119,9 +121,10 @@ function CampaignsList() {
           <QuickActions
             record={record}
             onView={(r) => navigate(`/campaigns/${r.id}`)}
-            onEdit={(r) => navigate(`/campaigns/${r.id}/edit`)}
-            onDelete={(r) => handleDelete(r.id)}
-            onArchive={() => handleToggleActive(record)}
+            onEdit={canManage ? (r) => navigate(`/campaigns/${r.id}/edit`) : undefined}
+            onDelete={canManage ? (r) => handleDelete(r.id) : undefined}
+            onArchive={canManage ? () => handleToggleActive(record) : undefined}
+            canManage={canManage}
           />
         </Space>
       ),
@@ -136,7 +139,9 @@ function CampaignsList() {
             <Title level={3} style={{ margin: 0 }}>Кампании</Title>
             <Text type="secondary">Список маркетинговых кампаний</Text>
           </div>
-          <Button type="primary" icon={<PlusOutlined />} onClick={() => navigate('/campaigns/new')}>Создать кампанию</Button>
+          {canManage ? (
+            <Button type="primary" icon={<PlusOutlined />} onClick={() => navigate('/campaigns/new')}>Создать кампанию</Button>
+          ) : null}
         </Space>
 
         <Space wrap>

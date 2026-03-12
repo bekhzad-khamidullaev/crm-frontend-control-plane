@@ -5,6 +5,7 @@ import dayjs from 'dayjs';
 import { App, Button, Card, Descriptions, Modal, Result, Skeleton, Space, Tag, Typography } from 'antd';
 
 import { deleteMemo, getMemo, markMemoPostponed, markMemoReviewed } from '../../lib/api/memos';
+import { canWrite } from '../../lib/rbac.js';
 import { navigate } from '../../router';
 
 const { Title } = Typography;
@@ -17,6 +18,7 @@ const stageLabels = {
 
 export default function MemoDetail({ id }) {
   const { message } = App.useApp();
+  const canManage = canWrite('tasks.change_memo');
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState(false);
@@ -108,10 +110,14 @@ export default function MemoDetail({ id }) {
             </Title>
             <Space>
               <Button icon={<ArrowLeft size={14} />} onClick={() => navigate('/memos')}>Назад</Button>
-              <Button icon={<Clock size={14} />} onClick={handlePostponed}>Отложить</Button>
-              <Button icon={<Check size={14} />} onClick={handleReviewed}>Рассмотрено</Button>
-              <Button type="primary" icon={<Edit size={14} />} onClick={() => navigate(`/memos/${id}/edit`)}>Редактировать</Button>
-              <Button danger icon={<Trash2 size={14} />} onClick={() => setConfirmOpen(true)}>Удалить</Button>
+              {canManage ? (
+                <>
+                  <Button icon={<Clock size={14} />} onClick={handlePostponed}>Отложить</Button>
+                  <Button icon={<Check size={14} />} onClick={handleReviewed}>Рассмотрено</Button>
+                  <Button type="primary" icon={<Edit size={14} />} onClick={() => navigate(`/memos/${id}/edit`)}>Редактировать</Button>
+                  <Button danger icon={<Trash2 size={14} />} onClick={() => setConfirmOpen(true)}>Удалить</Button>
+                </>
+              ) : null}
             </Space>
           </Space>
 
@@ -139,7 +145,7 @@ export default function MemoDetail({ id }) {
 
       <Modal
         title="Удалить мемо?"
-        open={confirmOpen}
+        open={confirmOpen && canManage}
         onCancel={() => setConfirmOpen(false)}
         onOk={handleDelete}
         okText="Удалить"

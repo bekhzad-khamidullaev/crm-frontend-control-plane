@@ -6,8 +6,9 @@ import { Suspense, lazy, useEffect, useState } from 'react';
 import { AppLayout } from './components/AppLayout.jsx';
 import TelephonyDialerModal from './components/TelephonyDialerModal.jsx';
 import { clearToken, getToken, getUserFromToken, isAuthenticated } from './lib/api/auth.js';
+import { canAccessRoute as canAccessRouteByPolicy } from './lib/rbac.js';
 import { getProfile } from './lib/api/user.js';
-import { mergeRoles, normalizeRoles, rolesFromProfile, rolesFromTokenPayload } from './lib/roles.js';
+import { mergeRoles, rolesFromProfile, rolesFromTokenPayload } from './lib/roles.js';
 import { useTheme } from './lib/hooks/useTheme.js';
 import { setLocale } from './lib/i18n/index.js';
 import {
@@ -24,7 +25,7 @@ import { loadTelephonyRuntimeConfig } from './lib/telephony/runtimeConfig.js';
 import callsWebSocket from './lib/websocket/CallsWebSocket.js';
 import chatWebSocket from './lib/websocket/ChatWebSocket.js';
 import IncomingCallModal from './modules/calls/IncomingCallModal.jsx';
-import { getRouteMeta, navigate, onRouteChange, parseHash } from './router.js';
+import { navigate, onRouteChange, parseHash } from './router.js';
 
 // Lazy load all page components for better code splitting
 const Dashboard = lazy(() => import('./pages/dashboard.jsx'));
@@ -180,6 +181,24 @@ function readStoredRoles() {
   return [];
 }
 
+function normalizePermissions(rawPermissions = []) {
+  if (!Array.isArray(rawPermissions)) return [];
+  const normalized = new Set();
+  rawPermissions.forEach((permission) => {
+    const value = String(permission || '').trim().toLowerCase();
+    if (!value) return;
+    normalized.add(value);
+  });
+  return Array.from(normalized);
+}
+
+function persistPermissions(rawPermissions = []) {
+  const permissions = normalizePermissions(rawPermissions);
+  const serialized = JSON.stringify(permissions);
+  sessionStorage.setItem('enterprise_crm_permissions', serialized);
+  localStorage.setItem('enterprise_crm_permissions', serialized);
+}
+
 function App() {
   const [collapsed, setCollapsed] = useState(false);
   const [route, setRoute] = useState(parseHash());
@@ -220,6 +239,7 @@ function App() {
             sessionStorage.setItem('enterprise_crm_roles', serializedRoles);
             localStorage.setItem('enterprise_crm_roles', serializedRoles);
           }
+          persistPermissions(me?.permissions || []);
           setUser((prev) => normalizeUser(me || {}, prev || tokenUser));
           // Sync locale from profile only when user did not explicitly choose one in localStorage.
           if (!localStorage.getItem('enterprise_crm_locale') && me?.language_code) {
@@ -387,6 +407,10 @@ function App() {
 
   const handleLogout = () => {
     clearToken();
+    sessionStorage.removeItem('enterprise_crm_roles');
+    localStorage.removeItem('enterprise_crm_roles');
+    sessionStorage.removeItem('enterprise_crm_permissions');
+    localStorage.removeItem('enterprise_crm_permissions');
     callsWebSocket.disconnect();
     chatWebSocket.disconnect();
     sipClient.stop();
@@ -407,29 +431,17 @@ function App() {
     setCurrentIncomingCall(null);
   };
 
-  const getCurrentRoles = () => {
-    const tokenRoles = rolesFromTokenPayload(getUserFromToken() || {});
-    let storedRoles = [];
-    try {
-      const raw = sessionStorage.getItem('enterprise_crm_roles') || localStorage.getItem('enterprise_crm_roles');
-      if (raw) {
-        const parsed = JSON.parse(raw);
-        storedRoles = Array.isArray(parsed) ? parsed : Array.isArray(parsed?.roles) ? parsed.roles : [];
-      }
-    } catch {
-      storedRoles = [];
+  const handleDismissIncomingCall = (callData) => {
+    if (!callData?.callId) {
+      setCurrentIncomingCall(null);
+      return;
     }
-    return mergeRoles(tokenRoles, storedRoles);
+    removeIncomingCall(callData.callId);
+    setCurrentIncomingCall(null);
   };
 
   const canAccessRoute = (routeName) => {
-    const meta = getRouteMeta(routeName);
-    if (!meta || meta.auth === false) return true;
-    if (!isAuthenticated()) return false;
-    const required = normalizeRoles(Array.isArray(meta.roles) ? meta.roles : []);
-    if (required.length === 0) return true;
-    const currentRoles = getCurrentRoles();
-    return currentRoles.some((role) => required.includes(role));
+    return canAccessRouteByPolicy(routeName);
   };
 
   const navAccessMap = {
@@ -695,6 +707,7 @@ function App() {
         callData={currentIncomingCall}
         onAnswer={handleAnswerCall}
         onReject={handleRejectCall}
+        onDismiss={handleDismissIncomingCall}
       />
 
       <TelephonyDialerModal

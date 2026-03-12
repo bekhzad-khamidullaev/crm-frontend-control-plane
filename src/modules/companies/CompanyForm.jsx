@@ -17,6 +17,7 @@ import { SaveOutlined, ArrowLeftOutlined } from '@ant-design/icons';
 import dayjs from 'dayjs';
 import { navigate } from '../../router';
 import { getCompany, createCompany, updateCompany, getUsers, getUser } from '../../lib/api/client';
+import { canWrite } from '../../lib/rbac.js';
 import ReferenceSelect from '../../components/ReferenceSelect';
 import EntitySelect from '../../components/EntitySelect';
 
@@ -25,6 +26,7 @@ const { TextArea } = Input;
 
 function CompanyForm({ id }) {
   const [form] = Form.useForm();
+  const canManage = canWrite('crm.change_company');
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
   const isEdit = !!id;
@@ -51,6 +53,10 @@ function CompanyForm({ id }) {
   };
 
   const onFinish = async (values) => {
+    if (!canManage) {
+      message.error('Недостаточно прав для изменения компании');
+      return;
+    }
     setSaving(true);
     try {
       const payload = {
@@ -288,9 +294,11 @@ function CompanyForm({ id }) {
 
           <Form.Item>
             <Space>
-              <Button type="primary" htmlType="submit" icon={<SaveOutlined />} loading={saving}>
-                {isEdit ? 'Обновить' : 'Создать'}
-              </Button>
+              {canManage ? (
+                <Button type="primary" htmlType="submit" icon={<SaveOutlined />} loading={saving}>
+                  {isEdit ? 'Обновить' : 'Создать'}
+                </Button>
+              ) : null}
               <Button onClick={() => navigate('/companies')}>Отмена</Button>
             </Space>
           </Form.Item>

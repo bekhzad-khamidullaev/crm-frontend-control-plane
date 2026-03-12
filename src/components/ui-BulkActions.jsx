@@ -35,15 +35,18 @@ export default function BulkActions({
   canSendEmail = true,
   canSendSMS = true,
   canBulkTag,
+  deletePermission,
+  statusPermission,
+  bulkTagPermission,
   canUseCustomActions = true,
 }) {
   const { theme } = useTheme();
   const { message, modal } = App.useApp();
   const count = selectedRowKeys.length;
   const roleCanWrite = canWriteByRole();
-  const allowDelete = canDelete ?? roleCanWrite;
-  const allowStatusChange = canStatusChange ?? roleCanWrite;
-  const allowBulkTag = canBulkTag ?? roleCanWrite;
+  const allowDelete = canDelete ?? (deletePermission ? canWriteByRole(deletePermission) : roleCanWrite);
+  const allowStatusChange = canStatusChange ?? (statusPermission ? canWriteByRole(statusPermission) : roleCanWrite);
+  const allowBulkTag = canBulkTag ?? (bulkTagPermission ? canWriteByRole(bulkTagPermission) : roleCanWrite);
   const allowCustomActions = canUseCustomActions ?? roleCanWrite;
 
   if (count === 0) {

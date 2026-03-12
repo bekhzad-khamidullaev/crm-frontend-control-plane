@@ -186,12 +186,14 @@ export function AppLayout({
       label: 'Профиль',
       onClick: () => navigate('/profile'),
     },
-    {
-      key: 'settings',
-      icon: <SettingOutlined />,
-      label: 'Настройки',
-      onClick: () => navigate('/settings'),
-    },
+    ...(Array.isArray(allowedNavKeys) && allowedNavKeys.includes('settings')
+      ? [{
+          key: 'settings',
+          icon: <SettingOutlined />,
+          label: 'Настройки',
+          onClick: () => navigate('/settings'),
+        }]
+      : []),
     {
       type: 'divider',
     },

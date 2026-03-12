@@ -11,7 +11,9 @@ import { getProject, createProject, updateProject, getUsers, getUser, getProject
 import ReferenceSelect from '../../components/ReferenceSelect';
 import EntitySelect from '../../components/EntitySelect';
 import { normalizePayload } from '../../lib/utils/payload';
+import { canWrite } from '../../lib/rbac';
 import { navigate } from '../../router';
+import FormPermissionGuard from '../../components/permissions/FormPermissionGuard';
 const { TextArea } = Input;
 const Label = ({ children, ...props }) => <label style={{ display: 'block', marginBottom: 6, fontWeight: 500 }} {...props}>{children}</label>;
 
@@ -46,6 +48,7 @@ function ProjectForm({ id }) {
   const [loadError, setLoadError] = useState(false);
   const [saving, setSaving] = useState(false);
   const isEdit = !!id;
+  const canManage = canWrite('tasks.change_project');
 
   const {
     register,
@@ -118,6 +121,10 @@ function ProjectForm({ id }) {
   };
 
   const onSubmit = async (values) => {
+    if (!canManage) {
+      notify({ title: 'Недостаточно прав', description: 'У вас нет прав для изменения проектов', variant: 'destructive' });
+      return;
+    }
     setSaving(true);
     try {
       const payload = normalizePayload(
@@ -162,18 +169,24 @@ function ProjectForm({ id }) {
   }
 
   return (
-    <div>
-      <Button onClick={() => navigate('/projects')}>
-        <ArrowLeft />
-        Назад
-      </Button>
+    <FormPermissionGuard
+      allowed={canManage}
+      listPath="/projects"
+      listButtonText="К списку проектов"
+      description="У вас нет прав для создания или редактирования проектов."
+    >
+      <div>
+        <Button onClick={() => navigate('/projects')}>
+          <ArrowLeft />
+          Назад
+        </Button>
 
-      <h2>
-        {isEdit ? 'Редактировать проект' : 'Создать новый проект'}
-      </h2>
+        <h2>
+          {isEdit ? 'Редактировать проект' : 'Создать новый проект'}
+        </h2>
 
-      <Card>
-        <form onSubmit={handleSubmit(onSubmit)}>
+        <Card>
+          <form onSubmit={handleSubmit(onSubmit)}>
           <section>
             <h3>Основная информация</h3>
             <div>
@@ -319,18 +332,21 @@ function ProjectForm({ id }) {
             </div>
           </section>
 
-          <div>
-            <Button type="submit" loading={saving}>
-              <Save />
-              {isEdit ? 'Обновить' : 'Создать'}
-            </Button>
-            <Button onClick={() => navigate('/projects')}>
-              Отмена
-            </Button>
-          </div>
-        </form>
-      </Card>
-    </div>
+            <div>
+              {canManage && (
+                <Button type="submit" loading={saving}>
+                  <Save />
+                  {isEdit ? 'Обновить' : 'Создать'}
+                </Button>
+              )}
+              <Button onClick={() => navigate('/projects')}>
+                Отмена
+              </Button>
+            </div>
+          </form>
+        </Card>
+      </div>
+    </FormPermissionGuard>
   );
 }
 

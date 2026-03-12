@@ -12,6 +12,7 @@ import {
   getUsers,
   reopenProject,
 } from '../../lib/api';
+import { canWrite } from '../../lib/rbac.js';
 import { navigate } from '../../router';
 
 const { Search } = Input;
@@ -19,6 +20,7 @@ const { Text, Title } = Typography;
 
 function ProjectsList() {
   const { message } = App.useApp();
+  const canManage = canWrite('tasks.change_project');
   const [projects, setProjects] = useState([]);
   const [allProjectsCache, setAllProjectsCache] = useState(null);
   const [loading, setLoading] = useState(false);
@@ -180,6 +182,7 @@ function ProjectsList() {
         <Checkbox
           checked={doneStage ? record.stage === doneStage.id : false}
           onChange={() => handleToggleComplete(record)}
+          disabled={!canManage}
         />
       ),
     },
@@ -229,12 +232,16 @@ function ProjectsList() {
           <Button size="small" icon={<Eye size={14} />} onClick={() => navigate(`/projects/${record.id}`)}>
             Просмотр
           </Button>
-          <Button size="small" icon={<Edit size={14} />} onClick={() => navigate(`/projects/${record.id}/edit`)}>
-            Редактировать
-          </Button>
-          <Button size="small" danger icon={<Trash2 size={14} />} onClick={() => handleDelete(record.id)}>
-            Удалить
-          </Button>
+          {canManage ? (
+            <>
+              <Button size="small" icon={<Edit size={14} />} onClick={() => navigate(`/projects/${record.id}/edit`)}>
+                Редактировать
+              </Button>
+              <Button size="small" danger icon={<Trash2 size={14} />} onClick={() => handleDelete(record.id)}>
+                Удалить
+              </Button>
+            </>
+          ) : null}
         </Space>
       ),
     },
@@ -250,9 +257,11 @@ function ProjectsList() {
             </Title>
             <Text type="secondary">Список проектов</Text>
           </div>
-          <Button type="primary" icon={<PlusOutlined />} onClick={() => navigate('/projects/new')}>
-            Создать проект
-          </Button>
+          {canManage ? (
+            <Button type="primary" icon={<PlusOutlined />} onClick={() => navigate('/projects/new')}>
+              Создать проект
+            </Button>
+          ) : null}
         </Space>
 
         <Space wrap style={{ width: '100%', justifyContent: 'space-between' }}>

@@ -5,6 +5,7 @@ import { PlusOutlined } from '@ant-design/icons';
 import { App, Button, Card, Checkbox, Input, Modal, Space, Table, Tag, Typography } from 'antd';
 
 import { deleteTask, getTasks, getTaskStages, getUsers, updateTask } from '../../lib/api';
+import { canWrite } from '../../lib/rbac.js';
 import { navigate } from '../../router';
 
 const { Search } = Input;
@@ -12,6 +13,7 @@ const { Text, Title } = Typography;
 
 function TasksList() {
   const { message } = App.useApp();
+  const canManage = canWrite('tasks.change_task');
   const [tasks, setTasks] = useState([]);
   const [allTasksCache, setAllTasksCache] = useState(null);
   const [loading, setLoading] = useState(false);
@@ -171,7 +173,11 @@ function TasksList() {
       key: 'checkbox',
       width: 56,
       render: (_, record) => (
-        <Checkbox checked={doneStage ? record.stage === doneStage.id : false} onChange={() => handleToggleComplete(record)} />
+        <Checkbox
+          checked={doneStage ? record.stage === doneStage.id : false}
+          onChange={() => handleToggleComplete(record)}
+          disabled={!canManage}
+        />
       ),
     },
     {
@@ -244,12 +250,16 @@ function TasksList() {
           <Button size="small" icon={<Eye size={14} />} onClick={() => navigate(`/tasks/${record.id}`)}>
             Просмотр
           </Button>
-          <Button size="small" icon={<Edit size={14} />} onClick={() => navigate(`/tasks/${record.id}/edit`)}>
-            Редактировать
-          </Button>
-          <Button size="small" danger icon={<Trash2 size={14} />} onClick={() => setDeleteTarget(record)}>
-            Удалить
-          </Button>
+          {canManage ? (
+            <>
+              <Button size="small" icon={<Edit size={14} />} onClick={() => navigate(`/tasks/${record.id}/edit`)}>
+                Редактировать
+              </Button>
+              <Button size="small" danger icon={<Trash2 size={14} />} onClick={() => setDeleteTarget(record)}>
+                Удалить
+              </Button>
+            </>
+          ) : null}
         </Space>
       ),
     },
@@ -266,9 +276,11 @@ function TasksList() {
               </Title>
               <Text type="secondary">Список задач</Text>
             </div>
-            <Button type="primary" icon={<PlusOutlined />} onClick={() => navigate('/tasks/new')}>
-              Создать задачу
-            </Button>
+            {canManage ? (
+              <Button type="primary" icon={<PlusOutlined />} onClick={() => navigate('/tasks/new')}>
+                Создать задачу
+              </Button>
+            ) : null}
           </Space>
 
           <Space wrap style={{ width: '100%', justifyContent: 'space-between' }}>

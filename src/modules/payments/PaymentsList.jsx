@@ -5,6 +5,7 @@ import { DownloadOutlined, PlusOutlined } from '@ant-design/icons';
 import { App, Button, Card, Dropdown, Input, Select, Space, Table, Typography } from 'antd';
 
 import { deletePayment, getPayments } from '../../lib/api/payments';
+import { canWrite } from '../../lib/rbac.js';
 import { formatCurrency } from '../../lib/utils/format';
 import { exportToCSV, exportToExcel } from '../../lib/utils/export';
 import { navigate } from '../../router';
@@ -21,6 +22,7 @@ const statusOptions = [
 
 function PaymentsList() {
   const { message } = App.useApp();
+  const canManage = canWrite('crm.change_payment');
   const [payments, setPayments] = useState([]);
   const [allPaymentsCache, setAllPaymentsCache] = useState(null);
   const [loading, setLoading] = useState(false);
@@ -152,12 +154,16 @@ function PaymentsList() {
           <Button size="small" icon={<Eye size={14} />} onClick={() => navigate(`/payments/${record.id}`)}>
             Просмотр
           </Button>
-          <Button size="small" icon={<Edit size={14} />} onClick={() => navigate(`/payments/${record.id}/edit`)}>
-            Редактировать
-          </Button>
-          <Button size="small" danger icon={<Trash2 size={14} />} onClick={() => handleDelete(record.id)}>
-            Удалить
-          </Button>
+          {canManage ? (
+            <>
+              <Button size="small" icon={<Edit size={14} />} onClick={() => navigate(`/payments/${record.id}/edit`)}>
+                Редактировать
+              </Button>
+              <Button size="small" danger icon={<Trash2 size={14} />} onClick={() => handleDelete(record.id)}>
+                Удалить
+              </Button>
+            </>
+          ) : null}
         </Space>
       ),
     },
@@ -184,9 +190,11 @@ function PaymentsList() {
             >
               <Button icon={<DownloadOutlined />}>Экспорт</Button>
             </Dropdown>
-            <Button type="primary" icon={<PlusOutlined />} onClick={() => navigate('/payments/new')}>
-              Создать платеж
-            </Button>
+            {canManage ? (
+              <Button type="primary" icon={<PlusOutlined />} onClick={() => navigate('/payments/new')}>
+                Создать платеж
+              </Button>
+            ) : null}
           </Space>
         </Space>
 
