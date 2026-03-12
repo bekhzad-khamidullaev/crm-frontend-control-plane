@@ -1,11 +1,15 @@
 import * as React from 'react';
 
-import { cn } from '../../lib/utils/cn.js';
-
-function Skeleton({ className, ...props }) {
+function Skeleton({ style, ...props }) {
   return (
     <div
-      className={cn('animate-pulse rounded-md bg-muted', className)}
+      style={{
+        background: 'rgba(0,0,0,0.06)',
+        borderRadius: 8,
+        minHeight: 16,
+        width: '100%',
+        ...style,
+      }}
       {...props}
     />
   );

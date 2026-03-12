@@ -138,14 +138,14 @@ function AIAssistantPanel({
   return (
     <Card>
       <CardHeader>
-        <CardTitle className="flex items-center gap-2 text-base">
-          <Sparkles className="h-4 w-4 text-primary" />
+        <CardTitle>
+          <Sparkles />
           AI ассистент CRM
         </CardTitle>
       </CardHeader>
-      <CardContent className="space-y-4">
-        <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-          <div className="space-y-2">
+      <CardContent>
+        <div>
+          <div>
             <Label>Сценарий</Label>
             <Select value={useCase} onValueChange={setUseCase}>
               <SelectTrigger>
@@ -160,7 +160,7 @@ function AIAssistantPanel({
               </SelectContent>
             </Select>
           </div>
-          <div className="space-y-2">
+          <div>
             <Label>Провайдер</Label>
             <Select
               value={providerId || '__default__'}
@@ -179,11 +179,11 @@ function AIAssistantPanel({
                 ))}
               </SelectContent>
             </Select>
-            <p className="text-xs text-muted-foreground">{providerHint}</p>
+            <p>{providerHint}</p>
           </div>
         </div>
 
-        <div className="space-y-2">
+        <div>
           <Label>Запрос</Label>
           <Textarea
             value={inputText}
@@ -194,7 +194,7 @@ function AIAssistantPanel({
         </div>
 
         {useCase === 'custom' && (
-          <div className="space-y-2">
+          <div>
             <Label>System prompt (опционально)</Label>
             <Textarea
               value={systemPrompt}
@@ -205,20 +205,20 @@ function AIAssistantPanel({
           </div>
         )}
 
-        <div className="flex flex-wrap gap-2">
+        <div>
           <Button onClick={handleGenerate} loading={loading}>
             Сгенерировать
           </Button>
           {outputText && (
             <Button variant="outline" onClick={handleCopy}>
-              <Copy className="h-4 w-4" />
+              <Copy />
               Копировать ответ
             </Button>
           )}
-          {modelInfo && <span className="self-center text-xs text-muted-foreground">{modelInfo}</span>}
+          {modelInfo && <span>{modelInfo}</span>}
         </div>
 
-        <div className="space-y-2">
+        <div>
           <Label>Ответ AI</Label>
           <Textarea value={outputText} readOnly rows={10} placeholder="Здесь появится ответ AI" />
         </div>

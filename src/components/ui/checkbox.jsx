@@ -1,22 +1,21 @@
-import * as React from "react"
-import * as CheckboxPrimitive from "@radix-ui/react-checkbox"
-import { Check } from "lucide-react"
+import * as React from 'react';
+import { Checkbox as AntCheckbox } from 'antd';
 
-import { cn } from "../../lib/utils/cn"
-
-const Checkbox = React.forwardRef(({ className, ...props }, ref) => (
-  <CheckboxPrimitive.Root
+const Checkbox = React.forwardRef(({ checked, onCheckedChange, children, ...props }, ref) => (
+  <AntCheckbox
     ref={ref}
-    className={cn(
-      "peer h-4 w-4 shrink-0 rounded-sm border border-primary ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 data-[state=checked]:bg-primary data-[state=checked]:text-primary-foreground",
-      className
-    )}
-    {...props}>
-    <CheckboxPrimitive.Indicator className={cn("flex items-center justify-center text-current")}>
-      <Check className="h-4 w-4" />
-    </CheckboxPrimitive.Indicator>
-  </CheckboxPrimitive.Root>
-))
-Checkbox.displayName = CheckboxPrimitive.Root.displayName
+    checked={checked}
+    onChange={(e) => {
+      const value = !!e.target.checked;
+      onCheckedChange?.(value);
+      props.onChange?.(e);
+    }}
+    {...props}
+  >
+    {children}
+  </AntCheckbox>
+));
 
-export { Checkbox }
+Checkbox.displayName = 'Checkbox';
+
+export { Checkbox };

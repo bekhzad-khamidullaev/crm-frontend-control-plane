@@ -8,7 +8,12 @@ import {
   Switch,
   DatePicker,
   Modal,
+  Button,
+  Space,
+  Typography,
+  Divider,
 } from 'antd';
+import { ArrowLeftOutlined, SaveOutlined } from '@ant-design/icons';
 import dayjs from 'dayjs';
 import { navigate } from '@/router.js';
 import {
@@ -23,8 +28,9 @@ import {
 } from '@/features/reference';
 import { CompanyFormData } from '@/entities/company/model/schema';
 import type { Company } from '@/entities/company/model/types';
-import { EntityFormSection, EntityFormShell, PhoneInput } from '@/shared/ui';
+
 const { TextArea } = Input;
+const { Title, Text } = Typography;
 
 export interface CompanyFormProps {
   initialValues?: Company;
@@ -55,7 +61,6 @@ export const CompanyForm: React.FC<CompanyFormProps> = ({
   }, [initialValues, form]);
 
   const handleFinish = (values: any) => {
-    // Transform values before submit if needed
     const payload: CompanyFormData = {
       ...values,
       was_in_touch: values.was_in_touch ? values.was_in_touch.format('YYYY-MM-DD') : null,
@@ -80,17 +85,32 @@ export const CompanyForm: React.FC<CompanyFormProps> = ({
   };
 
   return (
-    <EntityFormShell
-      title={isEdit ? 'Редактировать компанию' : 'Создать новую компанию'}
-      subtitle={isEdit ? 'Обновите ключевые данные компании и ответственных.' : 'Заполните основные данные компании, чтобы добавить ее в CRM.'}
-      hint="Сначала внесите ключевые поля. Детализация статуса и локации идет ниже."
-      formId={formId}
-      submitText={isEdit ? 'Сохранить изменения' : 'Создать компанию'}
-      isSubmitting={isLoading}
-      onBack={handleLeave}
-      onCancel={handleLeave}
-    >
-      <Card>
+    <div>
+      <Space wrap style={{ marginBottom: 16, width: '100%', justifyContent: 'space-between' }}>
+        <Button icon={<ArrowLeftOutlined />} onClick={handleLeave}>
+          Назад
+        </Button>
+        <Button
+          type="primary"
+          icon={<SaveOutlined />}
+          htmlType="submit"
+          form={formId}
+          loading={isLoading}
+        >
+          {isEdit ? 'Сохранить изменения' : 'Создать компанию'}
+        </Button>
+      </Space>
+
+      <Title level={2} style={{ marginBottom: 4 }}>
+        {isEdit ? 'Редактировать компанию' : 'Создать новую компанию'}
+      </Title>
+      <Text type="secondary">
+        {isEdit
+          ? 'Обновите ключевые данные компании и ответственных.'
+          : 'Заполните основные данные компании, чтобы добавить ее в CRM.'}
+      </Text>
+
+      <Card style={{ marginTop: 16 }}>
         <Form
           id={formId}
           form={form}
@@ -99,10 +119,10 @@ export const CompanyForm: React.FC<CompanyFormProps> = ({
           autoComplete="off"
           disabled={isLoading}
         >
-          <EntityFormSection
-            title="Основная информация"
-            description="Название, основные контакты и тип клиента."
-          />
+          <Title level={4}>Основная информация</Title>
+          <Text type="secondary">Название, основные контакты и тип клиента.</Text>
+          <Divider style={{ margin: '12px 0 16px' }} />
+
           <Row gutter={16}>
             <Col xs={24} md={12}>
               <Form.Item
@@ -117,9 +137,7 @@ export const CompanyForm: React.FC<CompanyFormProps> = ({
               <Form.Item
                 label="Email"
                 name="email"
-                rules={[
-                  { type: 'email', message: 'Некорректный email' },
-                ]}
+                rules={[{ type: 'email', message: 'Некорректный email' }]}
               >
                 <Input placeholder="info@company.ru" />
               </Form.Item>
@@ -142,7 +160,7 @@ export const CompanyForm: React.FC<CompanyFormProps> = ({
           <Row gutter={16}>
             <Col xs={24} md={12}>
               <Form.Item label="Телефон" name="phone">
-                <PhoneInput />
+                <Input placeholder="+998 90 123 45 67" />
               </Form.Item>
             </Col>
             <Col xs={24} md={12}>
@@ -178,10 +196,10 @@ export const CompanyForm: React.FC<CompanyFormProps> = ({
             </Col>
           </Row>
 
-          <EntityFormSection
-            title="Локация"
-            description="Заполните только те поля адреса, которые действительно нужны в работе."
-          />
+          <Title level={4} style={{ marginTop: 24 }}>Локация</Title>
+          <Text type="secondary">Заполните только те поля адреса, которые действительно нужны в работе.</Text>
+          <Divider style={{ margin: '12px 0 16px' }} />
+
           <Row gutter={16}>
             <Col xs={24} md={12}>
               <Form.Item label="Страна" name="country">
@@ -221,10 +239,10 @@ export const CompanyForm: React.FC<CompanyFormProps> = ({
             </Col>
           </Row>
 
-          <EntityFormSection
-            title="Управление и статус"
-            description="Статус, ответственные и коммуникационные настройки компании."
-          />
+          <Title level={4} style={{ marginTop: 24 }}>Управление и статус</Title>
+          <Text type="secondary">Статус, ответственные и коммуникационные настройки компании.</Text>
+          <Divider style={{ margin: '12px 0 16px' }} />
+
           <Row gutter={16}>
             <Col xs={24} md={8}>
               <Form.Item label="Активна" name="active" valuePropName="checked">
@@ -249,13 +267,13 @@ export const CompanyForm: React.FC<CompanyFormProps> = ({
                 <DatePicker style={{ width: '100%' }} format="DD.MM.YYYY" />
               </Form.Item>
             </Col>
-            {isEdit && (
+            {isEdit ? (
               <Col xs={24} md={12}>
                 <Form.Item label="Токен" name="token">
                   <Input placeholder="Авто" readOnly />
                 </Form.Item>
               </Col>
-            )}
+            ) : null}
           </Row>
 
           <Row gutter={16}>
@@ -271,15 +289,14 @@ export const CompanyForm: React.FC<CompanyFormProps> = ({
             </Col>
           </Row>
 
-          <EntityFormSection
-            title="Описание"
-            description="Короткий рабочий контекст для команды продаж и аккаунтинга."
-          />
+          <Title level={4} style={{ marginTop: 24 }}>Описание</Title>
+          <Text type="secondary">Короткий рабочий контекст для команды продаж и аккаунтинга.</Text>
+          <Divider style={{ margin: '12px 0 16px' }} />
           <Form.Item label="Описание" name="description">
             <TextArea rows={4} placeholder="Краткое описание компании" />
           </Form.Item>
         </Form>
       </Card>
-    </EntityFormShell>
+    </div>
   );
 };

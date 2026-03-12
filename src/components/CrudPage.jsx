@@ -4,11 +4,10 @@
  */
 
 import React, { useEffect, useState } from 'react';
-import { Form, Modal, Button, Card, Space, Input, InputNumber, Switch, DatePicker, Select, App, Descriptions, Tag } from 'antd';
-import { PlusOutlined, EditOutlined, DeleteOutlined, EyeOutlined } from '@ant-design/icons';
+import { Form, Modal, Button, Card, Space, Input, InputNumber, Switch, DatePicker, Select, App, Descriptions, Tag, Table, Empty } from 'antd';
+import { PlusOutlined, EditOutlined, DeleteOutlined, EyeOutlined, InboxOutlined } from '@ant-design/icons';
 import dayjs from 'dayjs';
 import EntitySelect from './EntitySelect.jsx';
-import EnhancedTable from './ui-EnhancedTable.jsx';
 import { canWrite as canWriteByRole } from '../lib/rbac.js';
 
 const { TextArea } = Input;
@@ -215,6 +214,25 @@ export default function CrudPage({
     : null;
 
   const tableColumns = actionColumn ? [...columns, actionColumn] : columns;
+  const maxPage = pagination.total && pagination.pageSize ? Math.ceil(pagination.total / pagination.pageSize) : 1;
+  const safePagination = {
+    ...pagination,
+    current: Math.min(pagination.current || 1, maxPage || 1),
+    hideOnSinglePage: true,
+  };
+  const tableLocale = {
+    emptyText: (
+      <Empty
+        image={<InboxOutlined style={{ fontSize: 48, color: '#bfbfbf' }} />}
+        description={
+          <div style={{ padding: '8px 0' }}>
+            <div style={{ marginBottom: 6, fontWeight: 600, fontSize: 15, color: '#18181b' }}>Нет данных</div>
+            <div style={{ fontSize: 13, lineHeight: 1.5, color: '#71717a' }}>Создайте первую запись</div>
+          </div>
+        }
+      />
+    ),
+  };
 
   return (
     <Card
@@ -227,13 +245,16 @@ export default function CrudPage({
         )
       }
     >
-      <EnhancedTable
+      <Table
         columns={tableColumns}
         dataSource={data}
         loading={loading}
-        pagination={pagination}
+        pagination={safePagination}
         onChange={handleTableChange}
         rowKey="id"
+        size="small"
+        locale={tableLocale}
+        style={{ borderRadius: 16, overflow: 'hidden' }}
       />
 
       {/* Create/Edit Modal */}

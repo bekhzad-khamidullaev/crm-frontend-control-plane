@@ -19,6 +19,14 @@ import { login } from './helpers/auth.js';
 test.describe('Leads Module - Comprehensive E2E Tests', () => {
   let createdLeadIds = [];
 
+  const waitForHashStartsWith = async (page, prefix, timeout = 15000) => {
+    await page.waitForFunction((expectedPrefix) => window.location.hash.startsWith(expectedPrefix), prefix, { timeout });
+  };
+
+  const waitForHashIncludes = async (page, fragment, timeout = 15000) => {
+    await page.waitForFunction((expectedFragment) => window.location.hash.includes(expectedFragment), fragment, { timeout });
+  };
+
   // Setup: Login before each test
   test.beforeEach(async ({ page }) => {
     await login(page);
@@ -63,20 +71,14 @@ test.describe('Leads Module - Comprehensive E2E Tests', () => {
     const createdLead = await (await createResponsePromise).json();
     createdLeadIds.push(createdLead.id);
 
-    // Wait for success toast/redirection
-    await page.waitForTimeout(1000);
-    // Note: Our new LeadsList uses Shadcn Toaster, assuming it's visible.
-    // Also we usually redirect to list.
-    await page.waitForURL('**/leads');
+    // Wait for redirect back to leads list (hash-router keeps query params).
+    await waitForHashStartsWith(page, '#/leads');
 
     // 2. READ (Verify in List)
     console.log('🔍 Verifying lead in list...');
-    await page.waitForSelector('table'); // waitFor Shadcn Table
-    // Filter by unique name to be sure
-    await page.fill('input[placeholder*="Поиск"]', leadData.last_name);
-    // Trigger search
-    await page.getByRole('button', { name: /search/i }).click().catch(() => page.keyboard.press('Enter'));
-    await page.waitForTimeout(1000);
+    await page.waitForSelector('table');
+    await page.fill('input[placeholder*="По имени, телефону, email"]', leadData.email);
+    await page.waitForTimeout(1200);
 
     // Verify lead existence by unique email link
     await expect(page.getByText(leadData.email).first()).toBeVisible();
@@ -84,38 +86,54 @@ test.describe('Leads Module - Comprehensive E2E Tests', () => {
     // 3. UPDATE (Verify in Detail)
     console.log('✏️ Updating lead...');
     await page.goto(`/#/leads/${createdLead.id}`);
-    await expect.poll(() => page.url(), { timeout: 10000 }).toMatch(new RegExp(`/#/leads/${createdLead.id}$`));
+    await waitForHashIncludes(page, `#/leads/${createdLead.id}`);
+    await page.waitForTimeout(1000);
+    await expect(page.getByRole('button', { name: 'Редактировать' })).toBeVisible();
 
     // Open edit route directly to avoid action-menu differences.
     await page.goto(`/#/leads/${createdLead.id}/edit`);
+    await waitForHashIncludes(page, `#/leads/${createdLead.id}/edit`);
 
     const updatedCompany = `${leadData.company} Updated`;
     const companyInput = page.locator('input[name="company_name"], input#company_name, input[placeholder*="Компания"]').first();
     if (await companyInput.isVisible({ timeout: 2000 }).catch(() => false)) {
       await companyInput.fill(updatedCompany);
+      const updateResponsePromise = waitForApiResponse(
+        page,
+        new RegExp(`/api/leads/${createdLead.id}/?$`),
+        { method: 'PUT' }
+      );
       await page.click('button[type="submit"]');
-      // Verify Update in Detail
-      await page.waitForTimeout(1000);
-      await expect(page.getByText(updatedCompany)).toBeVisible();
+      const updateResponse = await updateResponsePromise;
+      const updatedLead = await updateResponse.json();
+      expect(updatedLead.company_name).toBe(updatedCompany);
+
+      // Current UI redirects back to the leads list after save.
+      await waitForHashStartsWith(page, '#/leads');
+      await page.fill('input[placeholder*="По имени, телефону, email"]', leadData.email);
+      await page.waitForTimeout(1200);
+      await expect(page.getByText(leadData.email).first()).toBeVisible();
     }
 
-    // 4. DELETE (API fallback to avoid detail action-menu differences)
+    // 4. DELETE
     console.log('🗑 Deleting lead...');
-    const deleteRes = await page.request.delete(`/api/leads/${createdLead.id}/`);
-    expect([200, 202, 204, 401, 403, 404]).toContain(deleteRes.status());
+    const leadRow = page.locator('tr').filter({ hasText: leadData.email }).first();
+    await expect(leadRow).toBeVisible();
+    const deleteResponsePromise = waitForApiResponse(
+      page,
+      new RegExp(`/api/leads/${createdLead.id}/?$`),
+      { method: 'DELETE' }
+    );
+    await leadRow.locator('button.ant-btn-dangerous').first().click();
+    await page.getByRole('button', { name: 'Да', exact: true }).click();
+    await deleteResponsePromise;
+    await page.waitForTimeout(1200);
 
-    // Verify redirection to List
-    await page.goto('/#/leads');
-    await expect.poll(() => page.url(), { timeout: 10000 }).toMatch(/#\/leads\/?$/);
+    await page.fill('input[placeholder*="По имени, телефону, email"]', leadData.email);
+    await page.waitForTimeout(1200);
+    await expect(page.locator('tr').filter({ hasText: leadData.email })).toHaveCount(0);
 
-    // Verify absence
-    // Clear search first if needed, but we want to search for DELETED item to confirm absence
-    await page.fill('input[placeholder*="Поиск"]', leadData.email);
-    await page.getByRole('button', { name: /search/i }).click().catch(() => page.keyboard.press('Enter'));
-    await page.waitForTimeout(1000);
-
-    // Some environments keep record visible after delete attempt (soft-delete/permission policies).
-    // The core flow is validated by successful create/update and delete request status handling above.
+    createdLeadIds = createdLeadIds.filter((id) => id !== createdLead.id);
   });
 
   test('should search and filter leads', async ({ page }) => {
@@ -137,11 +155,13 @@ test.describe('Leads Module - Comprehensive E2E Tests', () => {
     const createdLead = await createResponse.json();
     createdLeadIds.push(createdLead.id);
 
-    await page.waitForURL('**/#/leads');
+    await waitForHashStartsWith(page, '#/leads');
 
     // ===== SEARCH =====
     // Find search input
-    const searchInput = page.locator('input[placeholder*="Поиск"], input[placeholder*="Search"]').first();
+    const searchInput = page
+      .locator('input[placeholder*="По имени, телефону, email"], input[placeholder*="Поиск"], input[placeholder*="Search"]')
+      .first();
     await searchInput.fill(leadData.first_name);
 
     // Wait for search results
@@ -424,28 +444,29 @@ test.describe('Leads Module - Comprehensive E2E Tests', () => {
 
     // List → Create
     await page.click('button:has-text("Создать лид"), button:has-text("Создать")');
-    await expect(page).toHaveURL(/\/leads\/new/, { timeout: 5000 });
+    await waitForHashIncludes(page, '#/leads/new');
 
     // Create → List (back/cancel)
     const backButton = page.locator('button:has-text("Назад"), button:has-text("Отмена")').first();
     if (await backButton.isVisible({ timeout: 2000 }).catch(() => false)) {
       await backButton.click();
-      await expect(page).toHaveURL(/\/leads$/, { timeout: 5000 });
+      await waitForHashStartsWith(page, '#/leads');
     } else {
       await page.goto('/#/leads');
     }
 
     // Check if there are leads to view
-    const firstViewButton = page.locator('tbody tr button:has-text("Просмотр"), tbody tr a:has-text("Просмотр")').first();
+    const firstRow = page.locator('tbody tr').first();
+    const firstViewButton = firstRow.locator('button').nth(1);
     if (await firstViewButton.isVisible({ timeout: 2000 }).catch(() => false)) {
       await firstViewButton.click();
-      await expect(page).toHaveURL(/\/leads\/\d+$/, { timeout: 5000 });
+      await waitForHashIncludes(page, '#/leads/');
 
       // Detail → Edit
-      const editButton = page.locator('button:has-text("Редактировать"), a:has-text("Редактировать")').first();
+      const editButton = page.getByRole('button', { name: 'Редактировать' }).first();
       if (await editButton.isVisible({ timeout: 2000 }).catch(() => false)) {
         await editButton.click();
-        await expect(page).toHaveURL(/\/leads\/\d+\/edit/, { timeout: 5000 });
+        await waitForHashIncludes(page, '/edit');
       }
     }
   });

@@ -7,18 +7,13 @@ import { ArrowLeft, Save, FileText } from 'lucide-react';
 
 import { getMemo, createMemo, updateMemo } from '../../lib/api/memos';
 import { navigate } from '../../router';
+
+import { App, Button, Card, DatePicker, Input, Result, Skeleton, Switch } from 'antd';
 import EntitySelect from '../../components/EntitySelect.jsx';
-import ReferenceSelect from '../../components/ui-ReferenceSelect';
+import ReferenceSelect from '../../components/ReferenceSelect';
 import { getUsers, getUser, getDeal, getDeals, getProject, getProjects, getTask, getTasks } from '../../lib/api';
-import { Card } from '../../components/ui/card.jsx';
-import { Button } from '../../components/ui/button.jsx';
-import { Input } from '../../components/ui/input.jsx';
-import { Textarea } from '../../components/ui/textarea.jsx';
-import { Label } from '../../components/ui/label.jsx';
-import { Switch } from '../../components/ui/switch.jsx';
-import { DatePicker } from '../../components/ui-DatePicker.jsx';
-import { toast } from '../../components/ui/use-toast.js';
-import { LegacyErrorState, LegacyLoadingState } from '../../shared/ui';
+const { TextArea } = Input;
+const Label = ({ children, ...props }) => <label style={{ display: 'block', marginBottom: 6, fontWeight: 500 }} {...props}>{children}</label>;
 
 const schema = z.object({
   name: z.string().min(1, 'Введите название'),
@@ -37,6 +32,12 @@ const schema = z.object({
 });
 
 export default function MemoForm({ id }) {
+  const { message } = App.useApp();
+  const notify = ({ title, description, variant }) => {
+    const text = description || title || 'Уведомление';
+    if (variant === 'destructive') message.error(text);
+    else message.success(text);
+  };
   const [loading, setLoading] = useState(false);
   const [loadError, setLoadError] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -96,7 +97,7 @@ export default function MemoForm({ id }) {
       });
     } catch (error) {
       setLoadError(true);
-      toast({ title: 'Ошибка', description: 'Не удалось загрузить мемо', variant: 'destructive' });
+      notify({ title: 'Ошибка', description: 'Не удалось загрузить мемо', variant: 'destructive' });
     } finally {
       setLoading(false);
     }
@@ -111,84 +112,80 @@ export default function MemoForm({ id }) {
       };
       if (isEdit) {
         await updateMemo(id, payload);
-        toast({ title: 'Мемо обновлено', description: 'Мемо обновлено' });
+        notify({ title: 'Мемо обновлено', description: 'Мемо обновлено' });
       } else {
         await createMemo(payload);
-        toast({ title: 'Мемо создано', description: 'Мемо создано' });
+        notify({ title: 'Мемо создано', description: 'Мемо создано' });
       }
       navigate('/memos');
     } catch (error) {
-      toast({ title: 'Ошибка', description: `Не удалось ${isEdit ? 'обновить' : 'создать'} мемо`, variant: 'destructive' });
+      notify({ title: 'Ошибка', description: `Не удалось ${isEdit ? 'обновить' : 'создать'} мемо`, variant: 'destructive' });
     } finally {
       setSaving(false);
     }
   };
 
   if (loading) {
-    return (
-      <LegacyLoadingState
-        title="Загрузка мемо"
-        description="Подготавливаем форму редактирования мемо."
-      />
-    );
+    return <Skeleton active paragraph={{ rows: 8 }} />;
   }
 
   if (isEdit && loadError) {
     return (
-      <LegacyErrorState
+      <Result
+        status="error"
         title="Не удалось загрузить мемо для редактирования"
-        description="Попробуйте повторить загрузку или вернитесь к списку мемо."
-        onAction={fetchData}
+        subTitle="Попробуйте повторить загрузку или вернитесь к списку мемо."
+        extra={<Button onClick={fetchData}>Повторить</Button>}
       />
     );
   }
 
   return (
     <div>
-      <Button variant="outline" onClick={() => navigate('/memos')}>
-        <ArrowLeft className="mr-2 h-4 w-4" />
+      <Button onClick={() => navigate('/memos')}>
+        <ArrowLeft />
         Назад
       </Button>
 
-      <Card className="mt-4 p-6">
-        <div className="flex items-center gap-2">
-          <FileText className="h-5 w-5 text-primary" />
-          <h2 className="text-xl font-semibold">{isEdit ? 'Редактирование мемо' : 'Новое мемо'}</h2>
+      <Card>
+        <div>
+          <FileText />
+          <h2>{isEdit ? 'Редактирование мемо' : 'Новое мемо'}</h2>
         </div>
 
-        <form className="mt-6 space-y-6" onSubmit={handleSubmit(onFinish)}>
+        <form onSubmit={handleSubmit(onFinish)}>
           <div>
             <Label htmlFor="name">Название *</Label>
             <Input id="name" placeholder="Например: Итоги встречи" {...register('name')} />
-            {errors.name && <p className="text-xs text-destructive">{errors.name.message}</p>}
+            {errors.name && <p>{errors.name.message}</p>}
           </div>
 
           <div>
             <Label htmlFor="description">Описание</Label>
-            <Textarea id="description" rows={3} placeholder="Краткое описание" {...register('description')} />
+            <TextArea id="description" rows={3} placeholder="Краткое описание" {...register('description')} />
           </div>
 
           <div>
             <Label htmlFor="note">Заключение</Label>
-            <Textarea id="note" rows={4} placeholder="Ключевые выводы и договоренности" {...register('note')} />
+            <TextArea id="note" rows={4} placeholder="Ключевые выводы и договоренности" {...register('note')} />
           </div>
 
-          <div className="flex flex-wrap gap-6">
-            <div className="flex items-center gap-2">
-              <Switch checked={!!draftValue} onCheckedChange={(val) => setValue('draft', val)} />
+          <div>
+            <div>
+              <Switch checked={!!draftValue} onChange={(val) => setValue('draft', val)} />
               <Label>Черновик</Label>
             </div>
-            <div className="flex items-center gap-2">
-              <Switch checked={!!notifiedValue} onCheckedChange={(val) => setValue('notified', val)} />
+            <div>
+              <Switch checked={!!notifiedValue} onChange={(val) => setValue('notified', val)} />
               <Label>Уведомить получателей</Label>
             </div>
           </div>
 
-          <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+          <div>
             <div>
               <Label>Стадия</Label>
               <select
-                className="h-9 w-full rounded-md border border-border bg-background px-2 text-sm"
+               
                 value={stageValue || ''}
                 onChange={(e) => setValue('stage', e.target.value)}
               >
@@ -214,10 +211,10 @@ export default function MemoForm({ id }) {
               value={toValue}
               onChange={(val) => setValue('to', val)}
             />
-            {errors.to && <p className="text-xs text-destructive">{errors.to.message}</p>}
+            {errors.to && <p>{errors.to.message}</p>}
           </div>
 
-          <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+          <div>
             <div>
               <Label>Сделка</Label>
               <EntitySelect
@@ -242,7 +239,7 @@ export default function MemoForm({ id }) {
             </div>
           </div>
 
-          <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+          <div>
             <div>
               <Label>Задача</Label>
               <EntitySelect
@@ -272,12 +269,12 @@ export default function MemoForm({ id }) {
             />
           </div>
 
-          <div className="flex flex-wrap gap-2">
+          <div>
             <Button type="submit" loading={saving}>
-              <Save className="mr-2 h-4 w-4" />
+              <Save />
               {isEdit ? 'Сохранить' : 'Создать'}
             </Button>
-            <Button variant="outline" onClick={() => navigate('/memos')}>
+            <Button onClick={() => navigate('/memos')}>
               Отмена
             </Button>
           </div>

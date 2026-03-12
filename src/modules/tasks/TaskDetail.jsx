@@ -1,19 +1,18 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { ArrowLeft, Edit, Trash2, Calendar, User } from 'lucide-react';
+import { ArrowLeft, Calendar, Edit, Trash2, User } from 'lucide-react';
 import dayjs from 'dayjs';
 
-import { navigate } from '../../router';
+import { App, Button, Card, Descriptions, Empty, Result, Skeleton, Space, Tabs, Tag, Typography } from 'antd';
+
+import ActivityLog from '../../components/ActivityLog';
 import { getTask, deleteTask, getUsers } from '../../lib/api/client';
 import { getTaskStages, getTaskTags } from '../../lib/api/reference';
-import ActivityLog from '../../components/ActivityLog';
-import { Card } from '../../components/ui/card.jsx';
-import { Button } from '../../components/ui/button.jsx';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '../../components/ui/tabs.jsx';
-import { Badge } from '../../components/ui/badge.jsx';
-import { toast } from '../../components/ui/use-toast.js';
-import { LegacyEmptyState, LegacyLoadingState } from '../../shared/ui';
+import { navigate } from '../../router';
+
+const { Text, Title } = Typography;
 
 function TaskDetail({ id }) {
+  const { message } = App.useApp();
   const [task, setTask] = useState(null);
   const [loading, setLoading] = useState(true);
   const [stages, setStages] = useState([]);
@@ -23,6 +22,7 @@ function TaskDetail({ id }) {
   useEffect(() => {
     loadTask();
     loadReferences();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [id]);
 
   const loadTask = async () => {
@@ -30,8 +30,9 @@ function TaskDetail({ id }) {
     try {
       const data = await getTask(id);
       setTask(data);
-    } catch (error) {
-      toast({ title: 'Ошибка', description: 'Ошибка загрузки данных задачи', variant: 'destructive' });
+    } catch {
+      message.error('Ошибка загрузки данных задачи');
+      setTask(null);
     } finally {
       setLoading(false);
     }
@@ -47,8 +48,7 @@ function TaskDetail({ id }) {
       setStages(stagesResponse.results || stagesResponse || []);
       setTags(tagsResponse.results || tagsResponse || []);
       setUsers(usersResponse.results || usersResponse || []);
-    } catch (error) {
-      console.error('Error loading task references:', error);
+    } catch {
       setStages([]);
       setTags([]);
       setUsers([]);
@@ -58,171 +58,118 @@ function TaskDetail({ id }) {
   const handleDelete = async () => {
     try {
       await deleteTask(id);
-      toast({ title: 'Задача удалена', description: 'Задача удалена' });
+      message.success('Задача удалена');
       navigate('/tasks');
-    } catch (error) {
-      toast({ title: 'Ошибка', description: 'Ошибка удаления задачи', variant: 'destructive' });
+    } catch {
+      message.error('Ошибка удаления задачи');
     }
   };
 
-  const stageMap = useMemo(() => {
-    return stages.reduce((acc, stage) => {
-      acc[stage.id] = stage;
-      return acc;
-    }, {});
-  }, [stages]);
+  const stageMap = useMemo(
+    () =>
+      stages.reduce((acc, stage) => {
+        acc[stage.id] = stage;
+        return acc;
+      }, {}),
+    [stages],
+  );
 
-  const userMap = useMemo(() => {
-    return users.reduce((acc, user) => {
-      acc[user.id] = user.username || user.email || '-';
-      return acc;
-    }, {});
-  }, [users]);
+  const userMap = useMemo(
+    () =>
+      users.reduce((acc, user) => {
+        acc[user.id] = user.username || user.email || '-';
+        return acc;
+      }, {}),
+    [users],
+  );
 
-  const tagMap = useMemo(() => {
-    return tags.reduce((acc, tag) => {
-      acc[tag.id] = tag.name;
-      return acc;
-    }, {});
-  }, [tags]);
+  const tagMap = useMemo(
+    () =>
+      tags.reduce((acc, tag) => {
+        acc[tag.id] = tag.name;
+        return acc;
+      }, {}),
+    [tags],
+  );
 
   if (loading) {
-    return (
-      <LegacyLoadingState
-        title="Загрузка задачи"
-        description="Получаем карточку задачи, связанные этапы, теги и пользователей."
-      />
-    );
+    return <Skeleton active paragraph={{ rows: 8 }} />;
   }
 
   if (!task) {
     return (
-      <LegacyEmptyState
+      <Result
+        status="404"
         title="Задача не найдена"
-        description="Запись могла быть удалена или больше не доступна текущему пользователю."
-        actionLabel="Вернуться к задачам"
-        onAction={() => navigate('/tasks')}
+        subTitle="Запись могла быть удалена или больше не доступна"
+        extra={
+          <Button type="primary" onClick={() => navigate('/tasks')}>
+            Вернуться к задачам
+          </Button>
+        }
       />
     );
   }
 
   const stage = stageMap[task.stage];
-  const priorityLabel = task.priority ? `Приоритет ${task.priority}` : '-';
-  const responsibleNames = Array.isArray(task.responsible)
-    ? task.responsible.map((id) => userMap[id]).filter(Boolean)
-    : [];
-  const subscriberNames = Array.isArray(task.subscribers)
-    ? task.subscribers.map((id) => userMap[id]).filter(Boolean)
-    : [];
-  const tagNames = Array.isArray(task.tags) ? task.tags.map((id) => tagMap[id]).filter(Boolean) : [];
+  const responsibleNames = Array.isArray(task.responsible) ? task.responsible.map((userId) => userMap[userId]).filter(Boolean) : [];
+  const subscriberNames = Array.isArray(task.subscribers) ? task.subscribers.map((userId) => userMap[userId]).filter(Boolean) : [];
+  const tagNames = Array.isArray(task.tags) ? task.tags.map((tagId) => tagMap[tagId]).filter(Boolean) : [];
 
   return (
-    <div className="space-y-4">
-      <div className="flex flex-wrap items-center gap-2">
-        <Button variant="outline" onClick={() => navigate('/tasks')}>
-          <ArrowLeft className="mr-2 h-4 w-4" />
+    <Space direction="vertical" size={16} style={{ width: '100%' }}>
+      <Space wrap>
+        <Button icon={<ArrowLeft size={14} />} onClick={() => navigate('/tasks')}>
           Назад
         </Button>
-        <Button onClick={() => navigate(`/tasks/${id}/edit`)}>
-          <Edit className="mr-2 h-4 w-4" />
+        <Button type="primary" icon={<Edit size={14} />} onClick={() => navigate(`/tasks/${id}/edit`)}>
           Редактировать
         </Button>
-        <Button variant="destructive" onClick={handleDelete}>
-          <Trash2 className="mr-2 h-4 w-4" />
+        <Button danger icon={<Trash2 size={14} />} onClick={handleDelete}>
           Удалить
         </Button>
-      </div>
+      </Space>
 
-      <h2 className="text-2xl font-semibold">{task.name}</h2>
-
-      <Card className="p-4">
-        <Tabs defaultValue="details">
-          <TabsList>
-            <TabsTrigger value="details">Детали</TabsTrigger>
-            <TabsTrigger value="activity">История активности</TabsTrigger>
-          </TabsList>
-
-          <TabsContent value="details">
-            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-              <DetailRow label="Название" value={<span className="text-base font-semibold">{task.name}</span>} span />
-              <DetailRow
-                label="Этап"
-                value={stage ? (
-                  <Badge variant="secondary">{stage.name}</Badge>
-                ) : (
-                  '-'
-                )}
-              />
-              <DetailRow label="Приоритет" value={priorityLabel} />
-              <DetailRow
-                label="Дата начала"
-                value={task.start_date ? (
-                  <div className="flex items-center gap-2">
-                    <Calendar className="h-4 w-4" />
-                    {dayjs(task.start_date).format('DD.MM.YYYY')}
-                  </div>
-                ) : (
-                  '-'
-                )}
-              />
-              <DetailRow
-                label="Срок выполнения"
-                value={task.due_date ? (
-                  <div className="flex items-center gap-2">
-                    <Calendar className="h-4 w-4" />
-                    {dayjs(task.due_date).format('DD.MM.YYYY')}
-                  </div>
-                ) : (
-                  '-'
-                )}
-              />
-              <DetailRow label="Дата закрытия" value={task.closing_date ? dayjs(task.closing_date).format('DD.MM.YYYY') : '-'} />
-              <DetailRow label="Следующий шаг" value={task.next_step || '-'} />
-              <DetailRow label="Дата следующего шага" value={task.next_step_date ? dayjs(task.next_step_date).format('DD.MM.YYYY') : '-'} />
-              <DetailRow label="Lead time" value={task.lead_time || '-'} />
-              <DetailRow label="Активна" value={<Badge variant={task.active ? 'default' : 'secondary'}>{task.active ? 'Да' : 'Нет'}</Badge>} />
-              <DetailRow label="Напоминать" value={<Badge variant={task.remind_me ? 'secondary' : 'outline'}>{task.remind_me ? 'Да' : 'Нет'}</Badge>} />
-              <DetailRow
-                label="Владелец"
-                value={
-                  <div className="flex items-center gap-2">
-                    <User className="h-4 w-4 text-muted-foreground" />
-                    {task.owner ? userMap[task.owner] || '-' : '-'}
-                  </div>
-                }
-              />
-              <DetailRow label="Со-владелец" value={task.co_owner ? userMap[task.co_owner] || '-' : '-'} />
-              <DetailRow label="Ответственные" value={responsibleNames.length ? responsibleNames.join(', ') : '-'} span />
-              <DetailRow label="Подписчики" value={subscriberNames.length ? subscriberNames.join(', ') : '-'} span />
-              <DetailRow
-                label="Теги"
-                value={tagNames.length ? tagNames.map((tag) => (
-                  <Badge key={tag} variant="secondary" className="mr-2">{tag}</Badge>
-                )) : '-'}
-                span
-              />
-              <DetailRow label="Дата создания" value={task.creation_date ? dayjs(task.creation_date).format('DD.MM.YYYY HH:mm') : '-'} />
-              <DetailRow label="Последнее обновление" value={task.update_date ? dayjs(task.update_date).format('DD.MM.YYYY HH:mm') : '-'} />
-              {task.description && <DetailRow label="Описание" value={task.description} span />}
-              {task.note && <DetailRow label="Заметка" value={task.note} span />}
-            </div>
-          </TabsContent>
-
-          <TabsContent value="activity">
-            <ActivityLog entityType="task" entityId={task.id} />
-          </TabsContent>
-        </Tabs>
+      <Card>
+        <Title level={3}>{task.name}</Title>
+        <Tabs
+          items={[
+            {
+              key: 'details',
+              label: 'Детали',
+              children: (
+                <Descriptions bordered column={1} size="small">
+                  <Descriptions.Item label="Название">{task.name}</Descriptions.Item>
+                  <Descriptions.Item label="Этап">{stage ? <Tag color={stage.done ? 'green' : stage.in_progress ? 'blue' : 'default'}>{stage.name}</Tag> : '-'}</Descriptions.Item>
+                  <Descriptions.Item label="Приоритет">{task.priority ? `Приоритет ${task.priority}` : '-'}</Descriptions.Item>
+                  <Descriptions.Item label="Дата начала">{task.start_date ? dayjs(task.start_date).format('DD.MM.YYYY') : '-'}</Descriptions.Item>
+                  <Descriptions.Item label="Срок выполнения">{task.due_date ? dayjs(task.due_date).format('DD.MM.YYYY') : '-'}</Descriptions.Item>
+                  <Descriptions.Item label="Дата закрытия">{task.closing_date ? dayjs(task.closing_date).format('DD.MM.YYYY') : '-'}</Descriptions.Item>
+                  <Descriptions.Item label="Следующий шаг">{task.next_step || '-'}</Descriptions.Item>
+                  <Descriptions.Item label="Дата следующего шага">{task.next_step_date ? dayjs(task.next_step_date).format('DD.MM.YYYY') : '-'}</Descriptions.Item>
+                  <Descriptions.Item label="Активна">{task.active ? <Tag color="green">Да</Tag> : <Tag>Нет</Tag>}</Descriptions.Item>
+                  <Descriptions.Item label="Напоминать">{task.remind_me ? <Tag color="gold">Да</Tag> : <Tag>Нет</Tag>}</Descriptions.Item>
+                  <Descriptions.Item label="Владелец">{task.owner ? userMap[task.owner] || '-' : '-'}</Descriptions.Item>
+                  <Descriptions.Item label="Со-владелец">{task.co_owner ? userMap[task.co_owner] || '-' : '-'}</Descriptions.Item>
+                  <Descriptions.Item label="Ответственные">{responsibleNames.length ? responsibleNames.join(', ') : '-'}</Descriptions.Item>
+                  <Descriptions.Item label="Подписчики">{subscriberNames.length ? subscriberNames.join(', ') : '-'}</Descriptions.Item>
+                  <Descriptions.Item label="Теги">{tagNames.length ? tagNames.map((tag) => <Tag key={tag}>{tag}</Tag>) : '-'}</Descriptions.Item>
+                  <Descriptions.Item label="Дата создания">{task.creation_date ? dayjs(task.creation_date).format('DD.MM.YYYY HH:mm') : '-'}</Descriptions.Item>
+                  <Descriptions.Item label="Последнее обновление">{task.update_date ? dayjs(task.update_date).format('DD.MM.YYYY HH:mm') : '-'}</Descriptions.Item>
+                  <Descriptions.Item label="Описание">{task.description || '-'}</Descriptions.Item>
+                  <Descriptions.Item label="Заметка">{task.note || '-'}</Descriptions.Item>
+                </Descriptions>
+              ),
+            },
+            {
+              key: 'activity',
+              label: 'История активности',
+              children: <ActivityLog entityType="task" entityId={task.id} />,
+            },
+          ]}
+        />
       </Card>
-    </div>
-  );
-}
-
-function DetailRow({ label, value, span = false }) {
-  return (
-    <div className={span ? 'sm:col-span-2' : ''}>
-      <div className="text-xs text-muted-foreground">{label}</div>
-      <div className="mt-1 text-sm">{value}</div>
-    </div>
+    </Space>
   );
 }
 

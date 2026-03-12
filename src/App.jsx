@@ -727,7 +727,7 @@ function AppWithTheme() {
   }, []);
   const antdLocale = locale === 'en' ? enUS : locale === 'uz' ? uzUZ : ruRU;
 
-  // Ant Design theme configuration for Radix UI aesthetic
+  // Ant Design theme configuration
   const themeConfig = {
     algorithm: theme === 'dark' ? antdTheme.darkAlgorithm : antdTheme.defaultAlgorithm,
     token: {

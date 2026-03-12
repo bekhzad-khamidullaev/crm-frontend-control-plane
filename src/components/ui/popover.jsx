@@ -1,26 +1,54 @@
 import * as React from 'react';
-import * as PopoverPrimitive from '@radix-ui/react-popover';
+import { Popover as AntPopover } from 'antd';
 
-import { cn } from '../../lib/utils/cn.js';
+const PopoverContext = React.createContext(null);
 
-const Popover = PopoverPrimitive.Root;
-const PopoverTrigger = PopoverPrimitive.Trigger;
-const PopoverAnchor = PopoverPrimitive.Anchor;
+function usePopoverContext() {
+  const ctx = React.useContext(PopoverContext);
+  if (!ctx) {
+    return { open: false, setOpen: () => {}, content: null, setContent: () => {} };
+  }
+  return ctx;
+}
 
-const PopoverContent = React.forwardRef(({ className, align = 'center', sideOffset = 4, ...props }, ref) => (
-  <PopoverPrimitive.Portal>
-    <PopoverPrimitive.Content
-      ref={ref}
-      align={align}
-      sideOffset={sideOffset}
-      className={cn(
-        'z-50 w-72 rounded-md border border-border bg-popover p-4 text-popover-foreground shadow-md outline-none',
-        className
-      )}
-      {...props}
-    />
-  </PopoverPrimitive.Portal>
-));
-PopoverContent.displayName = PopoverPrimitive.Content.displayName;
+const Popover = ({ open: controlledOpen, onOpenChange, children }) => {
+  const [uncontrolledOpen, setUncontrolledOpen] = React.useState(false);
+  const [content, setContent] = React.useState(null);
+  const open = controlledOpen ?? uncontrolledOpen;
+
+  const setOpen = (next) => {
+    if (controlledOpen === undefined) setUncontrolledOpen(next);
+    onOpenChange?.(next);
+  };
+
+  return <PopoverContext.Provider value={{ open, setOpen, content, setContent }}>{children}</PopoverContext.Provider>;
+};
+
+const PopoverTrigger = ({ asChild = false, children }) => {
+  const { open, setOpen, content } = usePopoverContext();
+  const triggerNode = asChild && React.isValidElement(children) ? children : <span>{children}</span>;
+
+  return (
+    <AntPopover
+      open={open}
+      onOpenChange={setOpen}
+      content={content}
+      trigger="click"
+    >
+      {triggerNode}
+    </AntPopover>
+  );
+};
+
+const PopoverAnchor = ({ children }) => children;
+
+const PopoverContent = ({ children }) => {
+  const { setContent } = usePopoverContext();
+  React.useEffect(() => {
+    setContent(children);
+    return () => setContent(null);
+  }, [children, setContent]);
+  return null;
+};
 
 export { Popover, PopoverTrigger, PopoverContent, PopoverAnchor };

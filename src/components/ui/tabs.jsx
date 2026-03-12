@@ -1,44 +1,48 @@
 import * as React from 'react';
-import * as TabsPrimitive from '@radix-ui/react-tabs';
+import { Tabs as AntTabs } from 'antd';
 
-import { cn } from '../../lib/utils/cn.js';
+const Tabs = ({ value, defaultValue, onValueChange, children, ...props }) => {
+  const [internalValue, setInternalValue] = React.useState(defaultValue);
+  const activeKey = value ?? internalValue;
 
-const Tabs = TabsPrimitive.Root;
+  const listChild = React.Children.toArray(children).find((child) => child?.type?.displayName === 'TabsList');
+  const contentChildren = React.Children.toArray(children).filter((child) => child?.type?.displayName === 'TabsContent');
 
-const TabsList = React.forwardRef(({ className, ...props }, ref) => (
-  <TabsPrimitive.List
-    ref={ref}
-    className={cn(
-      'inline-flex h-10 items-center justify-center rounded-md bg-muted p-1 text-muted-foreground',
-      className
-    )}
-    {...props}
-  />
-));
-TabsList.displayName = TabsPrimitive.List.displayName;
+  const triggers = listChild
+    ? React.Children.toArray(listChild.props.children).filter((child) => child?.type?.displayName === 'TabsTrigger')
+    : [];
 
-const TabsTrigger = React.forwardRef(({ className, ...props }, ref) => (
-  <TabsPrimitive.Trigger
-    ref={ref}
-    className={cn(
-      'inline-flex items-center justify-center whitespace-nowrap rounded-sm px-3 py-1.5 text-sm font-medium ring-offset-background transition-all',
-      'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2',
-      'disabled:pointer-events-none disabled:opacity-50',
-      'data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-sm',
-      className
-    )}
-    {...props}
-  />
-));
-TabsTrigger.displayName = TabsPrimitive.Trigger.displayName;
+  const items = triggers.map((trigger) => {
+    const matchedContent = contentChildren.find((content) => content.props.value === trigger.props.value);
+    return {
+      key: String(trigger.props.value),
+      label: trigger.props.children,
+      disabled: !!trigger.props.disabled,
+      children: matchedContent ? matchedContent.props.children : null,
+    };
+  });
 
-const TabsContent = React.forwardRef(({ className, ...props }, ref) => (
-  <TabsPrimitive.Content
-    ref={ref}
-    className={cn('mt-4 ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2', className)}
-    {...props}
-  />
-));
-TabsContent.displayName = TabsPrimitive.Content.displayName;
+  return (
+    <AntTabs
+      activeKey={activeKey ? String(activeKey) : items[0]?.key}
+      onChange={(nextKey) => {
+        if (value === undefined) setInternalValue(nextKey);
+        onValueChange?.(nextKey);
+      }}
+      items={items}
+      {...props}
+    />
+  );
+};
+Tabs.displayName = 'Tabs';
+
+const TabsList = ({ children }) => children;
+TabsList.displayName = 'TabsList';
+
+const TabsTrigger = () => null;
+TabsTrigger.displayName = 'TabsTrigger';
+
+const TabsContent = () => null;
+TabsContent.displayName = 'TabsContent';
 
 export { Tabs, TabsList, TabsTrigger, TabsContent };

@@ -1,20 +1,16 @@
 import { DollarSign, Edit, Eye, Trash2 } from 'lucide-react';
 import { useEffect, useState } from 'react';
-import { Button as AntButton, Dropdown, Select as AntSelect, Space } from 'antd';
+
 import { DownloadOutlined, PlusOutlined } from '@ant-design/icons';
+import { App, Button, Card, Dropdown, Input, Select, Space, Table, Typography } from 'antd';
 
+import { deletePayment, getPayments } from '../../lib/api/payments';
 import { formatCurrency } from '../../lib/utils/format';
-
-import EnhancedTable from '../../components/ui-EnhancedTable.jsx';
-import { Button } from '../../components/ui/button.jsx';
-import { toast } from '../../components/ui/use-toast.js';
-import {
-    deletePayment,
-    getPayments,
-} from '../../lib/api/payments';
 import { exportToCSV, exportToExcel } from '../../lib/utils/export';
 import { navigate } from '../../router';
-import { EntityListPageShell, EntityListToolbar } from '../../shared/ui';
+
+const { Search } = Input;
+const { Text, Title } = Typography;
 
 const statusOptions = [
   { value: 'r', label: 'Получен' },
@@ -23,14 +19,8 @@ const statusOptions = [
   { value: 'l', label: 'Низкая вероятность' },
 ];
 
-const statusColors = {
-  r: 'bg-emerald-100 text-emerald-700',
-  g: 'bg-sky-100 text-sky-700',
-  h: 'bg-amber-100 text-amber-700',
-  l: 'bg-muted text-muted-foreground',
-};
-
 function PaymentsList() {
+  const { message } = App.useApp();
   const [payments, setPayments] = useState([]);
   const [allPaymentsCache, setAllPaymentsCache] = useState(null);
   const [loading, setLoading] = useState(false);
@@ -41,6 +31,7 @@ function PaymentsList() {
 
   useEffect(() => {
     fetchPayments(1, searchText, statusFilter);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const fetchPayments = async (page = 1, search = '', status = statusFilter, pageSize = pagination.pageSize) => {
@@ -55,9 +46,8 @@ function PaymentsList() {
       });
       const results = response.results || [];
       const totalCount = response.count || 0;
-      
+
       if (results.length > pageSize && results.length === totalCount) {
-        console.warn('⚠️ PaymentsList: Caching all data');
         setAllPaymentsCache(results);
         const startIndex = (page - 1) * pageSize;
         setPayments(results.slice(startIndex, startIndex + pageSize));
@@ -65,16 +55,11 @@ function PaymentsList() {
         setAllPaymentsCache(null);
         setPayments(results);
       }
-      
-      setPagination((prev) => ({
-        ...prev,
-        current: page,
-        pageSize: pageSize,
-        total: totalCount,
-      }));
-    } catch (error) {
-      setError(error?.message || 'Не удалось загрузить список платежей');
-      toast({ title: 'Ошибка', description: 'Ошибка загрузки платежей', variant: 'destructive' });
+
+      setPagination((prev) => ({ ...prev, current: page, pageSize, total: totalCount }));
+    } catch (err) {
+      setError(err?.message || 'Не удалось загрузить список платежей');
+      message.error('Ошибка загрузки платежей');
       setPayments([]);
       setPagination((prev) => ({ ...prev, current: 1, total: 0 }));
     } finally {
@@ -90,14 +75,14 @@ function PaymentsList() {
   const handleTableChange = (newPagination) => {
     const nextPage = newPagination?.current || 1;
     const nextPageSize = newPagination?.pageSize || pagination.pageSize;
-    
+
     if (nextPageSize !== pagination.pageSize) {
       setPagination((p) => ({ ...p, pageSize: nextPageSize }));
       setAllPaymentsCache(null);
       fetchPayments(nextPage, searchText, statusFilter, nextPageSize);
       return;
     }
-    
+
     if (allPaymentsCache && allPaymentsCache.length > 0) {
       const startIndex = (nextPage - 1) * nextPageSize;
       setPayments(allPaymentsCache.slice(startIndex, startIndex + nextPageSize));
@@ -110,10 +95,10 @@ function PaymentsList() {
   const handleDelete = async (id) => {
     try {
       await deletePayment(id);
-      toast({ title: 'Платеж удален', description: 'Платеж удален' });
+      message.success('Платеж удален');
       fetchPayments(pagination.current, searchText, statusFilter);
-    } catch (error) {
-      toast({ title: 'Ошибка', description: 'Ошибка удаления платежа', variant: 'destructive' });
+    } catch {
+      message.error('Ошибка удаления платежа');
     }
   };
 
@@ -124,7 +109,7 @@ function PaymentsList() {
     } else {
       exportToCSV(payments, [], filename);
     }
-    toast({ title: 'Экспорт', description: 'Платежи экспортированы' });
+    message.success('Платежи экспортированы');
   };
 
   const columns = [
@@ -132,28 +117,19 @@ function PaymentsList() {
       title: 'Платеж',
       key: 'payment',
       render: (_, record) => (
-        <div className="flex items-center gap-2">
-          <div className="flex h-8 w-8 items-center justify-center rounded-full bg-primary/10 text-primary">
-            <DollarSign className="h-4 w-4" />
-          </div>
-          <div>
-            <div className="font-medium">
-              {formatCurrency(record.amount, record.currency_name || 'RUB')}
-            </div>
-            <div className="text-xs text-muted-foreground">{record.payment_date ? new Date(record.payment_date).toLocaleDateString('ru-RU') : ''}</div>
-          </div>
-        </div>
+        <Space direction="vertical" size={0}>
+          <Text strong>
+            <DollarSign size={14} /> {formatCurrency(record.amount, record.currency_name || 'RUB')}
+          </Text>
+          <Text type="secondary">{record.payment_date ? new Date(record.payment_date).toLocaleDateString('ru-RU') : ''}</Text>
+        </Space>
       ),
     },
     {
       title: 'Статус',
       dataIndex: 'status',
       key: 'status',
-      render: (status) => (
-        <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs ${statusColors[status] || 'bg-muted text-muted-foreground'}`}>
-          {statusOptions.find((opt) => opt.value === status)?.label || status || '-'}
-        </span>
-      ),
+      render: (status) => statusOptions.find((opt) => opt.value === status)?.label || status || '-',
     },
     {
       title: 'Дата платежа',
@@ -170,56 +146,61 @@ function PaymentsList() {
     {
       title: 'Действия',
       key: 'actions',
-      width: 180,
+      width: 280,
       render: (_, record) => (
-        <div className="flex flex-wrap items-center gap-2">
-          <Button variant="ghost" size="sm" onClick={() => navigate(`/payments/${record.id}`)}>
-            <Eye className="mr-1 h-4 w-4" />
+        <Space>
+          <Button size="small" icon={<Eye size={14} />} onClick={() => navigate(`/payments/${record.id}`)}>
             Просмотр
           </Button>
-          <Button variant="ghost" size="sm" onClick={() => navigate(`/payments/${record.id}/edit`)}>
-            <Edit className="mr-1 h-4 w-4" />
+          <Button size="small" icon={<Edit size={14} />} onClick={() => navigate(`/payments/${record.id}/edit`)}>
             Редактировать
           </Button>
-          <Button variant="ghost" size="sm" className="text-destructive" onClick={() => handleDelete(record.id)}>
-            <Trash2 className="mr-1 h-4 w-4" />
+          <Button size="small" danger icon={<Trash2 size={14} />} onClick={() => handleDelete(record.id)}>
             Удалить
           </Button>
-        </div>
+        </Space>
       ),
     },
   ];
 
-  const headerActions = (
-    <Space wrap>
-      <Dropdown
-        menu={{
-          items: [
-            { key: 'csv', label: 'CSV', onClick: () => handleExport('csv') },
-            { key: 'excel', label: 'Excel', onClick: () => handleExport('excel') },
-          ],
-        }}
-      >
-        <AntButton icon={<DownloadOutlined />}>Экспорт</AntButton>
-      </Dropdown>
-      <AntButton type="primary" icon={<PlusOutlined />} onClick={() => navigate('/payments/new')}>
-        Создать платеж
-      </AntButton>
-    </Space>
-  );
-
   return (
-    <EntityListPageShell
-      title="Платежи"
-      subtitle="Список платежей в едином list-shell"
-      extra={headerActions}
-      toolbar={
-        <EntityListToolbar
-          searchValue={searchText}
-          searchPlaceholder="Поиск по платежам..."
-          onSearchChange={handleSearch}
-          filters={
-            <AntSelect
+    <Card>
+      <Space direction="vertical" size={16} style={{ width: '100%' }}>
+        <Space wrap style={{ width: '100%', justifyContent: 'space-between' }}>
+          <div>
+            <Title level={3} style={{ margin: 0 }}>
+              Платежи
+            </Title>
+            <Text type="secondary">Список платежей</Text>
+          </div>
+          <Space>
+            <Dropdown
+              menu={{
+                items: [
+                  { key: 'csv', label: 'CSV', onClick: () => handleExport('csv') },
+                  { key: 'excel', label: 'Excel', onClick: () => handleExport('excel') },
+                ],
+              }}
+            >
+              <Button icon={<DownloadOutlined />}>Экспорт</Button>
+            </Dropdown>
+            <Button type="primary" icon={<PlusOutlined />} onClick={() => navigate('/payments/new')}>
+              Создать платеж
+            </Button>
+          </Space>
+        </Space>
+
+        <Space wrap style={{ width: '100%', justifyContent: 'space-between' }}>
+          <Search
+            placeholder="Поиск по платежам..."
+            allowClear
+            value={searchText}
+            onChange={(e) => setSearchText(e.target.value)}
+            onSearch={handleSearch}
+            style={{ maxWidth: 360 }}
+          />
+          <Space>
+            <Select
               allowClear
               placeholder="Статус"
               style={{ minWidth: 180 }}
@@ -230,27 +211,25 @@ function PaymentsList() {
                 fetchPayments(1, searchText, value || null);
               }}
             />
-          }
-          onRefresh={() => fetchPayments(pagination.current, searchText, statusFilter)}
+            <Button onClick={() => fetchPayments(pagination.current, searchText, statusFilter)} loading={loading}>
+              Обновить
+            </Button>
+          </Space>
+        </Space>
+
+        {error ? <Text type="danger">{error}</Text> : null}
+
+        <Table
+          rowKey="id"
+          columns={columns}
+          dataSource={payments}
           loading={loading}
-          resultSummary={pagination.total ? `${pagination.total} записей` : undefined}
+          pagination={{ ...pagination, showSizeChanger: true, showTotal: (total) => `Всего: ${total}` }}
+          onChange={handleTableChange}
+          locale={{ emptyText: 'Нет платежей' }}
         />
-      }
-      error={error}
-      onRetry={() => fetchPayments(pagination.current, searchText, statusFilter)}
-    >
-      <EnhancedTable
-        columns={columns}
-        dataSource={payments}
-        loading={loading}
-        pagination={pagination}
-        onChange={handleTableChange}
-        showTotal={true}
-        showSizeChanger={true}
-        emptyText="Нет платежей"
-        emptyDescription="Создайте первый платеж"
-      />
-    </EntityListPageShell>
+      </Space>
+    </Card>
   );
 }
 

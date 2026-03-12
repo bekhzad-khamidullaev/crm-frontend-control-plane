@@ -14,7 +14,6 @@ import {
   patchVoIPConnection
 } from '../lib/api/telephony';
 import { getProfile, updateProfile } from '../lib/api/user';
-import { PhoneInput } from '@/shared/ui';
 
 export default function TelephonySettings({ onSuccess }) {
   const { message } = App.useApp();
@@ -390,7 +389,7 @@ export default function TelephonySettings({ onSuccess }) {
             name="number"
             rules={[{ required: true, message: 'Введите номер' }]}
           >
-            <PhoneInput />
+            <Input />
           </Form.Item>
 
           <Form.Item
@@ -399,7 +398,7 @@ export default function TelephonySettings({ onSuccess }) {
             rules={[{ required: true, message: 'Введите номер отображения' }]}
             tooltip="Номер, который будет отображаться при исходящих звонках"
           >
-            <PhoneInput />
+            <Input />
           </Form.Item>
 
           <Form.Item label="Активно" name="active" valuePropName="checked" initialValue={true}>

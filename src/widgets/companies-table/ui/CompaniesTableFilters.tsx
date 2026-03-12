@@ -3,7 +3,8 @@ import { Form } from 'antd';
 import { IndustrySelect } from '@/features/reference';
 import { ClientTypeSelect } from '@/features/reference';
 import { useDebounce } from '@/shared/hooks';
-import { compactFilterChips, EntityListToolbar } from '@/shared/ui';
+import { Button, Card, Col, Input, Row, Space, Tag } from 'antd';
+import { ReloadOutlined, SearchOutlined } from '@ant-design/icons';
 
 export interface CompaniesTableFiltersProps {
   filters?: Record<string, unknown>;
@@ -31,11 +32,7 @@ export const CompaniesTableFilters: React.FC<CompaniesTableFiltersProps> = ({
     });
   }, [filters, form]);
 
-  // Debounce search input
   const handleValuesChange = (changedValues: any, allValues: any) => {
-    // If search changed, don't trigger immediately (handled by search input)
-    // If select changed, trigger filter
-
     if ('industry' in changedValues || 'type' in changedValues) {
       onFilterChange(allValues);
     }
@@ -56,52 +53,55 @@ export const CompaniesTableFilters: React.FC<CompaniesTableFiltersProps> = ({
     onFilterChange({});
   };
 
-  const activeFilters = compactFilterChips([
-    filters?.search
-      ? {
-          key: 'search',
-          label: 'Поиск',
-          value: String(filters.search),
-          onClear: () => onFilterChange({ ...filters, search: undefined }),
-        }
-      : null,
-    filters?.industry
-      ? {
-          key: 'industry',
-          label: 'Индустрия',
-          onClear: () => onFilterChange({ ...filters, industry: undefined }),
-        }
-      : null,
-    filters?.type
-      ? {
-          key: 'type',
-          label: 'Тип клиента',
-          onClear: () => onFilterChange({ ...filters, type: undefined }),
-        }
-      : null,
-  ]);
-
   return (
-    <Form form={form} layout="vertical" onValuesChange={handleValuesChange}>
-      <EntityListToolbar
-        searchValue={searchValue}
-        searchPlaceholder="По названию, email, телефону..."
-        onSearchChange={(value) => form.setFieldValue('search', value)}
-        onReset={handleReset}
-        onRefresh={onRefresh}
-        activeFilters={activeFilters}
-        loading={loading}
-        filters={
-          <>
-            <Form.Item name="industry" style={{ marginBottom: 0, minWidth: 220 }}>
+    <Card size="small" style={{ marginBottom: 16 }}>
+      <Form form={form} layout="vertical" onValuesChange={handleValuesChange}>
+        <Row gutter={[12, 12]}>
+          <Col xs={24} md={10} lg={8}>
+            <Input
+              value={searchValue}
+              allowClear
+              placeholder="По названию, email, телефону..."
+              prefix={<SearchOutlined style={{ color: '#8c8c8c' }} />}
+              onChange={(event) => form.setFieldValue('search', event.target.value)}
+            />
+          </Col>
+          <Col xs={24} md={7} lg={6}>
+            <Form.Item name="industry" style={{ marginBottom: 0 }}>
               <IndustrySelect placeholder="Индустрия" style={{ width: '100%' }} />
             </Form.Item>
-            <Form.Item name="type" style={{ marginBottom: 0, minWidth: 220 }}>
+          </Col>
+          <Col xs={24} md={7} lg={6}>
+            <Form.Item name="type" style={{ marginBottom: 0 }}>
               <ClientTypeSelect placeholder="Тип клиента" style={{ width: '100%' }} />
             </Form.Item>
-          </>
-        }
-      />
-    </Form>
+          </Col>
+          <Col xs={24} lg={4}>
+            <Space>
+              <Button onClick={handleReset}>Сбросить</Button>
+              <Button icon={<ReloadOutlined />} onClick={onRefresh} loading={loading} />
+            </Space>
+          </Col>
+        </Row>
+      </Form>
+
+      <Space size={[8, 8]} wrap style={{ marginTop: 12 }}>
+        {filters?.search ? (
+          <Tag closable onClose={() => onFilterChange({ ...filters, search: undefined })}>
+            Поиск: {String(filters.search)}
+          </Tag>
+        ) : null}
+        {filters?.industry ? (
+          <Tag closable onClose={() => onFilterChange({ ...filters, industry: undefined })}>
+            Индустрия
+          </Tag>
+        ) : null}
+        {filters?.type ? (
+          <Tag closable onClose={() => onFilterChange({ ...filters, type: undefined })}>
+            Тип клиента
+          </Tag>
+        ) : null}
+      </Space>
+    </Card>
   );
 };

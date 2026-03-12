@@ -1,27 +1,27 @@
 import { useEffect, useMemo, useState } from 'react';
-import { Eye, Edit, Trash2, Clock, Check } from 'lucide-react';
+import { Check, Clock, Edit, Eye, Trash2 } from 'lucide-react';
 import dayjs from 'dayjs';
-import { Button as AntButton } from 'antd';
-import { PlusOutlined } from '@ant-design/icons';
 
-import { getMemos, deleteMemo, markMemoReviewed, markMemoPostponed } from '../../lib/api/memos';
-import { navigate } from '../../router';
+import { PlusOutlined } from '@ant-design/icons';
+import { App, Button, Card, DatePicker, Input, Modal, Select, Space, Table, Tag, Typography } from 'antd';
+
 import EntitySelect from '../../components/EntitySelect.jsx';
-import { getUsers, getUser } from '../../lib/api';
-import EnhancedTable from '../../components/ui-EnhancedTable.jsx';
-import { Button } from '../../components/ui/button.jsx';
-import { DatePicker } from '../../components/ui-DatePicker.jsx';
-import { toast } from '../../components/ui/use-toast.js';
-import { AlertDialog, AlertDialogContent, AlertDialogHeader, AlertDialogTitle } from '../../components/ui/alert-dialog.jsx';
-import { EntityListPageShell, EntityListToolbar } from '../../shared/ui';
+import { getUser, getUsers } from '../../lib/api';
+import { deleteMemo, getMemos, markMemoPostponed, markMemoReviewed } from '../../lib/api/memos';
+import { navigate } from '../../router';
+
+const { RangePicker } = DatePicker;
+const { Search } = Input;
+const { Text, Title } = Typography;
 
 const stageLabels = {
-  pen: { text: 'В ожидании', className: 'bg-sky-100 text-sky-700' },
-  pos: { text: 'Отложено', className: 'bg-amber-100 text-amber-700' },
-  rev: { text: 'Рассмотрено', className: 'bg-emerald-100 text-emerald-700' },
+  pen: { text: 'В ожидании', color: 'blue' },
+  pos: { text: 'Отложено', color: 'gold' },
+  rev: { text: 'Рассмотрено', color: 'green' },
 };
 
 export default function MemosList() {
+  const { message } = App.useApp();
   const [data, setData] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
@@ -35,6 +35,7 @@ export default function MemosList() {
 
   useEffect(() => {
     fetchData();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [pagination.current, pagination.pageSize, searchText, draftFilter, stageFilter, recipientFilter, dateRange]);
 
   const fetchData = async () => {
@@ -65,8 +66,7 @@ export default function MemosList() {
       setPagination((prev) => ({ ...prev, total: res.count || filtered.length }));
     } catch (fetchError) {
       setError(fetchError?.message || 'Не удалось загрузить список мемо');
-      toast({ title: 'Ошибка', description: 'Не удалось загрузить мемо', variant: 'destructive' });
-      console.error(fetchError);
+      message.error('Не удалось загрузить мемо');
     } finally {
       setLoading(false);
     }
@@ -75,10 +75,10 @@ export default function MemosList() {
   const handleDelete = async (id) => {
     try {
       await deleteMemo(id);
-      toast({ title: 'Мемо удалено', description: 'Мемо удалено' });
+      message.success('Мемо удалено');
       fetchData();
-    } catch (deleteError) {
-      toast({ title: 'Ошибка', description: 'Не удалось удалить мемо', variant: 'destructive' });
+    } catch {
+      message.error('Не удалось удалить мемо');
     } finally {
       setConfirmDelete(null);
     }
@@ -87,221 +87,176 @@ export default function MemosList() {
   const handleMarkReviewed = async (id) => {
     try {
       await markMemoReviewed(id);
-      toast({ title: 'Мемо рассмотрено', description: 'Мемо отмечено как рассмотренное' });
+      message.success('Мемо отмечено как рассмотренное');
       fetchData();
-    } catch (updateError) {
-      toast({ title: 'Ошибка', description: 'Не удалось обновить мемо', variant: 'destructive' });
+    } catch {
+      message.error('Не удалось обновить мемо');
     }
   };
 
   const handleMarkPostponed = async (id) => {
     try {
       await markMemoPostponed(id);
-      toast({ title: 'Мемо отложено', description: 'Мемо отложено' });
+      message.success('Мемо отложено');
       fetchData();
-    } catch (updateError) {
-      toast({ title: 'Ошибка', description: 'Не удалось обновить мемо', variant: 'destructive' });
+    } catch {
+      message.error('Не удалось обновить мемо');
     }
   };
 
-  const columns = useMemo(() => ([
-    {
-      title: 'Название',
-      dataIndex: 'name',
-      key: 'name',
-      render: (name) => <strong>{name}</strong>,
-    },
-    {
-      title: 'Статус',
-      key: 'status',
-      render: (_, record) => {
-        const stage = stageLabels[record.stage] || { text: '-', className: 'bg-muted text-muted-foreground' };
-        return (
-          <div className="flex flex-wrap gap-2">
-            <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs ${stage.className}`}>
-              {stage.text}
-            </span>
-            {record.draft && (
-              <span className="inline-flex items-center rounded-full bg-amber-100 px-2 py-0.5 text-xs text-amber-700">
-                Черновик
-              </span>
-            )}
-          </div>
-        );
+  const columns = useMemo(
+    () => [
+      {
+        title: 'Название',
+        dataIndex: 'name',
+        key: 'name',
+        render: (name) => <Text strong>{name}</Text>,
       },
-    },
-    {
-      title: 'Получатель',
-      dataIndex: 'to_name',
-      key: 'to_name',
-      render: (toName) => toName || '-',
-    },
-    {
-      title: 'Связь',
-      key: 'related',
-      render: (_, record) => {
-        const items = [
-          record.deal_name && { label: 'Сделка', value: record.deal_name },
-          record.project_name && { label: 'Проект', value: record.project_name },
-          record.task_name && { label: 'Задача', value: record.task_name },
-        ].filter(Boolean);
-        if (items.length === 0) return '-';
-        return (
-          <div className="flex flex-col gap-1 text-xs text-muted-foreground">
-            {items.map((item) => (
-              <span key={item.label}>{item.label}: {item.value}</span>
-            ))}
-          </div>
-        );
+      {
+        title: 'Статус',
+        key: 'status',
+        render: (_, record) => {
+          const stage = stageLabels[record.stage] || { text: '-', color: 'default' };
+          return (
+            <Space>
+              <Tag color={stage.color}>{stage.text}</Tag>
+              {record.draft ? <Tag>Черновик</Tag> : null}
+            </Space>
+          );
+        },
       },
-    },
-    {
-      title: 'Дата обзора',
-      dataIndex: 'review_date',
-      key: 'review_date',
-      render: (value) => value ? dayjs(value).format('DD.MM.YYYY') : '-',
-    },
-    {
-      title: 'Обновлено',
-      dataIndex: 'update_date',
-      key: 'update_date',
-      render: (date, record) => {
-        const value = date || record.creation_date;
-        return value ? dayjs(value).format('DD.MM.YYYY HH:mm') : '-';
+      {
+        title: 'Получатель',
+        dataIndex: 'to_name',
+        key: 'to_name',
+        render: (toName) => toName || '-',
       },
-    },
-    {
-      title: 'Действия',
-      key: 'actions',
-      width: 260,
-      render: (_, record) => (
-        <div className="flex flex-wrap items-center gap-2">
-          <Button variant="ghost" size="sm" onClick={() => navigate(`/memos/${record.id}`)}>
-            <Eye className="mr-1 h-4 w-4" />
-            Открыть
-          </Button>
-          <Button variant="ghost" size="sm" onClick={() => navigate(`/memos/${record.id}/edit`)}>
-            <Edit className="mr-1 h-4 w-4" />
-            Ред.
-          </Button>
-          <Button variant="ghost" size="sm" onClick={() => handleMarkPostponed(record.id)}>
-            <Clock className="mr-1 h-4 w-4" />
-            Отложить
-          </Button>
-          <Button variant="ghost" size="sm" onClick={() => handleMarkReviewed(record.id)}>
-            <Check className="mr-1 h-4 w-4" />
-            Рассмотрено
-          </Button>
-          <Button variant="ghost" size="sm" className="text-destructive" onClick={() => setConfirmDelete(record)}>
-            <Trash2 className="mr-1 h-4 w-4" />
-            Удалить
-          </Button>
-        </div>
-      ),
-    },
-  ]), []);
-
-  const headerActions = (
-    <AntButton type="primary" icon={<PlusOutlined />} onClick={() => navigate('/memos/new')}>
-      Новое мемо
-    </AntButton>
+      {
+        title: 'Связь',
+        key: 'related',
+        render: (_, record) => {
+          const items = [
+            record.deal_name && `Сделка: ${record.deal_name}`,
+            record.project_name && `Проект: ${record.project_name}`,
+            record.task_name && `Задача: ${record.task_name}`,
+          ].filter(Boolean);
+          return items.length ? items.join(' | ') : '-';
+        },
+      },
+      {
+        title: 'Дата обзора',
+        dataIndex: 'review_date',
+        key: 'review_date',
+        render: (value) => (value ? dayjs(value).format('DD.MM.YYYY') : '-'),
+      },
+      {
+        title: 'Обновлено',
+        dataIndex: 'update_date',
+        key: 'update_date',
+        render: (date, record) => {
+          const value = date || record.creation_date;
+          return value ? dayjs(value).format('DD.MM.YYYY HH:mm') : '-';
+        },
+      },
+      {
+        title: 'Действия',
+        key: 'actions',
+        width: 360,
+        render: (_, record) => (
+          <Space>
+            <Button size="small" icon={<Eye size={14} />} onClick={() => navigate(`/memos/${record.id}`)}>Открыть</Button>
+            <Button size="small" icon={<Edit size={14} />} onClick={() => navigate(`/memos/${record.id}/edit`)}>Ред.</Button>
+            <Button size="small" icon={<Clock size={14} />} onClick={() => handleMarkPostponed(record.id)}>Отложить</Button>
+            <Button size="small" icon={<Check size={14} />} onClick={() => handleMarkReviewed(record.id)}>Рассмотрено</Button>
+            <Button size="small" danger icon={<Trash2 size={14} />} onClick={() => setConfirmDelete(record)}>Удалить</Button>
+          </Space>
+        ),
+      },
+    ],
+    [],
   );
 
   return (
     <>
-      <EntityListPageShell
-        title="Мемо"
-        subtitle="Список внутренних мемо в общем CRM shell"
-        extra={headerActions}
-        toolbar={
-          <EntityListToolbar
-            searchValue={searchText}
-            searchPlaceholder="Поиск по названию или тексту"
-            onSearchChange={setSearchText}
-            onRefresh={fetchData}
+      <Card>
+        <Space direction="vertical" size={16} style={{ width: '100%' }}>
+          <Space wrap style={{ width: '100%', justifyContent: 'space-between' }}>
+            <div>
+              <Title level={3} style={{ margin: 0 }}>Мемо</Title>
+              <Text type="secondary">Список внутренних мемо</Text>
+            </div>
+            <Button type="primary" icon={<PlusOutlined />} onClick={() => navigate('/memos/new')}>Новое мемо</Button>
+          </Space>
+
+          <Space wrap>
+            <Search
+              placeholder="Поиск по названию или тексту"
+              allowClear
+              value={searchText}
+              onChange={(e) => setSearchText(e.target.value)}
+              onSearch={setSearchText}
+              style={{ minWidth: 280 }}
+            />
+            <Select
+              allowClear
+              placeholder="Черновики"
+              style={{ minWidth: 150 }}
+              value={draftFilter}
+              options={[
+                { value: true, label: 'Черновик' },
+                { value: false, label: 'Опубликованные' },
+              ]}
+              onChange={(v) => setDraftFilter(v ?? null)}
+            />
+            <Select
+              allowClear
+              placeholder="Стадия"
+              style={{ minWidth: 160 }}
+              value={stageFilter}
+              options={Object.entries(stageLabels).map(([value, meta]) => ({ value, label: meta.text }))}
+              onChange={(v) => setStageFilter(v ?? null)}
+            />
+            <EntitySelect
+              placeholder="Получатель"
+              value={recipientFilter}
+              onChange={setRecipientFilter}
+              fetchList={getUsers}
+              fetchById={getUser}
+              allowClear
+            />
+            <RangePicker
+              format="DD.MM.YYYY"
+              value={dateRange}
+              onChange={(vals) => setDateRange(vals || null)}
+            />
+            <Button onClick={fetchData} loading={loading}>Обновить</Button>
+          </Space>
+
+          {error ? <Text type="danger">{error}</Text> : null}
+
+          <Table
+            rowKey="id"
+            columns={columns}
+            dataSource={data}
             loading={loading}
-            resultSummary={pagination.total ? `${pagination.total} записей` : undefined}
+            pagination={{ ...pagination, showSizeChanger: true, showTotal: (total) => `Всего: ${total}` }}
+            onChange={(pg) => setPagination((prev) => ({ ...prev, current: pg.current, pageSize: pg.pageSize }))}
+            locale={{ emptyText: 'Нет мемо' }}
           />
-        }
-        error={error}
-        onRetry={fetchData}
+        </Space>
+      </Card>
+
+      <Modal
+        title="Удалить мемо?"
+        open={!!confirmDelete}
+        onCancel={() => setConfirmDelete(null)}
+        onOk={() => confirmDelete && handleDelete(confirmDelete.id)}
+        okText="Удалить"
+        cancelText="Отмена"
+        okButtonProps={{ danger: true }}
       >
-        <div className="mb-4 flex flex-wrap gap-3">
-          <select
-            className="h-9 w-[160px] rounded-md border border-border bg-background px-2 text-sm"
-            value={draftFilter ?? ''}
-            onChange={(e) => setDraftFilter(e.target.value === '' ? null : e.target.value === 'true')}
-          >
-            <option value="">Черновики</option>
-            <option value="true">Черновик</option>
-            <option value="false">Опубликованные</option>
-          </select>
-          <select
-            className="h-9 w-[180px] rounded-md border border-border bg-background px-2 text-sm"
-            value={stageFilter ?? ''}
-            onChange={(e) => setStageFilter(e.target.value || null)}
-          >
-            <option value="">Стадия</option>
-            <option value="pen">В ожидании</option>
-            <option value="pos">Отложено</option>
-            <option value="rev">Рассмотрено</option>
-          </select>
-          <EntitySelect
-            placeholder="Получатель"
-            value={recipientFilter}
-            onChange={setRecipientFilter}
-            fetchList={getUsers}
-            fetchById={getUser}
-            allowClear
-          />
-          <div className="flex items-center gap-2">
-            <DatePicker
-              value={dateRange?.[0] || null}
-              onChange={(val) => setDateRange((prev) => [val, prev?.[1] || null])}
-              format="DD.MM.YYYY"
-            />
-            <span className="text-sm text-muted-foreground">-</span>
-            <DatePicker
-              value={dateRange?.[1] || null}
-              onChange={(val) => setDateRange((prev) => [prev?.[0] || null, val])}
-              format="DD.MM.YYYY"
-            />
-          </div>
-        </div>
-
-        <EnhancedTable
-          columns={columns}
-          dataSource={data}
-          loading={loading}
-          rowKey="id"
-          pagination={pagination}
-          onChange={(newPagination) => setPagination((prev) => ({
-            ...prev,
-            current: newPagination.current,
-            pageSize: newPagination.pageSize,
-          }))}
-          scroll={{ x: 1200 }}
-          emptyText="Нет мемо"
-          emptyDescription="Создайте новое мемо"
-        />
-      </EntityListPageShell>
-
-      <AlertDialog open={!!confirmDelete} onOpenChange={(open) => !open && setConfirmDelete(null)}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Удалить мемо?</AlertDialogTitle>
-          </AlertDialogHeader>
-          <p className="text-sm text-muted-foreground">Действие нельзя отменить.</p>
-          <div className="mt-4 flex justify-end gap-2">
-            <Button variant="outline" onClick={() => setConfirmDelete(null)}>
-              Отмена
-            </Button>
-            <Button variant="destructive" onClick={() => handleDelete(confirmDelete.id)}>
-              Удалить
-            </Button>
-          </div>
-        </AlertDialogContent>
-      </AlertDialog>
+        Действие нельзя отменить.
+      </Modal>
     </>
   );
 }

@@ -1,17 +1,16 @@
 import { useEffect, useState } from 'react';
-import { ArrowLeft, Edit, Trash2, Bell, Check, X } from 'lucide-react';
+import { ArrowLeft, Bell, Check, Edit, Trash2, X } from 'lucide-react';
 import dayjs from 'dayjs';
 
-import { getReminder, deleteReminder, updateReminder } from '../../lib/api/reminders';
+import { App, Button, Card, Descriptions, Modal, Result, Skeleton, Space, Tag, Typography } from 'antd';
+
+import { deleteReminder, getReminder, updateReminder } from '../../lib/api/reminders';
 import { navigate } from '../../router';
-import { Card } from '../../components/ui/card.jsx';
-import { Button } from '../../components/ui/button.jsx';
-import { Badge } from '../../components/ui/badge.jsx';
-import { toast } from '../../components/ui/use-toast.js';
-import { AlertDialog, AlertDialogContent, AlertDialogHeader, AlertDialogTitle } from '../../components/ui/alert-dialog.jsx';
-import { LegacyEmptyState, LegacyErrorState, LegacyLoadingState } from '../../shared/ui';
+
+const { Title, Text } = Typography;
 
 export default function ReminderDetail({ id }) {
+  const { message } = App.useApp();
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState(false);
@@ -19,6 +18,7 @@ export default function ReminderDetail({ id }) {
 
   useEffect(() => {
     fetchData();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [id]);
 
   const fetchData = async () => {
@@ -27,11 +27,10 @@ export default function ReminderDetail({ id }) {
     try {
       const res = await getReminder(id);
       setData(res);
-    } catch (error) {
+    } catch {
       setData(null);
       setLoadError(true);
-      toast({ title: 'Ошибка', description: 'Не удалось загрузить напоминание', variant: 'destructive' });
-      console.error(error);
+      message.error('Не удалось загрузить напоминание');
     } finally {
       setLoading(false);
     }
@@ -40,52 +39,43 @@ export default function ReminderDetail({ id }) {
   const handleDelete = async () => {
     try {
       await deleteReminder(id);
-      toast({ title: 'Напоминание удалено', description: 'Напоминание удалено' });
+      message.success('Напоминание удалено');
       navigate('/reminders');
-    } catch (error) {
-      toast({ title: 'Ошибка', description: 'Не удалось удалить напоминание', variant: 'destructive' });
+    } catch {
+      message.error('Не удалось удалить напоминание');
     }
   };
 
   const handleToggleActive = async () => {
     try {
       await updateReminder(id, { active: !data.active });
-      toast({
-        title: !data.active ? 'Напоминание активировано' : 'Напоминание деактивировано',
-        description: !data.active ? 'Напоминание активировано' : 'Напоминание деактивировано',
-      });
+      message.success(!data.active ? 'Напоминание активировано' : 'Напоминание деактивировано');
       fetchData();
-    } catch (error) {
-      toast({ title: 'Ошибка', description: 'Не удалось обновить напоминание', variant: 'destructive' });
+    } catch {
+      message.error('Не удалось обновить напоминание');
     }
   };
 
-  if (loading) {
-    return (
-      <LegacyLoadingState
-        title="Загрузка напоминания"
-        description="Подгружаем карточку напоминания и его параметры."
-      />
-    );
-  }
+  if (loading) return <Skeleton active paragraph={{ rows: 6 }} />;
 
   if (loadError) {
     return (
-      <LegacyErrorState
+      <Result
+        status="error"
         title="Не удалось открыть напоминание"
-        description="Попробуйте повторить загрузку или вернитесь к списку напоминаний."
-        onAction={fetchData}
+        subTitle="Попробуйте повторить загрузку"
+        extra={<Button onClick={fetchData}>Повторить</Button>}
       />
     );
   }
 
   if (!data) {
     return (
-      <LegacyEmptyState
+      <Result
+        status="404"
         title="Напоминание не найдено"
-        description="Возможно, запись была удалена или вам недоступен этот объект."
-        actionLabel="К списку напоминаний"
-        onAction={() => navigate('/reminders')}
+        subTitle="Запись могла быть удалена или недоступна"
+        extra={<Button onClick={() => navigate('/reminders')}>К списку напоминаний</Button>}
       />
     );
   }
@@ -94,91 +84,48 @@ export default function ReminderDetail({ id }) {
   const isPast = reminderDate ? reminderDate.isBefore(dayjs()) : false;
 
   return (
-    <Card className="p-6">
-      <div className="flex flex-wrap items-center justify-between gap-2">
-        <div className="flex items-center gap-2">
-          <Bell className="h-5 w-5 text-primary" />
-          <h2 className="text-xl font-semibold">Детали напоминания</h2>
-        </div>
-        <div className="flex flex-wrap items-center gap-2">
-          <Button variant="outline" onClick={() => navigate('/reminders')}>
-            <ArrowLeft className="mr-2 h-4 w-4" />
-            Назад
-          </Button>
-          <Button
-            variant={data.active ? 'outline' : 'default'}
-            onClick={handleToggleActive}
-          >
-            {data.active ? <X className="mr-2 h-4 w-4" /> : <Check className="mr-2 h-4 w-4" />}
-            {data.active ? 'Отключить' : 'Включить'}
-          </Button>
-          <Button onClick={() => navigate(`/reminders/${id}/edit`)}>
-            <Edit className="mr-2 h-4 w-4" />
-            Редактировать
-          </Button>
-          <Button variant="destructive" onClick={() => setConfirmOpen(true)}>
-            <Trash2 className="mr-2 h-4 w-4" />
-            Удалить
-          </Button>
-        </div>
-      </div>
-
-      <div className="mt-6 grid grid-cols-1 gap-4 sm:grid-cols-2">
-        <div className="sm:col-span-2 rounded-md border border-border p-4">
-          <div className="text-xs text-muted-foreground">Тема</div>
-          <div className="text-lg font-semibold">{data.subject}</div>
-        </div>
-
-        <DetailRow label="Статус">
-          <Badge variant={data.active ? 'default' : 'secondary'}>
-            {data.active ? 'Активно' : 'Неактивно'}
-          </Badge>
-        </DetailRow>
-
-        <DetailRow label="Дата напоминания">
-          {reminderDate ? (
-            <span className={isPast ? 'text-destructive font-semibold' : 'font-semibold'}>
-              {reminderDate.format('DD MMM YYYY HH:mm')}
-              {isPast && ' (Просрочено)'}
-            </span>
-          ) : (
-            '-'
-          )}
-        </DetailRow>
-
-        <DetailRow label="Тип объекта">{data.content_type ?? '-'}</DetailRow>
-        <DetailRow label="Связанный объект">{data.object_id ?? '-'}</DetailRow>
-        <DetailRow label="Владелец">{data.owner_name || '-'}</DetailRow>
-        <DetailRow label="Email уведомление">{data.send_notification_email ? 'Да' : 'Нет'}</DetailRow>
-        <DetailRow label="Описание">{data.description || '-'} </DetailRow>
-        <DetailRow label="Дата создания">{data.creation_date ? dayjs(data.creation_date).format('DD MMM YYYY HH:mm') : '-'}</DetailRow>
-      </div>
-
-      <AlertDialog open={confirmOpen} onOpenChange={setConfirmOpen}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Удалить напоминание?</AlertDialogTitle>
-          </AlertDialogHeader>
-          <p className="text-sm text-muted-foreground">Действие нельзя отменить.</p>
-          <div className="mt-4 flex justify-end gap-2">
-            <Button variant="outline" onClick={() => setConfirmOpen(false)}>
-              Отмена
+    <Card>
+      <Space direction="vertical" size={16} style={{ width: '100%' }}>
+        <Space wrap style={{ width: '100%', justifyContent: 'space-between' }}>
+          <Title level={3} style={{ margin: 0 }}>
+            <Bell size={18} /> Детали напоминания
+          </Title>
+          <Space>
+            <Button icon={<ArrowLeft size={14} />} onClick={() => navigate('/reminders')}>Назад</Button>
+            <Button icon={data.active ? <X size={14} /> : <Check size={14} />} onClick={handleToggleActive}>
+              {data.active ? 'Отключить' : 'Включить'}
             </Button>
-            <Button variant="destructive" onClick={handleDelete}>
-              Удалить
-            </Button>
-          </div>
-        </AlertDialogContent>
-      </AlertDialog>
+            <Button type="primary" icon={<Edit size={14} />} onClick={() => navigate(`/reminders/${id}/edit`)}>Редактировать</Button>
+            <Button danger icon={<Trash2 size={14} />} onClick={() => setConfirmOpen(true)}>Удалить</Button>
+          </Space>
+        </Space>
+
+        <Descriptions bordered column={1} size="small">
+          <Descriptions.Item label="Тема">{data.subject}</Descriptions.Item>
+          <Descriptions.Item label="Статус"><Tag color={data.active ? 'green' : 'default'}>{data.active ? 'Активно' : 'Неактивно'}</Tag></Descriptions.Item>
+          <Descriptions.Item label="Дата напоминания">
+            {reminderDate ? <Text type={isPast ? 'danger' : undefined}>{reminderDate.format('DD.MM.YYYY HH:mm')}{isPast ? ' (Просрочено)' : ''}</Text> : '-'}
+          </Descriptions.Item>
+          <Descriptions.Item label="Тип объекта">{data.content_type ?? '-'}</Descriptions.Item>
+          <Descriptions.Item label="Связанный объект">{data.object_id ?? '-'}</Descriptions.Item>
+          <Descriptions.Item label="Владелец">{data.owner_name || '-'}</Descriptions.Item>
+          <Descriptions.Item label="Email уведомление">{data.send_notification_email ? 'Да' : 'Нет'}</Descriptions.Item>
+          <Descriptions.Item label="Описание">{data.description || '-'}</Descriptions.Item>
+          <Descriptions.Item label="Дата создания">{data.creation_date ? dayjs(data.creation_date).format('DD.MM.YYYY HH:mm') : '-'}</Descriptions.Item>
+        </Descriptions>
+      </Space>
+
+      <Modal
+        title="Удалить напоминание?"
+        open={confirmOpen}
+        onCancel={() => setConfirmOpen(false)}
+        onOk={handleDelete}
+        okText="Удалить"
+        cancelText="Отмена"
+        okButtonProps={{ danger: true }}
+      >
+        Действие нельзя отменить.
+      </Modal>
     </Card>
-  );
-}
-
-function DetailRow({ label, children }) {
-  return (
-    <div className="rounded-md border border-border p-4">
-      <div className="text-xs text-muted-foreground">{label}</div>
-      <div className="mt-1 text-sm">{children}</div>
-    </div>
   );
 }

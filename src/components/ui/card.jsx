@@ -1,33 +1,45 @@
 import * as React from 'react';
-import { cn } from '../../lib/utils/cn';
+import { Card as AntCard } from 'antd';
 
-const Card = React.forwardRef(({ className, ...props }, ref) => (
-  <div ref={ref} className={cn('rounded-lg border border-border bg-card text-card-foreground shadow-sm', className)} {...props} />
+const Card = React.forwardRef(({ children, ...props }, ref) => (
+  <AntCard ref={ref} bordered style={{ borderRadius: 10 }} {...props}>
+    {children}
+  </AntCard>
 ));
 Card.displayName = 'Card';
 
-const CardHeader = React.forwardRef(({ className, ...props }, ref) => (
-  <div ref={ref} className={cn('flex flex-col space-y-1.5 p-6', className)} {...props} />
+const CardHeader = React.forwardRef(({ children, ...props }, ref) => (
+  <div ref={ref} style={{ marginBottom: 12 }} {...props}>
+    {children}
+  </div>
 ));
 CardHeader.displayName = 'CardHeader';
 
-const CardTitle = React.forwardRef(({ className, ...props }, ref) => (
-  <h3 ref={ref} className={cn('text-lg font-semibold leading-none tracking-tight', className)} {...props} />
+const CardTitle = React.forwardRef(({ children, ...props }, ref) => (
+  <div ref={ref} style={{ fontSize: 18, fontWeight: 600 }} {...props}>
+    {children}
+  </div>
 ));
 CardTitle.displayName = 'CardTitle';
 
-const CardDescription = React.forwardRef(({ className, ...props }, ref) => (
-  <p ref={ref} className={cn('text-sm text-muted-foreground', className)} {...props} />
+const CardDescription = React.forwardRef(({ children, ...props }, ref) => (
+  <div ref={ref} style={{ color: 'rgba(0,0,0,0.45)', marginTop: 4 }} {...props}>
+    {children}
+  </div>
 ));
 CardDescription.displayName = 'CardDescription';
 
-const CardContent = React.forwardRef(({ className, ...props }, ref) => (
-  <div ref={ref} className={cn('p-6 pt-0', className)} {...props} />
+const CardContent = React.forwardRef(({ children, ...props }, ref) => (
+  <div ref={ref} {...props}>
+    {children}
+  </div>
 ));
 CardContent.displayName = 'CardContent';
 
-const CardFooter = React.forwardRef(({ className, ...props }, ref) => (
-  <div ref={ref} className={cn('flex items-center p-6 pt-0', className)} {...props} />
+const CardFooter = React.forwardRef(({ children, ...props }, ref) => (
+  <div ref={ref} style={{ marginTop: 12 }} {...props}>
+    {children}
+  </div>
 ));
 CardFooter.displayName = 'CardFooter';
 

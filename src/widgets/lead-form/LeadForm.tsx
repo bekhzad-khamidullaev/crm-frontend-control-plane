@@ -11,16 +11,18 @@ import {
   DatePicker,
   Spin,
   Modal,
+  Button,
+  Space,
+  Typography,
+  Divider,
 } from 'antd';
+import { ArrowLeftOutlined, SaveOutlined } from '@ant-design/icons';
 import dayjs from 'dayjs';
-import { useCreateLead, useUpdateLead } from '@/entities/lead/api/mutations'; // Note: useLead is query, imported below
+import { useCreateLead, useUpdateLead } from '@/entities/lead/api/mutations';
 import { useLead as useLeadQuery } from '@/entities/lead/api/queries';
-
-// Feature Selects
 // @ts-ignore
 import { navigate } from '@/router.js';
 
-// Feature Selects
 import {
   LeadSourceSelect,
   UserSelect,
@@ -32,8 +34,9 @@ import {
   TagSelect,
   CompanySelect,
 } from '@/features/reference';
-import { EntityFormSection, EntityFormShell, PhoneInput } from '@/shared/ui';
+
 const { TextArea } = Input;
+const { Title, Text } = Typography;
 
 interface LeadFormProps {
   id?: number;
@@ -44,6 +47,7 @@ export const LeadForm: React.FC<LeadFormProps> = ({ id }) => {
   const { message } = App.useApp();
   const isEdit = !!id;
   const formId = 'lead-form';
+  const country = Form.useWatch('country', form);
 
   const { data: lead, isLoading: isLoadingLead } = useLeadQuery(id!, !!id);
   const createMutation = useCreateLead();
@@ -77,7 +81,6 @@ export const LeadForm: React.FC<LeadFormProps> = ({ id }) => {
       navigate('/leads');
     } catch (error: any) {
       if (error?.body?.details) {
-        // Handle Zod/DRF validation errors if structured
         const fields = Object.entries(error.body.details).map(([name, errors]: [string, any]) => ({
           name,
           errors: Array.isArray(errors) ? errors : [errors],
@@ -109,17 +112,32 @@ export const LeadForm: React.FC<LeadFormProps> = ({ id }) => {
   }
 
   return (
-    <EntityFormShell
-      title={isEdit ? 'Редактировать лид' : 'Создать новый лид'}
-      subtitle={isEdit ? 'Обновите данные лида и подготовьте его к следующему шагу воронки.' : 'Соберите минимум данных, чтобы не терять скорость входящей обработки.'}
-      hint="Для первичного захвата достаточно контактов, источника и ответственного. Остальные поля можно заполнить позже."
-      formId={formId}
-      submitText={isEdit ? 'Сохранить изменения' : 'Создать лид'}
-      isSubmitting={createMutation.isPending || updateMutation.isPending}
-      onBack={handleLeave}
-      onCancel={handleLeave}
-    >
-      <Card>
+    <div>
+      <Space wrap style={{ marginBottom: 16, width: '100%', justifyContent: 'space-between' }}>
+        <Button icon={<ArrowLeftOutlined />} onClick={handleLeave}>
+          Назад
+        </Button>
+        <Button
+          type="primary"
+          icon={<SaveOutlined />}
+          htmlType="submit"
+          form={formId}
+          loading={createMutation.isPending || updateMutation.isPending}
+        >
+          {isEdit ? 'Сохранить изменения' : 'Создать лид'}
+        </Button>
+      </Space>
+
+      <Title level={2} style={{ marginBottom: 4 }}>
+        {isEdit ? 'Редактировать лид' : 'Создать новый лид'}
+      </Title>
+      <Text type="secondary">
+        {isEdit
+          ? 'Обновите данные лида и подготовьте его к следующему шагу воронки.'
+          : 'Соберите минимум данных, чтобы не терять скорость входящей обработки.'}
+      </Text>
+
+      <Card style={{ marginTop: 16 }}>
         <Form
           id={formId}
           form={form}
@@ -132,16 +150,13 @@ export const LeadForm: React.FC<LeadFormProps> = ({ id }) => {
             disqualified: false,
           }}
         >
-          <EntityFormSection
-            title="Основная информация"
-            description="Кто это, чем занимается и какие данные уже известны."
-          />
+          <Title level={4}>Основная информация</Title>
+          <Text type="secondary">Кто это, чем занимается и какие данные уже известны.</Text>
+          <Divider style={{ margin: '12px 0 16px' }} />
+
           <Row gutter={16}>
             <Col xs={24} md={8}>
-              <Form.Item
-                label="Имя"
-                name="first_name"
-              >
+              <Form.Item label="Имя" name="first_name">
                 <Input placeholder="Иван" />
               </Form.Item>
             </Col>
@@ -182,18 +197,16 @@ export const LeadForm: React.FC<LeadFormProps> = ({ id }) => {
             </Col>
           </Row>
 
-          <EntityFormSection
-            title="Контакты"
-            description="Минимальный набор каналов связи для быстрого первого контакта."
-          />
+          <Title level={4} style={{ marginTop: 24 }}>Контакты</Title>
+          <Text type="secondary">Минимальный набор каналов связи для быстрого первого контакта.</Text>
+          <Divider style={{ margin: '12px 0 16px' }} />
+
           <Row gutter={16}>
             <Col xs={24} md={12}>
               <Form.Item
                 label="Email"
                 name="email"
-                rules={[
-                  { type: 'email', message: 'Некорректный email' },
-                ]}
+                rules={[{ type: 'email', message: 'Некорректный email' }]}
               >
                 <Input placeholder="ivan@example.com" />
               </Form.Item>
@@ -208,25 +221,25 @@ export const LeadForm: React.FC<LeadFormProps> = ({ id }) => {
           <Row gutter={16}>
             <Col xs={24} md={8}>
               <Form.Item label="Телефон" name="phone">
-                <PhoneInput />
+                <Input placeholder="+998 90 123 45 67" />
               </Form.Item>
             </Col>
             <Col xs={24} md={8}>
               <Form.Item label="Доп. телефон" name="other_phone">
-                <PhoneInput />
+                <Input placeholder="+998 90 765 43 21" />
               </Form.Item>
             </Col>
             <Col xs={24} md={8}>
               <Form.Item label="Мобильный" name="mobile">
-                <PhoneInput />
+                <Input placeholder="+998 90 000 00 00" />
               </Form.Item>
             </Col>
           </Row>
 
-          <EntityFormSection
-            title="Компания"
-            description="Если компания уже есть в базе, лучше привязать её сразу."
-          />
+          <Title level={4} style={{ marginTop: 24 }}>Компания</Title>
+          <Text type="secondary">Если компания уже есть в базе, лучше привязать её сразу.</Text>
+          <Divider style={{ margin: '12px 0 16px' }} />
+
           <Row gutter={16}>
             <Col xs={24} md={12}>
               <Form.Item label="Компания (из базы)" name="company">
@@ -243,7 +256,7 @@ export const LeadForm: React.FC<LeadFormProps> = ({ id }) => {
           <Row gutter={16}>
             <Col xs={24} md={8}>
               <Form.Item label="Телефон компании" name="company_phone">
-                <PhoneInput />
+                <Input placeholder="+998 90 123 45 67" />
               </Form.Item>
             </Col>
             <Col xs={24} md={8}>
@@ -275,10 +288,10 @@ export const LeadForm: React.FC<LeadFormProps> = ({ id }) => {
             </Col>
           </Row>
 
-          <EntityFormSection
-            title="Локация"
-            description="Адресные поля нужны только если влияют на маршрутизацию, доставку или региональную аналитику."
-          />
+          <Title level={4} style={{ marginTop: 24 }}>Локация</Title>
+          <Text type="secondary">Адресные поля нужны только если влияют на маршрутизацию, доставку или аналитику.</Text>
+          <Divider style={{ margin: '12px 0 16px' }} />
+
           <Row gutter={16}>
             <Col xs={24} md={12}>
               <Form.Item label="Страна" name="country">
@@ -287,20 +300,12 @@ export const LeadForm: React.FC<LeadFormProps> = ({ id }) => {
             </Col>
             <Col xs={24} md={12}>
               <Form.Item label="Город" name="city">
-                {/* CitySelect usually requires countryId to filter, passing form dependency */}
-                <Form.Item
-                  noStyle
-                  shouldUpdate={(prev, current) => prev.country !== current.country}
-                >
-                  {({ getFieldValue }) => (
-                    <CitySelect
-                      countryId={getFieldValue('country')}
-                      placeholder="Выберите город"
-                      allowClear
-                      disabled={!getFieldValue('country')}
-                    />
-                  )}
-                </Form.Item>
+                <CitySelect
+                  countryId={country}
+                  placeholder="Выберите город"
+                  allowClear
+                  disabled={!country}
+                />
               </Form.Item>
             </Col>
           </Row>
@@ -331,10 +336,10 @@ export const LeadForm: React.FC<LeadFormProps> = ({ id }) => {
             </Col>
           </Row>
 
-          <EntityFormSection
-            title="Управление"
-            description="Источник, ответственный и статус обработки лида."
-          />
+          <Title level={4} style={{ marginTop: 24 }}>Управление</Title>
+          <Text type="secondary">Источник, ответственный и статус обработки лида.</Text>
+          <Divider style={{ margin: '12px 0 16px' }} />
+
           <Row gutter={16}>
             <Col xs={24} md={8}>
               <Form.Item label="Источник" name="lead_source">
@@ -379,15 +384,14 @@ export const LeadForm: React.FC<LeadFormProps> = ({ id }) => {
             </Col>
           </Row>
 
-          <EntityFormSection
-            title="Дополнительно"
-            description="Любая информация, которая поможет следующему касанию."
-          />
+          <Title level={4} style={{ marginTop: 24 }}>Дополнительно</Title>
+          <Text type="secondary">Любая информация, которая поможет следующему касанию.</Text>
+          <Divider style={{ margin: '12px 0 16px' }} />
           <Form.Item label="Описание" name="description">
             <TextArea rows={4} placeholder="Дополнительная информация о лиде" />
           </Form.Item>
         </Form>
       </Card>
-    </EntityFormShell>
+    </div>
   );
 };

@@ -6,18 +6,13 @@ import { useForm } from 'react-hook-form';
 import { z } from 'zod';
 
 import EntitySelect from '../../components/EntitySelect.jsx';
-import { DatePicker } from '../../components/ui-DatePicker.jsx';
-import { Button } from '../../components/ui/button.jsx';
-import { Card } from '../../components/ui/card.jsx';
-import { Input } from '../../components/ui/input.jsx';
-import { Label } from '../../components/ui/label.jsx';
-import { Switch } from '../../components/ui/switch.jsx';
-import { Textarea } from '../../components/ui/textarea.jsx';
-import { toast } from '../../components/ui/use-toast.js';
 import { getUser, getUsers } from '../../lib/api';
 import { createReminder, getReminder, updateReminder } from '../../lib/api/reminders';
 import { navigate } from '../../router';
-import { LegacyErrorState, LegacyLoadingState } from '../../shared/ui';
+
+import { App, Button, Card, DatePicker, Input, Result, Skeleton, Switch } from 'antd';
+const { TextArea } = Input;
+const Label = ({ children, ...props }) => <label style={{ display: 'block', marginBottom: 6, fontWeight: 500 }} {...props}>{children}</label>;
 
 const schema = z.object({
   subject: z.string().min(1, 'Введите тему напоминания'),
@@ -31,6 +26,12 @@ const schema = z.object({
 });
 
 function ReminderForm({ id }) {
+  const { message } = App.useApp();
+  const notify = ({ title, description, variant }) => {
+    const text = description || title || 'Уведомление';
+    if (variant === 'destructive') message.error(text);
+    else message.success(text);
+  };
   const [loading, setLoading] = useState(false);
   const [loadError, setLoadError] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -79,7 +80,7 @@ function ReminderForm({ id }) {
       });
     } catch (error) {
       setLoadError(true);
-      toast({ title: 'Ошибка', description: 'Ошибка загрузки напоминания', variant: 'destructive' });
+      notify({ title: 'Ошибка', description: 'Ошибка загрузки напоминания', variant: 'destructive' });
       console.error('Error loading reminder:', error);
     } finally {
       setLoading(false);
@@ -96,14 +97,14 @@ function ReminderForm({ id }) {
 
       if (isEdit) {
         await updateReminder(id, payload);
-        toast({ title: 'Напоминание обновлено', description: 'Напоминание обновлено' });
+        notify({ title: 'Напоминание обновлено', description: 'Напоминание обновлено' });
       } else {
         await createReminder(payload);
-        toast({ title: 'Напоминание создано', description: 'Напоминание создано' });
+        notify({ title: 'Напоминание создано', description: 'Напоминание создано' });
       }
       navigate('/reminders');
     } catch (error) {
-      toast({ title: 'Ошибка', description: isEdit ? 'Ошибка обновления напоминания' : 'Ошибка создания напоминания', variant: 'destructive' });
+      notify({ title: 'Ошибка', description: isEdit ? 'Ошибка обновления напоминания' : 'Ошибка создания напоминания', variant: 'destructive' });
       console.error('Error saving reminder:', error);
     } finally {
       setSaving(false);
@@ -111,64 +112,60 @@ function ReminderForm({ id }) {
   };
 
   if (loading) {
-    return (
-      <LegacyLoadingState
-        title="Загрузка напоминания"
-        description="Подготавливаем форму редактирования напоминания."
-      />
-    );
+    return <Skeleton active paragraph={{ rows: 8 }} />;
   }
 
   if (isEdit && loadError) {
     return (
-      <LegacyErrorState
+      <Result
+        status="error"
         title="Не удалось загрузить напоминание для редактирования"
-        description="Попробуйте повторить загрузку или вернитесь к списку напоминаний."
-        onAction={loadReminder}
+        subTitle="Попробуйте повторить загрузку или вернитесь к списку напоминаний."
+        extra={<Button onClick={loadReminder}>Повторить</Button>}
       />
     );
   }
 
   return (
-    <div className="space-y-4">
-      <Button variant="outline" onClick={() => navigate('/reminders')}>
-        <ArrowLeft className="mr-2 h-4 w-4" />
+    <div>
+      <Button onClick={() => navigate('/reminders')}>
+        <ArrowLeft />
         Назад
       </Button>
 
-      <div className="flex items-center gap-3">
-        <Bell className="h-6 w-6 text-primary" />
-        <h2 className="text-2xl font-semibold">
+      <div>
+        <Bell />
+        <h2>
           {isEdit ? 'Редактирование напоминания' : 'Новое напоминание'}
         </h2>
       </div>
 
-      <Card className="p-6">
-        <form className="space-y-6" onSubmit={handleSubmit(handleSubmitForm)}>
+      <Card>
+        <form onSubmit={handleSubmit(handleSubmitForm)}>
           <div>
             <Label htmlFor="subject">Тема *</Label>
             <Input id="subject" placeholder="Например: Связаться с клиентом" {...register('subject')} />
-            {errors.subject && <p className="text-xs text-destructive">{errors.subject.message}</p>}
+            {errors.subject && <p>{errors.subject.message}</p>}
           </div>
 
           <div>
             <Label htmlFor="description">Описание</Label>
-            <Textarea id="description" rows={4} placeholder="Дополнительная информация" {...register('description')} />
+            <TextArea id="description" rows={4} placeholder="Дополнительная информация" {...register('description')} />
           </div>
 
           <div>
             <Label htmlFor="reminder_date">Дата и время напоминания *</Label>
             <DatePicker id="reminder_date" value={reminderDate || null} onChange={(val) => setValue('reminder_date', val)} format="YYYY-MM-DD" />
-            {errors.reminder_date && <p className="text-xs text-destructive">{errors.reminder_date.message}</p>}
+            {errors.reminder_date && <p>{errors.reminder_date.message}</p>}
           </div>
 
-          <div className="flex flex-wrap gap-6">
-            <div className="flex items-center gap-2">
-              <Switch id="active" checked={!!activeValue} onCheckedChange={(val) => setValue('active', val)} />
+          <div>
+            <div>
+              <Switch id="active" checked={!!activeValue} onChange={(val) => setValue('active', val)} />
               <Label htmlFor="active">Активно</Label>
             </div>
-            <div className="flex items-center gap-2">
-              <Switch id="send_notification_email" checked={!!emailValue} onCheckedChange={(val) => setValue('send_notification_email', val)} />
+            <div>
+              <Switch id="send_notification_email" checked={!!emailValue} onChange={(val) => setValue('send_notification_email', val)} />
               <Label htmlFor="send_notification_email">Email уведомление</Label>
             </div>
           </div>
@@ -186,7 +183,7 @@ function ReminderForm({ id }) {
             />
           </div>
 
-          <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+          <div>
             <div>
               <Label htmlFor="content_type">Тип объекта *</Label>
               <Input
@@ -196,7 +193,7 @@ function ReminderForm({ id }) {
                 placeholder="Код типа объекта"
                 {...register('content_type', { valueAsNumber: true })}
               />
-              {errors.content_type && <p className="text-xs text-destructive">{errors.content_type.message}</p>}
+              {errors.content_type && <p>{errors.content_type.message}</p>}
             </div>
             <div>
               <Label htmlFor="object_id">Связанный объект *</Label>
@@ -207,16 +204,16 @@ function ReminderForm({ id }) {
                 placeholder="Код связанного объекта"
                 {...register('object_id', { valueAsNumber: true })}
               />
-              {errors.object_id && <p className="text-xs text-destructive">{errors.object_id.message}</p>}
+              {errors.object_id && <p>{errors.object_id.message}</p>}
             </div>
           </div>
 
-          <div className="flex flex-wrap gap-2">
+          <div>
             <Button type="submit" loading={saving}>
-              <Save className="mr-2 h-4 w-4" />
+              <Save />
               {isEdit ? 'Сохранить' : 'Создать'}
             </Button>
-            <Button variant="outline" onClick={() => navigate('/reminders')}>
+            <Button onClick={() => navigate('/reminders')}>
               Отмена
             </Button>
           </div>

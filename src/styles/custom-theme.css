@@ -1,4 +1,4 @@
-/* Custom Ant Design Theme Overrides - Enterprise CRM / Radix UI Style */
+/* Custom Ant Design Theme Overrides - Enterprise CRM */
 
 html,
 body,
@@ -38,7 +38,7 @@ code {
   background: #a1a1aa;
 }
 
-/* GLOBAL RADIX UI AESTHETICS FOR ANT DESIGN */
+/* Global Ant Design aesthetics */
 
 /* Cards (Minimalist, flat border, tiny shadow) */
 .ant-card {
@@ -50,7 +50,7 @@ code {
   font-weight: 600 !important;
 }
 
-/* Inputs & Form Elements (Shadcn Outline/Ring style) */
+/* Inputs & Form Elements (single-ring focus style) */
 /* ant-input-affix-wrapper is Ant's wrapper for Input.Password and Input with prefix/suffix */
 .ant-input,
 .ant-input-affix-wrapper,
@@ -59,7 +59,7 @@ code {
 .ant-picker {
   border-radius: 6px !important;
   box-shadow: none !important;
-  transition: border-color 0.15s, outline 0.15s;
+  transition: border-color 0.15s, box-shadow 0.15s;
 }
 
 /* Focus: single clean ring — NO double border */
@@ -71,10 +71,17 @@ code {
 .ant-input-number:focus,
 .ant-select-focused .ant-select-selector,
 .ant-picker-focused {
+  border-color: #1677ff !important;
+  box-shadow: 0 0 0 2px rgba(22, 119, 255, 0.16) !important;
+  outline: none !important;
+}
+
+/* Prevent double focus contour on Input with prefix/suffix wrappers */
+.ant-input-affix-wrapper .ant-input:focus,
+.ant-input-affix-wrapper .ant-input-focused {
   border-color: transparent !important;
   box-shadow: none !important;
-  outline: 2px solid #09090b !important;
-  outline-offset: 0px;
+  outline: none !important;
 }
 
 /* Buttons */
@@ -160,10 +167,9 @@ h1, h2, h3, h4, h5, h6, .ant-typography {
 .dark .ant-input-number-focused,
 .dark .ant-select-focused .ant-select-selector,
 .dark .ant-picker-focused {
-  border-color: transparent !important;
-  outline: 2px solid #a1a1aa !important;
-  outline-offset: 0px;
-  box-shadow: none !important;
+  border-color: #3b82f6 !important;
+  outline: none !important;
+  box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.2) !important;
 }
 
 /* Dark Status badges */

@@ -1,65 +1,49 @@
-/**
- * CallsList Component
- * Displays list of call logs with filtering and statistics
- */
-
 import dayjs from 'dayjs';
-import { Clock, Phone, PhoneCall, RefreshCcw, Search } from 'lucide-react';
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 
 import {
   AudioOutlined,
   CheckCircleOutlined,
   ClockCircleOutlined,
-  CloseCircleOutlined,
   FormOutlined,
   InfoCircleOutlined,
-  PhoneFilled,
   PhoneOutlined,
   PhoneTwoTone,
   PlayCircleOutlined,
-  ReloadOutlined
+  ReloadOutlined,
 } from '@ant-design/icons';
-import { Button as AntButton, Form, Space, Tag, Tooltip } from 'antd';
-import { DatePicker } from '../../components/ui-DatePicker.jsx';
-import EnhancedTable from '../../components/ui-EnhancedTable.jsx';
-import { Button } from '../../components/ui/button.jsx';
-import { Card } from '../../components/ui/card.jsx';
-import { Input } from '../../components/ui/input.jsx';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '../../components/ui/tabs.jsx';
-import { toast } from '../../components/ui/use-toast.js';
-// replaced Ant Design icons with lucide-react above
+import {
+  App,
+  Button,
+  Card,
+  DatePicker,
+  Form,
+  Input,
+  Modal,
+  Select,
+  Space,
+  Statistic,
+  Table,
+  Tag,
+  Typography,
+} from 'antd';
+
 import AudioPlayer from '../../components/AudioPlayer.jsx';
 import CallButton from '../../components/CallButton.jsx';
-import CrudPage from '../../components/CrudPage.jsx';
-import { EntityListPageShell, EntityListToolbar, LegacyEmptyState, LegacyLoadingState, LegacyStatePanel } from '../../shared/ui';
-import { getContact, getContacts } from '../../lib/api';
-import {
-  addCallNote,
-  createCallLog,
-  deleteCallLog,
-  getCallLog,
-  getCallLogs,
-  getCallStatistics,
-  getVoipCallLog,
-  getVoipCallLogs,
-  updateCallLog,
-} from '../../lib/api/calls.js';
-const Title = ({ children }) => <h2 className="text-xl font-semibold">{children}</h2>;
-const Text = ({ children, secondary }) => (
-  <span className={secondary ? 'text-muted-foreground' : undefined}>{children}</span>
-);
-const RangePicker = DatePicker.RangePicker;
+import { addCallNote, getCallStatistics, getVoipCallLog, getVoipCallLogs } from '../../lib/api/calls.js';
+
+const { RangePicker } = DatePicker;
+const { Search } = Input;
+const { Text, Title } = Typography;
 
 function CallsList() {
+  const { message } = App.useApp();
   const [calls, setCalls] = useState([]);
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState(null);
   const [searchText, setSearchText] = useState('');
   const [statistics, setStatistics] = useState(null);
   const [selectedRecording, setSelectedRecording] = useState(null);
   const [recordingModalVisible, setRecordingModalVisible] = useState(false);
-  const [activeTab, setActiveTab] = useState('voip');
   const [noteModalOpen, setNoteModalOpen] = useState(false);
   const [noteTarget, setNoteTarget] = useState(null);
   const [noteSaving, setNoteSaving] = useState(false);
@@ -78,12 +62,8 @@ function CallsList() {
 
   const fetchCalls = async () => {
     setLoading(true);
-    setError(null);
     try {
-      const params = {
-        limit: 500,
-      };
-
+      const params = { limit: 500 };
       if (filters.direction) params.direction = filters.direction;
       if (filters.status) params.status = filters.status;
       if (filters.dateRange && filters.dateRange.length === 2) {
@@ -98,21 +78,12 @@ function CallsList() {
         : results;
 
       setCalls(filtered);
-      setPagination((prev) => ({
-        ...prev,
-        current: 1,
-        total: filtered.length,
-      }));
+      setPagination((prev) => ({ ...prev, current: 1, total: filtered.length }));
     } catch (error) {
-      setError(error?.message || 'Не удалось загрузить историю звонков');
       console.error('Error fetching calls:', error);
-      toast({ title: 'Ошибка', description: 'Ошибка загрузки истории звонков', variant: 'destructive' });
+      message.error('Ошибка загрузки истории звонков');
       setCalls([]);
-      setPagination((prev) => ({
-        ...prev,
-        current: 1,
-        total: 0,
-      }));
+      setPagination((prev) => ({ ...prev, current: 1, total: 0 }));
     } finally {
       setLoading(false);
     }
@@ -125,57 +96,22 @@ function CallsList() {
         params.date_from = filters.dateRange[0].format('YYYY-MM-DD');
         params.date_to = filters.dateRange[1].format('YYYY-MM-DD');
       }
-      
       const stats = await getCallStatistics(params);
       setStatistics(stats);
-    } catch (error) {
-      console.error('Error fetching statistics:', error);
+    } catch {
       setStatistics(null);
     }
   };
 
   useEffect(() => {
-    if (activeTab !== 'voip') return;
     fetchCalls();
     fetchStatistics();
-  }, [searchText, filters, activeTab]);
-
-  const handleFilterChange = (key, value) => {
-    setFilters({
-      ...filters,
-      [key]: value,
-    });
-  };
-
-  const handleClearFilters = () => {
-    setFilters({
-      direction: null,
-      status: null,
-      dateRange: null,
-    });
-    setSearchText('');
-  };
-
-  const handleTableChange = (newPagination) => {
-    setPagination((prev) => ({ 
-      ...prev, 
-      current: newPagination.current,
-      pageSize: newPagination.pageSize 
-    }));
-  };
-
-  const handleSearch = (value) => {
-    setSearchText(value);
-  };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [searchText, filters]);
 
   const handlePlayRecording = (call) => {
     setSelectedRecording(call);
     setRecordingModalVisible(true);
-  };
-
-  const handleCloseRecordingModal = () => {
-    setRecordingModalVisible(false);
-    setSelectedRecording(null);
   };
 
   const handleOpenNoteModal = (record) => {
@@ -190,23 +126,18 @@ function CallsList() {
       const values = await noteForm.validateFields();
       setNoteSaving(true);
       await addCallNote(noteTarget.id, { note: values.note });
-      toast({ title: 'Заметка добавлена', description: 'Сохранено' });
+      message.success('Заметка добавлена');
       setNoteModalOpen(false);
       setNoteTarget(null);
       noteForm.resetFields();
       fetchCalls();
     } catch (error) {
-      if (error?.errorFields) return;
-      toast({ title: 'Ошибка', description: 'Ошибка добавления заметки', variant: 'destructive' });
+      if (!error?.errorFields) {
+        message.error('Ошибка добавления заметки');
+      }
     } finally {
       setNoteSaving(false);
     }
-  };
-
-  const handleCloseNoteModal = () => {
-    setNoteModalOpen(false);
-    setNoteTarget(null);
-    noteForm.resetFields();
   };
 
   const handleViewDetails = async (record) => {
@@ -214,32 +145,20 @@ function CallsList() {
     try {
       const data = await getVoipCallLog(record.id);
       setDetailModal({ open: true, loading: false, data });
-    } catch (error) {
-      console.error('Error loading call details:', error);
-      toast({ title: 'Ошибка', description: 'Ошибка загрузки деталей звонка', variant: 'destructive' });
+    } catch {
+      message.error('Ошибка загрузки деталей звонка');
       setDetailModal({ open: true, loading: false, data: null });
     }
   };
 
-  const handleCloseDetailModal = () => {
-    setDetailModal({ open: false, loading: false, data: null });
-  };
-
-  const formatDuration = (seconds) => {
-    if (!seconds) return '0:00';
-    const mins = Math.floor(seconds / 60);
-    const secs = seconds % 60;
-    return `${mins}:${secs.toString().padStart(2, '0')}`;
-  };
-
   const statusConfig = {
-    answered: { color: 'success', text: 'Отвечен', icon: <CheckCircleOutlined /> },
-    completed: { color: 'success', text: 'Завершен', icon: <CheckCircleOutlined /> },
-    missed: { color: 'error', text: 'Пропущен', icon: <CloseCircleOutlined /> },
-    no_answer: { color: 'error', text: 'Нет ответа', icon: <CloseCircleOutlined /> },
-    busy: { color: 'warning', text: 'Занято', icon: <CloseCircleOutlined /> },
-    failed: { color: 'error', text: 'Ошибка', icon: <CloseCircleOutlined /> },
-    ringing: { color: 'processing', text: 'Звонит', icon: <PhoneFilled /> },
+    answered: { color: 'success', text: 'Отвечен' },
+    completed: { color: 'success', text: 'Завершен' },
+    missed: { color: 'error', text: 'Пропущен' },
+    no_answer: { color: 'error', text: 'Нет ответа' },
+    busy: { color: 'warning', text: 'Занято' },
+    failed: { color: 'error', text: 'Ошибка' },
+    ringing: { color: 'processing', text: 'Звонит' },
   };
 
   const columns = [
@@ -247,18 +166,13 @@ function CallsList() {
       title: 'Направление',
       dataIndex: 'direction',
       key: 'direction',
-      width: 120,
+      width: 140,
       render: (direction) => (
         <Space>
           <PhoneTwoTone twoToneColor={direction === 'inbound' ? '#52c41a' : '#1890ff'} />
           <Text>{direction === 'inbound' ? 'Входящий' : 'Исходящий'}</Text>
         </Space>
       ),
-      filters: [
-        { text: 'Входящие', value: 'inbound' },
-        { text: 'Исходящие', value: 'outbound' },
-      ],
-      onFilter: (value, record) => record.direction === value,
     },
     {
       title: 'Номер телефона',
@@ -278,11 +192,7 @@ function CallsList() {
       width: 130,
       render: (status) => {
         const config = statusConfig[status] || statusConfig.completed;
-        return (
-          <Tag color={config.color} icon={config.icon}>
-            {config.text}
-          </Tag>
-        );
+        return <Tag color={config.color}>{config.text}</Tag>;
       },
     },
     {
@@ -298,13 +208,17 @@ function CallsList() {
       dataIndex: 'duration',
       key: 'duration',
       width: 120,
-      render: (duration) => (
-        <Space>
-          <ClockCircleOutlined />
-          {formatDuration(duration)}
-        </Space>
-      ),
-      sorter: (a, b) => (a.duration || 0) - (b.duration || 0),
+      render: (duration) => {
+        const sec = duration || 0;
+        const mins = Math.floor(sec / 60);
+        const secs = sec % 60;
+        return (
+          <Space>
+            <ClockCircleOutlined />
+            {`${mins}:${secs.toString().padStart(2, '0')}`}
+          </Space>
+        );
+      },
     },
     {
       title: 'Заметки',
@@ -317,58 +231,32 @@ function CallsList() {
       title: 'Запись',
       dataIndex: 'recording_url',
       key: 'recording',
-      width: 100,
+      width: 120,
       align: 'center',
-      render: (recording_url, record) => {
-        if (recording_url) {
-          return (
-            <Tooltip title="Прослушать запись">
-              <span>
-                <Button
-                  type="link"
-                  icon={<AudioOutlined />}
-                  size="small"
-                  onClick={() => handlePlayRecording(record)}
-                >
-                  Запись
-                </Button>
-              </span>
-            </Tooltip>
-          );
-        }
-        return <Text type="secondary">-</Text>;
-      },
+      render: (recordingUrl, record) =>
+        recordingUrl ? (
+          <Button type="link" icon={<AudioOutlined />} size="small" onClick={() => handlePlayRecording(record)}>
+            Запись
+          </Button>
+        ) : (
+          <Text type="secondary">-</Text>
+        ),
     },
     {
       title: 'Действия',
       key: 'actions',
-      width: 200,
+      width: 240,
       render: (_, record) => (
         <Space>
-          {record.recording_url && (
-            <Button
-              type="link"
-              icon={<PlayCircleOutlined />}
-              size="small"
-              onClick={() => handlePlayRecording(record)}
-            >
+          {record.recording_url ? (
+            <Button type="link" icon={<PlayCircleOutlined />} size="small" onClick={() => handlePlayRecording(record)}>
               Прослушать
             </Button>
-          )}
-          <Button
-            type="link"
-            icon={<FormOutlined />}
-            size="small"
-            onClick={() => handleOpenNoteModal(record)}
-          >
+          ) : null}
+          <Button type="link" icon={<FormOutlined />} size="small" onClick={() => handleOpenNoteModal(record)}>
             Заметка
           </Button>
-          <Button
-            type="link"
-            icon={<InfoCircleOutlined />}
-            size="small"
-            onClick={() => handleViewDetails(record)}
-          >
+          <Button type="link" icon={<InfoCircleOutlined />} size="small" onClick={() => handleViewDetails(record)}>
             Детали
           </Button>
           <CallButton
@@ -378,322 +266,150 @@ function CallsList() {
             entityId={record.related_lead || record.related_contact}
             size="small"
             type="link"
-            icon={true}
+            icon
           />
         </Space>
       ),
     },
   ];
 
-  const crmDirectionOptions = [
-    { label: 'Входящий', value: 'inbound' },
-    { label: 'Исходящий', value: 'outbound' },
-  ];
+  const stats = useMemo(() => {
+    if (!statistics || typeof statistics !== 'object') return null;
+    return {
+      total: statistics.total || statistics.count || calls.length,
+      answered: statistics.answered || 0,
+      missed: statistics.missed || 0,
+      duration: statistics.total_duration || 0,
+    };
+  }, [statistics, calls.length]);
 
-  const crmColumns = [
-    {
-      title: 'Номер',
-      dataIndex: 'number',
-      key: 'number',
-      render: (value) => value || '-',
-    },
-    {
-      title: 'Направление',
-      dataIndex: 'direction',
-      key: 'direction',
-      render: (direction) => (direction === 'inbound' ? 'Входящий' : 'Исходящий'),
-      width: 140,
-    },
-    {
-      title: 'Контакт',
-      dataIndex: 'contact_name',
-      key: 'contact_name',
-      render: (value) => value || '-',
-    },
-    {
-      title: 'Длительность',
-      dataIndex: 'duration',
-      key: 'duration',
-      width: 140,
-      render: (value) => formatDuration(value || 0),
-    },
-    {
-      title: 'Дата',
-      dataIndex: 'timestamp',
-      key: 'timestamp',
-      width: 180,
-      render: (value) => (value ? dayjs(value).format('DD.MM.YYYY HH:mm') : '-'),
-    },
-    {
-      title: 'VoIP ID',
-      dataIndex: 'voip_call_id',
-      key: 'voip_call_id',
-      width: 160,
-      render: (value) => value || '-',
-    },
-  ];
-
-  const crmFields = [
-    {
-      name: 'direction',
-      label: 'Направление',
-      type: 'select',
-      required: true,
-      options: crmDirectionOptions,
-      placeholder: 'Выберите направление',
-    },
-    {
-      name: 'number',
-      label: 'Номер',
-      type: 'text',
-      required: true,
-      placeholder: 'Номер телефона',
-    },
-    {
-      name: 'duration',
-      label: 'Длительность (сек)',
-      type: 'number',
-      min: 0,
-    },
-    {
-      name: 'contact',
-      label: 'Контакт',
-      type: 'entity',
-      fetchList: getContacts,
-      fetchById: getContact,
-    },
-    {
-      name: 'voip_call_id',
-      label: 'VoIP Call ID',
-      type: 'text',
-    },
-  ];
-
-  const voipTabContent = (
-    <div>
-      <EntityListPageShell
-        title="История звонков"
-        subtitle="VoIP-звонки в общем CRM list-shell"
-        extra={
-          <AntButton icon={<ReloadOutlined />} onClick={() => { fetchCalls(); fetchStatistics(); }}>
-            Обновить
-          </AntButton>
-        }
-        toolbar={
-          <EntityListToolbar
-            searchValue={searchText}
-            searchPlaceholder="Поиск по номеру телефона..."
-            onSearchChange={handleSearch}
-            filters={
-              <>
-                <select
-                  className="h-9 w-[150px] rounded-md border border-border bg-background px-2 text-sm"
-                  value={filters.direction || ''}
-                  onChange={(e) => handleFilterChange('direction', e.target.value || null)}
-                >
-                  <option value="">Направление</option>
-                  <option value="inbound">Входящие</option>
-                  <option value="outbound">Исходящие</option>
-                </select>
-                <select
-                  className="h-9 w-[150px] rounded-md border border-border bg-background px-2 text-sm"
-                  value={filters.status || ''}
-                  onChange={(e) => handleFilterChange('status', e.target.value || null)}
-                >
-                  <option value="">Статус</option>
-                  <option value="answered">Отвечен</option>
-                  <option value="ringing">Звонит</option>
-                  <option value="busy">Занято</option>
-                  <option value="no_answer">Нет ответа</option>
-                  <option value="failed">Ошибка</option>
-                </select>
-                <RangePicker
-                  value={filters.dateRange}
-                  onChange={(dates) => handleFilterChange('dateRange', dates)}
-                  format="DD.MM.YYYY"
-                />
-                {(filters.direction || filters.status || filters.dateRange || searchText) ? (
-                  <AntButton onClick={handleClearFilters}>
-                    Сбросить
-                  </AntButton>
-                ) : null}
-              </>
-            }
-            onRefresh={() => { fetchCalls(); fetchStatistics(); }}
-            loading={loading}
-            resultSummary={pagination.total ? `${pagination.total} звонков` : undefined}
-          />
-        }
-        error={error}
-        onRetry={() => { fetchCalls(); fetchStatistics(); }}
-      >
-        {statistics && (
-          <div className="mb-4 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
-            <Card className="p-4">
-              <div className="flex items-center gap-3 text-sm">
-                <div className="rounded-md bg-muted p-2"><Phone className="h-4 w-4" /></div>
-                <div>
-                  <div className="text-xs text-muted-foreground">Всего звонков</div>
-                  <div className="text-lg font-semibold">{statistics.total ?? statistics.total_calls ?? 0}</div>
-                </div>
-              </div>
-            </Card>
-            <Card className="p-4">
-              <div className="flex items-center gap-3 text-sm">
-                <div className="rounded-md bg-emerald-100 p-2 text-emerald-700"><PhoneCall className="h-4 w-4" /></div>
-                <div>
-                  <div className="text-xs text-muted-foreground">Входящие</div>
-                  <div className="text-lg font-semibold">{statistics.inbound ?? statistics.incoming ?? statistics.incoming_calls ?? 0}</div>
-                </div>
-              </div>
-            </Card>
-            <Card className="p-4">
-              <div className="flex items-center gap-3 text-sm">
-                <div className="rounded-md bg-sky-100 p-2 text-sky-700"><PhoneCall className="h-4 w-4" /></div>
-                <div>
-                  <div className="text-xs text-muted-foreground">Исходящие</div>
-                  <div className="text-lg font-semibold">{statistics.outbound ?? statistics.outgoing ?? statistics.outgoing_calls ?? 0}</div>
-                </div>
-              </div>
-            </Card>
-            <Card className="p-4">
-              <div className="flex items-center gap-3 text-sm">
-                <div className="rounded-md bg-muted p-2"><Clock className="h-4 w-4" /></div>
-                <div>
-                  <div className="text-xs text-muted-foreground">Средняя длительность</div>
-                  <div className="text-lg font-semibold">{formatDuration(Math.round(statistics.averageDuration || statistics.average_duration || 0))}</div>
-                </div>
-              </div>
-            </Card>
+  return (
+    <Card>
+      <Space direction="vertical" size={16} style={{ width: '100%' }}>
+        <Space wrap style={{ width: '100%', justifyContent: 'space-between' }}>
+          <div>
+            <Title level={3} style={{ margin: 0 }}>История звонков</Title>
+            <Text type="secondary">VoIP-журнал и аналитика</Text>
           </div>
-        )}
+          <Button icon={<ReloadOutlined />} onClick={fetchCalls} loading={loading}>Обновить</Button>
+        </Space>
 
-        <EnhancedTable
+        {stats ? (
+          <Space wrap>
+            <Card size="small"><Statistic title="Всего" value={stats.total} /></Card>
+            <Card size="small"><Statistic title="Отвечено" value={stats.answered} /></Card>
+            <Card size="small"><Statistic title="Пропущено" value={stats.missed} /></Card>
+            <Card size="small"><Statistic title="Длит., сек" value={stats.duration} /></Card>
+          </Space>
+        ) : null}
+
+        <Space wrap>
+          <Search
+            placeholder="Поиск по номеру"
+            allowClear
+            value={searchText}
+            onChange={(e) => setSearchText(e.target.value)}
+            onSearch={setSearchText}
+            style={{ minWidth: 260 }}
+          />
+          <Select
+            allowClear
+            placeholder="Направление"
+            style={{ minWidth: 150 }}
+            value={filters.direction}
+            options={[
+              { value: 'inbound', label: 'Входящий' },
+              { value: 'outbound', label: 'Исходящий' },
+            ]}
+            onChange={(v) => setFilters((prev) => ({ ...prev, direction: v ?? null }))}
+          />
+          <Select
+            allowClear
+            placeholder="Статус"
+            style={{ minWidth: 150 }}
+            value={filters.status}
+            options={Object.entries(statusConfig).map(([value, meta]) => ({ value, label: meta.text }))}
+            onChange={(v) => setFilters((prev) => ({ ...prev, status: v ?? null }))}
+          />
+          <RangePicker
+            format="DD.MM.YYYY"
+            value={filters.dateRange}
+            onChange={(vals) => setFilters((prev) => ({ ...prev, dateRange: vals || null }))}
+          />
+          <Button onClick={() => setFilters({ direction: null, status: null, dateRange: null })}>Сбросить</Button>
+        </Space>
+
+        <Table
+          rowKey={(record, index) => record.id || record.call_id || `${record.phone_number || 'call'}-${index}`}
           columns={columns}
           dataSource={calls}
           loading={loading}
-          pagination={pagination}
-          onChange={handleTableChange}
-          emptyText="Звонков не найдено"
+          pagination={{ ...pagination, showSizeChanger: true, onChange: (page, pageSize) => setPagination((prev) => ({ ...prev, current: page, pageSize })) }}
         />
-      </EntityListPageShell>
+      </Space>
 
-      {recordingModalVisible && selectedRecording && (
-        <div className="mt-4 space-y-3 rounded-md border border-border p-4">
-          <div className="text-sm font-semibold">Запись звонка</div>
-          <div className="grid grid-cols-1 gap-2 text-sm sm:grid-cols-2">
-            <div>
-              <div className="text-muted-foreground">Номер телефона</div>
-              <div>{selectedRecording.phone_number || selectedRecording.number}</div>
-            </div>
-            <div>
-              <div className="text-muted-foreground">Дата и время</div>
-              <div>{dayjs(selectedRecording.started_at || selectedRecording.timestamp).format('DD.MM.YYYY HH:mm:ss')}</div>
-            </div>
-            <div>
-              <div className="text-muted-foreground">Длительность</div>
-              <div>{formatDuration(selectedRecording.duration)}</div>
-            </div>
-            {selectedRecording.notes && (
-              <div className="sm:col-span-2">
-                <div className="text-muted-foreground">Заметки</div>
-                <div>{selectedRecording.notes}</div>
+      <Modal
+        title="Прослушивание записи"
+        open={recordingModalVisible}
+        onCancel={() => {
+          setRecordingModalVisible(false);
+          setSelectedRecording(null);
+        }}
+        footer={null}
+      >
+        {selectedRecording?.recording_url ? (
+          <AudioPlayer src={selectedRecording.recording_url} />
+        ) : (
+          <Text type="secondary">Запись не найдена</Text>
+        )}
+      </Modal>
+
+      <Modal
+        title="Заметка к звонку"
+        open={noteModalOpen}
+        onCancel={() => {
+          setNoteModalOpen(false);
+          setNoteTarget(null);
+          noteForm.resetFields();
+        }}
+        onOk={handleSaveNote}
+        confirmLoading={noteSaving}
+        okText="Сохранить"
+        cancelText="Отмена"
+      >
+        <Form form={noteForm} layout="vertical">
+          <Form.Item
+            label="Заметка"
+            name="note"
+            rules={[{ required: true, message: 'Добавьте текст заметки' }]}
+          >
+            <Input.TextArea rows={4} placeholder="Введите заметку" />
+          </Form.Item>
+        </Form>
+      </Modal>
+
+      <Modal
+        title="Детали звонка"
+        open={detailModal.open}
+        onCancel={() => setDetailModal({ open: false, loading: false, data: null })}
+        footer={null}
+      >
+        {detailModal.loading ? (
+          'Загрузка...'
+        ) : !detailModal.data ? (
+          <Text type="secondary">Данные недоступны</Text>
+        ) : (
+          <Space direction="vertical" size={8} style={{ width: '100%' }}>
+            {Object.entries(detailModal.data).map(([key, value]) => (
+              <div key={key}>
+                <Text strong>{key}: </Text>
+                <Text>{String(value ?? '-')}</Text>
               </div>
-            )}
-          </div>
-          <AudioPlayer
-            src={selectedRecording.recording_url}
-            filename={`call_${selectedRecording.id}_${selectedRecording.phone_number || selectedRecording.number}.webm`}
-          />
-          <div className="text-right">
-            <Button variant="outline" onClick={handleCloseRecordingModal}>Закрыть</Button>
-          </div>
-        </div>
-      )}
-    </div>
-  );
-
-  const crmTabContent = (
-    <CrudPage
-      title="CRM логи звонков"
-      api={{
-        list: getCallLogs,
-        retrieve: getCallLog,
-        create: createCallLog,
-        update: updateCallLog,
-        remove: deleteCallLog,
-      }}
-      columns={crmColumns}
-      fields={crmFields}
-    />
-  );
-
-  return (
-    <>
-      <Tabs value={activeTab} onValueChange={setActiveTab}>
-        <TabsList>
-          <TabsTrigger value="voip">VoIP</TabsTrigger>
-          <TabsTrigger value="crm">CRM логи</TabsTrigger>
-        </TabsList>
-        <TabsContent value="voip">{voipTabContent}</TabsContent>
-        <TabsContent value="crm">{crmTabContent}</TabsContent>
-      </Tabs>
-
-      {noteModalOpen && (
-        <div className="mt-4 rounded-md border border-border p-4">
-          <div className="text-sm font-semibold">Добавить заметку</div>
-          <textarea
-            className="mt-2 w-full rounded-md border border-border p-2 text-sm"
-            rows={4}
-            placeholder="Описание звонка"
-            defaultValue={noteForm.getFieldValue('note')}
-            onChange={(e) => noteForm.setFieldsValue({ note: e.target.value })}
-          />
-          <div className="mt-3 flex justify-end gap-2">
-            <Button variant="outline" onClick={handleCloseNoteModal}>Отмена</Button>
-            <Button onClick={handleSaveNote} loading={noteSaving}>Сохранить</Button>
-          </div>
-        </div>
-      )}
-
-      {detailModal.open && (
-        <div className="mt-4">
-          {detailModal.loading ? (
-            <LegacyLoadingState
-              title="Загрузка деталей звонка"
-              description="Получаем расширенную информацию по выбранному звонку."
-            />
-          ) : detailModal.data ? (
-            <LegacyStatePanel
-              title="Детали звонка"
-              description="Расширенная техническая информация по выбранному звонку."
-              actionLabel="Закрыть"
-              onAction={handleCloseDetailModal}
-            >
-              <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-                {Object.entries(detailModal.data).map(([key, value]) => (
-                  <div key={key} className="rounded-md border border-border p-3">
-                    <div className="text-xs text-muted-foreground">{key}</div>
-                    <div className="mt-1 text-sm whitespace-pre-wrap break-words">
-                      {typeof value === 'object' && value !== null
-                        ? JSON.stringify(value, null, 2)
-                        : String(value ?? '-')}
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </LegacyStatePanel>
-          ) : (
-            <LegacyEmptyState
-              title="Детали звонка недоступны"
-              description="Для этого звонка не удалось получить расширенные данные."
-              actionLabel="Закрыть"
-              onAction={handleCloseDetailModal}
-            />
-          )}
-        </div>
-      )}
-    </>
+            ))}
+          </Space>
+        )}
+      </Modal>
+    </Card>
   );
 }
 

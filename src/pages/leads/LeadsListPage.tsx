@@ -1,13 +1,13 @@
-import { EntityListPageShell } from '@/shared/ui';
 import { LeadsKanbanBoard } from '@/widgets/leads-kanban';
 import { LeadsTable } from '@/widgets/leads-table';
 import { AppstoreOutlined, PlusOutlined, UnorderedListOutlined } from '@ant-design/icons';
-import { Button, Grid, Segmented, Space } from 'antd';
+import { Button, Card, Grid, Segmented, Space, Typography } from 'antd';
 import React, { useEffect, useState } from 'react';
 // @ts-ignore
 import { navigate } from '@/router.js';
 // @ts-ignore
 import { canWrite } from '@/lib/rbac.js';
+const { Title } = Typography;
 
 export const LeadsListPage: React.FC = () => {
   const screens = Grid.useBreakpoint();
@@ -23,9 +23,9 @@ export const LeadsListPage: React.FC = () => {
   const canManage = canWrite();
 
   return (
-    <EntityListPageShell
-      title="Лиды"
-      extra={
+    <>
+      <Space style={{ width: '100%', justifyContent: 'space-between', marginBottom: 16 }} wrap>
+        <Title level={3} style={{ margin: 0 }}>Лиды</Title>
         <Space direction={isMobile ? 'vertical' : 'horizontal'} size="middle">
           <Segmented
             value={viewMode}
@@ -46,10 +46,11 @@ export const LeadsListPage: React.FC = () => {
             </Button>
           )}
         </Space>
-      }
-    >
+      </Space>
+      <Card>
       {viewMode === 'table' ? <LeadsTable /> : <LeadsKanbanBoard readOnly={!canManage} />}
-    </EntityListPageShell>
+      </Card>
+    </>
   );
 };
 

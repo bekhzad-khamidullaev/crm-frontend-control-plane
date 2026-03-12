@@ -1,932 +1,151 @@
-import Chart from 'chart.js/auto';
 import {
-    AlertTriangle,
-    BarChart3,
-    CalendarClock,
-    ChevronUp,
-    DollarSign,
-    LineChart,
-    Timer,
-    Trophy,
-    User,
-    Users,
-} from 'lucide-react';
-import { useEffect, useRef, useState } from 'react';
+  BarChartOutlined,
+  DollarCircleOutlined,
+  TeamOutlined,
+  UserOutlined,
+} from '@ant-design/icons';
+import {
+  Alert,
+  Card,
+  Col,
+  List,
+  Row,
+  Segmented,
+  Space,
+  Spin,
+  Statistic,
+  Typography,
+} from 'antd';
+import { useEffect, useMemo, useState } from 'react';
+import { getActivityFeed, getOverview, normalizeOverview } from '../lib/api/analytics.js';
 
-import { CampaignsWidget, MemosWidget, RevenueChart } from '../components';
-import { AnalyticsWrapper, ContactAnalyticsCard, DealAnalyticsCard, LeadAnalyticsCard } from '../components/analytics';
-import AnalyticsCard from '../components/analytics/AnalyticsCard.jsx';
-import AnalyticsStatusBanner from '../components/analytics/AnalyticsStatusBanner.jsx';
-import PredictionChart from '../components/analytics/PredictionChart.jsx';
-import { Avatar, AvatarFallback } from '../components/ui/avatar.jsx';
-import { Badge } from '../components/ui/badge.jsx';
-import { Button } from '../components/ui/button.jsx';
-import { Card } from '../components/ui/card.jsx';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../components/ui/select.jsx';
-import { Separator } from '../components/ui/separator.jsx';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '../components/ui/tabs.jsx';
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '../components/ui/tooltip.jsx';
-import { getActivityFeed, getDashboardAnalytics, getFunnelData, getOverview, normalizeOverview } from '../lib/api/analytics.js';
-import { getContacts, getDeals, getLeads } from '../lib/api/client.js';
-import { t } from '../lib/i18n';
-import { formatCurrency } from '../lib/utils/format.js';
-import { navigate } from '../router.js';
+const { Title, Text } = Typography;
 
 function Dashboard() {
   const [period, setPeriod] = useState('30d');
   const [overview, setOverview] = useState(null);
-  const [analytics, setAnalytics] = useState(null);
-  const [funnel, setFunnel] = useState([]);
   const [activity, setActivity] = useState([]);
-  const [leads, setLeads] = useState([]);
-  const [contacts, setContacts] = useState([]);
-  const [deals, setDeals] = useState([]);
-  const [leadsLastUpdate, setLeadsLastUpdate] = useState(null);
-  const [contactsLastUpdate, setContactsLastUpdate] = useState(null);
-  const [dealsLastUpdate, setDealsLastUpdate] = useState(null);
   const [loadingOverview, setLoadingOverview] = useState(false);
-  const [loadingAnalytics, setLoadingAnalytics] = useState(false);
-  const [loadingFunnel, setLoadingFunnel] = useState(false);
   const [loadingActivity, setLoadingActivity] = useState(false);
-  const [loadingLeads, setLoadingLeads] = useState(false);
-  const [loadingContacts, setLoadingContacts] = useState(false);
-  const [loadingDeals, setLoadingDeals] = useState(false);
-  const [overviewError, setOverviewError] = useState(null);
-  const [analyticsError, setAnalyticsError] = useState(null);
-  const [funnelError, setFunnelError] = useState(null);
-  const [activityError, setActivityError] = useState(null);
-  const [leadsError, setLeadsError] = useState(null);
-  const [contactsError, setContactsError] = useState(null);
-  const [dealsError, setDealsError] = useState(null);
-
-  const chartRefs = {
-    leadSource: useRef(null),
-    leadStatus: useRef(null),
-    revenue: useRef(null),
-    funnelChart: useRef(null),
-    monthlyGrowth: useRef(null),
-  };
-  const chartInstances = useRef({});
+  const [error, setError] = useState('');
 
   useEffect(() => {
-    if (window.location.hash.includes('/login')) {
-      return;
-    }
-    loadDashboardData();
+    void loadData();
   }, [period]);
 
-  const loadDashboardData = async () => {
-    setOverviewError(null);
-    setAnalyticsError(null);
-    setFunnelError(null);
-    setActivityError(null);
-    setLeadsError(null);
-    setContactsError(null);
-    setDealsError(null);
+  const cards = useMemo(() => {
+    const data = overview || {};
+    return [
+      {
+        key: 'leads',
+        title: 'Лиды',
+        value: Number(data.total_leads || data.leads || 0),
+        icon: <UserOutlined />,
+      },
+      {
+        key: 'contacts',
+        title: 'Контакты',
+        value: Number(data.total_contacts || data.contacts || 0),
+        icon: <TeamOutlined />,
+      },
+      {
+        key: 'deals',
+        title: 'Сделки',
+        value: Number(data.total_deals || data.deals || 0),
+        icon: <BarChartOutlined />,
+      },
+      {
+        key: 'revenue',
+        title: 'Выручка',
+        value: Number(data.total_revenue || data.revenue || 0),
+        icon: <DollarCircleOutlined />,
+        precision: 2,
+      },
+    ];
+  }, [overview]);
+
+  async function loadData() {
+    setError('');
     setLoadingOverview(true);
-    setLoadingAnalytics(true);
-    setLoadingFunnel(true);
     setLoadingActivity(true);
-    setLoadingLeads(true);
-    setLoadingContacts(true);
-    setLoadingDeals(true);
-    await Promise.allSettled([
-      (async () => {
-        try {
-          const res = await getOverview();
-          setOverview(normalizeOverview(res));
-        } catch (e) {
-          setOverviewError(e);
-        } finally {
-          setLoadingOverview(false);
-        }
-      })(),
-      (async () => {
-        try {
-          const res = await getDashboardAnalytics({ period });
-          setAnalytics(res);
-        } catch (e) {
-          setAnalyticsError(e);
-        } finally {
-          setLoadingAnalytics(false);
-        }
-      })(),
-      (async () => {
-        try {
-          const res = await getFunnelData({ period });
-          setFunnel(res || []);
-        } catch (e) {
-          setFunnelError(e);
-        } finally {
-          setLoadingFunnel(false);
-        }
-      })(),
-      (async () => {
-        try {
-          const res = await getActivityFeed({ period });
-          setActivity(res || []);
-        } catch (e) {
-          setActivityError(e);
-        } finally {
-          setLoadingActivity(false);
-        }
-      })(),
-      (async () => {
-        try {
-          const res = await getLeads();
-          setLeads(res?.results || []);
-          setLeadsLastUpdate(new Date());
-        } catch (e) {
-          setLeadsError(e);
-        } finally {
-          setLoadingLeads(false);
-        }
-      })(),
-      (async () => {
-        try {
-          const res = await getContacts();
-          setContacts(res?.results || []);
-          setContactsLastUpdate(new Date());
-        } catch (e) {
-          setContactsError(e);
-        } finally {
-          setLoadingContacts(false);
-        }
-      })(),
-      (async () => {
-        try {
-          const res = await getDeals();
-          setDeals(res?.results || []);
-          setDealsLastUpdate(new Date());
-        } catch (e) {
-          setDealsError(e);
-        } finally {
-          setLoadingDeals(false);
-        }
-      })(),
-    ]);
-  };
 
-  useEffect(() => {
-    if (loadingAnalytics || !analytics) return;
-    if (loadingLeads || loadingDeals) return;
-    Object.keys(chartInstances.current).forEach((key) => {
-      if (chartInstances.current[key]) {
-        chartInstances.current[key].destroy();
-      }
-    });
+    try {
+      const [overviewRes, activityRes] = await Promise.all([
+        getOverview(),
+        getActivityFeed({ period }),
+      ]);
 
-    buildCharts();
-
-    return () => {
-      Object.keys(chartInstances.current).forEach((key) => {
-        if (chartInstances.current[key]) {
-          chartInstances.current[key].destroy();
-        }
-      });
-    };
-  }, [loadingAnalytics, analytics, loadingLeads, leads, loadingDeals, deals]);
-
-  const buildCharts = () => {
-    const normalizeBuckets = (data) => {
-      if (!data) return [];
-      if (Array.isArray(data)) {
-        return data
-          .map((item) => ({
-            label: item.label || item.name || item.source || item.status || item.key || '',
-            value: item.value ?? item.count ?? item.total ?? 0,
-          }))
-          .filter((item) => item.label);
-      }
-      if (typeof data === 'object') {
-        return Object.entries(data).map(([label, value]) => ({
-          label,
-          value: typeof value === 'number' ? value : Number(value) || 0,
-        }));
-      }
-      return [];
-    };
-
-    if (chartRefs.revenue.current && analytics?.monthly_growth && !analytics.monthly_growth._isSummary && analytics.monthly_growth.revenue?.length) {
-      const ctx = chartRefs.revenue.current.getContext('2d');
-      chartInstances.current.revenue = new Chart(ctx, {
-        type: 'line',
-        data: {
-          labels: analytics.monthly_growth.labels,
-          datasets: [
-            {
-              label: 'Выручка',
-              data: analytics.monthly_growth.revenue,
-              borderColor: 'rgb(22, 119, 255)',
-              backgroundColor: 'rgba(22, 119, 255, 0.1)',
-              tension: 0.4,
-              fill: true,
-            },
-          ],
-        },
-        options: {
-          responsive: true,
-          maintainAspectRatio: false,
-          plugins: { legend: { display: false } },
-        },
-      });
+      setOverview(normalizeOverview(overviewRes));
+      setActivity(Array.isArray(activityRes) ? activityRes : []);
+    } catch (e) {
+      console.error('Dashboard load error:', e);
+      setError('Не удалось загрузить данные дашборда');
+      setOverview(null);
+      setActivity([]);
+    } finally {
+      setLoadingOverview(false);
+      setLoadingActivity(false);
     }
-
-    if (chartRefs.monthlyGrowth.current && analytics?.monthly_growth) {
-      const ctx = chartRefs.monthlyGrowth.current.getContext('2d');
-      const isSummary = analytics.monthly_growth._isSummary;
-      const datasets = isSummary
-        ? [
-            {
-              label: 'Итого',
-              data: analytics.monthly_growth.leads,
-              backgroundColor: [
-                'rgba(82, 196, 26, 0.6)',
-                'rgba(22, 119, 255, 0.6)',
-                'rgba(250, 140, 22, 0.6)',
-              ],
-              borderWidth: 1,
-            },
-          ]
-        : [
-            {
-              label: 'Лиды',
-              data: analytics.monthly_growth.leads,
-              backgroundColor: 'rgba(82, 196, 26, 0.6)',
-              borderColor: 'rgb(82, 196, 26)',
-              borderWidth: 1,
-            },
-            {
-              label: 'Сделки',
-              data: analytics.monthly_growth.deals,
-              backgroundColor: 'rgba(22, 119, 255, 0.6)',
-              borderColor: 'rgb(22, 119, 255)',
-              borderWidth: 1,
-            },
-          ];
-      chartInstances.current.monthlyGrowth = new Chart(ctx, {
-        type: 'bar',
-        data: {
-          labels: analytics.monthly_growth.labels,
-          datasets,
-        },
-        options: {
-          responsive: true,
-          maintainAspectRatio: false,
-          plugins: { legend: { position: 'top' } },
-          scales: { y: { beginAtZero: true } },
-        },
-      });
-    }
-
-    // Compute lead sources from leads array if not in analytics
-    let leadSources = normalizeBuckets(
-      analytics?.lead_sources || analytics?.leads_by_source || analytics?.sources
-    );
-    if (!leadSources.length && leads.length) {
-      const sourceLabels = { web: 'Сайт', referral: 'Реферал', call: 'Звонок', email: 'Email', social: 'Соцсети' };
-      const counts = {};
-      leads.forEach(l => {
-        const src = l.lead_source?.name || (typeof l.lead_source === 'string' ? l.lead_source : null) || l.source || 'Другое';
-        counts[src] = (counts[src] || 0) + 1;
-      });
-      leadSources = Object.entries(counts).map(([label, value]) => ({ label: sourceLabels[label] || label, value }));
-    }
-
-    if (chartRefs.leadSource.current && leadSources.length) {
-      const ctx = chartRefs.leadSource.current.getContext('2d');
-      chartInstances.current.leadSource = new Chart(ctx, {
-        type: 'doughnut',
-        data: {
-          labels: leadSources.map((s) => s.label),
-          datasets: [
-            {
-              data: leadSources.map((s) => s.value),
-              backgroundColor: [
-                'rgba(22, 119, 255, 0.8)',
-                'rgba(82, 196, 26, 0.8)',
-                'rgba(250, 140, 22, 0.8)',
-                'rgba(114, 46, 209, 0.8)',
-                'rgba(255, 77, 79, 0.8)',
-              ],
-            },
-          ],
-        },
-        options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'bottom' } } },
-      });
-    }
-
-    // Compute lead statuses from leads array if not in analytics
-    let leadStatus = normalizeBuckets(
-      analytics?.lead_statuses || analytics?.leads_by_status || analytics?.statuses
-    );
-    if (!leadStatus.length && leads.length) {
-      const statusLabels = { active: 'Активный', disqualified: 'Дисквалиф.', converted: 'Конвертирован' };
-      const counts = {};
-      leads.forEach(l => {
-        const st = l.disqualified ? 'disqualified' : (l.was_in_touch ? 'converted' : 'active');
-        const label = statusLabels[st] || st;
-        counts[label] = (counts[label] || 0) + 1;
-      });
-      leadStatus = Object.entries(counts).map(([label, value]) => ({ label, value }));
-    }
-
-    if (chartRefs.leadStatus.current && leadStatus.length) {
-      const ctx = chartRefs.leadStatus.current.getContext('2d');
-      chartInstances.current.leadStatus = new Chart(ctx, {
-        type: 'bar',
-        data: {
-          labels: leadStatus.map((s) => s.label),
-          datasets: [
-            {
-              label: 'Количество',
-              data: leadStatus.map((s) => s.value),
-              backgroundColor: [
-                'rgba(24, 144, 255, 0.6)',
-                'rgba(250, 173, 20, 0.6)',
-                'rgba(255, 77, 79, 0.6)',
-                'rgba(82, 196, 26, 0.6)',
-              ],
-            },
-          ],
-        },
-        options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } } },
-      });
-    }
-
-    if (chartRefs.funnelChart.current && funnel.length > 0) {
-      const ctx = chartRefs.funnelChart.current.getContext('2d');
-      chartInstances.current.funnelChart = new Chart(ctx, {
-        type: 'bar',
-        data: {
-          labels: funnel.map((f) => f.label),
-          datasets: [
-            {
-              label: 'Сумма',
-              data: funnel.map((f) => f.value),
-              backgroundColor: 'rgba(22, 119, 255, 0.6)',
-            },
-          ],
-        },
-        options: {
-          indexAxis: 'y',
-          responsive: true,
-          maintainAspectRatio: false,
-          plugins: { legend: { display: false } },
-        },
-      });
-    }
-  };
-
-
-  const getActivityIcon = (type) => {
-    switch (type) {
-      case 'lead_created':
-        return <User className="h-4 w-4" />;
-      case 'deal_won':
-        return <Trophy className="h-4 w-4" />;
-      case 'contact_updated':
-        return <Users className="h-4 w-4" />;
-      default:
-        return <Timer className="h-4 w-4" />;
-    }
-  };
-
-  const formatTimeAgo = (timestamp) => {
-    const date = new Date(timestamp);
-    const now = new Date();
-    const diffMs = now - date;
-    const diffMins = Math.floor(diffMs / 60000);
-    const diffHours = Math.floor(diffMs / 3600000);
-    const diffDays = Math.floor(diffMs / 86400000);
-
-    if (diffMins < 60) return `${diffMins} мин назад`;
-    if (diffHours < 24) return `${diffHours} ч назад`;
-    return `${diffDays} дн назад`;
-  };
-
-  const overdueTasks = Number(analytics?.tasks_by_status?.overdue || 0);
-  const pendingTasks = Number(analytics?.tasks_by_status?.pending || 0);
-  const staleLeadThreshold = Date.now() - 7 * 24 * 60 * 60 * 1000;
-  const staleLeads = leads.filter((lead) => {
-    const lastTouch = lead?.was_in_touch || lead?.update_date || lead?.creation_date;
-    return !lead?.disqualified && !lead?.was_in_touch && lastTouch && new Date(lastTouch).getTime() < staleLeadThreshold;
-  }).length;
-  const inactiveDeals = deals.filter((deal) => deal?.active === false).length;
-  const todayFocusCards = [
-    {
-      key: 'leads',
-      title: 'Новые лиды',
-      value: overview?.total_leads || 0,
-      description: 'Проверьте входящий поток и закрепите ответственных.',
-      actionLabel: 'Открыть лиды',
-      onClick: () => navigate('/leads'),
-    },
-    {
-      key: 'tasks',
-      title: 'Задачи в ожидании',
-      value: pendingTasks,
-      description: 'Очистите хвост задач, которые тормозят воронку.',
-      actionLabel: 'Открыть задачи',
-      onClick: () => navigate('/tasks'),
-    },
-    {
-      key: 'deals',
-      title: 'Активные сделки',
-      value: deals.filter((deal) => deal?.active).length,
-      description: 'Посмотрите сделки, которым нужен следующий шаг.',
-      actionLabel: 'Открыть сделки',
-      onClick: () => navigate('/deals'),
-    },
-  ];
-  const riskCards = [
-    {
-      key: 'stale-leads',
-      title: 'Лиды без движения',
-      value: staleLeads,
-      tone: staleLeads > 0 ? 'warning' : 'neutral',
-      description: 'Лиды без касания более 7 дней.',
-    },
-    {
-      key: 'overdue-tasks',
-      title: 'Просроченные задачи',
-      value: overdueTasks,
-      tone: overdueTasks > 0 ? 'danger' : 'neutral',
-      description: 'Требуют реакции команды сегодня.',
-    },
-    {
-      key: 'inactive-deals',
-      title: 'Неактивные сделки',
-      value: inactiveDeals,
-      tone: inactiveDeals > 0 ? 'warning' : 'neutral',
-      description: 'Сделки, выпавшие из активной работы.',
-    },
-  ];
-  const prioritiesSummary = [
-    overdueTasks > 0 ? `Просрочено задач: ${overdueTasks}` : null,
-    staleLeads > 0 ? `Лидов без движения: ${staleLeads}` : null,
-    overview?.conversion_rate ? `Конверсия: ${overview.conversion_rate}%` : null,
-  ].filter(Boolean).join(' • ');
+  }
 
   return (
-    <div className="space-y-6 p-6">
-      <div className="flex flex-wrap items-center justify-between gap-4">
-        <div className="flex items-center gap-3">
-          <LineChart className="h-6 w-6" />
-          <h1 className="text-2xl font-semibold">Аналитика и дашборд</h1>
-          {analyticsError && (
-            <TooltipProvider>
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <Badge variant="secondary" className="flex items-center gap-1">
-                    <AlertTriangle className="h-3 w-3" />
-                    Частично доступен
-                  </Badge>
-                </TooltipTrigger>
-                <TooltipContent>{t('dashboard.analytics.partialTooltip')}</TooltipContent>
-              </Tooltip>
-            </TooltipProvider>
-          )}
-        </div>
-        <div className="flex items-center gap-3">
-          <span className="text-sm text-muted-foreground">Период:</span>
-          <Select value={period} onValueChange={setPeriod}>
-            <SelectTrigger className="w-[120px]">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="7d">7 дней</SelectItem>
-              <SelectItem value="30d">30 дней</SelectItem>
-              <SelectItem value="90d">90 дней</SelectItem>
-            </SelectContent>
-          </Select>
-          <Button onClick={loadDashboardData}>Обновить</Button>
-        </div>
-      </div>
-
-      <Tabs defaultValue="overview">
-        <TabsList>
-          <TabsTrigger value="overview">
-            <BarChart3 className="mr-2 h-4 w-4" /> Обзор
-          </TabsTrigger>
-          <TabsTrigger value="leads">
-            <User className="mr-2 h-4 w-4" /> Лиды
-          </TabsTrigger>
-          <TabsTrigger value="contacts">
-            <Users className="mr-2 h-4 w-4" /> Контакты
-          </TabsTrigger>
-          <TabsTrigger value="deals">
-            <Trophy className="mr-2 h-4 w-4" /> Сделки
-          </TabsTrigger>
-        </TabsList>
-
-        <TabsContent value="overview" className="space-y-6">
-          {analyticsError && (
-            <AnalyticsStatusBanner
-              message="Аналитика временно недоступна (ошибка сервера)"
-              details={analyticsError?.message}
-              onRetry={loadDashboardData}
+    <Space direction="vertical" size={16} style={{ width: '100%' }}>
+      <Card>
+        <Space direction="vertical" size={12} style={{ width: '100%' }}>
+          <Space style={{ width: '100%', justifyContent: 'space-between' }} wrap>
+            <Space direction="vertical" size={0}>
+              <Title level={3} style={{ margin: 0 }}>Дашборд</Title>
+              <Text type="secondary">Ключевые показатели CRM</Text>
+            </Space>
+            <Segmented
+              value={period}
+              options={[
+                { label: '7 дней', value: '7d' },
+                { label: '30 дней', value: '30d' },
+                { label: '90 дней', value: '90d' },
+              ]}
+              onChange={(value) => setPeriod(String(value))}
             />
-          )}
+          </Space>
 
-          <DashboardSection
-            title="Фокус на сегодня"
-            description={prioritiesSummary || 'Сначала закройте горящие задачи и проверьте новый входящий поток.'}
-          >
-            <div className="grid gap-4 lg:grid-cols-[1.6fr_1fr]">
-              <div className="grid gap-4 md:grid-cols-3">
-                {todayFocusCards.map((item) => (
-                  <OperationalCard key={item.key} {...item} />
-                ))}
-              </div>
-              <AnalyticsCard
-                title="Зоны риска"
-                loading={loadingAnalytics || loadingLeads || loadingDeals}
-                error={analyticsError || leadsError || dealsError}
-              >
-                <div className="space-y-3">
-                  {riskCards.map((risk) => (
-                    <RiskRow key={risk.key} {...risk} />
-                  ))}
-                </div>
-              </AnalyticsCard>
-            </div>
-          </DashboardSection>
+          {error ? <Alert type="error" showIcon message={error} /> : null}
+        </Space>
+      </Card>
 
-          <DashboardSection
-            title="Общий снимок"
-            description="Базовые показатели, которые помогают быстро оценить состояние продаж."
-          >
-            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-              <StatCard
-                title="Всего лидов"
-                value={overview?.total_leads || 0}
-                icon={<User className="h-4 w-4" />}
-                suffix={overview?.leads_growth > 0 ? `+${overview.leads_growth}%` : null}
-                loading={loadingOverview}
-              />
-              <StatCard
-                title="Всего контактов"
-                value={overview?.total_contacts || 0}
-                icon={<Users className="h-4 w-4" />}
-                loading={loadingOverview}
-              />
-              <StatCard
-                title="Всего сделок"
-                value={overview?.total_deals || 0}
-                icon={<Trophy className="h-4 w-4" />}
-                suffix={overview?.deals_growth > 0 ? `+${overview.deals_growth}%` : null}
-                loading={loadingOverview}
-              />
-              <StatCard
-                title="Выручка"
-                value={formatCurrency(overview?.total_revenue || 0)}
-                icon={<DollarSign className="h-4 w-4" />}
-                suffix={overview?.revenue_growth > 0 ? `+${overview.revenue_growth}%` : null}
-                loading={loadingOverview}
-              />
-            </div>
-          </DashboardSection>
+      <Spin spinning={loadingOverview}>
+        <Row gutter={[16, 16]}>
+          {cards.map((card) => (
+            <Col xs={24} sm={12} lg={6} key={card.key}>
+              <Card>
+                <Statistic
+                  title={card.title}
+                  value={card.value}
+                  precision={card.precision}
+                  prefix={card.icon}
+                />
+              </Card>
+            </Col>
+          ))}
+        </Row>
+      </Spin>
 
-          {!analyticsError && (
-            <DashboardSection
-              title="Тренды и прогноз"
-              description="Показывает динамику выручки, движения по воронке и ближайший прогноз."
-            >
-              <div className="grid gap-4 lg:grid-cols-2">
-                <AnalyticsCard title="Динамика выручки" loading={loadingAnalytics} error={undefined}>
-                  <div className="h-[300px]">
-                    <canvas ref={chartRefs.revenue}></canvas>
-                  </div>
-                </AnalyticsCard>
-                <AnalyticsCard title="Рост лидов и сделок" loading={loadingAnalytics} error={undefined}>
-                  <div className="h-[300px]">
-                    <canvas ref={chartRefs.monthlyGrowth}></canvas>
-                  </div>
-                </AnalyticsCard>
-              </div>
-
-              <div style={{ marginTop: 16 }}>
-                <AnalyticsCard
-                  title={
-                    <div className="flex items-center gap-2">
-                      <CalendarClock className="h-4 w-4" />
-                      <span>{t('dashboard.analytics.predictionTitle')}</span>
-                    </div>
-                  }
-                  loading={loadingAnalytics}
-                  error={undefined}
-                >
-                  {analytics?.prediction && (
-                    <PredictionChart
-                      labels={analytics.prediction.labels}
-                      predictedData={analytics.prediction.predicted_revenue}
-                      confidenceLower={analytics.prediction.confidence_lower}
-                      confidenceUpper={analytics.prediction.confidence_upper}
-                      title="Прогнозируемая выручка на следующие 6 месяцев"
-                      height={350}
-                    />
-                  )}
-                </AnalyticsCard>
-              </div>
-
-              <div className="grid gap-4 lg:grid-cols-3" style={{ marginTop: 16 }}>
-                <AnalyticsCard title="Источники лидов" loading={loadingAnalytics} error={undefined}>
-                  <div className="h-[300px]">
-                    <canvas ref={chartRefs.leadSource}></canvas>
-                  </div>
-                </AnalyticsCard>
-                <AnalyticsCard title="Статус лидов" loading={loadingAnalytics} error={undefined}>
-                  <div className="h-[300px]">
-                    <canvas ref={chartRefs.leadStatus}></canvas>
-                  </div>
-                </AnalyticsCard>
-                <AnalyticsCard title="Воронка продаж" loading={loadingFunnel} error={funnelError}>
-                  <div className="h-[300px]">
-                    <canvas ref={chartRefs.funnelChart}></canvas>
-                  </div>
-                </AnalyticsCard>
-              </div>
-            </DashboardSection>
-          )}
-
-          <DashboardSection
-            title="Рабочий контекст"
-            description="Дополнительные сигналы по заметкам, кампаниям и выручке."
-          >
-            <div className="grid gap-4 lg:grid-cols-3">
-              <MemosWidget />
-              <CampaignsWidget />
-              <RevenueChart />
-            </div>
-          </DashboardSection>
-
-          <DashboardSection
-            title="Активность команды"
-            description="Показывает, что произошло недавно и где может потребоваться вмешательство."
-          >
-            <div className="grid gap-4 lg:grid-cols-2">
-              <AnalyticsCard title="Последняя активность" loading={loadingActivity} error={activityError}>
-                <div className="space-y-4">
-                  {activity.length === 0 && (
-                    <div className="text-center text-sm text-muted-foreground py-4">Нет активности</div>
-                  )}
-                  {activity.map((item) => (
-                    <div key={item.id || item.timestamp} className="flex items-start gap-3">
-                      <Avatar className="h-8 w-8">
-                        <AvatarFallback>{getActivityIcon(item.type)}</AvatarFallback>
-                      </Avatar>
-                      <div className="flex-1 space-y-1">
-                        <div className="text-sm font-medium">{item.title || item.message || item.type}</div>
-                        {item.description && (
-                          <div className="text-xs text-muted-foreground">{item.description}</div>
-                        )}
-                        <div className="text-xs text-muted-foreground">
-                          {item.user ? `${item.user} • ` : ''}{formatTimeAgo(item.timestamp)}
-                        </div>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </AnalyticsCard>
-
-              <AnalyticsCard title="Статистика задач" loading={loadingAnalytics} error={analyticsError}>
-                {!analyticsError && analytics?.tasks_by_status && (
-                  <div className="space-y-4">
-                    <div className="grid gap-4 sm:grid-cols-2">
-                      <StatBadge label="В ожидании" value={analytics.tasks_by_status.pending} />
-                      <StatBadge label="В работе" value={analytics.tasks_by_status.in_progress} />
-                      <StatBadge label="Завершено" value={analytics.tasks_by_status.completed} />
-                      <StatBadge label="Просрочено" value={analytics.tasks_by_status.overdue} />
-                    </div>
-                    <Separator />
-                    <div className="text-center text-sm font-medium">
-                      Конверсия: {overview?.conversion_rate ?? 0}%
-                    </div>
-                  </div>
-                )}
-              </AnalyticsCard>
-            </div>
-          </DashboardSection>
-        </TabsContent>
-
-        <TabsContent value="leads">
-          <AnalyticsWrapper
-            title=""
-            onPeriodChange={(periodValue, customRange) => {
-              console.log('Period changed:', periodValue, customRange);
-            }}
-            onRefresh={() => loadDashboardData()}
-            exportData={leads.map((l) => ({
-              Статус: l.status,
-              Имя: l.name,
-              Email: l.email,
-              Телефон: l.phone,
-              Источник: l.source,
-              Создан: l.created_at,
-            }))}
-            loading={loadingLeads}
-            showFilters={true}
-            showExport={true}
-            enableRealTime={true}
-            realTimeInterval={30000}
-            lastUpdate={leadsLastUpdate}
-            onRealTimeToggle={(enabled) => {
-              console.log('Real-time toggle:', enabled);
-            }}
-            extra={
-              <Button variant="link" onClick={() => navigate('/leads')}>
-                Перейти к лидам →
-              </Button>
-            }
-          >
-            {leadsError ? (
-              <div className="text-center text-sm text-muted-foreground">Не удалось загрузить данные о лидах</div>
-            ) : (
-              <LeadAnalyticsCard
-                leads={leads}
-                showStatistics={true}
-                showStatusChart={true}
-                showSourceChart={true}
-                showFunnelChart={true}
-                size="small"
-                chartHeight={320}
-                enableDrillDown={true}
-                onLeadClick={(lead) => {
-                  navigate(`/leads/${lead.id}`);
-                }}
-              />
+      <Card title="Последняя активность">
+        <Spin spinning={loadingActivity}>
+          <List
+            dataSource={activity}
+            locale={{ emptyText: 'Нет активности за выбранный период' }}
+            renderItem={(item, index) => (
+              <List.Item key={`${item?.id || 'row'}-${index}`}>
+                <Space direction="vertical" size={0} style={{ width: '100%' }}>
+                  <Text strong>{item?.title || item?.event || 'Событие'}</Text>
+                  <Text type="secondary">{item?.description || item?.message || 'Без описания'}</Text>
+                </Space>
+              </List.Item>
             )}
-          </AnalyticsWrapper>
-        </TabsContent>
-
-        <TabsContent value="contacts">
-          <AnalyticsWrapper
-            title=""
-            onPeriodChange={(periodValue, customRange) => {
-              console.log('Period changed:', periodValue, customRange);
-            }}
-            onRefresh={() => loadDashboardData()}
-            exportData={contacts.map((c) => ({
-              Имя: c.name,
-              Email: c.email,
-              Телефон: c.phone,
-              Компания: c.company,
-              Тип: c.type,
-              Создан: c.created_at,
-            }))}
-            loading={loadingContacts}
-            showFilters={true}
-            showExport={true}
-            enableRealTime={true}
-            realTimeInterval={30000}
-            lastUpdate={contactsLastUpdate}
-            extra={
-              <Button variant="link" onClick={() => navigate('/contacts')}>
-                Перейти к контактам →
-              </Button>
-            }
-          >
-            {contactsError ? (
-              <div className="text-center text-sm text-muted-foreground">Не удалось загрузить данные о контактах</div>
-            ) : (
-              <ContactAnalyticsCard
-                contacts={contacts}
-                showStatistics={true}
-                showTypeChart={true}
-                showSourceChart={true}
-                showActivityChart={true}
-                size="small"
-                chartHeight={320}
-              />
-            )}
-          </AnalyticsWrapper>
-        </TabsContent>
-
-        <TabsContent value="deals">
-          <AnalyticsWrapper
-            title=""
-            onPeriodChange={(periodValue, customRange) => {
-              console.log('Period changed:', periodValue, customRange);
-            }}
-            onRefresh={() => loadDashboardData()}
-            exportData={deals.map((d) => ({
-              Название: d.title,
-              Сумма: d.amount,
-              Стадия: d.stage,
-              Контакт: d.contact,
-              Компания: d.company,
-              Ответственный: d.owner,
-              Создан: d.created_at,
-            }))}
-            loading={loadingDeals}
-            showFilters={true}
-            showExport={true}
-            enableRealTime={true}
-            realTimeInterval={30000}
-            lastUpdate={dealsLastUpdate}
-            extra={
-              <Button variant="link" onClick={() => navigate('/deals')}>
-                Перейти к сделкам →
-              </Button>
-            }
-          >
-            {dealsError ? (
-              <div className="text-center text-sm text-muted-foreground">Не удалось загрузить данные о сделках</div>
-            ) : (
-              <DealAnalyticsCard
-                deals={deals}
-                showStatistics={true}
-                showStageChart={true}
-                showManagerChart={true}
-                showSourceChart={true}
-                size="small"
-                chartHeight={320}
-              />
-            )}
-          </AnalyticsWrapper>
-        </TabsContent>
-      </Tabs>
-    </div>
-  );
-}
-
-function DashboardSection({ title, description, children }) {
-  return (
-    <div className="space-y-4">
-      <div className="space-y-1">
-        <h2 className="text-lg font-semibold">{title}</h2>
-        {description ? <p className="text-sm text-muted-foreground">{description}</p> : null}
-      </div>
-      {children}
-    </div>
-  );
-}
-
-function OperationalCard({ title, value, description, actionLabel, onClick }) {
-  return (
-    <Card className="p-4">
-      <div className="space-y-3">
-        <div>
-          <div className="text-xs text-muted-foreground">{title}</div>
-          <div className="text-2xl font-semibold">{value}</div>
-        </div>
-        <div className="text-sm text-muted-foreground">{description}</div>
-        <Button onClick={onClick}>{actionLabel}</Button>
-      </div>
-    </Card>
-  );
-}
-
-function RiskRow({ title, value, description, tone }) {
-  const toneClass =
-    tone === 'danger'
-      ? 'border-red-200 bg-red-50'
-      : tone === 'warning'
-        ? 'border-amber-200 bg-amber-50'
-        : 'border-border bg-background';
-
-  return (
-    <div className={`rounded-md border p-3 ${toneClass}`}>
-      <div className="flex items-center justify-between gap-3">
-        <div>
-          <div className="text-sm font-medium">{title}</div>
-          <div className="text-xs text-muted-foreground">{description}</div>
-        </div>
-        <div className="text-xl font-semibold">{value}</div>
-      </div>
-    </div>
-  );
-}
-
-function StatCard({ title, value, icon, suffix, loading }) {
-  return (
-    <Card className="p-4">
-      <div className="flex items-center gap-3">
-        <div className="rounded-md bg-muted p-2 text-muted-foreground">{icon}</div>
-        <div>
-          <div className="text-xs text-muted-foreground">{title}</div>
-          <div className="text-lg font-semibold">
-            {loading ? '...' : value}
-          </div>
-          {suffix && (
-            <Badge variant="secondary" className="mt-1">
-              <ChevronUp className="mr-1 h-3 w-3" />
-              {suffix}
-            </Badge>
-          )}
-        </div>
-      </div>
-    </Card>
-  );
-}
-
-function StatBadge({ label, value }) {
-  return (
-    <div className="rounded-md border border-border p-3 text-sm">
-      <div className="text-xs text-muted-foreground">{label}</div>
-      <div className="text-lg font-semibold">{value ?? 0}</div>
-    </div>
+          />
+        </Spin>
+      </Card>
+    </Space>
   );
 }
 

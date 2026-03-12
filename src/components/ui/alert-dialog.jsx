@@ -1,92 +1,93 @@
 import * as React from 'react';
-import * as AlertDialogPrimitive from '@radix-ui/react-alert-dialog';
+import { Modal } from 'antd';
+import { Button } from './button.jsx';
 
-import { cn } from '../../lib/utils/cn.js';
-import { buttonVariants } from './button.jsx';
+const AlertDialogContext = React.createContext(null);
 
-const AlertDialog = AlertDialogPrimitive.Root;
-const AlertDialogTrigger = AlertDialogPrimitive.Trigger;
-const AlertDialogPortal = AlertDialogPrimitive.Portal;
+function useAlertContext() {
+  const ctx = React.useContext(AlertDialogContext);
+  if (!ctx) {
+    return { open: false, setOpen: () => {} };
+  }
+  return ctx;
+}
 
-const AlertDialogOverlay = React.forwardRef(({ className, ...props }, ref) => (
-  <AlertDialogPrimitive.Overlay
-    ref={ref}
-    className={cn(
-      'fixed inset-0 z-50 bg-black/50 data-[state=open]:animate-in data-[state=closed]:animate-out',
-      'data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0',
-      className
-    )}
-    {...props}
-  />
-));
-AlertDialogOverlay.displayName = AlertDialogPrimitive.Overlay.displayName;
+const AlertDialog = ({ open: controlledOpen, onOpenChange, children }) => {
+  const [uncontrolledOpen, setUncontrolledOpen] = React.useState(false);
+  const open = controlledOpen ?? uncontrolledOpen;
 
-const AlertDialogContent = React.forwardRef(({ className, ...props }, ref) => (
-  <AlertDialogPortal>
-    <AlertDialogOverlay />
-    <AlertDialogPrimitive.Content
-      ref={ref}
-      className={cn(
-        'fixed left-[50%] top-[50%] z-50 grid w-full max-w-lg translate-x-[-50%] translate-y-[-50%] gap-4 border border-border bg-background p-6 shadow-lg duration-200',
-        'data-[state=open]:animate-in data-[state=closed]:animate-out',
-        'data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0',
-        'data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95',
-        'data-[state=closed]:slide-out-to-left-1/2 data-[state=closed]:slide-out-to-top-[48%]',
-        'data-[state=open]:slide-in-from-left-1/2 data-[state=open]:slide-in-from-top-[48%]',
-        'sm:rounded-lg',
-        className
-      )}
+  const setOpen = (next) => {
+    if (controlledOpen === undefined) setUncontrolledOpen(next);
+    onOpenChange?.(next);
+  };
+
+  return <AlertDialogContext.Provider value={{ open, setOpen }}>{children}</AlertDialogContext.Provider>;
+};
+
+const AlertDialogTrigger = ({ asChild = false, children }) => {
+  const { setOpen } = useAlertContext();
+  if (asChild && React.isValidElement(children)) {
+    return React.cloneElement(children, {
+      onClick: (e) => {
+        children.props.onClick?.(e);
+        setOpen(true);
+      },
+    });
+  }
+  return <span onClick={() => setOpen(true)}>{children}</span>;
+};
+
+const AlertDialogPortal = ({ children }) => children;
+const AlertDialogOverlay = () => null;
+
+const AlertDialogContent = ({ children, width = 520, ...props }) => {
+  const { open, setOpen } = useAlertContext();
+  return (
+    <Modal open={open} onCancel={() => setOpen(false)} footer={null} width={width} destroyOnClose {...props}>
+      {children}
+    </Modal>
+  );
+};
+
+const AlertDialogHeader = ({ children, ...props }) => <div {...props}>{children}</div>;
+const AlertDialogFooter = ({ children, ...props }) => (
+  <div style={{ marginTop: 16, display: 'flex', justifyContent: 'flex-end', gap: 8 }} {...props}>
+    {children}
+  </div>
+);
+const AlertDialogTitle = ({ children, ...props }) => <div style={{ fontSize: 18, fontWeight: 600, marginBottom: 8 }} {...props}>{children}</div>;
+const AlertDialogDescription = ({ children, ...props }) => <div style={{ color: 'rgba(0,0,0,0.65)' }} {...props}>{children}</div>;
+
+const AlertDialogAction = ({ children, onClick, ...props }) => {
+  const { setOpen } = useAlertContext();
+  return (
+    <Button
       {...props}
-    />
-  </AlertDialogPortal>
-));
-AlertDialogContent.displayName = AlertDialogPrimitive.Content.displayName;
+      onClick={(e) => {
+        onClick?.(e);
+        setOpen(false);
+      }}
+    >
+      {children}
+    </Button>
+  );
+};
 
-const AlertDialogHeader = ({ className, ...props }) => (
-  <div className={cn('flex flex-col space-y-2 text-center sm:text-left', className)} {...props} />
-);
-AlertDialogHeader.displayName = 'AlertDialogHeader';
-
-const AlertDialogFooter = ({ className, ...props }) => (
-  <div className={cn('flex flex-col-reverse sm:flex-row sm:justify-end sm:space-x-2', className)} {...props} />
-);
-AlertDialogFooter.displayName = 'AlertDialogFooter';
-
-const AlertDialogTitle = React.forwardRef(({ className, ...props }, ref) => (
-  <AlertDialogPrimitive.Title
-    ref={ref}
-    className={cn('text-lg font-semibold', className)}
-    {...props}
-  />
-));
-AlertDialogTitle.displayName = AlertDialogPrimitive.Title.displayName;
-
-const AlertDialogDescription = React.forwardRef(({ className, ...props }, ref) => (
-  <AlertDialogPrimitive.Description
-    ref={ref}
-    className={cn('text-sm text-muted-foreground', className)}
-    {...props}
-  />
-));
-AlertDialogDescription.displayName = AlertDialogPrimitive.Description.displayName;
-
-const AlertDialogAction = React.forwardRef(({ className, ...props }, ref) => (
-  <AlertDialogPrimitive.Action
-    ref={ref}
-    className={cn(buttonVariants(), className)}
-    {...props}
-  />
-));
-AlertDialogAction.displayName = AlertDialogPrimitive.Action.displayName;
-
-const AlertDialogCancel = React.forwardRef(({ className, ...props }, ref) => (
-  <AlertDialogPrimitive.Cancel
-    ref={ref}
-    className={cn(buttonVariants({ variant: 'outline' }), className)}
-    {...props}
-  />
-));
-AlertDialogCancel.displayName = AlertDialogPrimitive.Cancel.displayName;
+const AlertDialogCancel = ({ children, onClick, ...props }) => {
+  const { setOpen } = useAlertContext();
+  return (
+    <Button
+      variant="outline"
+      {...props}
+      onClick={(e) => {
+        onClick?.(e);
+        setOpen(false);
+      }}
+    >
+      {children}
+    </Button>
+  );
+};
 
 export {
   AlertDialog,

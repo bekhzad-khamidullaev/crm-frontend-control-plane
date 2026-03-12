@@ -1,28 +1,24 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { Folder, Calendar, Clock, Eye, Edit, Trash2 } from 'lucide-react';
-import { Button as AntButton, Dropdown, Space } from 'antd';
-import { DownloadOutlined, PlusOutlined } from '@ant-design/icons';
+import { Calendar, Edit, Eye, Folder, Trash2 } from 'lucide-react';
 
-import { navigate } from '../../router';
+import { PlusOutlined } from '@ant-design/icons';
+import { App, Button, Card, Checkbox, Input, Space, Table, Tag, Typography } from 'antd';
+
 import {
-  getProjects,
-  deleteProject,
-  getUsers,
-  getProjectStages,
-  bulkTagProjects,
-  reopenProject,
   completeProject,
+  deleteProject,
+  getProjectStages,
+  getProjects,
+  getUsers,
+  reopenProject,
 } from '../../lib/api';
-import EnhancedTable from '../../components/ui-EnhancedTable.jsx';
-import BulkActions from '../../components/ui-BulkActions.jsx';
-import ReferenceSelect from '../../components/ui-ReferenceSelect.jsx';
-import { exportAndDownload } from '../../lib/api/export.js';
-import { toast } from '../../components/ui/use-toast.js';
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '../../components/ui/dialog.jsx';
-import { Button } from '../../components/ui/button.jsx';
-import { EntityListPageShell, EntityListToolbar } from '../../shared/ui';
+import { navigate } from '../../router';
+
+const { Search } = Input;
+const { Text, Title } = Typography;
 
 function ProjectsList() {
+  const { message } = App.useApp();
   const [projects, setProjects] = useState([]);
   const [allProjectsCache, setAllProjectsCache] = useState(null);
   const [loading, setLoading] = useState(false);
@@ -35,13 +31,11 @@ function ProjectsList() {
   });
   const [stages, setStages] = useState([]);
   const [users, setUsers] = useState([]);
-  const [selectedRowKeys, setSelectedRowKeys] = useState([]);
-  const [bulkTagModalVisible, setBulkTagModalVisible] = useState(false);
-  const [selectedTags, setSelectedTags] = useState([]);
 
   useEffect(() => {
     fetchProjects(1, searchText);
     loadReferences();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const loadReferences = async () => {
@@ -54,21 +48,16 @@ function ProjectsList() {
       const data = stagesRes.value;
       setStages(data?.results || data || []);
     } else {
-      console.error('Error loading project stages:', stagesRes.reason);
       setStages([]);
+      message.warning('Не удалось загрузить стадии проектов');
     }
 
     if (usersRes.status === 'fulfilled') {
       const data = usersRes.value;
       setUsers(data?.results || data || []);
     } else {
-      console.error('Error loading users:', usersRes.reason);
       setUsers([]);
-      toast({
-        title: 'Внимание',
-        description:
-          'Не удалось загрузить пользователей (справочник). Страница работает, но выбор владельца/со-владельца может быть ограничен.',
-      });
+      message.warning('Не удалось загрузить пользователей');
     }
   };
 
@@ -81,11 +70,11 @@ function ProjectsList() {
         page_size: pageSize,
         search: search || undefined,
       });
+
       const results = response.results || [];
       const totalCount = response.count || 0;
-      
+
       if (results.length > pageSize && results.length === totalCount) {
-        console.warn('⚠️ ProjectsList: Caching all data');
         setAllProjectsCache(results);
         const startIndex = (page - 1) * pageSize;
         setProjects(results.slice(startIndex, startIndex + pageSize));
@@ -93,22 +82,18 @@ function ProjectsList() {
         setAllProjectsCache(null);
         setProjects(results);
       }
-      
+
       setPagination((prev) => ({
         ...prev,
         current: page,
-        pageSize: pageSize,
+        pageSize,
         total: totalCount,
       }));
-    } catch (error) {
-      setError(error?.message || 'Не удалось загрузить список проектов');
-      toast({ title: 'Ошибка', description: 'Ошибка загрузки проектов', variant: 'destructive' });
+    } catch (err) {
+      setError(err?.message || 'Не удалось загрузить список проектов');
+      message.error('Ошибка загрузки проектов');
       setProjects([]);
-      setPagination((prev) => ({
-        ...prev,
-        current: 1,
-        total: 0,
-      }));
+      setPagination((prev) => ({ ...prev, current: 1, total: 0 }));
     } finally {
       setLoading(false);
     }
@@ -122,24 +107,41 @@ function ProjectsList() {
   const handleDelete = async (id) => {
     try {
       await deleteProject(id);
-      toast({ title: 'Проект удален', description: 'Проект удален' });
+      message.success('Проект удален');
       fetchProjects(pagination.current, searchText);
-    } catch (error) {
-      toast({ title: 'Ошибка', description: 'Ошибка удаления проекта', variant: 'destructive' });
+    } catch {
+      message.error('Ошибка удаления проекта');
+    }
+  };
+
+  const handleToggleComplete = async (project) => {
+    const doneStage = stages.find((stage) => stage.done);
+    const isDone = doneStage ? project.stage === doneStage.id : project.active === false;
+    try {
+      if (isDone) {
+        await reopenProject(project.id);
+        message.success('Проект возобновлен');
+      } else {
+        await completeProject(project.id);
+        message.success('Проект завершен');
+      }
+      fetchProjects(pagination.current, searchText);
+    } catch {
+      message.error('Ошибка обновления статуса проекта');
     }
   };
 
   const handleTableChange = (newPagination) => {
     const nextPage = newPagination?.current || 1;
     const nextPageSize = newPagination?.pageSize || pagination.pageSize;
-    
+
     if (nextPageSize !== pagination.pageSize) {
       setPagination((p) => ({ ...p, pageSize: nextPageSize }));
       setAllProjectsCache(null);
       fetchProjects(nextPage, searchText, nextPageSize);
       return;
     }
-    
+
     if (allProjectsCache && allProjectsCache.length > 0) {
       const startIndex = (nextPage - 1) * nextPageSize;
       setProjects(allProjectsCache.slice(startIndex, startIndex + nextPageSize));
@@ -149,101 +151,33 @@ function ProjectsList() {
     }
   };
 
-  const handleExport = async (format) => {
-    try {
-      await exportAndDownload('projects', {
-        format: format === 'excel' ? 'xlsx' : 'csv',
-      });
-      toast({ title: 'Экспорт', description: 'Проекты экспортированы' });
-    } catch (error) {
-      toast({ title: 'Ошибка', description: 'Ошибка экспорта проектов', variant: 'destructive' });
-    }
-  };
+  const stagesById = useMemo(
+    () =>
+      stages.reduce((acc, stage) => {
+        acc[stage.id] = stage;
+        return acc;
+      }, {}),
+    [stages],
+  );
 
-  const handleBulkDelete = async (ids) => {
-    try {
-      await Promise.all(ids.map((id) => deleteProject(id)));
-      toast({ title: 'Удалено', description: `Удалено ${ids.length} проектов` });
-      setSelectedRowKeys([]);
-      fetchProjects(pagination.current, searchText);
-    } catch (error) {
-      toast({ title: 'Ошибка', description: 'Ошибка массового удаления', variant: 'destructive' });
-    }
-  };
-
-  const handleBulkTag = () => {
-    setBulkTagModalVisible(true);
-  };
-
-  const handleBulkTagConfirm = async () => {
-    if (!selectedTags.length) {
-      toast({ title: 'Ошибка', description: 'Выберите хотя бы один тег', variant: 'destructive' });
-      return;
-    }
-
-    try {
-      await bulkTagProjects({
-        project_ids: selectedRowKeys,
-        tag_ids: selectedTags,
-      });
-      toast({ title: 'Теги применены', description: `Теги применены к ${selectedRowKeys.length} проектам` });
-      setSelectedRowKeys([]);
-      setBulkTagModalVisible(false);
-      setSelectedTags([]);
-      fetchProjects(pagination.current, searchText);
-    } catch (error) {
-      const errorMessage = error?.details?.detail || error?.message || 'Ошибка применения тегов';
-      toast({ title: 'Ошибка', description: errorMessage, variant: 'destructive' });
-    }
-  };
-
-  const stagesById = useMemo(() => {
-    return stages.reduce((acc, stage) => {
-      acc[stage.id] = stage;
-      return acc;
-    }, {});
-  }, [stages]);
-
-  const userNameById = useMemo(() => {
-    return users.reduce((acc, user) => {
-      acc[user.id] = user.username || user.email || '-';
-      return acc;
-    }, {});
-  }, [users]);
+  const userNameById = useMemo(
+    () =>
+      users.reduce((acc, user) => {
+        acc[user.id] = user.username || user.email || '-';
+        return acc;
+      }, {}),
+    [users],
+  );
 
   const doneStage = stages.find((stage) => stage.done);
-
-  const handleToggleComplete = async (project) => {
-    const isDone = doneStage ? project.stage === doneStage.id : project.active === false;
-    try {
-      if (isDone) {
-        await reopenProject(project.id);
-        toast({ title: 'Проект возобновлен', description: 'Проект возобновлен' });
-      } else {
-        await completeProject(project.id);
-        toast({ title: 'Проект завершен', description: 'Проект завершен' });
-      }
-      fetchProjects(pagination.current, searchText);
-    } catch (error) {
-      toast({ title: 'Ошибка', description: 'Ошибка обновления статуса проекта', variant: 'destructive' });
-    }
-  };
-
-  const priorityConfig = {
-    1: { color: 'bg-emerald-100 text-emerald-700', text: 'Низкий' },
-    2: { color: 'bg-amber-100 text-amber-700', text: 'Средний' },
-    3: { color: 'bg-rose-100 text-rose-700', text: 'Высокий' },
-  };
 
   const columns = [
     {
       title: '',
       key: 'checkbox',
-      width: 50,
+      width: 56,
       render: (_, record) => (
-        <input
-          type="checkbox"
-          className="h-4 w-4 accent-primary"
+        <Checkbox
           checked={doneStage ? record.stage === doneStage.id : false}
           onChange={() => handleToggleComplete(record)}
         />
@@ -253,17 +187,12 @@ function ProjectsList() {
       title: 'Проект',
       key: 'project',
       render: (_, record) => (
-        <div className="flex items-start gap-3">
-          <div className="flex h-9 w-9 items-center justify-center rounded-full bg-primary/10 text-primary">
-            <Folder className="h-4 w-4" />
-          </div>
-          <div>
-            <div className="font-medium">{record.name}</div>
-            {record.description && (
-              <div className="text-xs text-muted-foreground">{record.description}</div>
-            )}
-          </div>
-        </div>
+        <Space direction="vertical" size={0}>
+          <Text strong>
+            <Folder size={14} /> {record.name}
+          </Text>
+          {record.description ? <Text type="secondary">{record.description}</Text> : null}
+        </Space>
       ),
       sorter: (a, b) => (a.name || '').localeCompare(b.name || ''),
     },
@@ -273,200 +202,86 @@ function ProjectsList() {
       key: 'stage',
       render: (stageId) => {
         const stage = stagesById[stageId];
-        return stage ? (
-          <span
-            className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs ${
-              stage.done
-                ? 'bg-emerald-100 text-emerald-700'
-                : stage.in_progress
-                ? 'bg-sky-100 text-sky-700'
-                : 'bg-muted text-muted-foreground'
-            }`}
-          >
-            {stage.name}
-          </span>
-        ) : (
-          '-'
-        );
+        if (!stage) return '-';
+        const color = stage.done ? 'green' : stage.in_progress ? 'blue' : 'default';
+        return <Tag color={color}>{stage.name}</Tag>;
       },
     },
     {
-      title: 'Приоритет',
-      dataIndex: 'priority',
-      key: 'priority',
-      render: (priority) => {
-        const config = priorityConfig[priority] || { color: 'bg-muted text-muted-foreground', text: '-' };
-        return <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs ${config.color}`}>{config.text}</span>;
-      },
-    },
-    {
-      title: 'Ответственные',
-      dataIndex: 'responsible',
-      key: 'responsible',
-      render: (responsible, record) => {
-        const ids = Array.isArray(responsible) ? responsible : [];
-        const names = ids.map((id) => userNameById[id]).filter(Boolean);
-        const ownerLabel = record.owner ? userNameById[record.owner] || '-' : null;
-        return <span className="text-sm">{names.length ? names.join(', ') : ownerLabel || '-'}</span>;
-      },
+      title: 'Владелец',
+      dataIndex: 'owner',
+      key: 'owner',
+      render: (ownerId) => userNameById[ownerId] || '-',
     },
     {
       title: 'Срок',
       dataIndex: 'due_date',
       key: 'due_date',
-      render: (date) => {
-        if (!date) return '-';
-        const dueDate = new Date(date);
-        const today = new Date();
-        const daysLeft = Math.ceil((dueDate - today) / (1000 * 60 * 60 * 24));
-        return (
-          <div className="space-y-1">
-            <div className="flex items-center gap-2 text-sm">
-              <Calendar className="h-4 w-4 text-muted-foreground" />
-              {dueDate.toLocaleDateString('ru-RU')}
-            </div>
-            {daysLeft > 0 && daysLeft <= 3 && (
-              <div className="text-xs text-amber-600">
-                <Clock className="inline h-3 w-3" /> {daysLeft} дн.
-              </div>
-            )}
-            {daysLeft < 0 && (
-              <div className="text-xs text-rose-600">
-                <Clock className="inline h-3 w-3" /> просрочено
-              </div>
-            )}
-          </div>
-        );
-      },
+      render: (date) => (date ? `${new Date(date).toLocaleDateString('ru-RU')}` : '-'),
       sorter: (a, b) => new Date(a.due_date || 0) - new Date(b.due_date || 0),
     },
     {
       title: 'Действия',
       key: 'actions',
-      width: 200,
+      width: 280,
       render: (_, record) => (
-        <div className="flex flex-wrap items-center gap-2">
-          <Button variant="ghost" size="sm" onClick={() => navigate(`/projects/${record.id}`)}>
-            <Eye className="mr-1 h-4 w-4" />
+        <Space>
+          <Button size="small" icon={<Eye size={14} />} onClick={() => navigate(`/projects/${record.id}`)}>
             Просмотр
           </Button>
-          <Button variant="ghost" size="sm" onClick={() => navigate(`/projects/${record.id}/edit`)}>
-            <Edit className="mr-1 h-4 w-4" />
+          <Button size="small" icon={<Edit size={14} />} onClick={() => navigate(`/projects/${record.id}/edit`)}>
             Редактировать
           </Button>
-          <Button variant="ghost" size="sm" className="text-destructive" onClick={() => handleDelete(record.id)}>
-            <Trash2 className="mr-1 h-4 w-4" />
+          <Button size="small" danger icon={<Trash2 size={14} />} onClick={() => handleDelete(record.id)}>
             Удалить
           </Button>
-        </div>
+        </Space>
       ),
     },
   ];
 
-  const rowSelection = {
-    selectedRowKeys,
-    onChange: (keys) => setSelectedRowKeys(keys),
-  };
-
-  const headerActions = (
-    <Space wrap>
-      <Dropdown
-        menu={{
-          items: [
-            { key: 'csv', label: 'CSV', onClick: () => handleExport('csv') },
-            { key: 'excel', label: 'Excel', onClick: () => handleExport('excel') },
-          ],
-        }}
-      >
-        <AntButton icon={<DownloadOutlined />}>Экспорт</AntButton>
-      </Dropdown>
-      <AntButton type="primary" icon={<PlusOutlined />} onClick={() => navigate('/projects/new')}>
-        Создать проект
-      </AntButton>
-    </Space>
-  );
-
   return (
-    <>
-      <EntityListPageShell
-        title="Проекты"
-        subtitle="Список проектов в том же page-shell, что и новые CRM-страницы"
-        extra={headerActions}
-        toolbar={
-          <EntityListToolbar
-            searchValue={searchText}
-            searchPlaceholder="Поиск по названию, описанию..."
-            onSearchChange={handleSearch}
-            onRefresh={() => fetchProjects(pagination.current, searchText)}
-            loading={loading}
-            resultSummary={pagination.total ? `${pagination.total} записей` : undefined}
+    <Card>
+      <Space direction="vertical" size={16} style={{ width: '100%' }}>
+        <Space wrap style={{ width: '100%', justifyContent: 'space-between' }}>
+          <div>
+            <Title level={3} style={{ margin: 0 }}>
+              Проекты
+            </Title>
+            <Text type="secondary">Список проектов</Text>
+          </div>
+          <Button type="primary" icon={<PlusOutlined />} onClick={() => navigate('/projects/new')}>
+            Создать проект
+          </Button>
+        </Space>
+
+        <Space wrap style={{ width: '100%', justifyContent: 'space-between' }}>
+          <Search
+            placeholder="Поиск проектов..."
+            allowClear
+            value={searchText}
+            onChange={(e) => setSearchText(e.target.value)}
+            onSearch={handleSearch}
+            style={{ maxWidth: 360 }}
           />
-        }
-        error={error}
-        onRetry={() => fetchProjects(pagination.current, searchText)}
-      >
-        <EnhancedTable
+          <Button onClick={() => fetchProjects(pagination.current, searchText)} loading={loading}>
+            Обновить
+          </Button>
+        </Space>
+
+        {error ? <Text type="danger">{error}</Text> : null}
+
+        <Table
+          rowKey="id"
           columns={columns}
           dataSource={projects}
           loading={loading}
-          pagination={pagination}
+          pagination={{ ...pagination, showSizeChanger: true, showTotal: (total) => `Всего: ${total}` }}
           onChange={handleTableChange}
-          rowSelection={rowSelection}
-          rowClassName={(record) =>
-            doneStage && record.stage === doneStage.id ? 'row-completed' : ''
-          }
-          showTotal={true}
-          showSizeChanger={true}
-          emptyText="Нет проектов"
-          emptyDescription="Создайте первый проект"
+          locale={{ emptyText: 'Нет проектов' }}
         />
-
-        <BulkActions
-          selectedRowKeys={selectedRowKeys}
-          onClearSelection={() => setSelectedRowKeys([])}
-          onDelete={handleBulkDelete}
-          onBulkTag={handleBulkTag}
-          entityName="проектов"
-        />
-      </EntityListPageShell>
-
-      <Dialog open={bulkTagModalVisible} onOpenChange={setBulkTagModalVisible}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Добавить теги к проектам</DialogTitle>
-          </DialogHeader>
-          <p className="text-sm text-muted-foreground">
-            Добавить теги к {selectedRowKeys.length} выбранным проектам
-          </p>
-          <div className="mt-3">
-            <label className="text-sm font-medium">Теги</label>
-            <ReferenceSelect
-              type="crm-tags"
-              mode="multiple"
-              placeholder="Выберите теги"
-              value={selectedTags}
-              onChange={setSelectedTags}
-            />
-          </div>
-          <div className="mt-4 flex justify-end gap-2">
-            <Button variant="outline" onClick={() => {
-              setBulkTagModalVisible(false);
-              setSelectedTags([]);
-            }}>
-              Отмена
-            </Button>
-            <Button onClick={handleBulkTagConfirm}>Применить</Button>
-          </div>
-        </DialogContent>
-      </Dialog>
-
-      <style>{`
-        .row-completed {
-          opacity: 0.6;
-          text-decoration: line-through;
-        }
-      `}</style>
-    </>
+      </Space>
+    </Card>
   );
 }
 

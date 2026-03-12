@@ -1,28 +1,23 @@
 import * as React from 'react';
+import { Alert as AntAlert } from 'antd';
 
-import { cn } from '../../lib/utils/cn.js';
-
-const Alert = React.forwardRef(({ className, variant = 'default', ...props }, ref) => (
-  <div
-    ref={ref}
-    role="alert"
-    className={cn(
-      'relative w-full rounded-lg border border-border p-4 text-sm',
-      variant === 'destructive' && 'border-destructive/50 text-destructive dark:border-destructive',
-      className
-    )}
-    {...props}
-  />
-));
+const Alert = React.forwardRef(({ variant = 'default', children, ...props }, ref) => {
+  const type = variant === 'destructive' ? 'error' : 'info';
+  return (
+    <div ref={ref}>
+      <AntAlert type={type} showIcon message={children} {...props} />
+    </div>
+  );
+});
 Alert.displayName = 'Alert';
 
-const AlertTitle = React.forwardRef(({ className, ...props }, ref) => (
-  <h5 ref={ref} className={cn('mb-1 font-medium leading-none tracking-tight', className)} {...props} />
+const AlertTitle = React.forwardRef(({ children, ...props }, ref) => (
+  <div ref={ref} style={{ fontWeight: 600 }} {...props}>{children}</div>
 ));
 AlertTitle.displayName = 'AlertTitle';
 
-const AlertDescription = React.forwardRef(({ className, ...props }, ref) => (
-  <div ref={ref} className={cn('text-sm [&_p]:leading-relaxed', className)} {...props} />
+const AlertDescription = React.forwardRef(({ children, ...props }, ref) => (
+  <div ref={ref} {...props}>{children}</div>
 ));
 AlertDescription.displayName = 'AlertDescription';
 

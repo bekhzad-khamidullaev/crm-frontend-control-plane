@@ -6,15 +6,7 @@ import { useForm } from 'react-hook-form';
 import { z } from 'zod';
 
 import EntitySelect from '../../components/EntitySelect';
-import { DatePicker } from '../../components/ui-DatePicker.jsx';
-import ReferenceSelect from '../../components/ui-ReferenceSelect';
-import { Button } from '../../components/ui/button.jsx';
-import { Card } from '../../components/ui/card.jsx';
-import { Input } from '../../components/ui/input.jsx';
-import { Label } from '../../components/ui/label.jsx';
-import { Switch } from '../../components/ui/switch.jsx';
-import { Textarea } from '../../components/ui/textarea.jsx';
-import { toast } from '../../components/ui/use-toast.js';
+import ReferenceSelect from '../../components/ReferenceSelect';
 import {
     createTask,
     getProject,
@@ -27,6 +19,10 @@ import {
 } from '../../lib/api';
 import { normalizePayload } from '../../lib/utils/payload';
 import { navigate } from '../../router';
+
+import { App, Button, Card, DatePicker, Input, Switch } from 'antd';
+const { TextArea } = Input;
+const Label = ({ children, ...props }) => <label style={{ display: 'block', marginBottom: 6, fontWeight: 500 }} {...props}>{children}</label>;
 
 const schema = z.object({
   name: z.string().min(1, 'Введите название'),
@@ -52,6 +48,12 @@ const schema = z.object({
 });
 
 function TaskForm({ id }) {
+  const { message } = App.useApp();
+  const notify = ({ title, description, variant }) => {
+    const text = description || title || 'Уведомление';
+    if (variant === 'destructive') message.error(text);
+    else message.success(text);
+  };
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
   const isEdit = !!id;
@@ -123,7 +125,7 @@ function TaskForm({ id }) {
         next_step_date: task.next_step_date ? dayjs(task.next_step_date) : null,
       });
     } catch (error) {
-      toast({ title: 'Ошибка', description: 'Ошибка загрузки данных задачи', variant: 'destructive' });
+      notify({ title: 'Ошибка', description: 'Ошибка загрузки данных задачи', variant: 'destructive' });
     } finally {
       setLoading(false);
     }
@@ -145,43 +147,43 @@ function TaskForm({ id }) {
 
       if (isEdit) {
         await updateTask(id, payload);
-        toast({ title: 'Задача обновлена', description: 'Задача обновлена' });
+        notify({ title: 'Задача обновлена', description: 'Задача обновлена' });
       } else {
         await createTask(payload);
-        toast({ title: 'Задача создана', description: 'Задача создана' });
+        notify({ title: 'Задача создана', description: 'Задача создана' });
       }
       navigate('/tasks');
     } catch (error) {
-      toast({ title: 'Ошибка', description: `Ошибка ${isEdit ? 'обновления' : 'создания'} задачи`, variant: 'destructive' });
+      notify({ title: 'Ошибка', description: `Ошибка ${isEdit ? 'обновления' : 'создания'} задачи`, variant: 'destructive' });
     } finally {
       setSaving(false);
     }
   };
 
   if (loading) {
-    return <div className="py-12 text-center text-sm text-muted-foreground">Загрузка...</div>;
+    return <div>Загрузка...</div>;
   }
 
   return (
-    <div className="space-y-4">
-      <Button variant="outline" onClick={() => navigate('/tasks')}>
-        <ArrowLeft className="mr-2 h-4 w-4" />
+    <div>
+      <Button onClick={() => navigate('/tasks')}>
+        <ArrowLeft />
         Назад
       </Button>
 
-      <h2 className="text-2xl font-semibold">
+      <h2>
         {isEdit ? 'Редактировать задачу' : 'Создать новую задачу'}
       </h2>
 
-      <Card className="p-6">
-        <form className="space-y-6" onSubmit={handleSubmit(onSubmit)}>
-          <section className="space-y-3">
-            <h3 className="text-lg font-semibold">Основная информация</h3>
-            <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+      <Card>
+        <form onSubmit={handleSubmit(onSubmit)}>
+          <section>
+            <h3>Основная информация</h3>
+            <div>
               <div>
                 <Label htmlFor="name">Название задачи *</Label>
                 <Input id="name" placeholder="Подготовить коммерческое предложение" {...register('name')} />
-                {errors.name && <p className="text-xs text-destructive">{errors.name.message}</p>}
+                {errors.name && <p>{errors.name.message}</p>}
               </div>
               <div>
                 <Label htmlFor="priority">Приоритет</Label>
@@ -191,15 +193,15 @@ function TaskForm({ id }) {
 
             <div>
               <Label htmlFor="description">Описание</Label>
-              <Textarea id="description" rows={4} placeholder="Детальное описание задачи" {...register('description')} />
+              <TextArea id="description" rows={4} placeholder="Детальное описание задачи" {...register('description')} />
             </div>
 
             <div>
               <Label htmlFor="note">Заметка</Label>
-              <Textarea id="note" rows={3} placeholder="Внутренние заметки" {...register('note')} />
+              <TextArea id="note" rows={3} placeholder="Внутренние заметки" {...register('note')} />
             </div>
 
-            <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
+            <div>
               <div>
                 <Label htmlFor="stage">Этап *</Label>
                 <ReferenceSelect
@@ -210,7 +212,7 @@ function TaskForm({ id }) {
                   value={stageValue || ''}
                   onChange={(val) => setValue('stage', val)}
                 />
-                {errors.stage && <p className="text-xs text-destructive">{errors.stage.message}</p>}
+                {errors.stage && <p>{errors.stage.message}</p>}
               </div>
               <div>
                 <Label htmlFor="start_date">Дата начала</Label>
@@ -222,7 +224,7 @@ function TaskForm({ id }) {
               </div>
             </div>
 
-            <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+            <div>
               <div>
                 <Label htmlFor="closing_date">Дата закрытия</Label>
                 <DatePicker id="closing_date" value={closingDate || null} onChange={(val) => setValue('closing_date', val)} format="DD.MM.YYYY" />
@@ -233,23 +235,23 @@ function TaskForm({ id }) {
               </div>
             </div>
 
-            <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+            <div>
               <div>
                 <Label htmlFor="next_step">Следующий шаг *</Label>
                 <Input id="next_step" placeholder="Согласовать требования" {...register('next_step')} />
-                {errors.next_step && <p className="text-xs text-destructive">{errors.next_step.message}</p>}
+                {errors.next_step && <p>{errors.next_step.message}</p>}
               </div>
               <div>
                 <Label htmlFor="next_step_date">Дата следующего шага *</Label>
                 <DatePicker id="next_step_date" value={nextStepDate || null} onChange={(val) => setValue('next_step_date', val)} format="DD.MM.YYYY" />
-                {errors.next_step_date && <p className="text-xs text-destructive">{errors.next_step_date.message}</p>}
+                {errors.next_step_date && <p>{errors.next_step_date.message}</p>}
               </div>
             </div>
           </section>
 
-          <section className="space-y-3">
-            <h3 className="text-lg font-semibold">Связанные записи</h3>
-            <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+          <section>
+            <h3>Связанные записи</h3>
+            <div>
               <div>
                 <Label>Проект</Label>
                 <EntitySelect
@@ -273,9 +275,9 @@ function TaskForm({ id }) {
             </div>
           </section>
 
-          <section className="space-y-3">
-            <h3 className="text-lg font-semibold">Ответственные</h3>
-            <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+          <section>
+            <h3>Ответственные</h3>
+            <div>
               <div>
                 <Label>Владелец</Label>
                 <EntitySelect
@@ -298,7 +300,7 @@ function TaskForm({ id }) {
               </div>
             </div>
 
-            <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+            <div>
               <div>
                 <Label>Ответственные</Label>
                 <EntitySelect
@@ -323,7 +325,7 @@ function TaskForm({ id }) {
               </div>
             </div>
 
-            <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+            <div>
               <div>
                 <Label>Теги</Label>
                 <ReferenceSelect
@@ -338,26 +340,26 @@ function TaskForm({ id }) {
             </div>
           </section>
 
-          <section className="space-y-3">
-            <h3 className="text-lg font-semibold">Статус</h3>
-            <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-              <div className="flex items-center gap-2">
-                <Switch id="active" checked={!!activeValue} onCheckedChange={(val) => setValue('active', val)} />
+          <section>
+            <h3>Статус</h3>
+            <div>
+              <div>
+                <Switch id="active" checked={!!activeValue} onChange={(val) => setValue('active', val)} />
                 <Label htmlFor="active">Активна</Label>
               </div>
-              <div className="flex items-center gap-2">
-                <Switch id="remind_me" checked={!!remindMeValue} onCheckedChange={(val) => setValue('remind_me', val)} />
+              <div>
+                <Switch id="remind_me" checked={!!remindMeValue} onChange={(val) => setValue('remind_me', val)} />
                 <Label htmlFor="remind_me">Напоминать</Label>
               </div>
             </div>
           </section>
 
-          <div className="flex flex-wrap gap-2">
+          <div>
             <Button type="submit" loading={saving}>
-              <Save className="mr-2 h-4 w-4" />
+              <Save />
               {isEdit ? 'Обновить' : 'Создать'}
             </Button>
-            <Button variant="outline" onClick={() => navigate('/tasks')}>
+            <Button onClick={() => navigate('/tasks')}>
               Отмена
             </Button>
           </div>

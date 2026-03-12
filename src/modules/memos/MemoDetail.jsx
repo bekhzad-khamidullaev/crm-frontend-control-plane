@@ -1,23 +1,22 @@
 import { useEffect, useState } from 'react';
-import { ArrowLeft, Edit, Trash2, FileText, Clock, Check } from 'lucide-react';
+import { ArrowLeft, Check, Clock, Edit, FileText, Trash2 } from 'lucide-react';
 import dayjs from 'dayjs';
 
-import { getMemo, deleteMemo, markMemoReviewed, markMemoPostponed } from '../../lib/api/memos';
+import { App, Button, Card, Descriptions, Modal, Result, Skeleton, Space, Tag, Typography } from 'antd';
+
+import { deleteMemo, getMemo, markMemoPostponed, markMemoReviewed } from '../../lib/api/memos';
 import { navigate } from '../../router';
-import { Card } from '../../components/ui/card.jsx';
-import { Button } from '../../components/ui/button.jsx';
-import { Badge } from '../../components/ui/badge.jsx';
-import { toast } from '../../components/ui/use-toast.js';
-import { AlertDialog, AlertDialogContent, AlertDialogHeader, AlertDialogTitle } from '../../components/ui/alert-dialog.jsx';
-import { LegacyEmptyState, LegacyErrorState, LegacyLoadingState } from '../../shared/ui';
+
+const { Title } = Typography;
 
 const stageLabels = {
-  pen: { text: 'В ожидании', className: 'bg-sky-100 text-sky-700' },
-  pos: { text: 'Отложено', className: 'bg-amber-100 text-amber-700' },
-  rev: { text: 'Рассмотрено', className: 'bg-emerald-100 text-emerald-700' },
+  pen: { text: 'В ожидании', color: 'blue' },
+  pos: { text: 'Отложено', color: 'gold' },
+  rev: { text: 'Рассмотрено', color: 'green' },
 };
 
 export default function MemoDetail({ id }) {
+  const { message } = App.useApp();
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState(false);
@@ -25,6 +24,7 @@ export default function MemoDetail({ id }) {
 
   useEffect(() => {
     fetchData();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [id]);
 
   const fetchData = async () => {
@@ -33,11 +33,10 @@ export default function MemoDetail({ id }) {
     try {
       const res = await getMemo(id);
       setData(res);
-    } catch (error) {
+    } catch {
       setData(null);
       setLoadError(true);
-      toast({ title: 'Ошибка', description: 'Не удалось загрузить мемо', variant: 'destructive' });
-      console.error(error);
+      message.error('Не удалось загрузить мемо');
     } finally {
       setLoading(false);
     }
@@ -46,150 +45,109 @@ export default function MemoDetail({ id }) {
   const handleDelete = async () => {
     try {
       await deleteMemo(id);
-      toast({ title: 'Мемо удалено', description: 'Мемо удалено' });
+      message.success('Мемо удалено');
       navigate('/memos');
-    } catch (error) {
-      toast({ title: 'Ошибка', description: 'Не удалось удалить мемо', variant: 'destructive' });
+    } catch {
+      message.error('Не удалось удалить мемо');
     }
   };
 
   const handleReviewed = async () => {
     try {
       await markMemoReviewed(id);
-      toast({ title: 'Мемо рассмотрено', description: 'Мемо отмечено как рассмотренное' });
+      message.success('Мемо отмечено как рассмотренное');
       fetchData();
-    } catch (error) {
-      toast({ title: 'Ошибка', description: 'Не удалось обновить мемо', variant: 'destructive' });
+    } catch {
+      message.error('Не удалось обновить мемо');
     }
   };
 
   const handlePostponed = async () => {
     try {
       await markMemoPostponed(id);
-      toast({ title: 'Мемо отложено', description: 'Мемо отложено' });
+      message.success('Мемо отложено');
       fetchData();
-    } catch (error) {
-      toast({ title: 'Ошибка', description: 'Не удалось обновить мемо', variant: 'destructive' });
+    } catch {
+      message.error('Не удалось обновить мемо');
     }
   };
 
-  if (loading) {
-    return (
-      <LegacyLoadingState
-        title="Загрузка мемо"
-        description="Подгружаем карточку мемо и связанные данные."
-      />
-    );
-  }
+  if (loading) return <Skeleton active paragraph={{ rows: 8 }} />;
 
   if (loadError) {
     return (
-      <LegacyErrorState
+      <Result
+        status="error"
         title="Не удалось открыть мемо"
-        description="Попробуйте повторить загрузку или вернитесь к списку мемо."
-        onAction={fetchData}
+        subTitle="Попробуйте повторить загрузку"
+        extra={<Button onClick={fetchData}>Повторить</Button>}
       />
     );
   }
 
   if (!data) {
     return (
-      <LegacyEmptyState
+      <Result
+        status="404"
         title="Мемо не найдено"
-        description="Возможно, запись была удалена или ещё недоступна в системе."
-        actionLabel="К списку мемо"
-        onAction={() => navigate('/memos')}
+        subTitle="Запись могла быть удалена или недоступна"
+        extra={<Button onClick={() => navigate('/memos')}>К списку мемо</Button>}
       />
     );
   }
 
-  const stage = stageLabels[data.stage] || { text: '—', className: 'bg-muted text-muted-foreground' };
+  const stage = stageLabels[data.stage] || { text: '—', color: 'default' };
 
   return (
-    <div className="space-y-4">
-      <Card className="p-6">
-        <div className="flex flex-wrap items-center justify-between gap-2">
-          <div className="flex items-center gap-2">
-            <FileText className="h-5 w-5 text-primary" />
-            <h2 className="text-xl font-semibold">Детали мемо</h2>
-          </div>
-          <div className="flex flex-wrap items-center gap-2">
-            <Button variant="outline" onClick={() => navigate('/memos')}>
-              <ArrowLeft className="mr-2 h-4 w-4" />
-              Назад
-            </Button>
-            <Button variant="outline" onClick={handlePostponed}>
-              <Clock className="mr-2 h-4 w-4" />
-              Отложить
-            </Button>
-            <Button onClick={handleReviewed}>
-              <Check className="mr-2 h-4 w-4" />
-              Рассмотрено
-            </Button>
-            <Button onClick={() => navigate(`/memos/${id}/edit`)}>
-              <Edit className="mr-2 h-4 w-4" />
-              Редактировать
-            </Button>
-            <Button variant="destructive" onClick={() => setConfirmOpen(true)}>
-              <Trash2 className="mr-2 h-4 w-4" />
-              Удалить
-            </Button>
-          </div>
-        </div>
+    <Space direction="vertical" size={16} style={{ width: '100%' }}>
+      <Card>
+        <Space direction="vertical" size={16} style={{ width: '100%' }}>
+          <Space wrap style={{ width: '100%', justifyContent: 'space-between' }}>
+            <Title level={3} style={{ margin: 0 }}>
+              <FileText size={18} /> Детали мемо
+            </Title>
+            <Space>
+              <Button icon={<ArrowLeft size={14} />} onClick={() => navigate('/memos')}>Назад</Button>
+              <Button icon={<Clock size={14} />} onClick={handlePostponed}>Отложить</Button>
+              <Button icon={<Check size={14} />} onClick={handleReviewed}>Рассмотрено</Button>
+              <Button type="primary" icon={<Edit size={14} />} onClick={() => navigate(`/memos/${id}/edit`)}>Редактировать</Button>
+              <Button danger icon={<Trash2 size={14} />} onClick={() => setConfirmOpen(true)}>Удалить</Button>
+            </Space>
+          </Space>
 
-        <div className="mt-6 grid grid-cols-1 gap-4 sm:grid-cols-2">
-          <DetailRow label="Название" span>
-            <div className="text-base font-semibold">{data.name}</div>
-          </DetailRow>
-          <DetailRow label="Стадия">
-            <Badge className={stage.className}>{stage.text}</Badge>
-          </DetailRow>
-          <DetailRow label="Черновик">{data.draft ? 'Да' : 'Нет'}</DetailRow>
-          <DetailRow label="Уведомления">{data.notified ? 'Отправлены' : 'Не отправлялись'}</DetailRow>
-          <DetailRow label="Дата обзора">{data.review_date ? dayjs(data.review_date).format('DD.MM.YYYY') : '-'}</DetailRow>
-          <DetailRow label="Получатель">{data.to_name || '-'}</DetailRow>
-          <DetailRow label="Сделка">{data.deal_name || '-'}</DetailRow>
-          <DetailRow label="Проект">{data.project_name || '-'}</DetailRow>
-          <DetailRow label="Задача">{data.task_name || '-'}</DetailRow>
-          <DetailRow label="Resolution">{data.resolution_name || data.resolution || '-'}</DetailRow>
-          <DetailRow label="Теги">{data.tag_names || '-'}</DetailRow>
-          <DetailRow label="Владелец">{data.owner_name || '-'}</DetailRow>
-          <DetailRow label="Создано">{data.creation_date ? dayjs(data.creation_date).format('DD.MM.YYYY HH:mm') : '-'}</DetailRow>
-          <DetailRow label="Обновлено">{data.update_date ? dayjs(data.update_date).format('DD.MM.YYYY HH:mm') : '-'}</DetailRow>
-          <DetailRow label="Описание" span>{data.description || '-'}</DetailRow>
-        </div>
+          <Descriptions bordered column={1} size="small">
+            <Descriptions.Item label="Название">{data.name}</Descriptions.Item>
+            <Descriptions.Item label="Стадия"><Tag color={stage.color}>{stage.text}</Tag></Descriptions.Item>
+            <Descriptions.Item label="Черновик">{data.draft ? 'Да' : 'Нет'}</Descriptions.Item>
+            <Descriptions.Item label="Уведомления">{data.notified ? 'Отправлены' : 'Не отправлялись'}</Descriptions.Item>
+            <Descriptions.Item label="Дата обзора">{data.review_date ? dayjs(data.review_date).format('DD.MM.YYYY') : '-'}</Descriptions.Item>
+            <Descriptions.Item label="Получатель">{data.to_name || '-'}</Descriptions.Item>
+            <Descriptions.Item label="Сделка">{data.deal_name || '-'}</Descriptions.Item>
+            <Descriptions.Item label="Проект">{data.project_name || '-'}</Descriptions.Item>
+            <Descriptions.Item label="Задача">{data.task_name || '-'}</Descriptions.Item>
+            <Descriptions.Item label="Resolution">{data.resolution_name || data.resolution || '-'}</Descriptions.Item>
+            <Descriptions.Item label="Теги">{data.tag_names || '-'}</Descriptions.Item>
+            <Descriptions.Item label="Владелец">{data.owner_name || '-'}</Descriptions.Item>
+            <Descriptions.Item label="Создано">{data.creation_date ? dayjs(data.creation_date).format('DD.MM.YYYY HH:mm') : '-'}</Descriptions.Item>
+            <Descriptions.Item label="Обновлено">{data.update_date ? dayjs(data.update_date).format('DD.MM.YYYY HH:mm') : '-'}</Descriptions.Item>
+            <Descriptions.Item label="Описание">{data.description || '-'}</Descriptions.Item>
+          </Descriptions>
+        </Space>
       </Card>
 
-      <Card className="p-6">
-        <h3 className="text-lg font-semibold mb-2">Заключение</h3>
-        <div className="text-sm whitespace-pre-wrap">{data.note || 'Нет заключения'}</div>
-      </Card>
+      <Card title="Заключение">{data.note || 'Нет заключения'}</Card>
 
-      <AlertDialog open={confirmOpen} onOpenChange={setConfirmOpen}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Удалить мемо?</AlertDialogTitle>
-          </AlertDialogHeader>
-          <p className="text-sm text-muted-foreground">Действие нельзя отменить.</p>
-          <div className="mt-4 flex justify-end gap-2">
-            <Button variant="outline" onClick={() => setConfirmOpen(false)}>
-              Отмена
-            </Button>
-            <Button variant="destructive" onClick={handleDelete}>
-              Удалить
-            </Button>
-          </div>
-        </AlertDialogContent>
-      </AlertDialog>
-    </div>
-  );
-}
-
-function DetailRow({ label, children, span }) {
-  return (
-    <div className={span ? 'sm:col-span-2' : ''}>
-      <div className="text-xs text-muted-foreground">{label}</div>
-      <div className="mt-1 text-sm">{children}</div>
-    </div>
+      <Modal
+        title="Удалить мемо?"
+        open={confirmOpen}
+        onCancel={() => setConfirmOpen(false)}
+        onOk={handleDelete}
+        okText="Удалить"
+        cancelText="Отмена"
+        okButtonProps={{ danger: true }}
+      >
+        Действие нельзя отменить.
+      </Modal>
+    </Space>
   );
 }

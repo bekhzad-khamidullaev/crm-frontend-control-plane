@@ -6,7 +6,6 @@ import { OpenAPI } from './shared/api/generated/core/OpenAPI';
 import './styles/charts-animations.css';
 import './styles/chat.css';
 import './styles/custom-theme.css';
-import './styles/tailwind.css';
 
 // Configure OpenAPI for generated services
 OpenAPI.BASE = resolveApiBase(import.meta.env.VITE_API_BASE_URL);

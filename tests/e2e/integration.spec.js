@@ -7,18 +7,18 @@
 import { test, expect } from '@playwright/test';
 import { generateLeadData } from './helpers/test-data.js';
 import { waitForApiResponse, cleanupTestData } from './helpers/api-helpers.js';
+import { login } from './helpers/auth.js';
 
 test.describe('Integration Tests - Cross-Module Workflows', () => {
   let createdLeadIds = [];
   let createdContactIds = [];
 
+  const waitForHashStartsWith = async (page, prefix, timeout = 15000) => {
+    await page.waitForFunction((expectedPrefix) => window.location.hash.startsWith(expectedPrefix), prefix, { timeout });
+  };
+
   test.beforeEach(async ({ page }) => {
-    // Login
-    await page.goto('/login');
-    await page.fill('#login_username', 'admin');
-    await page.fill('#login_password', 't3sl@admin');
-    await page.click('button[type="submit"]');
-    await page.waitForURL('**/dashboard', { timeout: 30000 });
+    await login(page);
   });
 
   test.afterEach(async ({ page }) => {
@@ -37,15 +37,15 @@ test.describe('Integration Tests - Cross-Module Workflows', () => {
     // Dashboard → Leads
     await page.goto('/#/dashboard');
     await page.getByRole('menuitem', { name: /Лиды/i }).click();
-    await expect.poll(() => page.url()).toMatch(/#\/leads\/?$/);
+    await waitForHashStartsWith(page, '#/leads');
     
     // Leads → Contacts
     await page.getByRole('menuitem', { name: /Контакты/i }).click();
-    await expect.poll(() => page.url()).toMatch(/#\/contacts\/?$/);
+    await waitForHashStartsWith(page, '#/contacts');
     
     // Contacts → Dashboard
     await page.goto('/#/dashboard');
-    await expect.poll(() => page.url()).toMatch(/#\/dashboard\/?$/);
+    await waitForHashStartsWith(page, '#/dashboard');
     
     console.log('✓ Module navigation working');
   });

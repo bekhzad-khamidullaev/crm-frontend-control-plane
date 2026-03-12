@@ -6,7 +6,6 @@ import { getClientTypeLabel } from '@/features/reference/lib/clientTypeLabel';
 // @ts-ignore
 import { CompaniesService } from '@/shared/api/generated/services/CompaniesService';
 import { useServerTable } from '@/shared/hooks';
-import { StatusTag } from '@/shared/ui';
 import {
     DeleteOutlined,
     EditOutlined,
@@ -16,7 +15,7 @@ import {
     PhoneOutlined,
     ShopOutlined
 } from '@ant-design/icons';
-import { Alert, Avatar, Button, Popconfirm, Space, Table, Tooltip } from 'antd';
+import { Alert, Avatar, Button, Popconfirm, Space, Table, Tag, Tooltip } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
 import React from 'react';
 import { CompaniesTableFilters } from './ui/CompaniesTableFilters';
@@ -139,7 +138,7 @@ export const CompaniesTable: React.FC = () => {
       render: (type) => {
         if (!type) return '-';
         const label = clientTypeMap.get(type);
-        return <StatusTag status="info" text={label || '-'} />;
+        return <Tag color="blue">{label || '-'}</Tag>;
       },
     },
     {

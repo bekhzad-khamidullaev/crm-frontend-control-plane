@@ -7,7 +7,6 @@ import React, { useEffect, useMemo, useState } from 'react';
 import { Alert, App, Button, Card, Col, Descriptions, Empty, Form, Input, Row, Select, Space, Statistic, Table, Tag } from 'antd';
 import { MessageOutlined, ReloadOutlined } from '@ant-design/icons';
 import smsApi from '../lib/api/sms.js';
-import { PhoneInput } from '@/shared/ui';
 
 const { TextArea } = Input;
 
@@ -206,7 +205,7 @@ export default function SMSSettings({ onSuccess }) {
               { pattern: /^\+?[\d\s\-\(\)]+$/, message: 'Неверный формат номера' },
             ]}
           >
-            <PhoneInput />
+            <Input />
           </Form.Item>
 
           <Form.Item

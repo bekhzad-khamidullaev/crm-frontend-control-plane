@@ -1,21 +1,19 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { ArrowLeft, Edit, Trash2, Calendar, User, CheckCircle, RotateCcw } from 'lucide-react';
+import { ArrowLeft, CheckCircle, Edit, RotateCcw, Trash2, User } from 'lucide-react';
 import dayjs from 'dayjs';
 
-import { navigate } from '../../router';
-import { getProject, deleteProject, getUsers, getUser, projectsApi } from '../../lib/api/client';
-import { getProjectStages, getCrmTags } from '../../lib/api/reference';
+import { App, Button, Card, Descriptions, Modal, Result, Skeleton, Space, Tabs, Tag, Typography } from 'antd';
+
 import ActivityLog from '../../components/ActivityLog';
 import EntitySelect from '../../components/EntitySelect.jsx';
-import { Card } from '../../components/ui/card.jsx';
-import { Button } from '../../components/ui/button.jsx';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '../../components/ui/tabs.jsx';
-import { Badge } from '../../components/ui/badge.jsx';
-import { toast } from '../../components/ui/use-toast.js';
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '../../components/ui/dialog.jsx';
-import { LegacyEmptyState, LegacyErrorState, LegacyLoadingState } from '../../shared/ui';
+import { getProject, deleteProject, getUsers, projectsApi } from '../../lib/api/client';
+import { getProjectStages, getCrmTags } from '../../lib/api/reference';
+import { navigate } from '../../router';
+
+const { Title } = Typography;
 
 function ProjectDetail({ id }) {
+  const { message } = App.useApp();
   const [project, setProject] = useState(null);
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState(false);
@@ -24,16 +22,12 @@ function ProjectDetail({ id }) {
   const [users, setUsers] = useState([]);
   const [assignModalOpen, setAssignModalOpen] = useState(false);
   const [assigning, setAssigning] = useState(false);
-  const [assignState, setAssignState] = useState({
-    owner: '',
-    co_owner: '',
-    responsible: [],
-    subscribers: [],
-  });
+  const [assignState, setAssignState] = useState({ owner: '', co_owner: '', responsible: [], subscribers: [] });
 
   useEffect(() => {
     loadProject();
     loadReferences();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [id]);
 
   const loadProject = async () => {
@@ -42,10 +36,10 @@ function ProjectDetail({ id }) {
     try {
       const data = await getProject(id);
       setProject(data);
-    } catch (error) {
+    } catch {
       setProject(null);
       setLoadError(true);
-      toast({ title: 'Ошибка', description: 'Ошибка загрузки данных проекта', variant: 'destructive' });
+      message.error('Ошибка загрузки данных проекта');
     } finally {
       setLoading(false);
     }
@@ -61,8 +55,7 @@ function ProjectDetail({ id }) {
       setStages(stagesResponse.results || stagesResponse || []);
       setTags(tagsResponse.results || tagsResponse || []);
       setUsers(usersResponse.results || usersResponse || []);
-    } catch (error) {
-      console.error('Error loading project references:', error);
+    } catch {
       setStages([]);
       setTags([]);
       setUsers([]);
@@ -72,30 +65,30 @@ function ProjectDetail({ id }) {
   const handleDelete = async () => {
     try {
       await deleteProject(id);
-      toast({ title: 'Проект удален', description: 'Проект удален' });
+      message.success('Проект удален');
       navigate('/projects');
-    } catch (error) {
-      toast({ title: 'Ошибка', description: 'Ошибка удаления проекта', variant: 'destructive' });
+    } catch {
+      message.error('Ошибка удаления проекта');
     }
   };
 
   const handleComplete = async () => {
     try {
       await projectsApi.complete(id);
-      toast({ title: 'Проект завершен', description: 'Проект завершен' });
+      message.success('Проект завершен');
       loadProject();
-    } catch (error) {
-      toast({ title: 'Ошибка', description: 'Ошибка завершения проекта', variant: 'destructive' });
+    } catch {
+      message.error('Ошибка завершения проекта');
     }
   };
 
   const handleReopen = async () => {
     try {
       await projectsApi.reopen(id);
-      toast({ title: 'Проект возобновлен', description: 'Проект возобновлен' });
+      message.success('Проект возобновлен');
       loadProject();
-    } catch (error) {
-      toast({ title: 'Ошибка', description: 'Ошибка возобновления проекта', variant: 'destructive' });
+    } catch {
+      message.error('Ошибка возобновления проекта');
     }
   };
 
@@ -113,258 +106,180 @@ function ProjectDetail({ id }) {
     try {
       setAssigning(true);
       await projectsApi.assign(id, assignState);
-      toast({ title: 'Назначения обновлены', description: 'Назначения обновлены' });
+      message.success('Назначения обновлены');
       setAssignModalOpen(false);
       loadProject();
-    } catch (error) {
-      toast({ title: 'Ошибка', description: 'Ошибка назначения', variant: 'destructive' });
+    } catch {
+      message.error('Ошибка назначения');
     } finally {
       setAssigning(false);
     }
   };
 
-  const stageMap = useMemo(() => {
-    return stages.reduce((acc, stage) => {
-      acc[stage.id] = stage;
-      return acc;
-    }, {});
-  }, [stages]);
+  const stageMap = useMemo(
+    () =>
+      stages.reduce((acc, stage) => {
+        acc[stage.id] = stage;
+        return acc;
+      }, {}),
+    [stages],
+  );
 
-  const userMap = useMemo(() => {
-    return users.reduce((acc, user) => {
-      acc[user.id] = user.username || user.email || '-';
-      return acc;
-    }, {});
-  }, [users]);
+  const userMap = useMemo(
+    () =>
+      users.reduce((acc, user) => {
+        acc[user.id] = user.username || user.email || '-';
+        return acc;
+      }, {}),
+    [users],
+  );
 
-  const tagMap = useMemo(() => {
-    return tags.reduce((acc, tag) => {
-      acc[tag.id] = tag.name;
-      return acc;
-    }, {});
-  }, [tags]);
+  const tagMap = useMemo(
+    () =>
+      tags.reduce((acc, tag) => {
+        acc[tag.id] = tag.name;
+        return acc;
+      }, {}),
+    [tags],
+  );
 
   if (loading) {
-    return (
-      <LegacyLoadingState
-        title="Загрузка проекта"
-        description="Подгружаем карточку проекта и связанные справочники."
-      />
-    );
+    return <Skeleton active paragraph={{ rows: 8 }} />;
   }
 
   if (loadError) {
     return (
-      <LegacyErrorState
+      <Result
+        status="error"
         title="Не удалось открыть проект"
-        description="Попробуйте повторить загрузку или вернитесь к списку проектов."
-        onAction={loadProject}
+        subTitle="Попробуйте повторить загрузку"
+        extra={<Button onClick={loadProject}>Повторить</Button>}
       />
     );
   }
 
   if (!project) {
     return (
-      <LegacyEmptyState
+      <Result
+        status="404"
         title="Проект не найден"
-        description="Возможно, запись была удалена или у вас больше нет к ней доступа."
-        actionLabel="К списку проектов"
-        onAction={() => navigate('/projects')}
+        subTitle="Запись могла быть удалена или у вас нет доступа"
+        extra={<Button onClick={() => navigate('/projects')}>К списку проектов</Button>}
       />
     );
   }
 
   const stage = stageMap[project.stage];
-  const responsibleNames = Array.isArray(project.responsible)
-    ? project.responsible.map((id) => userMap[id]).filter(Boolean)
-    : [];
-  const subscriberNames = Array.isArray(project.subscribers)
-    ? project.subscribers.map((id) => userMap[id]).filter(Boolean)
-    : [];
-  const tagNames = Array.isArray(project.tags) ? project.tags.map((id) => tagMap[id]).filter(Boolean) : [];
+  const responsibleNames = Array.isArray(project.responsible) ? project.responsible.map((uid) => userMap[uid]).filter(Boolean) : [];
+  const subscriberNames = Array.isArray(project.subscribers) ? project.subscribers.map((uid) => userMap[uid]).filter(Boolean) : [];
+  const tagNames = Array.isArray(project.tags) ? project.tags.map((tagId) => tagMap[tagId]).filter(Boolean) : [];
   const isCompleted = stage?.done || project.active === false;
 
   return (
-    <div>
-      <div className="mb-4 flex flex-wrap items-center gap-2">
-        <Button variant="outline" onClick={() => navigate('/projects')}>
-          <ArrowLeft className="mr-2 h-4 w-4" />
+    <Space direction="vertical" size={16} style={{ width: '100%' }}>
+      <Space wrap>
+        <Button icon={<ArrowLeft size={14} />} onClick={() => navigate('/projects')}>
           Назад
         </Button>
-        <Button onClick={() => navigate(`/projects/${id}/edit`)}>
-          <Edit className="mr-2 h-4 w-4" />
+        <Button type="primary" icon={<Edit size={14} />} onClick={() => navigate(`/projects/${id}/edit`)}>
           Редактировать
         </Button>
-        <Button variant="outline" onClick={openAssignModal}>
-          <User className="mr-2 h-4 w-4" />
+        <Button icon={<User size={14} />} onClick={openAssignModal}>
           Назначить
         </Button>
         {isCompleted ? (
-          <Button variant="outline" onClick={handleReopen}>
-            <RotateCcw className="mr-2 h-4 w-4" />
+          <Button icon={<RotateCcw size={14} />} onClick={handleReopen}>
             Возобновить
           </Button>
         ) : (
-          <Button variant="outline" onClick={handleComplete}>
-            <CheckCircle className="mr-2 h-4 w-4" />
+          <Button icon={<CheckCircle size={14} />} onClick={handleComplete}>
             Завершить
           </Button>
         )}
-        <Button variant="destructive" onClick={handleDelete}>
-          <Trash2 className="mr-2 h-4 w-4" />
+        <Button danger icon={<Trash2 size={14} />} onClick={handleDelete}>
           Удалить
         </Button>
-      </div>
+      </Space>
 
-      <h2 className="text-2xl font-semibold">{project.name}</h2>
-
-      <Card className="p-4">
-        <Tabs defaultValue="details">
-          <TabsList>
-            <TabsTrigger value="details">Детали</TabsTrigger>
-            <TabsTrigger value="activity">История активности</TabsTrigger>
-          </TabsList>
-
-          <TabsContent value="details">
-            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-              <DetailRow label="Название" value={<span className="text-base font-semibold">{project.name}</span>} span />
-              <DetailRow
-                label="Этап"
-                value={stage ? (
-                  <Badge variant="secondary">{stage.name}</Badge>
-                ) : (
-                  '-'
-                )}
-              />
-              <DetailRow label="Приоритет" value={project.priority ? `Приоритет ${project.priority}` : '-'} />
-              <DetailRow
-                label="Дата начала"
-                value={project.start_date ? (
-                  <div className="flex items-center gap-2">
-                    <Calendar className="h-4 w-4" />
-                    {dayjs(project.start_date).format('DD.MM.YYYY')}
-                  </div>
-                ) : (
-                  '-'
-                )}
-              />
-              <DetailRow
-                label="Срок завершения"
-                value={project.due_date ? (
-                  <div className="flex items-center gap-2">
-                    <Calendar className="h-4 w-4" />
-                    {dayjs(project.due_date).format('DD.MM.YYYY')}
-                  </div>
-                ) : (
-                  '-'
-                )}
-              />
-              <DetailRow label="Дата закрытия" value={project.closing_date ? dayjs(project.closing_date).format('DD.MM.YYYY') : '-'} />
-              <DetailRow label="Следующий шаг" value={project.next_step || '-'} />
-              <DetailRow label="Дата следующего шага" value={project.next_step_date ? dayjs(project.next_step_date).format('DD.MM.YYYY') : '-'} />
-              <DetailRow label="Активен" value={<Badge variant={project.active ? 'default' : 'secondary'}>{project.active ? 'Да' : 'Нет'}</Badge>} />
-              <DetailRow label="Напоминать" value={<Badge variant={project.remind_me ? 'secondary' : 'outline'}>{project.remind_me ? 'Да' : 'Нет'}</Badge>} />
-              <DetailRow
-                label="Владелец"
-                value={
-                  <div className="flex items-center gap-2">
-                    <User className="h-4 w-4 text-muted-foreground" />
-                    {project.owner ? userMap[project.owner] || '-' : '-'}
-                  </div>
-                }
-              />
-              <DetailRow label="Со-владелец" value={project.co_owner ? userMap[project.co_owner] || '-' : '-'} />
-              <DetailRow label="Ответственные" value={responsibleNames.length ? responsibleNames.join(', ') : '-'} span />
-              <DetailRow label="Подписчики" value={subscriberNames.length ? subscriberNames.join(', ') : '-'} span />
-              <DetailRow
-                label="Теги"
-                value={tagNames.length ? tagNames.map((tag) => (
-                  <Badge key={tag} variant="secondary" className="mr-2">{tag}</Badge>
-                )) : '-'}
-                span
-              />
-              <DetailRow label="Дата создания" value={project.creation_date ? dayjs(project.creation_date).format('DD.MM.YYYY HH:mm') : '-'} />
-              <DetailRow label="Последнее обновление" value={project.update_date ? dayjs(project.update_date).format('DD.MM.YYYY HH:mm') : '-'} />
-              {project.description && <DetailRow label="Описание" value={project.description} span />}
-              {project.note && <DetailRow label="Заметка" value={project.note} span />}
-            </div>
-          </TabsContent>
-
-          <TabsContent value="activity">
-            <ActivityLog entityType="project" entityId={project.id} />
-          </TabsContent>
-        </Tabs>
+      <Card>
+        <Title level={3}>{project.name}</Title>
+        <Tabs
+          items={[
+            {
+              key: 'details',
+              label: 'Детали',
+              children: (
+                <Descriptions bordered column={1} size="small">
+                  <Descriptions.Item label="Название">{project.name}</Descriptions.Item>
+                  <Descriptions.Item label="Этап">{stage ? <Tag color={stage.done ? 'green' : stage.in_progress ? 'blue' : 'default'}>{stage.name}</Tag> : '-'}</Descriptions.Item>
+                  <Descriptions.Item label="Приоритет">{project.priority ? `Приоритет ${project.priority}` : '-'}</Descriptions.Item>
+                  <Descriptions.Item label="Дата начала">{project.start_date ? dayjs(project.start_date).format('DD.MM.YYYY') : '-'}</Descriptions.Item>
+                  <Descriptions.Item label="Срок завершения">{project.due_date ? dayjs(project.due_date).format('DD.MM.YYYY') : '-'}</Descriptions.Item>
+                  <Descriptions.Item label="Дата закрытия">{project.closing_date ? dayjs(project.closing_date).format('DD.MM.YYYY') : '-'}</Descriptions.Item>
+                  <Descriptions.Item label="Следующий шаг">{project.next_step || '-'}</Descriptions.Item>
+                  <Descriptions.Item label="Дата следующего шага">{project.next_step_date ? dayjs(project.next_step_date).format('DD.MM.YYYY') : '-'}</Descriptions.Item>
+                  <Descriptions.Item label="Активен">{project.active ? <Tag color="green">Да</Tag> : <Tag>Нет</Tag>}</Descriptions.Item>
+                  <Descriptions.Item label="Напоминать">{project.remind_me ? <Tag color="gold">Да</Tag> : <Tag>Нет</Tag>}</Descriptions.Item>
+                  <Descriptions.Item label="Владелец">{project.owner ? userMap[project.owner] || '-' : '-'}</Descriptions.Item>
+                  <Descriptions.Item label="Со-владелец">{project.co_owner ? userMap[project.co_owner] || '-' : '-'}</Descriptions.Item>
+                  <Descriptions.Item label="Ответственные">{responsibleNames.length ? responsibleNames.join(', ') : '-'}</Descriptions.Item>
+                  <Descriptions.Item label="Подписчики">{subscriberNames.length ? subscriberNames.join(', ') : '-'}</Descriptions.Item>
+                  <Descriptions.Item label="Теги">{tagNames.length ? tagNames.map((tag) => <Tag key={tag}>{tag}</Tag>) : '-'}</Descriptions.Item>
+                  <Descriptions.Item label="Дата создания">{project.creation_date ? dayjs(project.creation_date).format('DD.MM.YYYY HH:mm') : '-'}</Descriptions.Item>
+                  <Descriptions.Item label="Последнее обновление">{project.update_date ? dayjs(project.update_date).format('DD.MM.YYYY HH:mm') : '-'}</Descriptions.Item>
+                  <Descriptions.Item label="Описание">{project.description || '-'}</Descriptions.Item>
+                  <Descriptions.Item label="Заметка">{project.note || '-'}</Descriptions.Item>
+                </Descriptions>
+              ),
+            },
+            {
+              key: 'activity',
+              label: 'История активности',
+              children: <ActivityLog entityType="project" entityId={project.id} />,
+            },
+          ]}
+        />
       </Card>
 
-      <Dialog open={assignModalOpen} onOpenChange={setAssignModalOpen}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Назначения проекта</DialogTitle>
-          </DialogHeader>
-          <div className="space-y-3">
-            <div>
-              <label className="text-sm font-medium">Владелец</label>
-              <EntitySelect
-                fetchOptions={getUsers}
-                fetchById={getUser}
-                placeholder="Выберите владельца"
-                value={assignState.owner || ''}
-                onChange={(val) => setAssignState((prev) => ({ ...prev, owner: val }))}
-              />
-            </div>
-            <div>
-              <label className="text-sm font-medium">Со-владелец</label>
-              <EntitySelect
-                fetchOptions={getUsers}
-                fetchById={getUser}
-                placeholder="Выберите со-владельца"
-                value={assignState.co_owner || ''}
-                onChange={(val) => setAssignState((prev) => ({ ...prev, co_owner: val }))}
-              />
-            </div>
-            <div>
-              <label className="text-sm font-medium">Ответственные</label>
-              <EntitySelect
-                fetchOptions={getUsers}
-                fetchById={getUser}
-                mode="multiple"
-                placeholder="Выберите ответственных"
-                value={assignState.responsible}
-                onChange={(val) => setAssignState((prev) => ({ ...prev, responsible: val }))}
-              />
-            </div>
-            <div>
-              <label className="text-sm font-medium">Подписчики</label>
-              <EntitySelect
-                fetchOptions={getUsers}
-                fetchById={getUser}
-                mode="multiple"
-                placeholder="Выберите подписчиков"
-                value={assignState.subscribers}
-                onChange={(val) => setAssignState((prev) => ({ ...prev, subscribers: val }))}
-              />
-            </div>
-          </div>
-          <div className="mt-4 flex justify-end gap-2">
-            <Button variant="outline" onClick={() => setAssignModalOpen(false)}>
-              Отмена
-            </Button>
-            <Button onClick={handleAssign} loading={assigning}>
-              Сохранить
-            </Button>
-          </div>
-        </DialogContent>
-      </Dialog>
-    </div>
-  );
-}
-
-function DetailRow({ label, value, span = false }) {
-  return (
-    <div className={span ? 'sm:col-span-2' : ''}>
-      <div className="text-xs text-muted-foreground">{label}</div>
-      <div className="mt-1 text-sm">{value}</div>
-    </div>
+      <Modal
+        title="Назначения проекта"
+        open={assignModalOpen}
+        onCancel={() => setAssignModalOpen(false)}
+        onOk={handleAssign}
+        okText="Сохранить"
+        cancelText="Отмена"
+        confirmLoading={assigning}
+      >
+        <Space direction="vertical" style={{ width: '100%' }}>
+          <EntitySelect
+            endpoint="users"
+            value={assignState.owner}
+            onChange={(value) => setAssignState((prev) => ({ ...prev, owner: value }))}
+            placeholder="Владелец"
+          />
+          <EntitySelect
+            endpoint="users"
+            value={assignState.co_owner}
+            onChange={(value) => setAssignState((prev) => ({ ...prev, co_owner: value }))}
+            placeholder="Со-владелец"
+          />
+          <EntitySelect
+            endpoint="users"
+            mode="multiple"
+            value={assignState.responsible}
+            onChange={(value) => setAssignState((prev) => ({ ...prev, responsible: value || [] }))}
+            placeholder="Ответственные"
+          />
+          <EntitySelect
+            endpoint="users"
+            mode="multiple"
+            value={assignState.subscribers}
+            onChange={(value) => setAssignState((prev) => ({ ...prev, subscribers: value || [] }))}
+            placeholder="Подписчики"
+          />
+        </Space>
+      </Modal>
+    </Space>
   );
 }
 

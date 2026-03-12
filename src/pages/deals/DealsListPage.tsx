@@ -1,12 +1,12 @@
-import { EntityListPageShell } from '@/shared/ui';
 import { DealsTable } from '@/widgets/deals-table';
 import { PlusOutlined } from '@ant-design/icons';
-import { Button, Grid } from 'antd';
+import { Button, Card, Grid, Space, Typography } from 'antd';
 import React from 'react';
 // @ts-ignore
 import { navigate } from '@/router.js';
 // @ts-ignore
 import { canWrite } from '@/lib/rbac.js';
+const { Title } = Typography;
 
 export const DealsListPage: React.FC = () => {
   const screens = Grid.useBreakpoint();
@@ -14,26 +14,25 @@ export const DealsListPage: React.FC = () => {
   const canManage = canWrite();
 
   return (
-    <EntityListPageShell
-      title="Сделки"
-      extra={
-        canManage
-          ? [
-              <Button
-                key="create"
-                type="primary"
-                icon={<PlusOutlined />}
-                onClick={() => navigate('/deals/new')}
-                block={isMobile}
-              >
-                {isMobile ? 'Создать' : 'Создать сделку'}
-              </Button>,
-            ]
-          : []
-      }
-    >
+    <>
+      <Space style={{ width: '100%', justifyContent: 'space-between', marginBottom: 16 }} wrap>
+        <Title level={3} style={{ margin: 0 }}>Сделки</Title>
+        {canManage ? (
+          <Button
+            key="create"
+            type="primary"
+            icon={<PlusOutlined />}
+            onClick={() => navigate('/deals/new')}
+            block={isMobile}
+          >
+            {isMobile ? 'Создать' : 'Создать сделку'}
+          </Button>
+        ) : null}
+      </Space>
+      <Card>
       <DealsTable />
-    </EntityListPageShell>
+      </Card>
+    </>
   );
 };
 

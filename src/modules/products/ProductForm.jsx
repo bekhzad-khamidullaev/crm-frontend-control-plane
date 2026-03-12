@@ -1,22 +1,13 @@
 import React, { useEffect, useState } from 'react';
-import {
-  Form,
-  Input,
-  Card,
-  App,
-  Row,
-  Col,
-  InputNumber,
-  Switch,
-  Select,
-} from 'antd';
+import { App, Button, Card, Col, Form, Input, InputNumber, Result, Row, Select, Skeleton, Space, Switch, Typography } from 'antd';
 import { navigate } from '../../router';
 import { getProduct, createProduct, updateProduct, getProductCategories, getProductCategory } from '../../lib/api/products';
-import ReferenceSelect from '../../components/ui-ReferenceSelect';
+import ReferenceSelect from '../../components/ReferenceSelect';
 import EntitySelect from '../../components/EntitySelect';
 import { normalizePayload } from '../../lib/utils/payload';
-import { EntityFormSection, EntityFormShell, LegacyErrorState, LegacyLoadingState } from '../../shared/ui';
+
 const { TextArea } = Input;
+const { Title, Text } = Typography;
 
 const typeOptions = [
   { value: 'G', label: 'Товар' },
@@ -30,12 +21,10 @@ function ProductForm({ id }) {
   const [loadError, setLoadError] = useState(false);
   const [saving, setSaving] = useState(false);
   const isEdit = !!id;
-  const formId = 'product-form';
 
   useEffect(() => {
-    if (isEdit) {
-      loadProduct();
-    }
+    if (isEdit) loadProduct();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [id]);
 
   const loadProduct = async () => {
@@ -44,7 +33,7 @@ function ProductForm({ id }) {
     try {
       const data = await getProduct(id);
       form.setFieldsValue(data);
-    } catch (error) {
+    } catch {
       setLoadError(true);
       message.error('Ошибка загрузки продукта');
     } finally {
@@ -57,11 +46,9 @@ function ProductForm({ id }) {
     try {
       const payload = normalizePayload({
         ...values,
-        price:
-          values.price !== undefined && values.price !== null && values.price !== ''
-            ? String(values.price)
-            : null,
+        price: values.price !== undefined && values.price !== null && values.price !== '' ? String(values.price) : null,
       });
+
       if (isEdit) {
         await updateProduct(id, payload);
         message.success('Продукт обновлен');
@@ -70,66 +57,55 @@ function ProductForm({ id }) {
         message.success('Продукт создан');
       }
       navigate('/products');
-    } catch (error) {
+    } catch {
       message.error(`Ошибка ${isEdit ? 'обновления' : 'создания'} продукта`);
     } finally {
       setSaving(false);
     }
   };
 
-  if (loading) {
-    return (
-      <LegacyLoadingState
-        title="Загрузка продукта"
-        description="Подготавливаем форму редактирования продукта."
-      />
-    );
-  }
+  if (loading) return <Skeleton active paragraph={{ rows: 8 }} />;
 
   if (isEdit && loadError) {
     return (
-      <LegacyErrorState
+      <Result
+        status="error"
         title="Не удалось загрузить продукт для редактирования"
-        description="Попробуйте повторить загрузку или вернитесь к каталогу продуктов."
-        onAction={loadProduct}
+        subTitle="Попробуйте повторить загрузку или вернитесь к каталогу продуктов"
+        extra={<Button onClick={loadProduct}>Повторить</Button>}
       />
     );
   }
 
   return (
-    <EntityFormShell
-      title={isEdit ? 'Редактировать продукт' : 'Новый продукт'}
-      subtitle="Настройка карточки товара или услуги в едином CRM-паттерне."
-      hint="Сначала заполните коммерчески важные поля: название, цену, категорию и тип продукта."
-      formId={formId}
-      submitText={isEdit ? 'Сохранить продукт' : 'Создать продукт'}
-      isSubmitting={saving}
-      onBack={() => navigate('/products')}
-      onCancel={() => navigate('/products')}
-    >
+    <Space direction="vertical" size={16} style={{ width: '100%' }}>
+      <Space wrap style={{ width: '100%', justifyContent: 'space-between' }}>
+        <Button onClick={() => navigate('/products')}>Назад</Button>
+        <Space>
+          <Button onClick={() => navigate('/products')}>Отмена</Button>
+          <Button type="primary" loading={saving} onClick={() => form.submit()}>
+            {isEdit ? 'Сохранить продукт' : 'Создать продукт'}
+          </Button>
+        </Space>
+      </Space>
+
       <Card>
-        <Form id={formId} form={form} layout="vertical" onFinish={onFinish} autoComplete="off">
-          <EntityFormSection
-            title="Основное"
-            description="Базовые данные, по которым продукт будет найден и использован в сделках."
-          />
+        <Title level={3} style={{ marginTop: 0 }}>{isEdit ? 'Редактировать продукт' : 'Новый продукт'}</Title>
+        <Text type="secondary">Настройка карточки товара или услуги</Text>
+      </Card>
+
+      <Card>
+        <Form form={form} layout="vertical" onFinish={onFinish} autoComplete="off">
+          <h3>Основное</h3>
           <Row gutter={16}>
             <Col xs={24} md={12}>
-              <Form.Item
-                label="Название"
-                name="name"
-                rules={[{ required: true, message: 'Введите название' }]}
-              >
+              <Form.Item label="Название" name="name" rules={[{ required: true, message: 'Введите название' }]}>
                 <Input placeholder="Например: Ноутбук ASUS" />
               </Form.Item>
             </Col>
             <Col xs={24} md={12}>
               <Form.Item label="Категория" name="product_category">
-                <EntitySelect
-                  placeholder="Выберите категорию"
-                  fetchOptions={getProductCategories}
-                  fetchById={getProductCategory}
-                />
+                <EntitySelect placeholder="Выберите категорию" fetchOptions={getProductCategories} fetchById={getProductCategory} />
               </Form.Item>
             </Col>
           </Row>
@@ -138,18 +114,11 @@ function ProductForm({ id }) {
             <TextArea rows={4} placeholder="Описание продукта" />
           </Form.Item>
 
-          <EntityFormSection
-            title="Коммерческие параметры"
-            description="Цена, валюта и тип определяют, как продукт выглядит в каталоге и расчётах."
-          />
+          <h3>Коммерческие параметры</h3>
           <Row gutter={16}>
             <Col xs={24} md={8}>
               <Form.Item label="Цена" name="price">
-                <InputNumber
-                  min={0}
-                  style={{ width: '100%' }}
-                  placeholder="0.00"
-                />
+                <InputNumber min={0} style={{ width: '100%' }} placeholder="0.00" />
               </Form.Item>
             </Col>
             <Col xs={24} md={8}>
@@ -171,10 +140,9 @@ function ProductForm({ id }) {
               </Form.Item>
             </Col>
           </Row>
-
         </Form>
       </Card>
-    </EntityFormShell>
+    </Space>
   );
 }
 

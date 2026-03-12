@@ -1,22 +1,21 @@
 import dayjs from 'dayjs';
 import { Check, Edit, Eye, Trash2, X } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
-import { Button as AntButton } from 'antd';
+
 import { PlusOutlined } from '@ant-design/icons';
+import { App, Button, Card, DatePicker, Input, Modal, Select, Space, Table, Tag, Typography } from 'antd';
 
 import EntitySelect from '../../components/EntitySelect.jsx';
-import { DatePicker } from '../../components/ui-DatePicker.jsx';
-import EnhancedTable from '../../components/ui-EnhancedTable.jsx';
-import { AlertDialog, AlertDialogContent, AlertDialogHeader, AlertDialogTitle } from '../../components/ui/alert-dialog.jsx';
-import { Badge } from '../../components/ui/badge.jsx';
-import { Button } from '../../components/ui/button.jsx';
-import { toast } from '../../components/ui/use-toast.js';
 import { getUser, getUsers } from '../../lib/api';
 import { deleteReminder, getReminders, updateReminder } from '../../lib/api/reminders';
 import { navigate } from '../../router';
-import { EntityListPageShell, EntityListToolbar } from '../../shared/ui';
+
+const { RangePicker } = DatePicker;
+const { Search } = Input;
+const { Text, Title } = Typography;
 
 export default function RemindersList() {
+  const { message } = App.useApp();
   const [data, setData] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
@@ -30,6 +29,7 @@ export default function RemindersList() {
 
   useEffect(() => {
     fetchData();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [pagination.current, pagination.pageSize, searchText, activeFilter, ownerFilter, contentTypeFilter, dateRange]);
 
   const fetchData = async () => {
@@ -60,8 +60,7 @@ export default function RemindersList() {
       setPagination((prev) => ({ ...prev, total: res.count || filteredByDate.length }));
     } catch (fetchError) {
       setError(fetchError?.message || 'Не удалось загрузить напоминания');
-      toast({ title: 'Ошибка', description: 'Не удалось загрузить напоминания', variant: 'destructive' });
-      console.error(fetchError);
+      message.error('Не удалось загрузить напоминания');
     } finally {
       setLoading(false);
     }
@@ -70,10 +69,10 @@ export default function RemindersList() {
   const handleDelete = async (id) => {
     try {
       await deleteReminder(id);
-      toast({ title: 'Напоминание удалено', description: 'Напоминание удалено' });
+      message.success('Напоминание удалено');
       fetchData();
-    } catch (deleteError) {
-      toast({ title: 'Ошибка', description: 'Не удалось удалить напоминание', variant: 'destructive' });
+    } catch {
+      message.error('Не удалось удалить напоминание');
     } finally {
       setConfirmDelete(null);
     }
@@ -82,13 +81,10 @@ export default function RemindersList() {
   const handleToggleActive = async (id, currentActive) => {
     try {
       await updateReminder(id, { active: !currentActive });
-      toast({
-        title: !currentActive ? 'Напоминание активировано' : 'Напоминание деактивировано',
-        description: !currentActive ? 'Напоминание активировано' : 'Напоминание деактивировано',
-      });
+      message.success(!currentActive ? 'Напоминание активировано' : 'Напоминание деактивировано');
       fetchData();
-    } catch (updateError) {
-      toast({ title: 'Ошибка', description: 'Не удалось обновить напоминание', variant: 'destructive' });
+    } catch {
+      message.error('Не удалось обновить напоминание');
     }
   };
 
@@ -100,183 +96,162 @@ export default function RemindersList() {
     }));
   };
 
-  const columns = useMemo(() => ([
-    {
-      title: 'Тема',
-      dataIndex: 'subject',
-      key: 'subject',
-      render: (subject) => <strong>{subject}</strong>,
-    },
-    {
-      title: 'Дата напоминания',
-      dataIndex: 'reminder_date',
-      key: 'reminder_date',
-      render: (date) => {
-        if (!date) return '-';
-        const reminderDate = dayjs(date);
-        const isPast = reminderDate.isBefore(dayjs());
-        return (
-          <span className={isPast ? 'text-destructive' : undefined}>
-            {reminderDate.format('DD MMM YYYY HH:mm')}
-            {isPast && ' (Просрочено)'}
-          </span>
-        );
+  const columns = useMemo(
+    () => [
+      {
+        title: 'Тема',
+        dataIndex: 'subject',
+        key: 'subject',
+        render: (subject) => <Text strong>{subject}</Text>,
       },
-      sorter: true,
-    },
-    {
-      title: 'Статус',
-      dataIndex: 'active',
-      key: 'active',
-      render: (active) => (
-        <Badge variant={active ? 'default' : 'secondary'}>
-          {active ? 'Активно' : 'Неактивно'}
-        </Badge>
-      ),
-    },
-    {
-      title: 'Тип объекта',
-      dataIndex: 'content_type',
-      key: 'content_type',
-      width: 120,
-      render: (value) => value ?? '-',
-    },
-    {
-      title: 'Связанный объект',
-      dataIndex: 'object_id',
-      key: 'object_id',
-      width: 120,
-      render: (value) => value ?? '-',
-    },
-    {
-      title: 'Владелец',
-      dataIndex: 'owner_name',
-      key: 'owner_name',
-      render: (ownerName) => ownerName || '-',
-    },
-    {
-      title: 'Действия',
-      key: 'actions',
-      width: 240,
-      render: (_, record) => (
-        <div className="flex flex-wrap items-center gap-2">
-          <Button variant="ghost" size="sm" onClick={() => navigate(`/reminders/${record.id}`)}>
-            <Eye className="mr-1 h-4 w-4" />
-            Открыть
-          </Button>
-          <Button variant="ghost" size="sm" onClick={() => navigate(`/reminders/${record.id}/edit`)}>
-            <Edit className="mr-1 h-4 w-4" />
-            Ред.
-          </Button>
-          <Button variant="ghost" size="sm" onClick={() => handleToggleActive(record.id, record.active)}>
-            {record.active ? <X className="mr-1 h-4 w-4" /> : <Check className="mr-1 h-4 w-4" />}
-            {record.active ? 'Откл.' : 'Вкл.'}
-          </Button>
-          <Button variant="ghost" size="sm" className="text-destructive" onClick={() => setConfirmDelete(record)}>
-            <Trash2 className="mr-1 h-4 w-4" />
-            Удалить
-          </Button>
-        </div>
-      ),
-    },
-  ]), []);
-
-  const headerActions = (
-    <AntButton type="primary" icon={<PlusOutlined />} onClick={() => navigate('/reminders/new')}>
-      Новое напоминание
-    </AntButton>
+      {
+        title: 'Дата напоминания',
+        dataIndex: 'reminder_date',
+        key: 'reminder_date',
+        render: (date) => {
+          if (!date) return '-';
+          const reminderDate = dayjs(date);
+          const isPast = reminderDate.isBefore(dayjs());
+          return (
+            <Text type={isPast ? 'danger' : undefined}>
+              {reminderDate.format('DD.MM.YYYY HH:mm')}
+              {isPast ? ' (Просрочено)' : ''}
+            </Text>
+          );
+        },
+      },
+      {
+        title: 'Статус',
+        dataIndex: 'active',
+        key: 'active',
+        render: (active) => <Tag color={active ? 'green' : 'default'}>{active ? 'Активно' : 'Неактивно'}</Tag>,
+      },
+      {
+        title: 'Тип объекта',
+        dataIndex: 'content_type',
+        key: 'content_type',
+        render: (value) => value ?? '-',
+      },
+      {
+        title: 'Связанный объект',
+        dataIndex: 'object_id',
+        key: 'object_id',
+        render: (value) => value ?? '-',
+      },
+      {
+        title: 'Владелец',
+        dataIndex: 'owner_name',
+        key: 'owner_name',
+        render: (ownerName) => ownerName || '-',
+      },
+      {
+        title: 'Действия',
+        key: 'actions',
+        width: 320,
+        render: (_, record) => (
+          <Space>
+            <Button size="small" icon={<Eye size={14} />} onClick={() => navigate(`/reminders/${record.id}`)}>
+              Открыть
+            </Button>
+            <Button size="small" icon={<Edit size={14} />} onClick={() => navigate(`/reminders/${record.id}/edit`)}>
+              Ред.
+            </Button>
+            <Button size="small" icon={record.active ? <X size={14} /> : <Check size={14} />} onClick={() => handleToggleActive(record.id, record.active)}>
+              {record.active ? 'Откл.' : 'Вкл.'}
+            </Button>
+            <Button size="small" danger icon={<Trash2 size={14} />} onClick={() => setConfirmDelete(record)}>
+              Удалить
+            </Button>
+          </Space>
+        ),
+      },
+    ],
+    [],
   );
 
   return (
     <>
-      <EntityListPageShell
-        title="Напоминания"
-        subtitle="Единый список напоминаний с поиском и фильтрами"
-        extra={headerActions}
-        toolbar={
-          <EntityListToolbar
-            searchValue={searchText}
-            searchPlaceholder="Поиск по теме или описанию"
-            onSearchChange={setSearchText}
-            onRefresh={fetchData}
+      <Card>
+        <Space direction="vertical" size={16} style={{ width: '100%' }}>
+          <Space wrap style={{ width: '100%', justifyContent: 'space-between' }}>
+            <div>
+              <Title level={3} style={{ margin: 0 }}>Напоминания</Title>
+              <Text type="secondary">Список напоминаний</Text>
+            </div>
+            <Button type="primary" icon={<PlusOutlined />} onClick={() => navigate('/reminders/new')}>
+              Новое напоминание
+            </Button>
+          </Space>
+
+          <Space wrap>
+            <Search
+              placeholder="Поиск по теме или описанию"
+              allowClear
+              value={searchText}
+              onChange={(e) => setSearchText(e.target.value)}
+              onSearch={setSearchText}
+              style={{ minWidth: 280 }}
+            />
+            <Select
+              allowClear
+              placeholder="Активность"
+              style={{ minWidth: 150 }}
+              value={activeFilter}
+              options={[
+                { value: true, label: 'Активные' },
+                { value: false, label: 'Неактивные' },
+              ]}
+              onChange={(v) => setActiveFilter(v ?? null)}
+            />
+            <EntitySelect
+              placeholder="Владелец"
+              value={ownerFilter}
+              onChange={setOwnerFilter}
+              fetchList={getUsers}
+              fetchById={getUser}
+              allowClear
+            />
+            <Input
+              type="number"
+              min={1}
+              placeholder="Тип объекта"
+              value={contentTypeFilter || ''}
+              onChange={(e) => setContentTypeFilter(e.target.value ? Number(e.target.value) : null)}
+              style={{ width: 160 }}
+            />
+            <RangePicker
+              format="DD.MM.YYYY"
+              value={dateRange}
+              onChange={(vals) => setDateRange(vals || null)}
+            />
+            <Button onClick={fetchData} loading={loading}>Обновить</Button>
+          </Space>
+
+          {error ? <Text type="danger">{error}</Text> : null}
+
+          <Table
+            rowKey="id"
+            columns={columns}
+            dataSource={data}
             loading={loading}
-            resultSummary={pagination.total ? `${pagination.total} записей` : undefined}
+            pagination={{ ...pagination, showSizeChanger: true, showTotal: (total) => `Всего: ${total}` }}
+            onChange={handleTableChange}
+            locale={{ emptyText: 'Нет напоминаний' }}
           />
-        }
-        error={error}
-        onRetry={fetchData}
+        </Space>
+      </Card>
+
+      <Modal
+        title="Удалить напоминание?"
+        open={!!confirmDelete}
+        onCancel={() => setConfirmDelete(null)}
+        onOk={() => confirmDelete && handleDelete(confirmDelete.id)}
+        okText="Удалить"
+        cancelText="Отмена"
+        okButtonProps={{ danger: true }}
       >
-        <div className="mb-4 flex flex-wrap gap-3">
-          <select
-            aria-label="Фильтр активности"
-            className="h-9 w-[160px] rounded-md border border-border bg-background px-2 text-sm"
-            value={activeFilter ?? ''}
-            onChange={(e) => setActiveFilter(e.target.value === '' ? null : e.target.value === 'true')}
-          >
-            <option value="">Активность</option>
-            <option value="true">Активные</option>
-            <option value="false">Неактивные</option>
-          </select>
-          <EntitySelect
-            placeholder="Владелец"
-            value={ownerFilter}
-            onChange={setOwnerFilter}
-            fetchList={getUsers}
-            fetchById={getUser}
-            allowClear
-          />
-          <input
-            type="number"
-            min={1}
-            className="h-9 w-[160px] rounded-md border border-border bg-background px-2 text-sm"
-            placeholder="Тип объекта"
-            value={contentTypeFilter || ''}
-            onChange={(e) => setContentTypeFilter(e.target.value ? Number(e.target.value) : null)}
-          />
-          <div className="flex items-center gap-2">
-            <DatePicker
-              value={dateRange?.[0] || null}
-              onChange={(val) => setDateRange((prev) => [val, prev?.[1] || null])}
-              format="DD.MM.YYYY"
-            />
-            <span className="text-sm text-muted-foreground">-</span>
-            <DatePicker
-              value={dateRange?.[1] || null}
-              onChange={(val) => setDateRange((prev) => [prev?.[0] || null, val])}
-              format="DD.MM.YYYY"
-            />
-          </div>
-        </div>
-
-        <EnhancedTable
-          columns={columns}
-          dataSource={data}
-          loading={loading}
-          rowKey="id"
-          pagination={pagination}
-          onChange={handleTableChange}
-          scroll={{ x: 1200 }}
-          emptyText="Нет напоминаний"
-          emptyDescription="Создайте новое напоминание"
-        />
-      </EntityListPageShell>
-
-      <AlertDialog open={!!confirmDelete} onOpenChange={(open) => !open && setConfirmDelete(null)}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle id="delete-dialog-title">Удалить напоминание?</AlertDialogTitle>
-          </AlertDialogHeader>
-          <p className="text-sm text-muted-foreground">Действие нельзя отменить.</p>
-          <div className="mt-4 flex justify-end gap-2">
-            <Button variant="outline" onClick={() => setConfirmDelete(null)}>
-              Отмена
-            </Button>
-            <Button variant="destructive" onClick={() => handleDelete(confirmDelete.id)}>
-              Удалить
-            </Button>
-          </div>
-        </AlertDialogContent>
-      </AlertDialog>
+        Действие нельзя отменить.
+      </Modal>
     </>
   );
 }

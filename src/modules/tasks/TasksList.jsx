@@ -1,19 +1,17 @@
-import { Calendar, Clock, Edit, Eye, Trash2, User } from 'lucide-react';
+import { Calendar, Clock, Edit, Eye, Trash2 } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
-import { Button as AntButton } from 'antd';
-import { PlusOutlined } from '@ant-design/icons';
 
-import EnhancedTable from '../../components/ui-EnhancedTable.jsx';
-import { AlertDialog, AlertDialogContent, AlertDialogHeader, AlertDialogTitle } from '../../components/ui/alert-dialog.jsx';
-import { Avatar, AvatarFallback } from '../../components/ui/avatar.jsx';
-import { Badge } from '../../components/ui/badge.jsx';
-import { Button } from '../../components/ui/button.jsx';
-import { toast } from '../../components/ui/use-toast.js';
+import { PlusOutlined } from '@ant-design/icons';
+import { App, Button, Card, Checkbox, Input, Modal, Space, Table, Tag, Typography } from 'antd';
+
 import { deleteTask, getTasks, getTaskStages, getUsers, updateTask } from '../../lib/api';
 import { navigate } from '../../router';
-import { EntityListPageShell, EntityListToolbar } from '../../shared/ui';
+
+const { Search } = Input;
+const { Text, Title } = Typography;
 
 function TasksList() {
+  const { message } = App.useApp();
   const [tasks, setTasks] = useState([]);
   const [allTasksCache, setAllTasksCache] = useState(null);
   const [loading, setLoading] = useState(false);
@@ -29,9 +27,9 @@ function TasksList() {
   const [deleteTarget, setDeleteTarget] = useState(null);
 
   useEffect(() => {
-    console.log('TASKS_LIST_API', { getTasks: typeof getTasks, isMock: !!getTasks?.mock });
     fetchTasks(1, searchText);
     loadReferences();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const loadReferences = async () => {
@@ -44,24 +42,16 @@ function TasksList() {
       const data = stagesRes.value;
       setStages(data?.results || data || []);
     } else {
-      console.error('Error loading task stages:', stagesRes.reason);
       setStages([]);
-      toast({
-        title: 'Внимание',
-        description: 'Не удалось загрузить стадии задач. Фильтры будут ограничены.',
-      });
+      message.warning('Не удалось загрузить стадии задач');
     }
 
     if (usersRes.status === 'fulfilled') {
       const data = usersRes.value;
       setUsers(data?.results || data || []);
     } else {
-      console.error('Error loading users:', usersRes.reason);
       setUsers([]);
-      toast({
-        title: 'Внимание',
-        description: 'Не удалось загрузить пользователей. Фильтры будут ограничены.',
-      });
+      message.warning('Не удалось загрузить пользователей');
     }
   };
 
@@ -76,9 +66,8 @@ function TasksList() {
       });
       const results = response.results || [];
       const totalCount = response.count || 0;
-      
+
       if (results.length > pageSize && results.length === totalCount) {
-        console.warn('⚠️ TasksList: Caching all data');
         setAllTasksCache(results);
         const startIndex = (page - 1) * pageSize;
         setTasks(results.slice(startIndex, startIndex + pageSize));
@@ -86,22 +75,18 @@ function TasksList() {
         setAllTasksCache(null);
         setTasks(results);
       }
-      
+
       setPagination((prev) => ({
         ...prev,
         current: page,
-        pageSize: pageSize,
+        pageSize,
         total: totalCount,
       }));
-    } catch (error) {
-      setError(error?.message || 'Не удалось загрузить список задач');
-      toast({ title: 'Ошибка', description: 'Ошибка загрузки задач', variant: 'destructive' });
+    } catch (err) {
+      setError(err?.message || 'Не удалось загрузить список задач');
+      message.error('Ошибка загрузки задач');
       setTasks([]);
-      setPagination((prev) => ({
-        ...prev,
-        current: 1,
-        total: 0,
-      }));
+      setPagination((prev) => ({ ...prev, current: 1, total: 0 }));
     } finally {
       setLoading(false);
     }
@@ -115,24 +100,24 @@ function TasksList() {
   const handleDelete = async (id) => {
     try {
       await deleteTask(id);
-      toast({ title: 'Задача удалена', description: 'Задача удалена' });
+      message.success('Задача удалена');
       fetchTasks(pagination.current, searchText);
-    } catch (error) {
-      toast({ title: 'Ошибка', description: 'Ошибка удаления задачи', variant: 'destructive' });
+    } catch {
+      message.error('Ошибка удаления задачи');
     }
   };
 
   const handleTableChange = (newPagination) => {
     const nextPage = newPagination?.current || 1;
     const nextPageSize = newPagination?.pageSize || pagination.pageSize;
-    
+
     if (nextPageSize !== pagination.pageSize) {
       setPagination((p) => ({ ...p, pageSize: nextPageSize }));
       setAllTasksCache(null);
       fetchTasks(nextPage, searchText, nextPageSize);
       return;
     }
-    
+
     if (allTasksCache && allTasksCache.length > 0) {
       const startIndex = (nextPage - 1) * nextPageSize;
       setTasks(allTasksCache.slice(startIndex, startIndex + nextPageSize));
@@ -142,69 +127,61 @@ function TasksList() {
     }
   };
 
-  const stagesById = useMemo(() => {
-    return stages.reduce((acc, stage) => {
-      acc[stage.id] = stage;
-      return acc;
-    }, {});
-  }, [stages]);
+  const stagesById = useMemo(
+    () =>
+      stages.reduce((acc, stage) => {
+        acc[stage.id] = stage;
+        return acc;
+      }, {}),
+    [stages],
+  );
 
-  const userNameById = useMemo(() => {
-    return users.reduce((acc, user) => {
-      acc[user.id] = user.username || user.email || '-';
-      return acc;
-    }, {});
-  }, [users]);
+  const userNameById = useMemo(
+    () =>
+      users.reduce((acc, user) => {
+        acc[user.id] = user.username || user.email || '-';
+        return acc;
+      }, {}),
+    [users],
+  );
 
   const doneStage = stages.find((stage) => stage.done);
   const inProgressStage = stages.find((stage) => stage.in_progress) || stages.find((stage) => stage.default);
 
   const handleToggleComplete = async (task) => {
     if (!doneStage || !inProgressStage) {
-      toast({ title: 'Внимание', description: 'Этапы задач не настроены' });
+      message.warning('Этапы задач не настроены');
       return;
     }
+
     const isDone = task.stage === doneStage.id;
     const newStage = isDone ? inProgressStage.id : doneStage.id;
     try {
       await updateTask(task.id, { stage: newStage });
-      toast({ title: 'Статус задачи обновлен', description: 'Статус задачи обновлен' });
+      message.success('Статус задачи обновлен');
       fetchTasks(pagination.current, searchText);
-    } catch (error) {
-      toast({ title: 'Ошибка', description: 'Ошибка обновления статуса задачи', variant: 'destructive' });
+    } catch {
+      message.error('Ошибка обновления статуса задачи');
     }
-  };
-
-  const priorityConfig = {
-    1: { color: 'bg-emerald-100 text-emerald-700', text: 'Низкий' },
-    2: { color: 'bg-amber-100 text-amber-700', text: 'Средний' },
-    3: { color: 'bg-rose-100 text-rose-700', text: 'Высокий' },
   };
 
   const columns = [
     {
       title: '',
       key: 'checkbox',
-      width: 50,
+      width: 56,
       render: (_, record) => (
-        <input
-          type="checkbox"
-          className="h-4 w-4 accent-primary"
-          checked={doneStage ? record.stage === doneStage.id : false}
-          onChange={() => handleToggleComplete(record)}
-        />
+        <Checkbox checked={doneStage ? record.stage === doneStage.id : false} onChange={() => handleToggleComplete(record)} />
       ),
     },
     {
       title: 'Задача',
       key: 'task',
       render: (_, record) => (
-        <div>
-          <div className="font-medium">{record.name}</div>
-          {record.description && (
-            <div className="text-xs text-muted-foreground">{record.description}</div>
-          )}
-        </div>
+        <Space direction="vertical" size={0}>
+          <Text strong>{record.name}</Text>
+          {record.description ? <Text type="secondary">{record.description}</Text> : null}
+        </Space>
       ),
       sorter: (a, b) => (a.name || '').localeCompare(b.name || ''),
     },
@@ -214,43 +191,19 @@ function TasksList() {
       key: 'stage',
       render: (stageId) => {
         const stage = stagesById[stageId];
-        return stage ? (
-          <Badge variant="secondary" className={stage.done ? 'bg-emerald-100 text-emerald-700' : stage.in_progress ? 'bg-sky-100 text-sky-700' : ''}>
-            {stage.name}
-          </Badge>
-        ) : (
-          '-'
-        );
-      },
-    },
-    {
-      title: 'Приоритет',
-      dataIndex: 'priority',
-      key: 'priority',
-      render: (priority) => {
-        const config = priorityConfig[priority] || { color: 'bg-muted text-muted-foreground', text: '-' };
-        return <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs ${config.color}`}>{config.text}</span>;
+        if (!stage) return '-';
+        const color = stage.done ? 'green' : stage.in_progress ? 'blue' : 'default';
+        return <Tag color={color}>{stage.name}</Tag>;
       },
     },
     {
       title: 'Ответственные',
       dataIndex: 'responsible',
       key: 'responsible',
-      render: (responsible, record) => {
+      render: (responsible) => {
         const ids = Array.isArray(responsible) ? responsible : [];
-        const names = ids.map((id) => userNameById[id]).filter(Boolean);
-        const ownerLabel = record.owner ? userNameById[record.owner] || '-' : null;
-        const display = names.length ? names.join(', ') : ownerLabel;
-        return (
-          <div className="flex items-center gap-2">
-            <Avatar className="h-6 w-6">
-              <AvatarFallback>
-                <User className="h-3 w-3" />
-              </AvatarFallback>
-            </Avatar>
-            <span className="text-sm">{display || '-'}</span>
-          </div>
-        );
+        const names = ids.map((userId) => userNameById[userId]).filter(Boolean);
+        return names.length ? names.join(', ') : '-';
       },
     },
     {
@@ -263,22 +216,21 @@ function TasksList() {
         const today = new Date();
         const daysLeft = Math.ceil((dueDate - today) / (1000 * 60 * 60 * 24));
         return (
-          <div className="space-y-1">
-            <div className="flex items-center gap-2 text-sm">
-              <Calendar className="h-4 w-4 text-muted-foreground" />
-              {dueDate.toLocaleDateString('ru-RU')}
-            </div>
-            {daysLeft > 0 && daysLeft <= 3 && (
-              <div className="text-xs text-amber-600">
-                <Clock className="inline h-3 w-3" /> {daysLeft} дн.
-              </div>
-            )}
-            {daysLeft < 0 && (
-              <div className="text-xs text-rose-600">
-                <Clock className="inline h-3 w-3" /> просрочено
-              </div>
-            )}
-          </div>
+          <Space direction="vertical" size={0}>
+            <Text>
+              <Calendar size={14} /> {dueDate.toLocaleDateString('ru-RU')}
+            </Text>
+            {daysLeft > 0 && daysLeft <= 3 ? (
+              <Text type="warning">
+                <Clock size={14} /> {daysLeft} дн.
+              </Text>
+            ) : null}
+            {daysLeft < 0 ? (
+              <Text type="danger">
+                <Clock size={14} /> просрочено
+              </Text>
+            ) : null}
+          </Space>
         );
       },
       sorter: (a, b) => new Date(a.due_date || 0) - new Date(b.due_date || 0),
@@ -286,64 +238,67 @@ function TasksList() {
     {
       title: 'Действия',
       key: 'actions',
-      width: 200,
+      width: 260,
       render: (_, record) => (
-        <div className="flex flex-wrap items-center gap-2">
-          <Button variant="ghost" size="sm" onClick={() => navigate(`/tasks/${record.id}`)}>
-            <Eye className="mr-1 h-4 w-4" />
+        <Space>
+          <Button size="small" icon={<Eye size={14} />} onClick={() => navigate(`/tasks/${record.id}`)}>
             Просмотр
           </Button>
-          <Button variant="ghost" size="sm" onClick={() => navigate(`/tasks/${record.id}/edit`)}>
-            <Edit className="mr-1 h-4 w-4" />
+          <Button size="small" icon={<Edit size={14} />} onClick={() => navigate(`/tasks/${record.id}/edit`)}>
             Редактировать
           </Button>
-          <Button variant="ghost" size="sm" className="text-destructive" onClick={() => setDeleteTarget(record)}>
-            <Trash2 className="mr-1 h-4 w-4" />
+          <Button size="small" danger icon={<Trash2 size={14} />} onClick={() => setDeleteTarget(record)}>
             Удалить
           </Button>
-        </div>
+        </Space>
       ),
     },
   ];
 
-  const headerActions = (
-    <AntButton type="primary" icon={<PlusOutlined />} onClick={() => navigate('/tasks/new')}>
-      Создать задачу
-    </AntButton>
-  );
-
   return (
     <>
-      <EntityListPageShell
-        title="Задачи"
-        subtitle="Список задач в едином шаблоне CRM-списков"
-        extra={headerActions}
-        toolbar={
-          <EntityListToolbar
-            searchValue={searchText}
-            searchPlaceholder="Поиск по названию, описанию..."
-            onSearchChange={handleSearch}
-            onRefresh={() => fetchTasks(pagination.current, searchText)}
+      <Card>
+        <Space direction="vertical" size={16} style={{ width: '100%' }}>
+          <Space style={{ width: '100%', justifyContent: 'space-between' }} wrap>
+            <div>
+              <Title level={3} style={{ margin: 0 }}>
+                Задачи
+              </Title>
+              <Text type="secondary">Список задач</Text>
+            </div>
+            <Button type="primary" icon={<PlusOutlined />} onClick={() => navigate('/tasks/new')}>
+              Создать задачу
+            </Button>
+          </Space>
+
+          <Space wrap style={{ width: '100%', justifyContent: 'space-between' }}>
+            <Search
+              placeholder="Поиск по названию, описанию..."
+              allowClear
+              value={searchText}
+              onChange={(e) => setSearchText(e.target.value)}
+              onSearch={handleSearch}
+              style={{ maxWidth: 360 }}
+            />
+            <Button onClick={() => fetchTasks(pagination.current, searchText)} loading={loading}>
+              Обновить
+            </Button>
+          </Space>
+
+          {error ? <Text type="danger">{error}</Text> : null}
+
+          <Table
+            rowKey="id"
+            columns={columns}
+            dataSource={tasks}
             loading={loading}
-            resultSummary={pagination.total ? `${pagination.total} записей` : undefined}
+            pagination={{ ...pagination, showSizeChanger: true, showTotal: (total) => `Всего: ${total}` }}
+            onChange={handleTableChange}
+            rowClassName={(record) => (doneStage && record.stage === doneStage.id ? 'row-completed' : '')}
+            locale={{ emptyText: 'Нет задач' }}
           />
-        }
-        error={error}
-        onRetry={() => fetchTasks(pagination.current, searchText)}
-      >
-        <EnhancedTable
-          columns={columns}
-          dataSource={tasks}
-          loading={loading}
-          pagination={pagination}
-          onChange={handleTableChange}
-          rowClassName={(record) => (doneStage && record.stage === doneStage.id ? 'row-completed' : '')}
-          showTotal={true}
-          showSizeChanger={true}
-          emptyText="Нет задач"
-          emptyDescription="Создайте первую задачу"
-        />
-      </EntityListPageShell>
+        </Space>
+      </Card>
 
       <style>{`
         .row-completed {
@@ -352,29 +307,21 @@ function TasksList() {
         }
       `}</style>
 
-      <AlertDialog open={!!deleteTarget} onOpenChange={(open) => !open && setDeleteTarget(null)}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Удалить эту задачу?</AlertDialogTitle>
-          </AlertDialogHeader>
-          <p className="text-sm text-muted-foreground">Это действие нельзя отменить</p>
-          <div className="mt-4 flex justify-end gap-2">
-            <Button variant="outline" onClick={() => setDeleteTarget(null)}>
-              Нет
-            </Button>
-            <Button
-              variant="destructive"
-              onClick={() => {
-                if (!deleteTarget) return;
-                handleDelete(deleteTarget.id);
-                setDeleteTarget(null);
-              }}
-            >
-              Да
-            </Button>
-          </div>
-        </AlertDialogContent>
-      </AlertDialog>
+      <Modal
+        title="Удалить эту задачу?"
+        open={!!deleteTarget}
+        onCancel={() => setDeleteTarget(null)}
+        onOk={() => {
+          if (!deleteTarget) return;
+          handleDelete(deleteTarget.id);
+          setDeleteTarget(null);
+        }}
+        okText="Да"
+        cancelText="Нет"
+        okButtonProps={{ danger: true }}
+      >
+        <Text>Это действие нельзя отменить.</Text>
+      </Modal>
     </>
   );
 }

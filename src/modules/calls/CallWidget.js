@@ -5,9 +5,9 @@
 
 import sipClient from '../../lib/telephony/SIPClient.js';
 import { createCallLog, updateCallLog } from '../../lib/api/calls.js';
-import CallControls, { updateCallControlsState } from '../../components/ui-CallControls.jsx';
-import CallTimer from '../../components/ui-CallTimer.jsx';
-import { showToast } from '../../components/ui-Toast.jsx';
+import CallControls, { updateCallControlsState } from '../../components/calls/CallControls.js';
+import CallTimer from '../../components/calls/CallTimer.js';
+import { showToast } from '../../lib/toast.js';
 
 /**
  * Create call widget

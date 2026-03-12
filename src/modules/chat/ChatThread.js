@@ -4,8 +4,8 @@
  */
 
 import { getEntityChatMessages, getMessageThread, createChatMessage, deleteChatMessage } from '../../lib/api/chat.js';
-import ChatMessage from '../../components/ui-ChatMessage.jsx';
-import ChatInput from '../../components/ui-ChatInput.jsx';
+import ChatMessage from '../../components/chat/ChatMessageLegacy.js';
+import ChatInput from '../../components/chat/ChatInputLegacy.js';
 import { Spinner, Toast } from '../../components/index.js';
 
 function createThreadState(type, title, description, actionLabel, onAction) {

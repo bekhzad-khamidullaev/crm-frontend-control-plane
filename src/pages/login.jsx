@@ -1,7 +1,6 @@
-import { App, Button, Card, Form, Input, Space, Typography } from 'antd';
+import { App, Button, Card, Form, Input, Space, Typography, theme as antdTheme } from 'antd';
 import { useState } from 'react';
 import brandLogo from '../assets/brand/logo.svg';
-import '../styles/login-page.css';
 
 import {
     clearToken,
@@ -14,7 +13,7 @@ import { authApi } from '../lib/api/client';
 import { mergeRoles, rolesFromProfile, rolesFromTokenPayload } from '../lib/roles';
 import { navigate } from '../router';
 
-const { Title, Text } = Typography;
+const { Text } = Typography;
 
 function readStoredRoles() {
   try {
@@ -33,6 +32,7 @@ function LoginPage({ onLogin }) {
   const [loading, setLoading] = useState(false);
   const [form] = Form.useForm();
   const { message } = App.useApp();
+  const { token } = antdTheme.useToken();
 
   const onSubmit = async (values) => {
     setLoading(true);
@@ -90,51 +90,64 @@ function LoginPage({ onLogin }) {
   };
 
   return (
-    <div className="login-container">
-      <Card className="login-card" variant="borderless">
+    <div
+      style={{
+        minHeight: '100vh',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        padding: 20,
+        background: token.colorBgLayout,
+      }}
+    >
+      <Card
+        variant="borderless"
+        style={{
+          width: '100%',
+          maxWidth: 420,
+          borderRadius: token.borderRadiusLG,
+          border: `1px solid ${token.colorBorderSecondary}`,
+          boxShadow: token.boxShadowTertiary,
+        }}
+      >
         <Space direction="vertical" size="large" style={{ width: '100%' }}>
-          {/* Header */}
-          <div style={{ textAlign: 'center', marginBottom: '8px' }}>
-            <img src={brandLogo} alt="Enterprise CRM" className="login-logo" />
-            <h1 className="login-title">Enterprise CRM</h1>
-            <p className="login-subtitle">Введите свои данные для входа в систему</p>
+          <div style={{ textAlign: 'center' }}>
+            <img
+              src={brandLogo}
+              alt="Enterprise CRM"
+              style={{
+                width: 'min(280px, 100%)',
+                height: 'auto',
+                margin: '0 auto 8px',
+                display: 'block',
+              }}
+            />
+            <Text
+              type="secondary"
+              style={{
+                display: 'block',
+                textAlign: 'center',
+                maxWidth: 320,
+                margin: '0 auto',
+              }}
+            >
+              Введите свои данные для входа в систему
+            </Text>
           </div>
 
-          {/* Login Form */}
-          <Form
-            form={form}
-            name="login"
-            onFinish={onSubmit}
-            layout="vertical"
-            size="large"
-            className="radix-form"
-          >
+          <Form form={form} name="login" onFinish={onSubmit} layout="vertical" size="large">
             <Form.Item
               name="username"
               label="Имя пользователя"
-              rules={[
-                {
-                  required: true,
-                  message: 'Введите имя пользователя',
-                },
-              ]}
+              rules={[{ required: true, message: 'Введите имя пользователя' }]}
             >
-              <Input
-                id="login_username"
-                placeholder="admin"
-                autoComplete="username"
-              />
+              <Input id="login_username" placeholder="admin" autoComplete="username" />
             </Form.Item>
 
             <Form.Item
               name="password"
               label="Пароль"
-              rules={[
-                {
-                  required: true,
-                  message: 'Введите пароль',
-                },
-              ]}
+              rules={[{ required: true, message: 'Введите пароль' }]}
             >
               <Input.Password
                 id="login_password"
@@ -144,13 +157,7 @@ function LoginPage({ onLogin }) {
             </Form.Item>
 
             <Form.Item style={{ marginBottom: 0, marginTop: 8 }}>
-              <Button
-                type="primary"
-                htmlType="submit"
-                loading={loading}
-                className="radix-btn"
-                block
-              >
+              <Button type="primary" htmlType="submit" loading={loading} block>
                 Войти
               </Button>
             </Form.Item>

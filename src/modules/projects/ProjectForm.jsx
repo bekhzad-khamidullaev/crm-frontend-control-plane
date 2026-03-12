@@ -5,20 +5,15 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import dayjs from 'dayjs';
 import { ArrowLeft, Save } from 'lucide-react';
 
-import { navigate } from '../../router';
+
+import { App, Button, Card, DatePicker, Input, Result, Skeleton, Switch } from 'antd';
 import { getProject, createProject, updateProject, getUsers, getUser, getProjectStages } from '../../lib/api';
-import ReferenceSelect from '../../components/ui-ReferenceSelect';
+import ReferenceSelect from '../../components/ReferenceSelect';
 import EntitySelect from '../../components/EntitySelect';
 import { normalizePayload } from '../../lib/utils/payload';
-import { Card } from '../../components/ui/card.jsx';
-import { Button } from '../../components/ui/button.jsx';
-import { Input } from '../../components/ui/input.jsx';
-import { Textarea } from '../../components/ui/textarea.jsx';
-import { Label } from '../../components/ui/label.jsx';
-import { Switch } from '../../components/ui/switch.jsx';
-import { DatePicker } from '../../components/ui-DatePicker.jsx';
-import { toast } from '../../components/ui/use-toast.js';
-import { LegacyErrorState, LegacyLoadingState } from '../../shared/ui';
+import { navigate } from '../../router';
+const { TextArea } = Input;
+const Label = ({ children, ...props }) => <label style={{ display: 'block', marginBottom: 6, fontWeight: 500 }} {...props}>{children}</label>;
 
 const schema = z.object({
   name: z.string().min(1, 'Введите название'),
@@ -41,6 +36,12 @@ const schema = z.object({
 });
 
 function ProjectForm({ id }) {
+  const { message } = App.useApp();
+  const notify = ({ title, description, variant }) => {
+    const text = description || title || 'Уведомление';
+    if (variant === 'destructive') message.error(text);
+    else message.success(text);
+  };
   const [loading, setLoading] = useState(false);
   const [loadError, setLoadError] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -110,7 +111,7 @@ function ProjectForm({ id }) {
       });
     } catch (error) {
       setLoadError(true);
-      toast({ title: 'Ошибка', description: 'Ошибка загрузки данных проекта', variant: 'destructive' });
+      notify({ title: 'Ошибка', description: 'Ошибка загрузки данных проекта', variant: 'destructive' });
     } finally {
       setLoading(false);
     }
@@ -132,58 +133,54 @@ function ProjectForm({ id }) {
 
       if (isEdit) {
         await updateProject(id, payload);
-        toast({ title: 'Проект обновлен', description: 'Проект обновлен' });
+        notify({ title: 'Проект обновлен', description: 'Проект обновлен' });
       } else {
         await createProject(payload);
-        toast({ title: 'Проект создан', description: 'Проект создан' });
+        notify({ title: 'Проект создан', description: 'Проект создан' });
       }
       navigate('/projects');
     } catch (error) {
-      toast({ title: 'Ошибка', description: `Ошибка ${isEdit ? 'обновления' : 'создания'} проекта`, variant: 'destructive' });
+      notify({ title: 'Ошибка', description: `Ошибка ${isEdit ? 'обновления' : 'создания'} проекта`, variant: 'destructive' });
     } finally {
       setSaving(false);
     }
   };
 
   if (loading) {
-    return (
-      <LegacyLoadingState
-        title="Загрузка проекта"
-        description="Подготавливаем форму редактирования проекта."
-      />
-    );
+    return <Skeleton active paragraph={{ rows: 8 }} />;
   }
 
   if (isEdit && loadError) {
     return (
-      <LegacyErrorState
+      <Result
+        status="error"
         title="Не удалось загрузить проект для редактирования"
-        description="Форма не может быть заполнена, пока данные проекта не подгружены."
-        onAction={loadProject}
+        subTitle="Форма не может быть заполнена, пока данные проекта не подгружены."
+        extra={<Button onClick={loadProject}>Повторить</Button>}
       />
     );
   }
 
   return (
-    <div className="space-y-4">
-      <Button variant="outline" onClick={() => navigate('/projects')}>
-        <ArrowLeft className="mr-2 h-4 w-4" />
+    <div>
+      <Button onClick={() => navigate('/projects')}>
+        <ArrowLeft />
         Назад
       </Button>
 
-      <h2 className="text-2xl font-semibold">
+      <h2>
         {isEdit ? 'Редактировать проект' : 'Создать новый проект'}
       </h2>
 
-      <Card className="p-6">
-        <form className="space-y-6" onSubmit={handleSubmit(onSubmit)}>
-          <section className="space-y-3">
-            <h3 className="text-lg font-semibold">Основная информация</h3>
-            <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+      <Card>
+        <form onSubmit={handleSubmit(onSubmit)}>
+          <section>
+            <h3>Основная информация</h3>
+            <div>
               <div>
                 <Label htmlFor="name">Название проекта *</Label>
                 <Input id="name" placeholder="Внедрение CRM системы" {...register('name')} />
-                {errors.name && <p className="text-xs text-destructive">{errors.name.message}</p>}
+                {errors.name && <p>{errors.name.message}</p>}
               </div>
               <div>
                 <Label htmlFor="priority">Приоритет</Label>
@@ -193,15 +190,15 @@ function ProjectForm({ id }) {
 
             <div>
               <Label htmlFor="description">Описание</Label>
-              <Textarea id="description" rows={4} placeholder="Детальное описание проекта" {...register('description')} />
+              <TextArea id="description" rows={4} placeholder="Детальное описание проекта" {...register('description')} />
             </div>
 
             <div>
               <Label htmlFor="note">Заметка</Label>
-              <Textarea id="note" rows={3} placeholder="Внутренние заметки" {...register('note')} />
+              <TextArea id="note" rows={3} placeholder="Внутренние заметки" {...register('note')} />
             </div>
 
-            <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
+            <div>
               <div>
                 <Label>Этап</Label>
                 <ReferenceSelect
@@ -222,7 +219,7 @@ function ProjectForm({ id }) {
               </div>
             </div>
 
-            <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+            <div>
               <div>
                 <Label>Дата закрытия</Label>
                 <DatePicker value={closingDate || null} onChange={(val) => setValue('closing_date', val)} format="DD.MM.YYYY" />
@@ -230,22 +227,22 @@ function ProjectForm({ id }) {
               <div>
                 <Label htmlFor="next_step">Следующий шаг *</Label>
                 <Input id="next_step" placeholder="Определить цели" {...register('next_step')} />
-                {errors.next_step && <p className="text-xs text-destructive">{errors.next_step.message}</p>}
+                {errors.next_step && <p>{errors.next_step.message}</p>}
               </div>
             </div>
 
-            <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+            <div>
               <div>
                 <Label>Дата следующего шага *</Label>
                 <DatePicker value={nextStepDate || null} onChange={(val) => setValue('next_step_date', val)} format="DD.MM.YYYY" />
-                {errors.next_step_date && <p className="text-xs text-destructive">{errors.next_step_date.message}</p>}
+                {errors.next_step_date && <p>{errors.next_step_date.message}</p>}
               </div>
             </div>
           </section>
 
-          <section className="space-y-3">
-            <h3 className="text-lg font-semibold">Ответственные</h3>
-            <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+          <section>
+            <h3>Ответственные</h3>
+            <div>
               <div>
                 <Label>Владелец</Label>
                 <EntitySelect
@@ -268,7 +265,7 @@ function ProjectForm({ id }) {
               </div>
             </div>
 
-            <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+            <div>
               <div>
                 <Label>Ответственные</Label>
                 <EntitySelect
@@ -293,7 +290,7 @@ function ProjectForm({ id }) {
               </div>
             </div>
 
-            <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+            <div>
               <div>
                 <Label>Теги</Label>
                 <ReferenceSelect
@@ -308,26 +305,26 @@ function ProjectForm({ id }) {
             </div>
           </section>
 
-          <section className="space-y-3">
-            <h3 className="text-lg font-semibold">Статус</h3>
-            <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-              <div className="flex items-center gap-2">
-                <Switch checked={!!activeValue} onCheckedChange={(val) => setValue('active', val)} />
+          <section>
+            <h3>Статус</h3>
+            <div>
+              <div>
+                <Switch checked={!!activeValue} onChange={(val) => setValue('active', val)} />
                 <Label>Активен</Label>
               </div>
-              <div className="flex items-center gap-2">
-                <Switch checked={!!remindMeValue} onCheckedChange={(val) => setValue('remind_me', val)} />
+              <div>
+                <Switch checked={!!remindMeValue} onChange={(val) => setValue('remind_me', val)} />
                 <Label>Напоминать</Label>
               </div>
             </div>
           </section>
 
-          <div className="flex flex-wrap gap-2">
+          <div>
             <Button type="submit" loading={saving}>
-              <Save className="mr-2 h-4 w-4" />
+              <Save />
               {isEdit ? 'Обновить' : 'Создать'}
             </Button>
-            <Button variant="outline" onClick={() => navigate('/projects')}>
+            <Button onClick={() => navigate('/projects')}>
               Отмена
             </Button>
           </div>

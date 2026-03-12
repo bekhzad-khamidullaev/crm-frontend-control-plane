@@ -6,16 +6,13 @@ import { useForm } from 'react-hook-form';
 import { z } from 'zod';
 
 import EntitySelect from '../../components/EntitySelect';
-import { DatePicker } from '../../components/ui-DatePicker.jsx';
-import ReferenceSelect from '../../components/ui-ReferenceSelect';
-import { Button } from '../../components/ui/button.jsx';
-import { Card } from '../../components/ui/card.jsx';
-import { Input } from '../../components/ui/input.jsx';
-import { Label } from '../../components/ui/label.jsx';
-import { toast } from '../../components/ui/use-toast.js';
+import ReferenceSelect from '../../components/ReferenceSelect';
 import { getDeal, getDeals } from '../../lib/api/client';
 import { createPayment, getPayment, updatePayment } from '../../lib/api/payments';
 import { navigate } from '../../router';
+
+import { App, Button, Card, DatePicker, Input } from 'antd';
+const Label = ({ children, ...props }) => <label style={{ display: 'block', marginBottom: 6, fontWeight: 500 }} {...props}>{children}</label>;
 
 const statusOptions = [
   { value: 'r', label: 'Получен' },
@@ -36,6 +33,12 @@ const schema = z.object({
 });
 
 function PaymentForm({ id }) {
+  const { message } = App.useApp();
+  const notify = ({ title, description, variant }) => {
+    const text = description || title || 'Уведомление';
+    if (variant === 'destructive') message.error(text);
+    else message.success(text);
+  };
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
   const isEdit = !!id;
@@ -81,7 +84,7 @@ function PaymentForm({ id }) {
         payment_date: data.payment_date ? dayjs(data.payment_date) : null,
       });
     } catch (error) {
-      toast({ title: 'Ошибка', description: 'Ошибка загрузки платежа', variant: 'destructive' });
+      notify({ title: 'Ошибка', description: 'Ошибка загрузки платежа', variant: 'destructive' });
     } finally {
       setLoading(false);
     }
@@ -97,41 +100,41 @@ function PaymentForm({ id }) {
 
       if (isEdit) {
         await updatePayment(id, payload);
-        toast({ title: 'Платеж обновлен', description: 'Платеж обновлен' });
+        notify({ title: 'Платеж обновлен', description: 'Платеж обновлен' });
       } else {
         await createPayment(payload);
-        toast({ title: 'Платеж создан', description: 'Платеж создан' });
+        notify({ title: 'Платеж создан', description: 'Платеж создан' });
       }
       navigate('/payments');
     } catch (error) {
-      toast({ title: 'Ошибка', description: isEdit ? 'Ошибка обновления платежа' : 'Ошибка создания платежа', variant: 'destructive' });
+      notify({ title: 'Ошибка', description: isEdit ? 'Ошибка обновления платежа' : 'Ошибка создания платежа', variant: 'destructive' });
     } finally {
       setSaving(false);
     }
   };
 
   if (loading) {
-    return <div className="py-12 text-center text-sm text-muted-foreground">Загрузка...</div>;
+    return <div>Загрузка...</div>;
   }
 
   return (
-    <div className="space-y-4">
-      <Button variant="outline" onClick={() => navigate('/payments')}>
-        <ArrowLeft className="mr-2 h-4 w-4" />
+    <div>
+      <Button onClick={() => navigate('/payments')}>
+        <ArrowLeft />
         Назад
       </Button>
 
-      <h2 className="text-2xl font-semibold">
+      <h2>
         {isEdit ? 'Редактирование платежа' : 'Новый платеж'}
       </h2>
 
-      <Card className="p-6">
-        <form className="space-y-6" onSubmit={handleSubmit(onSubmit)}>
-          <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+      <Card>
+        <form onSubmit={handleSubmit(onSubmit)}>
+          <div>
             <div>
               <Label htmlFor="amount">Сумма *</Label>
               <Input id="amount" type="number" step="0.01" placeholder="0.00" {...register('amount', { valueAsNumber: true })} />
-              {errors.amount && <p className="text-xs text-destructive">{errors.amount.message}</p>}
+              {errors.amount && <p>{errors.amount.message}</p>}
             </div>
             <div>
               <Label htmlFor="currency">Валюта</Label>
@@ -146,12 +149,12 @@ function PaymentForm({ id }) {
             </div>
           </div>
 
-          <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+          <div>
             <div>
               <Label htmlFor="status">Статус *</Label>
               <select
                 id="status"
-                className="h-9 w-full rounded-md border border-border bg-background px-2 text-sm"
+               
                 value={statusValue || ''}
                 onChange={(e) => setValue('status', e.target.value)}
               >
@@ -162,7 +165,7 @@ function PaymentForm({ id }) {
                   </option>
                 ))}
               </select>
-              {errors.status && <p className="text-xs text-destructive">{errors.status.message}</p>}
+              {errors.status && <p>{errors.status.message}</p>}
             </div>
             <div>
               <Label htmlFor="payment_date">Дата платежа</Label>
@@ -182,10 +185,10 @@ function PaymentForm({ id }) {
               optionLabel={(item) => item?.name || '-'}
               onChange={(val) => setValue('deal', val)}
             />
-            {errors.deal && <p className="text-xs text-destructive">{errors.deal.message}</p>}
+            {errors.deal && <p>{errors.deal.message}</p>}
           </div>
 
-          <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
+          <div>
             <div>
               <Label htmlFor="contract_number">Номер договора</Label>
               <Input id="contract_number" placeholder="Договор №" {...register('contract_number')} />
@@ -200,12 +203,12 @@ function PaymentForm({ id }) {
             </div>
           </div>
 
-          <div className="flex flex-wrap gap-2">
+          <div>
             <Button type="submit" loading={saving}>
-              <Save className="mr-2 h-4 w-4" />
+              <Save />
               {isEdit ? 'Сохранить' : 'Создать'}
             </Button>
-            <Button variant="outline" onClick={() => navigate('/payments')}>
+            <Button onClick={() => navigate('/payments')}>
               Отмена
             </Button>
           </div>

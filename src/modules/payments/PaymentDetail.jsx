@@ -2,16 +2,13 @@ import dayjs from 'dayjs';
 import { ArrowLeft, DollarSign, Edit, Trash2 } from 'lucide-react';
 import { useEffect, useState } from 'react';
 
-import { formatCurrency } from '../../lib/utils/format';
+import { App, Button, Card, Descriptions, Modal, Result, Skeleton, Space, Tag, Typography } from 'antd';
 
-import { AlertDialog, AlertDialogContent, AlertDialogHeader, AlertDialogTitle } from '../../components/ui/alert-dialog.jsx';
-import { Badge } from '../../components/ui/badge.jsx';
-import { Button } from '../../components/ui/button.jsx';
-import { Card } from '../../components/ui/card.jsx';
-import { toast } from '../../components/ui/use-toast.js';
 import { deletePayment, getPayment } from '../../lib/api/payments';
+import { formatCurrency } from '../../lib/utils/format';
 import { navigate } from '../../router';
-import { LegacyEmptyState, LegacyLoadingState } from '../../shared/ui';
+
+const { Title } = Typography;
 
 const statusOptions = {
   r: 'Получен',
@@ -20,20 +17,15 @@ const statusOptions = {
   l: 'Низкая вероятность',
 };
 
-const statusColors = {
-  r: 'bg-emerald-100 text-emerald-700',
-  g: 'bg-sky-100 text-sky-700',
-  h: 'bg-amber-100 text-amber-700',
-  l: 'bg-muted text-muted-foreground',
-};
-
 export default function PaymentDetail({ id }) {
+  const { message } = App.useApp();
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [confirmOpen, setConfirmOpen] = useState(false);
 
   useEffect(() => {
     fetchData();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [id]);
 
   const fetchData = async () => {
@@ -41,8 +33,9 @@ export default function PaymentDetail({ id }) {
     try {
       const res = await getPayment(id);
       setData(res);
-    } catch (error) {
-      toast({ title: 'Ошибка', description: 'Не удалось загрузить платеж', variant: 'destructive' });
+    } catch {
+      message.error('Не удалось загрузить платеж');
+      setData(null);
     } finally {
       setLoading(false);
     }
@@ -51,108 +44,72 @@ export default function PaymentDetail({ id }) {
   const handleDelete = async () => {
     try {
       await deletePayment(id);
-      toast({ title: 'Платеж удален', description: 'Платеж удален' });
+      message.success('Платеж удален');
       navigate('/payments');
-    } catch (error) {
-      toast({ title: 'Ошибка', description: 'Ошибка удаления платежа', variant: 'destructive' });
+    } catch {
+      message.error('Ошибка удаления платежа');
     }
   };
 
   if (loading) {
-    return (
-      <LegacyLoadingState
-        title="Загрузка платежа"
-        description="Получаем сумму, статус и связь со сделкой."
-      />
-    );
+    return <Skeleton active paragraph={{ rows: 6 }} />;
   }
 
   if (!data) {
     return (
-      <LegacyEmptyState
+      <Result
+        status="404"
         title="Платеж не найден"
-        description="Возможно, запись была удалена или у вас нет к ней доступа."
-        actionLabel="Вернуться к платежам"
-        onAction={() => navigate('/payments')}
+        subTitle="Возможно, запись удалена или у вас нет доступа"
+        extra={<Button onClick={() => navigate('/payments')}>Вернуться к платежам</Button>}
       />
     );
   }
 
   return (
-    <Card className="p-6">
-      <div className="flex flex-wrap items-center justify-between gap-2">
-        <div className="flex items-center gap-2">
-          <DollarSign className="h-5 w-5 text-primary" />
-          <h2 className="text-xl font-semibold">Платеж</h2>
-        </div>
-        <div className="flex flex-wrap items-center gap-2">
-          <Button variant="outline" onClick={() => navigate('/payments')}>
-            <ArrowLeft className="mr-2 h-4 w-4" />
-            Назад
-          </Button>
-          <Button onClick={() => navigate(`/payments/${id}/edit`)}>
-            <Edit className="mr-2 h-4 w-4" />
-            Редактировать
-          </Button>
-          <Button variant="destructive" onClick={() => setConfirmOpen(true)}>
-            <Trash2 className="mr-2 h-4 w-4" />
-            Удалить
-          </Button>
-        </div>
-      </div>
-
-      <div className="mt-6 grid grid-cols-1 gap-4 sm:grid-cols-2">
-        <div className="sm:col-span-2 rounded-md border border-border p-4">
-          <div className="text-xs text-muted-foreground">Сумма</div>
-          <div className="text-2xl font-semibold">
-            {formatCurrency(data.amount, data.currency_name || 'RUB')}
-          </div>
-        </div>
-
-        <DetailRow label="Статус">
-          <Badge className={statusColors[data.status] || 'bg-muted text-muted-foreground'}>
-            {statusOptions[data.status] || data.status || '—'}
-          </Badge>
-        </DetailRow>
-
-        <DetailRow label="Дата платежа">
-          {data.payment_date ? dayjs(data.payment_date).format('DD MMM YYYY') : '-'}
-        </DetailRow>
-
-        <DetailRow label="Сделка">
-          {data.deal_name || '-'}
-        </DetailRow>
-
-        <DetailRow label="Номер договора">{data.contract_number || '-'}</DetailRow>
-        <DetailRow label="Номер счета">{data.invoice_number || '-'}</DetailRow>
-        <DetailRow label="Номер заказа">{data.order_number || '-'}</DetailRow>
-      </div>
-
-      <AlertDialog open={confirmOpen} onOpenChange={setConfirmOpen}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Удалить платеж?</AlertDialogTitle>
-          </AlertDialogHeader>
-          <p className="text-sm text-muted-foreground">Это действие нельзя отменить</p>
-          <div className="mt-4 flex justify-end gap-2">
-            <Button variant="outline" onClick={() => setConfirmOpen(false)}>
-              Отмена
+    <Card>
+      <Space direction="vertical" size={16} style={{ width: '100%' }}>
+        <Space wrap style={{ width: '100%', justifyContent: 'space-between' }}>
+          <Title level={3} style={{ margin: 0 }}>
+            <DollarSign size={18} /> Платеж
+          </Title>
+          <Space>
+            <Button icon={<ArrowLeft size={14} />} onClick={() => navigate('/payments')}>
+              Назад
             </Button>
-            <Button variant="destructive" onClick={handleDelete}>
+            <Button type="primary" icon={<Edit size={14} />} onClick={() => navigate(`/payments/${id}/edit`)}>
+              Редактировать
+            </Button>
+            <Button danger icon={<Trash2 size={14} />} onClick={() => setConfirmOpen(true)}>
               Удалить
             </Button>
-          </div>
-        </AlertDialogContent>
-      </AlertDialog>
-    </Card>
-  );
-}
+          </Space>
+        </Space>
 
-function DetailRow({ label, children }) {
-  return (
-    <div className="rounded-md border border-border p-4">
-      <div className="text-xs text-muted-foreground">{label}</div>
-      <div className="mt-1 text-sm">{children}</div>
-    </div>
+        <Descriptions bordered column={1} size="small">
+          <Descriptions.Item label="Сумма">{formatCurrency(data.amount, data.currency_name || 'RUB')}</Descriptions.Item>
+          <Descriptions.Item label="Статус">
+            <Tag>{statusOptions[data.status] || data.status || '—'}</Tag>
+          </Descriptions.Item>
+          <Descriptions.Item label="Дата платежа">{data.payment_date ? dayjs(data.payment_date).format('DD.MM.YYYY') : '-'}</Descriptions.Item>
+          <Descriptions.Item label="Сделка">{data.deal_name || '-'}</Descriptions.Item>
+          <Descriptions.Item label="Номер договора">{data.contract_number || '-'}</Descriptions.Item>
+          <Descriptions.Item label="Номер счета">{data.invoice_number || '-'}</Descriptions.Item>
+          <Descriptions.Item label="Номер заказа">{data.order_number || '-'}</Descriptions.Item>
+        </Descriptions>
+      </Space>
+
+      <Modal
+        title="Удалить платеж?"
+        open={confirmOpen}
+        onCancel={() => setConfirmOpen(false)}
+        onOk={handleDelete}
+        okText="Удалить"
+        cancelText="Отмена"
+        okButtonProps={{ danger: true }}
+      >
+        Это действие нельзя отменить.
+      </Modal>
+    </Card>
   );
 }
