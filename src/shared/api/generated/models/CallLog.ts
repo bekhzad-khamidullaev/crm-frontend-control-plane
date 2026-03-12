@@ -2,10 +2,10 @@
 /* istanbul ignore file */
 /* tslint:disable */
 /* eslint-disable */
-import type { DirectionEnum } from './DirectionEnum';
+import type { CallLogDirectionEnum } from './CallLogDirectionEnum';
 export type CallLog = {
     readonly id: number;
-    direction: DirectionEnum;
+    direction: CallLogDirectionEnum;
     number: string;
     /**
      * Duration in seconds

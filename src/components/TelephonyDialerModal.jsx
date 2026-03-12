@@ -5,14 +5,12 @@ import {
   ReloadOutlined,
   StopOutlined,
 } from '@ant-design/icons';
-import { App, Button, Input, Modal, Space, Typography } from 'antd';
+import { Alert, App, Button, Card, Col, Input, Modal, Row, Space, Tabs, Tag, Tooltip } from 'antd';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { initiateCall } from '../lib/api/telephony.js';
 import sipClient from '../lib/telephony/SIPClient.js';
 import { loadTelephonyRuntimeConfig } from '../lib/telephony/runtimeConfig.js';
-import '../styles/telephony-dialer.css';
-
-const { Text } = Typography;
+import { TELEPHONY_MODAL_PROPS } from '../shared/ui/telephonyModal.js';
 
 const DTMF_KEYS = ['1', '2', '3', '4', '5', '6', '7', '8', '9', '*', '0', '#'];
 const DTMF_HINTS = {
@@ -439,100 +437,127 @@ export default function TelephonyDialerModal({ visible, onClose, initialNumber =
 
   return (
     <Modal
-      title="MicroSIP - Telephony"
+      {...TELEPHONY_MODAL_PROPS}
+      title="Телефонная звонилка"
       open={visible}
       onCancel={closeAndReset}
       footer={null}
-      width={300}
-      className="dialer-retro-modal"
+      width={420}
       destroyOnHidden
-      centered
     >
-      <div className="dialer-retro">
-        <div className="dialer-retro__tabs">
-          <button type="button" className="dialer-retro__tab dialer-retro__tab--active">Phone</button>
-          <button type="button" className="dialer-retro__tab">Logs</button>
-          <button type="button" className="dialer-retro__tab">Contacts</button>
-          <button type="button" className="dialer-retro__tab dialer-retro__tab--caret">▾</button>
-        </div>
+      <Space direction="vertical" size={12} style={{ width: '100%' }}>
+        <Tabs
+          size="small"
+          activeKey="dialer"
+          items={[
+            { key: 'dialer', label: 'Набор' },
+            { key: 'logs', label: 'Логи', disabled: true },
+            { key: 'contacts', label: 'Контакты', disabled: true },
+          ]}
+        />
 
         <Input
           value={dialNumber}
           onChange={(e) => setDialNumber(sanitizeDialInput(e.target.value))}
-          placeholder=""
+          onPressEnter={() => {
+            if (canStartCall) {
+              handleCall();
+            }
+          }}
+          placeholder="Введите номер"
           prefix={<PhoneOutlined />}
           disabled={callStatus === 'connected'}
           status={dialNumber && !dialValidation.isValid ? 'error' : ''}
-          className="dialer-retro__input"
           suffix={
             <Space size={2}>
-              <Button type="text" icon={<DeleteOutlined />} onClick={backspaceDial} disabled={!dialNumber || callStatus === 'connected'} />
+              <Tooltip title="Удалить символ">
+                <Button
+                  type="text"
+                  icon={<DeleteOutlined />}
+                  onClick={backspaceDial}
+                  disabled={!dialNumber || callStatus === 'connected'}
+                />
+              </Tooltip>
             </Space>
           }
         />
 
-        <div className="dialer-retro__grid">
+        <Row gutter={[8, 8]}>
           {DTMF_KEYS.map((digit) => (
-            <button key={digit} type="button" className="dialer-retro__key" onClick={() => appendDial(digit)}>
-              <span className="dialer-retro__digit">{digit}</span>
-              <span className="dialer-retro__hint">{DTMF_HINTS[digit] || ''}</span>
-            </button>
+            <Col key={digit} span={8}>
+              <Button block size="large" onClick={() => appendDial(digit)}>
+                <div style={{ display: 'flex', flexDirection: 'column', lineHeight: 1.1 }}>
+                  <span style={{ fontSize: 18, fontWeight: 600 }}>{digit}</span>
+                  <span style={{ fontSize: 10, color: '#8c8c8c' }}>{DTMF_HINTS[digit] || ' '}</span>
+                </div>
+              </Button>
+            </Col>
           ))}
-          <button type="button" className="dialer-retro__key dialer-retro__key--muted" onClick={loadBackendTelephony}>
-            R
-          </button>
-          <button type="button" className="dialer-retro__key dialer-retro__key--muted" onClick={() => appendDial('+')}>
-            +
-          </button>
-          <button type="button" className="dialer-retro__key dialer-retro__key--muted" onClick={clearDial}>
-            C
-          </button>
-        </div>
+          <Col span={8}>
+            <Button block onClick={loadBackendTelephony} icon={<ReloadOutlined />} />
+          </Col>
+          <Col span={8}>
+            <Button block onClick={() => appendDial('+')}>+</Button>
+          </Col>
+          <Col span={8}>
+            <Button block onClick={clearDial}>C</Button>
+          </Col>
+        </Row>
 
-        <div className="dialer-retro__actions">
-          <button
-            type="button"
-            className="dialer-retro__action dialer-retro__action--hangup"
-            disabled={callStatus !== 'calling' && callStatus !== 'connected'}
-            onClick={handleHangup}
-            aria-label="hangup"
-          >
-            <StopOutlined />
-          </button>
-          <button
-            type="button"
-            className="dialer-retro__action dialer-retro__action--call"
-            disabled={!canStartCall}
-            onClick={handleCall}
-          >
-            <PhoneFilled /> {registering ? '...' : 'Call'}
-          </button>
-          <button
-            type="button"
-            className={`dialer-retro__action ${muted ? 'dialer-retro__action--active' : ''}`}
-            onClick={callStatus === 'connected' ? handleMute : loadBackendTelephony}
-            aria-label="utility"
-          >
-            {callStatus === 'connected' ? 'M' : <ReloadOutlined />}
-          </button>
-        </div>
+        <Row gutter={8}>
+          <Col span={6}>
+            <Tooltip title="Завершить звонок">
+              <Button
+                danger
+                block
+                icon={<StopOutlined />}
+                disabled={callStatus !== 'calling' && callStatus !== 'connected'}
+                onClick={handleHangup}
+              />
+            </Tooltip>
+          </Col>
+          <Col span={12}>
+            <Button
+              type="primary"
+              block
+              icon={<PhoneFilled />}
+              disabled={!canStartCall}
+              onClick={handleCall}
+            >
+              {registering ? 'Подключение...' : 'Позвонить'}
+            </Button>
+          </Col>
+          <Col span={6}>
+            <Tooltip title={callStatus === 'connected' ? 'Выключить/включить микрофон' : 'Обновить статус'}>
+              <Button
+                block
+                type={muted ? 'primary' : 'default'}
+                icon={callStatus === 'connected' ? undefined : <ReloadOutlined />}
+                onClick={callStatus === 'connected' ? handleMute : loadBackendTelephony}
+              >
+                {callStatus === 'connected' ? 'M' : ''}
+              </Button>
+            </Tooltip>
+          </Col>
+        </Row>
 
-        <div className="dialer-retro__footer">
-          <Text className={`dialer-retro__online ${transportTag.color === 'success' ? 'is-online' : ''}`}>
-            ● {transportTag.color === 'success' ? 'Online' : 'Offline'}
-          </Text>
-          <div className="dialer-retro__footer-right">
-            <Text className="dialer-retro__meta">{numberLabel !== '-' ? numberLabel : 'extension'}</Text>
-            <Text className="dialer-retro__meta dialer-retro__meta--sub">SIP: {sipStatus} · {callTag.text}</Text>
-          </div>
-        </div>
+        <Card size="small">
+          <Space size={[8, 8]} wrap>
+            <Tag color={transportTag.color}>{transportTag.text}</Tag>
+            <Tag color={callTag.color}>{callTag.text}</Tag>
+            <Tag>SIP: {sipStatus}</Tag>
+            <Tag>{numberLabel !== '-' ? numberLabel : 'extension'}</Tag>
+          </Space>
+        </Card>
 
         {dialNumber && !dialValidation.isValid ? (
-          <Text type="danger" className="dialer-retro__error">{dialValidation.message}</Text>
+          <Alert type="error" showIcon message={dialValidation.message} />
         ) : null}
 
-        <audio ref={audioRef} autoPlay style={{ display: 'none' }} />
-      </div>
+        <div style={{ display: 'none' }}>
+          <audio ref={audioRef} autoPlay />
+        </div>
+      </Space>
     </Modal>
   );
 }

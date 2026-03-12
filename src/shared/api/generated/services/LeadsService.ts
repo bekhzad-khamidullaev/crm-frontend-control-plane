@@ -87,7 +87,7 @@ export class LeadsService {
     public static leadsCreate({
         requestBody,
     }: {
-        requestBody: Lead,
+        requestBody?: Lead,
     }): CancelablePromise<Lead> {
         return __request(OpenAPI, {
             method: 'POST',
@@ -130,7 +130,7 @@ export class LeadsService {
          * A unique integer value identifying this Lead.
          */
         id: number,
-        requestBody: Lead,
+        requestBody?: Lead,
     }): CancelablePromise<Lead> {
         return __request(OpenAPI, {
             method: 'PUT',
@@ -201,7 +201,7 @@ export class LeadsService {
          * A unique integer value identifying this Lead.
          */
         id: number,
-        requestBody: Lead,
+        requestBody?: Lead,
     }): CancelablePromise<Lead> {
         return __request(OpenAPI, {
             method: 'POST',
@@ -226,7 +226,7 @@ export class LeadsService {
          * A unique integer value identifying this Lead.
          */
         id: number,
-        requestBody: Lead,
+        requestBody?: Lead,
     }): CancelablePromise<Lead> {
         return __request(OpenAPI, {
             method: 'POST',
@@ -251,7 +251,7 @@ export class LeadsService {
          * A unique integer value identifying this Lead.
          */
         id: number,
-        requestBody: Lead,
+        requestBody?: Lead,
     }): CancelablePromise<Lead> {
         return __request(OpenAPI, {
             method: 'POST',
@@ -271,7 +271,7 @@ export class LeadsService {
     public static leadsBulkTagCreate({
         requestBody,
     }: {
-        requestBody: Lead,
+        requestBody?: Lead,
     }): CancelablePromise<Lead> {
         return __request(OpenAPI, {
             method: 'POST',

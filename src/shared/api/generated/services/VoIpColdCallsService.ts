@@ -142,6 +142,62 @@ export class VoIpColdCallsService {
         });
     }
     /**
+     * Drilldown by teams (routing groups) and agents.
+     * @returns any No response body
+     * @throws ApiError
+     */
+    public static voipContactCenterDrilldownRetrieve(): CancelablePromise<any> {
+        return __request(OpenAPI, {
+            method: 'GET',
+            url: '/api/voip/contact-center-drilldown/',
+        });
+    }
+    /**
+     * KPI economics for contact center:
+     * AHT, ASA, FCR, abandon rate, SLA breach rate, conversion by direction.
+     * @returns any No response body
+     * @throws ApiError
+     */
+    public static voipContactCenterKpiRetrieve(): CancelablePromise<any> {
+        return __request(OpenAPI, {
+            method: 'GET',
+            url: '/api/voip/contact-center-kpi/',
+        });
+    }
+    /**
+     * API endpoints for VoIP operations including cold calls
+     * @returns any
+     * @throws ApiError
+     */
+    public static voipIncomingContext({
+        phone,
+        callId,
+        callerName,
+    }: {
+        /**
+         * Incoming caller phone number
+         */
+        phone: string,
+        /**
+         * External call id
+         */
+        callId?: string,
+        /**
+         * Caller display name
+         */
+        callerName?: string,
+    }): CancelablePromise<Record<string, any>> {
+        return __request(OpenAPI, {
+            method: 'GET',
+            url: '/api/voip/incoming-context/',
+            query: {
+                'call_id': callId,
+                'caller_name': callerName,
+                'phone': phone,
+            },
+        });
+    }
+    /**
      * Get VoIP connections for current user
      * @returns any No response body
      * @throws ApiError
@@ -150,6 +206,124 @@ export class VoIpColdCallsService {
         return __request(OpenAPI, {
             method: 'GET',
             url: '/api/voip/my-connections/',
+        });
+    }
+    /**
+     * API endpoints for VoIP operations including cold calls
+     * @returns any No response body
+     * @throws ApiError
+     */
+    public static voipPilotWeeklyReportsList(): CancelablePromise<any> {
+        return __request(OpenAPI, {
+            method: 'GET',
+            url: '/api/voip/pilot-weekly-reports/',
+        });
+    }
+    /**
+     * API endpoints for VoIP operations including cold calls
+     * @returns any No response body
+     * @throws ApiError
+     */
+    public static voipPilotWeeklyReportRetrieve({
+        reportId,
+    }: {
+        reportId: string,
+    }): CancelablePromise<any> {
+        return __request(OpenAPI, {
+            method: 'GET',
+            url: '/api/voip/pilot-weekly-reports/{report_id}/',
+            path: {
+                'report_id': reportId,
+            },
+        });
+    }
+    /**
+     * API endpoints for VoIP operations including cold calls
+     * @returns any No response body
+     * @throws ApiError
+     */
+    public static voipPilotWeeklyReportExportRetrieve({
+        reportId,
+    }: {
+        reportId: string,
+    }): CancelablePromise<any> {
+        return __request(OpenAPI, {
+            method: 'GET',
+            url: '/api/voip/pilot-weekly-reports/{report_id}/export/',
+            path: {
+                'report_id': reportId,
+            },
+        });
+    }
+    /**
+     * API endpoints for VoIP operations including cold calls
+     * @returns any No response body
+     * @throws ApiError
+     */
+    public static voipPilotWeeklyReportsAutomationHealthRetrieve(): CancelablePromise<any> {
+        return __request(OpenAPI, {
+            method: 'GET',
+            url: '/api/voip/pilot-weekly-reports/automation-health/',
+        });
+    }
+    /**
+     * API endpoints for VoIP operations including cold calls
+     * @returns any No response body
+     * @throws ApiError
+     */
+    public static voipPilotWeeklyReportsGenerateCreate(): CancelablePromise<any> {
+        return __request(OpenAPI, {
+            method: 'POST',
+            url: '/api/voip/pilot-weekly-reports/generate/',
+        });
+    }
+    /**
+     * API endpoints for VoIP operations including cold calls
+     * @returns any No response body
+     * @throws ApiError
+     */
+    public static voipPilotWeeklyReportsRunAutomationNowCreate(): CancelablePromise<any> {
+        return __request(OpenAPI, {
+            method: 'POST',
+            url: '/api/voip/pilot-weekly-reports/run-automation-now/',
+        });
+    }
+    /**
+     * Manage QA scoring workflow for calls:
+     * - GET: list scores
+     * - POST: create or update current user's score for a call
+     * @returns any No response body
+     * @throws ApiError
+     */
+    public static voipQaScoresRetrieve(): CancelablePromise<any> {
+        return __request(OpenAPI, {
+            method: 'GET',
+            url: '/api/voip/qa-scores/',
+        });
+    }
+    /**
+     * Manage QA scoring workflow for calls:
+     * - GET: list scores
+     * - POST: create or update current user's score for a call
+     * @returns any No response body
+     * @throws ApiError
+     */
+    public static voipQaScoresCreate(): CancelablePromise<any> {
+        return __request(OpenAPI, {
+            method: 'POST',
+            url: '/api/voip/qa-scores/',
+        });
+    }
+    /**
+     * QA summary dashboard:
+     * score averages, pass-rate, outcome distribution.
+     * @returns any No response body
+     * @throws ApiError
+     */
+    public static voipQaSummaryRetrieve(): CancelablePromise<any> {
+        return __request(OpenAPI, {
+            method: 'GET',
+            url: '/api/voip/qa-summary/',
         });
     }
 }

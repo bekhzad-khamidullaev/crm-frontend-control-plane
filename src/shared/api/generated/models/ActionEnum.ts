@@ -3,7 +3,8 @@
 /* tslint:disable */
 /* eslint-disable */
 /**
- * * `inbound` - Inbound
- * * `outbound` - Outbound
+ * * `archive` - Archive
+ * * `anonymize` - Anonymize
+ * * `delete` - Delete
  */
-export type DirectionEnum = 'inbound' | 'outbound';
+export type ActionEnum = 'archive' | 'anonymize' | 'delete';

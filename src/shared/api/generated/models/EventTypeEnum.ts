@@ -14,5 +14,7 @@
  * * `deal_stage_changed` - deal_stage_changed
  * * `dedup_hit` - dedup_hit
  * * `sla_breached` - sla_breached
+ * * `share_link_copied` - share_link_copied
+ * * `share_link_opened` - share_link_opened
  */
-export type EventTypeEnum = 'landing_view' | 'cta_click' | 'form_view' | 'form_start' | 'form_submit' | 'lead_created' | 'deal_created' | 'lead_assigned' | 'deal_stage_changed' | 'dedup_hit' | 'sla_breached';
+export type EventTypeEnum = 'landing_view' | 'cta_click' | 'form_view' | 'form_start' | 'form_submit' | 'lead_created' | 'deal_created' | 'lead_assigned' | 'deal_stage_changed' | 'dedup_hit' | 'sla_breached' | 'share_link_copied' | 'share_link_opened';

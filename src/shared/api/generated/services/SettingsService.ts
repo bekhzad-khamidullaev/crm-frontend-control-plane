@@ -5,28 +5,44 @@
 import type { AIProviderSettings } from '../models/AIProviderSettings';
 import type { APIKey } from '../models/APIKey';
 import type { APIKeyCreate } from '../models/APIKeyCreate';
+import type { ComplianceAuditLog } from '../models/ComplianceAuditLog';
+import type { ConsentRecord } from '../models/ConsentRecord';
+import type { DataRetentionPolicy } from '../models/DataRetentionPolicy';
+import type { DataSubjectRequest } from '../models/DataSubjectRequest';
 import type { FacebookPage } from '../models/FacebookPage';
 import type { FacebookPageCreate } from '../models/FacebookPageCreate';
 import type { InstagramAccount } from '../models/InstagramAccount';
 import type { InstagramAccountCreate } from '../models/InstagramAccountCreate';
 import type { IntegrationLog } from '../models/IntegrationLog';
+import type { OmnichannelMessage } from '../models/OmnichannelMessage';
 import type { PaginatedAIProviderSettingsList } from '../models/PaginatedAIProviderSettingsList';
 import type { PaginatedAPIKeyList } from '../models/PaginatedAPIKeyList';
+import type { PaginatedComplianceAuditLogList } from '../models/PaginatedComplianceAuditLogList';
+import type { PaginatedConsentRecordList } from '../models/PaginatedConsentRecordList';
+import type { PaginatedDataRetentionPolicyList } from '../models/PaginatedDataRetentionPolicyList';
+import type { PaginatedDataSubjectRequestList } from '../models/PaginatedDataSubjectRequestList';
 import type { PaginatedFacebookPageList } from '../models/PaginatedFacebookPageList';
 import type { PaginatedInstagramAccountList } from '../models/PaginatedInstagramAccountList';
 import type { PaginatedIntegrationLogList } from '../models/PaginatedIntegrationLogList';
 import type { PaginatedTelegramBotList } from '../models/PaginatedTelegramBotList';
 import type { PaginatedWebhookList } from '../models/PaginatedWebhookList';
+import type { PaginatedWhatsAppBusinessAccountList } from '../models/PaginatedWhatsAppBusinessAccountList';
 import type { PatchedAIProviderSettings } from '../models/PatchedAIProviderSettings';
 import type { PatchedAPIKey } from '../models/PatchedAPIKey';
+import type { PatchedConsentRecord } from '../models/PatchedConsentRecord';
+import type { PatchedDataRetentionPolicy } from '../models/PatchedDataRetentionPolicy';
+import type { PatchedDataSubjectRequest } from '../models/PatchedDataSubjectRequest';
 import type { PatchedFacebookPage } from '../models/PatchedFacebookPage';
 import type { PatchedInstagramAccount } from '../models/PatchedInstagramAccount';
 import type { PatchedTelegramBot } from '../models/PatchedTelegramBot';
 import type { PatchedWebhook } from '../models/PatchedWebhook';
+import type { PatchedWhatsAppBusinessAccount } from '../models/PatchedWhatsAppBusinessAccount';
 import type { TelegramBot } from '../models/TelegramBot';
 import type { TelegramBotCreate } from '../models/TelegramBotCreate';
 import type { Webhook } from '../models/Webhook';
 import type { WebhookCreate } from '../models/WebhookCreate';
+import type { WhatsAppBusinessAccount } from '../models/WhatsAppBusinessAccount';
+import type { WhatsAppBusinessAccountCreate } from '../models/WhatsAppBusinessAccountCreate';
 import type { CancelablePromise } from '../core/CancelablePromise';
 import { OpenAPI } from '../core/OpenAPI';
 import { request as __request } from '../core/request';
@@ -436,6 +452,564 @@ export class SettingsService {
             path: {
                 'id': id,
             },
+        });
+    }
+    /**
+     * @returns PaginatedComplianceAuditLogList
+     * @throws ApiError
+     */
+    public static settingsComplianceAuditList({
+        ordering,
+        page,
+        pageSize,
+        search,
+    }: {
+        /**
+         * Which field to use when ordering the results.
+         */
+        ordering?: string,
+        /**
+         * A page number within the paginated result set.
+         */
+        page?: number,
+        /**
+         * Number of results to return per page.
+         */
+        pageSize?: number,
+        /**
+         * A search term.
+         */
+        search?: string,
+    }): CancelablePromise<PaginatedComplianceAuditLogList> {
+        return __request(OpenAPI, {
+            method: 'GET',
+            url: '/api/settings/compliance/audit/',
+            query: {
+                'ordering': ordering,
+                'page': page,
+                'page_size': pageSize,
+                'search': search,
+            },
+        });
+    }
+    /**
+     * @returns ComplianceAuditLog
+     * @throws ApiError
+     */
+    public static settingsComplianceAuditRetrieve({
+        id,
+    }: {
+        /**
+         * A unique integer value identifying this Compliance Audit Log.
+         */
+        id: number,
+    }): CancelablePromise<ComplianceAuditLog> {
+        return __request(OpenAPI, {
+            method: 'GET',
+            url: '/api/settings/compliance/audit/{id}/',
+            path: {
+                'id': id,
+            },
+        });
+    }
+    /**
+     * @returns ComplianceAuditLog
+     * @throws ApiError
+     */
+    public static settingsComplianceAuditReportRetrieve(): CancelablePromise<ComplianceAuditLog> {
+        return __request(OpenAPI, {
+            method: 'GET',
+            url: '/api/settings/compliance/audit/report/',
+        });
+    }
+    /**
+     * @returns PaginatedConsentRecordList
+     * @throws ApiError
+     */
+    public static settingsComplianceConsentsList({
+        ordering,
+        page,
+        pageSize,
+        search,
+    }: {
+        /**
+         * Which field to use when ordering the results.
+         */
+        ordering?: string,
+        /**
+         * A page number within the paginated result set.
+         */
+        page?: number,
+        /**
+         * Number of results to return per page.
+         */
+        pageSize?: number,
+        /**
+         * A search term.
+         */
+        search?: string,
+    }): CancelablePromise<PaginatedConsentRecordList> {
+        return __request(OpenAPI, {
+            method: 'GET',
+            url: '/api/settings/compliance/consents/',
+            query: {
+                'ordering': ordering,
+                'page': page,
+                'page_size': pageSize,
+                'search': search,
+            },
+        });
+    }
+    /**
+     * @returns ConsentRecord
+     * @throws ApiError
+     */
+    public static settingsComplianceConsentsCreate({
+        requestBody,
+    }: {
+        requestBody: ConsentRecord,
+    }): CancelablePromise<ConsentRecord> {
+        return __request(OpenAPI, {
+            method: 'POST',
+            url: '/api/settings/compliance/consents/',
+            body: requestBody,
+            mediaType: 'application/json',
+        });
+    }
+    /**
+     * @returns ConsentRecord
+     * @throws ApiError
+     */
+    public static settingsComplianceConsentsRetrieve({
+        id,
+    }: {
+        /**
+         * A unique integer value identifying this Consent Record.
+         */
+        id: number,
+    }): CancelablePromise<ConsentRecord> {
+        return __request(OpenAPI, {
+            method: 'GET',
+            url: '/api/settings/compliance/consents/{id}/',
+            path: {
+                'id': id,
+            },
+        });
+    }
+    /**
+     * @returns ConsentRecord
+     * @throws ApiError
+     */
+    public static settingsComplianceConsentsUpdate({
+        id,
+        requestBody,
+    }: {
+        /**
+         * A unique integer value identifying this Consent Record.
+         */
+        id: number,
+        requestBody: ConsentRecord,
+    }): CancelablePromise<ConsentRecord> {
+        return __request(OpenAPI, {
+            method: 'PUT',
+            url: '/api/settings/compliance/consents/{id}/',
+            path: {
+                'id': id,
+            },
+            body: requestBody,
+            mediaType: 'application/json',
+        });
+    }
+    /**
+     * @returns ConsentRecord
+     * @throws ApiError
+     */
+    public static settingsComplianceConsentsPartialUpdate({
+        id,
+        requestBody,
+    }: {
+        /**
+         * A unique integer value identifying this Consent Record.
+         */
+        id: number,
+        requestBody?: PatchedConsentRecord,
+    }): CancelablePromise<ConsentRecord> {
+        return __request(OpenAPI, {
+            method: 'PATCH',
+            url: '/api/settings/compliance/consents/{id}/',
+            path: {
+                'id': id,
+            },
+            body: requestBody,
+            mediaType: 'application/json',
+        });
+    }
+    /**
+     * @returns void
+     * @throws ApiError
+     */
+    public static settingsComplianceConsentsDestroy({
+        id,
+    }: {
+        /**
+         * A unique integer value identifying this Consent Record.
+         */
+        id: number,
+    }): CancelablePromise<void> {
+        return __request(OpenAPI, {
+            method: 'DELETE',
+            url: '/api/settings/compliance/consents/{id}/',
+            path: {
+                'id': id,
+            },
+        });
+    }
+    /**
+     * @returns ConsentRecord
+     * @throws ApiError
+     */
+    public static settingsComplianceConsentsRevokeCreate({
+        id,
+        requestBody,
+    }: {
+        /**
+         * A unique integer value identifying this Consent Record.
+         */
+        id: number,
+        requestBody: ConsentRecord,
+    }): CancelablePromise<ConsentRecord> {
+        return __request(OpenAPI, {
+            method: 'POST',
+            url: '/api/settings/compliance/consents/{id}/revoke/',
+            path: {
+                'id': id,
+            },
+            body: requestBody,
+            mediaType: 'application/json',
+        });
+    }
+    /**
+     * @returns PaginatedDataSubjectRequestList
+     * @throws ApiError
+     */
+    public static settingsComplianceDsrList({
+        ordering,
+        page,
+        pageSize,
+        search,
+    }: {
+        /**
+         * Which field to use when ordering the results.
+         */
+        ordering?: string,
+        /**
+         * A page number within the paginated result set.
+         */
+        page?: number,
+        /**
+         * Number of results to return per page.
+         */
+        pageSize?: number,
+        /**
+         * A search term.
+         */
+        search?: string,
+    }): CancelablePromise<PaginatedDataSubjectRequestList> {
+        return __request(OpenAPI, {
+            method: 'GET',
+            url: '/api/settings/compliance/dsr/',
+            query: {
+                'ordering': ordering,
+                'page': page,
+                'page_size': pageSize,
+                'search': search,
+            },
+        });
+    }
+    /**
+     * @returns DataSubjectRequest
+     * @throws ApiError
+     */
+    public static settingsComplianceDsrCreate({
+        requestBody,
+    }: {
+        requestBody: DataSubjectRequest,
+    }): CancelablePromise<DataSubjectRequest> {
+        return __request(OpenAPI, {
+            method: 'POST',
+            url: '/api/settings/compliance/dsr/',
+            body: requestBody,
+            mediaType: 'application/json',
+        });
+    }
+    /**
+     * @returns DataSubjectRequest
+     * @throws ApiError
+     */
+    public static settingsComplianceDsrRetrieve({
+        id,
+    }: {
+        /**
+         * A unique integer value identifying this Data Subject Request.
+         */
+        id: number,
+    }): CancelablePromise<DataSubjectRequest> {
+        return __request(OpenAPI, {
+            method: 'GET',
+            url: '/api/settings/compliance/dsr/{id}/',
+            path: {
+                'id': id,
+            },
+        });
+    }
+    /**
+     * @returns DataSubjectRequest
+     * @throws ApiError
+     */
+    public static settingsComplianceDsrUpdate({
+        id,
+        requestBody,
+    }: {
+        /**
+         * A unique integer value identifying this Data Subject Request.
+         */
+        id: number,
+        requestBody: DataSubjectRequest,
+    }): CancelablePromise<DataSubjectRequest> {
+        return __request(OpenAPI, {
+            method: 'PUT',
+            url: '/api/settings/compliance/dsr/{id}/',
+            path: {
+                'id': id,
+            },
+            body: requestBody,
+            mediaType: 'application/json',
+        });
+    }
+    /**
+     * @returns DataSubjectRequest
+     * @throws ApiError
+     */
+    public static settingsComplianceDsrPartialUpdate({
+        id,
+        requestBody,
+    }: {
+        /**
+         * A unique integer value identifying this Data Subject Request.
+         */
+        id: number,
+        requestBody?: PatchedDataSubjectRequest,
+    }): CancelablePromise<DataSubjectRequest> {
+        return __request(OpenAPI, {
+            method: 'PATCH',
+            url: '/api/settings/compliance/dsr/{id}/',
+            path: {
+                'id': id,
+            },
+            body: requestBody,
+            mediaType: 'application/json',
+        });
+    }
+    /**
+     * @returns void
+     * @throws ApiError
+     */
+    public static settingsComplianceDsrDestroy({
+        id,
+    }: {
+        /**
+         * A unique integer value identifying this Data Subject Request.
+         */
+        id: number,
+    }): CancelablePromise<void> {
+        return __request(OpenAPI, {
+            method: 'DELETE',
+            url: '/api/settings/compliance/dsr/{id}/',
+            path: {
+                'id': id,
+            },
+        });
+    }
+    /**
+     * @returns DataSubjectRequest
+     * @throws ApiError
+     */
+    public static settingsComplianceDsrExecuteCreate({
+        id,
+        requestBody,
+    }: {
+        /**
+         * A unique integer value identifying this Data Subject Request.
+         */
+        id: number,
+        requestBody: DataSubjectRequest,
+    }): CancelablePromise<DataSubjectRequest> {
+        return __request(OpenAPI, {
+            method: 'POST',
+            url: '/api/settings/compliance/dsr/{id}/execute/',
+            path: {
+                'id': id,
+            },
+            body: requestBody,
+            mediaType: 'application/json',
+        });
+    }
+    /**
+     * @returns PaginatedDataRetentionPolicyList
+     * @throws ApiError
+     */
+    public static settingsComplianceRetentionList({
+        ordering,
+        page,
+        pageSize,
+        search,
+    }: {
+        /**
+         * Which field to use when ordering the results.
+         */
+        ordering?: string,
+        /**
+         * A page number within the paginated result set.
+         */
+        page?: number,
+        /**
+         * Number of results to return per page.
+         */
+        pageSize?: number,
+        /**
+         * A search term.
+         */
+        search?: string,
+    }): CancelablePromise<PaginatedDataRetentionPolicyList> {
+        return __request(OpenAPI, {
+            method: 'GET',
+            url: '/api/settings/compliance/retention/',
+            query: {
+                'ordering': ordering,
+                'page': page,
+                'page_size': pageSize,
+                'search': search,
+            },
+        });
+    }
+    /**
+     * @returns DataRetentionPolicy
+     * @throws ApiError
+     */
+    public static settingsComplianceRetentionCreate({
+        requestBody,
+    }: {
+        requestBody: DataRetentionPolicy,
+    }): CancelablePromise<DataRetentionPolicy> {
+        return __request(OpenAPI, {
+            method: 'POST',
+            url: '/api/settings/compliance/retention/',
+            body: requestBody,
+            mediaType: 'application/json',
+        });
+    }
+    /**
+     * @returns DataRetentionPolicy
+     * @throws ApiError
+     */
+    public static settingsComplianceRetentionRetrieve({
+        id,
+    }: {
+        /**
+         * A unique integer value identifying this Data Retention Policy.
+         */
+        id: number,
+    }): CancelablePromise<DataRetentionPolicy> {
+        return __request(OpenAPI, {
+            method: 'GET',
+            url: '/api/settings/compliance/retention/{id}/',
+            path: {
+                'id': id,
+            },
+        });
+    }
+    /**
+     * @returns DataRetentionPolicy
+     * @throws ApiError
+     */
+    public static settingsComplianceRetentionUpdate({
+        id,
+        requestBody,
+    }: {
+        /**
+         * A unique integer value identifying this Data Retention Policy.
+         */
+        id: number,
+        requestBody: DataRetentionPolicy,
+    }): CancelablePromise<DataRetentionPolicy> {
+        return __request(OpenAPI, {
+            method: 'PUT',
+            url: '/api/settings/compliance/retention/{id}/',
+            path: {
+                'id': id,
+            },
+            body: requestBody,
+            mediaType: 'application/json',
+        });
+    }
+    /**
+     * @returns DataRetentionPolicy
+     * @throws ApiError
+     */
+    public static settingsComplianceRetentionPartialUpdate({
+        id,
+        requestBody,
+    }: {
+        /**
+         * A unique integer value identifying this Data Retention Policy.
+         */
+        id: number,
+        requestBody?: PatchedDataRetentionPolicy,
+    }): CancelablePromise<DataRetentionPolicy> {
+        return __request(OpenAPI, {
+            method: 'PATCH',
+            url: '/api/settings/compliance/retention/{id}/',
+            path: {
+                'id': id,
+            },
+            body: requestBody,
+            mediaType: 'application/json',
+        });
+    }
+    /**
+     * @returns void
+     * @throws ApiError
+     */
+    public static settingsComplianceRetentionDestroy({
+        id,
+    }: {
+        /**
+         * A unique integer value identifying this Data Retention Policy.
+         */
+        id: number,
+    }): CancelablePromise<void> {
+        return __request(OpenAPI, {
+            method: 'DELETE',
+            url: '/api/settings/compliance/retention/{id}/',
+            path: {
+                'id': id,
+            },
+        });
+    }
+    /**
+     * @returns DataRetentionPolicy
+     * @throws ApiError
+     */
+    public static settingsComplianceRetentionRunCreate({
+        requestBody,
+    }: {
+        requestBody: DataRetentionPolicy,
+    }): CancelablePromise<DataRetentionPolicy> {
+        return __request(OpenAPI, {
+            method: 'POST',
+            url: '/api/settings/compliance/retention/run/',
+            body: requestBody,
+            mediaType: 'application/json',
         });
     }
     /**
@@ -1149,6 +1723,32 @@ export class SettingsService {
         });
     }
     /**
+     * @returns OmnichannelMessage
+     * @throws ApiError
+     */
+    public static settingsOmnichannelSendCreate({
+        requestBody,
+    }: {
+        requestBody?: OmnichannelMessage,
+    }): CancelablePromise<OmnichannelMessage> {
+        return __request(OpenAPI, {
+            method: 'POST',
+            url: '/api/settings/omnichannel/send/',
+            body: requestBody,
+            mediaType: 'application/json',
+        });
+    }
+    /**
+     * @returns OmnichannelMessage
+     * @throws ApiError
+     */
+    public static settingsOmnichannelTimelineRetrieve(): CancelablePromise<OmnichannelMessage> {
+        return __request(OpenAPI, {
+            method: 'GET',
+            url: '/api/settings/omnichannel/timeline/',
+        });
+    }
+    /**
      * GET /api/settings/security/ - Get security settings.
      * @returns any No response body
      * @throws ApiError
@@ -1784,6 +2384,196 @@ export class SettingsService {
         return __request(OpenAPI, {
             method: 'POST',
             url: '/api/settings/webhooks/{id}/test/',
+            path: {
+                'id': id,
+            },
+            body: requestBody,
+            mediaType: 'application/json',
+        });
+    }
+    /**
+     * @returns PaginatedWhatsAppBusinessAccountList
+     * @throws ApiError
+     */
+    public static settingsWhatsappAccountsList({
+        ordering,
+        page,
+        pageSize,
+        search,
+    }: {
+        /**
+         * Which field to use when ordering the results.
+         */
+        ordering?: string,
+        /**
+         * A page number within the paginated result set.
+         */
+        page?: number,
+        /**
+         * Number of results to return per page.
+         */
+        pageSize?: number,
+        /**
+         * A search term.
+         */
+        search?: string,
+    }): CancelablePromise<PaginatedWhatsAppBusinessAccountList> {
+        return __request(OpenAPI, {
+            method: 'GET',
+            url: '/api/settings/whatsapp/accounts/',
+            query: {
+                'ordering': ordering,
+                'page': page,
+                'page_size': pageSize,
+                'search': search,
+            },
+        });
+    }
+    /**
+     * @returns WhatsAppBusinessAccountCreate
+     * @throws ApiError
+     */
+    public static settingsWhatsappAccountsCreate({
+        requestBody,
+    }: {
+        requestBody: WhatsAppBusinessAccountCreate,
+    }): CancelablePromise<WhatsAppBusinessAccountCreate> {
+        return __request(OpenAPI, {
+            method: 'POST',
+            url: '/api/settings/whatsapp/accounts/',
+            body: requestBody,
+            mediaType: 'application/json',
+        });
+    }
+    /**
+     * @returns WhatsAppBusinessAccount
+     * @throws ApiError
+     */
+    public static settingsWhatsappAccountsRetrieve({
+        id,
+    }: {
+        /**
+         * A UUID string identifying this WhatsApp Business Account.
+         */
+        id: string,
+    }): CancelablePromise<WhatsAppBusinessAccount> {
+        return __request(OpenAPI, {
+            method: 'GET',
+            url: '/api/settings/whatsapp/accounts/{id}/',
+            path: {
+                'id': id,
+            },
+        });
+    }
+    /**
+     * @returns WhatsAppBusinessAccount
+     * @throws ApiError
+     */
+    public static settingsWhatsappAccountsUpdate({
+        id,
+        requestBody,
+    }: {
+        /**
+         * A UUID string identifying this WhatsApp Business Account.
+         */
+        id: string,
+        requestBody: WhatsAppBusinessAccount,
+    }): CancelablePromise<WhatsAppBusinessAccount> {
+        return __request(OpenAPI, {
+            method: 'PUT',
+            url: '/api/settings/whatsapp/accounts/{id}/',
+            path: {
+                'id': id,
+            },
+            body: requestBody,
+            mediaType: 'application/json',
+        });
+    }
+    /**
+     * @returns WhatsAppBusinessAccount
+     * @throws ApiError
+     */
+    public static settingsWhatsappAccountsPartialUpdate({
+        id,
+        requestBody,
+    }: {
+        /**
+         * A UUID string identifying this WhatsApp Business Account.
+         */
+        id: string,
+        requestBody?: PatchedWhatsAppBusinessAccount,
+    }): CancelablePromise<WhatsAppBusinessAccount> {
+        return __request(OpenAPI, {
+            method: 'PATCH',
+            url: '/api/settings/whatsapp/accounts/{id}/',
+            path: {
+                'id': id,
+            },
+            body: requestBody,
+            mediaType: 'application/json',
+        });
+    }
+    /**
+     * @returns void
+     * @throws ApiError
+     */
+    public static settingsWhatsappAccountsDestroy({
+        id,
+    }: {
+        /**
+         * A UUID string identifying this WhatsApp Business Account.
+         */
+        id: string,
+    }): CancelablePromise<void> {
+        return __request(OpenAPI, {
+            method: 'DELETE',
+            url: '/api/settings/whatsapp/accounts/{id}/',
+            path: {
+                'id': id,
+            },
+        });
+    }
+    /**
+     * @returns WhatsAppBusinessAccount
+     * @throws ApiError
+     */
+    public static settingsWhatsappAccountsDisconnectCreate({
+        id,
+        requestBody,
+    }: {
+        /**
+         * A UUID string identifying this WhatsApp Business Account.
+         */
+        id: string,
+        requestBody: WhatsAppBusinessAccount,
+    }): CancelablePromise<WhatsAppBusinessAccount> {
+        return __request(OpenAPI, {
+            method: 'POST',
+            url: '/api/settings/whatsapp/accounts/{id}/disconnect/',
+            path: {
+                'id': id,
+            },
+            body: requestBody,
+            mediaType: 'application/json',
+        });
+    }
+    /**
+     * @returns WhatsAppBusinessAccount
+     * @throws ApiError
+     */
+    public static settingsWhatsappAccountsTestCreate({
+        id,
+        requestBody,
+    }: {
+        /**
+         * A UUID string identifying this WhatsApp Business Account.
+         */
+        id: string,
+        requestBody: WhatsAppBusinessAccount,
+    }): CancelablePromise<WhatsAppBusinessAccount> {
+        return __request(OpenAPI, {
+            method: 'POST',
+            url: '/api/settings/whatsapp/accounts/{id}/test/',
             path: {
                 'id': id,
             },

@@ -3542,6 +3542,10 @@ paths:
         name: is_active
         schema:
           type: boolean
+      - in: query
+        name: owner
+        schema:
+          type: integer
       - name: page
         required: false
         in: query
@@ -3916,6 +3920,10 @@ paths:
           * `tg` - Telegram
           * `ig` - Instagram
           * `email` - Email
+      - in: query
+        name: owner
+        schema:
+          type: integer
       - name: page
         required: false
         in: query
@@ -7696,6 +7704,736 @@ paths:
               schema:
                 $ref: '#/components/schemas/APIKey'
           description: ''
+  /api/settings/compliance/audit/:
+    get:
+      operationId: settings_compliance_audit_list
+      parameters:
+      - name: ordering
+        required: false
+        in: query
+        description: Which field to use when ordering the results.
+        schema:
+          type: string
+      - name: page
+        required: false
+        in: query
+        description: A page number within the paginated result set.
+        schema:
+          type: integer
+      - name: page_size
+        required: false
+        in: query
+        description: Number of results to return per page.
+        schema:
+          type: integer
+      - name: search
+        required: false
+        in: query
+        description: A search term.
+        schema:
+          type: string
+      tags:
+      - settings
+      security:
+      - jwtAuth: []
+      - tokenAuth: []
+      - jwtAuth: []
+      - tokenAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedComplianceAuditLogList'
+          description: ''
+  /api/settings/compliance/audit/{id}/:
+    get:
+      operationId: settings_compliance_audit_retrieve
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this Compliance Audit Log.
+        required: true
+      tags:
+      - settings
+      security:
+      - jwtAuth: []
+      - tokenAuth: []
+      - jwtAuth: []
+      - tokenAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ComplianceAuditLog'
+          description: ''
+  /api/settings/compliance/audit/report/:
+    get:
+      operationId: settings_compliance_audit_report_retrieve
+      tags:
+      - settings
+      security:
+      - jwtAuth: []
+      - tokenAuth: []
+      - jwtAuth: []
+      - tokenAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ComplianceAuditLog'
+          description: ''
+  /api/settings/compliance/consents/:
+    get:
+      operationId: settings_compliance_consents_list
+      parameters:
+      - name: ordering
+        required: false
+        in: query
+        description: Which field to use when ordering the results.
+        schema:
+          type: string
+      - name: page
+        required: false
+        in: query
+        description: A page number within the paginated result set.
+        schema:
+          type: integer
+      - name: page_size
+        required: false
+        in: query
+        description: Number of results to return per page.
+        schema:
+          type: integer
+      - name: search
+        required: false
+        in: query
+        description: A search term.
+        schema:
+          type: string
+      tags:
+      - settings
+      security:
+      - jwtAuth: []
+      - tokenAuth: []
+      - jwtAuth: []
+      - tokenAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedConsentRecordList'
+          description: ''
+    post:
+      operationId: settings_compliance_consents_create
+      tags:
+      - settings
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ConsentRecord'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/ConsentRecord'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/ConsentRecord'
+        required: true
+      security:
+      - jwtAuth: []
+      - tokenAuth: []
+      - jwtAuth: []
+      - tokenAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ConsentRecord'
+          description: ''
+  /api/settings/compliance/consents/{id}/:
+    get:
+      operationId: settings_compliance_consents_retrieve
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this Consent Record.
+        required: true
+      tags:
+      - settings
+      security:
+      - jwtAuth: []
+      - tokenAuth: []
+      - jwtAuth: []
+      - tokenAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ConsentRecord'
+          description: ''
+    put:
+      operationId: settings_compliance_consents_update
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this Consent Record.
+        required: true
+      tags:
+      - settings
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ConsentRecord'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/ConsentRecord'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/ConsentRecord'
+        required: true
+      security:
+      - jwtAuth: []
+      - tokenAuth: []
+      - jwtAuth: []
+      - tokenAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ConsentRecord'
+          description: ''
+    patch:
+      operationId: settings_compliance_consents_partial_update
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this Consent Record.
+        required: true
+      tags:
+      - settings
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedConsentRecord'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PatchedConsentRecord'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PatchedConsentRecord'
+      security:
+      - jwtAuth: []
+      - tokenAuth: []
+      - jwtAuth: []
+      - tokenAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ConsentRecord'
+          description: ''
+    delete:
+      operationId: settings_compliance_consents_destroy
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this Consent Record.
+        required: true
+      tags:
+      - settings
+      security:
+      - jwtAuth: []
+      - tokenAuth: []
+      - jwtAuth: []
+      - tokenAuth: []
+      responses:
+        '204':
+          description: No response body
+  /api/settings/compliance/consents/{id}/revoke/:
+    post:
+      operationId: settings_compliance_consents_revoke_create
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this Consent Record.
+        required: true
+      tags:
+      - settings
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ConsentRecord'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/ConsentRecord'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/ConsentRecord'
+        required: true
+      security:
+      - jwtAuth: []
+      - tokenAuth: []
+      - jwtAuth: []
+      - tokenAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ConsentRecord'
+          description: ''
+  /api/settings/compliance/dsr/:
+    get:
+      operationId: settings_compliance_dsr_list
+      parameters:
+      - name: ordering
+        required: false
+        in: query
+        description: Which field to use when ordering the results.
+        schema:
+          type: string
+      - name: page
+        required: false
+        in: query
+        description: A page number within the paginated result set.
+        schema:
+          type: integer
+      - name: page_size
+        required: false
+        in: query
+        description: Number of results to return per page.
+        schema:
+          type: integer
+      - name: search
+        required: false
+        in: query
+        description: A search term.
+        schema:
+          type: string
+      tags:
+      - settings
+      security:
+      - jwtAuth: []
+      - tokenAuth: []
+      - jwtAuth: []
+      - tokenAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedDataSubjectRequestList'
+          description: ''
+    post:
+      operationId: settings_compliance_dsr_create
+      tags:
+      - settings
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DataSubjectRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/DataSubjectRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/DataSubjectRequest'
+        required: true
+      security:
+      - jwtAuth: []
+      - tokenAuth: []
+      - jwtAuth: []
+      - tokenAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DataSubjectRequest'
+          description: ''
+  /api/settings/compliance/dsr/{id}/:
+    get:
+      operationId: settings_compliance_dsr_retrieve
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this Data Subject Request.
+        required: true
+      tags:
+      - settings
+      security:
+      - jwtAuth: []
+      - tokenAuth: []
+      - jwtAuth: []
+      - tokenAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DataSubjectRequest'
+          description: ''
+    put:
+      operationId: settings_compliance_dsr_update
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this Data Subject Request.
+        required: true
+      tags:
+      - settings
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DataSubjectRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/DataSubjectRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/DataSubjectRequest'
+        required: true
+      security:
+      - jwtAuth: []
+      - tokenAuth: []
+      - jwtAuth: []
+      - tokenAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DataSubjectRequest'
+          description: ''
+    patch:
+      operationId: settings_compliance_dsr_partial_update
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this Data Subject Request.
+        required: true
+      tags:
+      - settings
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedDataSubjectRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PatchedDataSubjectRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PatchedDataSubjectRequest'
+      security:
+      - jwtAuth: []
+      - tokenAuth: []
+      - jwtAuth: []
+      - tokenAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DataSubjectRequest'
+          description: ''
+    delete:
+      operationId: settings_compliance_dsr_destroy
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this Data Subject Request.
+        required: true
+      tags:
+      - settings
+      security:
+      - jwtAuth: []
+      - tokenAuth: []
+      - jwtAuth: []
+      - tokenAuth: []
+      responses:
+        '204':
+          description: No response body
+  /api/settings/compliance/dsr/{id}/execute/:
+    post:
+      operationId: settings_compliance_dsr_execute_create
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this Data Subject Request.
+        required: true
+      tags:
+      - settings
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DataSubjectRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/DataSubjectRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/DataSubjectRequest'
+        required: true
+      security:
+      - jwtAuth: []
+      - tokenAuth: []
+      - jwtAuth: []
+      - tokenAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DataSubjectRequest'
+          description: ''
+  /api/settings/compliance/retention/:
+    get:
+      operationId: settings_compliance_retention_list
+      parameters:
+      - name: ordering
+        required: false
+        in: query
+        description: Which field to use when ordering the results.
+        schema:
+          type: string
+      - name: page
+        required: false
+        in: query
+        description: A page number within the paginated result set.
+        schema:
+          type: integer
+      - name: page_size
+        required: false
+        in: query
+        description: Number of results to return per page.
+        schema:
+          type: integer
+      - name: search
+        required: false
+        in: query
+        description: A search term.
+        schema:
+          type: string
+      tags:
+      - settings
+      security:
+      - jwtAuth: []
+      - tokenAuth: []
+      - jwtAuth: []
+      - tokenAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedDataRetentionPolicyList'
+          description: ''
+    post:
+      operationId: settings_compliance_retention_create
+      tags:
+      - settings
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DataRetentionPolicy'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/DataRetentionPolicy'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/DataRetentionPolicy'
+        required: true
+      security:
+      - jwtAuth: []
+      - tokenAuth: []
+      - jwtAuth: []
+      - tokenAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DataRetentionPolicy'
+          description: ''
+  /api/settings/compliance/retention/{id}/:
+    get:
+      operationId: settings_compliance_retention_retrieve
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this Data Retention Policy.
+        required: true
+      tags:
+      - settings
+      security:
+      - jwtAuth: []
+      - tokenAuth: []
+      - jwtAuth: []
+      - tokenAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DataRetentionPolicy'
+          description: ''
+    put:
+      operationId: settings_compliance_retention_update
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this Data Retention Policy.
+        required: true
+      tags:
+      - settings
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DataRetentionPolicy'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/DataRetentionPolicy'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/DataRetentionPolicy'
+        required: true
+      security:
+      - jwtAuth: []
+      - tokenAuth: []
+      - jwtAuth: []
+      - tokenAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DataRetentionPolicy'
+          description: ''
+    patch:
+      operationId: settings_compliance_retention_partial_update
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this Data Retention Policy.
+        required: true
+      tags:
+      - settings
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedDataRetentionPolicy'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PatchedDataRetentionPolicy'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PatchedDataRetentionPolicy'
+      security:
+      - jwtAuth: []
+      - tokenAuth: []
+      - jwtAuth: []
+      - tokenAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DataRetentionPolicy'
+          description: ''
+    delete:
+      operationId: settings_compliance_retention_destroy
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this Data Retention Policy.
+        required: true
+      tags:
+      - settings
+      security:
+      - jwtAuth: []
+      - tokenAuth: []
+      - jwtAuth: []
+      - tokenAuth: []
+      responses:
+        '204':
+          description: No response body
+  /api/settings/compliance/retention/run/:
+    post:
+      operationId: settings_compliance_retention_run_create
+      tags:
+      - settings
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DataRetentionPolicy'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/DataRetentionPolicy'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/DataRetentionPolicy'
+        required: true
+      security:
+      - jwtAuth: []
+      - tokenAuth: []
+      - jwtAuth: []
+      - tokenAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DataRetentionPolicy'
+          description: ''
   /api/settings/facebook/pages/:
     get:
       operationId: settings_facebook_pages_list
@@ -8638,6 +9376,51 @@ paths:
       responses:
         '200':
           description: No response body
+  /api/settings/omnichannel/send/:
+    post:
+      operationId: settings_omnichannel_send_create
+      tags:
+      - settings
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/OmnichannelMessage'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/OmnichannelMessage'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/OmnichannelMessage'
+      security:
+      - jwtAuth: []
+      - tokenAuth: []
+      - jwtAuth: []
+      - tokenAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OmnichannelMessage'
+          description: ''
+  /api/settings/omnichannel/timeline/:
+    get:
+      operationId: settings_omnichannel_timeline_retrieve
+      tags:
+      - settings
+      security:
+      - jwtAuth: []
+      - tokenAuth: []
+      - jwtAuth: []
+      - tokenAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OmnichannelMessage'
+          description: ''
   /api/settings/public_email_domains/:
     get:
       operationId: settings_public_email_domains_retrieve
@@ -9512,6 +10295,266 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Webhook'
+          description: ''
+  /api/settings/whatsapp/accounts/:
+    get:
+      operationId: settings_whatsapp_accounts_list
+      parameters:
+      - name: ordering
+        required: false
+        in: query
+        description: Which field to use when ordering the results.
+        schema:
+          type: string
+      - name: page
+        required: false
+        in: query
+        description: A page number within the paginated result set.
+        schema:
+          type: integer
+      - name: page_size
+        required: false
+        in: query
+        description: Number of results to return per page.
+        schema:
+          type: integer
+      - name: search
+        required: false
+        in: query
+        description: A search term.
+        schema:
+          type: string
+      tags:
+      - settings
+      security:
+      - jwtAuth: []
+      - tokenAuth: []
+      - jwtAuth: []
+      - tokenAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedWhatsAppBusinessAccountList'
+          description: ''
+    post:
+      operationId: settings_whatsapp_accounts_create
+      tags:
+      - settings
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/WhatsAppBusinessAccountCreate'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/WhatsAppBusinessAccountCreate'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/WhatsAppBusinessAccountCreate'
+        required: true
+      security:
+      - jwtAuth: []
+      - tokenAuth: []
+      - jwtAuth: []
+      - tokenAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/WhatsAppBusinessAccountCreate'
+          description: ''
+  /api/settings/whatsapp/accounts/{id}/:
+    get:
+      operationId: settings_whatsapp_accounts_retrieve
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        description: A UUID string identifying this WhatsApp Business Account.
+        required: true
+      tags:
+      - settings
+      security:
+      - jwtAuth: []
+      - tokenAuth: []
+      - jwtAuth: []
+      - tokenAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/WhatsAppBusinessAccount'
+          description: ''
+    put:
+      operationId: settings_whatsapp_accounts_update
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        description: A UUID string identifying this WhatsApp Business Account.
+        required: true
+      tags:
+      - settings
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/WhatsAppBusinessAccount'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/WhatsAppBusinessAccount'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/WhatsAppBusinessAccount'
+        required: true
+      security:
+      - jwtAuth: []
+      - tokenAuth: []
+      - jwtAuth: []
+      - tokenAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/WhatsAppBusinessAccount'
+          description: ''
+    patch:
+      operationId: settings_whatsapp_accounts_partial_update
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        description: A UUID string identifying this WhatsApp Business Account.
+        required: true
+      tags:
+      - settings
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedWhatsAppBusinessAccount'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PatchedWhatsAppBusinessAccount'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PatchedWhatsAppBusinessAccount'
+      security:
+      - jwtAuth: []
+      - tokenAuth: []
+      - jwtAuth: []
+      - tokenAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/WhatsAppBusinessAccount'
+          description: ''
+    delete:
+      operationId: settings_whatsapp_accounts_destroy
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        description: A UUID string identifying this WhatsApp Business Account.
+        required: true
+      tags:
+      - settings
+      security:
+      - jwtAuth: []
+      - tokenAuth: []
+      - jwtAuth: []
+      - tokenAuth: []
+      responses:
+        '204':
+          description: No response body
+  /api/settings/whatsapp/accounts/{id}/disconnect/:
+    post:
+      operationId: settings_whatsapp_accounts_disconnect_create
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        description: A UUID string identifying this WhatsApp Business Account.
+        required: true
+      tags:
+      - settings
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/WhatsAppBusinessAccount'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/WhatsAppBusinessAccount'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/WhatsAppBusinessAccount'
+        required: true
+      security:
+      - jwtAuth: []
+      - tokenAuth: []
+      - jwtAuth: []
+      - tokenAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/WhatsAppBusinessAccount'
+          description: ''
+  /api/settings/whatsapp/accounts/{id}/test/:
+    post:
+      operationId: settings_whatsapp_accounts_test_create
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        description: A UUID string identifying this WhatsApp Business Account.
+        required: true
+      tags:
+      - settings
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/WhatsAppBusinessAccount'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/WhatsAppBusinessAccount'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/WhatsAppBusinessAccount'
+        required: true
+      security:
+      - jwtAuth: []
+      - tokenAuth: []
+      - jwtAuth: []
+      - tokenAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/WhatsAppBusinessAccount'
           description: ''
   /api/shipments/:
     get:
@@ -10902,6 +11945,36 @@ paths:
       responses:
         '204':
           description: No response body
+  /api/voip/contact-center-drilldown/:
+    get:
+      operationId: voip_contact_center_drilldown_retrieve
+      description: Drilldown by teams (routing groups) and agents.
+      tags:
+      - VoIP & Cold Calls
+      security:
+      - jwtAuth: []
+      - tokenAuth: []
+      - jwtAuth: []
+      - tokenAuth: []
+      responses:
+        '200':
+          description: No response body
+  /api/voip/contact-center-kpi/:
+    get:
+      operationId: voip_contact_center_kpi_retrieve
+      description: |-
+        KPI economics for contact center:
+        AHT, ASA, FCR, abandon rate, SLA breach rate, conversion by direction.
+      tags:
+      - VoIP & Cold Calls
+      security:
+      - jwtAuth: []
+      - tokenAuth: []
+      - jwtAuth: []
+      - tokenAuth: []
+      responses:
+        '200':
+          description: No response body
   /api/voip/incoming-calls/:
     get:
       operationId: voip_incoming_calls_list
@@ -10974,10 +12047,193 @@ paths:
               schema:
                 $ref: '#/components/schemas/IncomingCall'
           description: ''
+  /api/voip/incoming-context/:
+    get:
+      operationId: voip_incoming_context
+      description: API endpoints for VoIP operations including cold calls
+      parameters:
+      - in: query
+        name: call_id
+        schema:
+          type: string
+        description: External call id
+      - in: query
+        name: caller_name
+        schema:
+          type: string
+        description: Caller display name
+      - in: query
+        name: phone
+        schema:
+          type: string
+        description: Incoming caller phone number
+        required: true
+      tags:
+      - VoIP & Cold Calls
+      security:
+      - jwtAuth: []
+      - tokenAuth: []
+      - jwtAuth: []
+      - tokenAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: {}
+          description: ''
   /api/voip/my-connections/:
     get:
       operationId: voip_my_connections_retrieve
       description: Get VoIP connections for current user
+      tags:
+      - VoIP & Cold Calls
+      security:
+      - jwtAuth: []
+      - tokenAuth: []
+      - jwtAuth: []
+      - tokenAuth: []
+      responses:
+        '200':
+          description: No response body
+  /api/voip/pilot-weekly-reports/:
+    get:
+      operationId: voip_pilot_weekly_reports_list
+      description: API endpoints for VoIP operations including cold calls
+      tags:
+      - VoIP & Cold Calls
+      security:
+      - jwtAuth: []
+      - tokenAuth: []
+      - jwtAuth: []
+      - tokenAuth: []
+      responses:
+        '200':
+          description: No response body
+  /api/voip/pilot-weekly-reports/{report_id}/:
+    get:
+      operationId: voip_pilot_weekly_report_retrieve
+      description: API endpoints for VoIP operations including cold calls
+      parameters:
+      - in: path
+        name: report_id
+        schema:
+          type: string
+          pattern: ^[0-9]+$
+        required: true
+      tags:
+      - VoIP & Cold Calls
+      security:
+      - jwtAuth: []
+      - tokenAuth: []
+      - jwtAuth: []
+      - tokenAuth: []
+      responses:
+        '200':
+          description: No response body
+  /api/voip/pilot-weekly-reports/{report_id}/export/:
+    get:
+      operationId: voip_pilot_weekly_report_export_retrieve
+      description: API endpoints for VoIP operations including cold calls
+      parameters:
+      - in: path
+        name: report_id
+        schema:
+          type: string
+          pattern: ^[0-9]+$
+        required: true
+      tags:
+      - VoIP & Cold Calls
+      security:
+      - jwtAuth: []
+      - tokenAuth: []
+      - jwtAuth: []
+      - tokenAuth: []
+      responses:
+        '200':
+          description: No response body
+  /api/voip/pilot-weekly-reports/automation-health/:
+    get:
+      operationId: voip_pilot_weekly_reports_automation_health_retrieve
+      description: API endpoints for VoIP operations including cold calls
+      tags:
+      - VoIP & Cold Calls
+      security:
+      - jwtAuth: []
+      - tokenAuth: []
+      - jwtAuth: []
+      - tokenAuth: []
+      responses:
+        '200':
+          description: No response body
+  /api/voip/pilot-weekly-reports/generate/:
+    post:
+      operationId: voip_pilot_weekly_reports_generate_create
+      description: API endpoints for VoIP operations including cold calls
+      tags:
+      - VoIP & Cold Calls
+      security:
+      - jwtAuth: []
+      - tokenAuth: []
+      - jwtAuth: []
+      - tokenAuth: []
+      responses:
+        '200':
+          description: No response body
+  /api/voip/pilot-weekly-reports/run-automation-now/:
+    post:
+      operationId: voip_pilot_weekly_reports_run_automation_now_create
+      description: API endpoints for VoIP operations including cold calls
+      tags:
+      - VoIP & Cold Calls
+      security:
+      - jwtAuth: []
+      - tokenAuth: []
+      - jwtAuth: []
+      - tokenAuth: []
+      responses:
+        '200':
+          description: No response body
+  /api/voip/qa-scores/:
+    get:
+      operationId: voip_qa_scores_retrieve
+      description: |-
+        Manage QA scoring workflow for calls:
+        - GET: list scores
+        - POST: create or update current user's score for a call
+      tags:
+      - VoIP & Cold Calls
+      security:
+      - jwtAuth: []
+      - tokenAuth: []
+      - jwtAuth: []
+      - tokenAuth: []
+      responses:
+        '200':
+          description: No response body
+    post:
+      operationId: voip_qa_scores_create
+      description: |-
+        Manage QA scoring workflow for calls:
+        - GET: list scores
+        - POST: create or update current user's score for a call
+      tags:
+      - VoIP & Cold Calls
+      security:
+      - jwtAuth: []
+      - tokenAuth: []
+      - jwtAuth: []
+      - tokenAuth: []
+      responses:
+        '200':
+          description: No response body
+  /api/voip/qa-summary/:
+    get:
+      operationId: voip_qa_summary_retrieve
+      description: |-
+        QA summary dashboard:
+        score averages, pass-rate, outcome distribution.
       tags:
       - VoIP & Cold Calls
       security:
@@ -11207,6 +12463,16 @@ components:
       - key
       - key_preview
       - name
+    ActionEnum:
+      enum:
+      - archive
+      - anonymize
+      - delete
+      type: string
+      description: |-
+        * `archive` - Archive
+        * `anonymize` - Anonymize
+        * `delete` - Delete
     AuthStatusResponse:
       type: object
       properties:
@@ -11250,7 +12516,7 @@ components:
           type: integer
           readOnly: true
         direction:
-          $ref: '#/components/schemas/DirectionEnum'
+          $ref: '#/components/schemas/CallLogDirectionEnum'
         number:
           type: string
           maxLength: 50
@@ -11281,6 +12547,14 @@ components:
       - number
       - timestamp
       - user
+    CallLogDirectionEnum:
+      enum:
+      - inbound
+      - outbound
+      type: string
+      description: |-
+        * `inbound` - Inbound
+        * `outbound` - Outbound
     Campaign:
       type: object
       properties:
@@ -11318,6 +12592,16 @@ components:
       - name
       - segment_name
       - template_name
+    CategoryEnum:
+      enum:
+      - consent
+      - dsr
+      - retention
+      type: string
+      description: |-
+        * `consent` - Consent
+        * `dsr` - DSR
+        * `retention` - Retention
     ChannelEnum:
       enum:
       - sms
@@ -11551,6 +12835,39 @@ components:
       - full_name
       - id
       - update_date
+    ComplianceAuditLog:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        category:
+          $ref: '#/components/schemas/CategoryEnum'
+        action:
+          type: string
+          maxLength: 100
+        status:
+          type: string
+          maxLength: 20
+        details: {}
+        actor:
+          type: integer
+          readOnly: true
+          nullable: true
+        actor_username:
+          type: string
+          readOnly: true
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+      required:
+      - action
+      - actor
+      - actor_username
+      - category
+      - created_at
+      - id
     Connection:
       type: object
       properties:
@@ -11611,6 +12928,78 @@ components:
         * `pbx` - PBX extension
         * `sip` - SIP connection
         * `voip` - Virtual phone number
+    ConsentRecord:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        source:
+          type: string
+          description: Collection source, e.g. web_form, call_center
+          maxLength: 100
+        purpose:
+          type: string
+          description: Processing purpose, e.g. marketing, support
+          maxLength: 150
+        legal_basis:
+          $ref: '#/components/schemas/LegalBasisEnum'
+        status:
+          $ref: '#/components/schemas/ConsentRecordStatusEnum'
+        subject_content_type:
+          type: integer
+        subject_object_id:
+          type: integer
+          maximum: 9223372036854775807
+          minimum: 0
+          format: int64
+        subject_type:
+          type: string
+          readOnly: true
+        metadata: {}
+        granted_at:
+          type: string
+          format: date-time
+        revoked_at:
+          type: string
+          format: date-time
+          nullable: true
+        expires_at:
+          type: string
+          format: date-time
+          nullable: true
+        created_by:
+          type: integer
+          readOnly: true
+          nullable: true
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+        updated_at:
+          type: string
+          format: date-time
+          readOnly: true
+      required:
+      - created_at
+      - created_by
+      - id
+      - purpose
+      - source
+      - subject_content_type
+      - subject_object_id
+      - subject_type
+      - updated_at
+    ConsentRecordStatusEnum:
+      enum:
+      - granted
+      - revoked
+      - expired
+      type: string
+      description: |-
+        * `granted` - Granted
+        * `revoked` - Revoked
+        * `expired` - Expired
     Contact:
       type: object
       description: Mixin to add validation helpers to serializers
@@ -11945,6 +13334,133 @@ components:
       required:
       - label
       - value
+    DataRetentionPolicy:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        name:
+          type: string
+          maxLength: 150
+        entity:
+          $ref: '#/components/schemas/EntityEnum'
+        retention_days:
+          type: integer
+          maximum: 9223372036854775807
+          minimum: 0
+          format: int64
+        action:
+          $ref: '#/components/schemas/ActionEnum'
+        is_active:
+          type: boolean
+        last_run_at:
+          type: string
+          format: date-time
+          readOnly: true
+          nullable: true
+        created_by:
+          type: integer
+          readOnly: true
+          nullable: true
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+        updated_at:
+          type: string
+          format: date-time
+          readOnly: true
+      required:
+      - created_at
+      - created_by
+      - entity
+      - id
+      - last_run_at
+      - name
+      - retention_days
+      - updated_at
+    DataSubjectRequest:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        request_type:
+          $ref: '#/components/schemas/RequestTypeEnum'
+        status:
+          allOf:
+          - $ref: '#/components/schemas/DataSubjectRequestStatusEnum'
+          readOnly: true
+        reason:
+          type: string
+        subject_content_type:
+          type: integer
+        subject_object_id:
+          type: integer
+          maximum: 9223372036854775807
+          minimum: 0
+          format: int64
+        subject_type:
+          type: string
+          readOnly: true
+        requested_by:
+          type: integer
+          readOnly: true
+          nullable: true
+        processed_by:
+          type: integer
+          readOnly: true
+          nullable: true
+        result_payload:
+          readOnly: true
+        error_message:
+          type: string
+          readOnly: true
+        requested_at:
+          type: string
+          format: date-time
+          readOnly: true
+        processed_at:
+          type: string
+          format: date-time
+          readOnly: true
+          nullable: true
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+        updated_at:
+          type: string
+          format: date-time
+          readOnly: true
+      required:
+      - created_at
+      - error_message
+      - id
+      - processed_at
+      - processed_by
+      - request_type
+      - requested_at
+      - requested_by
+      - result_payload
+      - status
+      - subject_content_type
+      - subject_object_id
+      - subject_type
+      - updated_at
+    DataSubjectRequestStatusEnum:
+      enum:
+      - pending
+      - in_progress
+      - completed
+      - failed
+      type: string
+      description: |-
+        * `pending` - Pending
+        * `in_progress` - In progress
+        * `completed` - Completed
+        * `failed` - Failed
     Deal:
       type: object
       description: Mixin to add validation helpers to serializers
@@ -12000,6 +13516,9 @@ components:
         currency:
           type: integer
           nullable: true
+        currency_name:
+          type: string
+          readOnly: true
         closing_reason:
           type: integer
           nullable: true
@@ -12026,6 +13545,12 @@ components:
         contact:
           type: integer
           nullable: true
+        contact_name:
+          type: string
+          readOnly: true
+        contact_phone:
+          type: string
+          readOnly: true
         request:
           type: integer
           nullable: true
@@ -12033,6 +13558,9 @@ components:
           type: integer
           nullable: true
           title: Company of contact
+        company_name:
+          type: string
+          readOnly: true
         partner_contact:
           type: integer
           nullable: true
@@ -12055,6 +13583,9 @@ components:
         owner:
           type: integer
           nullable: true
+        owner_name:
+          type: string
+          readOnly: true
         co_owner:
           type: integer
           nullable: true
@@ -12070,11 +13601,15 @@ components:
           format: date-time
           readOnly: true
       required:
+      - company_name
+      - contact_name
+      - contact_phone
       - creation_date
+      - currency_name
       - id
       - name
       - next_step
-      - next_step_date
+      - owner_name
       - stage_name
       - stages_dates
       - ticket
@@ -12097,14 +13632,6 @@ components:
       - id
       - member_count
       - name
-    DirectionEnum:
-      enum:
-      - inbound
-      - outbound
-      type: string
-      description: |-
-        * `inbound` - Inbound
-        * `outbound` - Outbound
     EmailAccount:
       type: object
       properties:
@@ -12199,6 +13726,22 @@ components:
       - owner_name
       - subject
       - update_date
+    EntityEnum:
+      enum:
+      - crm.lead
+      - crm.contact
+      - crm.company
+      - crm.request
+      - integrations.externalmessage
+      - crm.calllog
+      type: string
+      description: |-
+        * `crm.lead` - crm.lead
+        * `crm.contact` - crm.contact
+        * `crm.company` - crm.company
+        * `crm.request` - crm.request
+        * `integrations.externalmessage` - integrations.externalmessage
+        * `crm.calllog` - crm.calllog
     EventTypeEnum:
       enum:
       - landing_view
@@ -12212,6 +13755,8 @@ components:
       - deal_stage_changed
       - dedup_hit
       - sla_breached
+      - share_link_copied
+      - share_link_opened
       type: string
       description: |-
         * `landing_view` - landing_view
@@ -12225,6 +13770,8 @@ components:
         * `deal_stage_changed` - deal_stage_changed
         * `dedup_hit` - dedup_hit
         * `sla_breached` - sla_breached
+        * `share_link_copied` - share_link_copied
+        * `share_link_opened` - share_link_opened
     FacebookPage:
       type: object
       description: Serializer for Facebook Page.
@@ -12983,6 +14530,18 @@ components:
         * `qualified` - Qualified
         * `converted` - Converted
         * `lost` - Lost
+    LegalBasisEnum:
+      enum:
+      - consent
+      - contract
+      - legal_obligation
+      - legitimate_interest
+      type: string
+      description: |-
+        * `consent` - Consent
+        * `contract` - Contract
+        * `legal_obligation` - Legal obligation
+        * `legitimate_interest` - Legitimate interest
     MailingOut:
       type: object
       properties:
@@ -13173,6 +14732,90 @@ components:
     NullEnum:
       enum:
       - null
+    OmnichannelMessage:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        channel:
+          type: integer
+          readOnly: true
+        channel_type:
+          type: string
+          readOnly: true
+        channel_name:
+          type: string
+          readOnly: true
+        direction:
+          allOf:
+          - $ref: '#/components/schemas/OmnichannelMessageDirectionEnum'
+          readOnly: true
+        external_id:
+          type: string
+          readOnly: true
+        sender_id:
+          type: string
+          readOnly: true
+        recipient_id:
+          type: string
+          readOnly: true
+        text:
+          type: string
+          readOnly: true
+        status:
+          type: string
+          readOnly: true
+        queue_state:
+          type: string
+          readOnly: true
+        sla_deadline_at:
+          type: string
+          format: date-time
+          readOnly: true
+          nullable: true
+        responded_at:
+          type: string
+          format: date-time
+          readOnly: true
+          nullable: true
+        subject_content_type:
+          type: integer
+          readOnly: true
+          nullable: true
+        subject_object_id:
+          type: integer
+          readOnly: true
+          nullable: true
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+      required:
+      - channel
+      - channel_name
+      - channel_type
+      - created_at
+      - direction
+      - external_id
+      - id
+      - queue_state
+      - recipient_id
+      - responded_at
+      - sender_id
+      - sla_deadline_at
+      - status
+      - subject_content_type
+      - subject_object_id
+      - text
+    OmnichannelMessageDirectionEnum:
+      enum:
+      - in
+      - out
+      type: string
+      description: |-
+        * `in` - Inbound
+        * `out` - Outbound
     Output:
       type: object
       description: Serializer for Output (product shipments) model
@@ -13467,6 +15110,29 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/Company'
+    PaginatedComplianceAuditLogList:
+      type: object
+      required:
+      - count
+      - results
+      properties:
+        count:
+          type: integer
+          example: 123
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=4
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=2
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/ComplianceAuditLog'
     PaginatedConnectionList:
       type: object
       required:
@@ -13490,6 +15156,29 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/Connection'
+    PaginatedConsentRecordList:
+      type: object
+      required:
+      - count
+      - results
+      properties:
+        count:
+          type: integer
+          example: 123
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=4
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=2
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/ConsentRecord'
     PaginatedContactList:
       type: object
       required:
@@ -13605,6 +15294,52 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/Currency'
+    PaginatedDataRetentionPolicyList:
+      type: object
+      required:
+      - count
+      - results
+      properties:
+        count:
+          type: integer
+          example: 123
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=4
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=2
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/DataRetentionPolicy'
+    PaginatedDataSubjectRequestList:
+      type: object
+      required:
+      - count
+      - results
+      properties:
+        count:
+          type: integer
+          example: 123
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=4
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=2
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/DataSubjectRequest'
     PaginatedDealList:
       type: object
       required:
@@ -14456,6 +16191,29 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/Webhook'
+    PaginatedWhatsAppBusinessAccountList:
+      type: object
+      required:
+      - count
+      - results
+      properties:
+        count:
+          type: integer
+          example: 123
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=4
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=2
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/WhatsAppBusinessAccount'
     Paragraph:
       type: object
       properties:
@@ -14577,7 +16335,7 @@ components:
           type: integer
           readOnly: true
         direction:
-          $ref: '#/components/schemas/DirectionEnum'
+          $ref: '#/components/schemas/CallLogDirectionEnum'
         number:
           type: string
           maxLength: 50
@@ -14813,6 +16571,58 @@ components:
           maxLength: 30
         active:
           type: boolean
+    PatchedConsentRecord:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        source:
+          type: string
+          description: Collection source, e.g. web_form, call_center
+          maxLength: 100
+        purpose:
+          type: string
+          description: Processing purpose, e.g. marketing, support
+          maxLength: 150
+        legal_basis:
+          $ref: '#/components/schemas/LegalBasisEnum'
+        status:
+          $ref: '#/components/schemas/ConsentRecordStatusEnum'
+        subject_content_type:
+          type: integer
+        subject_object_id:
+          type: integer
+          maximum: 9223372036854775807
+          minimum: 0
+          format: int64
+        subject_type:
+          type: string
+          readOnly: true
+        metadata: {}
+        granted_at:
+          type: string
+          format: date-time
+        revoked_at:
+          type: string
+          format: date-time
+          nullable: true
+        expires_at:
+          type: string
+          format: date-time
+          nullable: true
+        created_by:
+          type: integer
+          readOnly: true
+          nullable: true
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+        updated_at:
+          type: string
+          format: date-time
+          readOnly: true
     PatchedContact:
       type: object
       description: Mixin to add validation helpers to serializers
@@ -15001,6 +16811,97 @@ components:
           type: string
           format: date-time
           readOnly: true
+    PatchedDataRetentionPolicy:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        name:
+          type: string
+          maxLength: 150
+        entity:
+          $ref: '#/components/schemas/EntityEnum'
+        retention_days:
+          type: integer
+          maximum: 9223372036854775807
+          minimum: 0
+          format: int64
+        action:
+          $ref: '#/components/schemas/ActionEnum'
+        is_active:
+          type: boolean
+        last_run_at:
+          type: string
+          format: date-time
+          readOnly: true
+          nullable: true
+        created_by:
+          type: integer
+          readOnly: true
+          nullable: true
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+        updated_at:
+          type: string
+          format: date-time
+          readOnly: true
+    PatchedDataSubjectRequest:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        request_type:
+          $ref: '#/components/schemas/RequestTypeEnum'
+        status:
+          allOf:
+          - $ref: '#/components/schemas/DataSubjectRequestStatusEnum'
+          readOnly: true
+        reason:
+          type: string
+        subject_content_type:
+          type: integer
+        subject_object_id:
+          type: integer
+          maximum: 9223372036854775807
+          minimum: 0
+          format: int64
+        subject_type:
+          type: string
+          readOnly: true
+        requested_by:
+          type: integer
+          readOnly: true
+          nullable: true
+        processed_by:
+          type: integer
+          readOnly: true
+          nullable: true
+        result_payload:
+          readOnly: true
+        error_message:
+          type: string
+          readOnly: true
+        requested_at:
+          type: string
+          format: date-time
+          readOnly: true
+        processed_at:
+          type: string
+          format: date-time
+          readOnly: true
+          nullable: true
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+        updated_at:
+          type: string
+          format: date-time
+          readOnly: true
     PatchedDeal:
       type: object
       description: Mixin to add validation helpers to serializers
@@ -15056,6 +16957,9 @@ components:
         currency:
           type: integer
           nullable: true
+        currency_name:
+          type: string
+          readOnly: true
         closing_reason:
           type: integer
           nullable: true
@@ -15082,6 +16986,12 @@ components:
         contact:
           type: integer
           nullable: true
+        contact_name:
+          type: string
+          readOnly: true
+        contact_phone:
+          type: string
+          readOnly: true
         request:
           type: integer
           nullable: true
@@ -15089,6 +16999,9 @@ components:
           type: integer
           nullable: true
           title: Company of contact
+        company_name:
+          type: string
+          readOnly: true
         partner_contact:
           type: integer
           nullable: true
@@ -15111,6 +17024,9 @@ components:
         owner:
           type: integer
           nullable: true
+        owner_name:
+          type: string
+          readOnly: true
         co_owner:
           type: integer
           nullable: true
@@ -16360,6 +18276,57 @@ components:
         failure_count:
           type: integer
           readOnly: true
+    PatchedWhatsAppBusinessAccount:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        business_name:
+          type: string
+          maxLength: 255
+        phone_number:
+          type: string
+          maxLength: 32
+        phone_number_id:
+          type: string
+          maxLength: 100
+        business_account_id:
+          type: string
+          maxLength: 100
+        is_active:
+          type: boolean
+        auto_sync_messages:
+          type: boolean
+        auto_create_leads:
+          type: boolean
+        webhook_url:
+          type: string
+          format: uri
+          maxLength: 200
+        messages_received:
+          type: integer
+          readOnly: true
+        messages_sent:
+          type: integer
+          readOnly: true
+        last_activity_at:
+          type: string
+          format: date-time
+          readOnly: true
+          nullable: true
+        connected_by_username:
+          type: string
+          readOnly: true
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+        updated_at:
+          type: string
+          format: date-time
+          readOnly: true
     Payment:
       type: object
       description: Serializer for Payment model
@@ -16829,6 +18796,16 @@ components:
       - owner_name
       - ticket
       - update_date
+    RequestTypeEnum:
+      enum:
+      - export
+      - delete
+      - anonymize
+      type: string
+      description: |-
+        * `export` - Export
+        * `delete` - Delete
+        * `anonymize` - Anonymize
     Segment:
       type: object
       properties:
@@ -17101,7 +19078,6 @@ components:
       - id
       - next_step
       - next_step_date
-      - stage
       - token
       - update_date
       - workflow
@@ -17625,6 +19601,110 @@ components:
       - id
       - secret
       - url
+    WhatsAppBusinessAccount:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        business_name:
+          type: string
+          maxLength: 255
+        phone_number:
+          type: string
+          maxLength: 32
+        phone_number_id:
+          type: string
+          maxLength: 100
+        business_account_id:
+          type: string
+          maxLength: 100
+        is_active:
+          type: boolean
+        auto_sync_messages:
+          type: boolean
+        auto_create_leads:
+          type: boolean
+        webhook_url:
+          type: string
+          format: uri
+          maxLength: 200
+        messages_received:
+          type: integer
+          readOnly: true
+        messages_sent:
+          type: integer
+          readOnly: true
+        last_activity_at:
+          type: string
+          format: date-time
+          readOnly: true
+          nullable: true
+        connected_by_username:
+          type: string
+          readOnly: true
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+        updated_at:
+          type: string
+          format: date-time
+          readOnly: true
+      required:
+      - business_name
+      - connected_by_username
+      - created_at
+      - id
+      - last_activity_at
+      - messages_received
+      - messages_sent
+      - phone_number_id
+      - updated_at
+    WhatsAppBusinessAccountCreate:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        business_name:
+          type: string
+          maxLength: 255
+        phone_number:
+          type: string
+          maxLength: 32
+        phone_number_id:
+          type: string
+          maxLength: 100
+        business_account_id:
+          type: string
+          maxLength: 100
+        access_token:
+          type: string
+          writeOnly: true
+        app_secret:
+          type: string
+          writeOnly: true
+        verify_token:
+          type: string
+          maxLength: 255
+        is_active:
+          type: boolean
+        auto_sync_messages:
+          type: boolean
+        auto_create_leads:
+          type: boolean
+        webhook_url:
+          type: string
+          format: uri
+          maxLength: 200
+      required:
+      - access_token
+      - business_name
+      - id
+      - phone_number_id
   securitySchemes:
     jwtAuth:
       type: http

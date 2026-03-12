@@ -72,3 +72,4 @@ export type Lead = {
     readonly creation_date: string;
     readonly update_date: string;
 };
+

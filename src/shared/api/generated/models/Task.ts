@@ -34,7 +34,7 @@ export type Task = {
     remind_me?: boolean;
     project?: number | null;
     task?: number | null;
-    stage: number;
+    stage?: number;
     owner?: number | null;
     co_owner?: number | null;
     responsible?: Array<number>;

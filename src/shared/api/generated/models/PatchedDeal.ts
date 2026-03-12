@@ -34,6 +34,7 @@ export type PatchedDeal = {
      */
     amount?: string | null;
     currency?: number | null;
+    readonly currency_name?: string;
     closing_reason?: number | null;
     probability?: number | null;
     readonly ticket?: string;
@@ -44,8 +45,11 @@ export type PatchedDeal = {
     country?: number | null;
     lead?: number | null;
     contact?: number | null;
+    readonly contact_name?: string;
+    readonly contact_phone?: string;
     request?: number | null;
     company?: number | null;
+    readonly company_name?: string;
     /**
      * Contact person of dealer or distribution company
      */
@@ -57,6 +61,7 @@ export type PatchedDeal = {
     is_new?: boolean;
     remind_me?: boolean;
     owner?: number | null;
+    readonly owner_name?: string;
     co_owner?: number | null;
     department?: number | null;
     readonly creation_date?: string;

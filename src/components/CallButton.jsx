@@ -6,6 +6,7 @@ import { getProfile } from '../lib/api/user.js';
 import { addCallToHistory, clearActiveCall, setActiveCall } from '../lib/store/index.js';
 import sipClient from '../lib/telephony/SIPClient.js';
 import { loadTelephonyRuntimeConfig } from '../lib/telephony/runtimeConfig.js';
+import { TELEPHONY_MODAL_PROPS } from '../shared/ui/telephonyModal.js';
 
 const { Text, Title } = Typography;
 
@@ -437,12 +438,12 @@ function CallButton({ phone, name, entityType, entityId, size = 'middle', type =
       </Button>
 
       <Modal
+        {...TELEPHONY_MODAL_PROPS}
         title={getModalTitle()}
         open={modalVisible}
         onCancel={closeModal}
         footer={null}
         width={400}
-        centered
       >
         {renderModalContent()}
         {/* Audio element for WebRTC */}

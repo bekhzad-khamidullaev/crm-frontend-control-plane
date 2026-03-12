@@ -21,6 +21,7 @@ export class MarketingService {
      */
     public static marketingCampaignsList({
         isActive,
+        owner,
         page,
         pageSize,
         search,
@@ -28,6 +29,7 @@ export class MarketingService {
         template,
     }: {
         isActive?: boolean,
+        owner?: number,
         /**
          * A page number within the paginated result set.
          */
@@ -48,6 +50,7 @@ export class MarketingService {
             url: '/api/marketing/campaigns/',
             query: {
                 'is_active': isActive,
+                'owner': owner,
                 'page': page,
                 'page_size': pageSize,
                 'search': search,
@@ -302,6 +305,7 @@ export class MarketingService {
      */
     public static marketingTemplatesList({
         channel,
+        owner,
         page,
         pageSize,
         search,
@@ -313,6 +317,7 @@ export class MarketingService {
          * * `email` - Email
          */
         channel?: 'email' | 'ig' | 'sms' | 'tg',
+        owner?: number,
         /**
          * A page number within the paginated result set.
          */
@@ -331,6 +336,7 @@ export class MarketingService {
             url: '/api/marketing/templates/',
             query: {
                 'channel': channel,
+                'owner': owner,
                 'page': page,
                 'page_size': pageSize,
                 'search': search,

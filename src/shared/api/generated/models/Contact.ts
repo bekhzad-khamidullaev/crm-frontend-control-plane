@@ -13,7 +13,7 @@ export type Contact = {
     /**
      * The name of the contact person (one word).
      */
-    first_name: string;
+    first_name?: string;
     /**
      * The middle name of the contact person.
      */
@@ -62,3 +62,4 @@ export type Contact = {
     readonly creation_date: string;
     readonly update_date: string;
 };
+
