@@ -3,11 +3,13 @@ import {
   App,
   Button,
   Card,
+  Carousel,
   Col,
   DatePicker,
   Form,
   Input,
   InputNumber,
+  Popconfirm,
   Row,
   Select,
   Space,
@@ -16,15 +18,24 @@ import {
   Table,
   Tag,
   Typography,
+  Segmented,
 } from 'antd';
 import { Editor, Element, Frame, useEditor, useNode } from '@craftjs/core';
-import { createContext, useContext, useEffect, useMemo, useState } from 'react';
+import { createContext, useContext, useEffect, useMemo, useRef, useState } from 'react';
 import { landingsApi } from '../lib/api/client';
 import brandLogo from '../assets/brand/logo.svg';
+import { useTheme } from '../lib/hooks/useTheme.js';
 
 const { Title, Text } = Typography;
 const LANGUAGES = ['ru', 'uz', 'en'];
 const LandingLocaleContext = createContext('ru');
+const FONT_OPTIONS = [
+  { value: 'Inter, system-ui, sans-serif', label: 'Inter' },
+  { value: '"Manrope", "Inter", system-ui, sans-serif', label: 'Manrope' },
+  { value: '"SF Pro Display", "Inter", system-ui, sans-serif', label: 'SF Pro' },
+  { value: '"Roboto", system-ui, sans-serif', label: 'Roboto' },
+  { value: '"Georgia", serif', label: 'Georgia' },
+];
 
 const DEFAULT_THEME = {
   primary: '#1f2937',
@@ -50,11 +61,12 @@ function uid(prefix = 'node') {
 }
 
 function ensureI18nObject(value, fallback = '') {
+  const pick = (...items) => items.find((item) => item !== undefined && item !== null);
   if (value && typeof value === 'object' && !Array.isArray(value)) {
     return {
-      ru: value.ru || value.en || value.uz || fallback,
-      uz: value.uz || value.ru || value.en || fallback,
-      en: value.en || value.ru || value.uz || fallback,
+      ru: pick(value.ru, value.en, value.uz, fallback) ?? '',
+      uz: pick(value.uz, value.ru, value.en, fallback) ?? '',
+      en: pick(value.en, value.ru, value.uz, fallback) ?? '',
     };
   }
   const normalized = String(value || fallback || '');
@@ -63,7 +75,7 @@ function ensureI18nObject(value, fallback = '') {
 
 function textByLocale(nodeProps, key, locale, fallback = '') {
   const map = ensureI18nObject(nodeProps?.[`${key}_i18n`], nodeProps?.[key] || fallback);
-  return map?.[locale] || map?.ru || map?.en || map?.uz || fallback;
+  return map?.[locale] ?? map?.ru ?? map?.en ?? map?.uz ?? fallback;
 }
 
 function toSafeFilePart(value) {
@@ -72,6 +84,16 @@ function toSafeFilePart(value) {
     .replace(/\s+/g, '-')
     .replace(/[^a-zA-Z0-9_-]/g, '')
     .slice(0, 40);
+}
+
+function toSlug(value) {
+  return String(value || '')
+    .trim()
+    .toLowerCase()
+    .replace(/[^a-z0-9\s-]/g, '')
+    .replace(/\s+/g, '-')
+    .replace(/-+/g, '-')
+    .replace(/^-|-$/g, '');
 }
 
 function formatNumber(value) {
@@ -141,13 +163,15 @@ function defaultBindingConfig(landing) {
 }
 
 function getNodeLabel(node) {
-  const name = node?.type?.resolvedName;
+  const name = node?.type?.resolvedName || node?.displayName;
   const props = node?.props || {};
   if (name === 'HeroBlock') return props.title || 'Hero';
   if (name === 'TextBlock') return props.title || 'Text';
   if (name === 'FeaturesBlock') return props.title || 'Features';
   if (name === 'CtaBlock') return props.title || 'CTA';
   if (name === 'FormBlock') return props.title || 'Form';
+  if (name === 'CarouselBlock') return props.title || 'Carousel';
+  if (props?.title) return props.title;
   return name || 'Block';
 }
 
@@ -163,25 +187,62 @@ function useBlockSelection() {
   };
 }
 
-function BlockShell({ children, background, textColor, name }) {
+function blockContainerStyles(props = {}) {
+  return {
+    background: props.background || '#ffffff',
+    backgroundImage: props.backgroundImageUrl ? `url(${props.backgroundImageUrl})` : 'none',
+    backgroundSize: props.backgroundSize || 'cover',
+    backgroundPosition: props.backgroundPosition || 'center',
+    backgroundRepeat: props.backgroundRepeat || 'no-repeat',
+    opacity: typeof props.opacity === 'number' ? props.opacity : 1,
+    fontFamily: props.fontFamily || 'Inter, system-ui, sans-serif',
+    fontSize: props.fontSize ? `${Number(props.fontSize)}px` : undefined,
+  };
+}
+
+function BlockImage({ props }) {
+  if (!props?.imageUrl) return null;
+  return (
+    <div style={{ marginBottom: 14 }}>
+      <img
+        src={props.imageUrl}
+        alt="block visual"
+        style={{
+          width: '100%',
+          maxHeight: Number(props.imageMaxHeight || 360),
+          objectFit: props.imageFit || 'cover',
+          borderRadius: Number(props.imageBorderRadius || 12),
+          opacity: typeof props.imageOpacity === 'number' ? props.imageOpacity : 1,
+        }}
+      />
+    </div>
+  );
+}
+
+function BlockShell({ children, background, textColor, name, props }) {
   const { connect, drag, selected } = useBlockSelection();
   return (
     <div
       ref={(ref) => connect(drag(ref))}
       style={{
-        padding: '72px 24px',
-        borderRadius: 0,
-        border: selected ? '2px solid #1677ff' : '1px dashed transparent',
-        background: background || '#ffffff',
+        padding: `${Number(props?.paddingY || 72)}px ${Number(props?.paddingX || 28)}px`,
+        borderRadius: Number(props?.borderRadius || 14),
+        border: selected ? '2px solid #1677ff' : '1px solid #dbe5f4',
+        ...blockContainerStyles({ ...props, background }),
         color: textColor || '#111827',
-        marginBottom: 0,
+        marginBottom: 12,
         position: 'relative',
+        boxShadow: selected ? '0 8px 22px rgba(22, 119, 255, 0.18)' : '0 4px 14px rgba(15, 23, 42, 0.04)',
+        transition: 'all 0.2s ease',
       }}
     >
       <div style={{ position: 'absolute', left: 12, top: 10, zIndex: 5 }}>
         <Tag color={selected ? 'blue' : 'default'}>{name}</Tag>
       </div>
-      <div style={{ maxWidth: 980, margin: '0 auto' }}>{children}</div>
+      <div style={{ maxWidth: 980, margin: '0 auto' }}>
+        <BlockImage props={props} />
+        {children}
+      </div>
     </div>
   );
 }
@@ -196,12 +257,24 @@ function CanvasRoot(props) {
       style={{
         minHeight: 700,
         background: background || '#f8fafc',
-        padding: 0,
-        borderRadius: 0,
-        border: '1px solid #d4d4d8',
+        backgroundImage: props.backgroundImageUrl ? `url(${props.backgroundImageUrl})` : 'none',
+        backgroundSize: props.backgroundSize || 'cover',
+        backgroundPosition: props.backgroundPosition || 'center',
+        backgroundRepeat: props.backgroundRepeat || 'no-repeat',
+        padding: 14,
+        borderRadius: 18,
+        border: '1px solid #dbe5f4',
       }}
     >
-      <div style={{ padding: 20, background: '#fff', borderBottom: '1px solid #e4e4e7' }}>
+      <div
+        style={{
+          padding: 20,
+          marginBottom: 14,
+          background: 'linear-gradient(135deg, #ffffff 0%, #f8fbff 100%)',
+          border: '1px solid #dbe5f4',
+          borderRadius: 14,
+        }}
+      >
         <Title level={4} style={{ margin: 0, color: titleColor || '#111827' }}>
           {textByLocale(props, 'title', locale, title || 'Landing Page')}
         </Title>
@@ -219,7 +292,7 @@ function HeroBlock(props) {
   const { title, subtitle, buttonText, background, textColor } = props;
   const locale = useContext(LandingLocaleContext);
   return (
-    <BlockShell background={background} textColor={textColor} name="Hero">
+    <BlockShell background={background} textColor={textColor} name="Hero" props={props}>
       <Title level={2} style={{ margin: 0, color: textColor || '#111827' }}>
         {textByLocale(props, 'title', locale, title || '')}
       </Title>
@@ -236,7 +309,7 @@ function TextBlock(props) {
   const { title, body, background, textColor } = props;
   const locale = useContext(LandingLocaleContext);
   return (
-    <BlockShell background={background} textColor={textColor} name="Text">
+    <BlockShell background={background} textColor={textColor} name="Text" props={props}>
       <Title level={4} style={{ margin: 0, color: textColor || '#111827' }}>
         {textByLocale(props, 'title', locale, title || '')}
       </Title>
@@ -251,7 +324,7 @@ function FeaturesBlock(props) {
   const locale = useContext(LandingLocaleContext);
   const features = Array.isArray(items) ? items : [];
   return (
-    <BlockShell background={background} textColor={textColor} name="Features">
+    <BlockShell background={background} textColor={textColor} name="Features" props={props}>
       <Title level={4} style={{ margin: 0, color: textColor || '#111827' }}>
         {textByLocale(props, 'title', locale, title || '')}
       </Title>
@@ -271,7 +344,7 @@ function CtaBlock(props) {
   const { title, body, buttonText, background, textColor } = props;
   const locale = useContext(LandingLocaleContext);
   return (
-    <BlockShell background={background} textColor={textColor} name="CTA">
+    <BlockShell background={background} textColor={textColor} name="CTA" props={props}>
       <Title level={4} style={{ margin: 0, color: textColor || '#111827' }}>
         {textByLocale(props, 'title', locale, title || '')}
       </Title>
@@ -289,7 +362,7 @@ function FormBlock(props) {
   const locale = useContext(LandingLocaleContext);
   const formFields = Array.isArray(fields) ? fields : [];
   return (
-    <BlockShell background={background} textColor={textColor} name="Form">
+    <BlockShell background={background} textColor={textColor} name="Form" props={props}>
       <Title level={4} style={{ margin: 0, color: textColor || '#111827' }}>
         {textByLocale(props, 'title', locale, title || '')}
       </Title>
@@ -306,6 +379,42 @@ function FormBlock(props) {
   );
 }
 FormBlock.craft = { displayName: 'FormBlock' };
+
+function CarouselBlock(props) {
+  const { title, images, background, textColor } = props;
+  const locale = useContext(LandingLocaleContext);
+  const items = Array.isArray(images) ? images.filter(Boolean) : [];
+  return (
+    <BlockShell background={background} textColor={textColor} name="Carousel" props={props}>
+      <Title level={4} style={{ margin: 0, color: textColor || '#111827' }}>
+        {textByLocale(props, 'title', locale, title || '')}
+      </Title>
+      <div style={{ marginTop: 14 }}>
+        {items.length > 0 ? (
+          <Carousel autoplay dots>
+            {items.map((url, idx) => (
+              <div key={`carousel-${idx}`}>
+                <img
+                  src={url}
+                  alt={`slide-${idx + 1}`}
+                  style={{
+                    width: '100%',
+                    height: Number(props.slideHeight || 340),
+                    objectFit: props.imageFit || 'cover',
+                    borderRadius: Number(props.imageBorderRadius || 12),
+                  }}
+                />
+              </div>
+            ))}
+          </Carousel>
+        ) : (
+          <Text type="secondary">Добавьте изображения для карусели</Text>
+        )}
+      </div>
+    </BlockShell>
+  );
+}
+CarouselBlock.craft = { displayName: 'CarouselBlock' };
 
 function defaultCraftObject() {
   const heroId = uid('hero');
@@ -404,6 +513,171 @@ function defaultCraftObject() {
   };
 }
 
+function defaultCrmSalesCraftObject() {
+  const heroId = uid('hero');
+  const textId = uid('text');
+  const carouselId = uid('carousel');
+  const featuresId = uid('features');
+  const ctaId = uid('cta');
+  const formId = uid('form');
+  const formBlockId = `form-${formId}`;
+
+  return {
+    ROOT: {
+      type: { resolvedName: 'CanvasRoot' },
+      isCanvas: true,
+      props: {
+        background: '#f8fafc',
+        title: 'Enterprise CRM',
+        title_i18n: ensureI18nObject('Enterprise CRM'),
+        description: 'Платформа для роста продаж, автоматизации процессов и прозрачной аналитики.',
+        description_i18n: ensureI18nObject('Платформа для роста продаж, автоматизации процессов и прозрачной аналитики.'),
+        titleColor: '#111827',
+      },
+      displayName: 'CanvasRoot',
+      custom: {},
+      hidden: false,
+      nodes: [heroId, textId, carouselId, featuresId, ctaId, formId],
+      linkedNodes: {},
+    },
+    [heroId]: {
+      type: { resolvedName: 'HeroBlock' },
+      isCanvas: false,
+      props: {
+        title: 'Ускорьте продажи с Enterprise CRM',
+        title_i18n: ensureI18nObject('Ускорьте продажи с Enterprise CRM'),
+        subtitle: 'Лиды, сделки, задачи, звонки и отчёты в одной системе. Запускайтесь за 1 день.',
+        subtitle_i18n: ensureI18nObject('Лиды, сделки, задачи, звонки и отчёты в одной системе. Запускайтесь за 1 день.'),
+        buttonText: 'Получить демо',
+        buttonText_i18n: ensureI18nObject('Получить демо'),
+        background: '#ffffff',
+        textColor: '#111827',
+      },
+      displayName: 'HeroBlock',
+      custom: {},
+      hidden: false,
+      nodes: [],
+      linkedNodes: {},
+    },
+    [textId]: {
+      type: { resolvedName: 'TextBlock' },
+      isCanvas: false,
+      props: {
+        title: 'Почему компании выбирают нас',
+        title_i18n: ensureI18nObject('Почему компании выбирают нас'),
+        body: 'Enterprise CRM помогает сократить потерю лидов, ускорить работу команды и увеличить конверсию на каждом этапе воронки.',
+        body_i18n: ensureI18nObject('Enterprise CRM помогает сократить потерю лидов, ускорить работу команды и увеличить конверсию на каждом этапе воронки.'),
+        background: '#ffffff',
+        textColor: '#111827',
+      },
+      displayName: 'TextBlock',
+      custom: {},
+      hidden: false,
+      nodes: [],
+      linkedNodes: {},
+    },
+    [carouselId]: {
+      type: { resolvedName: 'CarouselBlock' },
+      isCanvas: false,
+      props: {
+        title: 'Интерфейс CRM в работе',
+        title_i18n: ensureI18nObject('Интерфейс CRM в работе'),
+        images: [
+          'https://images.unsplash.com/photo-1460925895917-afdab827c52f?auto=format&fit=crop&w=1400&q=80',
+          'https://images.unsplash.com/photo-1551281044-8b8f3c8e2f6f?auto=format&fit=crop&w=1400&q=80',
+          'https://images.unsplash.com/photo-1552664730-d307ca884978?auto=format&fit=crop&w=1400&q=80',
+        ],
+        background: '#ffffff',
+        textColor: '#111827',
+        slideHeight: 340,
+        imageFit: 'cover',
+        imageBorderRadius: 12,
+      },
+      displayName: 'CarouselBlock',
+      custom: {},
+      hidden: false,
+      nodes: [],
+      linkedNodes: {},
+    },
+    [featuresId]: {
+      type: { resolvedName: 'FeaturesBlock' },
+      isCanvas: false,
+      props: {
+        title: 'Что вы получите',
+        title_i18n: ensureI18nObject('Что вы получите'),
+        items: [
+          'Сквозная воронка: от лида до оплаты',
+          'Автоматизация задач и напоминаний',
+          'Понятная аналитика по менеджерам и каналам',
+          'Интеграции с почтой, телефонией и мессенджерами',
+        ],
+        background: '#ffffff',
+        textColor: '#111827',
+      },
+      displayName: 'FeaturesBlock',
+      custom: {},
+      hidden: false,
+      nodes: [],
+      linkedNodes: {},
+    },
+    [ctaId]: {
+      type: { resolvedName: 'CtaBlock' },
+      isCanvas: false,
+      props: {
+        title: 'Готовы вырасти в продажах?',
+        title_i18n: ensureI18nObject('Готовы вырасти в продажах?'),
+        body: 'Оставьте заявку и мы покажем, как адаптировать CRM под ваш бизнес-процесс.',
+        body_i18n: ensureI18nObject('Оставьте заявку и мы покажем, как адаптировать CRM под ваш бизнес-процесс.'),
+        buttonText: 'Запросить консультацию',
+        buttonText_i18n: ensureI18nObject('Запросить консультацию'),
+        background: '#ffffff',
+        textColor: '#111827',
+      },
+      displayName: 'CtaBlock',
+      custom: {},
+      hidden: false,
+      nodes: [],
+      linkedNodes: {},
+    },
+    [formId]: {
+      type: { resolvedName: 'FormBlock' },
+      isCanvas: false,
+      props: {
+        title: 'Запросить демо',
+        title_i18n: ensureI18nObject('Запросить демо'),
+        subtitle: 'Оставьте контакты, и наш эксперт свяжется с вами в течение 15 минут.',
+        subtitle_i18n: ensureI18nObject('Оставьте контакты, и наш эксперт свяжется с вами в течение 15 минут.'),
+        buttonText: 'Отправить заявку',
+        buttonText_i18n: ensureI18nObject('Отправить заявку'),
+        background: '#ffffff',
+        textColor: '#111827',
+        blockId: formBlockId,
+        formKey: 'crm_sales_demo',
+        fields: [
+          { key: 'name', label: 'Имя', label_i18n: ensureI18nObject('Имя'), type: 'text', required: true },
+          { key: 'phone', label: 'Телефон', label_i18n: ensureI18nObject('Телефон'), type: 'tel', required: true },
+          { key: 'email', label: 'Email', label_i18n: ensureI18nObject('Email'), type: 'email', required: false },
+          { key: 'company', label: 'Компания', label_i18n: ensureI18nObject('Компания'), type: 'text', required: false },
+        ],
+        lead_source: null,
+        stage_on_deal_create: null,
+        create_deal: true,
+        owner_strategy: 'inherit',
+        fixed_owner: null,
+        assignment_queue: null,
+        sla_minutes: 15,
+        dedup_window_minutes: 120,
+        active: true,
+      },
+      displayName: 'FormBlock',
+      custom: {},
+      hidden: false,
+      nodes: [],
+      linkedNodes: {},
+    },
+  };
+}
+
 function rootFromCraft(craft) {
   return craft?.ROOT || { nodes: [] };
 }
@@ -426,6 +700,8 @@ function extractSectionsFromCraft(craft) {
       sections.push({ id, type: 'features', ...props });
     } else if (type === 'CtaBlock') {
       sections.push({ id, type: 'cta', ...props });
+    } else if (type === 'CarouselBlock') {
+      sections.push({ id, type: 'carousel', ...props });
     } else if (type === 'FormBlock') {
       sections.push({
         id,
@@ -545,6 +821,21 @@ function legacySectionsToCraft(schema) {
           buttonText_i18n: ensureI18nObject(section.buttonText_i18n || section.buttonText || 'CTA'),
           background: section.background || '#ffffff',
           textColor: section.textColor || '#111827',
+          fontFamily: section.fontFamily || 'Inter, system-ui, sans-serif',
+          fontSize: section.fontSize || undefined,
+          opacity: section.opacity ?? 1,
+          backgroundImageUrl: section.backgroundImageUrl || '',
+          backgroundSize: section.backgroundSize || 'cover',
+          backgroundPosition: section.backgroundPosition || 'center',
+          backgroundRepeat: section.backgroundRepeat || 'no-repeat',
+          imageUrl: section.imageUrl || '',
+          imageMaxHeight: section.imageMaxHeight || 360,
+          imageOpacity: section.imageOpacity ?? 1,
+          imageFit: section.imageFit || 'cover',
+          imageBorderRadius: section.imageBorderRadius || 12,
+          paddingX: section.paddingX || 28,
+          paddingY: section.paddingY || 72,
+          borderRadius: section.borderRadius || 14,
         },
       };
     } else if (section.type === 'features') {
@@ -558,6 +849,21 @@ function legacySectionsToCraft(schema) {
           items: Array.isArray(section.items) ? section.items : [],
           background: section.background || '#ffffff',
           textColor: section.textColor || '#111827',
+          fontFamily: section.fontFamily || 'Inter, system-ui, sans-serif',
+          fontSize: section.fontSize || undefined,
+          opacity: section.opacity ?? 1,
+          backgroundImageUrl: section.backgroundImageUrl || '',
+          backgroundSize: section.backgroundSize || 'cover',
+          backgroundPosition: section.backgroundPosition || 'center',
+          backgroundRepeat: section.backgroundRepeat || 'no-repeat',
+          imageUrl: section.imageUrl || '',
+          imageMaxHeight: section.imageMaxHeight || 360,
+          imageOpacity: section.imageOpacity ?? 1,
+          imageFit: section.imageFit || 'cover',
+          imageBorderRadius: section.imageBorderRadius || 12,
+          paddingX: section.paddingX || 28,
+          paddingY: section.paddingY || 72,
+          borderRadius: section.borderRadius || 14,
         },
       };
     } else if (section.type === 'cta') {
@@ -574,6 +880,50 @@ function legacySectionsToCraft(schema) {
           buttonText_i18n: ensureI18nObject(section.buttonText_i18n || section.buttonText || 'Связаться'),
           background: section.background || '#ffffff',
           textColor: section.textColor || '#111827',
+          fontFamily: section.fontFamily || 'Inter, system-ui, sans-serif',
+          fontSize: section.fontSize || undefined,
+          opacity: section.opacity ?? 1,
+          backgroundImageUrl: section.backgroundImageUrl || '',
+          backgroundSize: section.backgroundSize || 'cover',
+          backgroundPosition: section.backgroundPosition || 'center',
+          backgroundRepeat: section.backgroundRepeat || 'no-repeat',
+          imageUrl: section.imageUrl || '',
+          imageMaxHeight: section.imageMaxHeight || 360,
+          imageOpacity: section.imageOpacity ?? 1,
+          imageFit: section.imageFit || 'cover',
+          imageBorderRadius: section.imageBorderRadius || 12,
+          paddingX: section.paddingX || 28,
+          paddingY: section.paddingY || 72,
+          borderRadius: section.borderRadius || 14,
+        },
+      };
+    } else if (section.type === 'carousel') {
+      draft[id] = {
+        ...base,
+        type: { resolvedName: 'CarouselBlock' },
+        displayName: 'CarouselBlock',
+        props: {
+          title: section.title || 'Carousel',
+          title_i18n: ensureI18nObject(section.title_i18n || section.title || 'Carousel'),
+          images: Array.isArray(section.images) ? section.images : [],
+          background: section.background || '#ffffff',
+          textColor: section.textColor || '#111827',
+          slideHeight: section.slideHeight || 340,
+          imageFit: section.imageFit || 'cover',
+          imageBorderRadius: section.imageBorderRadius || 12,
+          fontFamily: section.fontFamily || 'Inter, system-ui, sans-serif',
+          fontSize: section.fontSize || undefined,
+          opacity: section.opacity ?? 1,
+          backgroundImageUrl: section.backgroundImageUrl || '',
+          backgroundSize: section.backgroundSize || 'cover',
+          backgroundPosition: section.backgroundPosition || 'center',
+          backgroundRepeat: section.backgroundRepeat || 'no-repeat',
+          imageUrl: section.imageUrl || '',
+          imageMaxHeight: section.imageMaxHeight || 360,
+          imageOpacity: section.imageOpacity ?? 1,
+          paddingX: section.paddingX || 28,
+          paddingY: section.paddingY || 72,
+          borderRadius: section.borderRadius || 14,
         },
       };
     } else if (section.type === 'form') {
@@ -592,6 +942,21 @@ function legacySectionsToCraft(schema) {
           textColor: section.textColor || '#111827',
           blockId: section.blockId || section.block_id || `form-${id}`,
           formKey: section.formKey || section.form_key || 'lead_main',
+          fontFamily: section.fontFamily || 'Inter, system-ui, sans-serif',
+          fontSize: section.fontSize || undefined,
+          opacity: section.opacity ?? 1,
+          backgroundImageUrl: section.backgroundImageUrl || '',
+          backgroundSize: section.backgroundSize || 'cover',
+          backgroundPosition: section.backgroundPosition || 'center',
+          backgroundRepeat: section.backgroundRepeat || 'no-repeat',
+          imageUrl: section.imageUrl || '',
+          imageMaxHeight: section.imageMaxHeight || 360,
+          imageOpacity: section.imageOpacity ?? 1,
+          imageFit: section.imageFit || 'cover',
+          imageBorderRadius: section.imageBorderRadius || 12,
+          paddingX: section.paddingX || 28,
+          paddingY: section.paddingY || 72,
+          borderRadius: section.borderRadius || 14,
           fields: Array.isArray(section.fields)
             ? section.fields.map((field) => ({
                 ...field,
@@ -615,6 +980,21 @@ function legacySectionsToCraft(schema) {
           body_i18n: ensureI18nObject(section.body_i18n || section.body || ''),
           background: section.background || '#ffffff',
           textColor: section.textColor || '#111827',
+          fontFamily: section.fontFamily || 'Inter, system-ui, sans-serif',
+          fontSize: section.fontSize || undefined,
+          opacity: section.opacity ?? 1,
+          backgroundImageUrl: section.backgroundImageUrl || '',
+          backgroundSize: section.backgroundSize || 'cover',
+          backgroundPosition: section.backgroundPosition || 'center',
+          backgroundRepeat: section.backgroundRepeat || 'no-repeat',
+          imageUrl: section.imageUrl || '',
+          imageMaxHeight: section.imageMaxHeight || 360,
+          imageOpacity: section.imageOpacity ?? 1,
+          imageFit: section.imageFit || 'cover',
+          imageBorderRadius: section.imageBorderRadius || 12,
+          paddingX: section.paddingX || 28,
+          paddingY: section.paddingY || 72,
+          borderRadius: section.borderRadius || 14,
         },
       };
     }
@@ -735,6 +1115,28 @@ function AddBlockToolbar() {
       return;
     }
 
+    if (type === 'CarouselBlock') {
+      const tree = query
+        .parseReactElement(
+          <CarouselBlock
+            title="Карусель изображений"
+            title_i18n={ensureI18nObject('Карусель изображений')}
+            images={[
+              'https://images.unsplash.com/photo-1460925895917-afdab827c52f?auto=format&fit=crop&w=1400&q=80',
+              'https://images.unsplash.com/photo-1551281044-8b8f3c8e2f6f?auto=format&fit=crop&w=1400&q=80',
+            ]}
+            background="#ffffff"
+            textColor="#111827"
+            slideHeight={340}
+            imageFit="cover"
+            imageBorderRadius={12}
+          />,
+        )
+        .toNodeTree();
+      actions.addNodeTree(tree, 'ROOT');
+      return;
+    }
+
     const id = uid('form');
     const tree = query
       .parseReactElement(
@@ -768,6 +1170,13 @@ function AddBlockToolbar() {
     actions.addNodeTree(tree, 'ROOT');
   };
 
+  const addPromoTemplate = () => {
+    addBlock('HeroBlock');
+    addBlock('FeaturesBlock');
+    addBlock('CtaBlock');
+    addBlock('FormBlock');
+  };
+
   return (
     <Space wrap>
       <Button size="small" onClick={() => addBlock('HeroBlock')}>+ Cover</Button>
@@ -775,6 +1184,22 @@ function AddBlockToolbar() {
       <Button size="small" onClick={() => addBlock('FeaturesBlock')}>+ Cards</Button>
       <Button size="small" onClick={() => addBlock('CtaBlock')}>+ CTA</Button>
       <Button size="small" onClick={() => addBlock('FormBlock')}>+ Form</Button>
+      <Button size="small" onClick={() => addBlock('CarouselBlock')}>+ Carousel</Button>
+      <Button size="small" type="dashed" onClick={addPromoTemplate}>+ Template Promo</Button>
+    </Space>
+  );
+}
+
+function HistoryToolbar() {
+  const { actions, canUndo, canRedo } = useEditor((state) => ({
+    canUndo: state.options.enabled && state.events?.history?.canUndo,
+    canRedo: state.options.enabled && state.events?.history?.canRedo,
+  }));
+
+  return (
+    <Space size="small">
+      <Button size="small" onClick={() => actions.history.undo()} disabled={!canUndo}>Undo</Button>
+      <Button size="small" onClick={() => actions.history.redo()} disabled={!canRedo}>Redo</Button>
     </Space>
   );
 }
@@ -832,8 +1257,16 @@ function NodePropertiesPanel({ lookups, activeLocale }) {
   }
 
   const node = query.node(selectedId).get()?.data;
-  const type = node?.type?.resolvedName;
+  const type = node?.type?.resolvedName || node?.displayName || '';
   const props = node?.props || {};
+  const isCanvasRoot = type === 'CanvasRoot' || selectedId === 'ROOT';
+  const canEditTitle = props.title !== undefined || props.title_i18n !== undefined;
+  const canEditBody = props.body !== undefined || props.body_i18n !== undefined;
+  const canEditSubtitle = props.subtitle !== undefined || props.subtitle_i18n !== undefined;
+  const canEditButton = props.buttonText !== undefined || props.buttonText_i18n !== undefined;
+  const canEditFeatures = Array.isArray(props.items);
+  const canEditCarousel = type === 'CarouselBlock' || Array.isArray(props.images);
+  const canEditForm = Array.isArray(props.fields) || props.blockId !== undefined || props.formKey !== undefined;
 
   const setProp = (key, value) => {
     actions.setProp(selectedId, (draft) => {
@@ -872,9 +1305,20 @@ function NodePropertiesPanel({ lookups, activeLocale }) {
     setProp('fields', next);
   };
 
+  const setCarouselImage = (idx, value) => {
+    const next = Array.isArray(props.images) ? [...props.images] : [];
+    next[idx] = value;
+    setProp('images', next);
+  };
+
+  const removeCarouselImage = (idx) => {
+    const next = (Array.isArray(props.images) ? props.images : []).filter((_, i) => i !== idx);
+    setProp('images', next);
+  };
+
   return (
     <Form layout="vertical">
-      {type === 'CanvasRoot' && (
+      {isCanvasRoot && (
         <>
           <Form.Item label="Page title">
             <Input
@@ -895,10 +1339,57 @@ function NodePropertiesPanel({ lookups, activeLocale }) {
           <Form.Item label="Title color">
             <Input type="color" value={props.titleColor || DEFAULT_THEME.text} onChange={(e) => setProp('titleColor', e.target.value)} style={{ width: 72, padding: 4 }} />
           </Form.Item>
+          <Form.Item label="Background image URL">
+            <Input
+              placeholder="https://..."
+              value={props.backgroundImageUrl || ''}
+              onChange={(e) => setProp('backgroundImageUrl', e.target.value)}
+            />
+          </Form.Item>
+          <Form.Item label="Background size">
+            <Select
+              value={props.backgroundSize || 'cover'}
+              onChange={(value) => setProp('backgroundSize', value)}
+              options={[
+                { value: 'cover', label: 'cover' },
+                { value: 'contain', label: 'contain' },
+                { value: 'auto', label: 'auto' },
+              ]}
+            />
+          </Form.Item>
+          <Form.Item label="Background position">
+            <Select
+              value={props.backgroundPosition || 'center'}
+              onChange={(value) => setProp('backgroundPosition', value)}
+              options={[
+                { value: 'center', label: 'center' },
+                { value: 'top', label: 'top' },
+                { value: 'bottom', label: 'bottom' },
+                { value: 'left', label: 'left' },
+                { value: 'right', label: 'right' },
+                { value: 'top left', label: 'top left' },
+                { value: 'top right', label: 'top right' },
+                { value: 'bottom left', label: 'bottom left' },
+                { value: 'bottom right', label: 'bottom right' },
+              ]}
+            />
+          </Form.Item>
+          <Form.Item label="Background repeat">
+            <Select
+              value={props.backgroundRepeat || 'no-repeat'}
+              onChange={(value) => setProp('backgroundRepeat', value)}
+              options={[
+                { value: 'no-repeat', label: 'no-repeat' },
+                { value: 'repeat', label: 'repeat' },
+                { value: 'repeat-x', label: 'repeat-x' },
+                { value: 'repeat-y', label: 'repeat-y' },
+              ]}
+            />
+          </Form.Item>
         </>
       )}
 
-      {type !== 'CanvasRoot' && (
+      {!isCanvasRoot && (
         <>
           <Form.Item label="Background color">
             <Input type="color" value={props.background || '#ffffff'} onChange={(e) => setProp('background', e.target.value)} style={{ width: 72, padding: 4 }} />
@@ -906,10 +1397,126 @@ function NodePropertiesPanel({ lookups, activeLocale }) {
           <Form.Item label="Text color">
             <Input type="color" value={props.textColor || '#111827'} onChange={(e) => setProp('textColor', e.target.value)} style={{ width: 72, padding: 4 }} />
           </Form.Item>
+          <Form.Item label="Font family">
+            <Select
+              value={props.fontFamily || 'Inter, system-ui, sans-serif'}
+              options={FONT_OPTIONS}
+              onChange={(value) => setProp('fontFamily', value)}
+            />
+          </Form.Item>
+          <Form.Item label="Font size (px)">
+            <InputNumber
+              min={10}
+              max={72}
+              value={props.fontSize || 16}
+              onChange={(value) => setProp('fontSize', Number(value || 16))}
+              style={{ width: '100%' }}
+            />
+          </Form.Item>
+          <Form.Item label="Opacity">
+            <InputNumber
+              min={0}
+              max={1}
+              step={0.05}
+              value={typeof props.opacity === 'number' ? props.opacity : 1}
+              onChange={(value) => setProp('opacity', Number(value ?? 1))}
+              style={{ width: '100%' }}
+            />
+          </Form.Item>
+          <Form.Item label="Padding X (px)">
+            <InputNumber min={0} max={220} value={Number(props.paddingX || 28)} onChange={(value) => setProp('paddingX', Number(value || 0))} style={{ width: '100%' }} />
+          </Form.Item>
+          <Form.Item label="Padding Y (px)">
+            <InputNumber min={0} max={260} value={Number(props.paddingY || 72)} onChange={(value) => setProp('paddingY', Number(value || 0))} style={{ width: '100%' }} />
+          </Form.Item>
+          <Form.Item label="Border radius (px)">
+            <InputNumber min={0} max={80} value={Number(props.borderRadius || 14)} onChange={(value) => setProp('borderRadius', Number(value || 0))} style={{ width: '100%' }} />
+          </Form.Item>
+          <Form.Item label="Background image URL">
+            <Input
+              placeholder="https://..."
+              value={props.backgroundImageUrl || ''}
+              onChange={(e) => setProp('backgroundImageUrl', e.target.value)}
+            />
+          </Form.Item>
+          <Form.Item label="Background size">
+            <Select
+              value={props.backgroundSize || 'cover'}
+              onChange={(value) => setProp('backgroundSize', value)}
+              options={[
+                { value: 'cover', label: 'cover' },
+                { value: 'contain', label: 'contain' },
+                { value: 'auto', label: 'auto' },
+              ]}
+            />
+          </Form.Item>
+          <Form.Item label="Background position">
+            <Select
+              value={props.backgroundPosition || 'center'}
+              onChange={(value) => setProp('backgroundPosition', value)}
+              options={[
+                { value: 'center', label: 'center' },
+                { value: 'top', label: 'top' },
+                { value: 'bottom', label: 'bottom' },
+                { value: 'left', label: 'left' },
+                { value: 'right', label: 'right' },
+                { value: 'top left', label: 'top left' },
+                { value: 'top right', label: 'top right' },
+                { value: 'bottom left', label: 'bottom left' },
+                { value: 'bottom right', label: 'bottom right' },
+              ]}
+            />
+          </Form.Item>
+          <Form.Item label="Background repeat">
+            <Select
+              value={props.backgroundRepeat || 'no-repeat'}
+              onChange={(value) => setProp('backgroundRepeat', value)}
+              options={[
+                { value: 'no-repeat', label: 'no-repeat' },
+                { value: 'repeat', label: 'repeat' },
+                { value: 'repeat-x', label: 'repeat-x' },
+                { value: 'repeat-y', label: 'repeat-y' },
+              ]}
+            />
+          </Form.Item>
+          <Form.Item label="Block image URL">
+            <Input
+              placeholder="https://..."
+              value={props.imageUrl || ''}
+              onChange={(e) => setProp('imageUrl', e.target.value)}
+            />
+          </Form.Item>
+          <Form.Item label="Image fit">
+            <Select
+              value={props.imageFit || 'cover'}
+              onChange={(value) => setProp('imageFit', value)}
+              options={[
+                { value: 'cover', label: 'cover' },
+                { value: 'contain', label: 'contain' },
+                { value: 'fill', label: 'fill' },
+              ]}
+            />
+          </Form.Item>
+          <Form.Item label="Image max height (px)">
+            <InputNumber min={80} max={1200} value={Number(props.imageMaxHeight || 360)} onChange={(value) => setProp('imageMaxHeight', Number(value || 360))} style={{ width: '100%' }} />
+          </Form.Item>
+          <Form.Item label="Image opacity">
+            <InputNumber
+              min={0}
+              max={1}
+              step={0.05}
+              value={typeof props.imageOpacity === 'number' ? props.imageOpacity : 1}
+              onChange={(value) => setProp('imageOpacity', Number(value ?? 1))}
+              style={{ width: '100%' }}
+            />
+          </Form.Item>
+          <Form.Item label="Image border radius (px)">
+            <InputNumber min={0} max={80} value={Number(props.imageBorderRadius || 12)} onChange={(value) => setProp('imageBorderRadius', Number(value || 0))} style={{ width: '100%' }} />
+          </Form.Item>
         </>
       )}
 
-      {(type === 'HeroBlock' || type === 'TextBlock' || type === 'CtaBlock' || type === 'FormBlock' || type === 'FeaturesBlock') && (
+      {canEditTitle && (
         <Form.Item label="Title">
           <Input
             value={textByLocale(props, 'title', activeLocale, props.title || '')}
@@ -918,17 +1525,17 @@ function NodePropertiesPanel({ lookups, activeLocale }) {
         </Form.Item>
       )}
 
-      {(type === 'HeroBlock' || type === 'CtaBlock' || type === 'FormBlock') && (
+      {(canEditSubtitle || canEditBody) && (
         <Form.Item label="Subtitle / body">
           <Input.TextArea
             rows={3}
             value={
-              type === 'CtaBlock'
+              canEditBody && !canEditSubtitle
                 ? textByLocale(props, 'body', activeLocale, props.body || '')
                 : textByLocale(props, 'subtitle', activeLocale, props.subtitle || '')
             }
             onChange={(e) => {
-              if (type === 'CtaBlock') {
+              if (canEditBody && !canEditSubtitle) {
                 setI18nProp('body', e.target.value);
               } else {
                 setI18nProp('subtitle', e.target.value);
@@ -938,7 +1545,7 @@ function NodePropertiesPanel({ lookups, activeLocale }) {
         </Form.Item>
       )}
 
-      {type === 'TextBlock' && (
+      {canEditBody && canEditSubtitle && (
         <Form.Item label="Body">
           <Input.TextArea
             rows={4}
@@ -948,7 +1555,7 @@ function NodePropertiesPanel({ lookups, activeLocale }) {
         </Form.Item>
       )}
 
-      {(type === 'HeroBlock' || type === 'CtaBlock' || type === 'FormBlock') && (
+      {canEditButton && (
         <Form.Item label="Button text">
           <Input
             value={textByLocale(props, 'buttonText', activeLocale, props.buttonText || '')}
@@ -957,7 +1564,7 @@ function NodePropertiesPanel({ lookups, activeLocale }) {
         </Form.Item>
       )}
 
-      {type === 'FeaturesBlock' && (
+      {canEditFeatures && (
         <>
           <Text strong>Feature items</Text>
           <Space direction="vertical" size="small" style={{ width: '100%', marginTop: 8 }}>
@@ -974,7 +1581,37 @@ function NodePropertiesPanel({ lookups, activeLocale }) {
         </>
       )}
 
-      {type === 'FormBlock' && (
+      {canEditCarousel && (
+        <>
+          <Form.Item label="Slide height (px)">
+            <InputNumber
+              min={120}
+              max={1000}
+              value={Number(props.slideHeight || 340)}
+              onChange={(value) => setProp('slideHeight', Number(value || 340))}
+              style={{ width: '100%' }}
+            />
+          </Form.Item>
+          <Text strong>Carousel images</Text>
+          <Space direction="vertical" size="small" style={{ width: '100%', marginTop: 8 }}>
+            {(Array.isArray(props.images) ? props.images : []).map((image, idx) => (
+              <Space key={`carousel-image-${idx}`} align="start" style={{ width: '100%' }}>
+                <Input
+                  value={image}
+                  placeholder="https://..."
+                  onChange={(e) => setCarouselImage(idx, e.target.value)}
+                />
+                <Button danger onClick={() => removeCarouselImage(idx)}>Remove</Button>
+              </Space>
+            ))}
+            <Button onClick={() => setProp('images', [...(Array.isArray(props.images) ? props.images : []), ''])}>
+              + Add image
+            </Button>
+          </Space>
+        </>
+      )}
+
+      {canEditForm && (
         <>
           <Form.Item label="Block ID" style={{ marginTop: 12 }}>
             <Input value={props.blockId || ''} onChange={(e) => setProp('blockId', e.target.value || `form-${selectedId}`)} />
@@ -1088,27 +1725,48 @@ function NodePropertiesPanel({ lookups, activeLocale }) {
   );
 }
 
-function CraftBuilder({ frameData, editorKey, onNodesChange, lookups, activeLocale, previewMode }) {
+function CraftBuilder({ frameData, editorKey, onNodesChange, lookups, activeLocale, previewMode, editorMode, ui }) {
   const canvasWidth = previewMode === 'mobile' ? 390 : previewMode === 'tablet' ? 820 : 1200;
+  const editorEnabled = editorMode === 'edit';
   return (
     <LandingLocaleContext.Provider value={activeLocale}>
       <Editor
-        resolver={{ CanvasRoot, HeroBlock, TextBlock, FeaturesBlock, CtaBlock, FormBlock }}
+        enabled={editorEnabled}
+        resolver={{ CanvasRoot, HeroBlock, TextBlock, FeaturesBlock, CtaBlock, FormBlock, CarouselBlock }}
         onNodesChange={(query) => onNodesChange(query.serialize())}
       >
         <Row gutter={[12, 12]}>
-          <Col xs={24} xl={6}>
-            <Card title="Блоки" size="small">
-              <Space direction="vertical" size="small" style={{ width: '100%' }}>
-                <AddBlockToolbar />
-                <LayersPanel />
-              </Space>
-            </Card>
-          </Col>
+          {editorEnabled && (
+            <Col xs={24} xl={6}>
+              <Card title="Блоки" size="small" style={ui.cardStyle} bodyStyle={ui.cardBody}>
+                <Space direction="vertical" size="small" style={{ width: '100%' }}>
+                  <AddBlockToolbar />
+                  <HistoryToolbar />
+                  <LayersPanel />
+                </Space>
+              </Card>
+            </Col>
+          )}
 
-          <Col xs={24} xl={12}>
-            <Card title={`Canvas (${activeLocale.toUpperCase()})`} size="small" bodyStyle={{ background: '#f4f4f5' }}>
-              <div style={{ width: canvasWidth, maxWidth: '100%', margin: '0 auto', boxShadow: '0 8px 28px rgba(0,0,0,0.09)' }}>
+          <Col xs={24} xl={editorEnabled ? 12 : 24}>
+            <Card
+              title={`Canvas (${activeLocale.toUpperCase()})`}
+              size="small"
+              style={ui.cardStyle}
+              bodyStyle={{ ...ui.cardBody, background: ui.canvasPanelBg }}
+            >
+              <div
+                style={{
+                  width: canvasWidth,
+                  maxWidth: '100%',
+                  margin: '0 auto',
+                  borderRadius: 20,
+                  padding: 10,
+                  border: ui.canvasShellBorder,
+                  boxShadow: ui.canvasShellShadow,
+                  background: ui.canvasShellBg,
+                }}
+              >
                 <Frame key={editorKey} data={frameData}>
                   <Element is={CanvasRoot} canvas />
                 </Frame>
@@ -1116,11 +1774,13 @@ function CraftBuilder({ frameData, editorKey, onNodesChange, lookups, activeLoca
             </Card>
           </Col>
 
-          <Col xs={24} xl={6}>
-            <Card title={`Свойства (${activeLocale.toUpperCase()})`} size="small">
-              <NodePropertiesPanel lookups={lookups} activeLocale={activeLocale} />
-            </Card>
-          </Col>
+          {editorEnabled && (
+            <Col xs={24} xl={6}>
+              <Card title={`Свойства (${activeLocale.toUpperCase()})`} size="small" style={ui.cardStyle} bodyStyle={ui.cardBody}>
+                <NodePropertiesPanel lookups={lookups} activeLocale={activeLocale} />
+              </Card>
+            </Col>
+          )}
         </Row>
       </Editor>
     </LandingLocaleContext.Provider>
@@ -1129,9 +1789,12 @@ function CraftBuilder({ frameData, editorKey, onNodesChange, lookups, activeLoca
 
 export default function LandingBuilderPage() {
   const { message } = App.useApp();
+  const { theme } = useTheme();
+  const isDark = theme === 'dark';
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
   const [publishing, setPublishing] = useState(false);
+  const [saveAndPublishing, setSaveAndPublishing] = useState(false);
   const [landings, setLandings] = useState([]);
   const [lookups, setLookups] = useState({ stages: [], lead_sources: [], users: [], departments: [] });
   const [selectedId, setSelectedId] = useState(null);
@@ -1139,14 +1802,21 @@ export default function LandingBuilderPage() {
   const [existingBindings, setExistingBindings] = useState([]);
   const [frameData, setFrameData] = useState(JSON.stringify(defaultCraftObject()));
   const [craftSerialized, setCraftSerialized] = useState(JSON.stringify(defaultCraftObject()));
+  const [savedSerialized, setSavedSerialized] = useState(JSON.stringify(defaultCraftObject()));
   const [editorKey, setEditorKey] = useState(0);
   const [activeLocale, setActiveLocale] = useState('ru');
   const [previewMode, setPreviewMode] = useState('desktop');
+  const [editorMode, setEditorMode] = useState('edit');
   const [revisions, setRevisions] = useState([]);
   const [previewToken, setPreviewToken] = useState('');
+  const [draftVersion, setDraftVersion] = useState(1);
   const [report, setReport] = useState(null);
   const [reportLoading, setReportLoading] = useState(false);
   const [shareCampaign, setShareCampaign] = useState('');
+  const [autosaveEnabled, setAutosaveEnabled] = useState(true);
+  const [autosaving, setAutosaving] = useState(false);
+  const [lastAutosavedAt, setLastAutosavedAt] = useState(null);
+  const [liveValidationErrors, setLiveValidationErrors] = useState([]);
   const [reportFilters, setReportFilters] = useState({
     date_from: null,
     date_to: null,
@@ -1154,11 +1824,40 @@ export default function LandingBuilderPage() {
     utm_campaign: '',
   });
   const [createForm] = Form.useForm();
+  const blurAutosaveAtRef = useRef(0);
+  const ui = useMemo(
+    () => ({
+      pageBg: isDark
+        ? 'linear-gradient(180deg, #0b1220 0%, #0e1628 35%, #111827 100%)'
+        : 'linear-gradient(180deg, #f3f6ff 0%, #f8fbff 25%, #f9fafb 60%, #f5f7fb 100%)',
+      cardStyle: {
+        borderRadius: 16,
+        border: isDark ? '1px solid #253047' : '1px solid #e5e7eb',
+        boxShadow: isDark ? '0 10px 30px rgba(0,0,0,0.35)' : '0 8px 24px rgba(15, 23, 42, 0.06)',
+        overflow: 'hidden',
+        background: isDark ? '#111a2c' : '#ffffff',
+      },
+      cardBody: { padding: 18 },
+      heroBg: isDark
+        ? 'linear-gradient(120deg, #0b1220 0%, #12243f 55%, #1d4ed8 100%)'
+        : 'linear-gradient(120deg, #0f172a 0%, #1e3a8a 55%, #2563eb 100%)',
+      stickyBg: isDark ? 'rgba(17,26,44,0.92)' : 'rgba(255,255,255,0.92)',
+      canvasPanelBg: isDark ? 'linear-gradient(180deg, #0f172a 0%, #111827 100%)' : 'linear-gradient(180deg, #f8fbff 0%, #f4f6fb 100%)',
+      canvasShellBg: isDark ? '#0b1220' : '#ffffff',
+      canvasShellBorder: isDark ? '1px solid #2a3550' : '1px solid #dbe5f4',
+      canvasShellShadow: isDark ? '0 14px 28px rgba(0,0,0,0.36)' : '0 14px 28px rgba(15,23,42,0.08)',
+      titleColor: '#ffffff',
+      subtitleColor: isDark ? 'rgba(226,232,240,0.88)' : 'rgba(255,255,255,0.85)',
+      softBorder: isDark ? '#2a3550' : '#dbe5f4',
+    }),
+    [isDark],
+  );
 
   const selectedLandingItem = useMemo(
     () => landings.find((item) => item.id === selectedId) || null,
     [landings, selectedId],
   );
+  const isDirty = Boolean(selectedId) && craftSerialized !== savedSerialized;
 
   const loadLandings = async () => {
     setLoading(true);
@@ -1204,6 +1903,8 @@ export default function LandingBuilderPage() {
       setSelectedLanding(landing);
       setFrameData(serialized);
       setCraftSerialized(serialized);
+      setSavedSerialized(serialized);
+      setDraftVersion(Number(draft?.draft_version || 1));
       setEditorKey((prev) => prev + 1);
       setExistingBindings(Array.isArray(bindings) ? bindings : []);
       setRevisions(Array.isArray(revisionsData) ? revisionsData : []);
@@ -1225,37 +1926,85 @@ export default function LandingBuilderPage() {
     }
   }, [selectedId]);
 
-  const handleCreateLanding = async () => {
-    try {
-      const values = await createForm.validateFields();
-      const payload = {
-        title: values.title,
-        slug: values.slug,
-        is_active: values.is_active !== false,
-        department: values.department,
-        lead_source: values.lead_source,
-      };
-      await landingsApi.create(payload);
-      createForm.resetFields();
-      message.success('Лендинг создан');
-      await loadLandings();
-    } catch (err) {
-      if (err?.errorFields) return;
-      message.error(err?.details?.detail || 'Не удалось создать лендинг');
-    }
-  };
+  useEffect(() => {
+    const beforeUnloadHandler = (event) => {
+      if (!isDirty) return;
+      event.preventDefault();
+      event.returnValue = '';
+    };
+    window.addEventListener('beforeunload', beforeUnloadHandler);
+    return () => window.removeEventListener('beforeunload', beforeUnloadHandler);
+  }, [isDirty]);
 
-  const handleSaveDraft = async () => {
-    if (!selectedId) return;
-
+  useEffect(() => {
     const craftObj = safeParseJson(craftSerialized, null);
     if (!craftObj || !craftObj.ROOT) {
-      message.error('Не удалось прочитать структуру craft.js');
+      setLiveValidationErrors(['Повреждённая структура редактора']);
       return;
+    }
+    const sections = extractSectionsFromCraft(craftObj);
+    const errors = [];
+    const formError = validateFormSections(sections);
+    if (formError) errors.push(formError);
+    if ((craftObj?.ROOT?.props?.title || '').trim() === '') {
+      errors.push('Заполните заголовок страницы (Page title).');
+    }
+    setLiveValidationErrors(errors);
+  }, [craftSerialized]);
+
+  const validateFormSections = (sections) => {
+    const formSections = sections.filter((section) => section.type === 'form');
+    const uniqueBindingKeys = new Set();
+
+    for (let i = 0; i < formSections.length; i += 1) {
+      const section = formSections[i];
+      const blockId = String(section.blockId || section.block_id || '').trim();
+      const formKey = String(section.formKey || section.form_key || '').trim();
+      const sectionTitle = section?.title || `Форма #${i + 1}`;
+
+      if (!blockId || !formKey) {
+        return `У блока "${sectionTitle}" заполните Block ID и Form Key.`;
+      }
+
+      const key = bindingKey(blockId, formKey);
+      if (uniqueBindingKeys.has(key)) {
+        return `Дубликат form binding: ${blockId} / ${formKey}. Сделайте значения уникальными.`;
+      }
+      uniqueBindingKeys.add(key);
+
+      const fields = Array.isArray(section.fields) ? section.fields : [];
+      if (!fields.length) {
+        return `У блока "${sectionTitle}" должна быть минимум 1 форма-поле.`;
+      }
+      const fieldKeys = new Set();
+      for (let j = 0; j < fields.length; j += 1) {
+        const field = fields[j];
+        const fieldKey = String(field?.key || '').trim();
+        if (!fieldKey) {
+          return `У блока "${sectionTitle}" поле #${j + 1} не имеет key.`;
+        }
+        if (fieldKeys.has(fieldKey)) {
+          return `У блока "${sectionTitle}" повторяется key поля: ${fieldKey}.`;
+        }
+        fieldKeys.add(fieldKey);
+      }
+    }
+
+    return null;
+  };
+
+  const buildDraftAndBindingsPayload = () => {
+    const craftObj = safeParseJson(craftSerialized, null);
+    if (!craftObj || !craftObj.ROOT) {
+      return { error: 'Не удалось прочитать структуру craft.js' };
     }
 
     const rootProps = craftObj.ROOT.props || {};
     const sections = extractSectionsFromCraft(craftObj);
+    const validationError = validateFormSections(sections);
+    if (validationError) {
+      return { error: validationError };
+    }
 
     const schema = {
       schema_version: 1,
@@ -1279,8 +2028,8 @@ export default function LandingBuilderPage() {
     const bindingsPayload = sections
       .filter((section) => section.type === 'form')
       .map((section) => ({
-        block_id: section.blockId || section.block_id,
-        form_key: section.formKey || section.form_key,
+        block_id: String(section.blockId || section.block_id || '').trim(),
+        form_key: String(section.formKey || section.form_key || '').trim(),
         lead_source: section.lead_source || selectedLanding?.lead_source || null,
         stage_on_deal_create: section.stage_on_deal_create || null,
         create_deal: Boolean(section.create_deal),
@@ -1292,8 +2041,6 @@ export default function LandingBuilderPage() {
         active: section.active !== false,
       }));
 
-    // Keep backend bindings in sync with the canvas:
-    // if a form block was removed from the visual editor, explicitly deactivate its binding.
     const currentKeys = new Set(
       bindingsPayload.map((item) => bindingKey(item.block_id, item.form_key)),
     );
@@ -1313,25 +2060,171 @@ export default function LandingBuilderPage() {
         active: false,
       }));
 
-    const mergedBindingsPayload = [...bindingsPayload, ...removedBindings];
+    return {
+      schema,
+      bindings: [...bindingsPayload, ...removedBindings],
+    };
+  };
 
-    setSaving(true);
+  const handleCreateLanding = async () => {
     try {
-      await landingsApi.putDraft(selectedId, schema);
-      await landingsApi.putBindings(selectedId, mergedBindingsPayload);
-      message.success('Визуальный лендинг и формы сохранены');
-      await loadLandingDetails(selectedId);
+      const values = await createForm.validateFields();
+      const slug = toSlug(values.slug || values.title);
+      if (!slug) {
+        message.error('Укажите валидный slug');
+        return;
+      }
+      const payload = {
+        title: values.title,
+        slug,
+        is_active: values.is_active !== false,
+        department: values.department,
+        lead_source: values.lead_source,
+      };
+      const created = await landingsApi.create(payload);
+      createForm.resetFields();
+      message.success('Лендинг создан');
+      await loadLandings();
+      if (created?.id) {
+        setSelectedId(created.id);
+      }
     } catch (err) {
-      message.error(err?.details?.detail || err.message || 'Ошибка сохранения');
-    } finally {
-      setSaving(false);
+      if (err?.errorFields) return;
+      message.error(err?.details?.detail || 'Не удалось создать лендинг');
     }
   };
+
+  const buildDraftPayloadFromCraft = (craftObj, landingValues = {}) => {
+    const rootProps = craftObj?.ROOT?.props || {};
+    const sections = extractSectionsFromCraft(craftObj);
+    const schema = {
+      schema_version: 1,
+      page: {
+        meta: {
+          title: rootProps.title || landingValues.title || 'Landing Page',
+          title_i18n: ensureI18nObject(rootProps.title_i18n || rootProps.title || landingValues.title || 'Landing Page'),
+          description: rootProps.description || '',
+          description_i18n: ensureI18nObject(rootProps.description_i18n || rootProps.description || ''),
+        },
+        theme: {
+          ...DEFAULT_THEME,
+          background: rootProps.background || DEFAULT_THEME.background,
+          text: rootProps.titleColor || DEFAULT_THEME.text,
+        },
+        sections,
+      },
+      craft: craftObj,
+    };
+
+    const bindings = sections
+      .filter((section) => section.type === 'form')
+      .map((section) => ({
+        block_id: String(section.blockId || section.block_id || '').trim(),
+        form_key: String(section.formKey || section.form_key || '').trim(),
+        lead_source: section.lead_source || landingValues.lead_source || null,
+        stage_on_deal_create: section.stage_on_deal_create || null,
+        create_deal: Boolean(section.create_deal),
+        owner_strategy: section.owner_strategy || 'inherit',
+        fixed_owner: section.fixed_owner || null,
+        assignment_queue: section.assignment_queue || null,
+        sla_minutes: Number(section.sla_minutes || 15),
+        dedup_window_minutes: Number(section.dedup_window_minutes || 120),
+        active: section.active !== false,
+      }));
+
+    return { schema, bindings };
+  };
+
+  const handleCreateCrmSalesLanding = async () => {
+    try {
+      const suffix = Date.now().toString().slice(-6);
+      const payload = {
+        title: 'Enterprise CRM - Продажи и автоматизация',
+        slug: `enterprise-crm-sales-${suffix}`,
+        is_active: true,
+        department: null,
+        lead_source: null,
+      };
+      const created = await landingsApi.create(payload);
+      const craftObj = defaultCrmSalesCraftObject();
+      const { schema, bindings } = buildDraftPayloadFromCraft(craftObj, payload);
+
+      await landingsApi.putDraft(
+        created.id,
+        schema,
+        { headers: { 'X-Draft-Version': '1' } },
+      );
+      if (bindings.length > 0) {
+        await landingsApi.putBindings(created.id, bindings);
+      }
+
+      message.success('Шаблонный лендинг для продажи CRM создан');
+      await loadLandings();
+      setSelectedId(created.id);
+    } catch (err) {
+      message.error(err?.details?.detail || 'Не удалось создать шаблонный лендинг');
+    }
+  };
+
+  const saveDraft = async ({ silentSuccess = false, reloadAfterSave = true, background = false } = {}) => {
+    if (!selectedId) return;
+
+    const serializedSnapshot = craftSerialized;
+    const { schema, bindings, error } = buildDraftAndBindingsPayload();
+    if (error) {
+      message.error(error);
+      return false;
+    }
+
+    if (background) {
+      setAutosaving(true);
+    } else {
+      setSaving(true);
+    }
+    try {
+      const draftResponse = await landingsApi.putDraft(
+        selectedId,
+        schema,
+        { headers: { 'X-Draft-Version': String(draftVersion) } },
+      );
+      await landingsApi.putBindings(selectedId, bindings);
+      setDraftVersion(Number(draftResponse?.draft_version || draftVersion + 1));
+      if (!silentSuccess) {
+        message.success('Визуальный лендинг и формы сохранены');
+      }
+      setSavedSerialized(serializedSnapshot);
+      setExistingBindings(bindings);
+      if (reloadAfterSave) {
+        await loadLandingDetails(selectedId);
+      }
+      return true;
+    } catch (err) {
+      if (err?.status === 409 || err?.details?.code === 'draft_conflict') {
+        message.error('Конфликт черновика: кто-то уже обновил этот лендинг. Загружаю актуальную версию.');
+        await loadLandingDetails(selectedId);
+        return false;
+      }
+      message.error(err?.details?.detail || err.message || 'Ошибка сохранения');
+      return false;
+    } finally {
+      if (background) {
+        setAutosaving(false);
+      } else {
+        setSaving(false);
+      }
+    }
+  };
+
+  const handleSaveDraft = async () => saveDraft();
 
   const handlePublish = async () => {
     if (!selectedId) return;
     setPublishing(true);
     try {
+      if (isDirty) {
+        const saved = await saveDraft({ silentSuccess: true, reloadAfterSave: false });
+        if (!saved) return;
+      }
       await landingsApi.publish(selectedId);
       message.success('Лендинг опубликован');
       await loadLandingDetails(selectedId);
@@ -1339,6 +2232,77 @@ export default function LandingBuilderPage() {
       message.error(err?.details?.detail || 'Не удалось опубликовать лендинг');
     } finally {
       setPublishing(false);
+    }
+  };
+
+  const handleSelectLanding = (nextId) => {
+    if (nextId === selectedId) return;
+    if (isDirty && !window.confirm('Есть несохранённые изменения. Переключиться без сохранения?')) {
+      return;
+    }
+    setSelectedId(nextId);
+  };
+
+  useEffect(() => {
+    if (!autosaveEnabled || !selectedId || !isDirty || saving || publishing || autosaving || saveAndPublishing) return;
+    const timer = setTimeout(async () => {
+      const ok = await saveDraft({ silentSuccess: true, reloadAfterSave: false, background: true });
+      if (ok) {
+        setLastAutosavedAt(new Date());
+      }
+    }, 25000);
+
+    return () => clearTimeout(timer);
+  }, [autosaveEnabled, selectedId, isDirty, saving, publishing, autosaving, saveAndPublishing, craftSerialized]);
+
+  const handleCopyUrl = async (value, successText = 'Ссылка скопирована') => {
+    if (!value) return;
+    try {
+      if (navigator?.clipboard?.writeText) {
+        await navigator.clipboard.writeText(value);
+      } else {
+        const textarea = document.createElement('textarea');
+        textarea.value = value;
+        document.body.appendChild(textarea);
+        textarea.select();
+        document.execCommand('copy');
+        document.body.removeChild(textarea);
+      }
+      message.success(successText);
+    } catch {
+      message.error('Не удалось скопировать ссылку');
+    }
+  };
+
+  const openUrl = (value) => {
+    if (!value) return;
+    window.open(value, '_blank', 'noopener,noreferrer');
+  };
+
+  const handleEditorBlurAutosave = async () => {
+    if (!autosaveEnabled || !selectedId || !isDirty || saving || publishing || autosaving || saveAndPublishing) return;
+    const now = Date.now();
+    if (now - blurAutosaveAtRef.current < 3000) return;
+    blurAutosaveAtRef.current = now;
+    const ok = await saveDraft({ silentSuccess: true, reloadAfterSave: false, background: true });
+    if (ok) {
+      setLastAutosavedAt(new Date());
+    }
+  };
+
+  const handleSaveAndPublish = async () => {
+    if (!selectedId) return;
+    setSaveAndPublishing(true);
+    try {
+      const saved = await saveDraft({ silentSuccess: true, reloadAfterSave: false });
+      if (!saved) return;
+      await landingsApi.publish(selectedId);
+      message.success('Лендинг сохранён и опубликован');
+      await loadLandingDetails(selectedId);
+    } catch (err) {
+      message.error(err?.details?.detail || 'Не удалось сохранить и опубликовать лендинг');
+    } finally {
+      setSaveAndPublishing(false);
     }
   };
 
@@ -1554,10 +2518,11 @@ export default function LandingBuilderPage() {
   };
 
   const previewUrl = selectedLandingItem
-    ? `${window.location.origin}/api/public/landings/${selectedLandingItem.slug}/preview/?token=${previewToken}`
+    && previewToken
+    ? `${window.location.origin}/#/public-landing/${selectedLandingItem.slug}/preview/${encodeURIComponent(previewToken)}`
     : '';
   const publicUrl = selectedLandingItem
-    ? `${window.location.origin}/api/public/landings/${selectedLandingItem.slug}/`
+    ? `${window.location.origin}/#/public-landing/${selectedLandingItem.slug}`
     : '';
   const shareUrl = selectedLandingItem
     ? `${publicUrl}?via=share&utm_source=crm_landing_builder&utm_medium=copy_link${shareCampaign.trim() ? `&utm_campaign=${encodeURIComponent(shareCampaign.trim())}` : ''}`
@@ -1598,18 +2563,33 @@ export default function LandingBuilderPage() {
   };
 
   return (
-    <div style={{ padding: 24 }}>
+    <div style={{ padding: 24, background: ui.pageBg, minHeight: '100vh' }}>
       <Space direction="vertical" size="large" style={{ width: '100%' }}>
-        <Title level={3} style={{ margin: 0 }}>
-          Landing Builder
-        </Title>
+        <Card bordered={false} style={{ ...ui.cardStyle, background: ui.heroBg }}>
+          <Space direction="vertical" size={6} style={{ width: '100%' }}>
+            <Title level={3} style={{ margin: 0, color: ui.titleColor }}>
+              Landing Builder
+            </Title>
+            <Text style={{ color: ui.subtitleColor }}>
+              Визуальный конструктор посадочных страниц с CRM-формами, публикацией и аналитикой воронки.
+            </Text>
+          </Space>
+        </Card>
 
-        <Card title="Новый лендинг">
+        <Card title="Новый лендинг" style={ui.cardStyle} bodyStyle={ui.cardBody}>
           <Form layout="vertical" form={createForm}>
-            <Row gutter={12}>
+            <Row gutter={12} style={{ position: 'sticky', top: 8, zIndex: 20, background: ui.stickyBg, backdropFilter: 'blur(6px)', padding: '8px 0', marginBottom: 6 }}>
               <Col xs={24} md={6}>
                 <Form.Item name="title" label="Title" rules={[{ required: true }]}>
-                  <Input placeholder="Summer Campaign" />
+                  <Input
+                    placeholder="Summer Campaign"
+                    onBlur={(event) => {
+                      const currentSlug = createForm.getFieldValue('slug');
+                      if (!String(currentSlug || '').trim()) {
+                        createForm.setFieldValue('slug', toSlug(event.target.value));
+                      }
+                    }}
+                  />
                 </Form.Item>
               </Col>
               <Col xs={24} md={5}>
@@ -1633,11 +2613,23 @@ export default function LandingBuilderPage() {
                 </Form.Item>
               </Col>
             </Row>
-            <Button type="primary" onClick={handleCreateLanding}>Создать</Button>
+            <Space>
+              <Button type="primary" onClick={handleCreateLanding}>Создать</Button>
+              <Button onClick={handleCreateCrmSalesLanding}>Создать шаблон CRM Sales</Button>
+            </Space>
           </Form>
         </Card>
 
-        <Card title="Визуальный редактор (Tilda-style)">
+        <Card
+          title="Визуальный редактор"
+          style={ui.cardStyle}
+          bodyStyle={ui.cardBody}
+          onBlurCapture={(event) => {
+            const nextFocused = event.relatedTarget;
+            if (nextFocused && event.currentTarget.contains(nextFocused)) return;
+            handleEditorBlurAutosave();
+          }}
+        >
           <Space direction="vertical" style={{ width: '100%' }} size="middle">
             <Row gutter={12}>
               <Col xs={24} md={8}>
@@ -1646,7 +2638,7 @@ export default function LandingBuilderPage() {
                   placeholder="Выберите лендинг"
                   loading={loading}
                   value={selectedId}
-                  onChange={setSelectedId}
+                  onChange={handleSelectLanding}
                   options={landings.map((l) => ({ value: l.id, label: `${l.title} (${l.slug})` }))}
                 />
               </Col>
@@ -1657,7 +2649,7 @@ export default function LandingBuilderPage() {
                 </Space>
               </Col>
               <Col xs={24} md={8}>
-                <Space>
+                <Space wrap>
                   <Select
                     value={activeLocale}
                     style={{ width: 110 }}
@@ -1674,22 +2666,72 @@ export default function LandingBuilderPage() {
                       { value: 'mobile', label: 'Mobile' },
                     ]}
                   />
-                  <Button onClick={handleSaveDraft} loading={saving} disabled={!selectedId}>Сохранить</Button>
-                  <Button type="primary" onClick={handlePublish} loading={publishing} disabled={!selectedId}>Publish</Button>
+                  <Segmented
+                    value={editorMode}
+                    onChange={setEditorMode}
+                    options={[
+                      { label: 'Edit', value: 'edit' },
+                      { label: 'Preview', value: 'preview' },
+                    ]}
+                  />
+                  <Button onClick={handleSaveDraft} loading={saving} disabled={!selectedId || saveAndPublishing}>Сохранить</Button>
+                  <Button onClick={handlePublish} loading={publishing} disabled={!selectedId || saveAndPublishing}>Publish</Button>
+                  <Button type="primary" onClick={handleSaveAndPublish} loading={saveAndPublishing} disabled={!selectedId || saving || publishing}>
+                    Save & Publish
+                  </Button>
+                  <Space size={4}>
+                    <Text type="secondary" style={{ fontSize: 12 }}>Autosave</Text>
+                    <Switch size="small" checked={autosaveEnabled} onChange={setAutosaveEnabled} disabled={!selectedId} />
+                  </Space>
+                  <Tag color={isDirty ? 'orange' : 'green'}>
+                    {isDirty ? 'Есть несохранённые изменения' : 'Все изменения сохранены'}
+                  </Tag>
+                  {autosaving && <Tag color="processing">Autosaving...</Tag>}
+                  {lastAutosavedAt && (
+                    <Text type="secondary" style={{ fontSize: 12 }}>
+                      Автосейв: {lastAutosavedAt.toLocaleTimeString()}
+                    </Text>
+                  )}
                 </Space>
               </Col>
             </Row>
+            {liveValidationErrors.length > 0 && (
+              <Alert
+                type="warning"
+                showIcon
+                message="Проблемы в контенте"
+                description={(
+                  <ul style={{ margin: 0, paddingLeft: 18 }}>
+                    {liveValidationErrors.map((item, idx) => <li key={`ve-${idx}`}>{item}</li>)}
+                  </ul>
+                )}
+              />
+            )}
 
             {selectedLandingItem && (
               <Alert
                 type="info"
                 showIcon
-                message={`Public: ${publicUrl}`}
-                description={`Preview: ${previewUrl}`}
+                message="Ссылки лендинга"
+                description={(
+                  <Space direction="vertical" size="small" style={{ width: '100%' }}>
+                    <Space.Compact style={{ width: '100%' }}>
+                      <Input value={publicUrl} readOnly />
+                      <Button onClick={() => openUrl(publicUrl)}>Open</Button>
+                      <Button onClick={() => handleCopyUrl(publicUrl, 'Public ссылка скопирована')}>Copy</Button>
+                    </Space.Compact>
+                    <Space.Compact style={{ width: '100%' }}>
+                      <Input value={previewUrl} readOnly />
+                      <Button onClick={() => openUrl(previewUrl)}>Open preview</Button>
+                      <Button onClick={() => handleCopyUrl(previewUrl, 'Preview ссылка скопирована')}>Copy</Button>
+                    </Space.Compact>
+                  </Space>
+                )}
+                style={{ borderRadius: 12, borderColor: ui.softBorder }}
               />
             )}
             {selectedLandingItem && (
-              <Card size="small" title="Share link">
+              <Card size="small" title="Share link" style={{ borderRadius: 12, borderColor: ui.softBorder }}>
                 <Space direction="vertical" size="small" style={{ width: '100%' }}>
                   <Space wrap>
                     <Input
@@ -1714,11 +2756,13 @@ export default function LandingBuilderPage() {
               lookups={lookups}
               activeLocale={activeLocale}
               previewMode={previewMode}
+              editorMode={editorMode}
+              ui={ui}
             />
           </Space>
         </Card>
 
-        <Card title="Revisions">
+        <Card title="Revisions" style={ui.cardStyle} bodyStyle={ui.cardBody}>
           <Table
             rowKey="id"
             size="small"
@@ -1736,17 +2780,24 @@ export default function LandingBuilderPage() {
                   <Button
                     size="small"
                     disabled={!selectedId}
-                    onClick={async () => {
-                      try {
-                        await landingsApi.rollback(selectedId, record.id);
-                        message.success('Rollback выполнен');
-                        await loadLandingDetails(selectedId);
-                      } catch (err) {
-                        message.error(err?.details?.detail || 'Rollback failed');
-                      }
-                    }}
                   >
-                    Rollback
+                    <Popconfirm
+                      title="Откатить версию?"
+                      description={`Откат к ревизии #${record.id}. Текущий draft будет заменён.`}
+                      okText="Откатить"
+                      cancelText="Отмена"
+                      onConfirm={async () => {
+                        try {
+                          await landingsApi.rollback(selectedId, record.id);
+                          message.success('Rollback выполнен');
+                          await loadLandingDetails(selectedId);
+                        } catch (err) {
+                          message.error(err?.details?.detail || 'Rollback failed');
+                        }
+                      }}
+                    >
+                      <span>Rollback</span>
+                    </Popconfirm>
                   </Button>
                 ),
               },
@@ -1754,7 +2805,7 @@ export default function LandingBuilderPage() {
           />
         </Card>
 
-        <Card title="Funnel Filters">
+        <Card title="Funnel Filters" style={ui.cardStyle} bodyStyle={ui.cardBody}>
           <Row gutter={12}>
             <Col xs={24} md={8}>
               <Space>
@@ -1797,7 +2848,7 @@ export default function LandingBuilderPage() {
         </Card>
 
         {report && (
-          <Card title="Funnel Report">
+          <Card title="Funnel Report" style={ui.cardStyle} bodyStyle={ui.cardBody}>
             <Row gutter={12}>
               <Col xs={12} md={6}><Statistic title="Views" value={report?.metrics?.landing_view || 0} /></Col>
               <Col xs={12} md={6}><Statistic title="Form start" value={report?.metrics?.form_start || 0} /></Col>

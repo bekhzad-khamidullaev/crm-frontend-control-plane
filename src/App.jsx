@@ -79,6 +79,10 @@ const ProfilePage = lazy(() => import('./pages/profile.jsx'));
 const SettingsPage = lazy(() => import('./pages/settings.jsx'));
 const IntegrationsPage = lazy(() => import('./pages/integrations.jsx'));
 const LandingBuilderPage = lazy(() => import('./pages/landing-builder.jsx'));
+const PublicLandingPage = lazy(() => import('./pages/public-landing.jsx'));
+const CrmSalesLandingPage = lazy(() => import('./pages/crm-sales-landing.jsx'));
+
+const PUBLIC_ROUTE_NAMES = new Set(['landing-public', 'landing-preview', 'crm-landing']);
 
 // Lazy load sub-modules
 const PaymentsList = lazy(() =>
@@ -261,7 +265,7 @@ function App() {
       }
     } else {
       // Not authenticated, redirect to login if not already there
-      if (route.name !== 'login') {
+      if (route.name !== 'login' && !PUBLIC_ROUTE_NAMES.has(route.name)) {
         navigate('/login');
       }
     }
@@ -274,7 +278,7 @@ function App() {
       const authenticated = isAuthenticated();
 
       // If trying to access protected route without authentication
-      if (newRoute.name !== 'login' && !authenticated) {
+      if (newRoute.name !== 'login' && !PUBLIC_ROUTE_NAMES.has(newRoute.name) && !authenticated) {
         console.warn('Unauthorized access attempt, redirecting to login');
         navigate('/login');
         return;
@@ -311,6 +315,7 @@ function App() {
 
   useEffect(() => {
     if (!isAuthenticated()) return;
+    if (PUBLIC_ROUTE_NAMES.has(route.name)) return;
     if (route.name === 'login' || route.name === 'forbidden' || route.name === 'not-found') return;
     if (!canAccessRoute(route.name)) {
       navigate('/forbidden');
@@ -524,7 +529,7 @@ function App() {
         </div>
       );
     }
-    if (!canAccessRoute(route.name)) {
+    if (!PUBLIC_ROUTE_NAMES.has(route.name) && !canAccessRoute(route.name)) {
       return null;
     }
 
@@ -656,13 +661,20 @@ function App() {
         return <IntegrationsPage />;
       case 'landing-builder':
         return <LandingBuilderPage />;
+      case 'landing-public':
+      case 'landing-preview':
+        return <PublicLandingPage />;
+      case 'crm-landing':
+        return <CrmSalesLandingPage />;
       default:
         return null;
     }
   };
 
-  // Show login page without layout if not authenticated or on login route
-  if (!isAuthenticated() || route.name === 'login') {
+  const isPublicRoute = PUBLIC_ROUTE_NAMES.has(route.name);
+
+  // Show login page without layout when protected route is opened by anonymous user.
+  if ((!isAuthenticated() && !isPublicRoute) || route.name === 'login') {
     return (
       <LoginPage
         onLogin={(userData) => {
@@ -671,6 +683,22 @@ function App() {
           navigate('/dashboard');
         }}
       />
+    );
+  }
+
+  if (isPublicRoute) {
+    return (
+      <Suspense
+        fallback={
+          <div style={{ padding: 64, display: 'flex', justifyContent: 'center' }}>
+            <div style={{ width: '100%', maxWidth: 600 }}>
+              <Skeleton active paragraph={{ rows: 4 }} />
+            </div>
+          </div>
+        }
+      >
+        {renderContent()}
+      </Suspense>
     );
   }
 

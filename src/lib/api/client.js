@@ -422,7 +422,7 @@ export const tasksApi = { ...crudResource('/api/tasks/') };
 export const landingsApi = {
   ...crudResource('/api/landings/'),
   getDraft: (id) => api.get(`/api/landings/${id}/draft/`),
-  putDraft: (id, payload) => api.put(`/api/landings/${id}/draft/`, { body: payload }),
+  putDraft: (id, payload, opts = {}) => api.put(`/api/landings/${id}/draft/`, { ...opts, body: payload }),
   getBindings: (id) => api.get(`/api/landings/${id}/bindings/`),
   putBindings: (id, items) => api.put(`/api/landings/${id}/bindings/`, { body: items }),
   publish: (id) => api.post(`/api/landings/${id}/publish/`),

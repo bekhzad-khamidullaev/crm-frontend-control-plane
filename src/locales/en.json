@@ -43,6 +43,35 @@
     "search": "Search",
     "retry": "Retry"
   },
+  "helpCenterPage": {
+    "alertTitle": "Help Center",
+    "alertDescription": "Current user guides, tips, and practical scenarios for working in the CRM.",
+    "languageFilter": "Content language",
+    "fallback": "Some content is unavailable in the selected language. English fallback is shown.",
+    "pagesTitle": "Help Pages",
+    "paragraphsTitle": "Help Paragraphs",
+    "preview": "Preview",
+    "empty": "No entries found",
+    "withoutTitle": "Untitled paragraph",
+    "tabs": {
+      "pages": "Pages",
+      "paragraphs": "Paragraphs"
+    },
+    "columns": {
+      "page": "Page",
+      "title": "Title",
+      "language": "Language",
+      "paragraphs": "Paragraphs",
+      "index": "Index",
+      "preview": "Preview text",
+      "actions": "Actions"
+    },
+    "languages": {
+      "ru": "Russian",
+      "en": "English",
+      "uz": "Uzbek"
+    }
+  },
   "dashboard": {
     "analytics": {
       "partialBadge": "Partially available",

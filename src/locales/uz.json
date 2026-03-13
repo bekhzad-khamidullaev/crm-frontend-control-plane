@@ -43,6 +43,35 @@
     "search": "Qidirish",
     "retry": "Qayta urinib ko'rish"
   },
+  "helpCenterPage": {
+    "alertTitle": "Yordam markazi",
+    "alertDescription": "CRM bo'limlari bo'yicha dolzarb yo'riqnomalar, maslahatlar va amaliy ssenariylar.",
+    "languageFilter": "Kontent tili",
+    "fallback": "Tanlangan tilda ayrim materiallar yo'q. Inglizcha versiya ko'rsatildi.",
+    "pagesTitle": "Yordam sahifalari",
+    "paragraphsTitle": "Yordam bo'limlari",
+    "preview": "Ko'rish",
+    "empty": "Yozuvlar topilmadi",
+    "withoutTitle": "Sarlavhasiz bo'lim",
+    "tabs": {
+      "pages": "Sahifalar",
+      "paragraphs": "Bo'limlar"
+    },
+    "columns": {
+      "page": "Sahifa",
+      "title": "Sarlavha",
+      "language": "Til",
+      "paragraphs": "Bo'limlar soni",
+      "index": "Indeks",
+      "preview": "Qisqa matn",
+      "actions": "Amallar"
+    },
+    "languages": {
+      "ru": "Ruscha",
+      "en": "Inglizcha",
+      "uz": "O'zbekcha"
+    }
+  },
   "dashboard": {
     "analytics": {
       "partialBadge": "Qisman mavjud",

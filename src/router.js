@@ -67,6 +67,9 @@ export const routeMeta = {
  'settings': { auth: true, title: 'Settings' },
  'integrations': { auth: true, title: 'Integrations' },
  'landing-builder': { auth: true, roles: ['admin', 'manager'], title: 'Landing Builder' },
+ 'landing-public': { auth: false, title: 'Public Landing' },
+ 'landing-preview': { auth: false, title: 'Landing Preview' },
+ 'crm-landing': { auth: false, title: 'CRM Landing' },
  'forbidden': { auth: false, title: 'Forbidden' },
  'not-found': { auth: false, title: 'Not Found' },
  'chat-thread': { auth: true, title: 'Chat Thread' }
@@ -345,6 +348,17 @@ export function parseHash() {
   if (segments[0] === 'settings') return { name: 'settings', params: {} };
   if (segments[0] === 'integrations') return { name: 'integrations', params: {} };
   if (segments[0] === 'landing-builder') return { name: 'landing-builder', params: {} };
+  if (segments[0] === 'crm-landing') return { name: 'crm-landing', params: {} };
+  if (segments[0] === 'public-landing') {
+    const slug = segments[1];
+    if (!slug) return { name: 'not-found', params: {} };
+    if (segments[2] === 'preview') {
+      const token = segments[3];
+      if (!token) return { name: 'not-found', params: {} };
+      return { name: 'landing-preview', params: { slug, token } };
+    }
+    return { name: 'landing-public', params: { slug } };
+  }
   // Unknown route
   return isAuthenticated() ? { name: 'not-found', params: {} } : { name: 'login', params: {} };
 }
