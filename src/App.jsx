@@ -15,6 +15,7 @@ import smsApi from './lib/api/sms.js';
 import { getVoIPConnections } from './lib/api/telephony.js';
 import { getProfile } from './lib/api/user.js';
 import { mergeRoles, rolesFromProfile, rolesFromTokenPayload } from './lib/roles.js';
+import { getFrontendVersionInfo } from './shared/version.js';
 import { useTheme } from './lib/hooks/useTheme.js';
 import { applyLegacyContentLocalization } from './lib/i18n/legacy-content-dom.js';
 import { setLocale } from './lib/i18n/index.js';
@@ -243,6 +244,21 @@ function normalizeUser(raw, fallback = {}) {
     username: username || name,
     name,
     email,
+    roles: Array.isArray(raw?.roles)
+      ? raw.roles
+      : (Array.isArray(rawUser?.roles) ? rawUser.roles : (Array.isArray(fallback?.roles) ? fallback.roles : [])),
+    is_staff: Boolean(
+      raw?.is_staff ?? rawUser?.is_staff ?? fallback?.is_staff ?? fallbackUser?.is_staff,
+    ),
+    is_superuser: Boolean(
+      raw?.is_superuser ?? rawUser?.is_superuser ?? fallback?.is_superuser ?? fallbackUser?.is_superuser,
+    ),
+    system_version:
+      raw?.system_version && typeof raw.system_version === 'object'
+        ? raw.system_version
+        : (fallback?.system_version && typeof fallback.system_version === 'object'
+            ? fallback.system_version
+            : null),
   };
 }
 
@@ -296,6 +312,7 @@ function App() {
   const [locale, setLocaleState] = useState('ru');
   const [localeInitialized, setLocaleInitialized] = useState(false);
   const [dialerVisible, setDialerVisible] = useState(false);
+  const frontendVersion = getFrontendVersionInfo();
   const telephonyModulesRef = useRef({
     loaded: false,
     sipClient: null,
@@ -562,7 +579,7 @@ function App() {
 
   const initializeSipClient = async (sipClient, loadTelephonyRuntimeConfig) => {
     try {
-      const runtime = await loadTelephonyRuntimeConfig().catch(() => null);
+      const runtime = await loadTelephonyRuntimeConfig({ includeSystemSettings: false }).catch(() => null);
       const sip = runtime?.sipConfig;
       if (!sip?.username || !sip?.realm || !sip?.password || !sip?.websocketProxyUrl) {
         console.warn('[App] SIP config incomplete. Skipping SIP registration.');
@@ -972,6 +989,7 @@ function App() {
       selectedKey={getSelectedKey()}
       allowedNavKeys={allowedNavKeys}
       user={user}
+      frontendVersion={frontendVersion}
       wsConnected={wsConnected}
       wsReconnecting={wsReconnecting}
       activeIntegrations={activeIntegrations}

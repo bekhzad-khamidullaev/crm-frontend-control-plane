@@ -100,6 +100,8 @@ function LoginPage({ onLogin }) {
         name: userInfo?.username || response.user?.username || values.username,
         email: userInfo?.email || response.user?.email || `${values.username}@example.com`,
         id: userInfo?.user_id || response.user?.id,
+        is_staff: Boolean(userInfo?.is_staff || response.user?.is_staff),
+        is_superuser: Boolean(userInfo?.is_superuser || response.user?.is_superuser),
       };
 
       onLogin(user);

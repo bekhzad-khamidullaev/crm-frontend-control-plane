@@ -1,12 +1,18 @@
 import react from '@vitejs/plugin-react';
+import { readFileSync } from 'node:fs';
 import { visualizer } from 'rollup-plugin-visualizer';
 import { defineConfig, loadEnv } from 'vite';
 
 export default defineConfig(({ mode }) => {
   const env = loadEnv(mode, process.cwd(), '');
   const isProduction = mode === 'production';
+  const packageVersion = JSON.parse(readFileSync(new URL('./package.json', import.meta.url), 'utf-8')).version;
+  const resolvedAppVersion = (env.VITE_APP_VERSION || packageVersion || 'dev').trim();
 
   return {
+    define: {
+      'import.meta.env.VITE_APP_VERSION': JSON.stringify(resolvedAppVersion),
+    },
     plugins: [
       react({ jsxRuntime: 'automatic' }),
       isProduction && visualizer({

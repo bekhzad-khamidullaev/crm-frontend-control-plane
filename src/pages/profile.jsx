@@ -263,6 +263,10 @@ function ProfilePage() {
                 size={128}
                 icon={<UserOutlined />}
                 src={avatarUrl}
+                onError={() => {
+                  setAvatarUrl(null);
+                  return true;
+                }}
                 style={{ marginBottom: 16 }}
               />
               <Space direction="vertical" style={{ width: '100%' }}>

@@ -48,6 +48,7 @@ export function AppLayout({
   onLocaleChange,
   selectedKey,
   user,
+  frontendVersion,
   wsConnected,
   wsReconnecting,
   activeIntegrations,
@@ -176,6 +177,13 @@ export function AppLayout({
   };
   const hasActiveTelephony = Array.isArray(activeIntegrations)
     && activeIntegrations.some((integration) => integration?.key === 'telephony');
+  const userRoles = Array.isArray(user?.roles) ? user.roles : [];
+  const userIsAdmin = Boolean(
+    user?.is_superuser
+      || userRoles.some((role) => String(role || '').toLowerCase() === 'admin'),
+  );
+  const backendVersion = user?.system_version?.backend_version || null;
+  const frontendVersionText = frontendVersion?.frontend_version || null;
   const [wsIndicatorStatus, setWsIndicatorStatus] = useState(
     wsConnected ? 'success' : (wsReconnecting ? 'processing' : 'error')
   );
@@ -303,6 +311,18 @@ export function AppLayout({
       label: `${tr('nav.theme', 'Тема')} (${theme === 'dark' ? tr('nav.themeDark', 'Темная') : tr('nav.themeLight', 'Светлая')})`,
       children: themeMenuItems,
     },
+    ...(userIsAdmin
+      ? [{
+          key: 'system-version',
+          icon: <ApiOutlined />,
+          disabled: true,
+          label: [
+            tr('nav.version', 'Версия CRM'),
+            frontendVersionText ? `FE ${frontendVersionText}` : 'FE —',
+            backendVersion ? `BE ${backendVersion}` : 'BE —',
+          ].join(' | '),
+        }]
+      : []),
     { type: 'divider' },
     {
       key: 'logout',

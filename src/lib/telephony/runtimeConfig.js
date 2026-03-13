@@ -5,6 +5,7 @@ import {
   DEFAULT_TELEPHONY_PROVIDER,
   DEFAULT_TELEPHONY_ROUTE_MODE,
 } from './constants.js';
+const ENV_SIP_WS_URL = String(import.meta.env.VITE_SIP_SERVER || '').trim();
 
 function parseSipIdentity(sipUriRaw) {
   const sipUri = String(sipUriRaw || '').trim();
@@ -56,6 +57,39 @@ function parseIceServers(runtimeSettings, profile) {
   return iceServers;
 }
 
+function normalizeSipWebSocketUrl(rawValue, fallbackValue = '') {
+  const normalizeCandidate = (value) => {
+    const candidate = String(value || '').trim();
+    if (!candidate) return '';
+    try {
+      const parsed = new URL(candidate);
+      if (parsed.protocol === 'http:') parsed.protocol = 'ws:';
+      if (parsed.protocol === 'https:') parsed.protocol = 'wss:';
+      if (parsed.protocol !== 'ws:' && parsed.protocol !== 'wss:') return '';
+      return parsed.toString();
+    } catch {
+      return '';
+    }
+  };
+
+  const primary = normalizeCandidate(rawValue);
+  const fallback = normalizeCandidate(fallbackValue);
+  if (!primary) return fallback;
+  if (!fallback) return primary;
+
+  try {
+    const primaryUrl = new URL(primary);
+    const fallbackUrl = new URL(fallback);
+    const primaryRootPath = !primaryUrl.pathname || primaryUrl.pathname === '/';
+    const fallbackHasPath = Boolean(fallbackUrl.pathname && fallbackUrl.pathname !== '/');
+    if (primaryRootPath && fallbackHasPath) return fallback;
+  } catch {
+    return primary;
+  }
+
+  return primary;
+}
+
 function getActiveConnection(connectionsResponse) {
   const list = Array.isArray(connectionsResponse?.results)
     ? connectionsResponse.results
@@ -73,7 +107,7 @@ function buildSipConfigFromBackend(profile, activeConnection, runtimeSettings) {
   const username = sipUsernameFromUri || String(profile?.pbx_number || '').trim();
   const realm = sipRealmFromUri;
   const password = String(profile?.jssip_sip_password || '').trim();
-  const websocketProxyUrl = String(profile?.jssip_ws_uri || '').trim();
+  const websocketProxyUrl = normalizeSipWebSocketUrl(profile?.jssip_ws_uri, ENV_SIP_WS_URL);
   const displayName =
     String(profile?.jssip_display_name || '').trim() ||
     String(profile?.full_name || '').trim() ||
@@ -103,11 +137,12 @@ export function hasValidSipConfig(config) {
   return Boolean(config?.username && config?.realm && config?.password && config?.websocketProxyUrl);
 }
 
-export async function loadTelephonyRuntimeConfig() {
+export async function loadTelephonyRuntimeConfig(options = {}) {
+  const { includeSystemSettings = true } = options;
   const [profile, sipConnectionsResponse, systemSettings] = await Promise.all([
     getProfile(),
     getSIPConfig().catch(() => ({ results: [] })),
-    getVoipSystemSettings().catch(() => ({})),
+    includeSystemSettings ? getVoipSystemSettings().catch(() => ({})) : Promise.resolve({}),
   ]);
 
   const activeConnection = getActiveConnection(sipConnectionsResponse);

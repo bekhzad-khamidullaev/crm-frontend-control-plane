@@ -191,6 +191,8 @@ export function getUserFromToken() {
     first_name: payload.first_name ?? null,
     last_name: payload.last_name ?? null,
     full_name: payload.full_name ?? null,
+    is_staff: Boolean(payload.is_staff),
+    is_superuser: Boolean(payload.is_superuser),
     exp: payload.exp,
     iat: payload.iat,
   };
