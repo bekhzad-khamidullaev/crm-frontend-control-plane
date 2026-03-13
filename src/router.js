@@ -212,6 +212,7 @@ const ADMIN_PERMISSIONS = ['auth.view_user', 'settings.view_systemsettings'];
   ['telephony', 'voip.view_connection'],
   ['massmail', 'massmail.view_mailingout'],
   ['analytics', 'analytics.view_incomestat'],
+  ['landing-builder', 'landings.view_landingpage'],
 ].forEach(([route, permission]) => {
   if (routeMeta[route]) routeMeta[route].permissions = [permission];
 });

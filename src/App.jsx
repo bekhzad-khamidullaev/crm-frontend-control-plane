@@ -1,7 +1,5 @@
-import { App as AntApp, ConfigProvider, Skeleton, theme as antdTheme } from 'antd';
-import enUS from 'antd/locale/en_US';
+import { App as AntApp, ConfigProvider, Empty, Skeleton, theme as antdTheme } from 'antd';
 import ruRU from 'antd/locale/ru_RU';
-import uzUZ from 'antd/locale/uz_UZ';
 import { Suspense, lazy, useEffect, useState } from 'react';
 import { AppLayout } from './components/AppLayout.jsx';
 import TelephonyDialerModal from './components/TelephonyDialerModal.jsx';
@@ -245,13 +243,9 @@ function App() {
           }
           persistPermissions(me?.permissions || []);
           setUser((prev) => normalizeUser(me || {}, prev || tokenUser));
-          // Sync locale from profile only when user did not explicitly choose one in localStorage.
-          if (!localStorage.getItem('enterprise_crm_locale') && me?.language_code) {
-            const profileLocale = normalizeLocale(me.language_code);
-            if (profileLocale !== savedLocale) {
-              handleLocaleChange(profileLocale);
-            }
-          }
+          // Keep UI language stable from local preference/default.
+          // Profile language can differ and currently cause mixed UI on pages
+          // that still contain hardcoded RU labels.
         } catch (e) {
           console.warn('Failed to preload user profile/roles:', e);
         }
@@ -766,7 +760,8 @@ function AppWithTheme() {
       window.removeEventListener('storage', onStorage);
     };
   }, []);
-  const antdLocale = locale === 'en' ? enUS : locale === 'uz' ? uzUZ : ruRU;
+  // Keep AntD locale in Russian to avoid mixed-language UI on legacy pages.
+  const antdLocale = ruRU;
 
   // Ant Design theme configuration
   const themeConfig = {
@@ -882,7 +877,11 @@ function AppWithTheme() {
   };
 
   return (
-    <ConfigProvider theme={themeConfig} locale={antdLocale}>
+    <ConfigProvider
+      theme={themeConfig}
+      locale={antdLocale}
+      renderEmpty={() => <Empty description="Нет данных" />}
+    >
       <AntApp>
         <App />
       </AntApp>

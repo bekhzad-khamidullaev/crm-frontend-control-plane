@@ -968,6 +968,7 @@ export default function IntegrationsPage() {
       <Modal
         title="Webhook Telegram"
         open={webhookModal.open}
+        forceRender
         onCancel={closeWebhookModal}
         onOk={handleWebhookSave}
         okText="Сохранить"
@@ -987,6 +988,7 @@ export default function IntegrationsPage() {
       <Modal
         title={aiModal.record ? 'Редактирование AI провайдера' : 'Добавление AI провайдера'}
         open={aiModal.open}
+        forceRender
         onCancel={closeAIModal}
         onOk={handleAISave}
         okText="Сохранить"

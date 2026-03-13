@@ -930,6 +930,7 @@ function CallsDashboard() {
       <Modal
         title={`QA оценка звонка ${selectedQaCall?.session_id || ''}`}
         open={qaModalVisible}
+        forceRender
         onOk={handleSubmitQa}
         onCancel={closeQaModal}
         confirmLoading={qaSubmitting}

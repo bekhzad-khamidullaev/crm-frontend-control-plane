@@ -362,6 +362,7 @@ export default function TelephonySettings({ onSuccess }) {
       <Modal
         title={editingConnection ? 'Редактировать подключение' : 'Новое подключение'}
         open={modalVisible}
+        forceRender
         onCancel={() => {
           setModalVisible(false);
           form.resetFields();

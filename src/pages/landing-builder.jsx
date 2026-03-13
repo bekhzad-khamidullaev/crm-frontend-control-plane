@@ -17,6 +17,7 @@ import {
   Switch,
   Table,
   Tag,
+  Upload,
   Typography,
   Segmented,
 } from 'antd';
@@ -25,6 +26,7 @@ import { createContext, useContext, useEffect, useMemo, useRef, useState } from 
 import { landingsApi } from '../lib/api/client';
 import brandLogo from '../assets/brand/logo.svg';
 import { useTheme } from '../lib/hooks/useTheme.js';
+import { canWrite } from '../lib/rbac.js';
 
 const { Title, Text } = Typography;
 const LANGUAGES = ['ru', 'uz', 'en'];
@@ -330,7 +332,7 @@ function FeaturesBlock(props) {
       </Title>
       <Space direction="vertical" style={{ width: '100%' }}>
         {features.map((item, idx) => (
-          <Card key={`feature-${idx}`} size="small" bodyStyle={{ padding: 10 }}>
+          <Card key={`feature-${idx}`} size="small" styles={{ body: { padding: 10 } }}>
             {item}
           </Card>
         ))}
@@ -515,9 +517,12 @@ function defaultCraftObject() {
 
 function defaultCrmSalesCraftObject() {
   const heroId = uid('hero');
-  const textId = uid('text');
+  const introId = uid('text');
+  const valueId = uid('features');
+  const roleId = uid('features');
   const carouselId = uid('carousel');
-  const featuresId = uid('features');
+  const pricingId = uid('features');
+  const faqId = uid('features');
   const ctaId = uid('cta');
   const formId = uid('form');
   const formBlockId = `form-${formId}`;
@@ -527,31 +532,35 @@ function defaultCrmSalesCraftObject() {
       type: { resolvedName: 'CanvasRoot' },
       isCanvas: true,
       props: {
-        background: '#f8fafc',
-        title: 'Enterprise CRM',
-        title_i18n: ensureI18nObject('Enterprise CRM'),
-        description: 'Платформа для роста продаж, автоматизации процессов и прозрачной аналитики.',
-        description_i18n: ensureI18nObject('Платформа для роста продаж, автоматизации процессов и прозрачной аналитики.'),
+        background: '#f1f7ff',
+        title: 'Enterprise CRM Sales Landing',
+        title_i18n: ensureI18nObject('Enterprise CRM Sales Landing'),
+        description: 'Готовый продающий шаблон CRM: оффер, ценность, кейсы, тарифы, FAQ и лид-форма.',
+        description_i18n: ensureI18nObject('Готовый продающий шаблон CRM: оффер, ценность, кейсы, тарифы, FAQ и лид-форма.'),
         titleColor: '#111827',
       },
       displayName: 'CanvasRoot',
       custom: {},
       hidden: false,
-      nodes: [heroId, textId, carouselId, featuresId, ctaId, formId],
+      nodes: [heroId, introId, valueId, roleId, carouselId, pricingId, faqId, ctaId, formId],
       linkedNodes: {},
     },
     [heroId]: {
       type: { resolvedName: 'HeroBlock' },
       isCanvas: false,
       props: {
-        title: 'Ускорьте продажи с Enterprise CRM',
-        title_i18n: ensureI18nObject('Ускорьте продажи с Enterprise CRM'),
-        subtitle: 'Лиды, сделки, задачи, звонки и отчёты в одной системе. Запускайтесь за 1 день.',
-        subtitle_i18n: ensureI18nObject('Лиды, сделки, задачи, звонки и отчёты в одной системе. Запускайтесь за 1 день.'),
-        buttonText: 'Получить демо',
-        buttonText_i18n: ensureI18nObject('Получить демо'),
-        background: '#ffffff',
-        textColor: '#111827',
+        title: 'Превратите хаос продаж в управляемую систему роста',
+        title_i18n: ensureI18nObject('Превратите хаос продаж в управляемую систему роста'),
+        subtitle: 'Enterprise CRM объединяет лиды, сделки, задачи, коммуникации и аналитику в одной платформе.',
+        subtitle_i18n: ensureI18nObject('Enterprise CRM объединяет лиды, сделки, задачи, коммуникации и аналитику в одной платформе.'),
+        buttonText: 'Получить персональное демо',
+        buttonText_i18n: ensureI18nObject('Получить персональное демо'),
+        background: '#0f2748',
+        textColor: '#ffffff',
+        fontFamily: '"Manrope", "Inter", system-ui, sans-serif',
+        fontSize: 18,
+        paddingY: 84,
+        borderRadius: 20,
       },
       displayName: 'HeroBlock',
       custom: {},
@@ -559,18 +568,68 @@ function defaultCrmSalesCraftObject() {
       nodes: [],
       linkedNodes: {},
     },
-    [textId]: {
+    [introId]: {
       type: { resolvedName: 'TextBlock' },
       isCanvas: false,
       props: {
-        title: 'Почему компании выбирают нас',
-        title_i18n: ensureI18nObject('Почему компании выбирают нас'),
-        body: 'Enterprise CRM помогает сократить потерю лидов, ускорить работу команды и увеличить конверсию на каждом этапе воронки.',
-        body_i18n: ensureI18nObject('Enterprise CRM помогает сократить потерю лидов, ускорить работу команды и увеличить конверсию на каждом этапе воронки.'),
+        title: 'Почему Enterprise CRM работает',
+        title_i18n: ensureI18nObject('Почему Enterprise CRM работает'),
+        body: 'Вы получаете контроль над воронкой, прозрачные метрики и автоматизацию рутины. Менеджеры продают больше, а руководители видят причины роста и просадок в реальном времени.',
+        body_i18n: ensureI18nObject('Вы получаете контроль над воронкой, прозрачные метрики и автоматизацию рутины. Менеджеры продают больше, а руководители видят причины роста и просадок в реальном времени.'),
         background: '#ffffff',
         textColor: '#111827',
+        fontFamily: '"Manrope", "Inter", system-ui, sans-serif',
+        fontSize: 17,
+        borderRadius: 18,
       },
       displayName: 'TextBlock',
+      custom: {},
+      hidden: false,
+      nodes: [],
+      linkedNodes: {},
+    },
+    [valueId]: {
+      type: { resolvedName: 'FeaturesBlock' },
+      isCanvas: false,
+      props: {
+        title: 'Ценности для бизнеса',
+        title_i18n: ensureI18nObject('Ценности для бизнеса'),
+        items: [
+          'Единая платформа вместо набора разрозненных сервисов',
+          'Автоматизация этапов и задач без ручного контроля',
+          'Сквозная аналитика по каналам, менеджерам и этапам',
+          'Быстрый запуск и понятное масштабирование команды',
+        ],
+        background: '#ffffff',
+        textColor: '#111827',
+        fontFamily: '"Manrope", "Inter", system-ui, sans-serif',
+        fontSize: 16,
+        borderRadius: 18,
+      },
+      displayName: 'FeaturesBlock',
+      custom: {},
+      hidden: false,
+      nodes: [],
+      linkedNodes: {},
+    },
+    [roleId]: {
+      type: { resolvedName: 'FeaturesBlock' },
+      isCanvas: false,
+      props: {
+        title: 'Польза по ролям',
+        title_i18n: ensureI18nObject('Польза по ролям'),
+        items: [
+          'Собственник: прогноз выручки и контроль воронки без Excel',
+          'РОП: рост конверсии, дисциплина и контроль SLA команды',
+          'Менеджер: меньше рутины, больше времени на продажи',
+        ],
+        background: '#ffffff',
+        textColor: '#111827',
+        fontFamily: '"Manrope", "Inter", system-ui, sans-serif',
+        fontSize: 16,
+        borderRadius: 18,
+      },
+      displayName: 'FeaturesBlock',
       custom: {},
       hidden: false,
       nodes: [],
@@ -580,18 +639,20 @@ function defaultCrmSalesCraftObject() {
       type: { resolvedName: 'CarouselBlock' },
       isCanvas: false,
       props: {
-        title: 'Интерфейс CRM в работе',
-        title_i18n: ensureI18nObject('Интерфейс CRM в работе'),
+        title: 'CRM в действии',
+        title_i18n: ensureI18nObject('CRM в действии'),
         images: [
           'https://images.unsplash.com/photo-1460925895917-afdab827c52f?auto=format&fit=crop&w=1400&q=80',
-          'https://images.unsplash.com/photo-1551281044-8b8f3c8e2f6f?auto=format&fit=crop&w=1400&q=80',
+          'https://picsum.photos/seed/crm-hero/1400/800',
           'https://images.unsplash.com/photo-1552664730-d307ca884978?auto=format&fit=crop&w=1400&q=80',
         ],
         background: '#ffffff',
         textColor: '#111827',
-        slideHeight: 340,
+        slideHeight: 360,
         imageFit: 'cover',
-        imageBorderRadius: 12,
+        imageBorderRadius: 14,
+        fontFamily: '"Manrope", "Inter", system-ui, sans-serif',
+        borderRadius: 18,
       },
       displayName: 'CarouselBlock',
       custom: {},
@@ -599,20 +660,44 @@ function defaultCrmSalesCraftObject() {
       nodes: [],
       linkedNodes: {},
     },
-    [featuresId]: {
+    [pricingId]: {
       type: { resolvedName: 'FeaturesBlock' },
       isCanvas: false,
       props: {
-        title: 'Что вы получите',
-        title_i18n: ensureI18nObject('Что вы получите'),
+        title: 'Тарифы',
+        title_i18n: ensureI18nObject('Тарифы'),
         items: [
-          'Сквозная воронка: от лида до оплаты',
-          'Автоматизация задач и напоминаний',
-          'Понятная аналитика по менеджерам и каналам',
-          'Интеграции с почтой, телефонией и мессенджерами',
+          'Start: $19/user/mo — лиды, сделки, задачи, базовая аналитика',
+          'Growth: $39/user/mo — автоматизация, расширенная аналитика, API',
+          'Enterprise: custom — безопасность, SLA, кастомные роли и отчеты',
         ],
         background: '#ffffff',
         textColor: '#111827',
+        fontFamily: '"Manrope", "Inter", system-ui, sans-serif',
+        borderRadius: 18,
+      },
+      displayName: 'FeaturesBlock',
+      custom: {},
+      hidden: false,
+      nodes: [],
+      linkedNodes: {},
+    },
+    [faqId]: {
+      type: { resolvedName: 'FeaturesBlock' },
+      isCanvas: false,
+      props: {
+        title: 'FAQ',
+        title_i18n: ensureI18nObject('FAQ'),
+        items: [
+          'Внедрение: базовый запуск 1-3 дня, полный цикл 2-4 недели',
+          'Миграция: переносим данные из Excel и других CRM',
+          'Интеграции: телефония, мессенджеры, email, API и webhooks',
+          'ROI: первые эффекты обычно видны в первые 2-3 недели',
+        ],
+        background: '#ffffff',
+        textColor: '#111827',
+        fontFamily: '"Manrope", "Inter", system-ui, sans-serif',
+        borderRadius: 18,
       },
       displayName: 'FeaturesBlock',
       custom: {},
@@ -624,14 +709,16 @@ function defaultCrmSalesCraftObject() {
       type: { resolvedName: 'CtaBlock' },
       isCanvas: false,
       props: {
-        title: 'Готовы вырасти в продажах?',
-        title_i18n: ensureI18nObject('Готовы вырасти в продажах?'),
-        body: 'Оставьте заявку и мы покажем, как адаптировать CRM под ваш бизнес-процесс.',
-        body_i18n: ensureI18nObject('Оставьте заявку и мы покажем, как адаптировать CRM под ваш бизнес-процесс.'),
-        buttonText: 'Запросить консультацию',
-        buttonText_i18n: ensureI18nObject('Запросить консультацию'),
-        background: '#ffffff',
-        textColor: '#111827',
+        title: 'Готовы увеличить продажи без лишних затрат?',
+        title_i18n: ensureI18nObject('Готовы увеличить продажи без лишних затрат?'),
+        body: 'Оставьте заявку, и мы покажем персональный план внедрения CRM под ваш отдел продаж.',
+        body_i18n: ensureI18nObject('Оставьте заявку, и мы покажем персональный план внедрения CRM под ваш отдел продаж.'),
+        buttonText: 'Получить план внедрения',
+        buttonText_i18n: ensureI18nObject('Получить план внедрения'),
+        background: '#0b1e3b',
+        textColor: '#ffffff',
+        fontFamily: '"Manrope", "Inter", system-ui, sans-serif',
+        borderRadius: 18,
       },
       displayName: 'CtaBlock',
       custom: {},
@@ -643,20 +730,22 @@ function defaultCrmSalesCraftObject() {
       type: { resolvedName: 'FormBlock' },
       isCanvas: false,
       props: {
-        title: 'Запросить демо',
-        title_i18n: ensureI18nObject('Запросить демо'),
-        subtitle: 'Оставьте контакты, и наш эксперт свяжется с вами в течение 15 минут.',
-        subtitle_i18n: ensureI18nObject('Оставьте контакты, и наш эксперт свяжется с вами в течение 15 минут.'),
-        buttonText: 'Отправить заявку',
-        buttonText_i18n: ensureI18nObject('Отправить заявку'),
+        title: 'Запросить демо и расчёт ROI',
+        title_i18n: ensureI18nObject('Запросить демо и расчёт ROI'),
+        subtitle: 'Ответим в течение 15 минут в рабочее время.',
+        subtitle_i18n: ensureI18nObject('Ответим в течение 15 минут в рабочее время.'),
+        buttonText: 'Получить демо',
+        buttonText_i18n: ensureI18nObject('Получить демо'),
         background: '#ffffff',
         textColor: '#111827',
+        fontFamily: '"Manrope", "Inter", system-ui, sans-serif',
+        borderRadius: 18,
         blockId: formBlockId,
         formKey: 'crm_sales_demo',
         fields: [
           { key: 'name', label: 'Имя', label_i18n: ensureI18nObject('Имя'), type: 'text', required: true },
           { key: 'phone', label: 'Телефон', label_i18n: ensureI18nObject('Телефон'), type: 'tel', required: true },
-          { key: 'email', label: 'Email', label_i18n: ensureI18nObject('Email'), type: 'email', required: false },
+          { key: 'email', label: 'Рабочий email', label_i18n: ensureI18nObject('Рабочий email'), type: 'email', required: false },
           { key: 'company', label: 'Компания', label_i18n: ensureI18nObject('Компания'), type: 'text', required: false },
         ],
         lead_source: null,
@@ -1123,7 +1212,7 @@ function AddBlockToolbar() {
             title_i18n={ensureI18nObject('Карусель изображений')}
             images={[
               'https://images.unsplash.com/photo-1460925895917-afdab827c52f?auto=format&fit=crop&w=1400&q=80',
-              'https://images.unsplash.com/photo-1551281044-8b8f3c8e2f6f?auto=format&fit=crop&w=1400&q=80',
+              'https://picsum.photos/seed/crm-dashboard/1400/800',
             ]}
             background="#ffffff"
             textColor="#111827"
@@ -1247,7 +1336,8 @@ function LayersPanel() {
   );
 }
 
-function NodePropertiesPanel({ lookups, activeLocale }) {
+function NodePropertiesPanel({ lookups, activeLocale, selectedLandingId }) {
+  const { message } = App.useApp();
   const { query, actions, selectedId } = useEditor((state) => ({
     selectedId: getSelectedId(state.events?.selected),
   }));
@@ -1316,6 +1406,28 @@ function NodePropertiesPanel({ lookups, activeLocale }) {
     setProp('images', next);
   };
 
+  const uploadImageAndSet = async (file, onSuccess) => {
+    if (!selectedLandingId) {
+      message.error('Сначала выберите лендинг');
+      return false;
+    }
+    try {
+      const formData = new FormData();
+      formData.append('file', file);
+      const response = await landingsApi.uploadAsset(selectedLandingId, formData);
+      const uploadedUrl = response?.url || '';
+      if (!uploadedUrl) {
+        message.error('Не удалось получить URL загруженного файла');
+        return false;
+      }
+      onSuccess(uploadedUrl);
+      message.success('Изображение загружено');
+    } catch (err) {
+      message.error(err?.details?.detail || err?.message || 'Ошибка загрузки файла');
+    }
+    return false;
+  };
+
   return (
     <Form layout="vertical">
       {isCanvasRoot && (
@@ -1340,11 +1452,20 @@ function NodePropertiesPanel({ lookups, activeLocale }) {
             <Input type="color" value={props.titleColor || DEFAULT_THEME.text} onChange={(e) => setProp('titleColor', e.target.value)} style={{ width: 72, padding: 4 }} />
           </Form.Item>
           <Form.Item label="Background image URL">
-            <Input
-              placeholder="https://..."
-              value={props.backgroundImageUrl || ''}
-              onChange={(e) => setProp('backgroundImageUrl', e.target.value)}
-            />
+            <Space.Compact style={{ width: '100%' }}>
+              <Input
+                placeholder="https://..."
+                value={props.backgroundImageUrl || ''}
+                onChange={(e) => setProp('backgroundImageUrl', e.target.value)}
+              />
+              <Upload
+                showUploadList={false}
+                accept="image/*"
+                beforeUpload={(file) => uploadImageAndSet(file, (url) => setProp('backgroundImageUrl', url))}
+              >
+                <Button>Upload</Button>
+              </Upload>
+            </Space.Compact>
           </Form.Item>
           <Form.Item label="Background size">
             <Select
@@ -1433,11 +1554,20 @@ function NodePropertiesPanel({ lookups, activeLocale }) {
             <InputNumber min={0} max={80} value={Number(props.borderRadius || 14)} onChange={(value) => setProp('borderRadius', Number(value || 0))} style={{ width: '100%' }} />
           </Form.Item>
           <Form.Item label="Background image URL">
-            <Input
-              placeholder="https://..."
-              value={props.backgroundImageUrl || ''}
-              onChange={(e) => setProp('backgroundImageUrl', e.target.value)}
-            />
+            <Space.Compact style={{ width: '100%' }}>
+              <Input
+                placeholder="https://..."
+                value={props.backgroundImageUrl || ''}
+                onChange={(e) => setProp('backgroundImageUrl', e.target.value)}
+              />
+              <Upload
+                showUploadList={false}
+                accept="image/*"
+                beforeUpload={(file) => uploadImageAndSet(file, (url) => setProp('backgroundImageUrl', url))}
+              >
+                <Button>Upload</Button>
+              </Upload>
+            </Space.Compact>
           </Form.Item>
           <Form.Item label="Background size">
             <Select
@@ -1480,11 +1610,20 @@ function NodePropertiesPanel({ lookups, activeLocale }) {
             />
           </Form.Item>
           <Form.Item label="Block image URL">
-            <Input
-              placeholder="https://..."
-              value={props.imageUrl || ''}
-              onChange={(e) => setProp('imageUrl', e.target.value)}
-            />
+            <Space.Compact style={{ width: '100%' }}>
+              <Input
+                placeholder="https://..."
+                value={props.imageUrl || ''}
+                onChange={(e) => setProp('imageUrl', e.target.value)}
+              />
+              <Upload
+                showUploadList={false}
+                accept="image/*"
+                beforeUpload={(file) => uploadImageAndSet(file, (url) => setProp('imageUrl', url))}
+              >
+                <Button>Upload</Button>
+              </Upload>
+            </Space.Compact>
           </Form.Item>
           <Form.Item label="Image fit">
             <Select
@@ -1601,6 +1740,13 @@ function NodePropertiesPanel({ lookups, activeLocale }) {
                   placeholder="https://..."
                   onChange={(e) => setCarouselImage(idx, e.target.value)}
                 />
+                <Upload
+                  showUploadList={false}
+                  accept="image/*"
+                  beforeUpload={(file) => uploadImageAndSet(file, (url) => setCarouselImage(idx, url))}
+                >
+                  <Button>Upload</Button>
+                </Upload>
                 <Button danger onClick={() => removeCarouselImage(idx)}>Remove</Button>
               </Space>
             ))}
@@ -1725,7 +1871,7 @@ function NodePropertiesPanel({ lookups, activeLocale }) {
   );
 }
 
-function CraftBuilder({ frameData, editorKey, onNodesChange, lookups, activeLocale, previewMode, editorMode, ui }) {
+function CraftBuilder({ frameData, editorKey, onNodesChange, lookups, activeLocale, previewMode, editorMode, ui, selectedLandingId }) {
   const canvasWidth = previewMode === 'mobile' ? 390 : previewMode === 'tablet' ? 820 : 1200;
   const editorEnabled = editorMode === 'edit';
   return (
@@ -1733,12 +1879,15 @@ function CraftBuilder({ frameData, editorKey, onNodesChange, lookups, activeLoca
       <Editor
         enabled={editorEnabled}
         resolver={{ CanvasRoot, HeroBlock, TextBlock, FeaturesBlock, CtaBlock, FormBlock, CarouselBlock }}
-        onNodesChange={(query) => onNodesChange(query.serialize())}
+        onNodesChange={(query) => {
+          const serialized = query.serialize();
+          queueMicrotask(() => onNodesChange(serialized));
+        }}
       >
         <Row gutter={[12, 12]}>
           {editorEnabled && (
             <Col xs={24} xl={6}>
-              <Card title="Блоки" size="small" style={ui.cardStyle} bodyStyle={ui.cardBody}>
+              <Card title="Блоки" size="small" style={ui.cardStyle} styles={{ body: ui.cardBody }}>
                 <Space direction="vertical" size="small" style={{ width: '100%' }}>
                   <AddBlockToolbar />
                   <HistoryToolbar />
@@ -1753,7 +1902,7 @@ function CraftBuilder({ frameData, editorKey, onNodesChange, lookups, activeLoca
               title={`Canvas (${activeLocale.toUpperCase()})`}
               size="small"
               style={ui.cardStyle}
-              bodyStyle={{ ...ui.cardBody, background: ui.canvasPanelBg }}
+              styles={{ body: { ...ui.cardBody, background: ui.canvasPanelBg } }}
             >
               <div
                 style={{
@@ -1776,8 +1925,8 @@ function CraftBuilder({ frameData, editorKey, onNodesChange, lookups, activeLoca
 
           {editorEnabled && (
             <Col xs={24} xl={6}>
-              <Card title={`Свойства (${activeLocale.toUpperCase()})`} size="small" style={ui.cardStyle} bodyStyle={ui.cardBody}>
-                <NodePropertiesPanel lookups={lookups} activeLocale={activeLocale} />
+              <Card title={`Свойства (${activeLocale.toUpperCase()})`} size="small" style={ui.cardStyle} styles={{ body: ui.cardBody }}>
+                <NodePropertiesPanel lookups={lookups} activeLocale={activeLocale} selectedLandingId={selectedLandingId} />
               </Card>
             </Col>
           )}
@@ -1791,6 +1940,7 @@ export default function LandingBuilderPage() {
   const { message } = App.useApp();
   const { theme } = useTheme();
   const isDark = theme === 'dark';
+  const canManageLandings = canWrite('landings.change_landingpage');
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
   const [publishing, setPublishing] = useState(false);
@@ -1857,6 +2007,7 @@ export default function LandingBuilderPage() {
     () => landings.find((item) => item.id === selectedId) || null,
     [landings, selectedId],
   );
+  const effectiveEditorMode = canManageLandings ? editorMode : 'preview';
   const isDirty = Boolean(selectedId) && craftSerialized !== savedSerialized;
 
   const loadLandings = async () => {
@@ -2067,6 +2218,10 @@ export default function LandingBuilderPage() {
   };
 
   const handleCreateLanding = async () => {
+    if (!canManageLandings) {
+      message.error('Недостаточно прав для создания лендингов');
+      return;
+    }
     try {
       const values = await createForm.validateFields();
       const slug = toSlug(values.slug || values.title);
@@ -2136,10 +2291,14 @@ export default function LandingBuilderPage() {
   };
 
   const handleCreateCrmSalesLanding = async () => {
+    if (!canManageLandings) {
+      message.error('Недостаточно прав для создания шаблонов лендинга');
+      return;
+    }
     try {
       const suffix = Date.now().toString().slice(-6);
       const payload = {
-        title: 'Enterprise CRM - Продажи и автоматизация',
+        title: 'Enterprise CRM - Sales Landing (Template)',
         slug: `enterprise-crm-sales-${suffix}`,
         is_active: true,
         department: null,
@@ -2158,7 +2317,7 @@ export default function LandingBuilderPage() {
         await landingsApi.putBindings(created.id, bindings);
       }
 
-      message.success('Шаблонный лендинг для продажи CRM создан');
+      message.success('Обновленный шаблон CRM Sales лендинга создан');
       await loadLandings();
       setSelectedId(created.id);
     } catch (err) {
@@ -2168,6 +2327,12 @@ export default function LandingBuilderPage() {
 
   const saveDraft = async ({ silentSuccess = false, reloadAfterSave = true, background = false } = {}) => {
     if (!selectedId) return;
+    if (!canManageLandings) {
+      if (!background) {
+        message.error('Недостаточно прав для сохранения лендинга');
+      }
+      return false;
+    }
 
     const serializedSnapshot = craftSerialized;
     const { schema, bindings, error } = buildDraftAndBindingsPayload();
@@ -2219,6 +2384,10 @@ export default function LandingBuilderPage() {
 
   const handlePublish = async () => {
     if (!selectedId) return;
+    if (!canManageLandings) {
+      message.error('Недостаточно прав для публикации лендинга');
+      return;
+    }
     setPublishing(true);
     try {
       if (isDirty) {
@@ -2244,7 +2413,7 @@ export default function LandingBuilderPage() {
   };
 
   useEffect(() => {
-    if (!autosaveEnabled || !selectedId || !isDirty || saving || publishing || autosaving || saveAndPublishing) return;
+    if (!canManageLandings || !autosaveEnabled || !selectedId || !isDirty || saving || publishing || autosaving || saveAndPublishing) return;
     const timer = setTimeout(async () => {
       const ok = await saveDraft({ silentSuccess: true, reloadAfterSave: false, background: true });
       if (ok) {
@@ -2253,7 +2422,7 @@ export default function LandingBuilderPage() {
     }, 25000);
 
     return () => clearTimeout(timer);
-  }, [autosaveEnabled, selectedId, isDirty, saving, publishing, autosaving, saveAndPublishing, craftSerialized]);
+  }, [autosaveEnabled, selectedId, isDirty, saving, publishing, autosaving, saveAndPublishing, craftSerialized, canManageLandings]);
 
   const handleCopyUrl = async (value, successText = 'Ссылка скопирована') => {
     if (!value) return;
@@ -2280,7 +2449,7 @@ export default function LandingBuilderPage() {
   };
 
   const handleEditorBlurAutosave = async () => {
-    if (!autosaveEnabled || !selectedId || !isDirty || saving || publishing || autosaving || saveAndPublishing) return;
+    if (!canManageLandings || !autosaveEnabled || !selectedId || !isDirty || saving || publishing || autosaving || saveAndPublishing) return;
     const now = Date.now();
     if (now - blurAutosaveAtRef.current < 3000) return;
     blurAutosaveAtRef.current = now;
@@ -2292,6 +2461,10 @@ export default function LandingBuilderPage() {
 
   const handleSaveAndPublish = async () => {
     if (!selectedId) return;
+    if (!canManageLandings) {
+      message.error('Недостаточно прав для публикации лендинга');
+      return;
+    }
     setSaveAndPublishing(true);
     try {
       const saved = await saveDraft({ silentSuccess: true, reloadAfterSave: false });
@@ -2308,6 +2481,10 @@ export default function LandingBuilderPage() {
 
   const handleToggleActive = async (checked) => {
     if (!selectedId) return;
+    if (!canManageLandings) {
+      message.error('Недостаточно прав для изменения статуса лендинга');
+      return;
+    }
     try {
       await landingsApi.patch(selectedId, { is_active: checked });
       message.success(checked ? 'Лендинг активирован' : 'Лендинг деактивирован');
@@ -2565,7 +2742,7 @@ export default function LandingBuilderPage() {
   return (
     <div style={{ padding: 24, background: ui.pageBg, minHeight: '100vh' }}>
       <Space direction="vertical" size="large" style={{ width: '100%' }}>
-        <Card bordered={false} style={{ ...ui.cardStyle, background: ui.heroBg }}>
+        <Card variant="borderless" style={{ ...ui.cardStyle, background: ui.heroBg }}>
           <Space direction="vertical" size={6} style={{ width: '100%' }}>
             <Title level={3} style={{ margin: 0, color: ui.titleColor }}>
               Landing Builder
@@ -2575,8 +2752,16 @@ export default function LandingBuilderPage() {
             </Text>
           </Space>
         </Card>
+        {!canManageLandings && (
+          <Alert
+            type="info"
+            showIcon
+            message="Режим только чтения"
+            description="У вас есть доступ к просмотру лендингов, но нет прав на создание, редактирование и публикацию."
+          />
+        )}
 
-        <Card title="Новый лендинг" style={ui.cardStyle} bodyStyle={ui.cardBody}>
+        <Card title="Новый лендинг" style={ui.cardStyle} styles={{ body: ui.cardBody }}>
           <Form layout="vertical" form={createForm}>
             <Row gutter={12} style={{ position: 'sticky', top: 8, zIndex: 20, background: ui.stickyBg, backdropFilter: 'blur(6px)', padding: '8px 0', marginBottom: 6 }}>
               <Col xs={24} md={6}>
@@ -2614,8 +2799,8 @@ export default function LandingBuilderPage() {
               </Col>
             </Row>
             <Space>
-              <Button type="primary" onClick={handleCreateLanding}>Создать</Button>
-              <Button onClick={handleCreateCrmSalesLanding}>Создать шаблон CRM Sales</Button>
+              <Button type="primary" onClick={handleCreateLanding} disabled={!canManageLandings}>Создать</Button>
+              <Button onClick={handleCreateCrmSalesLanding} disabled={!canManageLandings}>Создать шаблон CRM Sales</Button>
             </Space>
           </Form>
         </Card>
@@ -2623,7 +2808,7 @@ export default function LandingBuilderPage() {
         <Card
           title="Визуальный редактор"
           style={ui.cardStyle}
-          bodyStyle={ui.cardBody}
+          styles={{ body: ui.cardBody }}
           onBlurCapture={(event) => {
             const nextFocused = event.relatedTarget;
             if (nextFocused && event.currentTarget.contains(nextFocused)) return;
@@ -2645,7 +2830,7 @@ export default function LandingBuilderPage() {
               <Col xs={24} md={8}>
                 <Space>
                   <Text type="secondary">Active</Text>
-                  <Switch checked={selectedLanding?.is_active} onChange={handleToggleActive} disabled={!selectedLanding} />
+                  <Switch checked={selectedLanding?.is_active} onChange={handleToggleActive} disabled={!selectedLanding || !canManageLandings} />
                 </Space>
               </Col>
               <Col xs={24} md={8}>
@@ -2667,21 +2852,22 @@ export default function LandingBuilderPage() {
                     ]}
                   />
                   <Segmented
-                    value={editorMode}
+                    value={effectiveEditorMode}
                     onChange={setEditorMode}
+                    disabled={!canManageLandings}
                     options={[
                       { label: 'Edit', value: 'edit' },
                       { label: 'Preview', value: 'preview' },
                     ]}
                   />
-                  <Button onClick={handleSaveDraft} loading={saving} disabled={!selectedId || saveAndPublishing}>Сохранить</Button>
-                  <Button onClick={handlePublish} loading={publishing} disabled={!selectedId || saveAndPublishing}>Publish</Button>
-                  <Button type="primary" onClick={handleSaveAndPublish} loading={saveAndPublishing} disabled={!selectedId || saving || publishing}>
+                  <Button onClick={handleSaveDraft} loading={saving} disabled={!selectedId || saveAndPublishing || !canManageLandings}>Сохранить</Button>
+                  <Button onClick={handlePublish} loading={publishing} disabled={!selectedId || saveAndPublishing || !canManageLandings}>Publish</Button>
+                  <Button type="primary" onClick={handleSaveAndPublish} loading={saveAndPublishing} disabled={!selectedId || saving || publishing || !canManageLandings}>
                     Save & Publish
                   </Button>
                   <Space size={4}>
                     <Text type="secondary" style={{ fontSize: 12 }}>Autosave</Text>
-                    <Switch size="small" checked={autosaveEnabled} onChange={setAutosaveEnabled} disabled={!selectedId} />
+                    <Switch size="small" checked={autosaveEnabled} onChange={setAutosaveEnabled} disabled={!selectedId || !canManageLandings} />
                   </Space>
                   <Tag color={isDirty ? 'orange' : 'green'}>
                     {isDirty ? 'Есть несохранённые изменения' : 'Все изменения сохранены'}
@@ -2756,13 +2942,14 @@ export default function LandingBuilderPage() {
               lookups={lookups}
               activeLocale={activeLocale}
               previewMode={previewMode}
-              editorMode={editorMode}
+              editorMode={effectiveEditorMode}
               ui={ui}
+              selectedLandingId={selectedId}
             />
           </Space>
         </Card>
 
-        <Card title="Revisions" style={ui.cardStyle} bodyStyle={ui.cardBody}>
+        <Card title="Revisions" style={ui.cardStyle} styles={{ body: ui.cardBody }}>
           <Table
             rowKey="id"
             size="small"
@@ -2779,7 +2966,7 @@ export default function LandingBuilderPage() {
                 render: (_, record) => (
                   <Button
                     size="small"
-                    disabled={!selectedId}
+                    disabled={!selectedId || !canManageLandings}
                   >
                     <Popconfirm
                       title="Откатить версию?"
@@ -2787,6 +2974,10 @@ export default function LandingBuilderPage() {
                       okText="Откатить"
                       cancelText="Отмена"
                       onConfirm={async () => {
+                        if (!canManageLandings) {
+                          message.error('Недостаточно прав для отката ревизий');
+                          return;
+                        }
                         try {
                           await landingsApi.rollback(selectedId, record.id);
                           message.success('Rollback выполнен');
@@ -2805,7 +2996,7 @@ export default function LandingBuilderPage() {
           />
         </Card>
 
-        <Card title="Funnel Filters" style={ui.cardStyle} bodyStyle={ui.cardBody}>
+        <Card title="Funnel Filters" style={ui.cardStyle} styles={{ body: ui.cardBody }}>
           <Row gutter={12}>
             <Col xs={24} md={8}>
               <Space>
@@ -2848,7 +3039,7 @@ export default function LandingBuilderPage() {
         </Card>
 
         {report && (
-          <Card title="Funnel Report" style={ui.cardStyle} bodyStyle={ui.cardBody}>
+          <Card title="Funnel Report" style={ui.cardStyle} styles={{ body: ui.cardBody }}>
             <Row gutter={12}>
               <Col xs={12} md={6}><Statistic title="Views" value={report?.metrics?.landing_view || 0} /></Col>
               <Col xs={12} md={6}><Statistic title="Form start" value={report?.metrics?.form_start || 0} /></Col>

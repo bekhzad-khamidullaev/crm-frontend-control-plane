@@ -26,6 +26,7 @@ const ROUTE_WRITE_PERMISSION_MAP = {
   'memos-detail': 'tasks.change_memo',
   'products-list': 'crm.change_product',
   'products-detail': 'crm.change_product',
+  'landing-builder': 'landings.change_landingpage',
 };
 
 function normalizePermissions(rawPermissions = []) {

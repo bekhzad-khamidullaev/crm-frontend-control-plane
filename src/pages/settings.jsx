@@ -42,6 +42,7 @@ import {
   getRetentionPolicies,
   runRetentionPolicies,
 } from '../lib/api/compliance.js';
+import { formatValueForUi, isPlainObject as isPlainObjectValue } from '../lib/utils/value-display.js';
 
 const { Text } = Typography;
 
@@ -52,7 +53,7 @@ function prettifyKey(key) {
 }
 
 function isPlainObject(value) {
-  return value && typeof value === 'object' && !Array.isArray(value) && !dayjs.isDayjs(value);
+  return isPlainObjectValue(value);
 }
 
 function isTimeString(value) {
@@ -271,36 +272,36 @@ function ComplianceSummary({ report }) {
     return <Empty description="Нет данных по compliance-отчёту" />;
   }
 
-  const scalarEntries = Object.entries(report).filter(([, value]) => !isPlainObject(value) && !Array.isArray(value));
-  const objectEntries = Object.entries(report).filter(([, value]) => isPlainObject(value));
+  const normalizedEntries = Object.entries(report).map(([key, value]) => [key, formatValueForUi(value, { key })]);
+  const scalarEntries = normalizedEntries.filter(([, formatted]) => formatted.kind !== 'complex');
+  const objectEntries = normalizedEntries.filter(([, formatted]) => formatted.kind === 'complex');
 
   return (
     <Space direction="vertical" size="large" style={{ width: '100%' }}>
       {scalarEntries.length ? (
         <Row gutter={[16, 16]}>
-          {scalarEntries.map(([key, value]) => (
+          {scalarEntries.map(([key, formatted]) => (
             <Col xs={24} md={8} key={key}>
               <Card size="small">
-                <Statistic title={prettifyKey(key)} value={typeof value === 'number' ? value : undefined} />
-                {typeof value !== 'number' ? <Text strong>{String(value || '-')}</Text> : null}
+                <Statistic title={prettifyKey(key)} value={formatted.kind === 'number' ? formatted.number : undefined} />
+                {formatted.kind !== 'number' ? <Text strong>{formatted.text}</Text> : null}
               </Card>
             </Col>
           ))}
         </Row>
       ) : null}
 
-      {objectEntries.map(([key, value]) => (
+      {objectEntries.map(([key, formatted]) => (
         <Card key={key} size="small" title={prettifyKey(key)}>
           <Descriptions bordered size="small" column={{ xs: 1, md: 2 }}>
-            {Object.entries(value).map(([childKey, childValue]) => (
-              <Descriptions.Item key={childKey} label={prettifyKey(childKey)}>
-                {typeof childValue === 'boolean'
-                  ? childValue
-                    ? 'Да'
-                    : 'Нет'
-                  : String(childValue ?? '-')}
-              </Descriptions.Item>
-            ))}
+            {Object.entries(formatted.value || {}).map(([childKey, childValue]) => {
+              const childFormatted = formatValueForUi(childValue, { key: childKey });
+              return (
+                <Descriptions.Item key={childKey} label={prettifyKey(childKey)}>
+                  {childFormatted.kind === 'complex' ? JSON.stringify(childFormatted.value) : childFormatted.text}
+                </Descriptions.Item>
+              );
+            })}
           </Descriptions>
         </Card>
       ))}

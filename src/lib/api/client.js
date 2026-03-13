@@ -423,6 +423,7 @@ export const landingsApi = {
   ...crudResource('/api/landings/'),
   getDraft: (id) => api.get(`/api/landings/${id}/draft/`),
   putDraft: (id, payload, opts = {}) => api.put(`/api/landings/${id}/draft/`, { ...opts, body: payload }),
+  uploadAsset: (id, formData) => api.post(`/api/landings/${id}/assets/upload/`, { body: formData }),
   getBindings: (id) => api.get(`/api/landings/${id}/bindings/`),
   putBindings: (id, items) => api.put(`/api/landings/${id}/bindings/`, { body: items }),
   publish: (id) => api.post(`/api/landings/${id}/publish/`),

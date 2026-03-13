@@ -3,6 +3,7 @@ import { Tabs, Card, Button, Table, message, Space, Empty, Row, Col, Statistic, 
 import CrudPage from '../components/CrudPage.jsx';
 import { getUsers, getUser } from '../lib/api/client.js';
 import { getProfiles, getProfileByUser, getUserSessions, revokeAllSessions, get2FAStatus } from '../lib/api/user.js';
+import { formatValueForUi } from '../lib/utils/value-display.js';
 
 function SecurityTab() {
   const [sessions, setSessions] = useState([]);
@@ -49,20 +50,28 @@ function SecurityTab() {
             {twoFaEntries.map(([key, value]) => (
               <Col xs={24} md={8} key={key}>
                 <Card size="small">
-                  {typeof value === 'number' ? (
-                    <Statistic title={key.replace(/_/g, ' ')} value={value} />
-                  ) : typeof value === 'boolean' ? (
-                    <>
-                      <div style={{ marginBottom: 8, color: '#71717a' }}>{key.replace(/_/g, ' ')}</div>
-                      <Tag color={value ? 'green' : 'default'}>{value ? 'Да' : 'Нет'}</Tag>
-                    </>
-                  ) : (
-                    <Descriptions size="small" column={1}>
-                      <Descriptions.Item label={key.replace(/_/g, ' ')}>
-                        {String(value ?? '-')}
-                      </Descriptions.Item>
-                    </Descriptions>
-                  )}
+                  {(() => {
+                    const title = key.replace(/_/g, ' ');
+                    const formatted = formatValueForUi(value, { key });
+                    if (formatted.kind === 'number') {
+                      return <Statistic title={title} value={formatted.number} />;
+                    }
+                    if (formatted.text === 'Да' || formatted.text === 'Нет') {
+                      return (
+                        <>
+                          <div style={{ marginBottom: 8, color: '#71717a' }}>{title}</div>
+                          <Tag color={formatted.text === 'Да' ? 'green' : 'default'}>{formatted.text}</Tag>
+                        </>
+                      );
+                    }
+                    return (
+                      <Descriptions size="small" column={1}>
+                        <Descriptions.Item label={title}>
+                          {formatted.kind === 'complex' ? JSON.stringify(formatted.value) : formatted.text}
+                        </Descriptions.Item>
+                      </Descriptions>
+                    );
+                  })()}
                 </Card>
               </Col>
             ))}

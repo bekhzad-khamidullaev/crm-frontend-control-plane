@@ -7,6 +7,7 @@ import React, { useEffect, useMemo, useState } from 'react';
 import { Alert, App, Button, Card, Col, Descriptions, Empty, Form, Input, Row, Select, Space, Statistic, Table, Tag } from 'antd';
 import { MessageOutlined, ReloadOutlined } from '@ant-design/icons';
 import smsApi from '../lib/api/sms.js';
+import { formatValueForUi } from '../lib/utils/value-display.js';
 
 const { TextArea } = Input;
 
@@ -160,26 +161,39 @@ export default function SMSSettings({ onSuccess }) {
             {statusEntries.map(([key, value]) => (
               <Col xs={24} md={12} key={key}>
                 <Card size="small">
-                  {typeof value === 'number' ? (
-                    <Statistic title={key} value={value} />
-                  ) : typeof value === 'boolean' ? (
-                    <>
-                      <div style={{ marginBottom: 8, color: '#71717a' }}>{key}</div>
-                      <Tag color={value ? 'green' : 'default'}>{value ? 'Да' : 'Нет'}</Tag>
-                    </>
-                  ) : value && typeof value === 'object' ? (
-                    <Descriptions column={1} size="small" bordered>
-                      {Object.entries(value).map(([nestedKey, nestedValue]) => (
-                        <Descriptions.Item key={nestedKey} label={nestedKey}>
-                          {String(nestedValue ?? '-')}
-                        </Descriptions.Item>
-                      ))}
-                    </Descriptions>
-                  ) : (
-                    <Descriptions column={1} size="small" bordered>
-                      <Descriptions.Item label={key}>{String(value ?? '-')}</Descriptions.Item>
-                    </Descriptions>
-                  )}
+                  {(() => {
+                    const formatted = formatValueForUi(value, { key });
+                    if (formatted.kind === 'number') {
+                      return <Statistic title={key} value={formatted.number} />;
+                    }
+                    if (formatted.kind === 'complex') {
+                      return (
+                        <Descriptions column={1} size="small" bordered>
+                          {Object.entries(formatted.value).map(([nestedKey, nestedValue]) => {
+                            const nestedFormatted = formatValueForUi(nestedValue, { key: nestedKey });
+                            return (
+                              <Descriptions.Item key={nestedKey} label={nestedKey}>
+                                {nestedFormatted.kind === 'complex' ? JSON.stringify(nestedFormatted.value) : nestedFormatted.text}
+                              </Descriptions.Item>
+                            );
+                          })}
+                        </Descriptions>
+                      );
+                    }
+                    if (formatted.text === 'Да' || formatted.text === 'Нет') {
+                      return (
+                        <>
+                          <div style={{ marginBottom: 8, color: '#71717a' }}>{key}</div>
+                          <Tag color={formatted.text === 'Да' ? 'green' : 'default'}>{formatted.text}</Tag>
+                        </>
+                      );
+                    }
+                    return (
+                      <Descriptions column={1} size="small" bordered>
+                        <Descriptions.Item label={key}>{formatted.text}</Descriptions.Item>
+                      </Descriptions>
+                    );
+                  })()}
                 </Card>
               </Col>
             ))}

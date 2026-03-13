@@ -44,6 +44,8 @@ import {
 } from '../lib/api/user';
 import { getCallHistory } from '../lib/api/telephony';
 
+const getAvatarUrl = (data) => data?.avatar_url || data?.avatar || null;
+
 function ProfilePage() {
   const [form] = Form.useForm();
   const [passwordForm] = Form.useForm();
@@ -68,7 +70,7 @@ function ProfilePage() {
     try {
       const data = await getProfile();
       setProfile(data);
-      setAvatarUrl(data.avatar);
+      setAvatarUrl(getAvatarUrl(data));
       form.setFieldsValue(data);
     } catch (error) {
       console.error('Error loading profile:', error);
@@ -124,7 +126,7 @@ function ProfilePage() {
     if (info.file.originFileObj) {
       try {
         const response = await uploadAvatar(info.file.originFileObj);
-        setAvatarUrl(response.avatar);
+        setAvatarUrl(getAvatarUrl(response));
         message.success('Аватар успешно обновлен');
       } catch (error) {
         console.error('Error uploading avatar:', error);
@@ -361,6 +363,7 @@ function ProfilePage() {
           Изменить пароль
         </span>
       ),
+      forceRender: true,
       children: (
         <div style={{ maxWidth: 600 }}>
           <Form
