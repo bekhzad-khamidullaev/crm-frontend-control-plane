@@ -3,16 +3,17 @@ import { Check, Clock, Edit, Eye, Trash2 } from 'lucide-react';
 import dayjs from 'dayjs';
 
 import { PlusOutlined } from '@ant-design/icons';
-import { App, Button, Card, DatePicker, Input, Modal, Select, Space, Table, Tag, Typography } from 'antd';
+import { App, Button, Card, DatePicker, Modal, Select, Space, Table, Tag, Typography } from 'antd';
 
 import EntitySelect from '../../components/EntitySelect.jsx';
 import { getUser, getUsers } from '../../lib/api';
 import { deleteMemo, getMemos, markMemoPostponed, markMemoReviewed } from '../../lib/api/memos';
 import { canWrite } from '../../lib/rbac.js';
 import { navigate } from '../../router';
+import { EntityListToolbar } from '../../shared/ui/EntityListToolbar';
+import { LIST_HEADER_STYLE, LIST_STACK_STYLE, LIST_TITLE_STYLE } from '../../shared/ui/listLayout';
 
 const { RangePicker } = DatePicker;
-const { Search } = Input;
 const { Text, Title } = Typography;
 
 const stageLabels = {
@@ -106,6 +107,15 @@ export default function MemosList() {
     }
   };
 
+  const handleResetFilters = () => {
+    setSearchText('');
+    setDraftFilter(null);
+    setStageFilter(null);
+    setRecipientFilter(null);
+    setDateRange(null);
+    setPagination((prev) => ({ ...prev, current: 1 }));
+  };
+
   const columns = useMemo(
     () => [
       {
@@ -182,13 +192,55 @@ export default function MemosList() {
     [canManage],
   );
 
+  const activeFilters = [];
+  if (searchText) {
+    activeFilters.push({
+      key: 'search',
+      label: 'Поиск',
+      value: searchText,
+      onClear: () => setSearchText(''),
+    });
+  }
+  if (typeof draftFilter === 'boolean') {
+    activeFilters.push({
+      key: 'draft',
+      label: 'Черновики',
+      value: draftFilter ? 'Черновик' : 'Опубликованные',
+      onClear: () => setDraftFilter(null),
+    });
+  }
+  if (stageFilter) {
+    activeFilters.push({
+      key: 'stage',
+      label: 'Стадия',
+      value: stageLabels[stageFilter]?.text || stageFilter,
+      onClear: () => setStageFilter(null),
+    });
+  }
+  if (recipientFilter) {
+    activeFilters.push({
+      key: 'recipient',
+      label: 'Получатель',
+      value: recipientFilter,
+      onClear: () => setRecipientFilter(null),
+    });
+  }
+  if (dateRange && dateRange.length === 2) {
+    activeFilters.push({
+      key: 'date',
+      label: 'Период',
+      value: `${dayjs(dateRange[0]).format('DD.MM.YYYY')} - ${dayjs(dateRange[1]).format('DD.MM.YYYY')}`,
+      onClear: () => setDateRange(null),
+    });
+  }
+
   return (
     <>
       <Card>
-        <Space direction="vertical" size={16} style={{ width: '100%' }}>
-          <Space wrap style={{ width: '100%', justifyContent: 'space-between' }}>
+        <Space direction="vertical" size={16} style={LIST_STACK_STYLE}>
+          <Space wrap style={LIST_HEADER_STYLE}>
             <div>
-              <Title level={3} style={{ margin: 0 }}>Мемо</Title>
+              <Title level={3} style={LIST_TITLE_STYLE}>Мемо</Title>
               <Text type="secondary">Список внутренних мемо</Text>
             </div>
             {canManage ? (
@@ -196,49 +248,52 @@ export default function MemosList() {
             ) : null}
           </Space>
 
-          <Space wrap>
-            <Search
-              placeholder="Поиск по названию или тексту"
-              allowClear
-              value={searchText}
-              onChange={(e) => setSearchText(e.target.value)}
-              onSearch={setSearchText}
-              style={{ minWidth: 280 }}
-            />
-            <Select
-              allowClear
-              placeholder="Черновики"
-              style={{ minWidth: 150 }}
-              value={draftFilter}
-              options={[
-                { value: true, label: 'Черновик' },
-                { value: false, label: 'Опубликованные' },
-              ]}
-              onChange={(v) => setDraftFilter(v ?? null)}
-            />
-            <Select
-              allowClear
-              placeholder="Стадия"
-              style={{ minWidth: 160 }}
-              value={stageFilter}
-              options={Object.entries(stageLabels).map(([value, meta]) => ({ value, label: meta.text }))}
-              onChange={(v) => setStageFilter(v ?? null)}
-            />
-            <EntitySelect
-              placeholder="Получатель"
-              value={recipientFilter}
-              onChange={setRecipientFilter}
-              fetchList={getUsers}
-              fetchById={getUser}
-              allowClear
-            />
-            <RangePicker
-              format="DD.MM.YYYY"
-              value={dateRange}
-              onChange={(vals) => setDateRange(vals || null)}
-            />
-            <Button onClick={fetchData} loading={loading}>Обновить</Button>
-          </Space>
+          <EntityListToolbar
+            searchValue={searchText}
+            searchPlaceholder="Поиск по названию или тексту"
+            onSearchChange={setSearchText}
+            filters={(
+              <Space wrap>
+                <Select
+                  allowClear
+                  placeholder="Черновики"
+                  style={{ minWidth: 150 }}
+                  value={draftFilter}
+                  options={[
+                    { value: true, label: 'Черновик' },
+                    { value: false, label: 'Опубликованные' },
+                  ]}
+                  onChange={(v) => setDraftFilter(v ?? null)}
+                />
+                <Select
+                  allowClear
+                  placeholder="Стадия"
+                  style={{ minWidth: 160 }}
+                  value={stageFilter}
+                  options={Object.entries(stageLabels).map(([value, meta]) => ({ value, label: meta.text }))}
+                  onChange={(v) => setStageFilter(v ?? null)}
+                />
+                <EntitySelect
+                  placeholder="Получатель"
+                  value={recipientFilter}
+                  onChange={setRecipientFilter}
+                  fetchList={getUsers}
+                  fetchById={getUser}
+                  allowClear
+                />
+                <RangePicker
+                  format="DD.MM.YYYY"
+                  value={dateRange}
+                  onChange={(vals) => setDateRange(vals || null)}
+                />
+              </Space>
+            )}
+            onRefresh={fetchData}
+            onReset={handleResetFilters}
+            loading={loading}
+            resultSummary={`Всего: ${pagination.total}`}
+            activeFilters={activeFilters}
+          />
 
           {error ? <Text type="danger">{error}</Text> : null}
 

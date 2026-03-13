@@ -13,6 +13,7 @@ import {
   LineChartOutlined,
   ApiOutlined,
 } from '@ant-design/icons';
+import { t } from '../lib/i18n';
 
 export default function IntegrationCard({
   title,
@@ -39,9 +40,8 @@ export default function IntegrationCard({
     setActionLoading(true);
     try {
       await onConnect();
-      message.success(`${title} успешно подключен`);
     } catch (error) {
-      message.error(`Ошибка подключения ${title}`);
+      message.error(t('integrationCard.messages.connectError', { title }));
     } finally {
       setActionLoading(false);
     }
@@ -52,9 +52,9 @@ export default function IntegrationCard({
     setActionLoading(true);
     try {
       await onDisconnect();
-      message.success(`${title} отключен`);
+      message.success(t('integrationCard.messages.disconnected', { title }));
     } catch (error) {
-      message.error(`Ошибка отключения ${title}`);
+      message.error(t('integrationCard.messages.disconnectError', { title }));
     } finally {
       setActionLoading(false);
     }
@@ -62,12 +62,12 @@ export default function IntegrationCard({
 
   const getStatusTag = () => {
     if (isConnected) {
-      return <Tag icon={<CheckCircleOutlined />} color="success">Подключено</Tag>;
+      return <Tag icon={<CheckCircleOutlined />} color="success">{t('integrationCard.status.connected')}</Tag>;
     }
     if (hasError) {
-      return <Tag icon={<CloseCircleOutlined />} color="error">Ошибка</Tag>;
+      return <Tag icon={<CloseCircleOutlined />} color="error">{t('integrationCard.status.error')}</Tag>;
     }
-    return <Tag color="default">Не подключено</Tag>;
+    return <Tag color="default">{t('integrationCard.status.disconnected')}</Tag>;
   };
 
   return (
@@ -88,7 +88,7 @@ export default function IntegrationCard({
               loading={loading}
               size="small"
             >
-              Обновить
+              {t('integrationCard.actions.refresh')}
             </Button>
           )}
           {isConnected && onSettings && (
@@ -97,7 +97,7 @@ export default function IntegrationCard({
               onClick={onSettings}
               size="small"
             >
-              Настройки
+              {t('integrationCard.actions.settings')}
             </Button>
           )}
         </Space>
@@ -110,7 +110,7 @@ export default function IntegrationCard({
 
           {hasError && error && (
             <Alert
-              message="Ошибка подключения"
+              message={t('integrationCard.messages.connectionErrorTitle')}
               description={error}
               type="error"
               showIcon
@@ -139,18 +139,18 @@ export default function IntegrationCard({
               <Space>
                 {onDisconnect && (
                   <Button danger onClick={handleDisconnect} loading={actionLoading}>
-                    Отключить
+                    {t('integrationCard.actions.disconnect')}
                   </Button>
                 )}
                 {onSettings && (
                   <Button onClick={onSettings}>
-                    Настроить
+                    {t('integrationCard.actions.configure')}
                   </Button>
                 )}
               </Space>
             ) : (
               <Button type="primary" onClick={handleConnect} loading={actionLoading}>
-                Подключить {title}
+                {t('integrationCard.actions.connect')} {title}
               </Button>
             )}
           </div>

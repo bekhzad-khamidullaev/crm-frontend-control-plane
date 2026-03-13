@@ -1,8 +1,8 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { Calendar, Edit, Eye, Folder, Trash2 } from 'lucide-react';
+import { Edit, Eye, Folder, Trash2 } from 'lucide-react';
 
 import { PlusOutlined } from '@ant-design/icons';
-import { App, Button, Card, Checkbox, Input, Space, Table, Tag, Typography } from 'antd';
+import { App, Button, Card, Checkbox, Popconfirm, Space, Table, Tag, Typography } from 'antd';
 
 import {
   completeProject,
@@ -12,10 +12,12 @@ import {
   getUsers,
   reopenProject,
 } from '../../lib/api';
+import { getLocale, t } from '../../lib/i18n';
 import { canWrite } from '../../lib/rbac.js';
 import { navigate } from '../../router';
+import { EntityListToolbar } from '../../shared/ui/EntityListToolbar';
+import { LIST_HEADER_STYLE, LIST_STACK_STYLE, LIST_TITLE_STYLE } from '../../shared/ui/listLayout';
 
-const { Search } = Input;
 const { Text, Title } = Typography;
 
 function ProjectsList() {
@@ -33,6 +35,8 @@ function ProjectsList() {
   });
   const [stages, setStages] = useState([]);
   const [users, setUsers] = useState([]);
+  const locale = getLocale();
+  const dateLocale = locale === 'en' ? 'en-US' : locale === 'uz' ? 'uz-UZ' : 'ru-RU';
 
   useEffect(() => {
     fetchProjects(1, searchText);
@@ -51,7 +55,7 @@ function ProjectsList() {
       setStages(data?.results || data || []);
     } else {
       setStages([]);
-      message.warning('Не удалось загрузить стадии проектов');
+      message.warning(t('projectsListPage.messages.stagesLoadWarning'));
     }
 
     if (usersRes.status === 'fulfilled') {
@@ -59,7 +63,7 @@ function ProjectsList() {
       setUsers(data?.results || data || []);
     } else {
       setUsers([]);
-      message.warning('Не удалось загрузить пользователей');
+      message.warning(t('projectsListPage.messages.usersLoadWarning'));
     }
   };
 
@@ -92,8 +96,8 @@ function ProjectsList() {
         total: totalCount,
       }));
     } catch (err) {
-      setError(err?.message || 'Не удалось загрузить список проектов');
-      message.error('Ошибка загрузки проектов');
+      setError(err?.message || t('projectsListPage.messages.listLoadError'));
+      message.error(t('projectsListPage.messages.loadError'));
       setProjects([]);
       setPagination((prev) => ({ ...prev, current: 1, total: 0 }));
     } finally {
@@ -106,13 +110,18 @@ function ProjectsList() {
     fetchProjects(1, value);
   };
 
+  const handleResetFilters = () => {
+    setSearchText('');
+    fetchProjects(1, '');
+  };
+
   const handleDelete = async (id) => {
     try {
       await deleteProject(id);
-      message.success('Проект удален');
+      message.success(t('projectsListPage.messages.deleted'));
       fetchProjects(pagination.current, searchText);
     } catch {
-      message.error('Ошибка удаления проекта');
+      message.error(t('projectsListPage.messages.deleteError'));
     }
   };
 
@@ -122,14 +131,14 @@ function ProjectsList() {
     try {
       if (isDone) {
         await reopenProject(project.id);
-        message.success('Проект возобновлен');
+        message.success(t('projectsListPage.messages.reopened'));
       } else {
         await completeProject(project.id);
-        message.success('Проект завершен');
+        message.success(t('projectsListPage.messages.completed'));
       }
       fetchProjects(pagination.current, searchText);
     } catch {
-      message.error('Ошибка обновления статуса проекта');
+      message.error(t('projectsListPage.messages.statusUpdateError'));
     }
   };
 
@@ -187,7 +196,7 @@ function ProjectsList() {
       ),
     },
     {
-      title: 'Проект',
+      title: t('projectsListPage.columns.project'),
       key: 'project',
       render: (_, record) => (
         <Space direction="vertical" size={0}>
@@ -200,7 +209,7 @@ function ProjectsList() {
       sorter: (a, b) => (a.name || '').localeCompare(b.name || ''),
     },
     {
-      title: 'Этап',
+      title: t('projectsListPage.columns.stage'),
       dataIndex: 'stage',
       key: 'stage',
       render: (stageId) => {
@@ -211,35 +220,44 @@ function ProjectsList() {
       },
     },
     {
-      title: 'Владелец',
+      title: t('projectsListPage.columns.owner'),
       dataIndex: 'owner',
       key: 'owner',
       render: (ownerId) => userNameById[ownerId] || '-',
     },
     {
-      title: 'Срок',
+      title: t('projectsListPage.columns.dueDate'),
       dataIndex: 'due_date',
       key: 'due_date',
-      render: (date) => (date ? `${new Date(date).toLocaleDateString('ru-RU')}` : '-'),
+      render: (date) => (date ? `${new Date(date).toLocaleDateString(dateLocale)}` : '-'),
       sorter: (a, b) => new Date(a.due_date || 0) - new Date(b.due_date || 0),
     },
     {
-      title: 'Действия',
+      title: t('projectsListPage.columns.actions'),
       key: 'actions',
       width: 280,
       render: (_, record) => (
         <Space>
           <Button size="small" icon={<Eye size={14} />} onClick={() => navigate(`/projects/${record.id}`)}>
-            Просмотр
+            {t('projectsListPage.actions.view')}
           </Button>
           {canManage ? (
             <>
               <Button size="small" icon={<Edit size={14} />} onClick={() => navigate(`/projects/${record.id}/edit`)}>
-                Редактировать
+                {t('projectsListPage.actions.edit')}
               </Button>
-              <Button size="small" danger icon={<Trash2 size={14} />} onClick={() => handleDelete(record.id)}>
-                Удалить
-              </Button>
+              <Popconfirm
+                title={t('projectsListPage.actions.delete')}
+                description={t('tasksListPage.deleteModal.description')}
+                onConfirm={() => handleDelete(record.id)}
+                okText={t('tasksListPage.deleteModal.confirm')}
+                cancelText={t('tasksListPage.deleteModal.cancel')}
+                okButtonProps={{ danger: true }}
+              >
+                <Button size="small" danger icon={<Trash2 size={14} />}>
+                  {t('projectsListPage.actions.delete')}
+                </Button>
+              </Popconfirm>
             </>
           ) : null}
         </Space>
@@ -249,34 +267,31 @@ function ProjectsList() {
 
   return (
     <Card>
-      <Space direction="vertical" size={16} style={{ width: '100%' }}>
-        <Space wrap style={{ width: '100%', justifyContent: 'space-between' }}>
+      <Space direction="vertical" size={16} style={LIST_STACK_STYLE}>
+        <Space wrap style={LIST_HEADER_STYLE}>
           <div>
-            <Title level={3} style={{ margin: 0 }}>
-              Проекты
+            <Title level={3} style={LIST_TITLE_STYLE}>
+              {t('projectsListPage.title')}
             </Title>
-            <Text type="secondary">Список проектов</Text>
+            <Text type="secondary">{t('projectsListPage.subtitle')}</Text>
           </div>
           {canManage ? (
             <Button type="primary" icon={<PlusOutlined />} onClick={() => navigate('/projects/new')}>
-              Создать проект
+              {t('projectsListPage.actions.create')}
             </Button>
           ) : null}
         </Space>
 
-        <Space wrap style={{ width: '100%', justifyContent: 'space-between' }}>
-          <Search
-            placeholder="Поиск проектов..."
-            allowClear
-            value={searchText}
-            onChange={(e) => setSearchText(e.target.value)}
-            onSearch={handleSearch}
-            style={{ maxWidth: 360 }}
-          />
-          <Button onClick={() => fetchProjects(pagination.current, searchText)} loading={loading}>
-            Обновить
-          </Button>
-        </Space>
+        <EntityListToolbar
+          searchValue={searchText}
+          searchPlaceholder={t('projectsListPage.searchPlaceholder')}
+          onSearchChange={handleSearch}
+          onRefresh={() => fetchProjects(pagination.current, searchText)}
+          onReset={handleResetFilters}
+          loading={loading}
+          resultSummary={t('projectsListPage.pagination.total', { total: pagination.total })}
+          activeFilters={searchText ? [{ key: 'search', label: t('actions.search'), value: searchText, onClear: handleResetFilters }] : []}
+        />
 
         {error ? <Text type="danger">{error}</Text> : null}
 
@@ -285,9 +300,9 @@ function ProjectsList() {
           columns={columns}
           dataSource={projects}
           loading={loading}
-          pagination={{ ...pagination, showSizeChanger: true, showTotal: (total) => `Всего: ${total}` }}
+          pagination={{ ...pagination, showSizeChanger: true, showTotal: (total) => t('projectsListPage.pagination.total', { total }) }}
           onChange={handleTableChange}
-          locale={{ emptyText: 'Нет проектов' }}
+          locale={{ emptyText: t('projectsListPage.empty') }}
         />
       </Space>
     </Card>

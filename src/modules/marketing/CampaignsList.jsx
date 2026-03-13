@@ -1,15 +1,17 @@
 import React, { useEffect, useState } from 'react';
-import { Button, Card, Input, Space, Table, Tag, Typography, message } from 'antd';
+import { App, Button, Card, Space, Table, Tag, Typography } from 'antd';
 import { PlusOutlined } from '@ant-design/icons';
 import { navigate } from '../../router';
 import { getCampaigns, deleteCampaign, patchCampaign } from '../../lib/api/marketing';
 import { canWrite } from '../../lib/rbac.js';
 import QuickActions from '../../components/QuickActions.jsx';
+import { EntityListToolbar } from '../../shared/ui/EntityListToolbar';
+import { LIST_HEADER_STYLE, LIST_STACK_STYLE, LIST_TITLE_STYLE } from '../../shared/ui/listLayout';
 
-const { Search } = Input;
 const { Text, Title } = Typography;
 
 function CampaignsList() {
+  const { message } = App.useApp();
   const canManage = canWrite('marketing.change_campaign');
   const [campaigns, setCampaigns] = useState([]);
   const [allCampaignsCache, setAllCampaignsCache] = useState(null);
@@ -54,6 +56,11 @@ function CampaignsList() {
   const handleSearch = (value) => {
     setSearchText(value);
     fetchCampaigns(1, value);
+  };
+
+  const handleResetFilters = () => {
+    setSearchText('');
+    fetchCampaigns(1, '');
   };
 
   const handleDelete = async (id) => {
@@ -133,10 +140,10 @@ function CampaignsList() {
 
   return (
     <Card>
-      <Space direction="vertical" size={16} style={{ width: '100%' }}>
-        <Space wrap style={{ width: '100%', justifyContent: 'space-between' }}>
+      <Space direction="vertical" size={16} style={LIST_STACK_STYLE}>
+        <Space wrap style={LIST_HEADER_STYLE}>
           <div>
-            <Title level={3} style={{ margin: 0 }}>Кампании</Title>
+            <Title level={3} style={LIST_TITLE_STYLE}>Кампании</Title>
             <Text type="secondary">Список маркетинговых кампаний</Text>
           </div>
           {canManage ? (
@@ -144,17 +151,16 @@ function CampaignsList() {
           ) : null}
         </Space>
 
-        <Space wrap>
-          <Search
-            value={searchText}
-            placeholder="Поиск по названию..."
-            allowClear
-            onChange={(e) => setSearchText(e.target.value)}
-            onSearch={handleSearch}
-            style={{ width: 320 }}
-          />
-          <Button onClick={() => fetchCampaigns(pagination.current, searchText)} loading={loading}>Обновить</Button>
-        </Space>
+        <EntityListToolbar
+          searchValue={searchText}
+          searchPlaceholder="Поиск по названию..."
+          onSearchChange={handleSearch}
+          onRefresh={() => fetchCampaigns(pagination.current, searchText)}
+          onReset={handleResetFilters}
+          loading={loading}
+          resultSummary={`Всего: ${pagination.total}`}
+          activeFilters={searchText ? [{ key: 'search', label: 'Поиск', value: searchText, onClear: handleResetFilters }] : []}
+        />
 
         {error ? <Text type="danger">{error}</Text> : null}
 

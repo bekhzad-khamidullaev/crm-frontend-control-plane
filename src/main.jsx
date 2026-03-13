@@ -9,7 +9,7 @@ import './styles/custom-theme.css';
 
 // Configure OpenAPI for generated services
 OpenAPI.BASE = resolveApiBase(import.meta.env.VITE_API_BASE_URL);
-OpenAPI.TOKEN = () => localStorage.getItem('crm_access_token') || undefined;
+OpenAPI.TOKEN = () => sessionStorage.getItem('crm_access_token') || undefined;
 
 // Setup global error handler for 401 errors
 setupGlobalErrorHandler();

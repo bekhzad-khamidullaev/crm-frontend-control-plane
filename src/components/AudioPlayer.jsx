@@ -13,10 +13,13 @@ import {
   ForwardOutlined,
   BackwardOutlined,
 } from '@ant-design/icons';
+import { useTheme } from '../lib/hooks/useTheme.js';
 
 const { Text } = Typography;
 
 function AudioPlayer({ src, filename = 'recording.webm' }) {
+  const { theme } = useTheme();
+  const isDark = theme === 'dark';
   const [isPlaying, setIsPlaying] = useState(false);
   const [currentTime, setCurrentTime] = useState(0);
   const [duration, setDuration] = useState(0);
@@ -93,7 +96,14 @@ function AudioPlayer({ src, filename = 'recording.webm' }) {
   };
 
   return (
-    <div style={{ padding: '16px', backgroundColor: '#f5f5f5', borderRadius: '8px' }}>
+    <div
+      style={{
+        padding: '16px',
+        backgroundColor: isDark ? '#1e232e' : '#f5f5f5',
+        border: `1px solid ${isDark ? '#2d3343' : '#e5e7eb'}`,
+        borderRadius: '8px',
+      }}
+    >
       <audio ref={audioRef} src={src} preload="metadata" />
       
       {/* Progress bar */}

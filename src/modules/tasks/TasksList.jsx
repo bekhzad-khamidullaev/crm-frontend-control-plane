@@ -2,13 +2,15 @@ import { Calendar, Clock, Edit, Eye, Trash2 } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
 
 import { PlusOutlined } from '@ant-design/icons';
-import { App, Button, Card, Checkbox, Input, Modal, Space, Table, Tag, Typography } from 'antd';
+import { App, Button, Card, Checkbox, Modal, Space, Table, Tag, Typography } from 'antd';
 
 import { deleteTask, getTasks, getTaskStages, getUsers, updateTask } from '../../lib/api';
+import { getLocale, t } from '../../lib/i18n';
 import { canWrite } from '../../lib/rbac.js';
 import { navigate } from '../../router';
+import { EntityListToolbar } from '../../shared/ui/EntityListToolbar';
+import { LIST_HEADER_STYLE, LIST_STACK_STYLE, LIST_TITLE_STYLE } from '../../shared/ui/listLayout';
 
-const { Search } = Input;
 const { Text, Title } = Typography;
 
 function TasksList() {
@@ -27,6 +29,8 @@ function TasksList() {
   const [stages, setStages] = useState([]);
   const [users, setUsers] = useState([]);
   const [deleteTarget, setDeleteTarget] = useState(null);
+  const locale = getLocale();
+  const dateLocale = locale === 'en' ? 'en-US' : locale === 'uz' ? 'uz-UZ' : 'ru-RU';
 
   useEffect(() => {
     fetchTasks(1, searchText);
@@ -45,7 +49,7 @@ function TasksList() {
       setStages(data?.results || data || []);
     } else {
       setStages([]);
-      message.warning('Не удалось загрузить стадии задач');
+      message.warning(t('tasksListPage.messages.stagesLoadWarning'));
     }
 
     if (usersRes.status === 'fulfilled') {
@@ -53,7 +57,7 @@ function TasksList() {
       setUsers(data?.results || data || []);
     } else {
       setUsers([]);
-      message.warning('Не удалось загрузить пользователей');
+      message.warning(t('tasksListPage.messages.usersLoadWarning'));
     }
   };
 
@@ -85,8 +89,8 @@ function TasksList() {
         total: totalCount,
       }));
     } catch (err) {
-      setError(err?.message || 'Не удалось загрузить список задач');
-      message.error('Ошибка загрузки задач');
+      setError(err?.message || t('tasksListPage.messages.listLoadError'));
+      message.error(t('tasksListPage.messages.loadError'));
       setTasks([]);
       setPagination((prev) => ({ ...prev, current: 1, total: 0 }));
     } finally {
@@ -99,13 +103,18 @@ function TasksList() {
     fetchTasks(1, value);
   };
 
+  const handleResetFilters = () => {
+    setSearchText('');
+    fetchTasks(1, '');
+  };
+
   const handleDelete = async (id) => {
     try {
       await deleteTask(id);
-      message.success('Задача удалена');
+      message.success(t('tasksListPage.messages.deleted'));
       fetchTasks(pagination.current, searchText);
     } catch {
-      message.error('Ошибка удаления задачи');
+      message.error(t('tasksListPage.messages.deleteError'));
     }
   };
 
@@ -152,7 +161,7 @@ function TasksList() {
 
   const handleToggleComplete = async (task) => {
     if (!doneStage || !inProgressStage) {
-      message.warning('Этапы задач не настроены');
+      message.warning(t('tasksListPage.messages.stagesNotConfigured'));
       return;
     }
 
@@ -160,10 +169,10 @@ function TasksList() {
     const newStage = isDone ? inProgressStage.id : doneStage.id;
     try {
       await updateTask(task.id, { stage: newStage });
-      message.success('Статус задачи обновлен');
+      message.success(t('tasksListPage.messages.statusUpdated'));
       fetchTasks(pagination.current, searchText);
     } catch {
-      message.error('Ошибка обновления статуса задачи');
+      message.error(t('tasksListPage.messages.statusUpdateError'));
     }
   };
 
@@ -181,7 +190,7 @@ function TasksList() {
       ),
     },
     {
-      title: 'Задача',
+      title: t('tasksListPage.columns.task'),
       key: 'task',
       render: (_, record) => (
         <Space direction="vertical" size={0}>
@@ -192,7 +201,7 @@ function TasksList() {
       sorter: (a, b) => (a.name || '').localeCompare(b.name || ''),
     },
     {
-      title: 'Этап',
+      title: t('tasksListPage.columns.stage'),
       dataIndex: 'stage',
       key: 'stage',
       render: (stageId) => {
@@ -203,7 +212,7 @@ function TasksList() {
       },
     },
     {
-      title: 'Ответственные',
+      title: t('tasksListPage.columns.responsible'),
       dataIndex: 'responsible',
       key: 'responsible',
       render: (responsible) => {
@@ -213,7 +222,7 @@ function TasksList() {
       },
     },
     {
-      title: 'Срок',
+      title: t('tasksListPage.columns.dueDate'),
       dataIndex: 'due_date',
       key: 'due_date',
       render: (date) => {
@@ -224,16 +233,16 @@ function TasksList() {
         return (
           <Space direction="vertical" size={0}>
             <Text>
-              <Calendar size={14} /> {dueDate.toLocaleDateString('ru-RU')}
+              <Calendar size={14} /> {dueDate.toLocaleDateString(dateLocale)}
             </Text>
             {daysLeft > 0 && daysLeft <= 3 ? (
               <Text type="warning">
-                <Clock size={14} /> {daysLeft} дн.
+                <Clock size={14} /> {t('tasksListPage.deadline.daysLeft', { count: daysLeft })}
               </Text>
             ) : null}
             {daysLeft < 0 ? (
               <Text type="danger">
-                <Clock size={14} /> просрочено
+                <Clock size={14} /> {t('tasksListPage.deadline.overdue')}
               </Text>
             ) : null}
           </Space>
@@ -242,21 +251,21 @@ function TasksList() {
       sorter: (a, b) => new Date(a.due_date || 0) - new Date(b.due_date || 0),
     },
     {
-      title: 'Действия',
+      title: t('tasksListPage.columns.actions'),
       key: 'actions',
       width: 260,
       render: (_, record) => (
         <Space>
           <Button size="small" icon={<Eye size={14} />} onClick={() => navigate(`/tasks/${record.id}`)}>
-            Просмотр
+            {t('tasksListPage.actions.view')}
           </Button>
           {canManage ? (
             <>
               <Button size="small" icon={<Edit size={14} />} onClick={() => navigate(`/tasks/${record.id}/edit`)}>
-                Редактировать
+                {t('tasksListPage.actions.edit')}
               </Button>
               <Button size="small" danger icon={<Trash2 size={14} />} onClick={() => setDeleteTarget(record)}>
-                Удалить
+                {t('tasksListPage.actions.delete')}
               </Button>
             </>
           ) : null}
@@ -268,34 +277,31 @@ function TasksList() {
   return (
     <>
       <Card>
-        <Space direction="vertical" size={16} style={{ width: '100%' }}>
-          <Space style={{ width: '100%', justifyContent: 'space-between' }} wrap>
+        <Space direction="vertical" size={16} style={LIST_STACK_STYLE}>
+          <Space style={LIST_HEADER_STYLE} wrap>
             <div>
-              <Title level={3} style={{ margin: 0 }}>
-                Задачи
+              <Title level={3} style={LIST_TITLE_STYLE}>
+                {t('tasksListPage.title')}
               </Title>
-              <Text type="secondary">Список задач</Text>
+              <Text type="secondary">{t('tasksListPage.subtitle')}</Text>
             </div>
             {canManage ? (
               <Button type="primary" icon={<PlusOutlined />} onClick={() => navigate('/tasks/new')}>
-                Создать задачу
+                {t('tasksListPage.actions.create')}
               </Button>
             ) : null}
           </Space>
 
-          <Space wrap style={{ width: '100%', justifyContent: 'space-between' }}>
-            <Search
-              placeholder="Поиск по названию, описанию..."
-              allowClear
-              value={searchText}
-              onChange={(e) => setSearchText(e.target.value)}
-              onSearch={handleSearch}
-              style={{ maxWidth: 360 }}
-            />
-            <Button onClick={() => fetchTasks(pagination.current, searchText)} loading={loading}>
-              Обновить
-            </Button>
-          </Space>
+          <EntityListToolbar
+            searchValue={searchText}
+            searchPlaceholder={t('tasksListPage.searchPlaceholder')}
+            onSearchChange={handleSearch}
+            onRefresh={() => fetchTasks(pagination.current, searchText)}
+            onReset={handleResetFilters}
+            loading={loading}
+            resultSummary={t('tasksListPage.pagination.total', { total: pagination.total })}
+            activeFilters={searchText ? [{ key: 'search', label: t('actions.search'), value: searchText, onClear: handleResetFilters }] : []}
+          />
 
           {error ? <Text type="danger">{error}</Text> : null}
 
@@ -304,10 +310,10 @@ function TasksList() {
             columns={columns}
             dataSource={tasks}
             loading={loading}
-            pagination={{ ...pagination, showSizeChanger: true, showTotal: (total) => `Всего: ${total}` }}
+            pagination={{ ...pagination, showSizeChanger: true, showTotal: (total) => t('tasksListPage.pagination.total', { total }) }}
             onChange={handleTableChange}
             rowClassName={(record) => (doneStage && record.stage === doneStage.id ? 'row-completed' : '')}
-            locale={{ emptyText: 'Нет задач' }}
+            locale={{ emptyText: t('tasksListPage.empty') }}
           />
         </Space>
       </Card>
@@ -320,7 +326,7 @@ function TasksList() {
       `}</style>
 
       <Modal
-        title="Удалить эту задачу?"
+        title={t('tasksListPage.deleteModal.title')}
         open={!!deleteTarget}
         onCancel={() => setDeleteTarget(null)}
         onOk={() => {
@@ -328,11 +334,11 @@ function TasksList() {
           handleDelete(deleteTarget.id);
           setDeleteTarget(null);
         }}
-        okText="Да"
-        cancelText="Нет"
+        okText={t('tasksListPage.deleteModal.confirm')}
+        cancelText={t('tasksListPage.deleteModal.cancel')}
         okButtonProps={{ danger: true }}
       >
-        <Text>Это действие нельзя отменить.</Text>
+        <Text>{t('tasksListPage.deleteModal.description')}</Text>
       </Modal>
     </>
   );

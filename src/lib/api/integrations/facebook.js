@@ -20,6 +20,11 @@ export const getFacebookPage = (id) => api.get(`/api/settings/facebook/pages/${i
 export const connectFacebook = (data) =>
   api.post('/api/settings/facebook/pages/', { body: normalizePayload(data) });
 
+export const discoverFacebookPages = (accessToken) =>
+  api.post('/api/settings/facebook/pages/discover/', {
+    body: { access_token: accessToken },
+  });
+
 export const updateFacebookPage = (id, data) =>
   api.patch(`/api/settings/facebook/pages/${id}/`, { body: data });
 

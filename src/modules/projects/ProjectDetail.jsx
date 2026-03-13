@@ -8,6 +8,7 @@ import ActivityLog from '../../components/ActivityLog';
 import EntitySelect from '../../components/EntitySelect.jsx';
 import { getProject, deleteProject, getUsers, projectsApi } from '../../lib/api/client';
 import { getProjectStages, getCrmTags } from '../../lib/api/reference';
+import { t } from '../../lib/i18n';
 import { canWrite } from '../../lib/rbac.js';
 import { navigate } from '../../router';
 
@@ -41,7 +42,7 @@ function ProjectDetail({ id }) {
     } catch {
       setProject(null);
       setLoadError(true);
-      message.error('Ошибка загрузки данных проекта');
+      message.error(t('projectDetailPage.messages.loadError'));
     } finally {
       setLoading(false);
     }
@@ -67,30 +68,30 @@ function ProjectDetail({ id }) {
   const handleDelete = async () => {
     try {
       await deleteProject(id);
-      message.success('Проект удален');
+      message.success(t('projectDetailPage.messages.deleted'));
       navigate('/projects');
     } catch {
-      message.error('Ошибка удаления проекта');
+      message.error(t('projectDetailPage.messages.deleteError'));
     }
   };
 
   const handleComplete = async () => {
     try {
       await projectsApi.complete(id);
-      message.success('Проект завершен');
+      message.success(t('projectDetailPage.messages.completed'));
       loadProject();
     } catch {
-      message.error('Ошибка завершения проекта');
+      message.error(t('projectDetailPage.messages.completeError'));
     }
   };
 
   const handleReopen = async () => {
     try {
       await projectsApi.reopen(id);
-      message.success('Проект возобновлен');
+      message.success(t('projectDetailPage.messages.reopened'));
       loadProject();
     } catch {
-      message.error('Ошибка возобновления проекта');
+      message.error(t('projectDetailPage.messages.reopenError'));
     }
   };
 
@@ -108,11 +109,11 @@ function ProjectDetail({ id }) {
     try {
       setAssigning(true);
       await projectsApi.assign(id, assignState);
-      message.success('Назначения обновлены');
+      message.success(t('projectDetailPage.messages.assignmentsUpdated'));
       setAssignModalOpen(false);
       loadProject();
     } catch {
-      message.error('Ошибка назначения');
+      message.error(t('projectDetailPage.messages.assignmentsError'));
     } finally {
       setAssigning(false);
     }
@@ -153,9 +154,9 @@ function ProjectDetail({ id }) {
     return (
       <Result
         status="error"
-        title="Не удалось открыть проект"
-        subTitle="Попробуйте повторить загрузку"
-        extra={<Button onClick={loadProject}>Повторить</Button>}
+        title={t('projectDetailPage.loadError.title')}
+        subTitle={t('projectDetailPage.loadError.subtitle')}
+        extra={<Button onClick={loadProject}>{t('projectDetailPage.loadError.retry')}</Button>}
       />
     );
   }
@@ -164,9 +165,9 @@ function ProjectDetail({ id }) {
     return (
       <Result
         status="404"
-        title="Проект не найден"
-        subTitle="Запись могла быть удалена или у вас нет доступа"
-        extra={<Button onClick={() => navigate('/projects')}>К списку проектов</Button>}
+        title={t('projectDetailPage.notFound.title')}
+        subTitle={t('projectDetailPage.notFound.subtitle')}
+        extra={<Button onClick={() => navigate('/projects')}>{t('projectDetailPage.notFound.back')}</Button>}
       />
     );
   }
@@ -181,27 +182,27 @@ function ProjectDetail({ id }) {
     <Space direction="vertical" size={16} style={{ width: '100%' }}>
       <Space wrap>
         <Button icon={<ArrowLeft size={14} />} onClick={() => navigate('/projects')}>
-          Назад
+          {t('projectDetailPage.actions.back')}
         </Button>
         {canManage ? (
           <>
             <Button type="primary" icon={<Edit size={14} />} onClick={() => navigate(`/projects/${id}/edit`)}>
-              Редактировать
+              {t('projectDetailPage.actions.edit')}
             </Button>
             <Button icon={<User size={14} />} onClick={openAssignModal}>
-              Назначить
+              {t('projectDetailPage.actions.assign')}
             </Button>
             {isCompleted ? (
               <Button icon={<RotateCcw size={14} />} onClick={handleReopen}>
-                Возобновить
+                {t('projectDetailPage.actions.reopen')}
               </Button>
             ) : (
               <Button icon={<CheckCircle size={14} />} onClick={handleComplete}>
-                Завершить
+                {t('projectDetailPage.actions.complete')}
               </Button>
             )}
             <Button danger icon={<Trash2 size={14} />} onClick={handleDelete}>
-              Удалить
+              {t('projectDetailPage.actions.delete')}
             </Button>
           </>
         ) : null}
@@ -213,34 +214,34 @@ function ProjectDetail({ id }) {
           items={[
             {
               key: 'details',
-              label: 'Детали',
+              label: t('projectDetailPage.tabs.details'),
               children: (
                 <Descriptions bordered column={1} size="small">
-                  <Descriptions.Item label="Название">{project.name}</Descriptions.Item>
-                  <Descriptions.Item label="Этап">{stage ? <Tag color={stage.done ? 'green' : stage.in_progress ? 'blue' : 'default'}>{stage.name}</Tag> : '-'}</Descriptions.Item>
-                  <Descriptions.Item label="Приоритет">{project.priority ? `Приоритет ${project.priority}` : '-'}</Descriptions.Item>
-                  <Descriptions.Item label="Дата начала">{project.start_date ? dayjs(project.start_date).format('DD.MM.YYYY') : '-'}</Descriptions.Item>
-                  <Descriptions.Item label="Срок завершения">{project.due_date ? dayjs(project.due_date).format('DD.MM.YYYY') : '-'}</Descriptions.Item>
-                  <Descriptions.Item label="Дата закрытия">{project.closing_date ? dayjs(project.closing_date).format('DD.MM.YYYY') : '-'}</Descriptions.Item>
-                  <Descriptions.Item label="Следующий шаг">{project.next_step || '-'}</Descriptions.Item>
-                  <Descriptions.Item label="Дата следующего шага">{project.next_step_date ? dayjs(project.next_step_date).format('DD.MM.YYYY') : '-'}</Descriptions.Item>
-                  <Descriptions.Item label="Активен">{project.active ? <Tag color="green">Да</Tag> : <Tag>Нет</Tag>}</Descriptions.Item>
-                  <Descriptions.Item label="Напоминать">{project.remind_me ? <Tag color="gold">Да</Tag> : <Tag>Нет</Tag>}</Descriptions.Item>
-                  <Descriptions.Item label="Владелец">{project.owner ? userMap[project.owner] || '-' : '-'}</Descriptions.Item>
-                  <Descriptions.Item label="Со-владелец">{project.co_owner ? userMap[project.co_owner] || '-' : '-'}</Descriptions.Item>
-                  <Descriptions.Item label="Ответственные">{responsibleNames.length ? responsibleNames.join(', ') : '-'}</Descriptions.Item>
-                  <Descriptions.Item label="Подписчики">{subscriberNames.length ? subscriberNames.join(', ') : '-'}</Descriptions.Item>
-                  <Descriptions.Item label="Теги">{tagNames.length ? tagNames.map((tag) => <Tag key={tag}>{tag}</Tag>) : '-'}</Descriptions.Item>
-                  <Descriptions.Item label="Дата создания">{project.creation_date ? dayjs(project.creation_date).format('DD.MM.YYYY HH:mm') : '-'}</Descriptions.Item>
-                  <Descriptions.Item label="Последнее обновление">{project.update_date ? dayjs(project.update_date).format('DD.MM.YYYY HH:mm') : '-'}</Descriptions.Item>
-                  <Descriptions.Item label="Описание">{project.description || '-'}</Descriptions.Item>
-                  <Descriptions.Item label="Заметка">{project.note || '-'}</Descriptions.Item>
+                  <Descriptions.Item label={t('projectDetailPage.fields.name')}>{project.name}</Descriptions.Item>
+                  <Descriptions.Item label={t('projectDetailPage.fields.stage')}>{stage ? <Tag color={stage.done ? 'green' : stage.in_progress ? 'blue' : 'default'}>{stage.name}</Tag> : '-'}</Descriptions.Item>
+                  <Descriptions.Item label={t('projectDetailPage.fields.priority')}>{project.priority ? t('projectDetailPage.priorityValue', { value: project.priority }) : '-'}</Descriptions.Item>
+                  <Descriptions.Item label={t('projectDetailPage.fields.startDate')}>{project.start_date ? dayjs(project.start_date).format('DD.MM.YYYY') : '-'}</Descriptions.Item>
+                  <Descriptions.Item label={t('projectDetailPage.fields.dueDate')}>{project.due_date ? dayjs(project.due_date).format('DD.MM.YYYY') : '-'}</Descriptions.Item>
+                  <Descriptions.Item label={t('projectDetailPage.fields.closingDate')}>{project.closing_date ? dayjs(project.closing_date).format('DD.MM.YYYY') : '-'}</Descriptions.Item>
+                  <Descriptions.Item label={t('projectDetailPage.fields.nextStep')}>{project.next_step || '-'}</Descriptions.Item>
+                  <Descriptions.Item label={t('projectDetailPage.fields.nextStepDate')}>{project.next_step_date ? dayjs(project.next_step_date).format('DD.MM.YYYY') : '-'}</Descriptions.Item>
+                  <Descriptions.Item label={t('projectDetailPage.fields.active')}>{project.active ? <Tag color="green">{t('projectDetailPage.yes')}</Tag> : <Tag>{t('projectDetailPage.no')}</Tag>}</Descriptions.Item>
+                  <Descriptions.Item label={t('projectDetailPage.fields.remindMe')}>{project.remind_me ? <Tag color="gold">{t('projectDetailPage.yes')}</Tag> : <Tag>{t('projectDetailPage.no')}</Tag>}</Descriptions.Item>
+                  <Descriptions.Item label={t('projectDetailPage.fields.owner')}>{project.owner ? userMap[project.owner] || '-' : '-'}</Descriptions.Item>
+                  <Descriptions.Item label={t('projectDetailPage.fields.coOwner')}>{project.co_owner ? userMap[project.co_owner] || '-' : '-'}</Descriptions.Item>
+                  <Descriptions.Item label={t('projectDetailPage.fields.responsible')}>{responsibleNames.length ? responsibleNames.join(', ') : '-'}</Descriptions.Item>
+                  <Descriptions.Item label={t('projectDetailPage.fields.subscribers')}>{subscriberNames.length ? subscriberNames.join(', ') : '-'}</Descriptions.Item>
+                  <Descriptions.Item label={t('projectDetailPage.fields.tags')}>{tagNames.length ? tagNames.map((tag) => <Tag key={tag}>{tag}</Tag>) : '-'}</Descriptions.Item>
+                  <Descriptions.Item label={t('projectDetailPage.fields.createdAt')}>{project.creation_date ? dayjs(project.creation_date).format('DD.MM.YYYY HH:mm') : '-'}</Descriptions.Item>
+                  <Descriptions.Item label={t('projectDetailPage.fields.updatedAt')}>{project.update_date ? dayjs(project.update_date).format('DD.MM.YYYY HH:mm') : '-'}</Descriptions.Item>
+                  <Descriptions.Item label={t('projectDetailPage.fields.description')}>{project.description || '-'}</Descriptions.Item>
+                  <Descriptions.Item label={t('projectDetailPage.fields.note')}>{project.note || '-'}</Descriptions.Item>
                 </Descriptions>
               ),
             },
             {
               key: 'activity',
-              label: 'История активности',
+              label: t('projectDetailPage.tabs.activity'),
               children: <ActivityLog entityType="project" entityId={project.id} />,
             },
           ]}
@@ -248,12 +249,12 @@ function ProjectDetail({ id }) {
       </Card>
 
       <Modal
-        title="Назначения проекта"
+        title={t('projectDetailPage.assignModal.title')}
         open={assignModalOpen && canManage}
         onCancel={() => setAssignModalOpen(false)}
         onOk={handleAssign}
-        okText="Сохранить"
-        cancelText="Отмена"
+        okText={t('projectDetailPage.assignModal.save')}
+        cancelText={t('projectDetailPage.assignModal.cancel')}
         confirmLoading={assigning}
       >
         <Space direction="vertical" style={{ width: '100%' }}>
@@ -261,27 +262,27 @@ function ProjectDetail({ id }) {
             endpoint="users"
             value={assignState.owner}
             onChange={(value) => setAssignState((prev) => ({ ...prev, owner: value }))}
-            placeholder="Владелец"
+            placeholder={t('projectDetailPage.assignModal.placeholders.owner')}
           />
           <EntitySelect
             endpoint="users"
             value={assignState.co_owner}
             onChange={(value) => setAssignState((prev) => ({ ...prev, co_owner: value }))}
-            placeholder="Со-владелец"
+            placeholder={t('projectDetailPage.assignModal.placeholders.coOwner')}
           />
           <EntitySelect
             endpoint="users"
             mode="multiple"
             value={assignState.responsible}
             onChange={(value) => setAssignState((prev) => ({ ...prev, responsible: value || [] }))}
-            placeholder="Ответственные"
+            placeholder={t('projectDetailPage.assignModal.placeholders.responsible')}
           />
           <EntitySelect
             endpoint="users"
             mode="multiple"
             value={assignState.subscribers}
             onChange={(value) => setAssignState((prev) => ({ ...prev, subscribers: value || [] }))}
-            placeholder="Подписчики"
+            placeholder={t('projectDetailPage.assignModal.placeholders.subscribers')}
           />
         </Space>
       </Modal>

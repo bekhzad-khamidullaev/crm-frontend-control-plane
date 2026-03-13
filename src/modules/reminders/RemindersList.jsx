@@ -3,16 +3,22 @@ import { Check, Edit, Eye, Trash2, X } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
 
 import { PlusOutlined } from '@ant-design/icons';
-import { App, Button, Card, DatePicker, Input, Modal, Select, Space, Table, Tag, Typography } from 'antd';
+import { App, Button, Card, DatePicker, Modal, Select, Space, Table, Tag, Typography } from 'antd';
 
 import EntitySelect from '../../components/EntitySelect.jsx';
 import { getUser, getUsers } from '../../lib/api';
-import { deleteReminder, getReminders, updateReminder } from '../../lib/api/reminders';
+import {
+  deleteReminder,
+  getReminderContentTypes,
+  getReminders,
+  updateReminder
+} from '../../lib/api/reminders';
 import { canWrite } from '../../lib/rbac.js';
 import { navigate } from '../../router';
+import { EntityListToolbar } from '../../shared/ui/EntityListToolbar';
+import { LIST_HEADER_STYLE, LIST_STACK_STYLE, LIST_TITLE_STYLE } from '../../shared/ui/listLayout';
 
 const { RangePicker } = DatePicker;
-const { Search } = Input;
 const { Text, Title } = Typography;
 
 export default function RemindersList() {
@@ -26,6 +32,7 @@ export default function RemindersList() {
   const [activeFilter, setActiveFilter] = useState(null);
   const [ownerFilter, setOwnerFilter] = useState(null);
   const [contentTypeFilter, setContentTypeFilter] = useState(null);
+  const [contentTypeOptions, setContentTypeOptions] = useState([]);
   const [dateRange, setDateRange] = useState(null);
   const [confirmDelete, setConfirmDelete] = useState(null);
 
@@ -33,6 +40,21 @@ export default function RemindersList() {
     fetchData();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [pagination.current, pagination.pageSize, searchText, activeFilter, ownerFilter, contentTypeFilter, dateRange]);
+
+  useEffect(() => {
+    loadContentTypes();
+  }, []);
+
+  const loadContentTypes = async () => {
+    try {
+      const response = await getReminderContentTypes();
+      const results = Array.isArray(response?.results) ? response.results : [];
+      setContentTypeOptions(results.map((item) => ({ value: item.id, label: item.label || item.model || `Type ${item.id}` })));
+    } catch (fetchError) {
+      setContentTypeOptions([]);
+      console.error('Failed to load reminder content types', fetchError);
+    }
+  };
 
   const fetchData = async () => {
     setLoading(true);
@@ -96,6 +118,15 @@ export default function RemindersList() {
       current: newPagination.current,
       pageSize: newPagination.pageSize,
     }));
+  };
+
+  const handleResetFilters = () => {
+    setSearchText('');
+    setActiveFilter(null);
+    setOwnerFilter(null);
+    setContentTypeFilter(null);
+    setDateRange(null);
+    setPagination((prev) => ({ ...prev, current: 1 }));
   };
 
   const columns = useMemo(
@@ -175,13 +206,55 @@ export default function RemindersList() {
     [canManage],
   );
 
+  const activeFilters = [];
+  if (searchText) {
+    activeFilters.push({
+      key: 'search',
+      label: 'Поиск',
+      value: searchText,
+      onClear: () => setSearchText(''),
+    });
+  }
+  if (typeof activeFilter === 'boolean') {
+    activeFilters.push({
+      key: 'active',
+      label: 'Активность',
+      value: activeFilter ? 'Активные' : 'Неактивные',
+      onClear: () => setActiveFilter(null),
+    });
+  }
+  if (ownerFilter) {
+    activeFilters.push({
+      key: 'owner',
+      label: 'Владелец',
+      value: ownerFilter,
+      onClear: () => setOwnerFilter(null),
+    });
+  }
+  if (contentTypeFilter) {
+    activeFilters.push({
+      key: 'contentType',
+      label: 'Тип объекта',
+      value: contentTypeOptions.find((opt) => opt.value === contentTypeFilter)?.label || contentTypeFilter,
+      onClear: () => setContentTypeFilter(null),
+    });
+  }
+  if (dateRange && dateRange.length === 2) {
+    activeFilters.push({
+      key: 'date',
+      label: 'Период',
+      value: `${dayjs(dateRange[0]).format('DD.MM.YYYY')} - ${dayjs(dateRange[1]).format('DD.MM.YYYY')}`,
+      onClear: () => setDateRange(null),
+    });
+  }
+
   return (
     <>
       <Card>
-        <Space direction="vertical" size={16} style={{ width: '100%' }}>
-          <Space wrap style={{ width: '100%', justifyContent: 'space-between' }}>
+        <Space direction="vertical" size={16} style={LIST_STACK_STYLE}>
+          <Space wrap style={LIST_HEADER_STYLE}>
             <div>
-              <Title level={3} style={{ margin: 0 }}>Напоминания</Title>
+              <Title level={3} style={LIST_TITLE_STYLE}>Напоминания</Title>
               <Text type="secondary">Список напоминаний</Text>
             </div>
             {canManage ? (
@@ -191,49 +264,52 @@ export default function RemindersList() {
             ) : null}
           </Space>
 
-          <Space wrap>
-            <Search
-              placeholder="Поиск по теме или описанию"
-              allowClear
-              value={searchText}
-              onChange={(e) => setSearchText(e.target.value)}
-              onSearch={setSearchText}
-              style={{ minWidth: 280 }}
-            />
-            <Select
-              allowClear
-              placeholder="Активность"
-              style={{ minWidth: 150 }}
-              value={activeFilter}
-              options={[
-                { value: true, label: 'Активные' },
-                { value: false, label: 'Неактивные' },
-              ]}
-              onChange={(v) => setActiveFilter(v ?? null)}
-            />
-            <EntitySelect
-              placeholder="Владелец"
-              value={ownerFilter}
-              onChange={setOwnerFilter}
-              fetchList={getUsers}
-              fetchById={getUser}
-              allowClear
-            />
-            <Input
-              type="number"
-              min={1}
-              placeholder="Тип объекта"
-              value={contentTypeFilter || ''}
-              onChange={(e) => setContentTypeFilter(e.target.value ? Number(e.target.value) : null)}
-              style={{ width: 160 }}
-            />
-            <RangePicker
-              format="DD.MM.YYYY"
-              value={dateRange}
-              onChange={(vals) => setDateRange(vals || null)}
-            />
-            <Button onClick={fetchData} loading={loading}>Обновить</Button>
-          </Space>
+          <EntityListToolbar
+            searchValue={searchText}
+            searchPlaceholder="Поиск по теме или описанию"
+            onSearchChange={setSearchText}
+            filters={(
+              <Space wrap>
+                <Select
+                  allowClear
+                  placeholder="Активность"
+                  style={{ minWidth: 150 }}
+                  value={activeFilter}
+                  options={[
+                    { value: true, label: 'Активные' },
+                    { value: false, label: 'Неактивные' },
+                  ]}
+                  onChange={(v) => setActiveFilter(v ?? null)}
+                />
+                <EntitySelect
+                  placeholder="Владелец"
+                  value={ownerFilter}
+                  onChange={setOwnerFilter}
+                  fetchList={getUsers}
+                  fetchById={getUser}
+                  allowClear
+                />
+                <Select
+                  allowClear
+                  placeholder="Тип объекта"
+                  value={contentTypeFilter}
+                  options={contentTypeOptions}
+                  onChange={(val) => setContentTypeFilter(val ?? null)}
+                  style={{ minWidth: 180 }}
+                />
+                <RangePicker
+                  format="DD.MM.YYYY"
+                  value={dateRange}
+                  onChange={(vals) => setDateRange(vals || null)}
+                />
+              </Space>
+            )}
+            onRefresh={fetchData}
+            onReset={handleResetFilters}
+            loading={loading}
+            resultSummary={`Всего: ${pagination.total}`}
+            activeFilters={activeFilters}
+          />
 
           {error ? <Text type="danger">{error}</Text> : null}
 

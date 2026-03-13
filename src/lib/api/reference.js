@@ -12,6 +12,7 @@
  * - Currencies (валюты)
  * - Client Types (типы клиентов)
  * - Closing Reasons (причины закрытия)
+ * - Resolutions (резолюции memo)
  * - Departments (отделы)
  * - CRM Tags (теги)
  * - Task Tags (теги задач)
@@ -249,6 +250,28 @@ export async function getClosingReason(id) {
 }
 
 // ============================================================================
+// Memo Resolutions
+// ============================================================================
+
+/**
+ * Get all memo resolutions
+ * @param {Object} params - Query parameters
+ * @returns {Promise<Object>}
+ */
+export async function getResolutions(params = {}) {
+  return api.get('/api/resolutions/', { params });
+}
+
+/**
+ * Get single memo resolution by ID
+ * @param {number} id - Resolution ID
+ * @returns {Promise<Object>}
+ */
+export async function getResolution(id) {
+  return api.get(`/api/resolutions/${id}/`);
+}
+
+// ============================================================================
 // Departments (отделы)
 // ============================================================================
 
@@ -343,6 +366,7 @@ export async function loadAllReferenceData() {
       currencies,
       clientTypes,
       closingReasons,
+      resolutions,
       departments,
       crmTags,
       taskTags,
@@ -356,6 +380,7 @@ export async function loadAllReferenceData() {
       getCurrencies(),
       getClientTypes(),
       getClosingReasons(),
+      getResolutions(),
       getDepartments(),
       getCrmTags(),
       getTaskTags(),
@@ -371,6 +396,7 @@ export async function loadAllReferenceData() {
       currencies: currencies.results || currencies,
       clientTypes: clientTypes.results || clientTypes,
       closingReasons: closingReasons.results || closingReasons,
+      resolutions: resolutions.results || resolutions,
       departments: departments.results || departments,
       crmTags: crmTags.results || crmTags,
       taskTags: taskTags.results || taskTags,

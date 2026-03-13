@@ -1,3 +1,4 @@
+import { ArrowLeft } from 'lucide-react';
 import React, { useEffect, useState } from 'react';
 import { App, Button, Card, Col, Form, Input, InputNumber, Result, Row, Select, Skeleton, Space, Switch, Typography } from 'antd';
 import { navigate } from '../../router';
@@ -15,6 +16,11 @@ const typeOptions = [
   { value: 'G', label: 'Товар' },
   { value: 'S', label: 'Услуга' },
 ];
+
+const normalizeTypeValue = (value) => {
+  if (typeof value !== 'string') return value;
+  return value.trim().toUpperCase();
+};
 
 function ProductForm({ id }) {
   const [form] = Form.useForm();
@@ -35,7 +41,10 @@ function ProductForm({ id }) {
     setLoadError(false);
     try {
       const data = await getProduct(id);
-      form.setFieldsValue(data);
+      form.setFieldsValue({
+        ...data,
+        type: normalizeTypeValue(data?.type),
+      });
     } catch {
       setLoadError(true);
       message.error('Ошибка загрузки продукта');
@@ -53,6 +62,7 @@ function ProductForm({ id }) {
     try {
       const payload = normalizePayload({
         ...values,
+        type: normalizeTypeValue(values?.type),
         price: values.price !== undefined && values.price !== null && values.price !== '' ? String(values.price) : null,
       });
 
@@ -93,7 +103,7 @@ function ProductForm({ id }) {
     >
       <Space direction="vertical" size={16} style={{ width: '100%' }}>
         <Space wrap style={{ width: '100%', justifyContent: 'space-between' }}>
-          <Button onClick={() => navigate('/products')}>Назад</Button>
+          <Button onClick={() => navigate('/products')} icon={<ArrowLeft size={16} />}>Назад</Button>
           <Space>
             <Button onClick={() => navigate('/products')}>Отмена</Button>
             {canManage && (
@@ -111,7 +121,7 @@ function ProductForm({ id }) {
 
         <Card>
           <Form form={form} layout="vertical" onFinish={onFinish} autoComplete="off">
-            <h3>Основное</h3>
+            <Title level={5} style={{ marginTop: 0 }}>Основное</Title>
             <Row gutter={16}>
               <Col xs={24} md={12}>
                 <Form.Item label="Название" name="name" rules={[{ required: true, message: 'Введите название' }]}>
@@ -129,7 +139,7 @@ function ProductForm({ id }) {
               <TextArea rows={4} placeholder="Описание продукта" />
             </Form.Item>
 
-            <h3>Коммерческие параметры</h3>
+            <Title level={5}>Коммерческие параметры</Title>
             <Row gutter={16}>
               <Col xs={24} md={8}>
                 <Form.Item label="Цена" name="price">

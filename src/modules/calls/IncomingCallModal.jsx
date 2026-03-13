@@ -30,6 +30,11 @@ import { TELEPHONY_MODAL_PROPS } from '../../shared/ui/telephonyModal.js';
 
 const { Text, Title } = Typography;
 
+function normalizeOptionValue(value, options = []) {
+  const matched = options.find((option) => String(option?.value) === String(value));
+  return matched ? matched.value : value;
+}
+
 function asEntityDisplay(entity) {
   if (!entity) return { title: 'Неизвестный', subtitle: '' };
 
@@ -88,6 +93,10 @@ function IncomingCallModal({ visible, callData, onAnswer, onReject, onDismiss })
       description: `Входящий звонок${callData?.callId ? ` (CallID: ${callData.callId})` : ''}`,
     };
   }, [callData?.callId, callData?.callerName, phoneNumber]);
+  const leadSourceOptions = useMemo(
+    () => leadSources.map((source) => ({ value: source.id, label: source.name || `#${source.id}` })),
+    [leadSources],
+  );
 
   const loadLeadSources = async () => {
     try {
@@ -341,11 +350,15 @@ function IncomingCallModal({ visible, callData, onAnswer, onReject, onDismiss })
           >
             <Input placeholder="+998..." />
           </Form.Item>
-          <Form.Item name="lead_source" label="Источник лида">
+          <Form.Item
+            name="lead_source"
+            label="Источник лида"
+            getValueProps={(value) => ({ value: normalizeOptionValue(value, leadSourceOptions) })}
+          >
             <Select
               allowClear
               placeholder="Источник"
-              options={leadSources.map((source) => ({ value: source.id, label: source.name || `#${source.id}` }))}
+              options={leadSourceOptions}
             />
           </Form.Item>
           <Form.Item name="status" label="Статус">

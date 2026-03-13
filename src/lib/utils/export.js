@@ -1,5 +1,5 @@
 import dayjs from 'dayjs';
-import { formatCurrency } from './format';
+import { formatCurrency, formatNumber } from './format';
 
 /**
  * Export utilities for CSV, Excel, and PDF formats
@@ -217,13 +217,12 @@ export const formatters = {
   date: (value) => value ? dayjs(value).format('DD/MM/YYYY') : '-',
   datetime: (value) => value ? dayjs(value).format('DD/MM/YYYY HH:mm') : '-',
   currency: (value, row) => {
-    // row.currency_name — текстовое название ('Рубли'), row.currency_code — ISO код ('RUB')
-    const currencyCode = row.currency_code || row.currency || 'RUB';
-    return value ? formatCurrency(value, currencyCode) : '-';
+    const currencyCode = row.currency_code;
+    return value && currencyCode ? formatCurrency(value, currencyCode) : '-';
   },
   boolean: (value) => value ? 'Yes' : 'No',
   array: (value) => Array.isArray(value) ? value.join(', ') : '-',
-  number: (value) => value !== null && value !== undefined ? parseFloat(value).toLocaleString() : '-',
+  number: (value) => value !== null && value !== undefined ? formatNumber(value) : '-',
 };
 
 /**

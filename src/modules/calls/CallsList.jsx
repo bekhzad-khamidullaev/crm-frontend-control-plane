@@ -30,6 +30,7 @@ import {
 
 import AudioPlayer from '../../components/AudioPlayer.jsx';
 import CallButton from '../../components/CallButton.jsx';
+import { t } from '../../lib/i18n';
 import { addCallNote, getCallStatistics, getVoipCallLog, getVoipCallLogs } from '../../lib/api/calls.js';
 
 const { RangePicker } = DatePicker;
@@ -38,6 +39,10 @@ const { Text, Title } = Typography;
 
 function CallsList() {
   const { message } = App.useApp();
+  const tr = (key, fallback, vars = {}) => {
+    const localized = t(key, vars);
+    return localized === key ? fallback : localized;
+  };
   const [calls, setCalls] = useState([]);
   const [loading, setLoading] = useState(false);
   const [searchText, setSearchText] = useState('');
@@ -81,7 +86,7 @@ function CallsList() {
       setPagination((prev) => ({ ...prev, current: 1, total: filtered.length }));
     } catch (error) {
       console.error('Error fetching calls:', error);
-      message.error('Ошибка загрузки истории звонков');
+      message.error(tr('callsList.messages.loadError', 'Failed to load call history'));
       setCalls([]);
       setPagination((prev) => ({ ...prev, current: 1, total: 0 }));
     } finally {
@@ -126,14 +131,14 @@ function CallsList() {
       const values = await noteForm.validateFields();
       setNoteSaving(true);
       await addCallNote(noteTarget.id, { note: values.note });
-      message.success('Заметка добавлена');
+      message.success(tr('callsList.messages.noteAdded', 'Note added'));
       setNoteModalOpen(false);
       setNoteTarget(null);
       noteForm.resetFields();
       fetchCalls();
     } catch (error) {
       if (!error?.errorFields) {
-        message.error('Ошибка добавления заметки');
+        message.error(tr('callsList.messages.noteAddError', 'Failed to add note'));
       }
     } finally {
       setNoteSaving(false);
@@ -146,36 +151,36 @@ function CallsList() {
       const data = await getVoipCallLog(record.id);
       setDetailModal({ open: true, loading: false, data });
     } catch {
-      message.error('Ошибка загрузки деталей звонка');
+      message.error(tr('callsList.messages.detailsError', 'Failed to load call details'));
       setDetailModal({ open: true, loading: false, data: null });
     }
   };
 
   const statusConfig = {
-    answered: { color: 'success', text: 'Отвечен' },
-    completed: { color: 'success', text: 'Завершен' },
-    missed: { color: 'error', text: 'Пропущен' },
-    no_answer: { color: 'error', text: 'Нет ответа' },
-    busy: { color: 'warning', text: 'Занято' },
-    failed: { color: 'error', text: 'Ошибка' },
-    ringing: { color: 'processing', text: 'Звонит' },
+    answered: { color: 'success', text: tr('callsList.status.answered', 'Answered') },
+    completed: { color: 'success', text: tr('callsList.status.completed', 'Completed') },
+    missed: { color: 'error', text: tr('callsList.status.missed', 'Missed') },
+    no_answer: { color: 'error', text: tr('callsList.status.noAnswer', 'No answer') },
+    busy: { color: 'warning', text: tr('callsList.status.busy', 'Busy') },
+    failed: { color: 'error', text: tr('callsList.status.failed', 'Failed') },
+    ringing: { color: 'processing', text: tr('callsList.status.ringing', 'Ringing') },
   };
 
   const columns = [
     {
-      title: 'Направление',
+      title: tr('callsList.table.direction', 'Direction'),
       dataIndex: 'direction',
       key: 'direction',
       width: 140,
       render: (direction) => (
         <Space>
           <PhoneTwoTone twoToneColor={direction === 'inbound' ? '#52c41a' : '#1890ff'} />
-          <Text>{direction === 'inbound' ? 'Входящий' : 'Исходящий'}</Text>
+          <Text>{direction === 'inbound' ? tr('callsList.direction.inbound', 'Inbound') : tr('callsList.direction.outbound', 'Outbound')}</Text>
         </Space>
       ),
     },
     {
-      title: 'Номер телефона',
+      title: tr('callsList.table.phoneNumber', 'Phone number'),
       dataIndex: 'phone_number',
       key: 'phone_number',
       render: (phone, record) => (
@@ -186,7 +191,7 @@ function CallsList() {
       ),
     },
     {
-      title: 'Статус',
+      title: tr('callsList.table.status', 'Status'),
       dataIndex: 'status',
       key: 'status',
       width: 130,
@@ -196,7 +201,7 @@ function CallsList() {
       },
     },
     {
-      title: 'Дата и время',
+      title: tr('callsList.table.dateTime', 'Date and time'),
       dataIndex: 'started_at',
       key: 'started_at',
       width: 180,
@@ -204,7 +209,7 @@ function CallsList() {
       sorter: (a, b) => new Date(a.started_at || a.timestamp) - new Date(b.started_at || b.timestamp),
     },
     {
-      title: 'Длительность',
+      title: tr('callsList.table.duration', 'Duration'),
       dataIndex: 'duration',
       key: 'duration',
       width: 120,
@@ -221,14 +226,14 @@ function CallsList() {
       },
     },
     {
-      title: 'Заметки',
+      title: tr('callsList.table.notes', 'Notes'),
       dataIndex: 'notes',
       key: 'notes',
       ellipsis: true,
       render: (notes, record) => notes || record.note || <Text type="secondary">-</Text>,
     },
     {
-      title: 'Запись',
+      title: tr('callsList.table.recording', 'Recording'),
       dataIndex: 'recording_url',
       key: 'recording',
       width: 120,
@@ -236,28 +241,28 @@ function CallsList() {
       render: (recordingUrl, record) =>
         recordingUrl ? (
           <Button type="link" icon={<AudioOutlined />} size="small" onClick={() => handlePlayRecording(record)}>
-            Запись
+            {tr('callsList.actions.recording', 'Recording')}
           </Button>
         ) : (
           <Text type="secondary">-</Text>
         ),
     },
     {
-      title: 'Действия',
+      title: tr('callsList.table.actions', 'Actions'),
       key: 'actions',
       width: 240,
       render: (_, record) => (
         <Space>
           {record.recording_url ? (
             <Button type="link" icon={<PlayCircleOutlined />} size="small" onClick={() => handlePlayRecording(record)}>
-              Прослушать
+              {tr('callsList.actions.listen', 'Listen')}
             </Button>
           ) : null}
           <Button type="link" icon={<FormOutlined />} size="small" onClick={() => handleOpenNoteModal(record)}>
-            Заметка
+            {tr('callsList.actions.note', 'Note')}
           </Button>
           <Button type="link" icon={<InfoCircleOutlined />} size="small" onClick={() => handleViewDetails(record)}>
-            Детали
+            {tr('callsList.actions.details', 'Details')}
           </Button>
           <CallButton
             phone={record.phone_number || record.number}
@@ -288,24 +293,24 @@ function CallsList() {
       <Space direction="vertical" size={16} style={{ width: '100%' }}>
         <Space wrap style={{ width: '100%', justifyContent: 'space-between' }}>
           <div>
-            <Title level={3} style={{ margin: 0 }}>История звонков</Title>
-            <Text type="secondary">VoIP-журнал и аналитика</Text>
+            <Title level={3} style={{ margin: 0 }}>{tr('callsList.title', 'Call history')}</Title>
+            <Text type="secondary">{tr('callsList.subtitle', 'VoIP log and analytics')}</Text>
           </div>
-          <Button icon={<ReloadOutlined />} onClick={fetchCalls} loading={loading}>Обновить</Button>
+          <Button icon={<ReloadOutlined />} onClick={fetchCalls} loading={loading}>{tr('actions.refresh', 'Refresh')}</Button>
         </Space>
 
         {stats ? (
           <Space wrap>
-            <Card size="small"><Statistic title="Всего" value={stats.total} /></Card>
-            <Card size="small"><Statistic title="Отвечено" value={stats.answered} /></Card>
-            <Card size="small"><Statistic title="Пропущено" value={stats.missed} /></Card>
-            <Card size="small"><Statistic title="Длит., сек" value={stats.duration} /></Card>
+            <Card size="small"><Statistic title={tr('callsList.stats.total', 'Total')} value={stats.total} /></Card>
+            <Card size="small"><Statistic title={tr('callsList.stats.answered', 'Answered')} value={stats.answered} /></Card>
+            <Card size="small"><Statistic title={tr('callsList.stats.missed', 'Missed')} value={stats.missed} /></Card>
+            <Card size="small"><Statistic title={tr('callsList.stats.durationSec', 'Duration, sec')} value={stats.duration} /></Card>
           </Space>
         ) : null}
 
         <Space wrap>
           <Search
-            placeholder="Поиск по номеру"
+            placeholder={tr('callsList.filters.searchByNumber', 'Search by number')}
             allowClear
             value={searchText}
             onChange={(e) => setSearchText(e.target.value)}
@@ -314,18 +319,18 @@ function CallsList() {
           />
           <Select
             allowClear
-            placeholder="Направление"
+            placeholder={tr('callsList.filters.direction', 'Direction')}
             style={{ minWidth: 150 }}
             value={filters.direction}
             options={[
-              { value: 'inbound', label: 'Входящий' },
-              { value: 'outbound', label: 'Исходящий' },
+              { value: 'inbound', label: tr('callsList.direction.inbound', 'Inbound') },
+              { value: 'outbound', label: tr('callsList.direction.outbound', 'Outbound') },
             ]}
             onChange={(v) => setFilters((prev) => ({ ...prev, direction: v ?? null }))}
           />
           <Select
             allowClear
-            placeholder="Статус"
+            placeholder={tr('callsList.filters.status', 'Status')}
             style={{ minWidth: 150 }}
             value={filters.status}
             options={Object.entries(statusConfig).map(([value, meta]) => ({ value, label: meta.text }))}
@@ -336,7 +341,7 @@ function CallsList() {
             value={filters.dateRange}
             onChange={(vals) => setFilters((prev) => ({ ...prev, dateRange: vals || null }))}
           />
-          <Button onClick={() => setFilters({ direction: null, status: null, dateRange: null })}>Сбросить</Button>
+          <Button onClick={() => setFilters({ direction: null, status: null, dateRange: null })}>{tr('actions.reset', 'Reset')}</Button>
         </Space>
 
         <Table
@@ -349,7 +354,7 @@ function CallsList() {
       </Space>
 
       <Modal
-        title="Прослушивание записи"
+        title={tr('callsList.modals.recordingTitle', 'Recording playback')}
         open={recordingModalVisible}
         onCancel={() => {
           setRecordingModalVisible(false);
@@ -360,12 +365,12 @@ function CallsList() {
         {selectedRecording?.recording_url ? (
           <AudioPlayer src={selectedRecording.recording_url} />
         ) : (
-          <Text type="secondary">Запись не найдена</Text>
+          <Text type="secondary">{tr('callsList.modals.recordingNotFound', 'Recording not found')}</Text>
         )}
       </Modal>
 
       <Modal
-        title="Заметка к звонку"
+        title={tr('callsList.modals.noteTitle', 'Call note')}
         open={noteModalOpen}
         onCancel={() => {
           setNoteModalOpen(false);
@@ -374,30 +379,30 @@ function CallsList() {
         }}
         onOk={handleSaveNote}
         confirmLoading={noteSaving}
-        okText="Сохранить"
-        cancelText="Отмена"
+        okText={tr('actions.save', 'Save')}
+        cancelText={tr('actions.cancel', 'Cancel')}
       >
         <Form form={noteForm} layout="vertical">
           <Form.Item
-            label="Заметка"
+            label={tr('callsList.fields.note', 'Note')}
             name="note"
-            rules={[{ required: true, message: 'Добавьте текст заметки' }]}
+            rules={[{ required: true, message: tr('callsList.validation.noteRequired', 'Add note text') }]}
           >
-            <Input.TextArea rows={4} placeholder="Введите заметку" />
+            <Input.TextArea rows={4} placeholder={tr('callsList.placeholders.note', 'Enter note')} />
           </Form.Item>
         </Form>
       </Modal>
 
       <Modal
-        title="Детали звонка"
+        title={tr('callsList.modals.detailsTitle', 'Call details')}
         open={detailModal.open}
         onCancel={() => setDetailModal({ open: false, loading: false, data: null })}
         footer={null}
       >
         {detailModal.loading ? (
-          'Загрузка...'
+          tr('common.loading', 'Loading...')
         ) : !detailModal.data ? (
-          <Text type="secondary">Данные недоступны</Text>
+          <Text type="secondary">{tr('callsList.modals.detailsUnavailable', 'Data unavailable')}</Text>
         ) : (
           <Space direction="vertical" size={8} style={{ width: '100%' }}>
             {Object.entries(detailModal.data).map(([key, value]) => (

@@ -56,7 +56,7 @@ export const DealsTable: React.FC = () => {
       responsive: ['sm'],
       width: 160,
       render: (amount: string, record: Deal) => (
-        <span>{formatCurrency(amount, (record as any).currency_name || 'RUB')}</span>
+        <span>{(record as any).currency_code ? formatCurrency(amount, (record as any).currency_code) : '-'}</span>
       ),
     },
     {

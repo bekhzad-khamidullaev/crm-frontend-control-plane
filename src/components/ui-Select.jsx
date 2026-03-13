@@ -24,6 +24,11 @@ export function Select({
   showSearch = true,
   ...rest
 } = {}) {
+  const normalizeOptionValue = (currentValue, opts = []) => {
+    const matched = opts.find((option) => String(option?.value) === String(currentValue));
+    return matched ? matched.value : currentValue;
+  };
+
   const handleChange = (newValue) => {
     if (onChange) {
       onChange(newValue);
@@ -36,6 +41,11 @@ export function Select({
     }
     return opt;
   });
+  const normalizedValue = multiple
+    ? Array.isArray(value)
+      ? value.map((item) => normalizeOptionValue(item, formattedOptions))
+      : value
+    : normalizeOptionValue(value, formattedOptions);
 
   return (
     <div className={className} style={{ marginBottom: 16, ...style }}>
@@ -47,7 +57,7 @@ export function Select({
       )}
 
       <AntSelect
-        value={value || undefined}
+        value={normalizedValue || undefined}
         onChange={handleChange}
         options={formattedOptions}
         placeholder={placeholder}

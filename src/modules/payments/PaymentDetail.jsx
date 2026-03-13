@@ -93,7 +93,7 @@ export default function PaymentDetail({ id }) {
         </Space>
 
         <Descriptions bordered column={1} size="small">
-          <Descriptions.Item label="Сумма">{formatCurrency(data.amount, data.currency_name || 'RUB')}</Descriptions.Item>
+          <Descriptions.Item label="Сумма">{data.currency_code ? formatCurrency(data.amount, data.currency_code) : '-'}</Descriptions.Item>
           <Descriptions.Item label="Статус">
             <Tag>{statusOptions[data.status] || data.status || '—'}</Tag>
           </Descriptions.Item>

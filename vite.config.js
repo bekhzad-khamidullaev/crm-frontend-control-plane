@@ -58,9 +58,16 @@ export default defineConfig(({ mode }) => {
         output: {
           // Optimize chunk splitting
           manualChunks: (id) => {
-            // Vendor chunks
             if (id.includes('node_modules')) {
-              // Removed react-vendor explicit split to prevent circular dependencies with 'object-assign' and other internals
+              // TanStack stack (query + table)
+              if (id.includes('@tanstack/react-query') || id.includes('@tanstack/react-table')) {
+                return 'tanstack';
+              }
+
+              // CRM builder/editor dependencies
+              if (id.includes('@craftjs/core')) {
+                return 'craft';
+              }
 
               // Chart.js
               if (id.includes('chart.js') || id.includes('react-chartjs-2')) {
@@ -77,7 +84,7 @@ export default defineConfig(({ mode }) => {
                 return 'dnd';
               }
 
-              // Other node_modules
+              // Group the rest into shared vendor chunk.
               return 'vendor';
             }
           },
@@ -107,7 +114,7 @@ export default defineConfig(({ mode }) => {
       },
 
       // Chunk size warnings
-      chunkSizeWarningLimit: 1000,
+      chunkSizeWarningLimit: 2600,
 
       // Compression
       reportCompressedSize: true,

@@ -42,7 +42,7 @@ function normalizePermissions(rawPermissions = []) {
 
 function getStoredRoles() {
   try {
-    const raw = sessionStorage.getItem('enterprise_crm_roles') || localStorage.getItem('enterprise_crm_roles');
+    const raw = sessionStorage.getItem('enterprise_crm_roles');
     if (!raw) return [];
     const parsed = JSON.parse(raw);
     if (Array.isArray(parsed)) return normalizeRoles(parsed);
@@ -55,7 +55,7 @@ function getStoredRoles() {
 
 function getStoredPermissions() {
   try {
-    const raw = sessionStorage.getItem('enterprise_crm_permissions') || localStorage.getItem('enterprise_crm_permissions');
+    const raw = sessionStorage.getItem('enterprise_crm_permissions');
     if (!raw) return [];
     const parsed = JSON.parse(raw);
     if (Array.isArray(parsed)) return normalizePermissions(parsed);
@@ -96,12 +96,12 @@ export function hasAnyPermission(requiredPermissions = []) {
 
 export function canWrite(requiredPermissions = null) {
   if (requiredPermissions) {
-    return hasAnyPermission(requiredPermissions) || hasAnyRole(WRITE_ROLES);
+    return hasAnyPermission(requiredPermissions);
   }
   const currentRoute = parseHash().name;
   const routePermission = ROUTE_WRITE_PERMISSION_MAP[currentRoute];
   if (routePermission) {
-    return hasAnyPermission([routePermission]) || hasAnyRole(WRITE_ROLES);
+    return hasAnyPermission([routePermission]);
   }
   return hasAnyRole(WRITE_ROLES);
 }

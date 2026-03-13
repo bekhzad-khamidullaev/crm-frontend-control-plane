@@ -1,6 +1,7 @@
 import React, { useMemo, useState } from 'react';
 import { Alert, Button, Descriptions, Empty, Grid, Modal, Table, Tabs, Tag, Spin } from 'antd';
 import CrudPage from '../components/CrudPage.jsx';
+import { t } from '../lib/i18n/index.js';
 import {
   getCountries,
   getCountry,
@@ -56,15 +57,37 @@ async function fetchAllReferencePages(listFn, params = {}) {
   return allResults;
 }
 
-function withAllPages(listFn, baseParams = {}) {
-  return async (params = {}) => fetchAllReferencePages(listFn, { ...params, ...baseParams });
+function normalizeValue(value) {
+  return String(value || '').trim().toLowerCase().replace(/\s+/g, ' ');
+}
+
+function dedupeRows(rows, keySelector) {
+  const seen = new Set();
+  const unique = [];
+  for (const row of rows || []) {
+    const rawKey = keySelector(row);
+    const key = Array.isArray(rawKey)
+      ? rawKey.map((part) => normalizeValue(part)).join('::')
+      : normalizeValue(rawKey);
+    if (seen.has(key)) continue;
+    seen.add(key);
+    unique.push(row);
+  }
+  return unique;
+}
+
+function withAllPagesDeduped(listFn, keySelector, baseParams = {}) {
+  return async (params = {}) => {
+    const rows = await fetchAllReferencePages(listFn, { ...params, ...baseParams });
+    return dedupeRows(rows, keySelector);
+  };
 }
 
 function localizedNameColumns() {
   return [
-    { title: 'RU', dataIndex: 'name_ru', key: 'name_ru', render: (value, record) => value || record?.name || '-' },
-    { title: 'EN', dataIndex: 'name_en', key: 'name_en', render: (value, record) => value || record?.name || '-' },
-    { title: 'UZ', dataIndex: 'name_uz', key: 'name_uz', render: (value, record) => value || record?.name || '-' },
+    { title: t('referenceDataPage.common.ru'), dataIndex: 'name_ru', key: 'name_ru', render: (value, record) => value || record?.name || '-' },
+    { title: t('referenceDataPage.common.en'), dataIndex: 'name_en', key: 'name_en', render: (value, record) => value || record?.name || '-' },
+    { title: t('referenceDataPage.common.uz'), dataIndex: 'name_uz', key: 'name_uz', render: (value, record) => value || record?.name || '-' },
   ];
 }
 
@@ -93,33 +116,33 @@ function CurrencyRatesTab() {
       setRatesModal({
         open: true,
         data: rates,
-        title: `Курсы: ${currency.name}`,
+        title: `${t('referenceDataPage.currencyRates.rates')}: ${currency.name}`,
       });
     } catch (error) {
-      setRatesModal({ open: true, data: { error: 'Не удалось загрузить курсы' }, title: 'Курсы' });
+      setRatesModal({ open: true, data: { error: t('referenceDataPage.currencyRates.loadError') }, title: t('referenceDataPage.currencyRates.rates') });
     }
   };
 
   const columns = [
-    { title: 'Код', dataIndex: 'name', key: 'name', width: 120 },
+    { title: t('referenceDataPage.common.code'), dataIndex: 'name', key: 'name', width: 120 },
     {
-      title: 'Курс',
+      title: t('referenceDataPage.common.rate'),
       dataIndex: 'rate_to_state_currency',
       key: 'rate_to_state_currency',
       width: 140,
     },
     {
-      title: 'Автообновление',
+      title: t('referenceDataPage.common.autoUpdate'),
       dataIndex: 'auto_update',
       key: 'auto_update',
-      render: (value) => <Tag color={value ? 'green' : 'default'}>{value ? 'Да' : 'Нет'}</Tag>,
+      render: (value) => <Tag color={value ? 'green' : 'default'}>{value ? t('referenceDataPage.common.yes') : t('referenceDataPage.common.no')}</Tag>,
     },
     {
-      title: 'Действия',
+      title: t('referenceDataPage.common.actions'),
       key: 'actions',
       render: (_, record) => (
         <Button type="link" onClick={() => openRates(record)}>
-          Курсы
+          {t('referenceDataPage.currencyRates.rates')}
         </Button>
       ),
     },
@@ -161,7 +184,7 @@ function CurrencyRatesTab() {
             ))}
           </Descriptions>
         ) : (
-          <Empty description="Нет доступных данных по курсам" />
+          <Empty description={t('referenceDataPage.currencyRates.empty')} />
         )}
       </Modal>
     </>
@@ -182,27 +205,27 @@ export default function ReferenceDataPage() {
   });
   const allPagesApi = useMemo(
     () => ({
-      countries: withAllPages(getCountries),
-      cities: withAllPages(getCities),
-      industries: withAllPages(getIndustries),
-      leadSources: withAllPages(getLeadSources),
-      clientTypes: withAllPages(getClientTypes),
-      closingReasons: withAllPages(getClosingReasons),
-      stages: withAllPages(getStages),
-      taskStages: withAllPages(getTaskStages),
-      projectStages: withAllPages(getProjectStages),
-      crmTags: withAllPages(getCrmTags),
-      taskTags: withAllPages(getTaskTags),
-      departments: withAllPages(getDepartments),
-      currencies: withAllPages(getCurrencies),
-      productCategories: withAllPages(getProductCategories),
+      countries: withAllPagesDeduped(getCountries, (row) => row?.name),
+      cities: withAllPagesDeduped(getCities, (row) => [row?.country, row?.name]),
+      industries: withAllPagesDeduped(getIndustries, (row) => row?.name),
+      leadSources: withAllPagesDeduped(getLeadSources, (row) => row?.name),
+      clientTypes: withAllPagesDeduped(getClientTypes, (row) => row?.name),
+      closingReasons: withAllPagesDeduped(getClosingReasons, (row) => row?.name),
+      stages: withAllPagesDeduped(getStages, (row) => row?.name),
+      taskStages: withAllPagesDeduped(getTaskStages, (row) => row?.name),
+      projectStages: withAllPagesDeduped(getProjectStages, (row) => row?.name),
+      crmTags: withAllPagesDeduped(getCrmTags, (row) => row?.name),
+      taskTags: withAllPagesDeduped(getTaskTags, (row) => [row?.for_content, row?.name]),
+      departments: withAllPagesDeduped(getDepartments, (row) => row?.name),
+      currencies: withAllPagesDeduped(getCurrencies, (row) => row?.name),
+      productCategories: withAllPagesDeduped(getProductCategories, (row) => row?.name),
     }),
     []
   );
 
   const departmentMemberColumns = [
     {
-      title: 'Пользователь',
+      title: t('referenceDataPage.members.user'),
       key: 'name',
       render: (_, record) => record.full_name || record.username || record.email || `#${record.id}`,
     },
@@ -213,7 +236,7 @@ export default function ReferenceDataPage() {
       render: (value) => value || '-',
     },
     {
-      title: 'Роль',
+      title: t('referenceDataPage.members.role'),
       key: 'role',
       render: (_, record) => record.role_name || record.role || '-',
     },
@@ -224,7 +247,7 @@ export default function ReferenceDataPage() {
       open: true,
       loading: true,
       data: [],
-      title: `Сотрудники: ${department.name}`,
+      title: `${t('referenceDataPage.members.title')}: ${department.name}`,
     });
     try {
       const response = await getDepartmentMembers(department.id);
@@ -233,28 +256,31 @@ export default function ReferenceDataPage() {
         open: true,
         loading: false,
         data: Array.isArray(list) ? list : [],
-        title: `Сотрудники: ${department.name}`,
+        title: `${t('referenceDataPage.members.title')}: ${department.name}`,
       });
     } catch (error) {
       setMembersModal({
         open: true,
         loading: false,
         data: [],
-        title: `Сотрудники: ${department.name}`,
+        title: `${t('referenceDataPage.members.title')}: ${department.name}`,
       });
     }
   };
 
+  const nameColumn = { title: t('referenceDataPage.common.name'), dataIndex: 'name', key: 'name' };
+  const yesNo = (value) => (value ? t('referenceDataPage.common.yes') : t('referenceDataPage.common.no'));
+
   const tabs = [
     {
       key: 'countries',
-      label: 'Страны',
+      label: t('referenceDataPage.tabs.countries'),
       children: (
         <CrudPage
-          title="Страны"
+          title={t('referenceDataPage.tabs.countries')}
           api={{ list: allPagesApi.countries, retrieve: getCountry }}
           columns={[
-            { title: 'Название', dataIndex: 'name', key: 'name' },
+            nameColumn,
             ...localizedNameColumns(),
           ]}
           fields={emptyFields}
@@ -265,18 +291,18 @@ export default function ReferenceDataPage() {
     },
     {
       key: 'cities',
-      label: 'Города',
+      label: t('referenceDataPage.tabs.cities'),
       children: (
         <CrudPage
-          title="Города"
+          title={t('referenceDataPage.tabs.cities')}
           api={{ list: allPagesApi.cities, retrieve: getCity }}
           columns={[
-            { title: 'Название', dataIndex: 'name', key: 'name' },
+            nameColumn,
             ...localizedNameColumns(),
-            { title: 'Страна', dataIndex: 'country_name', key: 'country_name' },
-            { title: 'Страна RU', dataIndex: 'country_name_ru', key: 'country_name_ru' },
-            { title: 'Страна EN', dataIndex: 'country_name_en', key: 'country_name_en' },
-            { title: 'Страна UZ', dataIndex: 'country_name_uz', key: 'country_name_uz' },
+            { title: t('referenceDataPage.common.country'), dataIndex: 'country_name', key: 'country_name' },
+            { title: t('referenceDataPage.common.countryRu'), dataIndex: 'country_name_ru', key: 'country_name_ru' },
+            { title: t('referenceDataPage.common.countryEn'), dataIndex: 'country_name_en', key: 'country_name_en' },
+            { title: t('referenceDataPage.common.countryUz'), dataIndex: 'country_name_uz', key: 'country_name_uz' },
           ]}
           fields={emptyFields}
           readOnly={readOnly}
@@ -286,13 +312,13 @@ export default function ReferenceDataPage() {
     },
     {
       key: 'industries',
-      label: 'Отрасли',
+      label: t('referenceDataPage.tabs.industries'),
       children: (
         <CrudPage
-          title="Отрасли"
+          title={t('referenceDataPage.tabs.industries')}
           api={{ list: allPagesApi.industries, retrieve: getIndustry }}
           columns={[
-            { title: 'Название', dataIndex: 'name', key: 'name' },
+            nameColumn,
             ...localizedNameColumns(),
           ]}
           fields={emptyFields}
@@ -303,13 +329,13 @@ export default function ReferenceDataPage() {
     },
     {
       key: 'lead-sources',
-      label: 'Источники лидов',
+      label: t('referenceDataPage.tabs.leadSources'),
       children: (
         <CrudPage
-          title="Источники лидов"
+          title={t('referenceDataPage.tabs.leadSources')}
           api={{ list: allPagesApi.leadSources, retrieve: getLeadSource }}
           columns={[
-            { title: 'Название', dataIndex: 'name', key: 'name' },
+            nameColumn,
             ...localizedNameColumns(),
           ]}
           fields={emptyFields}
@@ -320,13 +346,13 @@ export default function ReferenceDataPage() {
     },
     {
       key: 'client-types',
-      label: 'Типы клиентов',
+      label: t('referenceDataPage.tabs.clientTypes'),
       children: (
         <CrudPage
-          title="Типы клиентов"
+          title={t('referenceDataPage.tabs.clientTypes')}
           api={{ list: allPagesApi.clientTypes, retrieve: getClientType }}
           columns={[
-            { title: 'Название', dataIndex: 'name', key: 'name' },
+            nameColumn,
             ...localizedNameColumns(),
           ]}
           fields={emptyFields}
@@ -337,13 +363,13 @@ export default function ReferenceDataPage() {
     },
     {
       key: 'closing-reasons',
-      label: 'Причины закрытия',
+      label: t('referenceDataPage.tabs.closingReasons'),
       children: (
         <CrudPage
-          title="Причины закрытия"
+          title={t('referenceDataPage.tabs.closingReasons')}
           api={{ list: allPagesApi.closingReasons, retrieve: getClosingReason }}
           columns={[
-            { title: 'Название', dataIndex: 'name', key: 'name' },
+            nameColumn,
             ...localizedNameColumns(),
           ]}
           fields={emptyFields}
@@ -354,17 +380,17 @@ export default function ReferenceDataPage() {
     },
     {
       key: 'stages',
-      label: 'Стадии сделок',
+      label: t('referenceDataPage.tabs.dealStages'),
       children: (
         <CrudPage
-          title="Стадии сделок"
+          title={t('referenceDataPage.tabs.dealStages')}
           api={{ list: allPagesApi.stages, retrieve: getStage }}
           columns={[
-            { title: 'Название', dataIndex: 'name', key: 'name' },
+            nameColumn,
             ...localizedNameColumns(),
-            { title: 'Индекс', dataIndex: 'index_number', key: 'index_number', width: 90 },
-            { title: 'По умолчанию', dataIndex: 'default', key: 'default', render: (value) => value ? 'Да' : 'Нет' },
-            { title: 'Успешная', dataIndex: 'success_stage', key: 'success_stage', render: (value) => value ? 'Да' : 'Нет' },
+            { title: t('referenceDataPage.common.index'), dataIndex: 'index_number', key: 'index_number', width: 90 },
+            { title: t('referenceDataPage.common.default'), dataIndex: 'default', key: 'default', render: yesNo },
+            { title: t('referenceDataPage.common.successful'), dataIndex: 'success_stage', key: 'success_stage', render: yesNo },
           ]}
           fields={emptyFields}
           readOnly={readOnly}
@@ -374,18 +400,18 @@ export default function ReferenceDataPage() {
     },
     {
       key: 'task-stages',
-      label: 'Стадии задач',
+      label: t('referenceDataPage.tabs.taskStages'),
       children: (
         <CrudPage
-          title="Стадии задач"
+          title={t('referenceDataPage.tabs.taskStages')}
           api={{ list: allPagesApi.taskStages, retrieve: getTaskStage }}
           columns={[
-            { title: 'Название', dataIndex: 'name', key: 'name' },
+            nameColumn,
             ...localizedNameColumns(),
-            { title: 'Индекс', dataIndex: 'index_number', key: 'index_number', width: 90 },
-            { title: 'По умолчанию', dataIndex: 'default', key: 'default', render: (value) => value ? 'Да' : 'Нет' },
-            { title: 'В работе', dataIndex: 'in_progress', key: 'in_progress', render: (value) => value ? 'Да' : 'Нет' },
-            { title: 'Завершено', dataIndex: 'done', key: 'done', render: (value) => value ? 'Да' : 'Нет' },
+            { title: t('referenceDataPage.common.index'), dataIndex: 'index_number', key: 'index_number', width: 90 },
+            { title: t('referenceDataPage.common.default'), dataIndex: 'default', key: 'default', render: yesNo },
+            { title: t('referenceDataPage.common.inProgress'), dataIndex: 'in_progress', key: 'in_progress', render: yesNo },
+            { title: t('referenceDataPage.common.done'), dataIndex: 'done', key: 'done', render: yesNo },
           ]}
           fields={emptyFields}
           readOnly={readOnly}
@@ -395,18 +421,18 @@ export default function ReferenceDataPage() {
     },
     {
       key: 'project-stages',
-      label: 'Стадии проектов',
+      label: t('referenceDataPage.tabs.projectStages'),
       children: (
         <CrudPage
-          title="Стадии проектов"
+          title={t('referenceDataPage.tabs.projectStages')}
           api={{ list: allPagesApi.projectStages, retrieve: getProjectStage }}
           columns={[
-            { title: 'Название', dataIndex: 'name', key: 'name' },
+            nameColumn,
             ...localizedNameColumns(),
-            { title: 'Индекс', dataIndex: 'index_number', key: 'index_number', width: 90 },
-            { title: 'По умолчанию', dataIndex: 'default', key: 'default', render: (value) => value ? 'Да' : 'Нет' },
-            { title: 'В работе', dataIndex: 'in_progress', key: 'in_progress', render: (value) => value ? 'Да' : 'Нет' },
-            { title: 'Завершено', dataIndex: 'done', key: 'done', render: (value) => value ? 'Да' : 'Нет' },
+            { title: t('referenceDataPage.common.index'), dataIndex: 'index_number', key: 'index_number', width: 90 },
+            { title: t('referenceDataPage.common.default'), dataIndex: 'default', key: 'default', render: yesNo },
+            { title: t('referenceDataPage.common.inProgress'), dataIndex: 'in_progress', key: 'in_progress', render: yesNo },
+            { title: t('referenceDataPage.common.done'), dataIndex: 'done', key: 'done', render: yesNo },
           ]}
           fields={emptyFields}
           readOnly={readOnly}
@@ -416,13 +442,13 @@ export default function ReferenceDataPage() {
     },
     {
       key: 'crm-tags',
-      label: 'CRM теги',
+      label: t('referenceDataPage.tabs.crmTags'),
       children: (
         <CrudPage
-          title="CRM теги"
+          title={t('referenceDataPage.tabs.crmTags')}
           api={{ list: allPagesApi.crmTags, retrieve: getCrmTag }}
           columns={[
-            { title: 'Название', dataIndex: 'name', key: 'name' },
+            nameColumn,
             ...localizedNameColumns(),
           ]}
           fields={emptyFields}
@@ -433,15 +459,15 @@ export default function ReferenceDataPage() {
     },
     {
       key: 'task-tags',
-      label: 'Теги задач',
+      label: t('referenceDataPage.tabs.taskTags'),
       children: (
         <CrudPage
-          title="Теги задач"
+          title={t('referenceDataPage.tabs.taskTags')}
           api={{ list: allPagesApi.taskTags, retrieve: getTaskTag }}
           columns={[
-            { title: 'Название', dataIndex: 'name', key: 'name' },
+            nameColumn,
             ...localizedNameColumns(),
-            { title: 'Для контента', dataIndex: 'for_content', key: 'for_content' },
+            { title: t('referenceDataPage.common.forContent'), dataIndex: 'for_content', key: 'for_content' },
           ]}
           fields={emptyFields}
           readOnly={readOnly}
@@ -451,22 +477,22 @@ export default function ReferenceDataPage() {
     },
     {
       key: 'departments',
-      label: 'Отделы',
+      label: t('referenceDataPage.tabs.departments'),
       children: (
         <CrudPage
-          title="Отделы"
+          title={t('referenceDataPage.tabs.departments')}
           api={{ list: allPagesApi.departments, retrieve: getDepartment }}
           columns={[
-            { title: 'Название', dataIndex: 'name', key: 'name' },
+            nameColumn,
             ...localizedNameColumns(),
-            { title: 'Сотрудников', dataIndex: 'member_count', key: 'member_count', width: 120 },
+            { title: t('referenceDataPage.members.count'), dataIndex: 'member_count', key: 'member_count', width: 120 },
             {
-              title: 'Состав',
+              title: t('referenceDataPage.members.composition'),
               key: 'members',
               width: 120,
               render: (_, record) => (
                 <Button type="link" onClick={() => openDepartmentMembers(record)}>
-                  Состав
+                  {t('referenceDataPage.members.composition')}
                 </Button>
               ),
             },
@@ -479,16 +505,16 @@ export default function ReferenceDataPage() {
     },
     {
       key: 'currencies',
-      label: 'Валюты',
+      label: t('referenceDataPage.tabs.currencies'),
       children: (
         <CrudPage
-          title="Валюты"
+          title={t('referenceDataPage.tabs.currencies')}
           api={{ list: allPagesApi.currencies, retrieve: getCurrency }}
           columns={[
-            { title: 'Код', dataIndex: 'name', key: 'name', width: 120 },
+            { title: t('referenceDataPage.common.code'), dataIndex: 'name', key: 'name', width: 120 },
             ...localizedNameColumns(),
-            { title: 'Курс', dataIndex: 'rate_to_state_currency', key: 'rate_to_state_currency' },
-            { title: 'Автообновление', dataIndex: 'auto_update', key: 'auto_update', render: (value) => value ? 'Да' : 'Нет' },
+            { title: t('referenceDataPage.common.rate'), dataIndex: 'rate_to_state_currency', key: 'rate_to_state_currency' },
+            { title: t('referenceDataPage.common.autoUpdate'), dataIndex: 'auto_update', key: 'auto_update', render: yesNo },
           ]}
           fields={emptyFields}
           readOnly={readOnly}
@@ -498,18 +524,18 @@ export default function ReferenceDataPage() {
     },
     {
       key: 'currency-rates',
-      label: 'Курсы валют',
+      label: t('referenceDataPage.tabs.currencyRates'),
       children: <CurrencyRatesTab />,
     },
     {
       key: 'product-categories',
-      label: 'Категории продуктов',
+      label: t('referenceDataPage.tabs.productCategories'),
       children: (
         <CrudPage
-          title="Категории продуктов"
+          title={t('referenceDataPage.tabs.productCategories')}
           api={{ list: allPagesApi.productCategories, retrieve: getProductCategory }}
           columns={[
-            { title: 'Название', dataIndex: 'name', key: 'name' },
+            nameColumn,
             ...localizedNameColumns(),
           ]}
           fields={emptyFields}
@@ -526,8 +552,8 @@ export default function ReferenceDataPage() {
         showIcon
         type="info"
         style={{ marginBottom: 16 }}
-        message="Справочники"
-        description="Раздел с системными справочными списками (статусы, типы, страны, теги и т.д.), которые используются в карточках и бизнес-процессах CRM."
+        message={t('referenceDataPage.alert.title')}
+        description={t('referenceDataPage.alert.description')}
       />
       <Tabs
         items={tabs}
@@ -556,7 +582,7 @@ export default function ReferenceDataPage() {
             size="small"
           />
         ) : (
-          <Empty description="Нет сотрудников в этом отделе" />
+          <Empty description={t('referenceDataPage.members.empty')} />
         )}
       </Modal>
     </>

@@ -25,7 +25,7 @@ function getRolesFromToken(token) {
 
 function getStoredRoles() {
   try {
-    const raw = sessionStorage.getItem('enterprise_crm_roles') || localStorage.getItem('enterprise_crm_roles');
+    const raw = sessionStorage.getItem('enterprise_crm_roles');
     if (!raw) return [];
     const parsed = JSON.parse(raw);
     if (Array.isArray(parsed)) return normalizeRoles(parsed);
@@ -49,7 +49,7 @@ function normalizePermissions(rawPermissions = []) {
 
 function getStoredPermissions() {
   try {
-    const raw = sessionStorage.getItem('enterprise_crm_permissions') || localStorage.getItem('enterprise_crm_permissions');
+    const raw = sessionStorage.getItem('enterprise_crm_permissions');
     if (!raw) return [];
     const parsed = JSON.parse(raw);
     if (Array.isArray(parsed)) return normalizePermissions(parsed);

@@ -14,6 +14,7 @@ import {
   Filler
 } from 'chart.js';
 import { getDashboardAnalytics } from '../lib/api/analytics';
+import { formatNumber } from '../lib/utils/format';
 
 // Register ChartJS components
 ChartJS.register(
@@ -105,7 +106,7 @@ export default function RevenueChart() {
         beginAtZero: true,
         ticks: {
           callback: function(value) {
-            return value.toLocaleString();
+            return formatNumber(value);
           }
         }
       },

@@ -7,6 +7,7 @@ import React, { useState, useEffect } from 'react';
 import { Modal, Form, Input, Select, Button, Space, App, Typography, Alert, Divider } from 'antd';
 import { MessageOutlined, SendOutlined, EyeOutlined } from '@ant-design/icons';
 import smsApi from '../lib/api/sms.js';
+import { useTheme } from '../lib/hooks/useTheme.js';
 
 const { TextArea } = Input;
 const { Text, Paragraph } = Typography;
@@ -17,6 +18,8 @@ export default function SendSMSModal({
   phoneNumber = '',
   contactName = '',
 }) {
+  const { theme } = useTheme();
+  const isDark = theme === 'dark';
   const { message } = App.useApp();
   const [form] = Form.useForm();
   const [loading, setLoading] = useState(false);
@@ -50,14 +53,21 @@ export default function SendSMSModal({
   const handleSend = async (values) => {
     setLoading(true);
     try {
-      await smsApi.send({
+      const response = await smsApi.send({
         channel_id: values.channel_id,
         to: values.phone_number,
         text: values.message,
         async: true,
       });
-      
-      message.success(`SMS отправлено на номер ${values.phone_number}`);
+      if (response?.status === 'error') {
+        message.error(response?.detail || 'Ошибка отправки SMS');
+        return;
+      }
+      if (response?.status === 'accepted') {
+        message.success(`SMS поставлено в очередь для номера ${values.phone_number}`);
+      } else {
+        message.success(`SMS отправлено на номер ${values.phone_number}`);
+      }
       form.resetFields();
       onClose();
     } catch (error) {
@@ -168,7 +178,8 @@ export default function SendSMSModal({
             <div
               style={{
                 padding: 12,
-                background: '#f5f5f5',
+                background: isDark ? '#1e232e' : '#f5f5f5',
+                border: `1px solid ${isDark ? '#2d3343' : '#e5e7eb'}`,
                 borderRadius: 4,
                 marginBottom: 16,
               }}

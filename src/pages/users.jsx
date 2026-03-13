@@ -2,6 +2,7 @@ import React, { useEffect, useMemo, useState } from 'react';
 import { Tabs, Card, Button, Table, message, Space, Empty, Row, Col, Statistic, Tag, Descriptions } from 'antd';
 import CrudPage from '../components/CrudPage.jsx';
 import { getUsers, getUser } from '../lib/api/client.js';
+import { t } from '../lib/i18n/index.js';
 import { getProfiles, getProfileByUser, getUserSessions, revokeAllSessions, get2FAStatus } from '../lib/api/user.js';
 import { formatValueForUi } from '../lib/utils/value-display.js';
 
@@ -22,7 +23,7 @@ function SecurityTab() {
       setSessions(sessionsRes?.results || sessionsRes || []);
       setTwoFA(twoFaRes);
     } catch (error) {
-      message.error('Не удалось загрузить данные безопасности');
+      message.error(t('usersPage.messages.securityLoadError'));
     }
   };
 
@@ -33,18 +34,18 @@ function SecurityTab() {
   const handleRevoke = async () => {
     try {
       await revokeAllSessions();
-      message.success('Все сессии отозваны');
+      message.success(t('usersPage.messages.sessionsRevoked'));
       load();
     } catch (error) {
-      message.error('Не удалось отозвать сессии');
+      message.error(t('usersPage.messages.revokeError'));
     }
   };
 
   return (
     <Space direction="vertical" size="middle" style={{ width: '100%' }}>
-      <Card title="2FA статус" extra={<Button onClick={load}>Обновить</Button>}>
+      <Card title={t('usersPage.security.twoFaTitle')} extra={<Button onClick={load}>{t('usersPage.common.refresh')}</Button>}>
         {!twoFaEntries.length ? (
-          <Empty description="Нет данных по 2FA" />
+          <Empty description={t('usersPage.security.twoFaEmpty')} />
         ) : (
           <Row gutter={[16, 16]}>
             {twoFaEntries.map(([key, value]) => (
@@ -56,11 +57,12 @@ function SecurityTab() {
                     if (formatted.kind === 'number') {
                       return <Statistic title={title} value={formatted.number} />;
                     }
-                    if (formatted.text === 'Да' || formatted.text === 'Нет') {
+                    if (typeof value === 'boolean') {
+                      const isYes = value === true;
                       return (
                         <>
                           <div style={{ marginBottom: 8, color: '#71717a' }}>{title}</div>
-                          <Tag color={formatted.text === 'Да' ? 'green' : 'default'}>{formatted.text}</Tag>
+                          <Tag color={isYes ? 'green' : 'default'}>{isYes ? t('usersPage.common.yes') : t('usersPage.common.no')}</Tag>
                         </>
                       );
                     }
@@ -78,15 +80,15 @@ function SecurityTab() {
           </Row>
         )}
       </Card>
-      <Card title="Сессии" extra={<Button danger onClick={handleRevoke}>Отозвать все</Button>}>
+      <Card title={t('usersPage.security.sessionsTitle')} extra={<Button danger onClick={handleRevoke}>{t('usersPage.security.revokeAll')}</Button>}>
         <Table
           dataSource={sessions}
           rowKey={(record) => record.id || record.session_key || `${record.ip_address || 'ip'}-${record.created_at || record.user_agent || 'session'}`}
           columns={[
             { title: 'IP', dataIndex: 'ip_address', key: 'ip_address' },
             { title: 'User Agent', dataIndex: 'user_agent', key: 'user_agent' },
-            { title: 'Создано', dataIndex: 'created_at', key: 'created_at' },
-            { title: 'Активна', dataIndex: 'is_active', key: 'is_active', render: (value) => value ? 'Да' : 'Нет' },
+            { title: t('usersPage.security.createdAt'), dataIndex: 'created_at', key: 'created_at' },
+            { title: t('usersPage.security.active'), dataIndex: 'is_active', key: 'is_active', render: (value) => value ? t('usersPage.common.yes') : t('usersPage.common.no') },
           ]}
           pagination={{ pageSize: 10 }}
         />
@@ -99,15 +101,15 @@ export default function UsersPage() {
   const tabs = [
     {
       key: 'users',
-      label: 'Пользователи',
+      label: t('usersPage.tabs.users'),
       children: (
         <CrudPage
-          title="Пользователи"
+          title={t('usersPage.tabs.users')}
           api={{ list: getUsers, retrieve: getUser }}
           columns={[
             { title: 'Username', dataIndex: 'username', key: 'username' },
-            { title: 'Имя', dataIndex: 'first_name', key: 'first_name' },
-            { title: 'Фамилия', dataIndex: 'last_name', key: 'last_name' },
+            { title: t('usersPage.columns.firstName'), dataIndex: 'first_name', key: 'first_name' },
+            { title: t('usersPage.columns.lastName'), dataIndex: 'last_name', key: 'last_name' },
             { title: 'Email', dataIndex: 'email', key: 'email' },
           ]}
           fields={[]}
@@ -117,15 +119,15 @@ export default function UsersPage() {
     },
     {
       key: 'profiles',
-      label: 'Профили',
+      label: t('usersPage.tabs.profiles'),
       children: (
         <CrudPage
-          title="Профили"
+          title={t('usersPage.tabs.profiles')}
           api={{ list: getProfiles, retrieve: getProfileByUser }}
           columns={[
             { title: 'User', dataIndex: 'username', key: 'username' },
             { title: 'Email', dataIndex: 'email', key: 'email' },
-            { title: 'Полное имя', dataIndex: 'full_name', key: 'full_name' },
+            { title: t('usersPage.columns.fullName'), dataIndex: 'full_name', key: 'full_name' },
             { title: 'PBX', dataIndex: 'pbx_number', key: 'pbx_number' },
             { title: 'Timezone', dataIndex: 'utc_timezone', key: 'utc_timezone' },
           ]}
@@ -136,7 +138,7 @@ export default function UsersPage() {
     },
     {
       key: 'security',
-      label: 'Безопасность',
+      label: t('usersPage.tabs.security'),
       children: <SecurityTab />,
     },
   ];

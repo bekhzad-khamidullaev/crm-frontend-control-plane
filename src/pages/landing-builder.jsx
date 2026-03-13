@@ -21,6 +21,16 @@ import {
   Typography,
   Segmented,
 } from 'antd';
+import {
+  EnvironmentOutlined,
+  FacebookOutlined,
+  InstagramOutlined,
+  LinkedinOutlined,
+  MailOutlined,
+  PhoneOutlined,
+  SendOutlined,
+  WhatsAppOutlined,
+} from '@ant-design/icons';
 import { Editor, Element, Frame, useEditor, useNode } from '@craftjs/core';
 import { createContext, useContext, useEffect, useMemo, useRef, useState } from 'react';
 import { landingsApi } from '../lib/api/client';
@@ -45,6 +55,12 @@ const DEFAULT_THEME = {
   text: '#111827',
   accent: '#2563eb',
 };
+const DARK_CANVAS_BG = '#0b1220';
+const DARK_BLOCK_BG = '#111827';
+const LIGHT_CANVAS_BG = '#f8fafc';
+const LIGHT_BLOCK_BG = '#ffffff';
+const DARK_TEXT = '#e2e8f0';
+const LIGHT_TEXT = '#111827';
 
 function safeParseJson(raw, fallback) {
   try {
@@ -56,6 +72,15 @@ function safeParseJson(raw, fallback) {
 
 function cloneJson(value) {
   return JSON.parse(JSON.stringify(value));
+}
+
+function normalizeOptionValue(value, options = []) {
+  const matched = options.find((option) => String(option?.value) === String(value));
+  return matched ? matched.value : value;
+}
+
+function idsEqual(left, right) {
+  return String(left) === String(right);
 }
 
 function uid(prefix = 'node') {
@@ -80,6 +105,83 @@ function textByLocale(nodeProps, key, locale, fallback = '') {
   return map?.[locale] ?? map?.ru ?? map?.en ?? map?.uz ?? fallback;
 }
 
+function normalizeColor(value) {
+  return String(value || '').trim().toLowerCase();
+}
+
+function hexToRgb(value) {
+  const normalized = normalizeColor(value);
+  if (!normalized.startsWith('#')) return null;
+  const hex = normalized.slice(1);
+  if (hex.length === 3) {
+    const r = parseInt(hex[0] + hex[0], 16);
+    const g = parseInt(hex[1] + hex[1], 16);
+    const b = parseInt(hex[2] + hex[2], 16);
+    if ([r, g, b].some(Number.isNaN)) return null;
+    return { r, g, b };
+  }
+  if (hex.length === 6) {
+    const r = parseInt(hex.slice(0, 2), 16);
+    const g = parseInt(hex.slice(2, 4), 16);
+    const b = parseInt(hex.slice(4, 6), 16);
+    if ([r, g, b].some(Number.isNaN)) return null;
+    return { r, g, b };
+  }
+  return null;
+}
+
+function relativeLuminance({ r, g, b }) {
+  const transform = (v) => {
+    const channel = v / 255;
+    return channel <= 0.03928 ? channel / 12.92 : ((channel + 0.055) / 1.055) ** 2.4;
+  };
+  const rr = transform(r);
+  const gg = transform(g);
+  const bb = transform(b);
+  return 0.2126 * rr + 0.7152 * gg + 0.0722 * bb;
+}
+
+function contrastRatio(colorA, colorB) {
+  const rgbA = hexToRgb(colorA);
+  const rgbB = hexToRgb(colorB);
+  if (!rgbA || !rgbB) return null;
+  const l1 = relativeLuminance(rgbA);
+  const l2 = relativeLuminance(rgbB);
+  const lighter = Math.max(l1, l2);
+  const darker = Math.min(l1, l2);
+  return (lighter + 0.05) / (darker + 0.05);
+}
+
+function resolveThemeSurfaceColor(value, isDark, lightFallback = LIGHT_BLOCK_BG, darkFallback = DARK_BLOCK_BG) {
+  if (!value) return isDark ? darkFallback : lightFallback;
+  const normalized = normalizeColor(value);
+  if (!isDark) return value;
+  if (normalized === '#fff' || normalized === '#ffffff' || normalized === '#f8fafc' || normalized === '#f9fafb' || normalized === '#f1f7ff' || normalized === '#fafafa') {
+    return darkFallback;
+  }
+  return value;
+}
+
+function resolveThemeTextColor(value, isDark) {
+  if (!value) return isDark ? DARK_TEXT : LIGHT_TEXT;
+  const normalized = normalizeColor(value);
+  if (!isDark) return value;
+  if (normalized === '#111827' || normalized === '#1f2937' || normalized === '#0f172a' || normalized === '#000' || normalized === '#000000') {
+    return DARK_TEXT;
+  }
+  return value;
+}
+
+function resolveReadableTextColor(value, background, isDark, lightBgFallback = LIGHT_BLOCK_BG, darkBgFallback = DARK_BLOCK_BG) {
+  const text = resolveThemeTextColor(value, isDark);
+  const bg = resolveThemeSurfaceColor(background, isDark, lightBgFallback, darkBgFallback);
+  const ratio = contrastRatio(text, bg);
+  if (ratio !== null && ratio < 4.5) {
+    return isDark ? DARK_TEXT : LIGHT_TEXT;
+  }
+  return text;
+}
+
 function toSafeFilePart(value) {
   return String(value || '')
     .trim()
@@ -96,6 +198,25 @@ function toSlug(value) {
     .replace(/\s+/g, '-')
     .replace(/-+/g, '-')
     .replace(/^-|-$/g, '');
+}
+
+function normalizePhoneHref(value) {
+  const normalized = String(value || '').replace(/[^\d+]/g, '');
+  return normalized ? `tel:${normalized}` : '';
+}
+
+function formatPhoneForInput(value) {
+  const digits = String(value || '').replace(/\D/g, '').slice(0, 15);
+  if (!digits) return '';
+  if (digits.startsWith('998')) {
+    const local = digits.slice(3, 12);
+    const p1 = local.slice(0, 2);
+    const p2 = local.slice(2, 5);
+    const p3 = local.slice(5, 7);
+    const p4 = local.slice(7, 9);
+    return ['+998', p1, p2, p3, p4].filter(Boolean).join(' ').trim();
+  }
+  return `+${digits}`;
 }
 
 function formatNumber(value) {
@@ -173,6 +294,7 @@ function getNodeLabel(node) {
   if (name === 'CtaBlock') return props.title || 'CTA';
   if (name === 'FormBlock') return props.title || 'Form';
   if (name === 'CarouselBlock') return props.title || 'Carousel';
+  if (name === 'ContactsBlock') return props.title || 'Contacts';
   if (props?.title) return props.title;
   return name || 'Block';
 }
@@ -189,9 +311,9 @@ function useBlockSelection() {
   };
 }
 
-function blockContainerStyles(props = {}) {
+function blockContainerStyles(props = {}, isDark = false) {
   return {
-    background: props.background || '#ffffff',
+    background: resolveThemeSurfaceColor(props.background, isDark, LIGHT_BLOCK_BG, DARK_BLOCK_BG),
     backgroundImage: props.backgroundImageUrl ? `url(${props.backgroundImageUrl})` : 'none',
     backgroundSize: props.backgroundSize || 'cover',
     backgroundPosition: props.backgroundPosition || 'center',
@@ -222,6 +344,9 @@ function BlockImage({ props }) {
 }
 
 function BlockShell({ children, background, textColor, name, props }) {
+  const { theme } = useTheme();
+  const isDark = theme === 'dark';
+  const resolvedTextColor = resolveReadableTextColor(textColor, background, isDark, LIGHT_BLOCK_BG, DARK_BLOCK_BG);
   const { connect, drag, selected } = useBlockSelection();
   return (
     <div
@@ -229,12 +354,14 @@ function BlockShell({ children, background, textColor, name, props }) {
       style={{
         padding: `${Number(props?.paddingY || 72)}px ${Number(props?.paddingX || 28)}px`,
         borderRadius: Number(props?.borderRadius || 14),
-        border: selected ? '2px solid #1677ff' : '1px solid #dbe5f4',
-        ...blockContainerStyles({ ...props, background }),
-        color: textColor || '#111827',
+        border: selected ? '2px solid #3b82f6' : `1px solid ${isDark ? '#2a3550' : '#dbe5f4'}`,
+        ...blockContainerStyles({ ...props, background }, isDark),
+        color: resolvedTextColor,
         marginBottom: 12,
         position: 'relative',
-        boxShadow: selected ? '0 8px 22px rgba(22, 119, 255, 0.18)' : '0 4px 14px rgba(15, 23, 42, 0.04)',
+        boxShadow: selected
+          ? (isDark ? '0 10px 24px rgba(59, 130, 246, 0.25)' : '0 8px 22px rgba(22, 119, 255, 0.18)')
+          : (isDark ? '0 8px 18px rgba(0, 0, 0, 0.35)' : '0 4px 14px rgba(15, 23, 42, 0.04)'),
         transition: 'all 0.2s ease',
       }}
     >
@@ -250,7 +377,10 @@ function BlockShell({ children, background, textColor, name, props }) {
 }
 
 function CanvasRoot(props) {
+  const { theme } = useTheme();
+  const isDark = theme === 'dark';
   const { children, background, title, description, titleColor } = props;
+  const resolvedTitleColor = resolveReadableTextColor(titleColor, background, isDark, LIGHT_CANVAS_BG, DARK_CANVAS_BG);
   const locale = useContext(LandingLocaleContext);
   const { connectors: { connect } } = useNode();
   return (
@@ -258,29 +388,31 @@ function CanvasRoot(props) {
       ref={connect}
       style={{
         minHeight: 700,
-        background: background || '#f8fafc',
+        background: resolveThemeSurfaceColor(background, isDark, LIGHT_CANVAS_BG, DARK_CANVAS_BG),
         backgroundImage: props.backgroundImageUrl ? `url(${props.backgroundImageUrl})` : 'none',
         backgroundSize: props.backgroundSize || 'cover',
         backgroundPosition: props.backgroundPosition || 'center',
         backgroundRepeat: props.backgroundRepeat || 'no-repeat',
         padding: 14,
         borderRadius: 18,
-        border: '1px solid #dbe5f4',
+        border: `1px solid ${isDark ? '#2a3550' : '#dbe5f4'}`,
       }}
     >
       <div
         style={{
           padding: 20,
           marginBottom: 14,
-          background: 'linear-gradient(135deg, #ffffff 0%, #f8fbff 100%)',
-          border: '1px solid #dbe5f4',
+          background: isDark
+            ? 'linear-gradient(135deg, #111827 0%, #1f2937 100%)'
+            : 'linear-gradient(135deg, #ffffff 0%, #f8fbff 100%)',
+          border: `1px solid ${isDark ? '#2a3550' : '#dbe5f4'}`,
           borderRadius: 14,
         }}
       >
-        <Title level={4} style={{ margin: 0, color: titleColor || '#111827' }}>
+        <Title level={4} style={{ margin: 0, color: resolvedTitleColor }}>
           {textByLocale(props, 'title', locale, title || 'Landing Page')}
         </Title>
-        <Text type="secondary">
+        <Text style={{ color: isDark ? '#cbd5e1' : undefined }}>
           {textByLocale(props, 'description', locale, description || 'Добавьте описание лендинга')}
         </Text>
       </div>
@@ -292,13 +424,16 @@ CanvasRoot.craft = { displayName: 'CanvasRoot' };
 
 function HeroBlock(props) {
   const { title, subtitle, buttonText, background, textColor } = props;
+  const { theme } = useTheme();
+  const isDark = theme === 'dark';
+  const resolvedTextColor = resolveReadableTextColor(textColor, background, isDark, LIGHT_BLOCK_BG, DARK_BLOCK_BG);
   const locale = useContext(LandingLocaleContext);
   return (
     <BlockShell background={background} textColor={textColor} name="Hero" props={props}>
-      <Title level={2} style={{ margin: 0, color: textColor || '#111827' }}>
+      <Title level={2} style={{ margin: 0, color: resolvedTextColor }}>
         {textByLocale(props, 'title', locale, title || '')}
       </Title>
-      <Text>{textByLocale(props, 'subtitle', locale, subtitle || '')}</Text>
+      <Text style={{ color: resolvedTextColor }}>{textByLocale(props, 'subtitle', locale, subtitle || '')}</Text>
       <div style={{ marginTop: 12 }}>
         <Button type="primary">{textByLocale(props, 'buttonText', locale, buttonText || 'CTA')}</Button>
       </div>
@@ -309,13 +444,16 @@ HeroBlock.craft = { displayName: 'HeroBlock' };
 
 function TextBlock(props) {
   const { title, body, background, textColor } = props;
+  const { theme } = useTheme();
+  const isDark = theme === 'dark';
+  const resolvedTextColor = resolveReadableTextColor(textColor, background, isDark, LIGHT_BLOCK_BG, DARK_BLOCK_BG);
   const locale = useContext(LandingLocaleContext);
   return (
     <BlockShell background={background} textColor={textColor} name="Text" props={props}>
-      <Title level={4} style={{ margin: 0, color: textColor || '#111827' }}>
+      <Title level={4} style={{ margin: 0, color: resolvedTextColor }}>
         {textByLocale(props, 'title', locale, title || '')}
       </Title>
-      <Text>{textByLocale(props, 'body', locale, body || '')}</Text>
+      <Text style={{ color: resolvedTextColor }}>{textByLocale(props, 'body', locale, body || '')}</Text>
     </BlockShell>
   );
 }
@@ -323,11 +461,14 @@ TextBlock.craft = { displayName: 'TextBlock' };
 
 function FeaturesBlock(props) {
   const { title, items, background, textColor } = props;
+  const { theme } = useTheme();
+  const isDark = theme === 'dark';
+  const resolvedTextColor = resolveReadableTextColor(textColor, background, isDark, LIGHT_BLOCK_BG, DARK_BLOCK_BG);
   const locale = useContext(LandingLocaleContext);
   const features = Array.isArray(items) ? items : [];
   return (
     <BlockShell background={background} textColor={textColor} name="Features" props={props}>
-      <Title level={4} style={{ margin: 0, color: textColor || '#111827' }}>
+      <Title level={4} style={{ margin: 0, color: resolvedTextColor }}>
         {textByLocale(props, 'title', locale, title || '')}
       </Title>
       <Space direction="vertical" style={{ width: '100%' }}>
@@ -344,13 +485,16 @@ FeaturesBlock.craft = { displayName: 'FeaturesBlock' };
 
 function CtaBlock(props) {
   const { title, body, buttonText, background, textColor } = props;
+  const { theme } = useTheme();
+  const isDark = theme === 'dark';
+  const resolvedTextColor = resolveReadableTextColor(textColor, background, isDark, LIGHT_BLOCK_BG, DARK_BLOCK_BG);
   const locale = useContext(LandingLocaleContext);
   return (
     <BlockShell background={background} textColor={textColor} name="CTA" props={props}>
-      <Title level={4} style={{ margin: 0, color: textColor || '#111827' }}>
+      <Title level={4} style={{ margin: 0, color: resolvedTextColor }}>
         {textByLocale(props, 'title', locale, title || '')}
       </Title>
-      <Text>{textByLocale(props, 'body', locale, body || '')}</Text>
+      <Text style={{ color: resolvedTextColor }}>{textByLocale(props, 'body', locale, body || '')}</Text>
       <div style={{ marginTop: 12 }}>
         <Button type="primary">{textByLocale(props, 'buttonText', locale, buttonText || 'CTA')}</Button>
       </div>
@@ -361,14 +505,17 @@ CtaBlock.craft = { displayName: 'CtaBlock' };
 
 function FormBlock(props) {
   const { title, subtitle, fields, buttonText, background, textColor } = props;
+  const { theme } = useTheme();
+  const isDark = theme === 'dark';
+  const resolvedTextColor = resolveReadableTextColor(textColor, background, isDark, LIGHT_BLOCK_BG, DARK_BLOCK_BG);
   const locale = useContext(LandingLocaleContext);
   const formFields = Array.isArray(fields) ? fields : [];
   return (
     <BlockShell background={background} textColor={textColor} name="Form" props={props}>
-      <Title level={4} style={{ margin: 0, color: textColor || '#111827' }}>
+      <Title level={4} style={{ margin: 0, color: resolvedTextColor }}>
         {textByLocale(props, 'title', locale, title || '')}
       </Title>
-      <Text>{textByLocale(props, 'subtitle', locale, subtitle || '')}</Text>
+      <Text style={{ color: resolvedTextColor }}>{textByLocale(props, 'subtitle', locale, subtitle || '')}</Text>
       <Space direction="vertical" style={{ width: '100%', marginTop: 10 }}>
         {formFields.map((field) => (
           <Input key={field.key} placeholder={textByLocale(field, 'label', locale, field.label || '')} disabled />
@@ -384,11 +531,14 @@ FormBlock.craft = { displayName: 'FormBlock' };
 
 function CarouselBlock(props) {
   const { title, images, background, textColor } = props;
+  const { theme } = useTheme();
+  const isDark = theme === 'dark';
+  const resolvedTextColor = resolveReadableTextColor(textColor, background, isDark, LIGHT_BLOCK_BG, DARK_BLOCK_BG);
   const locale = useContext(LandingLocaleContext);
   const items = Array.isArray(images) ? images.filter(Boolean) : [];
   return (
     <BlockShell background={background} textColor={textColor} name="Carousel" props={props}>
-      <Title level={4} style={{ margin: 0, color: textColor || '#111827' }}>
+      <Title level={4} style={{ margin: 0, color: resolvedTextColor }}>
         {textByLocale(props, 'title', locale, title || '')}
       </Title>
       <div style={{ marginTop: 14 }}>
@@ -417,6 +567,56 @@ function CarouselBlock(props) {
   );
 }
 CarouselBlock.craft = { displayName: 'CarouselBlock' };
+
+function ContactsBlock(props) {
+  const { title, subtitle, phone, email, address, whatsapp, telegram, instagram, facebook, linkedin, background, textColor } = props;
+  const { theme } = useTheme();
+  const isDark = theme === 'dark';
+  const resolvedTextColor = resolveReadableTextColor(textColor, background, isDark, LIGHT_BLOCK_BG, DARK_BLOCK_BG);
+  const locale = useContext(LandingLocaleContext);
+  const socials = [
+    { key: 'wa', label: 'WhatsApp', url: whatsapp, icon: WhatsAppOutlined },
+    { key: 'tg', label: 'Telegram', url: telegram, icon: SendOutlined },
+    { key: 'ig', label: 'Instagram', url: instagram, icon: InstagramOutlined },
+    { key: 'fb', label: 'Facebook', url: facebook, icon: FacebookOutlined },
+    { key: 'in', label: 'LinkedIn', url: linkedin, icon: LinkedinOutlined },
+  ].filter((item) => item.url);
+
+  return (
+    <BlockShell background={background} textColor={textColor} name="Contacts" props={props}>
+      <Title level={4} style={{ margin: 0, color: resolvedTextColor }}>
+        {textByLocale(props, 'title', locale, title || '')}
+      </Title>
+      <Text style={{ color: resolvedTextColor }}>{textByLocale(props, 'subtitle', locale, subtitle || '')}</Text>
+      <Space direction="vertical" size={8} style={{ marginTop: 12, width: '100%' }}>
+        {phone ? (
+          <Text style={{ color: resolvedTextColor }}>
+            <PhoneOutlined /> Телефон: <a href={normalizePhoneHref(phone)}>{phone}</a>
+          </Text>
+        ) : null}
+        {email ? (
+          <Text style={{ color: resolvedTextColor }}>
+            <MailOutlined /> Email: <a href={`mailto:${email}`}>{email}</a>
+          </Text>
+        ) : null}
+        {address ? <Text style={{ color: resolvedTextColor }}><EnvironmentOutlined /> Адрес: {address}</Text> : null}
+        {socials.length > 0 ? (
+          <Space wrap>
+            {socials.map((item) => {
+              const Icon = item.icon;
+              return (
+                <Button key={item.key} href={item.url} target="_blank" rel="noopener noreferrer" icon={<Icon />}>
+                {item.label}
+              </Button>
+              );
+            })}
+          </Space>
+        ) : null}
+      </Space>
+    </BlockShell>
+  );
+}
+ContactsBlock.craft = { displayName: 'ContactsBlock' };
 
 function defaultCraftObject() {
   const heroId = uid('hero');
@@ -523,6 +723,7 @@ function defaultCrmSalesCraftObject() {
   const carouselId = uid('carousel');
   const pricingId = uid('features');
   const faqId = uid('features');
+  const contactsId = uid('contacts');
   const ctaId = uid('cta');
   const formId = uid('form');
   const formBlockId = `form-${formId}`;
@@ -542,7 +743,7 @@ function defaultCrmSalesCraftObject() {
       displayName: 'CanvasRoot',
       custom: {},
       hidden: false,
-      nodes: [heroId, introId, valueId, roleId, carouselId, pricingId, faqId, ctaId, formId],
+      nodes: [heroId, introId, valueId, roleId, carouselId, pricingId, faqId, contactsId, ctaId, formId],
       linkedNodes: {},
     },
     [heroId]: {
@@ -705,6 +906,33 @@ function defaultCrmSalesCraftObject() {
       nodes: [],
       linkedNodes: {},
     },
+    [contactsId]: {
+      type: { resolvedName: 'ContactsBlock' },
+      isCanvas: false,
+      props: {
+        title: 'Контакты',
+        title_i18n: ensureI18nObject('Контакты'),
+        subtitle: 'Свяжитесь с нами через звонок или соцсети',
+        subtitle_i18n: ensureI18nObject('Свяжитесь с нами через звонок или соцсети'),
+        phone: '+998 90 123 45 67',
+        email: 'sales@enterprise-crm.com',
+        address: 'Ташкент, Узбекистан',
+        whatsapp: 'https://wa.me/998901234567',
+        telegram: 'https://t.me/enterprise_crm',
+        instagram: 'https://instagram.com/enterprise_crm',
+        facebook: 'https://facebook.com/enterprise_crm',
+        linkedin: 'https://linkedin.com/company/enterprise-crm',
+        background: '#ffffff',
+        textColor: '#111827',
+        fontFamily: '"Manrope", "Inter", system-ui, sans-serif',
+        borderRadius: 18,
+      },
+      displayName: 'ContactsBlock',
+      custom: {},
+      hidden: false,
+      nodes: [],
+      linkedNodes: {},
+    },
     [ctaId]: {
       type: { resolvedName: 'CtaBlock' },
       isCanvas: false,
@@ -791,6 +1019,8 @@ function extractSectionsFromCraft(craft) {
       sections.push({ id, type: 'cta', ...props });
     } else if (type === 'CarouselBlock') {
       sections.push({ id, type: 'carousel', ...props });
+    } else if (type === 'ContactsBlock') {
+      sections.push({ id, type: 'contacts', ...props });
     } else if (type === 'FormBlock') {
       sections.push({
         id,
@@ -1015,6 +1245,43 @@ function legacySectionsToCraft(schema) {
           borderRadius: section.borderRadius || 14,
         },
       };
+    } else if (section.type === 'contacts') {
+      draft[id] = {
+        ...base,
+        type: { resolvedName: 'ContactsBlock' },
+        displayName: 'ContactsBlock',
+        props: {
+          title: section.title || 'Контакты',
+          title_i18n: ensureI18nObject(section.title_i18n || section.title || 'Контакты'),
+          subtitle: section.subtitle || '',
+          subtitle_i18n: ensureI18nObject(section.subtitle_i18n || section.subtitle || ''),
+          phone: section.phone || '',
+          email: section.email || '',
+          address: section.address || '',
+          whatsapp: section.whatsapp || '',
+          telegram: section.telegram || '',
+          instagram: section.instagram || '',
+          facebook: section.facebook || '',
+          linkedin: section.linkedin || '',
+          background: section.background || '#ffffff',
+          textColor: section.textColor || '#111827',
+          fontFamily: section.fontFamily || 'Inter, system-ui, sans-serif',
+          fontSize: section.fontSize || undefined,
+          opacity: section.opacity ?? 1,
+          backgroundImageUrl: section.backgroundImageUrl || '',
+          backgroundSize: section.backgroundSize || 'cover',
+          backgroundPosition: section.backgroundPosition || 'center',
+          backgroundRepeat: section.backgroundRepeat || 'no-repeat',
+          imageUrl: section.imageUrl || '',
+          imageMaxHeight: section.imageMaxHeight || 360,
+          imageOpacity: section.imageOpacity ?? 1,
+          imageFit: section.imageFit || 'cover',
+          imageBorderRadius: section.imageBorderRadius || 12,
+          paddingX: section.paddingX || 28,
+          paddingY: section.paddingY || 72,
+          borderRadius: section.borderRadius || 14,
+        },
+      };
     } else if (section.type === 'form') {
       draft[id] = {
         ...base,
@@ -1143,8 +1410,8 @@ function AddBlockToolbar() {
             subtitle_i18n={ensureI18nObject('Опишите ваше предложение')}
             buttonText="Оставить заявку"
             buttonText_i18n={ensureI18nObject('Оставить заявку')}
-            background="#ffffff"
-            textColor="#111827"
+            background=""
+            textColor=""
           />,
         )
         .toNodeTree();
@@ -1160,8 +1427,8 @@ function AddBlockToolbar() {
             title_i18n={ensureI18nObject('Текстовый блок')}
             body="Добавьте описание"
             body_i18n={ensureI18nObject('Добавьте описание')}
-            background="#ffffff"
-            textColor="#111827"
+            background=""
+            textColor=""
           />,
         )
         .toNodeTree();
@@ -1176,8 +1443,8 @@ function AddBlockToolbar() {
             title="Преимущества"
             title_i18n={ensureI18nObject('Преимущества')}
             items={['Преимущество 1', 'Преимущество 2']}
-            background="#ffffff"
-            textColor="#111827"
+            background=""
+            textColor=""
           />,
         )
         .toNodeTree();
@@ -1195,8 +1462,8 @@ function AddBlockToolbar() {
             body_i18n={ensureI18nObject('Призыв к действию')}
             buttonText="Связаться"
             buttonText_i18n={ensureI18nObject('Связаться')}
-            background="#ffffff"
-            textColor="#111827"
+            background=""
+            textColor=""
           />,
         )
         .toNodeTree();
@@ -1214,11 +1481,36 @@ function AddBlockToolbar() {
               'https://images.unsplash.com/photo-1460925895917-afdab827c52f?auto=format&fit=crop&w=1400&q=80',
               'https://picsum.photos/seed/crm-dashboard/1400/800',
             ]}
-            background="#ffffff"
-            textColor="#111827"
+            background=""
+            textColor=""
             slideHeight={340}
             imageFit="cover"
             imageBorderRadius={12}
+          />,
+        )
+        .toNodeTree();
+      actions.addNodeTree(tree, 'ROOT');
+      return;
+    }
+
+    if (type === 'ContactsBlock') {
+      const tree = query
+        .parseReactElement(
+          <ContactsBlock
+            title="Контакты"
+            title_i18n={ensureI18nObject('Контакты')}
+            subtitle="Свяжитесь с нами"
+            subtitle_i18n={ensureI18nObject('Свяжитесь с нами')}
+            phone="+998 90 123 45 67"
+            email="sales@enterprise-crm.com"
+            address="Ташкент, Узбекистан"
+            whatsapp="https://wa.me/998901234567"
+            telegram="https://t.me/enterprise_crm"
+            instagram=""
+            facebook=""
+            linkedin=""
+            background=""
+            textColor=""
           />,
         )
         .toNodeTree();
@@ -1236,8 +1528,8 @@ function AddBlockToolbar() {
           subtitle_i18n={ensureI18nObject('Оставьте контакты')}
           buttonText="Отправить"
           buttonText_i18n={ensureI18nObject('Отправить')}
-          background="#ffffff"
-          textColor="#111827"
+          background=""
+          textColor=""
           blockId={`form-${id}`}
           formKey="lead_main"
           fields={[
@@ -1274,6 +1566,7 @@ function AddBlockToolbar() {
       <Button size="small" onClick={() => addBlock('CtaBlock')}>+ CTA</Button>
       <Button size="small" onClick={() => addBlock('FormBlock')}>+ Form</Button>
       <Button size="small" onClick={() => addBlock('CarouselBlock')}>+ Carousel</Button>
+      <Button size="small" onClick={() => addBlock('ContactsBlock')}>+ Contacts</Button>
       <Button size="small" type="dashed" onClick={addPromoTemplate}>+ Template Promo</Button>
     </Space>
   );
@@ -1356,6 +1649,7 @@ function NodePropertiesPanel({ lookups, activeLocale, selectedLandingId }) {
   const canEditButton = props.buttonText !== undefined || props.buttonText_i18n !== undefined;
   const canEditFeatures = Array.isArray(props.items);
   const canEditCarousel = type === 'CarouselBlock' || Array.isArray(props.images);
+  const canEditContacts = type === 'ContactsBlock' || props.phone !== undefined || props.whatsapp !== undefined;
   const canEditForm = Array.isArray(props.fields) || props.blockId !== undefined || props.formKey !== undefined;
 
   const setProp = (key, value) => {
@@ -1757,6 +2051,39 @@ function NodePropertiesPanel({ lookups, activeLocale, selectedLandingId }) {
         </>
       )}
 
+      {canEditContacts && (
+        <>
+          <Form.Item label="Phone (call)">
+            <Input
+              value={props.phone || ''}
+              onChange={(e) => setProp('phone', formatPhoneForInput(e.target.value))}
+              placeholder="+998 90 123 45 67"
+            />
+          </Form.Item>
+          <Form.Item label="Email">
+            <Input value={props.email || ''} onChange={(e) => setProp('email', e.target.value)} placeholder="sales@company.com" />
+          </Form.Item>
+          <Form.Item label="Address">
+            <Input value={props.address || ''} onChange={(e) => setProp('address', e.target.value)} placeholder="City, Country" />
+          </Form.Item>
+          <Form.Item label="WhatsApp URL">
+            <Input value={props.whatsapp || ''} onChange={(e) => setProp('whatsapp', e.target.value)} placeholder="https://wa.me/..." />
+          </Form.Item>
+          <Form.Item label="Telegram URL">
+            <Input value={props.telegram || ''} onChange={(e) => setProp('telegram', e.target.value)} placeholder="https://t.me/..." />
+          </Form.Item>
+          <Form.Item label="Instagram URL">
+            <Input value={props.instagram || ''} onChange={(e) => setProp('instagram', e.target.value)} placeholder="https://instagram.com/..." />
+          </Form.Item>
+          <Form.Item label="Facebook URL">
+            <Input value={props.facebook || ''} onChange={(e) => setProp('facebook', e.target.value)} placeholder="https://facebook.com/..." />
+          </Form.Item>
+          <Form.Item label="LinkedIn URL">
+            <Input value={props.linkedin || ''} onChange={(e) => setProp('linkedin', e.target.value)} placeholder="https://linkedin.com/company/..." />
+          </Form.Item>
+        </>
+      )}
+
       {canEditForm && (
         <>
           <Form.Item label="Block ID" style={{ marginTop: 12 }}>
@@ -1818,7 +2145,10 @@ function NodePropertiesPanel({ lookups, activeLocale, selectedLandingId }) {
           <Form.Item label="Lead source" style={{ marginTop: 8 }}>
             <Select
               allowClear
-              value={props.lead_source ?? null}
+              value={normalizeOptionValue(
+                props.lead_source ?? null,
+                lookups.lead_sources.map((s) => ({ value: s.id, label: s.name })),
+              )}
               options={lookups.lead_sources.map((s) => ({ value: s.id, label: s.name }))}
               onChange={(value) => setProp('lead_source', value || null)}
             />
@@ -1829,7 +2159,10 @@ function NodePropertiesPanel({ lookups, activeLocale, selectedLandingId }) {
           <Form.Item label="Deal stage">
             <Select
               allowClear
-              value={props.stage_on_deal_create ?? null}
+              value={normalizeOptionValue(
+                props.stage_on_deal_create ?? null,
+                lookups.stages.map((s) => ({ value: s.id, label: s.name })),
+              )}
               options={lookups.stages.map((s) => ({ value: s.id, label: s.name }))}
               onChange={(value) => setProp('stage_on_deal_create', value || null)}
             />
@@ -1850,7 +2183,10 @@ function NodePropertiesPanel({ lookups, activeLocale, selectedLandingId }) {
             <Form.Item label="Fixed owner">
               <Select
                 allowClear
-                value={props.fixed_owner ?? null}
+                value={normalizeOptionValue(
+                  props.fixed_owner ?? null,
+                  lookups.users.map((u) => ({ value: u.id, label: u.full_name || u.username || `User #${u.id}` })),
+                )}
                 options={lookups.users.map((u) => ({ value: u.id, label: u.full_name || u.username || `User #${u.id}` }))}
                 onChange={(value) => setProp('fixed_owner', value || null)}
               />
@@ -1878,7 +2214,7 @@ function CraftBuilder({ frameData, editorKey, onNodesChange, lookups, activeLoca
     <LandingLocaleContext.Provider value={activeLocale}>
       <Editor
         enabled={editorEnabled}
-        resolver={{ CanvasRoot, HeroBlock, TextBlock, FeaturesBlock, CtaBlock, FormBlock, CarouselBlock }}
+        resolver={{ CanvasRoot, HeroBlock, TextBlock, FeaturesBlock, CtaBlock, FormBlock, CarouselBlock, ContactsBlock }}
         onNodesChange={(query) => {
           const serialized = query.serialize();
           queueMicrotask(() => onNodesChange(serialized));
@@ -2004,7 +2340,7 @@ export default function LandingBuilderPage() {
   );
 
   const selectedLandingItem = useMemo(
-    () => landings.find((item) => item.id === selectedId) || null,
+    () => landings.find((item) => idsEqual(item.id, selectedId)) || null,
     [landings, selectedId],
   );
   const effectiveEditorMode = canManageLandings ? editorMode : 'preview';
@@ -2405,7 +2741,7 @@ export default function LandingBuilderPage() {
   };
 
   const handleSelectLanding = (nextId) => {
-    if (nextId === selectedId) return;
+    if (idsEqual(nextId, selectedId)) return;
     if (isDirty && !window.confirm('Есть несохранённые изменения. Переключиться без сохранения?')) {
       return;
     }
@@ -2783,12 +3119,30 @@ export default function LandingBuilderPage() {
                 </Form.Item>
               </Col>
               <Col xs={24} md={5}>
-                <Form.Item name="department" label="Department">
+                <Form.Item
+                  name="department"
+                  label="Department"
+                  getValueProps={(value) => ({
+                    value: normalizeOptionValue(
+                      value,
+                      lookups.departments.map((d) => ({ value: d.id, label: d.name })),
+                    ),
+                  })}
+                >
                   <Select allowClear options={lookups.departments.map((d) => ({ value: d.id, label: d.name }))} />
                 </Form.Item>
               </Col>
               <Col xs={24} md={5}>
-                <Form.Item name="lead_source" label="Lead Source">
+                <Form.Item
+                  name="lead_source"
+                  label="Lead Source"
+                  getValueProps={(value) => ({
+                    value: normalizeOptionValue(
+                      value,
+                      lookups.lead_sources.map((s) => ({ value: s.id, label: s.name })),
+                    ),
+                  })}
+                >
                   <Select allowClear options={lookups.lead_sources.map((s) => ({ value: s.id, label: s.name }))} />
                 </Form.Item>
               </Col>
@@ -2822,7 +3176,10 @@ export default function LandingBuilderPage() {
                   style={{ width: '100%' }}
                   placeholder="Выберите лендинг"
                   loading={loading}
-                  value={selectedId}
+                  value={normalizeOptionValue(
+                    selectedId,
+                    landings.map((l) => ({ value: l.id, label: `${l.title} (${l.slug})` })),
+                  )}
                   onChange={handleSelectLanding}
                   options={landings.map((l) => ({ value: l.id, label: `${l.title} (${l.slug})` }))}
                 />

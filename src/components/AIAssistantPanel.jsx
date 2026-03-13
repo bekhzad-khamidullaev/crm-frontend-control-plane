@@ -1,19 +1,11 @@
-import { Copy, Sparkles } from 'lucide-react';
+import { CopyOutlined, RobotOutlined } from '@ant-design/icons';
+import { App, Button, Card, Form, Input, Select, Space, Typography } from 'antd';
 import { useEffect, useMemo, useState } from 'react';
 
 import { getAIAssistProviders, runAIAssist } from '../lib/api/integrations/ai.js';
-import { Button } from './ui/button.jsx';
-import { Card, CardContent, CardHeader, CardTitle } from './ui/card.jsx';
-import { Label } from './ui/label.jsx';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from './ui/select.jsx';
-import { Textarea } from './ui/textarea.jsx';
-import { toast } from './ui/use-toast.js';
+
+const { Text } = Typography;
+const { TextArea } = Input;
 
 const USE_CASES = [
   { value: 'lead_summary', label: 'Сводка по лиду' },
@@ -22,6 +14,11 @@ const USE_CASES = [
   { value: 'deal_analysis', label: 'Анализ сделки' },
   { value: 'custom', label: 'Произвольный запрос' },
 ];
+const idsEqual = (left, right) => String(left) === String(right);
+const normalizeOptionValue = (value, options = []) => {
+  const matched = options.find((option) => idsEqual(option?.value, value));
+  return matched ? matched.value : value;
+};
 
 function AIAssistantPanel({
   entityType,
@@ -30,6 +27,7 @@ function AIAssistantPanel({
   initialInput = '',
   defaultUseCase = 'next_action',
 }) {
+  const { message } = App.useApp();
   const [providers, setProviders] = useState([]);
   const [providerId, setProviderId] = useState('');
   const [useCase, setUseCase] = useState(defaultUseCase);
@@ -51,14 +49,14 @@ function AIAssistantPanel({
         setProviders(list);
         const defaultProvider = list.find((item) => item.is_default) || list[0];
         setProviderId(defaultProvider?.id || '');
-      } catch (error) {
-        // Non-admin users may not have access to provider settings in some environments.
+      } catch {
         if (!active) return;
         setProviders([]);
       } finally {
         if (active) setProvidersLoading(false);
       }
     };
+
     loadProviders();
     return () => {
       active = false;
@@ -66,7 +64,6 @@ function AIAssistantPanel({
   }, []);
 
   useEffect(() => {
-    // Reset draft when switching CRM entity (e.g., another lead/deal/contact card).
     setUseCase(defaultUseCase);
     setInputText(initialInput || '');
     setSystemPrompt('');
@@ -75,18 +72,22 @@ function AIAssistantPanel({
   }, [entityType, entityId, defaultUseCase, initialInput]);
 
   const providerHint = useMemo(() => {
-    const selected = providers.find((item) => item.id === providerId);
+    const selected = providers.find((item) => idsEqual(item.id, providerId));
     if (!selected) return 'Будет использован провайдер по умолчанию на сервере';
     return `${selected.name}${selected.model ? ` • ${selected.model}` : ''}`;
   }, [providers, providerId]);
+  const providerOptions = useMemo(
+    () => [{ value: '__default__', label: 'По умолчанию' }, ...providers.map((item) => ({ value: item.id, label: item.name }))],
+    [providers],
+  );
+  const normalizedProviderValue = useMemo(
+    () => normalizeOptionValue(providerId || '__default__', providerOptions),
+    [providerId, providerOptions],
+  );
 
   const handleGenerate = async () => {
     if (!inputText.trim()) {
-      toast({
-        title: 'Пустой запрос',
-        description: 'Введите задачу для AI ассистента',
-        variant: 'destructive',
-      });
+      message.warning('Введите задачу для AI ассистента');
       return;
     }
 
@@ -101,6 +102,7 @@ function AIAssistantPanel({
           ...contextData,
         },
       };
+
       if (providerId) payload.provider_id = providerId;
       if (useCase === 'custom' && systemPrompt.trim()) {
         payload.system_prompt = systemPrompt.trim();
@@ -115,11 +117,7 @@ function AIAssistantPanel({
       const details = error?.details || {};
       const messageText =
         details?.error || details?.detail || error?.message || 'Не удалось получить ответ от AI';
-      toast({
-        title: 'Ошибка AI запроса',
-        description: messageText,
-        variant: 'destructive',
-      });
+      message.error(messageText);
     } finally {
       setLoading(false);
     }
@@ -129,100 +127,76 @@ function AIAssistantPanel({
     if (!outputText) return;
     try {
       await navigator.clipboard.writeText(outputText);
-      toast({ title: 'Скопировано', description: 'Ответ AI скопирован в буфер обмена' });
-    } catch (error) {
-      toast({ title: 'Ошибка', description: 'Не удалось скопировать текст', variant: 'destructive' });
+      message.success('Ответ AI скопирован в буфер обмена');
+    } catch {
+      message.error('Не удалось скопировать текст');
     }
   };
 
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle>
-          <Sparkles />
+    <Card
+      title={
+        <Space>
+          <RobotOutlined />
           AI ассистент CRM
-        </CardTitle>
-      </CardHeader>
-      <CardContent>
-        <div>
-          <div>
-            <Label>Сценарий</Label>
-            <Select value={useCase} onValueChange={setUseCase}>
-              <SelectTrigger>
-                <SelectValue placeholder="Выберите сценарий" />
-              </SelectTrigger>
-              <SelectContent>
-                {USE_CASES.map((item) => (
-                  <SelectItem key={item.value} value={item.value}>
-                    {item.label}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-          <div>
-            <Label>Провайдер</Label>
-            <Select
-              value={providerId || '__default__'}
-              onValueChange={(value) => setProviderId(value === '__default__' ? '' : value)}
-              disabled={providersLoading}
-            >
-              <SelectTrigger>
-                <SelectValue placeholder="По умолчанию" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="__default__">По умолчанию</SelectItem>
-                {providers.map((item) => (
-                  <SelectItem key={item.id} value={item.id}>
-                    {item.name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-            <p>{providerHint}</p>
-          </div>
-        </div>
+        </Space>
+      }
+    >
+      <Form layout="vertical">
+        <Form.Item label="Сценарий">
+          <Select
+            value={useCase}
+            onChange={setUseCase}
+            options={USE_CASES}
+            placeholder="Выберите сценарий"
+          />
+        </Form.Item>
 
-        <div>
-          <Label>Запрос</Label>
-          <Textarea
+        <Form.Item label="Провайдер" extra={providerHint}>
+          <Select
+            value={normalizedProviderValue}
+            onChange={(value) => setProviderId(value === '__default__' ? '' : value)}
+            loading={providersLoading}
+            options={providerOptions}
+          />
+        </Form.Item>
+
+        <Form.Item label="Запрос">
+          <TextArea
             value={inputText}
             onChange={(event) => setInputText(event.target.value)}
             rows={6}
             placeholder="Опишите задачу: что проанализировать или сгенерировать"
           />
-        </div>
+        </Form.Item>
 
         {useCase === 'custom' && (
-          <div>
-            <Label>System prompt (опционально)</Label>
-            <Textarea
+          <Form.Item label="System prompt (опционально)">
+            <TextArea
               value={systemPrompt}
               onChange={(event) => setSystemPrompt(event.target.value)}
               rows={3}
               placeholder="Дополнительные правила для модели"
             />
-          </div>
+          </Form.Item>
         )}
 
-        <div>
-          <Button onClick={handleGenerate} loading={loading}>
+        <Space style={{ marginBottom: 12 }}>
+          <Button type="primary" onClick={handleGenerate} loading={loading}>
             Сгенерировать
           </Button>
           {outputText && (
-            <Button variant="outline" onClick={handleCopy}>
-              <Copy />
+            <Button icon={<CopyOutlined />} onClick={handleCopy}>
               Копировать ответ
             </Button>
           )}
-          {modelInfo && <span>{modelInfo}</span>}
-        </div>
+          {modelInfo && <Text type="secondary">{modelInfo}</Text>}
+        </Space>
 
-        <div>
-          <Label>Ответ AI</Label>
-          <Textarea value={outputText} readOnly rows={10} placeholder="Здесь появится ответ AI" />
-        </div>
-      </CardContent>
+        <Form.Item label="Ответ AI">
+          <TextArea value={outputText} readOnly rows={10} placeholder="Здесь появится ответ AI" />
+        </Form.Item>
+      </Form>
     </Card>
   );
 }

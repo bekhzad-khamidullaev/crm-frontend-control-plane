@@ -1,5 +1,6 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { Tabs, Card, Table, Form, Input, Button, Switch, message, Select, Row, Col, Statistic, Tag, Empty, Descriptions } from 'antd';
+import { t } from '../lib/i18n/index.js';
 import smsApi from '../lib/api/sms.js';
 
 const { TextArea } = Input;
@@ -23,15 +24,15 @@ function ProvidersTab() {
   }, []);
 
   return (
-    <Card title="SMS провайдеры" extra={<Button onClick={load}>Обновить</Button>}>
+    <Card title={t('smsCenterPage.providers.title')} extra={<Button onClick={load}>{t('smsCenterPage.common.refresh')}</Button>}>
       <Table
         dataSource={data}
         rowKey={(record) => record.id || record.name || record.channel_id || Math.random()}
         loading={loading}
         columns={[
-          { title: 'Название', dataIndex: 'name', key: 'name' },
+          { title: t('smsCenterPage.providers.columns.name'), dataIndex: 'name', key: 'name' },
           {
-            title: 'Канал',
+            title: t('smsCenterPage.common.channel'),
             key: 'channel',
             width: 140,
             render: (_, record) => record.type_display || record.type || record.channel_id || '-',
@@ -73,27 +74,28 @@ function HistoryTab() {
   }, []);
 
   return (
-    <Card title="История SMS" extra={<Button onClick={load}>Обновить</Button>}>
+    <Card title={t('smsCenterPage.history.title')} extra={<Button onClick={load}>{t('smsCenterPage.common.refresh')}</Button>}>
       <Table
         dataSource={data}
         rowKey={(record) => record.id || record.message_id || Math.random()}
         loading={loading}
         columns={[
           {
-            title: 'Канал',
+            title: t('smsCenterPage.common.channel'),
             dataIndex: 'provider',
             key: 'provider',
             width: 140,
             render: (_value, record) =>
-              providerNameByChannel[record.channel_id || record.id] ||
+              providerNameByChannel[record.channel_id] ||
+              record.provider_display ||
               record.provider ||
               record.type_display ||
               '-',
           },
-          { title: 'Получатель', dataIndex: 'phone', key: 'phone' },
-          { title: 'Текст', dataIndex: 'text', key: 'text' },
-          { title: 'Статус', dataIndex: 'status', key: 'status', width: 120 },
-          { title: 'Дата', dataIndex: 'sent_at', key: 'sent_at', width: 180 },
+          { title: t('smsCenterPage.history.columns.recipient'), dataIndex: 'phone', key: 'phone' },
+          { title: t('smsCenterPage.history.columns.text'), dataIndex: 'text', key: 'text' },
+          { title: t('smsCenterPage.history.columns.status'), dataIndex: 'status', key: 'status', width: 120 },
+          { title: t('smsCenterPage.history.columns.date'), dataIndex: 'sent_at', key: 'sent_at', width: 180 },
         ]}
         pagination={{ pageSize: 10 }}
       />
@@ -138,11 +140,11 @@ function StatusTab() {
   }, [data]);
 
   return (
-    <Card title="Статус SMS" extra={<Button onClick={load}>Обновить</Button>}>
+    <Card title={t('smsCenterPage.status.title')} extra={<Button onClick={load}>{t('smsCenterPage.common.refresh')}</Button>}>
       {loading ? (
-        'Загрузка...'
+        t('smsCenterPage.common.loading')
       ) : !data ? (
-        <Empty description="Нет данных по SMS-статусу" />
+        <Empty description={t('smsCenterPage.status.empty')} />
       ) : (
         <Row gutter={[16, 16]}>
           {scalarRows.map((row) => (
@@ -153,7 +155,7 @@ function StatusTab() {
                 ) : typeof row.value === 'boolean' ? (
                   <>
                     <div style={{ marginBottom: 8, color: '#71717a' }}>{row.label}</div>
-                    <Tag color={row.value ? 'green' : 'default'}>{row.value ? 'Да' : 'Нет'}</Tag>
+                    <Tag color={row.value ? 'green' : 'default'}>{row.value ? t('smsCenterPage.common.yes') : t('smsCenterPage.common.no')}</Tag>
                   </>
                 ) : (
                   <>
@@ -174,7 +176,7 @@ function StatusTab() {
                     dataSource={row.value.map((item, index) => ({ key: index, value: item }))}
                     columns={[
                       {
-                        title: 'Значение',
+                        title: t('smsCenterPage.status.value'),
                         dataIndex: 'value',
                         key: 'value',
                         render: (value) =>
@@ -235,58 +237,74 @@ function SendTab({ bulk = false }) {
           .split('\n')
           .map((v) => v.trim())
           .filter(Boolean);
-        await smsApi.sendBulk({
+        const response = await smsApi.sendBulk({
           channel_id: values.channel_id,
           phone_numbers: phoneNumbers,
           text: values.text,
         });
+        if (response?.status === 'queued') {
+          message.success(t('smsCenterPage.messages.bulkQueued', { count: String(phoneNumbers.length) }));
+        } else if (response?.status === 'error' || response?.error) {
+          message.error(response?.error || response?.detail || t('smsCenterPage.messages.sendError'));
+          return;
+        } else {
+          message.success(t('smsCenterPage.messages.sent'));
+        }
       } else {
-        await smsApi.send({
+        const response = await smsApi.send({
           channel_id: values.channel_id,
           to: values.to,
           text: values.text,
           async: values.async,
         });
+        if (response?.status === 'error') {
+          message.error(response?.detail || t('smsCenterPage.messages.sendError'));
+          return;
+        }
+        if (response?.status === 'accepted') {
+          message.success(t('smsCenterPage.messages.queued'));
+        } else {
+          message.success(t('smsCenterPage.messages.sent'));
+        }
       }
-      message.success('SMS отправлено');
       form.resetFields();
     } catch (error) {
-      message.error('Не удалось отправить SMS');
+      message.error(t('smsCenterPage.messages.sendError'));
     }
   };
 
   return (
-    <Card title={bulk ? 'Отправка SMS (Bulk)' : 'Отправка SMS'}>
+    <Card title={bulk ? t('smsCenterPage.send.bulkTitle') : t('smsCenterPage.send.title')}>
       <Form form={form} layout="vertical" onFinish={handleSubmit} initialValues={{ async: true }}>
-        <Form.Item label="Канал" name="channel_id" rules={[{ required: true, message: 'Укажите канал' }]}>
+        <Form.Item label={t('smsCenterPage.common.channel')} name="channel_id" rules={[{ required: true, message: t('smsCenterPage.send.validation.channelRequired') }]}>
           <Select
             loading={providersLoading}
-            placeholder="Выберите канал"
+            placeholder={t('smsCenterPage.send.placeholders.selectChannel')}
             options={(providers || []).map((provider) => ({
               value: provider.channel_id || provider.id,
-              label: provider.name || provider.provider || provider.title || 'Канал',
+              label: provider.name || provider.provider || provider.title || t('smsCenterPage.common.channel'),
             }))}
           />
         </Form.Item>
         {bulk ? (
-          <Form.Item label="Телефоны (по одному на строку)" name="phone_numbers" rules={[{ required: true, message: 'Укажите номера' }]}>
+          <Form.Item label={t('smsCenterPage.send.fields.phones')} name="phone_numbers" rules={[{ required: true, message: t('smsCenterPage.send.validation.numbersRequired') }]}>
             <TextArea rows={4} />
           </Form.Item>
         ) : (
-          <Form.Item label="Телефон" name="to" rules={[{ required: true, message: 'Укажите номер' }]}>
+          <Form.Item label={t('smsCenterPage.send.fields.phone')} name="to" rules={[{ required: true, message: t('smsCenterPage.send.validation.phoneRequired') }]}>
             <Input />
           </Form.Item>
         )}
-        <Form.Item label="Текст" name="text" rules={[{ required: true, message: 'Введите текст' }]}>
+        <Form.Item label={t('smsCenterPage.send.fields.text')} name="text" rules={[{ required: true, message: t('smsCenterPage.send.validation.textRequired') }]}>
           <TextArea rows={4} />
         </Form.Item>
         {!bulk && (
-          <Form.Item label="Отправлять асинхронно" name="async" valuePropName="checked">
+          <Form.Item label={t('smsCenterPage.send.fields.async')} name="async" valuePropName="checked">
             <Switch />
           </Form.Item>
         )}
         <Button type="primary" htmlType="submit">
-          Отправить
+          {t('smsCenterPage.send.submit')}
         </Button>
       </Form>
     </Card>
@@ -295,10 +313,10 @@ function SendTab({ bulk = false }) {
 
 export default function SmsCenterPage() {
   const tabs = [
-    { key: 'providers', label: 'Провайдеры', children: <ProvidersTab /> },
-    { key: 'history', label: 'История', children: <HistoryTab /> },
-    { key: 'status', label: 'Статус', children: <StatusTab /> },
-    { key: 'send', label: 'Отправка', children: <SendTab /> },
+    { key: 'providers', label: t('smsCenterPage.tabs.providers'), children: <ProvidersTab /> },
+    { key: 'history', label: t('smsCenterPage.tabs.history'), children: <HistoryTab /> },
+    { key: 'status', label: t('smsCenterPage.tabs.status'), children: <StatusTab /> },
+    { key: 'send', label: t('smsCenterPage.tabs.send'), children: <SendTab /> },
     { key: 'send-bulk', label: 'Bulk', children: <SendTab bulk /> },
   ];
 

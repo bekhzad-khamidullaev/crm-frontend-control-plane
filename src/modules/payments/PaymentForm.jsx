@@ -5,16 +5,30 @@ import { useEffect, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
 
+import { App, Button, Card, Col, DatePicker, Input, Result, Row, Select, Skeleton, Space, Typography } from 'antd';
 import EntitySelect from '../../components/EntitySelect';
+import FormPermissionGuard from '../../components/permissions/FormPermissionGuard';
 import ReferenceSelect from '../../components/ReferenceSelect';
 import { getDeal, getDeals } from '../../lib/api/client';
 import { createPayment, getPayment, updatePayment } from '../../lib/api/payments';
 import { canWrite } from '../../lib/rbac';
 import { navigate } from '../../router';
-import FormPermissionGuard from '../../components/permissions/FormPermissionGuard';
 
-import { App, Button, Card, DatePicker, Input } from 'antd';
-const Label = ({ children, ...props }) => <label style={{ display: 'block', marginBottom: 6, fontWeight: 500 }} {...props}>{children}</label>;
+const { Text } = Typography;
+
+const FieldLabel = ({ children, ...props }) => (
+  <Text strong style={{ display: 'block', marginBottom: 6 }} {...props}>
+    {children}
+  </Text>
+);
+
+const FieldError = ({ message }) => (
+  message ? (
+    <Text type="danger" style={{ display: 'block', marginTop: 6 }}>
+      {message}
+    </Text>
+  ) : null
+);
 
 const statusOptions = [
   { value: 'r', label: 'Получен' },
@@ -41,7 +55,9 @@ function PaymentForm({ id }) {
     if (variant === 'destructive') message.error(text);
     else message.success(text);
   };
+
   const [loading, setLoading] = useState(false);
+  const [loadError, setLoadError] = useState(false);
   const [saving, setSaving] = useState(false);
   const isEdit = !!id;
   const canManage = canWrite('crm.change_payment');
@@ -80,6 +96,7 @@ function PaymentForm({ id }) {
 
   const loadPayment = async () => {
     setLoading(true);
+    setLoadError(false);
     try {
       const data = await getPayment(id);
       reset({
@@ -87,6 +104,7 @@ function PaymentForm({ id }) {
         payment_date: data.payment_date ? dayjs(data.payment_date) : null,
       });
     } catch (error) {
+      setLoadError(true);
       notify({ title: 'Ошибка', description: 'Ошибка загрузки платежа', variant: 'destructive' });
     } finally {
       setLoading(false);
@@ -98,6 +116,7 @@ function PaymentForm({ id }) {
       notify({ title: 'Недостаточно прав', description: 'У вас нет прав для изменения платежей', variant: 'destructive' });
       return;
     }
+
     setSaving(true);
     try {
       const payload = {
@@ -121,7 +140,21 @@ function PaymentForm({ id }) {
   };
 
   if (loading) {
-    return <div>Загрузка...</div>;
+    return <Skeleton active paragraph={{ rows: 8 }} />;
+  }
+
+  if (isEdit && loadError) {
+    return (
+      <Result
+        status="error"
+        title="Не удалось загрузить платеж"
+        subTitle="Попробуйте обновить данные или вернитесь к списку платежей."
+        extra={[
+          <Button key="retry" onClick={loadPayment}>Повторить</Button>,
+          <Button key="list" type="primary" onClick={() => navigate('/payments')}>К списку платежей</Button>,
+        ]}
+      />
+    );
   }
 
   return (
@@ -131,105 +164,102 @@ function PaymentForm({ id }) {
       listButtonText="К списку платежей"
       description="У вас нет прав для создания или редактирования платежей."
     >
-      <div>
-        <Button onClick={() => navigate('/payments')}>
-          <ArrowLeft />
+      <Space direction="vertical" size={16} style={{ width: '100%' }}>
+        <Button onClick={() => navigate('/payments')} icon={<ArrowLeft size={16} />}>
           Назад
         </Button>
 
-        <h2>
-          {isEdit ? 'Редактирование платежа' : 'Новый платеж'}
-        </h2>
-
-        <Card>
+        <Card title={isEdit ? 'Редактирование платежа' : 'Новый платеж'}>
           <form onSubmit={handleSubmit(onSubmit)}>
-          <div>
-            <div>
-              <Label htmlFor="amount">Сумма *</Label>
-              <Input id="amount" type="number" step="0.01" placeholder="0.00" {...register('amount', { valueAsNumber: true })} />
-              {errors.amount && <p>{errors.amount.message}</p>}
-            </div>
-            <div>
-              <Label htmlFor="currency">Валюта</Label>
-              <ReferenceSelect
-                id="currency"
-                data-testid="currency-select"
-                type="currencies"
-                placeholder="Выберите валюту"
-                value={currencyValue || ''}
-                onChange={(val) => setValue('currency', val)}
-              />
-            </div>
-          </div>
+            <Space direction="vertical" size={16} style={{ width: '100%' }}>
+              <Row gutter={[16, 16]}>
+                <Col xs={24} md={12}>
+                  <FieldLabel htmlFor="amount">Сумма *</FieldLabel>
+                  <Input id="amount" type="number" step="0.01" placeholder="0.00" {...register('amount', { valueAsNumber: true })} />
+                  <FieldError message={errors.amount?.message} />
+                </Col>
+                <Col xs={24} md={12}>
+                  <FieldLabel htmlFor="currency">Валюта</FieldLabel>
+                  <ReferenceSelect
+                    id="currency"
+                    data-testid="currency-select"
+                    type="currencies"
+                    placeholder="Выберите валюту"
+                    value={currencyValue || ''}
+                    onChange={(val) => setValue('currency', val)}
+                  />
+                </Col>
+              </Row>
 
-          <div>
-            <div>
-              <Label htmlFor="status">Статус *</Label>
-              <select
-                id="status"
-               
-                value={statusValue || ''}
-                onChange={(e) => setValue('status', e.target.value)}
-              >
-                <option value="">Выберите статус</option>
-                {statusOptions.map((option) => (
-                  <option key={option.value} value={option.value}>
-                    {option.label}
-                  </option>
-                ))}
-              </select>
-              {errors.status && <p>{errors.status.message}</p>}
-            </div>
-            <div>
-              <Label htmlFor="payment_date">Дата платежа</Label>
-              <DatePicker id="payment_date" value={paymentDate || null} onChange={(val) => setValue('payment_date', val)} format="YYYY-MM-DD" />
-            </div>
-          </div>
+              <Row gutter={[16, 16]}>
+                <Col xs={24} md={12}>
+                  <FieldLabel htmlFor="status">Статус *</FieldLabel>
+                  <Select
+                    id="status"
+                    value={statusValue || undefined}
+                    onChange={(value) => setValue('status', value ?? '')}
+                    placeholder="Выберите статус"
+                    allowClear
+                    options={statusOptions}
+                  />
+                  <FieldError message={errors.status?.message} />
+                </Col>
+                <Col xs={24} md={12}>
+                  <FieldLabel htmlFor="payment_date">Дата платежа</FieldLabel>
+                  <DatePicker
+                    id="payment_date"
+                    value={paymentDate || null}
+                    onChange={(val) => setValue('payment_date', val)}
+                    format="YYYY-MM-DD"
+                    style={{ width: '100%' }}
+                  />
+                </Col>
+              </Row>
 
-          <div>
-            <Label htmlFor="deal">Сделка *</Label>
-            <EntitySelect
-              id="deal"
-              data-testid="deal-select"
-              placeholder="Выберите сделку"
-              value={dealValue || ''}
-              fetchOptions={getDeals}
-              fetchById={getDeal}
-              optionLabel={(item) => item?.name || '-'}
-              onChange={(val) => setValue('deal', val)}
-            />
-            {errors.deal && <p>{errors.deal.message}</p>}
-          </div>
+              <div>
+                <FieldLabel htmlFor="deal">Сделка *</FieldLabel>
+                <EntitySelect
+                  id="deal"
+                  data-testid="deal-select"
+                  placeholder="Выберите сделку"
+                  value={dealValue || ''}
+                  fetchOptions={getDeals}
+                  fetchById={getDeal}
+                  optionLabel={(item) => item?.name || '-'}
+                  onChange={(val) => setValue('deal', val)}
+                />
+                <FieldError message={errors.deal?.message} />
+              </div>
 
-          <div>
-            <div>
-              <Label htmlFor="contract_number">Номер договора</Label>
-              <Input id="contract_number" placeholder="Договор №" {...register('contract_number')} />
-            </div>
-            <div>
-              <Label htmlFor="invoice_number">Номер счета</Label>
-              <Input id="invoice_number" placeholder="Счет №" {...register('invoice_number')} />
-            </div>
-            <div>
-              <Label htmlFor="order_number">Номер заказа</Label>
-              <Input id="order_number" placeholder="Заказ №" {...register('order_number')} />
-            </div>
-          </div>
+              <Row gutter={[16, 16]}>
+                <Col xs={24} md={8}>
+                  <FieldLabel htmlFor="contract_number">Номер договора</FieldLabel>
+                  <Input id="contract_number" placeholder="Договор №" {...register('contract_number')} />
+                </Col>
+                <Col xs={24} md={8}>
+                  <FieldLabel htmlFor="invoice_number">Номер счета</FieldLabel>
+                  <Input id="invoice_number" placeholder="Счет №" {...register('invoice_number')} />
+                </Col>
+                <Col xs={24} md={8}>
+                  <FieldLabel htmlFor="order_number">Номер заказа</FieldLabel>
+                  <Input id="order_number" placeholder="Заказ №" {...register('order_number')} />
+                </Col>
+              </Row>
 
-            <div>
-              {canManage && (
-                <Button type="submit" loading={saving}>
-                  <Save />
-                  {isEdit ? 'Сохранить' : 'Создать'}
+              <Space size={12}>
+                {canManage && (
+                  <Button type="primary" htmlType="submit" loading={saving} icon={<Save size={16} />}>
+                    {isEdit ? 'Сохранить' : 'Создать'}
+                  </Button>
+                )}
+                <Button htmlType="button" onClick={() => navigate('/payments')}>
+                  Отмена
                 </Button>
-              )}
-              <Button onClick={() => navigate('/payments')}>
-                Отмена
-              </Button>
-            </div>
+              </Space>
+            </Space>
           </form>
         </Card>
-      </div>
+      </Space>
     </FormPermissionGuard>
   );
 }

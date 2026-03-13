@@ -178,34 +178,6 @@ h1, h2, h3, h4, h5, h6, .ant-typography {
 .dark .status-badge.qualified { background: rgba(22, 163, 74, 0.2); color: #4ade80; }
 .dark .status-badge.lost { background: rgba(220, 38, 38, 0.2); color: #f87171; }
 
-/* Custom Enterprise Component Dark Mode Overrides */
-.dark .action-panel,
-.dark .action-panel__button,
-.dark .form-section,
-.dark .form-preview,
-.dark .timeline-item__content,
-.dark .timeline-item__marker,
-.dark .info-card,
-.dark .drawer-footer,
-.dark .page-header,
-.dark .form-actions-bar,
-.dark .mdc-card {
-  background: var(--mdc-theme-surface) !important;
-  color: var(--mdc-theme-text-primary) !important;
-}
-
-.dark .card-premium__header,
-.dark .form-section__header,
-.dark .form-preview__header,
-.dark .info-card__header {
-  background: var(--mdc-theme-surface-variant) !important;
-}
-
-.dark .search-premium__input {
-  background: var(--mdc-theme-surface);
-  color: var(--mdc-theme-text-primary);
-}
-
 /* Ant Design dark-surface fixes for pages with white leftovers */
 .dark .ant-tabs-content-holder,
 .dark .ant-tabs-tabpane,
@@ -242,12 +214,28 @@ h1, h2, h3, h4, h5, h6, .ant-typography {
   border-color: #2d3343 !important;
 }
 
-/* Disable backdrop darkening for modal-like overlays across Ant Design */
+/* Preserve section-level custom backgrounds in public landing cards */
+.dark .landing-public-page .landing-public-card {
+  background: var(--landing-card-bg, #161b22) !important;
+  color: var(--landing-card-text, #e2e8f0) !important;
+  border-color: var(--landing-card-border, #2d3343) !important;
+}
+
+/* Modal backdrops: subtle dim + blur to improve modal focus */
 .ant-modal-mask,
 .ant-image-preview-mask,
 .ant-tour-mask,
 .ant-modal-root .ant-modal-mask {
-  background: transparent !important;
+  background: rgba(9, 15, 25, 0.42) !important;
+  -webkit-backdrop-filter: blur(4px);
+  backdrop-filter: blur(4px);
+}
+
+.dark .ant-modal-mask,
+.dark .ant-image-preview-mask,
+.dark .ant-tour-mask,
+.dark .ant-modal-root .ant-modal-mask {
+  background: rgba(2, 6, 12, 0.54) !important;
 }
 
 /* Mobile-friendly defaults */

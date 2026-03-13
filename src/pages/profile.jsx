@@ -8,6 +8,7 @@ import {
   Upload,
   Space,
   Divider,
+  Alert,
   message,
   Tabs,
   Switch,
@@ -42,11 +43,51 @@ import {
   getUserStats,
   getUserActivity,
 } from '../lib/api/user';
+import { apiConfig } from '../lib/api/client';
 import { getCallHistory } from '../lib/api/telephony';
+import { t } from '../lib/i18n';
+import { formatDate } from '../lib/utils/format';
 
-const getAvatarUrl = (data) => data?.avatar_url || data?.avatar || null;
+const toAbsoluteAvatarUrl = (value) => {
+  if (!value || typeof value !== 'string') return null;
+  const rawUrl = value.trim();
+  if (!rawUrl) return null;
+
+  if (rawUrl.startsWith('data:')) return rawUrl;
+
+  try {
+    if (/^https?:\/\//i.test(rawUrl)) {
+      const parsed = new URL(rawUrl);
+      // Prevent mixed-content images when backend is behind a proxy.
+      if (window.location.protocol === 'https:' && parsed.protocol === 'http:') {
+        parsed.protocol = 'https:';
+      }
+      return parsed.toString();
+    }
+
+    if (rawUrl.startsWith('//')) {
+      return `${window.location.protocol}${rawUrl}`;
+    }
+
+    if (rawUrl.startsWith('/')) {
+      const apiOrigin = new URL(apiConfig.baseUrl || window.location.origin, window.location.origin).origin;
+      return `${apiOrigin}${rawUrl}`;
+    }
+
+    return rawUrl;
+  } catch {
+    return rawUrl;
+  }
+};
+
+const getAvatarUrl = (data) =>
+  toAbsoluteAvatarUrl(data?.avatar_url || data?.avatar || data?.avatarUrl || data?.url || null);
 
 function ProfilePage() {
+  const tr = (key, fallback, vars = {}) => {
+    const localized = t(key, vars);
+    return localized === key ? fallback : localized;
+  };
   const [form] = Form.useForm();
   const [passwordForm] = Form.useForm();
   const [preferencesForm] = Form.useForm();
@@ -74,7 +115,7 @@ function ProfilePage() {
       form.setFieldsValue(data);
     } catch (error) {
       console.error('Error loading profile:', error);
-      message.error('Ошибка загрузки профиля');
+      message.error(tr('profilePage.messages.loadError', 'Failed to load profile'));
     }
   };
 
@@ -101,40 +142,34 @@ function ProfilePage() {
     try {
       const payload = {
         pbx_number: values.pbx_number,
-        jssip_ws_uri: values.jssip_ws_uri,
-        jssip_sip_uri: values.jssip_sip_uri,
-        jssip_sip_password: values.jssip_sip_password,
         jssip_display_name: values.jssip_display_name,
       };
       await updateProfile(payload);
-      message.success('Профиль успешно обновлен');
+      message.success(tr('profilePage.messages.profileUpdated', 'Profile updated'));
       loadProfile();
     } catch (error) {
       console.error('Error updating profile:', error);
-      message.error('Ошибка обновления профиля');
+      message.error(tr('profilePage.messages.profileUpdateError', 'Failed to update profile'));
     } finally {
       setLoading(false);
     }
   };
 
-  const handleAvatarChange = async (info) => {
-    if (info.file.status === 'uploading') {
-      setLoading(true);
-      return;
+  const handleAvatarUpload = async (file) => {
+    setLoading(true);
+    try {
+      const response = await uploadAvatar(file);
+      const nextAvatarUrl = getAvatarUrl(response);
+      setAvatarUrl(nextAvatarUrl);
+      setProfile((prev) => (prev ? { ...prev, avatar_url: nextAvatarUrl, avatar: nextAvatarUrl } : prev));
+      message.success(tr('profilePage.messages.avatarUpdated', 'Avatar updated'));
+    } catch (error) {
+      console.error('Error uploading avatar:', error);
+      message.error(tr('profilePage.messages.avatarUploadError', 'Failed to upload avatar'));
+    } finally {
+      setLoading(false);
     }
-    
-    if (info.file.originFileObj) {
-      try {
-        const response = await uploadAvatar(info.file.originFileObj);
-        setAvatarUrl(getAvatarUrl(response));
-        message.success('Аватар успешно обновлен');
-      } catch (error) {
-        console.error('Error uploading avatar:', error);
-        message.error('Ошибка загрузки аватара');
-      } finally {
-        setLoading(false);
-      }
-    }
+    return false;
   };
 
   const handleAvatarDelete = async () => {
@@ -142,10 +177,10 @@ function ProfilePage() {
     try {
       await deleteAvatar();
       setAvatarUrl(null);
-      message.success('Аватар удален');
+      message.success(tr('profilePage.messages.avatarDeleted', 'Avatar removed'));
     } catch (error) {
       console.error('Error deleting avatar:', error);
-      message.error('Ошибка удаления аватара');
+      message.error(tr('profilePage.messages.avatarDeleteError', 'Failed to remove avatar'));
     } finally {
       setLoading(false);
     }
@@ -153,18 +188,18 @@ function ProfilePage() {
 
   const handlePasswordChange = async (values) => {
     if (values.new_password !== values.confirm_password) {
-      message.error('Пароли не совпадают');
+      message.error(tr('profilePage.messages.passwordMismatch', 'Passwords do not match'));
       return;
     }
 
     setLoading(true);
     try {
       await changePassword(values);
-      message.success('Пароль успешно изменен');
+      message.success(tr('profilePage.messages.passwordUpdated', 'Password updated'));
       passwordForm.resetFields();
     } catch (error) {
       console.error('Error changing password:', error);
-      message.error(error?.details?.detail || 'Ошибка изменения пароля');
+      message.error(error?.details?.detail || tr('profilePage.messages.passwordUpdateError', 'Failed to update password'));
     } finally {
       setLoading(false);
     }
@@ -174,10 +209,20 @@ function ProfilePage() {
     setLoading(true);
     try {
       await updatePreferences(values);
-      message.success('Настройки успешно сохранены');
+      message.success(tr('profilePage.messages.preferencesSaved', 'Settings saved'));
+      if (values?.language_code) {
+        const normalized = String(values.language_code).toLowerCase().startsWith('en')
+          ? 'en'
+          : String(values.language_code).toLowerCase().startsWith('uz')
+            ? 'uz'
+            : 'ru';
+        localStorage.setItem('enterprise_crm_locale', normalized);
+        localStorage.setItem('locale', normalized);
+        window.dispatchEvent(new CustomEvent('enterprise_crm:locale-change', { detail: normalized }));
+      }
     } catch (error) {
       console.error('Error updating preferences:', error);
-      message.error('Ошибка сохранения настроек');
+      message.error(tr('profilePage.messages.preferencesSaveError', 'Failed to save settings'));
     } finally {
       setLoading(false);
     }
@@ -207,7 +252,7 @@ function ProfilePage() {
       label: (
         <span>
           <UserOutlined />
-          Основная информация
+          {tr('profilePage.tabs.mainInfo', 'Main information')}
         </span>
       ),
       children: (
@@ -223,11 +268,11 @@ function ProfilePage() {
               <Space direction="vertical" style={{ width: '100%' }}>
                 <Upload
                   showUploadList={false}
-                  onChange={handleAvatarChange}
-                  beforeUpload={() => false}
+                  accept="image/*"
+                  beforeUpload={handleAvatarUpload}
                 >
                   <Button icon={<CameraOutlined />} block>
-                    Изменить фото
+                    {tr('profilePage.actions.changePhoto', 'Change photo')}
                   </Button>
                 </Upload>
                 <Button
@@ -237,18 +282,18 @@ function ProfilePage() {
                   disabled={!avatarUrl}
                   onClick={handleAvatarDelete}
                 >
-                  Удалить фото
+                  {tr('profilePage.actions.deletePhoto', 'Delete photo')}
                 </Button>
               </Space>
 
               {stats && (
                 <div style={{ marginTop: 24 }}>
                   <Statistic
-                    title="Всего лидов"
+                    title={tr('profilePage.stats.totalLeads', 'Total leads')}
                     value={stats.total_leads || 0}
                   />
                   <Statistic
-                    title="Всего сделок"
+                    title={tr('profilePage.stats.totalDeals', 'Total deals')}
                     value={stats.total_deals || 0}
                     style={{ marginTop: 16 }}
                   />
@@ -266,7 +311,7 @@ function ProfilePage() {
               <Row gutter={16}>
                 <Col span={12}>
                   <Form.Item
-                    label="Полное имя"
+                    label={tr('profilePage.fields.fullName', 'Full name')}
                     name="full_name"
                   >
                     <Input prefix={<UserOutlined />} disabled />
@@ -274,7 +319,7 @@ function ProfilePage() {
                 </Col>
                 <Col span={12}>
                   <Form.Item
-                    label="Username"
+                    label={tr('profilePage.fields.username', 'Username')}
                     name="username"
                   >
                     <Input prefix={<UserOutlined />} disabled />
@@ -283,71 +328,47 @@ function ProfilePage() {
               </Row>
 
               <Form.Item
-                label="Email"
+                label={tr('profilePage.fields.email', 'Email')}
                 name="email"
                 rules={[
-                  { required: true, message: 'Введите email' },
-                  { type: 'email', message: 'Введите корректный email' },
+                  { required: true, message: tr('profilePage.validation.enterEmail', 'Enter email') },
+                  { type: 'email', message: tr('profilePage.validation.validEmail', 'Enter valid email') },
                 ]}
               >
                 <Input prefix={<MailOutlined />} disabled />
               </Form.Item>
 
-              <Divider>Настройки телефонии</Divider>
+              <Divider>{tr('profilePage.telephony.title', 'Telephony settings')}</Divider>
+
+              <Alert
+                type="info"
+                showIcon
+                style={{ marginBottom: 16 }}
+                message={tr('profilePage.telephony.agentSettingsTitle', 'Personal agent settings')}
+                description={tr('profilePage.telephony.agentSettingsDescription', 'Only personal call settings are configured here. System SIP/WebRTC and routing are managed by admin in Integrations -> Telephony.')}
+              />
 
               <Form.Item 
-                label="Внутренний номер (PBX)" 
+                label={tr('profilePage.telephony.pbxNumber', 'Internal number (PBX)')} 
                 name="pbx_number"
-                tooltip="Ваш внутренний телефонный номер в системе"
+                tooltip={tr('profilePage.telephony.pbxTooltip', 'Your internal phone number in the system')}
+                extra={tr('profilePage.telephony.pbxExtra', 'Example: 101, 7477. Main number for internal calls.')}
               >
-                <Input prefix={<PhoneOutlined />} placeholder="1001" />
+                <Input prefix={<PhoneOutlined />} placeholder={tr('profilePage.placeholders.pbxNumber', '1001')} />
               </Form.Item>
 
-              <Row gutter={16}>
-                <Col span={12}>
-                  <Form.Item 
-                    label="WebSocket URI (JsSIP)" 
-                    name="jssip_ws_uri"
-                    tooltip="Пример: wss://sip.example.com:7443"
-                  >
-                    <Input placeholder="wss://sip.example.com:7443" />
-                  </Form.Item>
-                </Col>
-                <Col span={12}>
-                  <Form.Item 
-                    label="SIP URI (JsSIP)" 
-                    name="jssip_sip_uri"
-                    tooltip="Пример: sip:1001@sip.example.com"
-                  >
-                    <Input placeholder="sip:1001@sip.example.com" />
-                  </Form.Item>
-                </Col>
-              </Row>
-
-              <Row gutter={16}>
-                <Col span={12}>
-                  <Form.Item 
-                    label="Пароль SIP (JsSIP)" 
-                    name="jssip_sip_password"
-                    tooltip="Будет использоваться веб-клиентом для звонков"
-                  >
-                    <Input.Password placeholder="••••••••" />
-                  </Form.Item>
-                </Col>
-                <Col span={12}>
-                  <Form.Item 
-                    label="Отображаемое имя" 
-                    name="jssip_display_name"
-                    tooltip="Имя, которое увидит собеседник при звонке"
-                  >
-                    <Input placeholder="Иван Иванов" />
-                  </Form.Item>
-                </Col>
-              </Row>
+              <Form.Item 
+                label={tr('profilePage.telephony.displayName', 'Display name')} 
+                name="jssip_display_name"
+                tooltip={tr('profilePage.telephony.displayNameTooltip', 'Name shown to call recipient')}
+                extra={tr('profilePage.telephony.displayNameExtra', 'If empty, profile name is used.')}
+              >
+                <Input placeholder={tr('profilePage.placeholders.displayName', 'John Doe')} />
+              </Form.Item>
 
               <Form.Item>
                 <Button type="primary" htmlType="submit" loading={loading}>
-                  Сохранить изменения
+                  {tr('actions.saveChanges', 'Save changes')}
                 </Button>
               </Form.Item>
             </Form>
@@ -360,7 +381,7 @@ function ProfilePage() {
       label: (
         <span>
           <LockOutlined />
-          Изменить пароль
+          {tr('profilePage.tabs.changePassword', 'Change password')}
         </span>
       ),
       forceRender: true,
@@ -372,29 +393,29 @@ function ProfilePage() {
             onFinish={handlePasswordChange}
           >
             <Form.Item
-              label="Текущий пароль"
+              label={tr('profilePage.password.current', 'Current password')}
               name="old_password"
-              rules={[{ required: true, message: 'Введите текущий пароль' }]}
+              rules={[{ required: true, message: tr('profilePage.validation.enterCurrentPassword', 'Enter current password') }]}
             >
               <Input.Password prefix={<LockOutlined />} />
             </Form.Item>
 
             <Form.Item
-              label="Новый пароль"
+              label={tr('profilePage.password.new', 'New password')}
               name="new_password"
               rules={[
-                { required: true, message: 'Введите новый пароль' },
-                { min: 8, message: 'Пароль должен быть не менее 8 символов' },
+                { required: true, message: tr('profilePage.validation.enterNewPassword', 'Enter new password') },
+                { min: 8, message: tr('profilePage.validation.passwordMin', 'Password must be at least 8 characters') },
               ]}
             >
               <Input.Password prefix={<LockOutlined />} />
             </Form.Item>
 
             <Form.Item
-              label="Подтвердите новый пароль"
+              label={tr('profilePage.password.confirm', 'Confirm new password')}
               name="confirm_password"
               rules={[
-                { required: true, message: 'Подтвердите новый пароль' },
+                { required: true, message: tr('profilePage.validation.confirmNewPassword', 'Confirm new password') },
               ]}
             >
               <Input.Password prefix={<LockOutlined />} />
@@ -402,7 +423,7 @@ function ProfilePage() {
 
             <Form.Item>
               <Button type="primary" htmlType="submit" loading={loading}>
-                Изменить пароль
+                {tr('profilePage.actions.changePassword', 'Change password')}
               </Button>
             </Form.Item>
           </Form>
@@ -414,7 +435,7 @@ function ProfilePage() {
       label: (
         <span>
           <SettingOutlined />
-          Настройки
+          {tr('profilePage.tabs.settings', 'Settings')}
         </span>
       ),
       forceRender: true,
@@ -425,26 +446,26 @@ function ProfilePage() {
             layout="vertical"
             onFinish={handlePreferencesUpdate}
           >
-            <Divider>Региональные настройки</Divider>
+            <Divider>{tr('profilePage.regional.title', 'Regional settings')}</Divider>
 
-            <Form.Item label="Язык" name="language_code">
+            <Form.Item label={tr('profilePage.regional.language', 'Language')} name="language_code">
               <Select>
-                <Select.Option value="ru">Русский</Select.Option>
-                <Select.Option value="en">English</Select.Option>
-                <Select.Option value="uz">O'zbekcha</Select.Option>
+                <Select.Option value="ru">{tr('profilePage.languages.ru', 'Russian')}</Select.Option>
+                <Select.Option value="en">{tr('profilePage.languages.en', 'English')}</Select.Option>
+                <Select.Option value="uz">{tr('profilePage.languages.uz', "Uzbek")}</Select.Option>
               </Select>
             </Form.Item>
 
-            <Form.Item label="Часовой пояс" name="utc_timezone">
+            <Form.Item label={tr('profilePage.regional.timezone', 'Timezone')} name="utc_timezone">
               <Select showSearch>
-                <Select.Option value="Europe/Moscow">Москва (UTC+3)</Select.Option>
-                <Select.Option value="Asia/Tashkent">Ташкент (UTC+5)</Select.Option>
-                <Select.Option value="Asia/Almaty">Алматы (UTC+6)</Select.Option>
+                <Select.Option value="Europe/Moscow">{tr('profilePage.timezones.moscow', 'Moscow (UTC+3)')}</Select.Option>
+                <Select.Option value="Asia/Tashkent">{tr('profilePage.timezones.tashkent', 'Tashkent (UTC+5)')}</Select.Option>
+                <Select.Option value="Asia/Almaty">{tr('profilePage.timezones.almaty', 'Almaty (UTC+6)')}</Select.Option>
               </Select>
             </Form.Item>
 
             <Form.Item
-              label="Использовать этот часовой пояс"
+              label={tr('profilePage.regional.activateTimezone', 'Use this timezone')}
               name="activate_timezone"
               valuePropName="checked"
             >
@@ -453,7 +474,7 @@ function ProfilePage() {
 
             <Form.Item>
               <Button type="primary" htmlType="submit" loading={loading} icon={<BellOutlined />}>
-                Сохранить настройки
+                {tr('profilePage.actions.saveSettings', 'Save settings')}
               </Button>
             </Form.Item>
           </Form>
@@ -465,7 +486,7 @@ function ProfilePage() {
       label: (
         <span>
           <HistoryOutlined />
-          Активность
+          {tr('profilePage.tabs.activity', 'Activity')}
         </span>
       ),
       children: (
@@ -473,14 +494,14 @@ function ProfilePage() {
           <Row gutter={16} style={{ marginBottom: 24 }}>
             <Col span={8}>
               <Statistic 
-                title="Всего действий" 
+                title={tr('profilePage.activity.totalActions', 'Total actions')} 
                 value={activity.length} 
                 prefix={<LineChartOutlined />}
               />
             </Col>
             <Col span={8}>
               <Statistic 
-                title="Звонков сегодня" 
+                title={tr('profilePage.activity.callsToday', 'Calls today')} 
                 value={callHistory.filter(c => {
                   const today = new Date().toDateString();
                   return new Date(c.timestamp || c.started_at).toDateString() === today;
@@ -489,14 +510,14 @@ function ProfilePage() {
             </Col>
             <Col span={8}>
               <Statistic 
-                title="Конверсия лидов" 
+                title={tr('profilePage.activity.leadConversion', 'Lead conversion')} 
                 value={stats?.conversion_rate || 0}
                 suffix="%"
               />
             </Col>
           </Row>
 
-          <Divider>Последние действия</Divider>
+          <Divider>{tr('profilePage.activity.recentActions', 'Recent actions')}</Divider>
           
           <Timeline
             items={activity.slice(0, 10).map(item => ({
@@ -504,14 +525,14 @@ function ProfilePage() {
                 <div>
                   <strong>{item.action}</strong>
                   <div style={{ color: '#8c8c8c', fontSize: 12 }}>
-                    {new Date(item.timestamp).toLocaleString('ru')}
+                    {formatDate(item.timestamp, 'datetime')}
                   </div>
                 </div>
               ),
             }))}
           />
 
-          <Divider>История звонков</Divider>
+          <Divider>{tr('profilePage.activity.callHistory', 'Call history')}</Divider>
           
           <Table
             dataSource={callHistory}
@@ -519,35 +540,35 @@ function ProfilePage() {
             pagination={{ pageSize: 10 }}
             columns={[
               {
-                title: 'Номер',
+                title: tr('profilePage.callTable.number', 'Number'),
                 dataIndex: 'phone_number',
                 key: 'phone_number',
                 render: (value, record) => value || record.number || '-',
               },
               {
-                title: 'Тип',
+                title: tr('profilePage.callTable.type', 'Type'),
                 dataIndex: 'call_type',
                 key: 'call_type',
                 render: (type, record) => {
                   const direction = type || record.direction;
                   return (
                     <Tag color={direction === 'incoming' || direction === 'inbound' ? 'green' : 'blue'}>
-                      {direction === 'incoming' || direction === 'inbound' ? 'Входящий' : 'Исходящий'}
+                      {direction === 'incoming' || direction === 'inbound' ? tr('profilePage.callTable.inbound', 'Inbound') : tr('profilePage.callTable.outbound', 'Outbound')}
                     </Tag>
                   );
                 },
               },
               {
-                title: 'Длительность',
+                title: tr('profilePage.callTable.duration', 'Duration'),
                 dataIndex: 'duration',
                 key: 'duration',
                 render: (duration) => `${Math.floor(duration / 60)}:${(duration % 60).toString().padStart(2, '0')}`,
               },
               {
-                title: 'Время',
+                title: tr('profilePage.callTable.time', 'Time'),
                 dataIndex: 'timestamp',
                 key: 'timestamp',
-                render: (date, record) => new Date(date || record.started_at).toLocaleString('ru'),
+                render: (date, record) => formatDate(date || record.started_at, 'datetime'),
               },
             ]}
           />
@@ -558,7 +579,7 @@ function ProfilePage() {
 
   return (
     <div style={{ padding: 24 }}>
-      <Card title="Профиль пользователя">
+      <Card title={tr('profilePage.title', 'User profile')}>
         <Tabs defaultActiveKey="profile" items={tabItems} />
       </Card>
     </div>

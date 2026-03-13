@@ -10,8 +10,11 @@ import { getClientTypeLabel } from '@/features/reference/lib/clientTypeLabel';
 import { canWrite } from '@/lib/rbac.js';
 // @ts-ignore
 import { getLocale } from '@/lib/i18n';
+// @ts-ignore
+import { formatCurrency, formatDate } from '@/lib/utils/format.js';
 
 const { Text, Title } = Typography;
+const idsEqual = (left: unknown, right: unknown) => String(left) === String(right);
 
 export interface CompanyDetailPageProps {
   id?: number;
@@ -19,13 +22,6 @@ export interface CompanyDetailPageProps {
 
 export const CompanyDetailPage: React.FC<CompanyDetailPageProps> = ({ id }) => {
   const canManage = canWrite();
-  const formatAmount = (value: number) =>
-    new Intl.NumberFormat('ru-RU', {
-      style: 'currency',
-      currency: 'RUB',
-      minimumFractionDigits: 0,
-      maximumFractionDigits: 2,
-    }).format(Number(value || 0));
 
   const { data: company, isLoading: isLoadingCompany } = useCompany(id!);
   const { data: contactsData, isLoading: isLoadingContacts } = useCompanyContacts(id!);
@@ -40,12 +36,12 @@ export const CompanyDetailPage: React.FC<CompanyDetailPageProps> = ({ id }) => {
   const companyName = company?.full_name || 'Компания';
 
   const clientTypeName = useMemo(
-    () => getClientTypeLabel(clientTypes?.results?.find((t) => t.id === company?.type)?.name, locale),
+    () => getClientTypeLabel(clientTypes?.results?.find((t) => idsEqual(t.id, company?.type))?.name, locale),
     [clientTypes, company, locale],
   );
 
   const industryNames = useMemo(
-    () => company?.industry?.map((indId: number) => industries?.results?.find((i) => i.id === indId)?.name).filter(Boolean) || [],
+    () => company?.industry?.map((indId: number) => industries?.results?.find((i) => idsEqual(i.id, indId))?.name).filter(Boolean) || [],
     [industries, company],
   );
 
@@ -77,7 +73,7 @@ export const CompanyDetailPage: React.FC<CompanyDetailPageProps> = ({ id }) => {
       <Space wrap>
         <Card size="small" title="Контакты">{contacts.length}</Card>
         <Card size="small" title="Сделки">{deals.length}</Card>
-        <Card size="small" title="Сумма сделок">{formatAmount(dealsAmount)}</Card>
+        <Card size="small" title="Сумма сделок">{formatCurrency(dealsAmount)}</Card>
       </Space>
 
       <Card>
@@ -99,7 +95,7 @@ export const CompanyDetailPage: React.FC<CompanyDetailPageProps> = ({ id }) => {
                   <Descriptions.Item label="Веб-сайт" span={2}>{company.website ? <a href={company.website} target="_blank" rel="noreferrer">{company.website}</a> : '-'}</Descriptions.Item>
                   <Descriptions.Item label="Адрес" span={2}>{company.address || '-'}</Descriptions.Item>
                   <Descriptions.Item label="Последний контакт">{company.was_in_touch ? dayjs(company.was_in_touch).format('DD.MM.YYYY') : '-'}</Descriptions.Item>
-                  <Descriptions.Item label="Дата создания">{company.creation_date ? dayjs(company.creation_date).format('DD.MM.YYYY HH:mm') : '-'}</Descriptions.Item>
+                  <Descriptions.Item label="Дата создания">{formatDate(company.creation_date, 'datetime')}</Descriptions.Item>
                 </Descriptions>
               ),
             },
@@ -133,7 +129,13 @@ export const CompanyDetailPage: React.FC<CompanyDetailPageProps> = ({ id }) => {
                   pagination={false}
                   columns={[
                     { title: 'Название', dataIndex: 'name', key: 'name', render: (val: string, rec: any) => <a onClick={() => navigate(`/deals/${rec.id}`)}>{val}</a> },
-                    { title: 'Сумма', dataIndex: 'amount', key: 'amount', render: (val: number) => (val ? formatAmount(val) : '-') },
+                    {
+                      title: 'Сумма',
+                      dataIndex: 'amount',
+                      key: 'amount',
+                      render: (val: number, record: any) =>
+                        val && record?.currency_code ? formatCurrency(val, record.currency_code) : '-',
+                    },
                     { title: 'Стадия', dataIndex: 'stage', key: 'stage' },
                     { title: 'Дата', dataIndex: 'created_at', key: 'created_at', render: (val: string) => dayjs(val).format('DD.MM.YYYY') },
                   ]}

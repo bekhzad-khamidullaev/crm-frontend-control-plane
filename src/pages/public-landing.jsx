@@ -1,6 +1,17 @@
 import { Alert, App, Button, Card, Carousel, Input, Space, Spin, Typography } from 'antd';
+import {
+  EnvironmentOutlined,
+  FacebookOutlined,
+  InstagramOutlined,
+  LinkedinOutlined,
+  MailOutlined,
+  PhoneOutlined,
+  SendOutlined,
+  WhatsAppOutlined,
+} from '@ant-design/icons';
 import { useEffect, useState } from 'react';
 import { api, landingsApi } from '../lib/api/client';
+import { useTheme } from '../lib/hooks/useTheme.js';
 
 const { Title, Text } = Typography;
 
@@ -41,11 +52,97 @@ function readLocale() {
   return 'ru';
 }
 
-function sectionCardStyle(section = {}) {
+function normalizePhoneHref(value) {
+  const normalized = String(value || '').replace(/[^\d+]/g, '');
+  return normalized ? `tel:${normalized}` : '';
+}
+
+function normalizeColor(value) {
+  return String(value || '').trim().toLowerCase();
+}
+
+function hexToRgb(value) {
+  const normalized = normalizeColor(value);
+  if (!normalized.startsWith('#')) return null;
+  const hex = normalized.slice(1);
+  if (hex.length === 3) {
+    const r = parseInt(hex[0] + hex[0], 16);
+    const g = parseInt(hex[1] + hex[1], 16);
+    const b = parseInt(hex[2] + hex[2], 16);
+    if ([r, g, b].some(Number.isNaN)) return null;
+    return { r, g, b };
+  }
+  if (hex.length === 6) {
+    const r = parseInt(hex.slice(0, 2), 16);
+    const g = parseInt(hex.slice(2, 4), 16);
+    const b = parseInt(hex.slice(4, 6), 16);
+    if ([r, g, b].some(Number.isNaN)) return null;
+    return { r, g, b };
+  }
+  return null;
+}
+
+function relativeLuminance({ r, g, b }) {
+  const transform = (v) => {
+    const channel = v / 255;
+    return channel <= 0.03928 ? channel / 12.92 : ((channel + 0.055) / 1.055) ** 2.4;
+  };
+  const rr = transform(r);
+  const gg = transform(g);
+  const bb = transform(b);
+  return 0.2126 * rr + 0.7152 * gg + 0.0722 * bb;
+}
+
+function contrastRatio(colorA, colorB) {
+  const rgbA = hexToRgb(colorA);
+  const rgbB = hexToRgb(colorB);
+  if (!rgbA || !rgbB) return null;
+  const l1 = relativeLuminance(rgbA);
+  const l2 = relativeLuminance(rgbB);
+  const lighter = Math.max(l1, l2);
+  const darker = Math.min(l1, l2);
+  return (lighter + 0.05) / (darker + 0.05);
+}
+
+function resolveThemeSurfaceColor(value, isDark, lightFallback = '#ffffff', darkFallback = '#111827') {
+  if (!value) return isDark ? darkFallback : lightFallback;
+  const normalized = normalizeColor(value);
+  if (!isDark) return value;
+  if (normalized === '#fff' || normalized === '#ffffff' || normalized === '#f8fafc' || normalized === '#f9fafb' || normalized === '#f1f7ff' || normalized === '#fafafa') {
+    return darkFallback;
+  }
+  return value;
+}
+
+function resolveThemeTextColor(value, isDark) {
+  if (!value) return isDark ? '#e2e8f0' : '#111827';
+  const normalized = normalizeColor(value);
+  if (!isDark) return value;
+  if (normalized === '#111827' || normalized === '#1f2937' || normalized === '#0f172a' || normalized === '#000' || normalized === '#000000') {
+    return '#e2e8f0';
+  }
+  return value;
+}
+
+function resolveReadableTextColor(value, background, isDark) {
+  const text = resolveThemeTextColor(value, isDark);
+  const bg = resolveThemeSurfaceColor(background, isDark, '#ffffff', '#111827');
+  const ratio = contrastRatio(text, bg);
+  if (ratio !== null && ratio < 4.5) {
+    return isDark ? '#e2e8f0' : '#111827';
+  }
+  return text;
+}
+
+function sectionCardStyle(section = {}, isDark = false) {
+  const bg = resolveThemeSurfaceColor(section.background, isDark, '#ffffff', '#111827');
+  const text = resolveReadableTextColor(section.textColor, section.background, isDark);
+  const border = isDark ? '#2d3343' : '#e5e7eb';
   return {
     borderRadius: Number(section.borderRadius || 14),
-    background: section.background || '#ffffff',
-    color: section.textColor || '#111827',
+    background: bg,
+    color: text,
+    borderColor: border,
     opacity: typeof section.opacity === 'number' ? section.opacity : 1,
     fontFamily: section.fontFamily || 'Inter, system-ui, sans-serif',
     fontSize: section.fontSize ? `${Number(section.fontSize)}px` : undefined,
@@ -53,6 +150,9 @@ function sectionCardStyle(section = {}) {
     backgroundSize: section.backgroundSize || 'cover',
     backgroundPosition: section.backgroundPosition || 'center',
     backgroundRepeat: section.backgroundRepeat || 'no-repeat',
+    '--landing-card-bg': bg,
+    '--landing-card-text': text,
+    '--landing-card-border': border,
   };
 }
 
@@ -83,6 +183,8 @@ function SectionImage({ section }) {
 
 export default function PublicLandingPage() {
   const { message } = App.useApp();
+  const { theme } = useTheme();
+  const isDark = theme === 'dark';
   const [loading, setLoading] = useState(true);
   const [schema, setSchema] = useState(null);
   const [error, setError] = useState('');
@@ -179,7 +281,7 @@ export default function PublicLandingPage() {
   }
 
   return (
-    <div style={{ minHeight: '100vh', background: '#f8fafc' }}>
+    <div className="landing-public-page" style={{ minHeight: '100vh', background: isDark ? '#0b1220' : '#f8fafc' }}>
       <div style={{ maxWidth: 980, margin: '0 auto', padding: '20px 16px 48px' }}>
         {isPreview && (
           <Alert
@@ -203,11 +305,11 @@ export default function PublicLandingPage() {
 
             if (type === 'hero') {
               return (
-                <Card key={key} style={sectionCardStyle(section)}>
+                <Card key={key} className="landing-public-card" style={sectionCardStyle(section, isDark)}>
                   <div style={sectionContentStyle(section)}>
                     <SectionImage section={section} />
-                    <Title level={3} style={{ color: section.textColor || '#111827' }}>{tByLocale(section, 'title', locale, '')}</Title>
-                    <Text style={{ color: section.textColor || '#111827' }}>{tByLocale(section, 'subtitle', locale, '')}</Text>
+                    <Title level={3} style={{ color: resolveReadableTextColor(section.textColor, section.background, isDark) }}>{tByLocale(section, 'title', locale, '')}</Title>
+                    <Text style={{ color: resolveReadableTextColor(section.textColor, section.background, isDark) }}>{tByLocale(section, 'subtitle', locale, '')}</Text>
                   </div>
                 </Card>
               );
@@ -215,11 +317,11 @@ export default function PublicLandingPage() {
 
             if (type === 'text') {
               return (
-                <Card key={key} style={sectionCardStyle(section)}>
+                <Card key={key} className="landing-public-card" style={sectionCardStyle(section, isDark)}>
                   <div style={sectionContentStyle(section)}>
                     <SectionImage section={section} />
-                    <Title level={4} style={{ color: section.textColor || '#111827' }}>{tByLocale(section, 'title', locale, '')}</Title>
-                    <Text style={{ color: section.textColor || '#111827' }}>{tByLocale(section, 'body', locale, '')}</Text>
+                    <Title level={4} style={{ color: resolveReadableTextColor(section.textColor, section.background, isDark) }}>{tByLocale(section, 'title', locale, '')}</Title>
+                    <Text style={{ color: resolveReadableTextColor(section.textColor, section.background, isDark) }}>{tByLocale(section, 'body', locale, '')}</Text>
                   </div>
                 </Card>
               );
@@ -227,10 +329,10 @@ export default function PublicLandingPage() {
 
             if (type === 'features') {
               return (
-                <Card key={key} style={sectionCardStyle(section)}>
+                <Card key={key} className="landing-public-card" style={sectionCardStyle(section, isDark)}>
                   <div style={sectionContentStyle(section)}>
                     <SectionImage section={section} />
-                    <Title level={4} style={{ color: section.textColor || '#111827' }}>{tByLocale(section, 'title', locale, '')}</Title>
+                    <Title level={4} style={{ color: resolveReadableTextColor(section.textColor, section.background, isDark) }}>{tByLocale(section, 'title', locale, '')}</Title>
                     <Space direction="vertical" style={{ width: '100%' }}>
                       {(Array.isArray(section.items) ? section.items : []).map((item, i) => (
                         <Card key={`${key}-item-${i}`} size="small">{item}</Card>
@@ -243,11 +345,11 @@ export default function PublicLandingPage() {
 
             if (type === 'cta') {
               return (
-                <Card key={key} style={sectionCardStyle(section)}>
+                <Card key={key} className="landing-public-card" style={sectionCardStyle(section, isDark)}>
                   <div style={sectionContentStyle(section)}>
                     <SectionImage section={section} />
-                    <Title level={4} style={{ color: section.textColor || '#111827' }}>{tByLocale(section, 'title', locale, '')}</Title>
-                    <Text style={{ color: section.textColor || '#111827' }}>{tByLocale(section, 'body', locale, '')}</Text>
+                    <Title level={4} style={{ color: resolveReadableTextColor(section.textColor, section.background, isDark) }}>{tByLocale(section, 'title', locale, '')}</Title>
+                    <Text style={{ color: resolveReadableTextColor(section.textColor, section.background, isDark) }}>{tByLocale(section, 'body', locale, '')}</Text>
                   </div>
                 </Card>
               );
@@ -256,10 +358,10 @@ export default function PublicLandingPage() {
             if (type === 'carousel') {
               const images = Array.isArray(section.images) ? section.images.filter(Boolean) : [];
               return (
-                <Card key={key} style={sectionCardStyle(section)}>
+                <Card key={key} className="landing-public-card" style={sectionCardStyle(section, isDark)}>
                   <div style={sectionContentStyle(section)}>
                     <SectionImage section={section} />
-                    <Title level={4} style={{ color: section.textColor || '#111827' }}>{tByLocale(section, 'title', locale, '')}</Title>
+                    <Title level={4} style={{ color: resolveReadableTextColor(section.textColor, section.background, isDark) }}>{tByLocale(section, 'title', locale, '')}</Title>
                     {images.length > 0 ? (
                       <Carousel autoplay dots>
                         {images.map((url, i) => (
@@ -285,16 +387,52 @@ export default function PublicLandingPage() {
               );
             }
 
+            if (type === 'contacts') {
+              const socials = [
+                { key: 'wa', label: 'WhatsApp', url: section.whatsapp, icon: WhatsAppOutlined },
+                { key: 'tg', label: 'Telegram', url: section.telegram, icon: SendOutlined },
+                { key: 'ig', label: 'Instagram', url: section.instagram, icon: InstagramOutlined },
+                { key: 'fb', label: 'Facebook', url: section.facebook, icon: FacebookOutlined },
+                { key: 'in', label: 'LinkedIn', url: section.linkedin, icon: LinkedinOutlined },
+              ].filter((item) => item.url);
+              return (
+                <Card key={key} style={sectionCardStyle(section)}>
+                  <div style={sectionContentStyle(section)}>
+                    <SectionImage section={section} />
+                    <Title level={4} style={{ color: section.textColor || '#111827' }}>{tByLocale(section, 'title', locale, 'Контакты')}</Title>
+                    <Text style={{ color: section.textColor || '#111827' }}>{tByLocale(section, 'subtitle', locale, '')}</Text>
+                    <Space direction="vertical" size="small" style={{ marginTop: 12 }}>
+                      {section.phone ? <Text><PhoneOutlined /> Телефон: <a href={normalizePhoneHref(section.phone)}>{section.phone}</a></Text> : null}
+                      {section.email ? <Text><MailOutlined /> Email: <a href={`mailto:${section.email}`}>{section.email}</a></Text> : null}
+                      {section.address ? <Text><EnvironmentOutlined /> Адрес: {section.address}</Text> : null}
+                      {socials.length > 0 ? (
+                        <Space wrap>
+                          {socials.map((item) => {
+                            const Icon = item.icon;
+                            return (
+                              <Button key={item.key} href={item.url} target="_blank" rel="noopener noreferrer" icon={<Icon />}>
+                              {item.label}
+                              </Button>
+                            );
+                          })}
+                        </Space>
+                      ) : null}
+                    </Space>
+                  </div>
+                </Card>
+              );
+            }
+
             if (type === 'form') {
               const fields = Array.isArray(section.fields) ? section.fields : [];
               return (
-                <Card key={key} style={sectionCardStyle(section)}>
+                <Card key={key} className="landing-public-card" style={sectionCardStyle(section, isDark)}>
                   <div style={sectionContentStyle(section)}>
                     <Space direction="vertical" style={{ width: '100%' }} size="middle">
                       <SectionImage section={section} />
                       <div>
-                        <Title level={4} style={{ marginBottom: 0, color: section.textColor || '#111827' }}>{tByLocale(section, 'title', locale, 'Форма')}</Title>
-                        <Text style={{ color: section.textColor || '#111827' }}>{tByLocale(section, 'subtitle', locale, '')}</Text>
+                        <Title level={4} style={{ marginBottom: 0, color: resolveReadableTextColor(section.textColor, section.background, isDark) }}>{tByLocale(section, 'title', locale, 'Форма')}</Title>
+                        <Text style={{ color: resolveReadableTextColor(section.textColor, section.background, isDark) }}>{tByLocale(section, 'subtitle', locale, '')}</Text>
                       </div>
 
                       {fields.map((field) => (

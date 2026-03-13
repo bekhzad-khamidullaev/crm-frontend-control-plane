@@ -6,6 +6,13 @@ import { CheckOutlined, CloseOutlined } from '@ant-design/icons';
 const { TextArea } = Input;
 const { Option } = Select;
 
+const valuesEqual = (left, right) => String(left) === String(right);
+
+const normalizeOptionValue = (value, options = []) => {
+  const matched = options.find((option) => valuesEqual(option?.value, value));
+  return matched ? matched.value : value;
+};
+
 /**
  * EditableCell component for inline table editing
  * Supports text, number, select, and date fields with auto-save
@@ -103,7 +110,7 @@ export default function EditableCell({
         return (
           <Select
             {...commonProps}
-            value={value ?? undefined}
+            value={normalizeOptionValue(value, options) ?? undefined}
             onChange={(val) => setValue(val)}
             placeholder={placeholder || 'Выберите...'}
             style={{ width: '100%' }}
@@ -160,7 +167,7 @@ export default function EditableCell({
     }
 
     if (type === 'select' && options.length > 0) {
-      const option = options.find((opt) => opt.value === value);
+      const option = options.find((opt) => valuesEqual(opt?.value, value));
       return option ? option.label : value;
     }
 

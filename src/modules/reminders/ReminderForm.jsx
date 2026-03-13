@@ -5,16 +5,37 @@ import { useEffect, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
 
+import { App, Button, Card, Col, DatePicker, Input, Result, Row, Select, Skeleton, Space, Switch, Typography } from 'antd';
 import EntitySelect from '../../components/EntitySelect.jsx';
+import FormPermissionGuard from '../../components/permissions/FormPermissionGuard';
 import { getUser, getUsers } from '../../lib/api';
-import { createReminder, getReminder, updateReminder } from '../../lib/api/reminders';
+import {
+  createReminder,
+  getReminder,
+  getReminderContentTypes,
+  getReminderObject,
+  getReminderObjects,
+  updateReminder,
+} from '../../lib/api/reminders';
 import { canWrite } from '../../lib/rbac';
 import { navigate } from '../../router';
-import FormPermissionGuard from '../../components/permissions/FormPermissionGuard';
 
-import { App, Button, Card, DatePicker, Input, Result, Skeleton, Switch } from 'antd';
 const { TextArea } = Input;
-const Label = ({ children, ...props }) => <label style={{ display: 'block', marginBottom: 6, fontWeight: 500 }} {...props}>{children}</label>;
+const { Text, Title } = Typography;
+
+const FieldLabel = ({ children, ...props }) => (
+  <Text strong style={{ display: 'block', marginBottom: 6 }} {...props}>
+    {children}
+  </Text>
+);
+
+const FieldError = ({ message }) => (
+  message ? (
+    <Text type="danger" style={{ display: 'block', marginTop: 6 }}>
+      {message}
+    </Text>
+  ) : null
+);
 
 const schema = z.object({
   subject: z.string().min(1, 'Введите тему напоминания'),
@@ -23,8 +44,8 @@ const schema = z.object({
   active: z.boolean().optional(),
   send_notification_email: z.boolean().optional(),
   owner: z.any().optional(),
-  content_type: z.number({ invalid_type_error: 'Укажите content type ID' }).min(1, 'Укажите content type ID'),
-  object_id: z.number({ invalid_type_error: 'Укажите object ID' }).min(1, 'Укажите object ID'),
+  content_type: z.number({ invalid_type_error: 'Выберите тип объекта' }).min(1, 'Выберите тип объекта'),
+  object_id: z.number({ invalid_type_error: 'Выберите связанный объект' }).min(1, 'Выберите связанный объект'),
 });
 
 function ReminderForm({ id }) {
@@ -34,9 +55,11 @@ function ReminderForm({ id }) {
     if (variant === 'destructive') message.error(text);
     else message.success(text);
   };
+
   const [loading, setLoading] = useState(false);
   const [loadError, setLoadError] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [contentTypeOptions, setContentTypeOptions] = useState([]);
   const isEdit = !!id;
   const canManage = canWrite('common.change_reminder');
 
@@ -56,8 +79,8 @@ function ReminderForm({ id }) {
       active: true,
       send_notification_email: false,
       owner: '',
-      content_type: 0,
-      object_id: 0,
+      content_type: undefined,
+      object_id: undefined,
     },
   });
 
@@ -65,12 +88,34 @@ function ReminderForm({ id }) {
   const activeValue = watch('active');
   const emailValue = watch('send_notification_email');
   const ownerValue = watch('owner');
+  const contentTypeValue = watch('content_type');
+  const objectValue = watch('object_id');
+
+  useEffect(() => {
+    loadContentTypes();
+  }, []);
 
   useEffect(() => {
     if (isEdit) {
       loadReminder();
     }
   }, [id]);
+
+  const loadContentTypes = async () => {
+    try {
+      const response = await getReminderContentTypes();
+      const results = Array.isArray(response?.results) ? response.results : [];
+      setContentTypeOptions(
+        results.map((item) => ({
+          value: item.id,
+          label: item.label || item.model || `Type ${item.id}`,
+        })),
+      );
+    } catch (error) {
+      setContentTypeOptions([]);
+      console.error('Error loading reminder content types:', error);
+    }
+  };
 
   const loadReminder = async () => {
     setLoading(true);
@@ -95,6 +140,7 @@ function ReminderForm({ id }) {
       notify({ title: 'Недостаточно прав', description: 'У вас нет прав для изменения напоминаний', variant: 'destructive' });
       return;
     }
+
     setSaving(true);
     try {
       const payload = {
@@ -128,7 +174,10 @@ function ReminderForm({ id }) {
         status="error"
         title="Не удалось загрузить напоминание для редактирования"
         subTitle="Попробуйте повторить загрузку или вернитесь к списку напоминаний."
-        extra={<Button onClick={loadReminder}>Повторить</Button>}
+        extra={[
+          <Button key="retry" onClick={loadReminder}>Повторить</Button>,
+          <Button key="list" type="primary" onClick={() => navigate('/reminders')}>К списку напоминаний</Button>,
+        ]}
       />
     );
   }
@@ -140,101 +189,124 @@ function ReminderForm({ id }) {
       listButtonText="К списку напоминаний"
       description="У вас нет прав для создания или редактирования напоминаний."
     >
-      <div>
-        <Button onClick={() => navigate('/reminders')}>
-          <ArrowLeft />
+      <Space direction="vertical" size={16} style={{ width: '100%' }}>
+        <Button onClick={() => navigate('/reminders')} icon={<ArrowLeft size={16} />}>
           Назад
         </Button>
 
-        <div>
-          <Bell />
-          <h2>
-            {isEdit ? 'Редактирование напоминания' : 'Новое напоминание'}
-          </h2>
-        </div>
-
-        <Card>
+        <Card
+          title={(
+            <Space>
+              <Bell size={18} />
+              <Title level={4} style={{ margin: 0 }}>
+                {isEdit ? 'Редактирование напоминания' : 'Новое напоминание'}
+              </Title>
+            </Space>
+          )}
+        >
           <form onSubmit={handleSubmit(handleSubmitForm)}>
-          <div>
-            <Label htmlFor="subject">Тема *</Label>
-            <Input id="subject" placeholder="Например: Связаться с клиентом" {...register('subject')} />
-            {errors.subject && <p>{errors.subject.message}</p>}
-          </div>
+            <Space direction="vertical" size={16} style={{ width: '100%' }}>
+              <div>
+                <FieldLabel htmlFor="subject">Тема *</FieldLabel>
+                <Input id="subject" placeholder="Например: Связаться с клиентом" {...register('subject')} />
+                <FieldError message={errors.subject?.message} />
+              </div>
 
-          <div>
-            <Label htmlFor="description">Описание</Label>
-            <TextArea id="description" rows={4} placeholder="Дополнительная информация" {...register('description')} />
-          </div>
+              <div>
+                <FieldLabel htmlFor="description">Описание</FieldLabel>
+                <TextArea id="description" rows={4} placeholder="Дополнительная информация" {...register('description')} />
+              </div>
 
-          <div>
-            <Label htmlFor="reminder_date">Дата и время напоминания *</Label>
-            <DatePicker id="reminder_date" value={reminderDate || null} onChange={(val) => setValue('reminder_date', val)} format="YYYY-MM-DD" />
-            {errors.reminder_date && <p>{errors.reminder_date.message}</p>}
-          </div>
+              <div>
+                <FieldLabel htmlFor="reminder_date">Дата и время напоминания *</FieldLabel>
+                <DatePicker
+                  id="reminder_date"
+                  value={reminderDate || null}
+                  onChange={(val) => setValue('reminder_date', val)}
+                  format="YYYY-MM-DD"
+                  style={{ width: '100%' }}
+                />
+                <FieldError message={errors.reminder_date?.message} />
+              </div>
 
-          <div>
-            <div>
-              <Switch id="active" checked={!!activeValue} onChange={(val) => setValue('active', val)} />
-              <Label htmlFor="active">Активно</Label>
-            </div>
-            <div>
-              <Switch id="send_notification_email" checked={!!emailValue} onChange={(val) => setValue('send_notification_email', val)} />
-              <Label htmlFor="send_notification_email">Email уведомление</Label>
-            </div>
-          </div>
+              <Row gutter={[16, 16]}>
+                <Col xs={24} md={12}>
+                  <Space align="center">
+                    <Switch id="active" checked={!!activeValue} onChange={(val) => setValue('active', val)} />
+                    <Text>Активно</Text>
+                  </Space>
+                </Col>
+                <Col xs={24} md={12}>
+                  <Space align="center">
+                    <Switch id="send_notification_email" checked={!!emailValue} onChange={(val) => setValue('send_notification_email', val)} />
+                    <Text>Email уведомление</Text>
+                  </Space>
+                </Col>
+              </Row>
 
-          <div>
-            <Label htmlFor="owner">Владелец</Label>
-            <EntitySelect
-              id="owner"
-              placeholder="Выберите пользователя"
-              fetchList={getUsers}
-              fetchById={getUser}
-              allowClear
-              value={ownerValue || ''}
-              onChange={(val) => setValue('owner', val)}
-            />
-          </div>
+              <div>
+                <FieldLabel htmlFor="owner">Владелец</FieldLabel>
+                <EntitySelect
+                  id="owner"
+                  placeholder="Выберите пользователя"
+                  fetchList={getUsers}
+                  fetchById={getUser}
+                  allowClear
+                  value={ownerValue || ''}
+                  onChange={(val) => setValue('owner', val)}
+                />
+              </div>
 
-          <div>
-            <div>
-              <Label htmlFor="content_type">Тип объекта *</Label>
-              <Input
-                id="content_type"
-                type="number"
-                min={1}
-                placeholder="Код типа объекта"
-                {...register('content_type', { valueAsNumber: true })}
-              />
-              {errors.content_type && <p>{errors.content_type.message}</p>}
-            </div>
-            <div>
-              <Label htmlFor="object_id">Связанный объект *</Label>
-              <Input
-                id="object_id"
-                type="number"
-                min={1}
-                placeholder="Код связанного объекта"
-                {...register('object_id', { valueAsNumber: true })}
-              />
-              {errors.object_id && <p>{errors.object_id.message}</p>}
-            </div>
-          </div>
+              <Row gutter={[16, 16]}>
+                <Col xs={24} md={12}>
+                  <FieldLabel htmlFor="content_type">Тип объекта *</FieldLabel>
+                  <Select
+                    id="content_type"
+                    placeholder="Выберите тип объекта"
+                    options={contentTypeOptions}
+                    value={contentTypeValue}
+                    onChange={(val) => {
+                      setValue('content_type', val ?? undefined);
+                      setValue('object_id', undefined);
+                    }}
+                    allowClear
+                    showSearch
+                    filterOption={(input, option) =>
+                      (option?.label ?? '').toLowerCase().includes(input.toLowerCase())
+                    }
+                  />
+                  <FieldError message={errors.content_type?.message} />
+                </Col>
+                <Col xs={24} md={12}>
+                  <FieldLabel htmlFor="object_id">Связанный объект *</FieldLabel>
+                  <EntitySelect
+                    id="object_id"
+                    placeholder={contentTypeValue ? 'Выберите объект' : 'Сначала выберите тип объекта'}
+                    disabled={!contentTypeValue}
+                    fetchList={contentTypeValue ? (params) => getReminderObjects(contentTypeValue, params) : undefined}
+                    fetchById={contentTypeValue ? (objectId) => getReminderObject(contentTypeValue, objectId) : undefined}
+                    value={objectValue}
+                    onChange={(val) => setValue('object_id', val ?? undefined)}
+                    allowClear
+                  />
+                  <FieldError message={errors.object_id?.message} />
+                </Col>
+              </Row>
 
-            <div>
-              {canManage && (
-                <Button type="submit" loading={saving}>
-                  <Save />
-                  {isEdit ? 'Сохранить' : 'Создать'}
+              <Space size={12}>
+                {canManage && (
+                  <Button type="primary" htmlType="submit" loading={saving} icon={<Save size={16} />}>
+                    {isEdit ? 'Сохранить' : 'Создать'}
+                  </Button>
+                )}
+                <Button htmlType="button" onClick={() => navigate('/reminders')}>
+                  Отмена
                 </Button>
-              )}
-              <Button onClick={() => navigate('/reminders')}>
-                Отмена
-              </Button>
-            </div>
+              </Space>
+            </Space>
           </form>
         </Card>
-      </div>
+      </Space>
     </FormPermissionGuard>
   );
 }

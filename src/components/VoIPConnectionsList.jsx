@@ -18,6 +18,7 @@ import {
   patchVoIPConnection
 } from '../lib/api/telephony';
 import { canWrite } from '../lib/rbac.js';
+import { TELEPHONY_PROVIDER_TAG_COLORS } from '../lib/telephony/constants.js';
 
 export default function VoIPConnectionsList({ onEdit, onRefresh }) {
   const { message } = App.useApp();
@@ -91,11 +92,7 @@ export default function VoIPConnectionsList({ onEdit, onRefresh }) {
       dataIndex: 'provider',
       key: 'provider',
       render: (provider) => {
-        const colors = {
-          'OnlinePBX': 'blue',
-          'Zadarma': 'green',
-        };
-        return <Tag color={colors[provider] || 'default'}>{provider}</Tag>;
+        return <Tag color={TELEPHONY_PROVIDER_TAG_COLORS[provider] || 'default'}>{provider}</Tag>;
       },
     },
     {

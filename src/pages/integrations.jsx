@@ -15,6 +15,7 @@ import {
   SendOutlined,
   RobotOutlined,
   WhatsAppOutlined,
+  CopyOutlined,
 } from '@ant-design/icons';
 import dayjs from 'dayjs';
 import IntegrationCard from '../components/IntegrationCard';
@@ -54,6 +55,8 @@ import {
   testWhatsAppAccount,
   disconnectWhatsAppAccount,
 } from '../lib/api/integrations/whatsapp.js';
+import { apiConfig } from '../lib/api/client';
+import { t } from '../lib/i18n';
 
 const formatDateTime = (value) => {
   if (!value) return '-';
@@ -65,8 +68,49 @@ const normalizeList = (response) => {
   return Array.isArray(response?.results) ? response.results : [];
 };
 
+const getDefaultTelegramWebhookUrl = () => {
+  if (typeof window === 'undefined') return '';
+
+  const fallbackOrigin = window.location.origin;
+  try {
+    const origin = new URL(apiConfig?.baseUrl || fallbackOrigin, fallbackOrigin).origin;
+    return `${origin.replace(/\/+$/, '')}/api/telegram/webhook/`;
+  } catch {
+    return `${fallbackOrigin.replace(/\/+$/, '')}/api/telegram/webhook/`;
+  }
+};
+
+const AI_PROVIDER_OPTIONS = [
+  { value: 'openai', label: 'OpenAI' },
+  { value: 'gemini', label: 'Google Gemini' },
+  { value: 'claude', label: 'Anthropic Claude' },
+  { value: 'openai_compatible', label: 'OpenAI Compatible' },
+  { value: 'custom', label: 'Custom HTTP' },
+];
+
+const AI_PROVIDER_MODELS = {
+  openai: ['gpt-4o-mini', 'gpt-4.1', 'gpt-4.1-mini', 'gpt-4o'],
+  gemini: ['gemini-2.5-flash', 'gemini-2.5-pro', 'gemini-2.0-flash'],
+  claude: ['claude-sonnet-4-20250514', 'claude-3-7-sonnet-20250219', 'claude-3-5-haiku-20241022'],
+};
+
+const getProviderModelOptions = (provider, currentValue) => {
+  const modelValues = AI_PROVIDER_MODELS[provider] || [];
+  const options = modelValues.map((value) => ({ value, label: value }));
+
+  if (currentValue && !modelValues.includes(currentValue)) {
+    options.unshift({ value: currentValue, label: `${currentValue} (текущая)` });
+  }
+
+  return options;
+};
+
 export default function IntegrationsPage() {
   const { message } = App.useApp();
+  const tr = (key, fallback, vars = {}) => {
+    const localized = t(key, vars);
+    return localized === key ? fallback : localized;
+  };
   const [loading, setLoading] = useState({});
   const [statuses, setStatuses] = useState({
     sms: { status: 'disconnected', stats: {} },
@@ -131,15 +175,23 @@ export default function IntegrationsPage() {
     try {
       const [providers, status] = await Promise.all([smsApi.providers(), smsApi.status()]);
       const list = normalizeList(providers);
-      const connected = Array.isArray(list) && list.length > 0;
+      const configuredCountFromList = Array.isArray(list)
+        ? list.filter((item) => item?.configured === true).length
+        : 0;
 
       const stats = status && typeof status === 'object' ? status : {};
+      const configuredCount =
+        typeof stats.configured_providers === 'number'
+          ? stats.configured_providers
+          : configuredCountFromList;
+      const connected = configuredCount > 0;
       setStatuses((prev) => ({
         ...prev,
         sms: {
           status: connected ? 'connected' : 'disconnected',
           stats: {
-            Каналов: list.length,
+            [tr('integrationsPage.stats.channels', 'Каналов')]: list.length,
+            [tr('integrationsPage.stats.configuredChannels', 'Настроенных каналов')]: configuredCount,
             ...stats,
           },
         },
@@ -167,10 +219,10 @@ export default function IntegrationsPage() {
         telephony: {
           status: active ? 'connected' : 'disconnected',
           stats: {
-            Подключений: list.length,
-            'Активный провайдер': active?.provider || '-',
-            'Звонков сегодня': stats?.calls_today || stats?.total || 0,
-            Пропущенных: stats?.missed || stats?.missed_calls || 0,
+            [tr('integrationsPage.stats.connections', 'Подключений')]: list.length,
+            [tr('integrationsPage.stats.activeProvider', 'Активный провайдер')]: active?.provider || '-',
+            [tr('integrationsPage.stats.callsToday', 'Звонков сегодня')]: stats?.calls_today || stats?.total || 0,
+            [tr('integrationsPage.stats.missed', 'Пропущенных')]: stats?.missed || stats?.missed_calls || 0,
           },
         },
       }));
@@ -193,9 +245,9 @@ export default function IntegrationsPage() {
       setFacebookPages(list);
 
       const stats = {
-        Страниц: list.length,
-        Сообщений: list.reduce((sum, item) => sum + (item.messages_synced || 0), 0),
-        Подписчиков: list.reduce((sum, item) => sum + (item.followers_count || 0), 0),
+        [tr('integrationsPage.stats.pages', 'Страниц')]: list.length,
+        [tr('integrationsPage.stats.messages', 'Сообщений')]: list.reduce((sum, item) => sum + (item.messages_synced || 0), 0),
+        [tr('integrationsPage.stats.followers', 'Подписчиков')]: list.reduce((sum, item) => sum + (item.followers_count || 0), 0),
       };
 
       setStatuses((prev) => ({
@@ -222,9 +274,9 @@ export default function IntegrationsPage() {
       setWhatsAppAccounts(list);
 
       const stats = {
-        Аккаунтов: list.length,
-        'Сообщений получено': list.reduce((sum, item) => sum + (item.messages_received || 0), 0),
-        'Сообщений отправлено': list.reduce((sum, item) => sum + (item.messages_sent || 0), 0),
+        [tr('integrationsPage.stats.accounts', 'Аккаунтов')]: list.length,
+        [tr('integrationsPage.stats.messagesReceived', 'Сообщений получено')]: list.reduce((sum, item) => sum + (item.messages_received || 0), 0),
+        [tr('integrationsPage.stats.messagesSent', 'Сообщений отправлено')]: list.reduce((sum, item) => sum + (item.messages_sent || 0), 0),
       };
 
       setStatuses((prev) => ({
@@ -251,10 +303,10 @@ export default function IntegrationsPage() {
       setInstagramAccounts(list);
 
       const stats = {
-        Аккаунтов: list.length,
-        Сообщений: list.reduce((sum, item) => sum + (item.messages_synced || 0), 0),
-        Комментариев: list.reduce((sum, item) => sum + (item.comments_synced || 0), 0),
-        Подписчиков: list.reduce((sum, item) => sum + (item.followers_count || 0), 0),
+        [tr('integrationsPage.stats.accounts', 'Аккаунтов')]: list.length,
+        [tr('integrationsPage.stats.messages', 'Сообщений')]: list.reduce((sum, item) => sum + (item.messages_synced || 0), 0),
+        [tr('integrationsPage.stats.comments', 'Комментариев')]: list.reduce((sum, item) => sum + (item.comments_synced || 0), 0),
+        [tr('integrationsPage.stats.followers', 'Подписчиков')]: list.reduce((sum, item) => sum + (item.followers_count || 0), 0),
       };
 
       setStatuses((prev) => ({
@@ -281,10 +333,10 @@ export default function IntegrationsPage() {
       setTelegramBots(list);
 
       const stats = {
-        Ботов: list.length,
-        'Сообщений получено': list.reduce((sum, item) => sum + (item.messages_received || 0), 0),
-        'Сообщений отправлено': list.reduce((sum, item) => sum + (item.messages_sent || 0), 0),
-        'Активных чатов': list.reduce((sum, item) => sum + (item.active_chats || 0), 0),
+        [tr('integrationsPage.stats.bots', 'Ботов')]: list.length,
+        [tr('integrationsPage.stats.messagesReceived', 'Сообщений получено')]: list.reduce((sum, item) => sum + (item.messages_received || 0), 0),
+        [tr('integrationsPage.stats.messagesSent', 'Сообщений отправлено')]: list.reduce((sum, item) => sum + (item.messages_sent || 0), 0),
+        [tr('integrationsPage.stats.activeChats', 'Активных чатов')]: list.reduce((sum, item) => sum + (item.active_chats || 0), 0),
       };
 
       setStatuses((prev) => ({
@@ -313,9 +365,9 @@ export default function IntegrationsPage() {
       const activeCount = list.filter((item) => item.is_active).length;
       const defaultProvider = list.find((item) => item.is_default);
       const stats = {
-        Провайдеров: list.length,
-        Активных: activeCount,
-        'По умолчанию': defaultProvider?.name || '-',
+        [tr('integrationsPage.stats.providers', 'Провайдеров')]: list.length,
+        [tr('integrationsPage.stats.active', 'Активных')]: activeCount,
+        [tr('integrationsPage.stats.default', 'По умолчанию')]: defaultProvider?.name || '-',
       };
 
       setStatuses((prev) => ({
@@ -339,7 +391,7 @@ export default function IntegrationsPage() {
 
   const handleIntegrationSuccess = async (type) => {
     closeModal(type);
-    message.success('Настройки сохранены');
+    message.success(t('integrationsPage.messages.settingsSaved'));
     if (type === 'sms') await loadSMSStatus();
     if (type === 'telephony') await loadTelephonyStatus();
     if (type === 'whatsapp') await loadWhatsAppStatus();
@@ -380,6 +432,15 @@ export default function IntegrationsPage() {
     setAIModal({ open: true, record });
   };
 
+  const handleAIProviderChange = (provider) => {
+    const currentModel = aiForm.getFieldValue('model');
+    const modelsForProvider = AI_PROVIDER_MODELS[provider] || [];
+    if (!modelsForProvider.length) return;
+    if (!modelsForProvider.includes(currentModel)) {
+      aiForm.setFieldsValue({ model: modelsForProvider[0] });
+    }
+  };
+
   const closeAIModal = () => {
     setAIModal({ open: false, record: null });
     aiForm.resetFields();
@@ -397,17 +458,17 @@ export default function IntegrationsPage() {
 
       if (aiModal.record?.id) {
         await updateAIProvider(aiModal.record.id, payload);
-        message.success('AI провайдер обновлен');
+        message.success(tr('integrationsPage.messages.aiProviderUpdated', 'AI провайдер обновлен'));
       } else {
         await createAIProvider(payload);
-        message.success('AI провайдер добавлен');
+        message.success(tr('integrationsPage.messages.aiProviderAdded', 'AI провайдер добавлен'));
       }
 
       closeAIModal();
       loadAIStatus();
     } catch (error) {
       if (error?.errorFields) return;
-      message.error(getErrorText(error, 'Не удалось сохранить AI провайдера'));
+      message.error(getErrorText(error, tr('integrationsPage.messages.aiProviderSaveError', 'Не удалось сохранить AI провайдера')));
     } finally {
       setAISaving(false);
     }
@@ -417,10 +478,10 @@ export default function IntegrationsPage() {
     setAITestingId(record.id);
     try {
       const result = await testAIProviderConnection(record.id);
-      message.success(result?.output_text ? `Тест OK: ${result.output_text}` : 'Подключение проверено');
+      message.success(result?.output_text ? tr('integrationsPage.messages.testOkOutput', 'Тест OK: {output}', { output: result.output_text }) : tr('integrationsPage.messages.connectionChecked', 'Подключение проверено'));
       loadAIStatus();
     } catch (error) {
-      message.error(getErrorText(error, 'Не удалось проверить AI провайдера'));
+      message.error(getErrorText(error, tr('integrationsPage.messages.aiProviderTestError', 'Не удалось проверить AI провайдера')));
     } finally {
       setAITestingId(null);
     }
@@ -429,10 +490,10 @@ export default function IntegrationsPage() {
   const handleAIDelete = async (record) => {
     try {
       await deleteAIProvider(record.id);
-      message.success('AI провайдер удален');
+      message.success(tr('integrationsPage.messages.aiProviderDeleted', 'AI провайдер удален'));
       loadAIStatus();
     } catch (error) {
-      message.error(getErrorText(error, 'Не удалось удалить AI провайдера'));
+      message.error(getErrorText(error, tr('integrationsPage.messages.aiProviderDeleteError', 'Не удалось удалить AI провайдера')));
     }
   };
 
@@ -441,10 +502,10 @@ export default function IntegrationsPage() {
     setAIDefaultingId(record.id);
     try {
       await updateAIProvider(record.id, { is_default: true, is_active: true });
-      message.success(`Провайдер "${record.name}" установлен по умолчанию`);
+      message.success(tr('integrationsPage.messages.aiProviderDefaultSet', 'Провайдер "{name}" установлен по умолчанию', { name: record.name }));
       loadAIStatus();
     } catch (error) {
-      message.error(getErrorText(error, 'Не удалось установить провайдера по умолчанию'));
+      message.error(getErrorText(error, tr('integrationsPage.messages.aiProviderDefaultSetError', 'Не удалось установить провайдера по умолчанию')));
     } finally {
       setAIDefaultingId(null);
     }
@@ -453,85 +514,85 @@ export default function IntegrationsPage() {
   const handleFacebookTest = async (record) => {
     try {
       await testFacebookPage(record.id);
-      message.success('Facebook подключение проверено');
+      message.success(tr('integrationsPage.messages.facebookTestOk', 'Facebook подключение проверено'));
       loadFacebookStatus();
     } catch (error) {
-      message.error('Не удалось проверить Facebook подключение');
+      message.error(tr('integrationsPage.messages.facebookTestError', 'Не удалось проверить Facebook подключение'));
     }
   };
 
   const handleFacebookDisconnect = async (record) => {
     try {
       await disconnectFacebook(record.id);
-      message.success('Facebook страница отключена');
+      message.success(tr('integrationsPage.messages.facebookDisconnected', 'Facebook страница отключена'));
       loadFacebookStatus();
     } catch (error) {
-      message.error('Не удалось отключить Facebook страницу');
+      message.error(tr('integrationsPage.messages.facebookDisconnectError', 'Не удалось отключить Facebook страницу'));
     }
   };
 
   const handleInstagramTest = async (record) => {
     try {
       await testInstagramAccount(record.id);
-      message.success('Instagram подключение проверено');
+      message.success(tr('integrationsPage.messages.instagramTestOk', 'Instagram подключение проверено'));
       loadInstagramStatus();
     } catch (error) {
-      message.error('Не удалось проверить Instagram подключение');
+      message.error(tr('integrationsPage.messages.instagramTestError', 'Не удалось проверить Instagram подключение'));
     }
   };
 
   const handleInstagramDisconnect = async (record) => {
     try {
       await disconnectInstagram(record.id);
-      message.success('Instagram аккаунт отключен');
+      message.success(tr('integrationsPage.messages.instagramDisconnected', 'Instagram аккаунт отключен'));
       loadInstagramStatus();
     } catch (error) {
-      message.error('Не удалось отключить Instagram аккаунт');
+      message.error(tr('integrationsPage.messages.instagramDisconnectError', 'Не удалось отключить Instagram аккаунт'));
     }
   };
 
   const handleTelegramTest = async (record) => {
     try {
       await testTelegramBot(record.id);
-      message.success('Telegram подключение проверено');
+      message.success(tr('integrationsPage.messages.telegramTestOk', 'Telegram подключение проверено'));
       loadTelegramStatus();
     } catch (error) {
-      message.error('Не удалось проверить Telegram подключение');
+      message.error(tr('integrationsPage.messages.telegramTestError', 'Не удалось проверить Telegram подключение'));
     }
   };
 
   const handleTelegramDisconnect = async (record) => {
     try {
       await disconnectTelegramBot(record.id);
-      message.success('Telegram бот отключен');
+      message.success(tr('integrationsPage.messages.telegramDisconnected', 'Telegram бот отключен'));
       loadTelegramStatus();
     } catch (error) {
-      message.error('Не удалось отключить Telegram бот');
+      message.error(tr('integrationsPage.messages.telegramDisconnectError', 'Не удалось отключить Telegram бот'));
     }
   };
 
   const handleWhatsAppTest = async (record) => {
     try {
       await testWhatsAppAccount(record.id);
-      message.success('WhatsApp подключение проверено');
+      message.success(tr('integrationsPage.messages.whatsappTestOk', 'WhatsApp подключение проверено'));
       loadWhatsAppStatus();
     } catch (error) {
-      message.error(getErrorText(error, 'Не удалось проверить WhatsApp подключение'));
+      message.error(getErrorText(error, tr('integrationsPage.messages.whatsappTestError', 'Не удалось проверить WhatsApp подключение')));
     }
   };
 
   const handleWhatsAppDisconnect = async (record) => {
     try {
       await disconnectWhatsAppAccount(record.id);
-      message.success('WhatsApp аккаунт отключен');
+      message.success(tr('integrationsPage.messages.whatsappDisconnected', 'WhatsApp аккаунт отключен'));
       loadWhatsAppStatus();
     } catch (error) {
-      message.error(getErrorText(error, 'Не удалось отключить WhatsApp аккаунт'));
+      message.error(getErrorText(error, tr('integrationsPage.messages.whatsappDisconnectError', 'Не удалось отключить WhatsApp аккаунт')));
     }
   };
 
   const openWebhookModal = (bot) => {
-    webhookForm.setFieldsValue({ webhook_url: bot?.webhook_url || '' });
+    webhookForm.setFieldsValue({ webhook_url: bot?.webhook_url || getDefaultTelegramWebhookUrl() });
     setWebhookModal({ open: true, bot });
   };
 
@@ -544,20 +605,59 @@ export default function IntegrationsPage() {
     try {
       const values = await webhookForm.validateFields();
       if (!webhookModal.bot?.id) {
-        message.error('Не удалось определить бота');
+        message.error(tr('integrationsPage.messages.botNotDetected', 'Не удалось определить бота'));
         return;
       }
       setWebhookSaving(true);
       await setTelegramWebhook(webhookModal.bot.id, values);
-      message.success('Webhook обновлен');
+      message.success(tr('integrationsPage.messages.webhookUpdated', 'Webhook обновлен'));
       closeWebhookModal();
       loadTelegramStatus();
     } catch (error) {
       if (error?.errorFields) return;
-      message.error(getErrorText(error, 'Не удалось обновить webhook'));
+      message.error(getErrorText(error, tr('integrationsPage.messages.webhookUpdateError', 'Не удалось обновить webhook')));
     } finally {
       setWebhookSaving(false);
     }
+  };
+
+  const copyUrlToClipboard = async (value) => {
+    const text = (value || '').trim();
+    if (!text) {
+      message.warning(tr('integrationsPage.messages.urlEmpty', 'URL пустой'));
+      return false;
+    }
+
+    try {
+      if (navigator?.clipboard?.writeText) {
+        await navigator.clipboard.writeText(text);
+      } else {
+        const textarea = document.createElement('textarea');
+        textarea.value = text;
+        textarea.setAttribute('readonly', '');
+        textarea.style.position = 'absolute';
+        textarea.style.left = '-9999px';
+        document.body.appendChild(textarea);
+        textarea.select();
+        document.execCommand('copy');
+        document.body.removeChild(textarea);
+      }
+      message.success(tr('integrationsPage.messages.urlCopied', 'URL скопирован'));
+      return true;
+    } catch (error) {
+      message.error(tr('integrationsPage.messages.urlCopyError', 'Не удалось скопировать URL'));
+      return false;
+    }
+  };
+
+  const handleCopyWebhookUrl = async () => {
+    const value = webhookForm.getFieldValue('webhook_url');
+    await copyUrlToClipboard(value);
+  };
+
+  const handleCopyAiBaseUrl = async () => {
+    const value = aiForm.getFieldValue('base_url');
+    await copyUrlToClipboard(value);
   };
 
   return (
@@ -566,19 +666,19 @@ export default function IntegrationsPage() {
         title={
           <Space>
             <ApiOutlined />
-            <span>Интеграции</span>
+            <span>{t('integrationsPage.title')}</span>
           </Space>
         }
         extra={
           <Button icon={<ReloadOutlined />} onClick={loadAllStatuses}>
-            Обновить все
+            {t('integrationsPage.actions.refreshAll')}
           </Button>
         }
       >
         <Space direction="vertical" style={{ width: '100%' }} size="large">
           <IntegrationCard
             title="SMS"
-            description="Провайдеры и статус отправки SMS"
+            description={tr('integrationsPage.cards.sms.description', 'Провайдеры и статус отправки SMS')}
             icon={<MessageOutlined style={{ fontSize: 24, color: '#52c41a' }} />}
             type="sms"
             status={statuses.sms.status}
@@ -590,8 +690,8 @@ export default function IntegrationsPage() {
           />
 
           <IntegrationCard
-            title="Телефония"
-            description="Подключения VoIP/SIP для звонков из CRM"
+            title={tr('integrationsPage.cards.telephony.title', 'Телефония')}
+            description={tr('integrationsPage.cards.telephony.description', 'Подключения VoIP/SIP для звонков из CRM')}
             icon={<PhoneOutlined style={{ fontSize: 24, color: '#1890ff' }} />}
             type="telephony"
             status={statuses.telephony.status}
@@ -604,7 +704,7 @@ export default function IntegrationsPage() {
 
           <IntegrationCard
             title="WhatsApp Business"
-            description="Cloud API аккаунты для омниканала поддержки и продаж"
+            description={tr('integrationsPage.cards.whatsapp.description', 'Cloud API аккаунты для омниканала поддержки и продаж')}
             icon={<WhatsAppOutlined style={{ fontSize: 24, color: '#25D366' }} />}
             type="whatsapp"
             status={statuses.whatsapp.status}
@@ -619,33 +719,33 @@ export default function IntegrationsPage() {
                 size="small"
                 rowKey={(record) => record.id || record.phone_number_id}
                 columns={[
-                  { title: 'Аккаунт', dataIndex: 'business_name', key: 'business_name' },
-                  { title: 'Номер', dataIndex: 'phone_number', key: 'phone_number' },
-                  { title: 'Phone ID', dataIndex: 'phone_number_id', key: 'phone_number_id' },
+                  { title: tr('integrationsPage.table.account', 'Аккаунт'), dataIndex: 'business_name', key: 'business_name' },
+                  { title: tr('integrationsPage.table.number', 'Номер'), dataIndex: 'phone_number', key: 'phone_number' },
+                  { title: tr('integrationsPage.table.phoneId', 'Phone ID'), dataIndex: 'phone_number_id', key: 'phone_number_id' },
                   {
-                    title: 'Статус',
+                    title: tr('integrationsPage.table.status', 'Статус'),
                     dataIndex: 'is_active',
                     key: 'is_active',
                     render: (value) => (
-                      <Tag color={value ? 'green' : 'default'}>{value ? 'Активен' : 'Пауза'}</Tag>
+                      <Tag color={value ? 'green' : 'default'}>{value ? tr('integrationsPage.status.active', 'Активен') : tr('integrationsPage.status.paused', 'Пауза')}</Tag>
                     ),
                   },
                   {
-                    title: 'Последняя активность',
+                    title: tr('integrationsPage.table.lastActivity', 'Последняя активность'),
                     dataIndex: 'last_activity_at',
                     key: 'last_activity_at',
                     render: formatDateTime,
                   },
                   {
-                    title: 'Действия',
+                    title: tr('integrationsPage.table.actions', 'Действия'),
                     key: 'actions',
                     render: (_, record) => (
                       <Space>
                         <Button type="link" onClick={() => handleWhatsAppTest(record)}>
-                          Тест
+                          {tr('integrationsPage.actions.test', 'Тест')}
                         </Button>
                         <Button type="link" danger onClick={() => handleWhatsAppDisconnect(record)}>
-                          Отключить
+                          {tr('integrationsPage.actions.disconnect', 'Отключить')}
                         </Button>
                       </Space>
                     ),
@@ -659,7 +759,7 @@ export default function IntegrationsPage() {
 
           <IntegrationCard
             title="Facebook Messenger"
-            description="Подключенные страницы для обработки сообщений"
+            description={tr('integrationsPage.cards.facebook.description', 'Подключенные страницы для обработки сообщений')}
             icon={<FacebookOutlined style={{ fontSize: 24, color: '#1877F2' }} />}
             type="facebook"
             status={statuses.facebook.status}
@@ -674,31 +774,31 @@ export default function IntegrationsPage() {
                 size="small"
                 rowKey={(record) => record.id || record.facebook_page_id}
                 columns={[
-                  { title: 'Страница', dataIndex: 'page_name', key: 'page_name' },
+                  { title: tr('integrationsPage.table.page', 'Страница'), dataIndex: 'page_name', key: 'page_name' },
                   {
-                    title: 'Статус',
+                    title: tr('integrationsPage.table.status', 'Статус'),
                     dataIndex: 'is_active',
                     key: 'is_active',
                     render: (value) => (
-                      <Tag color={value ? 'green' : 'default'}>{value ? 'Активна' : 'Пауза'}</Tag>
+                      <Tag color={value ? 'green' : 'default'}>{value ? tr('integrationsPage.status.activeFeminine', 'Активна') : tr('integrationsPage.status.paused', 'Пауза')}</Tag>
                     ),
                   },
                   {
-                    title: 'Синхронизация',
+                    title: tr('integrationsPage.table.sync', 'Синхронизация'),
                     dataIndex: 'last_sync_at',
                     key: 'last_sync_at',
                     render: formatDateTime,
                   },
                   {
-                    title: 'Действия',
+                    title: tr('integrationsPage.table.actions', 'Действия'),
                     key: 'actions',
                     render: (_, record) => (
                       <Space>
                         <Button type="link" onClick={() => handleFacebookTest(record)}>
-                          Тест
+                          {tr('integrationsPage.actions.test', 'Тест')}
                         </Button>
                         <Button type="link" danger onClick={() => handleFacebookDisconnect(record)}>
-                          Отключить
+                          {tr('integrationsPage.actions.disconnect', 'Отключить')}
                         </Button>
                       </Space>
                     ),
@@ -711,8 +811,8 @@ export default function IntegrationsPage() {
           </IntegrationCard>
 
           <IntegrationCard
-            title="Instagram"
-            description="Instagram Business аккаунты"
+            title={t('integrationsPage.cards.instagram.title')}
+            description={t('integrationsPage.cards.instagram.description')}
             icon={<InstagramOutlined style={{ fontSize: 24, color: '#E1306C' }} />}
             type="instagram"
             status={statuses.instagram.status}
@@ -729,29 +829,29 @@ export default function IntegrationsPage() {
                 columns={[
                   { title: 'Username', dataIndex: 'username', key: 'username' },
                   {
-                    title: 'Статус',
+                    title: tr('integrationsPage.table.status', 'Статус'),
                     dataIndex: 'is_active',
                     key: 'is_active',
                     render: (value) => (
-                      <Tag color={value ? 'green' : 'default'}>{value ? 'Активен' : 'Пауза'}</Tag>
+                      <Tag color={value ? 'green' : 'default'}>{value ? tr('integrationsPage.status.active', 'Активен') : tr('integrationsPage.status.paused', 'Пауза')}</Tag>
                     ),
                   },
                   {
-                    title: 'Синхронизация',
+                    title: tr('integrationsPage.table.sync', 'Синхронизация'),
                     dataIndex: 'last_sync_at',
                     key: 'last_sync_at',
                     render: formatDateTime,
                   },
                   {
-                    title: 'Действия',
+                    title: tr('integrationsPage.table.actions', 'Действия'),
                     key: 'actions',
                     render: (_, record) => (
                       <Space>
                         <Button type="link" onClick={() => handleInstagramTest(record)}>
-                          Тест
+                          {tr('integrationsPage.actions.test', 'Тест')}
                         </Button>
                         <Button type="link" danger onClick={() => handleInstagramDisconnect(record)}>
-                          Отключить
+                          {tr('integrationsPage.actions.disconnect', 'Отключить')}
                         </Button>
                       </Space>
                     ),
@@ -764,8 +864,8 @@ export default function IntegrationsPage() {
           </IntegrationCard>
 
           <IntegrationCard
-            title="Telegram"
-            description="Telegram боты для входящих сообщений"
+            title={t('integrationsPage.cards.telegram.title')}
+            description={t('integrationsPage.cards.telegram.description')}
             icon={<SendOutlined style={{ fontSize: 24, color: '#2AABEE' }} />}
             type="telegram"
             status={statuses.telegram.status}
@@ -780,35 +880,35 @@ export default function IntegrationsPage() {
                 size="small"
                 rowKey={(record) => record.id || record.bot_username}
                 columns={[
-                  { title: 'Бот', dataIndex: 'bot_name', key: 'bot_name' },
-                  { title: 'Username', dataIndex: 'bot_username', key: 'bot_username' },
+                  { title: tr('integrationsPage.table.bot', 'Бот'), dataIndex: 'bot_name', key: 'bot_name' },
+                  { title: tr('integrationsPage.table.username', 'Username'), dataIndex: 'bot_username', key: 'bot_username' },
                   {
-                    title: 'Статус',
+                    title: tr('integrationsPage.table.status', 'Статус'),
                     dataIndex: 'is_active',
                     key: 'is_active',
                     render: (value) => (
-                      <Tag color={value ? 'green' : 'default'}>{value ? 'Активен' : 'Пауза'}</Tag>
+                      <Tag color={value ? 'green' : 'default'}>{value ? tr('integrationsPage.status.active', 'Активен') : tr('integrationsPage.status.paused', 'Пауза')}</Tag>
                     ),
                   },
                   {
-                    title: 'Последняя активность',
+                    title: tr('integrationsPage.table.lastActivity', 'Последняя активность'),
                     dataIndex: 'last_activity_at',
                     key: 'last_activity_at',
                     render: formatDateTime,
                   },
                   {
-                    title: 'Действия',
+                    title: tr('integrationsPage.table.actions', 'Действия'),
                     key: 'actions',
                     render: (_, record) => (
                       <Space>
                         <Button type="link" onClick={() => handleTelegramTest(record)}>
-                          Тест
+                          {tr('integrationsPage.actions.test', 'Тест')}
                         </Button>
                         <Button type="link" onClick={() => openWebhookModal(record)}>
-                          Webhook
+                          {tr('integrationsPage.actions.webhook', 'Webhook')}
                         </Button>
                         <Button type="link" danger onClick={() => handleTelegramDisconnect(record)}>
-                          Отключить
+                          {tr('integrationsPage.actions.disconnect', 'Отключить')}
                         </Button>
                       </Space>
                     ),
@@ -821,8 +921,8 @@ export default function IntegrationsPage() {
           </IntegrationCard>
 
           <IntegrationCard
-            title="AI Провайдеры"
-            description="OpenAI, Gemini, Claude и совместимые модели для AI-функций CRM"
+            title={t('integrationsPage.cards.ai.title')}
+            description={t('integrationsPage.cards.ai.description')}
             icon={<RobotOutlined style={{ fontSize: 24, color: '#722ed1' }} />}
             type="ai"
             status={statuses.ai.status}
@@ -837,29 +937,29 @@ export default function IntegrationsPage() {
                 size="small"
                 rowKey={(record) => record.id}
                 columns={[
-                  { title: 'Название', dataIndex: 'name', key: 'name' },
-                  { title: 'Провайдер', dataIndex: 'provider', key: 'provider' },
-                  { title: 'Модель', dataIndex: 'model', key: 'model', render: (value) => value || '-' },
+                  { title: tr('integrationsPage.table.name', 'Название'), dataIndex: 'name', key: 'name' },
+                  { title: tr('integrationsPage.table.provider', 'Провайдер'), dataIndex: 'provider', key: 'provider' },
+                  { title: tr('integrationsPage.table.model', 'Модель'), dataIndex: 'model', key: 'model', render: (value) => value || '-' },
                   {
-                    title: 'Статус',
+                    title: tr('integrationsPage.table.status', 'Статус'),
                     key: 'status',
                     render: (_, record) => (
                       <Space>
                         <Tag color={record.is_active ? 'green' : 'default'}>
-                          {record.is_active ? 'Активен' : 'Пауза'}
+                          {record.is_active ? tr('integrationsPage.status.active', 'Активен') : tr('integrationsPage.status.paused', 'Пауза')}
                         </Tag>
-                        {record.is_default && <Tag color="blue">По умолчанию</Tag>}
+                        {record.is_default && <Tag color="blue">{tr('integrationsPage.status.default', 'По умолчанию')}</Tag>}
                       </Space>
                     ),
                   },
                   {
-                    title: 'Ключ',
+                    title: tr('integrationsPage.table.key', 'Ключ'),
                     dataIndex: 'api_key_preview',
                     key: 'api_key_preview',
                     render: (value) => value || '-',
                   },
                   {
-                    title: 'Действия',
+                    title: tr('integrationsPage.table.actions', 'Действия'),
                     key: 'actions',
                     render: (_, record) => (
                       <Space>
@@ -868,10 +968,10 @@ export default function IntegrationsPage() {
                           loading={aiTestingId === record.id}
                           onClick={() => handleAITest(record)}
                         >
-                          Тест
+                          {tr('integrationsPage.actions.test', 'Тест')}
                         </Button>
                         <Button type="link" onClick={() => openAIModal(record)}>
-                          Редактировать
+                          {tr('integrationsPage.actions.edit', 'Редактировать')}
                         </Button>
                         {!record.is_default && (
                           <Button
@@ -879,17 +979,17 @@ export default function IntegrationsPage() {
                             loading={aiDefaultingId === record.id}
                             onClick={() => handleAIMakeDefault(record)}
                           >
-                            По умолчанию
+                            {tr('integrationsPage.actions.makeDefault', 'По умолчанию')}
                           </Button>
                         )}
                         <Popconfirm
-                          title="Удалить AI провайдера?"
+                          title={tr('integrationsPage.actions.deleteProviderConfirm', 'Удалить AI провайдера?')}
                           onConfirm={() => handleAIDelete(record)}
-                          okText="Удалить"
-                          cancelText="Отмена"
+                          okText={tr('actions.delete', 'Удалить')}
+                          cancelText={tr('actions.cancel', 'Отмена')}
                         >
                           <Button type="link" danger>
-                            Удалить
+                            {tr('actions.delete', 'Удалить')}
                           </Button>
                         </Popconfirm>
                       </Space>
@@ -905,7 +1005,7 @@ export default function IntegrationsPage() {
       </Card>
 
       <Modal
-        title="Настройка SMS"
+        title={tr('integrationsPage.modals.smsSettings', 'Настройка SMS')}
         open={modalVisible.sms}
         onCancel={() => closeModal('sms')}
         footer={null}
@@ -916,7 +1016,7 @@ export default function IntegrationsPage() {
       </Modal>
 
       <Modal
-        title="Настройка телефонии"
+        title={tr('integrationsPage.modals.telephonySettings', 'Настройка телефонии')}
         open={modalVisible.telephony}
         onCancel={() => closeModal('telephony')}
         footer={null}
@@ -926,7 +1026,7 @@ export default function IntegrationsPage() {
       </Modal>
 
       <Modal
-        title="Подключение WhatsApp Business"
+        title={tr('integrationsPage.modals.connectWhatsapp', 'Подключение WhatsApp Business')}
         open={modalVisible.whatsapp}
         onCancel={() => closeModal('whatsapp')}
         footer={null}
@@ -936,7 +1036,7 @@ export default function IntegrationsPage() {
       </Modal>
 
       <Modal
-        title="Подключение Facebook"
+        title={tr('integrationsPage.modals.connectFacebook', 'Подключение Facebook')}
         open={modalVisible.facebook}
         onCancel={() => closeModal('facebook')}
         footer={null}
@@ -946,7 +1046,7 @@ export default function IntegrationsPage() {
       </Modal>
 
       <Modal
-        title="Подключение Instagram"
+        title={tr('integrationsPage.modals.connectInstagram', 'Подключение Instagram')}
         open={modalVisible.instagram}
         onCancel={() => closeModal('instagram')}
         footer={null}
@@ -956,7 +1056,7 @@ export default function IntegrationsPage() {
       </Modal>
 
       <Modal
-        title="Подключение Telegram"
+        title={tr('integrationsPage.modals.connectTelegram', 'Подключение Telegram')}
         open={modalVisible.telegram}
         onCancel={() => closeModal('telegram')}
         footer={null}
@@ -966,72 +1066,102 @@ export default function IntegrationsPage() {
       </Modal>
 
       <Modal
-        title="Webhook Telegram"
+        title={tr('integrationsPage.modals.telegramWebhook', 'Webhook Telegram')}
         open={webhookModal.open}
         forceRender
         onCancel={closeWebhookModal}
         onOk={handleWebhookSave}
-        okText="Сохранить"
+        okText={tr('actions.save', 'Сохранить')}
         confirmLoading={webhookSaving}
       >
         <Form form={webhookForm} layout="vertical">
           <Form.Item
             label="Webhook URL"
             name="webhook_url"
-            rules={[{ type: 'url', message: 'Укажите корректный URL' }]}
+            rules={[{ type: 'url', message: tr('integrationsPage.validation.url', 'Укажите корректный URL') }]}
           >
-            <Input placeholder="Оставьте пустым для автогенерации URL" />
+            <Input
+              placeholder={tr('integrationsPage.placeholders.webhookUrl', 'Оставьте пустым для автогенерации URL')}
+              addonAfter={
+                <Button type="text" size="small" icon={<CopyOutlined />} onClick={handleCopyWebhookUrl}>
+                  {tr('integrationsPage.actions.copy', 'Скопировать')}
+                </Button>
+              }
+            />
           </Form.Item>
         </Form>
       </Modal>
 
       <Modal
-        title={aiModal.record ? 'Редактирование AI провайдера' : 'Добавление AI провайдера'}
+        title={aiModal.record ? tr('integrationsPage.modals.editAiProvider', 'Редактирование AI провайдера') : tr('integrationsPage.modals.addAiProvider', 'Добавление AI провайдера')}
         open={aiModal.open}
         forceRender
         onCancel={closeAIModal}
         onOk={handleAISave}
-        okText="Сохранить"
+        okText={tr('actions.save', 'Сохранить')}
         confirmLoading={aiSaving}
         width={760}
       >
         <Form form={aiForm} layout="vertical">
           <Form.Item
-            label="Название"
+            label={tr('integrationsPage.form.name', 'Название')}
             name="name"
-            rules={[{ required: true, message: 'Введите название провайдера' }]}
+            rules={[{ required: true, message: tr('integrationsPage.validation.providerName', 'Введите название провайдера') }]}
           >
             <Input placeholder="OpenAI Prod" />
           </Form.Item>
 
           <Form.Item
-            label="Провайдер"
+            label={tr('integrationsPage.form.provider', 'Провайдер')}
             name="provider"
-            rules={[{ required: true, message: 'Выберите провайдера' }]}
+            rules={[{ required: true, message: tr('integrationsPage.validation.providerSelect', 'Выберите провайдера') }]}
           >
-            <Select
-              options={[
-                { value: 'openai', label: 'OpenAI' },
-                { value: 'gemini', label: 'Google Gemini' },
-                { value: 'claude', label: 'Anthropic Claude' },
-                { value: 'openai_compatible', label: 'OpenAI Compatible' },
-                { value: 'custom', label: 'Custom HTTP' },
-              ]}
-            />
+            <Select options={AI_PROVIDER_OPTIONS} onChange={handleAIProviderChange} />
           </Form.Item>
 
-          <Form.Item label="Модель" name="model">
-            <Input placeholder="gpt-4o-mini / gemini-1.5-flash / claude-3-5-sonnet-20241022" />
+          <Form.Item noStyle shouldUpdate={(prev, next) => prev.provider !== next.provider || prev.model !== next.model}>
+            {({ getFieldValue }) => {
+              const provider = getFieldValue('provider');
+              const model = getFieldValue('model');
+              const isCustomModel = provider === 'openai_compatible' || provider === 'custom';
+              const providerModelOptions = getProviderModelOptions(provider, model);
+
+              return (
+                <Form.Item
+                  label={tr('integrationsPage.form.model', 'Модель')}
+                  name="model"
+                  rules={[{ required: true, message: tr('integrationsPage.validation.modelSelect', 'Выберите или укажите модель') }]}
+                >
+                  {isCustomModel ? (
+                    <Input placeholder={tr('integrationsPage.placeholders.customModel', 'Введите модель, поддерживаемую вашим провайдером')} />
+                  ) : (
+                    <Select
+                      showSearch
+                      options={providerModelOptions}
+                      placeholder={tr('integrationsPage.placeholders.modelSelect', 'Выберите модель')}
+                      optionFilterProp="label"
+                    />
+                  )}
+                </Form.Item>
+              );
+            }}
           </Form.Item>
 
           <Form.Item label="Base URL" name="base_url">
-            <Input placeholder="https://api.openai.com" />
+            <Input
+              placeholder="https://api.openai.com"
+              addonAfter={
+                <Button type="text" size="small" icon={<CopyOutlined />} onClick={handleCopyAiBaseUrl}>
+                  Скопировать
+                </Button>
+              }
+            />
           </Form.Item>
 
           <Form.Item
-            label={aiModal.record ? 'API Key (оставьте пустым, чтобы не менять)' : 'API Key'}
+            label={aiModal.record ? tr('integrationsPage.form.apiKeyOptional', 'API Key (оставьте пустым, чтобы не менять)') : tr('integrationsPage.form.apiKey', 'API Key')}
             name="api_key"
-            rules={aiModal.record ? [] : [{ required: true, message: 'Введите API ключ' }]}
+            rules={aiModal.record ? [] : [{ required: true, message: tr('integrationsPage.validation.apiKey', 'Введите API ключ') }]}
           >
             <Input.Password placeholder="sk-..." />
           </Form.Item>
@@ -1049,10 +1179,10 @@ export default function IntegrationsPage() {
           </Space>
 
           <Space style={{ width: '100%' }} size="large">
-            <Form.Item label="Активен" name="is_active" valuePropName="checked">
+            <Form.Item label={tr('integrationsPage.form.active', 'Активен')} name="is_active" valuePropName="checked">
               <Switch />
             </Form.Item>
-            <Form.Item label="По умолчанию" name="is_default" valuePropName="checked">
+            <Form.Item label={tr('integrationsPage.form.default', 'По умолчанию')} name="is_default" valuePropName="checked">
               <Switch />
             </Form.Item>
           </Space>

@@ -17,6 +17,17 @@ const normalizeItems = (response) => {
   return Array.isArray(response.results) ? response.results : [];
 };
 
+const valuesEqual = (left, right) => String(left) === String(right);
+
+const normalizeSelectedValue = (value, options = []) => {
+  const normalizeSingle = (currentValue) => {
+    const matched = options.find((option) => valuesEqual(option?.value, currentValue));
+    return matched ? matched.value : currentValue;
+  };
+  if (Array.isArray(value)) return value.map((item) => normalizeSingle(item));
+  return normalizeSingle(value);
+};
+
 const defaultLabel = (item) =>
   item?.full_name ||
   item?.name ||
@@ -97,8 +108,9 @@ function EntitySelect({
     if (!fetchById) return;
     const selectedIds = mode === 'multiple' ? value || [] : value ? [value] : [];
     if (!selectedIds.length) return;
-    const existing = new Set(options.map((opt) => opt.value));
-    const missing = selectedIds.filter((id) => !existing.has(id));
+    const missing = selectedIds.filter(
+      (id) => !options.some((opt) => valuesEqual(opt?.value, id))
+    );
     if (!missing.length) return;
 
     try {
@@ -113,7 +125,7 @@ function EntitySelect({
       setOptions((prev) => {
         const merged = [...prev];
         mapped.forEach((option) => {
-          if (!merged.some((opt) => opt.value === option.value)) {
+          if (!merged.some((opt) => valuesEqual(opt?.value, option?.value))) {
             merged.push(option);
           }
         });
@@ -142,10 +154,11 @@ function EntitySelect({
   }, [value]);
 
   const isDisabled = disabled || (showSearch && !resolvedFetchOptions);
+  const selectValue = normalizeSelectedValue(value, options);
 
   return (
     <Select
-      value={value}
+      value={selectValue}
       onChange={onChange}
       placeholder={placeholder}
       mode={mode}

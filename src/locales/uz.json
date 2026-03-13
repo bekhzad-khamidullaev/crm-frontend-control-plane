@@ -1,5 +1,10 @@
 {
   "nav": {
+    "salesGroup": "Savdo",
+    "communicationsGroup": "Aloqa",
+    "marketingGroup": "Marketing",
+    "operationsGroup": "Operatsiyalar",
+    "systemGroup": "Tizim",
     "dashboard": "Boshqaruv paneli",
     "analytics": "Analitika",
     "leads": "Lidlar",
@@ -23,16 +28,20 @@
     "helpCenter": "Yordam markazi",
     "reportsAndAnalytics": "Hisobotlar va analitika",
     "crmEmails": "Emails",
-    "massmail": "Massmail",
+    "massmail": "Ommaviy xat yuborish",
     "smsCenter": "SMS",
-    "landingBuilder": "Landing Builder",
+    "landingBuilder": "Lending konstruktori",
     "operations": "Operatsiyalar",
     "referenceData": "Ma'lumotnomalar",
     "telephony": "Telefoniya",
     "users": "Foydalanuvchilar",
     "profile": "Profil",
     "settings": "Sozlamalar",
-    "logout": "Chiqish"
+    "logout": "Chiqish",
+    "themeLight": "Yorug' mavzu",
+    "themeDark": "Qorong'u mavzu",
+    "language": "Til",
+    "theme": "Mavzu"
   },
   "actions": {
     "edit": "Tahrirlash",
@@ -41,7 +50,12 @@
     "cancel": "Bekor qilish",
     "create": "Yaratish",
     "search": "Qidirish",
-    "retry": "Qayta urinib ko'rish"
+    "retry": "Qayta urinib ko'rish",
+    "refresh": "Yangilash",
+    "back": "Orqaga",
+    "saveChanges": "O'zgarishlarni saqlash",
+    "reset": "Tozalash",
+    "update": "Yangilash"
   },
   "helpCenterPage": {
     "alertTitle": "Yordam markazi",
@@ -81,6 +95,437 @@
     },
     "kpi": {
       "conversion": "Konversiya: {value}%"
+    }
+  },
+  "dashboardPage": {
+    "title": "Boshqaruv paneli",
+    "subtitle": "Asosiy CRM ko'rsatkichlari",
+    "cards": {
+      "leads": "Lidlar",
+      "contacts": "Kontaktlar",
+      "deals": "Bitimlar",
+      "revenue": "Daromad"
+    },
+    "periods": {
+      "d7": "7 kun",
+      "d30": "30 kun",
+      "d90": "90 kun"
+    },
+    "lastActivity": {
+      "title": "So'nggi faollik",
+      "empty": "Tanlangan davr uchun faollik yo'q",
+      "fallbackEvent": "Hodisa",
+      "fallbackDescription": "Tavsif yo'q"
+    },
+    "errors": {
+      "loadData": "Boshqaruv paneli ma'lumotlarini yuklab bo'lmadi"
+    }
+  },
+  "loginPage": {
+    "subtitle": "Tizimga kirish uchun ma'lumotlaringizni kiriting",
+    "submit": "Kirish",
+    "fields": {
+      "username": {
+        "label": "Foydalanuvchi nomi",
+        "required": "Foydalanuvchi nomini kiriting"
+      },
+      "password": {
+        "label": "Parol",
+        "required": "Parolni kiriting"
+      }
+    },
+    "messages": {
+      "welcome": "Xush kelibsiz!"
+    },
+    "errors": {
+      "invalidCredentials": "Foydalanuvchi nomi yoki parol noto'g'ri",
+      "tokenTooLarge": "Token Authorization header uchun juda katta (> {limit} bayt). Cookie auth yoqing yoki backendda JWT hajmini kamaytiring."
+    }
+  },
+  "usersPage": {
+    "tabs": {
+      "users": "Foydalanuvchilar",
+      "profiles": "Profillar",
+      "security": "Xavfsizlik"
+    },
+    "columns": {
+      "firstName": "Ism",
+      "lastName": "Familiya",
+      "fullName": "To'liq ism"
+    },
+    "security": {
+      "twoFaTitle": "2FA holati",
+      "twoFaEmpty": "2FA bo'yicha ma'lumot yo'q",
+      "sessionsTitle": "Sessiyalar",
+      "revokeAll": "Barchasini bekor qilish",
+      "createdAt": "Yaratilgan",
+      "active": "Faol"
+    },
+    "messages": {
+      "securityLoadError": "Xavfsizlik ma'lumotlarini yuklab bo'lmadi",
+      "sessionsRevoked": "Barcha sessiyalar bekor qilindi",
+      "revokeError": "Sessiyalarni bekor qilib bo'lmadi"
+    },
+    "common": {
+      "refresh": "Yangilash",
+      "yes": "Ha",
+      "no": "Yo'q"
+    }
+  },
+  "smsCenterPage": {
+    "tabs": {
+      "providers": "Provayderlar",
+      "history": "Tarix",
+      "status": "Holat",
+      "send": "Yuborish"
+    },
+    "common": {
+      "refresh": "Yangilash",
+      "loading": "Yuklanmoqda...",
+      "channel": "Kanal",
+      "yes": "Ha",
+      "no": "Yo'q"
+    },
+    "providers": {
+      "title": "SMS provayderlar",
+      "columns": {
+        "name": "Nomi"
+      }
+    },
+    "history": {
+      "title": "SMS tarixi",
+      "columns": {
+        "recipient": "Qabul qiluvchi",
+        "text": "Matn",
+        "status": "Holat",
+        "date": "Sana"
+      }
+    },
+    "status": {
+      "title": "SMS holati",
+      "empty": "SMS holati bo'yicha ma'lumot yo'q",
+      "value": "Qiymat"
+    },
+    "send": {
+      "title": "SMS yuborish",
+      "bulkTitle": "SMS yuborish (Bulk)",
+      "submit": "Yuborish",
+      "fields": {
+        "phone": "Telefon",
+        "phones": "Telefonlar (har qatorga bittadan)",
+        "text": "Matn",
+        "async": "Asinxron yuborish"
+      },
+      "placeholders": {
+        "selectChannel": "Kanalni tanlang"
+      },
+      "validation": {
+        "channelRequired": "Kanalni ko'rsating",
+        "numbersRequired": "Raqamlarni kiriting",
+        "phoneRequired": "Raqamni kiriting",
+        "textRequired": "Matnni kiriting"
+      }
+    },
+    "messages": {
+      "sent": "SMS yuborildi",
+      "queued": "SMS navbatga qo'yildi",
+      "bulkQueued": "SMS navbatga qo'yildi: {count} ta qabul qiluvchi",
+      "sendError": "SMS yuborib bo'lmadi"
+    }
+  },
+  "telephonyPage": {
+    "tabs": {
+      "connections": "Ulanishlar",
+      "incoming": "Kiruvchi",
+      "queue": "Navbat",
+      "coldCalls": "Sovuq qo'ng'iroqlar"
+    },
+    "common": {
+      "refresh": "Yangilash",
+      "details": "Tafsilotlar",
+      "noData": "Ma'lumot yo'q",
+      "yes": "Ha",
+      "no": "Yo'q",
+      "complexValue": "[murakkab qiymat]"
+    },
+    "messages": {
+      "queueLoadError": "Qo'ng'iroqlar navbatini yuklab bo'lmadi",
+      "callDetailsError": "Qo'ng'iroq tafsilotlarini yuklab bo'lmadi",
+      "callInitiated": "Qo'ng'iroq boshlandi",
+      "callInitiateError": "Qo'ng'iroqni boshlab bo'lmadi",
+      "callScheduled": "Qo'ng'iroq rejalashtirildi",
+      "callScheduleError": "Qo'ng'iroqni rejalashtirib bo'lmadi",
+      "bulkSent": "Bulk jadval yuborildi",
+      "bulkError": "Bulk yuborib bo'lmadi"
+    },
+    "queue": {
+      "title": "Qo'ng'iroqlar navbati",
+      "detailTitle": "Navbat tafsilotlari",
+      "columns": {
+        "number": "Raqam",
+        "client": "Mijoz",
+        "status": "Holat",
+        "priority": "Ustuvorlik",
+        "operator": "Operator",
+        "createdAt": "Yaratilgan",
+        "actions": "Amallar"
+      },
+      "stats": {
+        "total": "Jami",
+        "waiting": "Kutilmoqda",
+        "active": "Jarayonda",
+        "errors": "Xatolar"
+      }
+    },
+    "incoming": {
+      "title": "Kiruvchi qo'ng'iroqlar",
+      "detailTitle": "Kiruvchi qo'ng'iroq tafsilotlari",
+      "columns": {
+        "callerId": "Ko'rsatiladigan raqam",
+        "client": "Mijoz",
+        "type": "Turi",
+        "user": "Foydalanuvchi",
+        "shown": "Ko'rsatilgan",
+        "createdAt": "Yaratilgan",
+        "actions": "Amallar"
+      }
+    },
+    "cold": {
+      "initiateTitle": "Qo'ng'iroqni boshlash",
+      "scheduleTitle": "Qo'ng'iroqni rejalashtirish",
+      "bulkTitle": "Bulk qo'ng'iroqlar",
+      "toNumber": "To number",
+      "fromNumber": "From number",
+      "lead": "Lid",
+      "contact": "Kontakt",
+      "campaign": "Kampaniya",
+      "dateTime": "Sana va vaqt",
+      "selectDateTime": "Sana va vaqtni tanlang",
+      "phoneNumbers": "Phone numbers (har qatorga bittadan)",
+      "delayBetweenCalls": "Delay between calls (sek)",
+      "callNow": "Qo'ng'iroq qilish",
+      "schedule": "Rejalashtirish",
+      "runBulk": "Bulk ishga tushirish",
+      "validation": {
+        "enterNumber": "Raqamni kiriting",
+        "enterNumbers": "Raqamlarni kiriting"
+      }
+    },
+    "connections": {
+      "title": "VoIP ulanishlar",
+      "columns": {
+        "provider": "Provayder",
+        "type": "Turi",
+        "number": "Raqam",
+        "callerId": "Ko'rsatiladigan raqam",
+        "active": "Faol"
+      },
+      "fields": {
+        "provider": "Provayder",
+        "type": "Turi",
+        "number": "Raqam",
+        "callerId": "Ko'rsatiladigan raqam",
+        "owner": "Egası",
+        "active": "Faol"
+      }
+    }
+  },
+  "callsDashboardPage": {
+    "title": "Telefoniya boshqaruv paneli",
+    "common": {
+      "refresh": "Yangilash"
+    },
+    "period": {
+      "today": "Bugun",
+      "week": "Hafta",
+      "month": "Oy",
+      "year": "Yil"
+    },
+    "columns": {
+      "direction": "Yo'nalish",
+      "number": "Raqam",
+      "status": "Holat",
+      "time": "Vaqt",
+      "duration": "Davomiylik",
+      "rate": "Baholash",
+      "team": "Jamoa",
+      "total": "Jami",
+      "agent": "Agent"
+    },
+    "direction": {
+      "inbound": "Kiruvchi",
+      "outbound": "Chiquvchi"
+    },
+    "status": {
+      "completed": "Yakunlangan",
+      "answered": "Javob berilgan",
+      "missed": "O'tkazib yuborilgan",
+      "noAnswer": "Javob yo'q",
+      "busy": "Band",
+      "failed": "Xato"
+    },
+    "stats": {
+      "totalCalls": "Jami qo'ng'iroqlar",
+      "inbound": "Kiruvchi",
+      "outbound": "Chiquvchi",
+      "successRate": "Muvaffaqiyat darajasi",
+      "completed": "Yakunlangan",
+      "missed": "O'tkazib yuborilgan",
+      "totalDuration": "Umumiy vaqt",
+      "averageDuration": "O'rtacha davomiylik"
+    },
+    "duration": {
+      "hoursMinutes": "{hours}soat {minutes}daq",
+      "secondsZero": "0 son",
+      "secondsValue": "{value} son"
+    },
+    "recent": {
+      "title": "So'nggi qo'ng'iroqlar",
+      "empty": "Qo'ng'iroqlar bo'yicha ma'lumot yo'q"
+    },
+    "drilldown": {
+      "teams": "Jamoalar bo'yicha drilldown",
+      "agents": "Agentlar bo'yicha drilldown"
+    },
+    "weekly": {
+      "period": "Davr",
+      "createdAt": "Yaratilgan",
+      "export": "Eksport"
+    },
+    "automation": {
+      "start": "Boshlanish",
+      "status": "Holat",
+      "error": "Xato"
+    },
+    "qa": {
+      "session": "Sessiya",
+      "date": "Sana",
+      "modalTitle": "Qo'ng'iroq QA bahosi",
+      "save": "Saqlash",
+      "cancel": "Bekor qilish",
+      "validation": {
+        "script": "Skript bahosini kiriting",
+        "communication": "Muloqot bahosini kiriting",
+        "result": "Natija bahosini kiriting",
+        "outcome": "Outcome ni tanlang"
+      }
+    },
+    "messages": {
+      "loadError": "Telefoniya ma'lumotlarini yuklab bo'lmadi",
+      "qaCallNotSelected": "QA uchun qo'ng'iroq tanlanmagan",
+      "qaSaved": "QA bahosi saqlandi",
+      "qaSaveError": "QA bahosini saqlab bo'lmadi",
+      "weeklyGenerated": "Weekly board report yaratildi",
+      "weeklyGenerateError": "Weekly report yaratib bo'lmadi",
+      "weeklyExportError": "Weekly report eksport qilib bo'lmadi",
+      "automationRunError": "Automation ishga tushirilmadi"
+    }
+  },
+  "operationsPage": {
+    "tabs": {
+      "requests": "So'rovlar",
+      "outputs": "Yuklab jo'natishlar",
+      "shipments": "Yetkazib berishlar"
+    },
+    "common": {
+      "yes": "Ha",
+      "no": "Yo'q"
+    },
+    "fields": {
+      "description": "Tavsif",
+      "firstName": "Ism",
+      "middleName": "Otasining ismi",
+      "lastName": "Familiya",
+      "phone": "Telefon",
+      "country": "Mamlakat",
+      "city": "Shahar",
+      "owner": "Egası",
+      "company": "Kompaniya",
+      "contact": "Kontakt",
+      "lead": "Lid",
+      "deal": "Bitim",
+      "product": "Mahsulot",
+      "quantity": "Soni",
+      "amount": "Summa",
+      "currency": "Valyuta",
+      "shippingDate": "Yuklab jo'natish sanasi",
+      "plannedShippingDate": "Rejalashtirilgan sana",
+      "actualShippingDate": "Haqiqiy sana",
+      "shipped": "Yuklab jo'natilgan",
+      "serialNumber": "Seriya raqami"
+    },
+    "columns": {
+      "ticket": "Tiket",
+      "firstName": "Ism",
+      "lastName": "Familiya",
+      "phone": "Telefon",
+      "company": "Kompaniya",
+      "contact": "Kontakt",
+      "lead": "Lid",
+      "deal": "Bitim",
+      "product": "Mahsulot",
+      "quantity": "Soni",
+      "amount": "Summa",
+      "currency": "Valyuta",
+      "shipped": "Yuklab jo'natilgan"
+    }
+  },
+  "referenceDataPage": {
+    "tabs": {
+      "countries": "Mamlakatlar",
+      "cities": "Shaharlar",
+      "industries": "Soha turlari",
+      "leadSources": "Lid manbalari",
+      "clientTypes": "Mijoz turlari",
+      "closingReasons": "Yopish sabablari",
+      "dealStages": "Bitim bosqichlari",
+      "taskStages": "Vazifa bosqichlari",
+      "projectStages": "Loyiha bosqichlari",
+      "crmTags": "CRM teglar",
+      "taskTags": "Vazifa teglari",
+      "departments": "Bo'limlar",
+      "currencies": "Valyutalar",
+      "currencyRates": "Valyuta kurslari",
+      "productCategories": "Mahsulot toifalari"
+    },
+    "alert": {
+      "title": "Ma'lumotnomalar",
+      "description": "CRM kartalari va biznes jarayonlarida ishlatiladigan tizimli ma'lumotnoma ro'yxatlari (statuslar, turlar, mamlakatlar, teglar va h.k.)."
+    },
+    "common": {
+      "ru": "RU",
+      "en": "EN",
+      "uz": "UZ",
+      "yes": "Ha",
+      "no": "Yo'q",
+      "name": "Nomi",
+      "code": "Kod",
+      "rate": "Kurs",
+      "autoUpdate": "Avtoyangilash",
+      "actions": "Amallar",
+      "country": "Mamlakat",
+      "countryRu": "Mamlakat RU",
+      "countryEn": "Mamlakat EN",
+      "countryUz": "Mamlakat UZ",
+      "index": "Indeks",
+      "default": "Standart",
+      "successful": "Muvaffaqiyatli",
+      "inProgress": "Jarayonda",
+      "done": "Yakunlangan",
+      "forContent": "Kontent uchun"
+    },
+    "members": {
+      "title": "Xodimlar",
+      "user": "Foydalanuvchi",
+      "role": "Rol",
+      "count": "Xodimlar soni",
+      "composition": "Tarkib",
+      "empty": "Bu bo'limda xodimlar yo'q"
+    },
+    "currencyRates": {
+      "rates": "Kurslar",
+      "loadError": "Kurslarni yuklab bo'lmadi",
+      "empty": "Valyuta kurslari bo'yicha ma'lumotlar mavjud emas"
     }
   },
   "leads": {
@@ -184,6 +629,1380 @@
       "showStatistics": "Statistikani ko'rsatish",
       "noDataAvailable": "Ma'lumot mavjud emas",
       "loadingError": "Ma'lumotlarni yuklashda xato"
+    }
+  },
+  "tasksListPage": {
+    "columns": {
+      "task": "Vazifa",
+      "stage": "Bosqich",
+      "responsible": "Mas'ullar",
+      "dueDate": "Muddat",
+      "actions": "Amallar"
+    },
+    "actions": {
+      "view": "Ko'rish",
+      "edit": "Tahrirlash",
+      "delete": "O'chirish",
+      "create": "Vazifa yaratish",
+      "refresh": "Yangilash"
+    },
+    "messages": {
+      "stagesLoadWarning": "Vazifa bosqichlarini yuklab bo'lmadi",
+      "usersLoadWarning": "Foydalanuvchilarni yuklab bo'lmadi",
+      "listLoadError": "Vazifalar ro'yxatini yuklab bo'lmadi",
+      "loadError": "Vazifalarni yuklashda xato",
+      "deleted": "Vazifa o'chirildi",
+      "deleteError": "Vazifani o'chirib bo'lmadi",
+      "stagesNotConfigured": "Vazifa bosqichlari sozlanmagan",
+      "statusUpdated": "Vazifa holati yangilandi",
+      "statusUpdateError": "Vazifa holatini yangilab bo'lmadi"
+    },
+    "deadline": {
+      "daysLeft": "{count} kun",
+      "overdue": "muddati o'tgan"
+    },
+    "deleteModal": {
+      "title": "Ushbu vazifani o'chirish?",
+      "description": "Bu amalni bekor qilib bo'lmaydi.",
+      "confirm": "Ha",
+      "cancel": "Yo'q"
+    },
+    "title": "Vazifalar",
+    "subtitle": "Vazifalar ro'yxati",
+    "searchPlaceholder": "Nomi va tavsifi bo'yicha qidirish...",
+    "pagination": {
+      "total": "Jami: {total}"
+    },
+    "empty": "Vazifalar yo'q"
+  },
+  "projectsListPage": {
+    "columns": {
+      "project": "Loyiha",
+      "stage": "Bosqich",
+      "owner": "Ega",
+      "dueDate": "Muddat",
+      "actions": "Amallar"
+    },
+    "actions": {
+      "view": "Ko'rish",
+      "edit": "Tahrirlash",
+      "delete": "O'chirish",
+      "create": "Loyiha yaratish",
+      "refresh": "Yangilash"
+    },
+    "messages": {
+      "stagesLoadWarning": "Loyiha bosqichlarini yuklab bo'lmadi",
+      "usersLoadWarning": "Foydalanuvchilarni yuklab bo'lmadi",
+      "listLoadError": "Loyihalar ro'yxatini yuklab bo'lmadi",
+      "loadError": "Loyihalarni yuklashda xato",
+      "deleted": "Loyiha o'chirildi",
+      "deleteError": "Loyihani o'chirib bo'lmadi",
+      "reopened": "Loyiha qayta ochildi",
+      "completed": "Loyiha yakunlandi",
+      "statusUpdateError": "Loyiha holatini yangilab bo'lmadi"
+    },
+    "title": "Loyihalar",
+    "subtitle": "Loyihalar ro'yxati",
+    "searchPlaceholder": "Loyihalarni qidirish...",
+    "pagination": {
+      "total": "Jami: {total}"
+    },
+    "empty": "Loyihalar yo'q"
+  },
+  "taskDetailPage": {
+    "actions": {
+      "back": "Ortga",
+      "edit": "Tahrirlash",
+      "delete": "O'chirish"
+    },
+    "messages": {
+      "loadError": "Vazifa ma'lumotlarini yuklab bo'lmadi",
+      "deleted": "Vazifa o'chirildi",
+      "deleteError": "Vazifani o'chirib bo'lmadi"
+    },
+    "notFound": {
+      "title": "Vazifa topilmadi",
+      "subtitle": "Yozuv o'chirilgan bo'lishi yoki mavjud emas",
+      "back": "Vazifalarga qaytish"
+    },
+    "tabs": {
+      "details": "Tafsilotlar",
+      "activity": "Faollik tarixi"
+    },
+    "fields": {
+      "name": "Nomi",
+      "stage": "Bosqich",
+      "priority": "Ustuvorlik",
+      "startDate": "Boshlanish sanasi",
+      "dueDate": "Bajarish muddati",
+      "closingDate": "Yopilish sanasi",
+      "nextStep": "Keyingi qadam",
+      "nextStepDate": "Keyingi qadam sanasi",
+      "active": "Faol",
+      "remindMe": "Eslatish",
+      "owner": "Ega",
+      "coOwner": "Qo'shimcha ega",
+      "responsible": "Mas'ullar",
+      "subscribers": "Obunachilar",
+      "tags": "Teglar",
+      "createdAt": "Yaratilgan sana",
+      "updatedAt": "Oxirgi yangilanish",
+      "description": "Tavsif",
+      "note": "Eslatma"
+    },
+    "priorityValue": "Ustuvorlik {value}",
+    "yes": "Ha",
+    "no": "Yo'q"
+  },
+  "projectDetailPage": {
+    "actions": {
+      "back": "Ortga",
+      "edit": "Tahrirlash",
+      "assign": "Tayinlash",
+      "reopen": "Qayta ochish",
+      "complete": "Yakunlash",
+      "delete": "O'chirish"
+    },
+    "messages": {
+      "loadError": "Loyiha ma'lumotlarini yuklab bo'lmadi",
+      "deleted": "Loyiha o'chirildi",
+      "deleteError": "Loyihani o'chirib bo'lmadi",
+      "completed": "Loyiha yakunlandi",
+      "completeError": "Loyihani yakunlab bo'lmadi",
+      "reopened": "Loyiha qayta ochildi",
+      "reopenError": "Loyihani qayta ochib bo'lmadi",
+      "assignmentsUpdated": "Tayinlovlar yangilandi",
+      "assignmentsError": "Tayinlashda xato"
+    },
+    "loadError": {
+      "title": "Loyihani ochib bo'lmadi",
+      "subtitle": "Qayta yuklab ko'ring",
+      "retry": "Qayta urinish"
+    },
+    "notFound": {
+      "title": "Loyiha topilmadi",
+      "subtitle": "Yozuv o'chirilgan yoki sizda kirish huquqi yo'q",
+      "back": "Loyihalar ro'yxatiga qaytish"
+    },
+    "tabs": {
+      "details": "Tafsilotlar",
+      "activity": "Faollik tarixi"
+    },
+    "fields": {
+      "name": "Nomi",
+      "stage": "Bosqich",
+      "priority": "Ustuvorlik",
+      "startDate": "Boshlanish sanasi",
+      "dueDate": "Yakunlash muddati",
+      "closingDate": "Yopilish sanasi",
+      "nextStep": "Keyingi qadam",
+      "nextStepDate": "Keyingi qadam sanasi",
+      "active": "Faol",
+      "remindMe": "Eslatish",
+      "owner": "Ega",
+      "coOwner": "Qo'shimcha ega",
+      "responsible": "Mas'ullar",
+      "subscribers": "Obunachilar",
+      "tags": "Teglar",
+      "createdAt": "Yaratilgan sana",
+      "updatedAt": "Oxirgi yangilanish",
+      "description": "Tavsif",
+      "note": "Eslatma"
+    },
+    "priorityValue": "Ustuvorlik {value}",
+    "yes": "Ha",
+    "no": "Yo'q",
+    "assignModal": {
+      "title": "Loyiha tayinlovlari",
+      "save": "Saqlash",
+      "cancel": "Bekor qilish",
+      "placeholders": {
+        "owner": "Ega",
+        "coOwner": "Qo'shimcha ega",
+        "responsible": "Mas'ullar",
+        "subscribers": "Obunachilar"
+      }
+    }
+  },
+  "taskFormPage": {
+    "titleEdit": "Vazifani tahrirlash",
+    "titleCreate": "Yangi vazifa yaratish",
+    "loading": "Yuklanmoqda...",
+    "sections": {
+      "main": "Asosiy ma'lumot",
+      "related": "Bog'langan yozuvlar",
+      "assignees": "Mas'ullar",
+      "status": "Holat"
+    },
+    "fields": {
+      "name": "Vazifa nomi",
+      "priority": "Ustuvorlik",
+      "description": "Tavsif",
+      "note": "Eslatma",
+      "stage": "Bosqich",
+      "startDate": "Boshlanish sanasi",
+      "dueDate": "Bajarish muddati",
+      "closingDate": "Yopilish sanasi",
+      "leadTime": "Lead time",
+      "nextStep": "Keyingi qadam",
+      "nextStepDate": "Keyingi qadam sanasi",
+      "project": "Loyiha",
+      "parentTask": "Asosiy vazifa",
+      "owner": "Ega",
+      "coOwner": "Qo'shimcha ega",
+      "responsible": "Mas'ullar",
+      "subscribers": "Obunachilar",
+      "tags": "Teglar",
+      "active": "Faol",
+      "remindMe": "Eslatish"
+    },
+    "placeholders": {
+      "name": "Tijorat taklifini tayyorlash",
+      "priority": "Ustuvorlikni tanlang",
+      "description": "Vazifaning batafsil tavsifi",
+      "note": "Ichki eslatmalar",
+      "stage": "Bosqichni tanlang",
+      "leadTime": "DD HH:MM:SS",
+      "nextStep": "Talablarni kelishish",
+      "project": "Loyihani tanlang",
+      "parentTask": "Vazifani tanlang",
+      "user": "Foydalanuvchini tanlang",
+      "users": "Foydalanuvchilarni tanlang",
+      "tags": "Teglarni tanlang"
+    },
+    "priority": {
+      "low": "Past",
+      "medium": "O'rta",
+      "high": "Yuqori"
+    },
+    "validation": {
+      "nameRequired": "Nom kiriting",
+      "stageRequired": "Bosqichni tanlang",
+      "nextStepRequired": "Keyingi qadamni kiriting",
+      "nextStepDateRequired": "Keyingi qadam sanasini tanlang"
+    },
+    "permission": {
+      "backToList": "Vazifalar ro'yxatiga",
+      "description": "Sizda vazifa yaratish yoki tahrirlash huquqi yo'q."
+    },
+    "actions": {
+      "back": "Ortga",
+      "update": "Yangilash",
+      "create": "Yaratish",
+      "cancel": "Bekor qilish"
+    },
+    "messages": {
+      "notification": "Bildirishnoma",
+      "error": "Xato",
+      "loadError": "Vazifa ma'lumotlarini yuklab bo'lmadi",
+      "noPermissionTitle": "Huquq yetarli emas",
+      "noPermissionDescription": "Sizda vazifalarni o'zgartirish huquqi yo'q",
+      "updated": "Vazifa yangilandi",
+      "created": "Vazifa yaratildi",
+      "updateError": "Vazifani yangilab bo'lmadi",
+      "createError": "Vazifa yaratib bo'lmadi"
+    }
+  },
+  "projectFormPage": {
+    "titleEdit": "Loyihani tahrirlash",
+    "titleCreate": "Yangi loyiha yaratish",
+    "sections": {
+      "main": "Asosiy ma'lumot",
+      "assignees": "Mas'ullar",
+      "status": "Holat"
+    },
+    "fields": {
+      "name": "Loyiha nomi",
+      "priority": "Ustuvorlik",
+      "description": "Tavsif",
+      "note": "Eslatma",
+      "stage": "Bosqich",
+      "startDate": "Boshlanish sanasi",
+      "dueDate": "Yakunlash muddati",
+      "closingDate": "Yopilish sanasi",
+      "nextStep": "Keyingi qadam",
+      "nextStepDate": "Keyingi qadam sanasi",
+      "owner": "Ega",
+      "coOwner": "Qo'shimcha ega",
+      "responsible": "Mas'ullar",
+      "subscribers": "Obunachilar",
+      "tags": "Teglar",
+      "active": "Faol",
+      "remindMe": "Eslatish"
+    },
+    "placeholders": {
+      "name": "CRM tizimini joriy etish",
+      "priority": "Ustuvorlikni tanlang",
+      "description": "Loyihaning batafsil tavsifi",
+      "note": "Ichki eslatmalar",
+      "stage": "Bosqichni tanlang",
+      "nextStep": "Maqsadlarni aniqlash",
+      "user": "Foydalanuvchini tanlang",
+      "users": "Foydalanuvchilarni tanlang",
+      "tags": "Teglarni tanlang"
+    },
+    "priority": {
+      "low": "Past",
+      "medium": "O'rta",
+      "high": "Yuqori"
+    },
+    "validation": {
+      "nameRequired": "Nom kiriting",
+      "nextStepRequired": "Keyingi qadamni kiriting",
+      "nextStepDateRequired": "Keyingi qadam sanasini tanlang"
+    },
+    "permission": {
+      "backToList": "Loyihalar ro'yxatiga",
+      "description": "Sizda loyiha yaratish yoki tahrirlash huquqi yo'q."
+    },
+    "actions": {
+      "back": "Ortga",
+      "update": "Yangilash",
+      "create": "Yaratish",
+      "cancel": "Bekor qilish"
+    },
+    "messages": {
+      "notification": "Bildirishnoma",
+      "error": "Xato",
+      "loadError": "Loyiha ma'lumotlarini yuklab bo'lmadi",
+      "noPermissionTitle": "Huquq yetarli emas",
+      "noPermissionDescription": "Sizda loyihalarni o'zgartirish huquqi yo'q",
+      "updated": "Loyiha yangilandi",
+      "created": "Loyiha yaratildi",
+      "updateError": "Loyihani yangilab bo'lmadi",
+      "createError": "Loyiha yaratib bo'lmadi"
+    },
+    "loadError": {
+      "title": "Tahrirlash uchun loyihani yuklab bo'lmadi",
+      "subtitle": "Loyiha ma'lumotlari yuklanmaguncha formani to'ldirib bo'lmaydi.",
+      "retry": "Qayta urinish"
+    }
+  },
+  "integrationCard": {
+    "status": {
+      "connected": "Ulangan",
+      "disconnected": "Ulanmagan",
+      "error": "Xato"
+    },
+    "actions": {
+      "refresh": "Yangilash",
+      "settings": "Sozlamalar",
+      "disconnect": "Uzish",
+      "configure": "Sozlash",
+      "connect": "Ulash"
+    },
+    "messages": {
+      "connectionErrorTitle": "Ulanish xatosi",
+      "connectError": "{title} ni ulab bo'lmadi",
+      "disconnectError": "{title} ni uzib bo'lmadi",
+      "disconnected": "{title} uzildi"
+    }
+  },
+  "integrationsPage": {
+    "title": "Integratsiyalar",
+    "actions": {
+      "refreshAll": "Barchasini yangilash",
+      "test": "Test",
+      "disconnect": "Uzish",
+      "webhook": "Webhook",
+      "edit": "Tahrirlash",
+      "makeDefault": "Standart qilish",
+      "copy": "Nusxalash",
+      "deleteProviderConfirm": "AI provayderni o'chirish?"
+    },
+    "messages": {
+      "settingsSaved": "Sozlamalar saqlandi",
+      "aiProviderUpdated": "AI provayder yangilandi",
+      "aiProviderAdded": "AI provayder qo'shildi",
+      "aiProviderSaveError": "AI provayderni saqlab bo'lmadi",
+      "testOkOutput": "Test OK: {output}",
+      "connectionChecked": "Ulanish tekshirildi",
+      "aiProviderTestError": "AI provayderni tekshirib bo'lmadi",
+      "aiProviderDeleted": "AI provayder o'chirildi",
+      "aiProviderDeleteError": "AI provayderni o'chirib bo'lmadi",
+      "aiProviderDefaultSet": "\"{name}\" provayderi standart qilib belgilandi",
+      "aiProviderDefaultSetError": "Provayderni standart qilib bo'lmadi",
+      "facebookTestOk": "Facebook ulanishi tekshirildi",
+      "facebookTestError": "Facebook ulanishini tekshirib bo'lmadi",
+      "facebookDisconnected": "Facebook sahifasi uzildi",
+      "facebookDisconnectError": "Facebook sahifasini uzib bo'lmadi",
+      "instagramTestOk": "Instagram ulanishi tekshirildi",
+      "instagramTestError": "Instagram ulanishini tekshirib bo'lmadi",
+      "instagramDisconnected": "Instagram hisobi uzildi",
+      "instagramDisconnectError": "Instagram hisobini uzib bo'lmadi",
+      "telegramTestOk": "Telegram ulanishi tekshirildi",
+      "telegramTestError": "Telegram ulanishini tekshirib bo'lmadi",
+      "telegramDisconnected": "Telegram boti uzildi",
+      "telegramDisconnectError": "Telegram botini uzib bo'lmadi",
+      "whatsappTestOk": "WhatsApp ulanishi tekshirildi",
+      "whatsappTestError": "WhatsApp ulanishini tekshirib bo'lmadi",
+      "whatsappDisconnected": "WhatsApp hisobi uzildi",
+      "whatsappDisconnectError": "WhatsApp hisobini uzib bo'lmadi",
+      "botNotDetected": "Botni aniqlab bo'lmadi",
+      "webhookUpdated": "Webhook yangilandi",
+      "webhookUpdateError": "Webhookni yangilab bo'lmadi",
+      "urlEmpty": "URL bo'sh",
+      "urlCopied": "URL nusxalandi",
+      "urlCopyError": "URL ni nusxalab bo'lmadi"
+    },
+    "cards": {
+      "instagram": {
+        "title": "Instagram",
+        "description": "Instagram biznes hisoblari"
+      },
+      "telegram": {
+        "title": "Telegram",
+        "description": "Kiruvchi xabarlar uchun Telegram botlari"
+      },
+      "ai": {
+        "title": "AI provayderlar",
+        "description": "OpenAI, Gemini, Claude va AI CRM funktsiyalari uchun mos modellar"
+      },
+      "sms": {
+        "title": "SMS",
+        "description": "SMS provayderlari va yuborish holati"
+      },
+      "telephony": {
+        "title": "Telefoniya",
+        "description": "CRM qo'ng'iroqlari uchun VoIP/SIP ulanishlari"
+      },
+      "whatsapp": {
+        "title": "WhatsApp Business",
+        "description": "Omnikanal qo'llab-quvvatlash va savdo uchun Cloud API hisoblari"
+      },
+      "facebook": {
+        "title": "Facebook Messenger",
+        "description": "Xabarlarni qayta ishlash uchun ulangan sahifalar"
+      }
+    },
+    "table": {
+      "account": "Hisob",
+      "number": "Raqam",
+      "phoneId": "Phone ID",
+      "status": "Holat",
+      "lastActivity": "Oxirgi faollik",
+      "actions": "Amallar",
+      "page": "Sahifa",
+      "sync": "Sinxronizatsiya",
+      "bot": "Bot",
+      "username": "Username",
+      "name": "Nomi",
+      "provider": "Provayder",
+      "model": "Model",
+      "key": "Kalit"
+    },
+    "status": {
+      "active": "Faol",
+      "activeFeminine": "Faol",
+      "paused": "Pauza",
+      "default": "Standart"
+    },
+    "stats": {
+      "channels": "Kanallar",
+      "configuredChannels": "Sozlangan kanallar",
+      "connections": "Ulanishlar",
+      "activeProvider": "Faol provayder",
+      "callsToday": "Bugungi qo'ng'iroqlar",
+      "missed": "O'tkazib yuborilgan",
+      "pages": "Sahifalar",
+      "messages": "Xabarlar",
+      "followers": "Obunachilar",
+      "accounts": "Hisoblar",
+      "messagesReceived": "Qabul qilingan xabarlar",
+      "messagesSent": "Yuborilgan xabarlar",
+      "comments": "Izohlar",
+      "bots": "Botlar",
+      "activeChats": "Faol chatlar",
+      "providers": "Provayderlar",
+      "active": "Faol",
+      "default": "Standart"
+    },
+    "modals": {
+      "smsSettings": "SMS sozlamalari",
+      "telephonySettings": "Telefoniya sozlamalari",
+      "connectWhatsapp": "WhatsApp Business ulash",
+      "connectFacebook": "Facebook ulash",
+      "connectInstagram": "Instagram ulash",
+      "connectTelegram": "Telegram ulash",
+      "telegramWebhook": "Telegram webhook",
+      "editAiProvider": "AI provayderni tahrirlash",
+      "addAiProvider": "AI provayder qo'shish"
+    },
+    "validation": {
+      "url": "To'g'ri URL kiriting",
+      "providerName": "Provayder nomini kiriting",
+      "providerSelect": "Provayderni tanlang",
+      "modelSelect": "Modelni tanlang yoki kiriting",
+      "apiKey": "API kalitini kiriting"
+    },
+    "placeholders": {
+      "webhookUrl": "URL avtomatik yaratilishi uchun bo'sh qoldiring",
+      "customModel": "Provayderingiz qo'llaydigan modelni kiriting",
+      "modelSelect": "Modelni tanlang"
+    },
+    "form": {
+      "name": "Nomi",
+      "provider": "Provayder",
+      "model": "Model",
+      "apiKey": "API Key",
+      "apiKeyOptional": "API Key (o'zgartirmaslik uchun bo'sh qoldiring)",
+      "active": "Faol",
+      "default": "Standart"
+    }
+  },
+  "settingsPage": {
+    "title": "Tizim sozlamalari",
+    "field": {
+      "groupDescription": "Parametrlar guruhi sozlamasi.",
+      "addValues": "Qiymatlar qo'shing",
+      "enter": "Kiriting"
+    },
+    "empty": {
+      "section": "Server bu bo'lim uchun parametrlarni hali qaytarmadi",
+      "complianceReport": "Compliance hisobot ma'lumotlari yo'q"
+    },
+    "messages": {
+      "massmailLoadError": "Yuborish sozlamalarini yuklab bo'lmadi",
+      "remindersLoadError": "Eslatma sozlamalarini yuklab bo'lmadi",
+      "domainsLoadError": "Domenlar ro'yxatini yuklab bo'lmadi",
+      "complianceLoadError": "Compliance ma'lumotlarini yuklab bo'lmadi",
+      "dsrExecuted": "DSR bajarildi",
+      "dsrExecuteError": "DSR ni bajarib bo'lmadi",
+      "retentionExecuted": "Retention bajarildi: {count} siyosat",
+      "retentionExecuteError": "Retention siyosatlarini bajarib bo'lmadi",
+      "saved": "Sozlamalar saqlandi",
+      "saveError": "Sozlamalarni saqlab bo'lmadi",
+      "exportDone": "CRM eksporti yakunlandi",
+      "exportError": "CRM ma'lumotlarini eksport qilib bo'lmadi",
+      "importDone": "CRM importi yakunlandi",
+      "importError": "CRM ma'lumotlarini import qilishda xato"
+    },
+    "tabs": {
+      "massmail": "Yuborishlar",
+      "reminders": "Eslatmalar",
+      "crmData": "CRM ma'lumotlari",
+      "domains": "Domenlar",
+      "compliance": "Compliance"
+    },
+    "massmail": {
+      "title": "Ommaviy yuborish sozlamalari",
+      "description": "Yuborish parametrlari JSONsiz vizual boshqaruvlar orqali tahrirlanadi."
+    },
+    "reminders": {
+      "title": "Eslatma sozlamalari",
+      "description": "Eslatma parametrlari tumblerlar, vaqt maydonlari va limitlar orqali tahrirlanadi."
+    },
+    "crmData": {
+      "title": "CRM import va eksport",
+      "alertTitle": "Excel orqali ma'lumot almashinuvi",
+      "alertDescription": "Eksport barcha CRM obyektlari bo'yicha Excel fayl yaratadi. Import uchun shu formatdan foydalaning.",
+      "export": {
+        "title": "Ma'lumot eksporti",
+        "description": "Joriy CRM ma'lumotlari bilan to'liq Excel faylni yuklab oling.",
+        "action": "Excel ga eksport"
+      },
+      "import": {
+        "title": "Ma'lumot importi",
+        "description": "Tayyorlangan Excel faylni yuklang va qayta ishlashni boshlang.",
+        "selectFile": "Excel faylni tanlang",
+        "action": "Import qilish"
+      },
+      "lastImport": "Oxirgi import natijasi",
+      "stats": {
+        "created": "Yaratildi",
+        "updated": "Yangilandi",
+        "errors": "Xatolar"
+      },
+      "table": {
+        "sheet": "Varaq",
+        "created": "Yaratildi",
+        "updated": "Yangilandi",
+        "errors": "Xatolar"
+      }
+    },
+    "domains": {
+      "title": "Ommaviy email domenlari",
+      "public": "Ommaviy"
+    },
+    "compliance": {
+      "overviewTitle": "Compliance overview",
+      "summaryTitle": "Rozilik, DSR va retention bo'yicha qisqacha",
+      "summaryDescription": "Ko'rsatkichlar xom JSONsiz kartalar va jadvallar ko'rinishida beriladi.",
+      "dsrTitle": "DSR Requests",
+      "execute": "Bajarish",
+      "runRetention": "Retention ishga tushirish"
+    },
+    "table": {
+      "domain": "Domen",
+      "status": "Holat",
+      "type": "Turi",
+      "reason": "Sabab",
+      "actions": "Amallar",
+      "name": "Nomi",
+      "entity": "Obyekt",
+      "action": "Harakat",
+      "retentionDays": "Saqlash muddati (kun)",
+      "activity": "Faollik",
+      "lastRun": "Oxirgi ishga tushirish"
+    },
+    "status": {
+      "active": "Faol",
+      "inactive": "Nofaol"
+    }
+  },
+  "common": {
+    "next": "Keyingi",
+    "important": "Muhim",
+    "yes": "Ha",
+    "no": "Yo'q",
+    "loading": "Yuklanmoqda..."
+  },
+  "smsSettings": {
+    "header": {
+      "message": "SMS provayderlar",
+      "description": "SMS provayderlarni shu oynada qo'shing va tahrirlang. Saqlagandan so'ng test yuborishni darhol bajarish mumkin."
+    },
+    "providers": {
+      "title": "Mavjud provayderlar"
+    },
+    "serviceStatus": {
+      "title": "Xizmat holati"
+    },
+    "test": {
+      "title": "Test yuborish",
+      "channel": "Kanal",
+      "recipient": "Qabul qiluvchi raqami",
+      "messageText": "Xabar matni"
+    },
+    "table": {
+      "channelId": "Kanal ID",
+      "provider": "Provayder",
+      "status": "Holat",
+      "actions": "Amallar"
+    },
+    "status": {
+      "notConfigured": "Sozlanmagan",
+      "inactive": "Nofaol",
+      "ready": "Tayyor"
+    },
+    "statusItem": "Holat {index}",
+    "common": {
+      "channel": "Kanal"
+    },
+    "boolean": {
+      "yes": "Ha",
+      "no": "Yo'q"
+    },
+    "empty": {
+      "noData": "Ma'lumot yo'q"
+    },
+    "actions": {
+      "copy": "Nusxalash",
+      "sendTest": "Test yuborish"
+    },
+    "confirm": {
+      "deleteProviderTitle": "SMS provayderni o'chirish?",
+      "deleteProviderDescription": "Bu amal kanal va uning sozlamalarini o'chiradi."
+    },
+    "form": {
+      "providerType": "Provayder turi",
+      "name": "Nomi",
+      "active": "Faol",
+      "sender": "Yuboruvchi (from)",
+      "password": "Parol",
+      "passwordOptional": "Parol (o'zgartirmaslik uchun bo'sh qoldiring)",
+      "token": "Token",
+      "tokenOptional": "Token (o'zgartirmaslik uchun bo'sh qoldiring)",
+      "authType": "Avtorizatsiya turi",
+      "apiUrl": "API URL",
+      "statusUrl": "Status URL",
+      "bearerToken": "Bearer Token",
+      "bearerTokenOptional": "Bearer Token (o'zgartirmaslik uchun bo'sh qoldiring)",
+      "login": "Login"
+    },
+    "modal": {
+      "addProvider": "SMS provayder qo'shish",
+      "editProvider": "SMS provayderni tahrirlash"
+    },
+    "placeholders": {
+      "selectProvider": "Provayderni tanlang",
+      "providerName": "Masalan: Eskiz Prod"
+    },
+    "validation": {
+      "selectChannel": "Kanalni tanlang",
+      "enterNumber": "Raqamni kiriting",
+      "invalidPhone": "Raqam formati noto'g'ri",
+      "enterMessageText": "Xabar matnini kiriting",
+      "selectProvider": "Provayderni tanlang",
+      "apiUrl": "API URL kiriting",
+      "bearerToken": "Bearer Token kiriting",
+      "login": "Login kiriting",
+      "password": "Parol kiriting"
+    },
+    "messages": {
+      "loadProvidersError": "SMS provayderlar ro'yxatini yuklab bo'lmadi",
+      "loadStatusError": "SMS holatini yuklab bo'lmadi",
+      "testSent": "Test SMS yuborildi",
+      "providerError": "Provayder xato qaytardi",
+      "sendError": "SMS yuborib bo'lmadi",
+      "eskizCredentialsError": "Eskiz uchun token yoki email/parol juftligini kiriting",
+      "providerUpdated": "SMS provayder yangilandi",
+      "providerAdded": "SMS provayder qo'shildi",
+      "providerSaveError": "SMS provayderni saqlab bo'lmadi",
+      "providerDeleted": "SMS provayder o'chirildi",
+      "providerDeleteError": "SMS provayderni o'chirib bo'lmadi",
+      "urlEmpty": "URL bo'sh",
+      "urlCopied": "URL nusxalandi",
+      "urlCopyError": "URL ni nusxalab bo'lmadi"
+    }
+  },
+  "instagramConnect": {
+    "alert": {
+      "title": "Instagram Business ulash",
+      "description": "Ulash uchun Instagram Business hisobi va Facebook Developers access tokeni kerak."
+    },
+    "steps": {
+      "createApp": "Ilova yaratish",
+      "getToken": "Token olish",
+      "connect": "Ulash",
+      "inputData": "Ma'lumot kiritish"
+    },
+    "guides": {
+      "step1Title": "1-qadam: Facebook Developers da ilova yarating",
+      "step2Title": "2-qadam: Access token oling",
+      "step1Item3": "3. \"Instagram Basic Display\" yoki \"Instagram Graph API\" mahsulotini qo'shing",
+      "step2Item1": "1. Ilova sozlamalarida \"Instagram Basic Display\" yoki \"Instagram Graph API\" bo'limiga o'ting"
+    },
+    "fields": {
+      "tokenExtra": "Instagram Business API uchun Facebook access token",
+      "accountId": "Instagram Business hisob ID",
+      "accountIdExtra": "Instagram Business hisobingizning raqamli IDsi",
+      "usernameExtra": "Instagram Business hisob username"
+    },
+    "placeholders": {
+      "selectAccount": "Instagram hisobini tanlang"
+    },
+    "actions": {
+      "loadFromMeta": "Meta dan hisoblarni yuklash",
+      "connect": "Instagram ulash"
+    },
+    "warning": {
+      "businessAccount": "Instagram hisobingiz Business ekaniga va Facebook sahifasiga ulanganiga ishonch hosil qiling"
+    },
+    "validation": {
+      "enterToken": "Access token kiriting",
+      "tokenShort": "Token juda qisqa",
+      "enterAccountId": "Hisob ID kiriting",
+      "accountIdDigits": "Hisob ID faqat raqamlardan iborat bo'lishi kerak",
+      "enterUsername": "Username kiriting"
+    },
+    "messages": {
+      "connected": "Instagram ulandi",
+      "connectError": "Instagram ulanish xatosi",
+      "enterAccessToken": "Avval Access Token kiriting",
+      "accountsNotFound": "Bu token uchun Instagram hisoblari topilmadi",
+      "accountsFound": "Topilgan hisoblar: {count}",
+      "loadAccountsError": "Instagram hisoblarini yuklab bo'lmadi"
+    }
+  },
+  "facebookConnect": {
+    "alert": {
+      "title": "Facebook Messenger ulash",
+      "description": "Ulash uchun Facebook sahifa va manage_pages hamda pages_messaging huquqlari bilan token kerak."
+    },
+    "guide": {
+      "title": "Ulash bo'yicha yo'riqnoma",
+      "itemMessengerSettings": "• \"Messenger\" → \"Settings\" bo'limida \"Access Tokens\" ni toping"
+    },
+    "fields": {
+      "tokenExtra": "Facebook sahifangiz uchun uzoq muddatli access token",
+      "pageId": "Facebook sahifa ID",
+      "pageIdExtra": "Facebook sahifa ID (sahifa sozlamalarida topiladi)",
+      "pageName": "Sahifa nomi",
+      "pageNameExtra": "Facebookda ko'rinadigan sahifa nomi"
+    },
+    "placeholders": {
+      "selectPage": "Sahifani tanlang"
+    },
+    "permissions": {
+      "title": "Ruxsatlarni tekshirish"
+    },
+    "actions": {
+      "connect": "Facebook Messenger ulash"
+    },
+    "validation": {
+      "enterToken": "Sahifa access tokenini kiriting",
+      "tokenShort": "Token juda qisqa",
+      "enterPageId": "Sahifa ID ni kiriting",
+      "enterPageName": "Sahifa nomini kiriting"
+    },
+    "messages": {
+      "connected": "Facebook Messenger ulandi",
+      "connectError": "Facebook Messenger ulanish xatosi",
+      "enterToken": "Avval Page Access Token kiriting",
+      "pagesNotFound": "Bu token bo'yicha sahifalar topilmadi",
+      "pagesFound": "Topilgan sahifalar: {count}",
+      "loadPagesError": "Meta dan sahifalarni yuklab bo'lmadi"
+    }
+  },
+  "telegramConnect": {
+    "alert": {
+      "title": "Telegram bot ulash",
+      "description": "@BotFather orqali bot yarating va token oling."
+    },
+    "guide": {
+      "title": "Bot yaratish yo'riqnomasi",
+      "aboutText": "• /setabouttext - bot haqida matn"
+    },
+    "fields": {
+      "tokenExtra": "@BotFather dan olingan bot tokeni"
+    },
+    "notes": {
+      "title": "Muhim eslatmalar",
+      "serverReachable": "Webhook olish uchun serveringiz internetdan kirish mumkin ekaniga ishonch hosil qiling",
+      "botReceivesAll": "Bot foydalanuvchilar yuborgan barcha xabarlarni qabul qiladi"
+    },
+    "actions": {
+      "copy": "Nusxalash",
+      "connect": "Telegram bot ulash"
+    },
+    "validation": {
+      "enterToken": "Bot tokenini kiriting",
+      "tokenFormat": "Token formati noto'g'ri (123456:ABC-DEF...)"
+    },
+    "messages": {
+      "connected": "Telegram bot muvaffaqiyatli ulandi",
+      "connectError": "Telegram bot ulanish xatosi",
+      "webhookEmpty": "Webhook URL bo'sh",
+      "webhookCopied": "Webhook URL nusxalandi",
+      "webhookCopyError": "Webhook URL ni nusxalab bo'lmadi"
+    }
+  },
+  "whatsappConnect": {
+    "alert": {
+      "title": "WhatsApp Cloud API ulash",
+      "description": "Access token kiriting va Business Account/Phone Number ID ni Meta dan avtomatik yuklang."
+    },
+    "fields": {
+      "accountName": "Hisob nomi",
+      "active": "Faol",
+      "autoSync": "Avto-sinxron",
+      "autoLeads": "Avto-lidlar"
+    },
+    "placeholders": {
+      "selectPhoneFromMeta": "Meta dan raqamni tanlang",
+      "selectBusinessAccount": "Biznes hisobni tanlang"
+    },
+    "actions": {
+      "loadFromMeta": "Meta dan raqamlarni yuklash",
+      "connect": "WhatsApp ulash"
+    },
+    "validation": {
+      "enterAccountName": "Hisob nomini kiriting",
+      "enterPhone": "WhatsApp raqamini kiriting",
+      "selectPhoneId": "phone_number_id ni tanlang",
+      "selectBusinessAccount": "business account ni tanlang",
+      "enterAccessToken": "access token kiriting"
+    },
+    "messages": {
+      "connected": "WhatsApp Business ulandi",
+      "connectError": "WhatsApp Business ulanish xatosi",
+      "enterToken": "Avval Access token kiriting",
+      "numbersNotFound": "Bu token uchun WhatsApp raqamlari topilmadi",
+      "numbersFound": "Topilgan raqamlar: {count}",
+      "loadMetaError": "Meta dan ma'lumotlarni yuklab bo'lmadi"
+    }
+  },
+  "telephonySettings": {
+    "header": {
+      "title": "Telefoniya: ulanishlar va marshrutlash qoidalari sozlamasi",
+      "description": "Maydonlarni bosqichma-bosqich to'ldiring: 1) asosiy marshrutlash va WebRTC, 2) marshrutlash patternlari, 3) operator/raqam ulanishlari."
+    },
+    "sections": {
+      "base": "1. Asosiy marshrutlash va WebRTC (STUN/TURN)",
+      "routing": "2. Pattern-based routing",
+      "voip": "3. VoIP ulanishlar"
+    },
+    "table": {
+      "provider": "Provayder",
+      "type": "Turi",
+      "number": "Raqam",
+      "callerId": "Ko'rsatiladigan raqam",
+      "owner": "Ega",
+      "status": "Holat",
+      "actions": "Amallar"
+    },
+    "status": {
+      "active": "Faol",
+      "inactive": "Nofaol"
+    },
+    "actions": {
+      "deactivate": "O'chirish",
+      "activate": "Faollashtirish",
+      "saveBase": "Asosiy sozlamalarni saqlash",
+      "applyPreset": "Presetni qo'llash",
+      "addConnection": "Ulanish qo'shish"
+    },
+    "confirm": {
+      "areYouSure": "Ishonchingiz komilmi?"
+    },
+    "messages": {
+      "loadSettingsError": "Telefoniya sozlamalarini yuklab bo'lmadi",
+      "loadConnectionsError": "Ulanishlarni yuklab bo'lmadi",
+      "connectionUpdated": "Ulanish yangilandi",
+      "connectionCreated": "Ulanish yaratildi",
+      "saveConnectionError": "Ulanishni saqlab bo'lmadi",
+      "connectionDeleted": "Ulanish o'chirildi",
+      "deleteConnectionError": "Ulanishni o'chirib bo'lmadi",
+      "connectionDeactivated": "Ulanish o'chirildi",
+      "connectionActivated": "Ulanish faollashtirildi",
+      "toggleStatusError": "Holatni o'zgartirib bo'lmadi",
+      "settingsSaved": "Telefoniya sozlamalari saqlandi",
+      "saveSettingsError": "Telefoniya sozlamalarini saqlab bo'lmadi",
+      "routingSaved": "Routing patternlari brauzerda saqlandi",
+      "routingSaveError": "Routing patternlarini saqlab bo'lmadi",
+      "presetApplied": "\"{label}\" preseti qo'llandi",
+      "routingLoadError": "Marshrutlash qoidalarini yuklab bo'lmadi",
+      "routingTargetsLoadError": "Marshrutlash uchun raqamlar va guruhlarni yuklab bo'lmadi"
+    },
+    "routing": {
+      "infoTitle": "Qoidalar ustuvorlik bo'yicha ishlaydi: raqam qancha kichik bo'lsa, shuncha oldin tekshiriladi.",
+      "infoDescription": "Patternlar RegExp formatida beriladi. Bu blok qoidalarni brauzerda saqlaydi va dialplan patternlarini oldindan sozlash uchun mos.",
+      "empty": "Hozircha patternlar yo'q. Birinchi qoidani qo'shing.",
+      "placeholders": {
+        "ruleName": "Masalan: Ichki 1xx -> PBX",
+        "calledPattern": "Misol: ^1\\d{2}$ yoki ^\\+?\\d{10,15}$",
+        "callerPattern": "Misol: ^\\+998 yoki ^8800",
+        "description": "Qoidaning biznes maqsadini qisqacha yozing"
+      },
+      "actions": {
+        "route_to_number": "Route to internal number",
+        "route_to_group": "Route to group",
+        "route_to_queue": "Route to group queue",
+        "forward_external": "Forward to external number",
+        "route_to_voicemail": "Route to voicemail",
+        "play_announcement": "Play announcement",
+        "hangup": "Hang up",
+        "addRule": "Add rule",
+        "savePatternRouting": "Save pattern routing"
+      },
+      "fields": {
+        "ruleName": "Rule name",
+        "description": "Description (optional)",
+        "calledPattern": "Called number pattern (required)",
+        "calledPatternLabel": "Called number pattern",
+        "callerPattern": "Caller number pattern (optional)",
+        "callerPatternLabel": "Caller number pattern",
+        "action": "Routing action",
+        "targetInternalNumber": "Target internal number",
+        "targetGroup": "Target group",
+        "targetQueueGroup": "Target queue group",
+        "externalNumber": "External number",
+        "announcementText": "Announcement text",
+        "timeCondition": "Time condition (optional)",
+        "timeConditionExtra": "For example: weekdays 09:00-18:00",
+        "priority": "Priority (lower = higher)"
+      },
+      "ruleTitle": "Rule #{{number}}",
+      "targetsHint": "Marshrutlash yo'nalishlari ichki raqamlar va guruhlar ro'yxatidan olinadi.",
+      "loading": "Marshrutlash qoidalari yuklanmoqda..."
+    },
+    "connectionHelp": {
+      "title": "Nimani to'ldirish kerak?",
+      "description": "Provider = operator/ATS. Type = ulanish formati. Number = chiquvchi qo'ng'iroq uchun ichki/tashqi raqam. Caller ID = mijoz ko'radigan raqam."
+    },
+    "placeholders": {
+      "provider": "Masalan: Asterisk / OnlinePBX / Zadarma",
+      "connectionType": "Turni tanlang",
+      "callerId": "Masalan: +998712001122",
+      "turnServer": "turn:turn.company.com:3478?transport=udp",
+      "turnUsername": "crm_turn_user",
+      "turnPassword": "********",
+      "externalNumber": "+998901234567",
+      "timeCondition": "weekdays 09:00-18:00",
+      "selectInternalNumber": "Ichki raqamni tanlang",
+      "selectGroup": "Guruhni tanlang",
+      "announcementText": "Qo'ng'iroq qiluvchi eshitadigan matn",
+      "numberByType": {
+        "pbx": "Masalan: 101",
+        "sip": "Masalan: 1001 yoki sip_user_1001",
+        "voip": "Masalan: +998901234567"
+      },
+      "enterNumber": "Raqamni kiriting"
+    },
+    "validation": {
+      "invalidRegexp": "{{label}}: invalid RegExp",
+      "selectMode": "Select mode",
+      "selectProvider": "Select provider",
+      "enterTurnServer": "Enter TURN server",
+      "enterTurnUsername": "Enter TURN username",
+      "enterTurnPassword": "Enter TURN password",
+      "enterRuleName": "Specify rule name",
+      "enterCalledPattern": "Enter called number pattern",
+      "selectAction": "Select action",
+      "selectInternalNumber": "Select internal number",
+      "selectGroup": "Select group",
+      "enterExternalNumber": "Enter external number",
+      "externalNumberFormat": "Use international format, for example +998901234567",
+      "enterAnnouncementText": "Enter announcement text",
+      "selectType": "Select type",
+      "enterNumber": "Enter number",
+      "pbxNumberFormat": "For PBX use extension (2-10 symbols: digits, *, #)",
+      "voipNumberFormat": "For external number use international format, e.g. +998901234567",
+      "enterCallerId": "Enter caller ID"
+    },
+    "routeModes": {
+      "auto": "CRM chooses route automatically: SIP/WebRTC first, then fallback.",
+      "internal": "Outgoing calls prioritize internal PBX numbers.",
+      "external": "Calls are treated as external and use external route.",
+      "provider": "Outgoing calls are initiated via selected provider API.",
+      "asterisk": "Routing via Asterisk dialplan/AMI."
+    },
+    "mode": {
+      "current": "Current mode: {{mode}}"
+    },
+    "fields": {
+      "routeMode": "Call routing mode",
+      "routeModeExtra": "Select the primary way to route outgoing calls from CRM.",
+      "preferredProvider": "Preferred provider",
+      "preferredProviderExtra": "Used in Provider/API mode and as fallback in Auto mode.",
+      "stunServers": "STUN servers",
+      "stunTooltip": "One per line or comma-separated. Example: stun:stun.l.google.com:19302",
+      "stunExtra": "Needed to determine WebRTC client network route.",
+      "enableTurnRelay": "Enable TURN relay",
+      "turnRelayExtra": "Recommended for users behind NAT/CGNAT and corporate networks.",
+      "turnServer": "TURN server",
+      "turnServerExtra": "turn: and turns: (TLS) schemes are supported.",
+      "turnUsername": "TURN username",
+      "turnPassword": "TURN password",
+      "connectionType": "Connection type",
+      "connectionTypeExtra": "PBX: internal extension. SIP: SIP account. VoIP: virtual external number.",
+      "provider": "Provider",
+      "providerExtra": "Select platform CRM will use to initiate calls.",
+      "number": "Number",
+      "numberByType": {
+        "pbx": "Internal number (extension)",
+        "sip": "SIP number/login",
+        "voip": "External number"
+      },
+      "active": "Active",
+      "callerId": "Ko'rinadigan raqam",
+      "callerIdTooltip": "Chiquvchi qo'ng'iroqlarda ko'rinadigan raqam",
+      "callerIdExtra": "Odatda kompaniya tashqi raqami bilan bir xil bo'ladi."
+    },
+    "options": {
+      "typePbx": "PBX extension (internal)",
+      "typeSip": "SIP account",
+      "typeVoip": "Virtual external number"
+    },
+    "modal": {
+      "editConnection": "Ulanishni tahrirlash",
+      "newConnection": "Yangi ulanish"
+    }
+  },
+  "callsList": {
+    "title": "Qo'ng'iroqlar tarixi",
+    "subtitle": "VoIP jurnali va analitika",
+    "messages": {
+      "loadError": "Failed to load call history",
+      "noteAdded": "Note added",
+      "noteAddError": "Failed to add note",
+      "detailsError": "Failed to load call details"
+    },
+    "status": {
+      "answered": "Answered",
+      "completed": "Completed",
+      "missed": "Missed",
+      "noAnswer": "No answer",
+      "busy": "Busy",
+      "failed": "Failed",
+      "ringing": "Ringing"
+    },
+    "direction": {
+      "inbound": "Inbound",
+      "outbound": "Outbound"
+    },
+    "table": {
+      "direction": "Direction",
+      "phoneNumber": "Phone number",
+      "status": "Status",
+      "dateTime": "Date and time",
+      "duration": "Duration",
+      "notes": "Notes",
+      "recording": "Recording",
+      "actions": "Actions"
+    },
+    "stats": {
+      "total": "Total",
+      "answered": "Answered",
+      "missed": "Missed",
+      "durationSec": "Duration, sec"
+    },
+    "filters": {
+      "searchByNumber": "Search by number",
+      "direction": "Direction",
+      "status": "Status"
+    },
+    "modals": {
+      "recordingTitle": "Recording playback",
+      "recordingNotFound": "Recording not found",
+      "noteTitle": "Call note",
+      "detailsTitle": "Call details",
+      "detailsUnavailable": "Data unavailable"
+    },
+    "fields": {
+      "note": "Note"
+    },
+    "placeholders": {
+      "note": "Enter note"
+    },
+    "validation": {
+      "noteRequired": "Add note text"
+    },
+    "actions": {
+      "recording": "Recording",
+      "listen": "Listen",
+      "note": "Note",
+      "details": "Details"
+    }
+  },
+  "profilePage": {
+    "title": "Foydalanuvchi profili",
+    "tabs": {
+      "mainInfo": "Main information",
+      "changePassword": "Change password",
+      "settings": "Settings",
+      "activity": "Activity"
+    },
+    "actions": {
+      "changePhoto": "Change photo",
+      "deletePhoto": "Delete photo",
+      "changePassword": "Change password",
+      "saveSettings": "Save settings"
+    },
+    "fields": {
+      "fullName": "Full name",
+      "username": "Username",
+      "email": "Email"
+    },
+    "stats": {
+      "totalLeads": "Total leads",
+      "totalDeals": "Total deals"
+    },
+    "languages": {
+      "ru": "Ruscha",
+      "en": "English",
+      "uz": "O'zbekcha"
+    },
+    "regional": {
+      "title": "Regional settings",
+      "language": "Language",
+      "timezone": "Timezone",
+      "activateTimezone": "Use this timezone"
+    },
+    "timezones": {
+      "moscow": "Moscow (UTC+3)",
+      "tashkent": "Tashkent (UTC+5)",
+      "almaty": "Almaty (UTC+6)"
+    },
+    "telephony": {
+      "title": "Telephony settings",
+      "agentSettingsTitle": "Personal agent settings",
+      "agentSettingsDescription": "Only personal call settings are configured here. System SIP/WebRTC and routing are managed by admin in Integrations -> Telephony.",
+      "pbxNumber": "Internal number (PBX)",
+      "pbxTooltip": "Your internal phone number in the system",
+      "pbxExtra": "Example: 101, 7477. Main number for internal calls.",
+      "displayName": "Display name",
+      "displayNameTooltip": "Name shown to call recipient",
+      "displayNameExtra": "If empty, profile name is used."
+    },
+    "placeholders": {
+      "displayName": "John Doe",
+      "pbxNumber": "1001"
+    },
+    "password": {
+      "current": "Current password",
+      "new": "New password",
+      "confirm": "Confirm new password"
+    },
+    "activity": {
+      "totalActions": "Total actions",
+      "callsToday": "Calls today",
+      "leadConversion": "Lead conversion",
+      "recentActions": "Recent actions",
+      "callHistory": "Call history"
+    },
+    "callTable": {
+      "number": "Number",
+      "type": "Type",
+      "inbound": "Inbound",
+      "outbound": "Outbound",
+      "duration": "Duration",
+      "time": "Time"
+    },
+    "validation": {
+      "enterEmail": "Enter email",
+      "validEmail": "Enter valid email",
+      "enterCurrentPassword": "Enter current password",
+      "enterNewPassword": "Enter new password",
+      "passwordMin": "Password must be at least 8 characters",
+      "confirmNewPassword": "Confirm new password"
+    },
+    "messages": {
+      "loadError": "Failed to load profile",
+      "profileUpdated": "Profile updated",
+      "profileUpdateError": "Failed to update profile",
+      "avatarUpdated": "Avatar updated",
+      "avatarUploadError": "Failed to upload avatar",
+      "avatarDeleted": "Avatar removed",
+      "avatarDeleteError": "Failed to remove avatar",
+      "passwordMismatch": "Passwords do not match",
+      "passwordUpdated": "Password updated",
+      "passwordUpdateError": "Failed to update password",
+      "preferencesSaved": "Settings saved",
+      "preferencesSaveError": "Failed to save settings"
+    }
+  },
+  "analyticsPage": {
+    "title": "Analitika",
+    "subtitle": "Sotuvlar, jamoa faolligi va prognozlar bo'yicha qaror qabul qilish oynasi.",
+    "messages": {
+      "predictionsStarted": "Predictions started",
+      "predictionsStartError": "Failed to start predictions"
+    },
+    "tabs": {
+      "decisions": "Decisions",
+      "team": "Team",
+      "predictionsActions": "Predictions and actions",
+      "system": "System"
+    },
+    "sections": {
+      "executiveSummary": "Executive summary",
+      "executiveSummaryDescription": "Summary of key metrics and risks for selected period.",
+      "risks": "Risks",
+      "keyMetrics": "Key metrics",
+      "keyMetricsDescription": "Quick snapshot of base size, deals and revenue.",
+      "trends": "Trends",
+      "trendsDescription": "Revenue dynamics and funnel movement for pace evaluation.",
+      "operations": "Operational control",
+      "operationsDescription": "What is happening with funnel and team tasks right now.",
+      "taskStatuses": "Task statuses",
+      "teamActivity": "Team activity",
+      "teamActivityDescription": "Latest user actions and system auth snapshot.",
+      "activityFeed": "Activity feed",
+      "authSnapshot": "Auth snapshot",
+      "predictionsByMetrics": "Predictions by key metrics",
+      "predictionsByMetricsDescription": "Estimate of future revenue, leads and client base.",
+      "predictionModelsState": "Prediction models state",
+      "predictionModelsStateDescription": "Current model state and available signals.",
+      "predictionStatus": "Prediction status",
+      "recommendedActions": "Recommended actions",
+      "recommendedActionsDescription": "Next actions considered high priority by model.",
+      "recommendedActionsClients": "Recommended actions (clients)",
+      "recommendedActionsDeals": "Recommended actions (deals)",
+      "systemMetrics": "System metrics",
+      "systemMetricsDescription": "Service auth indicators and technical system snapshot.",
+      "authStats": "Auth stats"
+    },
+    "charts": {
+      "revenue": "Revenue",
+      "leads": "Leads",
+      "deals": "Deals",
+      "stage": "Stage {{index}}",
+      "salesFunnel": "Sales funnel",
+      "revenueDynamics": "Revenue dynamics",
+      "leadsAndDeals": "Leads and deals"
+    },
+    "metrics": {
+      "totalLeads": "Total leads",
+      "totalContacts": "Total contacts",
+      "totalDeals": "Total deals",
+      "revenue": "Revenue"
+    },
+    "tasks": {
+      "pending": "Pending",
+      "inProgress": "In progress",
+      "completed": "Completed",
+      "overdue": "Overdue"
+    },
+    "predictions": {
+      "status": "Status",
+      "inProgress": "in progress",
+      "revenueForecast": "Revenue forecast",
+      "leadsForecast": "Leads forecast",
+      "clientsForecast": "Clients forecast",
+      "empty": "Empty",
+      "oneRecord": "1 record",
+      "nRecords": "{{count}} records",
+      "technicalStatus": "Technical status"
+    },
+    "summary": {
+      "overdueTasks": "Overdue tasks: {{count}}",
+      "conversion": "Conversion: {{value}}%",
+      "revenueGrowth": "Revenue growth: {{value}}%"
+    },
+    "focus": {
+      "pipelineTitle": "Deals in progress",
+      "pipelineDescription": "Total commercial workload in the system.",
+      "pendingTitle": "Pending tasks",
+      "pendingDescription": "Shows current team workload.",
+      "predictionsTitle": "Active predictions",
+      "predictionsDescription": "How many predictive signals are already available for analysis."
+    },
+    "risks": {
+      "overdueTitle": "Overdue tasks",
+      "overdueDescription": "Require immediate attention first.",
+      "conversionTitle": "Conversion",
+      "conversionDescription": "If metric is below target, check follow-up and incoming lead quality.",
+      "growthTitle": "Revenue growth",
+      "growthDescription": "Signal of current sales pace for selected period."
+    },
+    "actions": {
+      "runPredictions": "Run predictions"
+    },
+    "activity": {
+      "event": "Event"
+    },
+    "common": {
+      "count": "Count",
+      "noData": "No data",
+      "series": "Series {{index}}",
+      "unknown": "Unknown"
+    },
+    "empty": {
+      "noRevenueData": "No revenue data",
+      "noLeadsDealsData": "No leads and deals data",
+      "noFunnelData": "No funnel data",
+      "noActivity": "No activity for selected period",
+      "noAuthData": "No auth data",
+      "noRevenueForecast": "No revenue forecast",
+      "noLeadsForecast": "No leads forecast",
+      "noClientsForecast": "No clients forecast",
+      "noPredictionStatus": "No prediction status",
+      "noClientRecommendations": "No client recommendations",
+      "noDealRecommendations": "No deal recommendations",
+      "noSystemData": "No system data",
+      "noEndpointsData": "No endpoints data",
+      "noUsersData": "No users data",
+      "noDailyData": "No daily data",
+      "noFailedAttempts": "No failed attempts"
+    },
+    "table": {
+      "group": "Group",
+      "metric": "Metric",
+      "status": "Status"
+    },
+    "auth": {
+      "period": "Period",
+      "days": "{{count}} days",
+      "daysShort": "days",
+      "jwtAdoption": "JWT adoption",
+      "successRate": "Success rate",
+      "requests": "Requests",
+      "topUsers": "Top users",
+      "topEndpoints": "Top endpoints",
+      "dailyBreakdown": "Daily breakdown",
+      "failedAttempts": "Failed attempts"
     }
   }
 }

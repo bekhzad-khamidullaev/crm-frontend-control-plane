@@ -2,15 +2,16 @@ import { DollarSign, Edit, Eye, Trash2 } from 'lucide-react';
 import { useEffect, useState } from 'react';
 
 import { DownloadOutlined, PlusOutlined } from '@ant-design/icons';
-import { App, Button, Card, Dropdown, Input, Select, Space, Table, Typography } from 'antd';
+import { App, Button, Card, Dropdown, Popconfirm, Select, Space, Table, Typography } from 'antd';
 
 import { deletePayment, getPayments } from '../../lib/api/payments';
 import { canWrite } from '../../lib/rbac.js';
+import { EntityListToolbar } from '../../shared/ui/EntityListToolbar';
+import { LIST_HEADER_STYLE, LIST_STACK_STYLE, LIST_TITLE_STYLE } from '../../shared/ui/listLayout';
 import { formatCurrency } from '../../lib/utils/format';
 import { exportToCSV, exportToExcel } from '../../lib/utils/export';
 import { navigate } from '../../router';
 
-const { Search } = Input;
 const { Text, Title } = Typography;
 
 const statusOptions = [
@@ -74,6 +75,12 @@ function PaymentsList() {
     fetchPayments(1, value, statusFilter);
   };
 
+  const handleResetFilters = () => {
+    setSearchText('');
+    setStatusFilter(null);
+    fetchPayments(1, '', null);
+  };
+
   const handleTableChange = (newPagination) => {
     const nextPage = newPagination?.current || 1;
     const nextPageSize = newPagination?.pageSize || pagination.pageSize;
@@ -121,7 +128,7 @@ function PaymentsList() {
       render: (_, record) => (
         <Space direction="vertical" size={0}>
           <Text strong>
-            <DollarSign size={14} /> {formatCurrency(record.amount, record.currency_name || 'RUB')}
+            <DollarSign size={14} /> {record.currency_code ? formatCurrency(record.amount, record.currency_code) : '-'}
           </Text>
           <Text type="secondary">{record.payment_date ? new Date(record.payment_date).toLocaleDateString('ru-RU') : ''}</Text>
         </Space>
@@ -159,9 +166,18 @@ function PaymentsList() {
               <Button size="small" icon={<Edit size={14} />} onClick={() => navigate(`/payments/${record.id}/edit`)}>
                 Редактировать
               </Button>
-              <Button size="small" danger icon={<Trash2 size={14} />} onClick={() => handleDelete(record.id)}>
-                Удалить
-              </Button>
+              <Popconfirm
+                title="Удалить платеж?"
+                description="Это действие нельзя отменить."
+                onConfirm={() => handleDelete(record.id)}
+                okText="Удалить"
+                cancelText="Отмена"
+                okButtonProps={{ danger: true }}
+              >
+                <Button size="small" danger icon={<Trash2 size={14} />}>
+                  Удалить
+                </Button>
+              </Popconfirm>
             </>
           ) : null}
         </Space>
@@ -171,10 +187,10 @@ function PaymentsList() {
 
   return (
     <Card>
-      <Space direction="vertical" size={16} style={{ width: '100%' }}>
-        <Space wrap style={{ width: '100%', justifyContent: 'space-between' }}>
+      <Space direction="vertical" size={16} style={LIST_STACK_STYLE}>
+        <Space wrap style={LIST_HEADER_STYLE}>
           <div>
-            <Title level={3} style={{ margin: 0 }}>
+            <Title level={3} style={LIST_TITLE_STYLE}>
               Платежи
             </Title>
             <Text type="secondary">Список платежей</Text>
@@ -198,16 +214,11 @@ function PaymentsList() {
           </Space>
         </Space>
 
-        <Space wrap style={{ width: '100%', justifyContent: 'space-between' }}>
-          <Search
-            placeholder="Поиск по платежам..."
-            allowClear
-            value={searchText}
-            onChange={(e) => setSearchText(e.target.value)}
-            onSearch={handleSearch}
-            style={{ maxWidth: 360 }}
-          />
-          <Space>
+        <EntityListToolbar
+          searchValue={searchText}
+          searchPlaceholder="Поиск по платежам..."
+          onSearchChange={handleSearch}
+          filters={(
             <Select
               allowClear
               placeholder="Статус"
@@ -219,11 +230,28 @@ function PaymentsList() {
                 fetchPayments(1, searchText, value || null);
               }}
             />
-            <Button onClick={() => fetchPayments(pagination.current, searchText, statusFilter)} loading={loading}>
-              Обновить
-            </Button>
-          </Space>
-        </Space>
+          )}
+          onRefresh={() => fetchPayments(pagination.current, searchText, statusFilter)}
+          onReset={handleResetFilters}
+          loading={loading}
+          resultSummary={`Всего: ${pagination.total}`}
+          activeFilters={[
+            ...(searchText ? [{ key: 'search', label: 'Поиск', value: searchText, onClear: () => handleSearch('') }] : []),
+            ...(statusFilter
+              ? [
+                  {
+                    key: 'status',
+                    label: 'Статус',
+                    value: statusOptions.find((opt) => opt.value === statusFilter)?.label || statusFilter,
+                    onClear: () => {
+                      setStatusFilter(null);
+                      fetchPayments(1, searchText, null);
+                    },
+                  },
+                ]
+              : []),
+          ]}
+        />
 
         {error ? <Text type="danger">{error}</Text> : null}
 

@@ -1,6 +1,7 @@
 import React, { useEffect, useRef } from 'react';
 import PropTypes from 'prop-types';
 import Chart from 'chart.js/auto';
+import { formatCurrency } from '../../lib/utils/format';
 
 /**
  * Prediction/Forecast chart component with confidence intervals
@@ -96,11 +97,7 @@ function PredictionChart({
                   label += ': ';
                 }
                 if (context.parsed.y !== null) {
-                  label += new Intl.NumberFormat('ru-RU', {
-                    style: 'currency',
-                    currency: 'RUB',
-                    minimumFractionDigits: 0,
-                  }).format(context.parsed.y);
+                  label += formatCurrency(context.parsed.y);
                 }
                 return label;
               }
@@ -112,13 +109,7 @@ function PredictionChart({
             beginAtZero: false,
             ticks: {
               callback: function(value) {
-                return new Intl.NumberFormat('ru-RU', {
-                  style: 'currency',
-                  currency: 'RUB',
-                  minimumFractionDigits: 0,
-                  notation: 'compact',
-                  compactDisplay: 'short',
-                }).format(value);
+                return formatCurrency(value);
               }
             }
           }

@@ -1,4 +1,5 @@
 import {
+    ApiOutlined,
     AppstoreOutlined,
     BankOutlined,
     BarChartOutlined,
@@ -7,8 +8,11 @@ import {
     CustomerServiceOutlined,
     DisconnectOutlined,
     DollarOutlined,
+    FacebookOutlined,
     FileTextOutlined,
     FolderOutlined,
+    GlobalOutlined,
+    InstagramOutlined,
     LogoutOutlined,
     MailOutlined,
     MenuFoldOutlined,
@@ -17,19 +21,21 @@ import {
     MoonOutlined,
     PhoneOutlined,
     QuestionCircleOutlined,
+    RobotOutlined,
+    SendOutlined,
     SettingOutlined,
     SunOutlined,
     TeamOutlined,
     UserOutlined,
-    WifiOutlined,
+    WhatsAppOutlined,
 } from '@ant-design/icons';
-import { Avatar, Badge, Button, ConfigProvider, Drawer, Dropdown, Grid, Layout, Menu, Space, Switch, Typography } from 'antd';
+import { Avatar, Badge, Button, ConfigProvider, Drawer, Dropdown, Grid, Layout, Menu, Space, Tooltip, Typography } from 'antd';
 import { useEffect, useState } from 'react';
 import brandMark from '../assets/brand/favicon.svg';
 import brandLogo from '../assets/brand/logo.svg';
 import brandLogoDark from '../assets/brand/logo-dark.svg';
 import { useTheme } from '../lib/hooks/useTheme.js';
-import { t } from '../lib/i18n/index.js';
+import { getLocale, t } from '../lib/i18n/index.js';
 import { navigate } from '../router.js';
 
 const { Header, Sider, Content } = Layout;
@@ -43,6 +49,8 @@ export function AppLayout({
   selectedKey,
   user,
   wsConnected,
+  wsReconnecting,
+  activeIntegrations,
   incomingCallsCount,
   unreadCount,
   allowedNavKeys,
@@ -56,64 +64,72 @@ export function AppLayout({
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const siderWidth = 256;
   const drawerWidth = screens.sm ? 300 : '86vw';
+  const tr = (key, fallback) => {
+    const localized = t(key);
+    return localized === key ? fallback : localized;
+  };
+  const i18nLocale = getLocale();
+  const activeLocale = i18nLocale === 'ru' || i18nLocale === 'en' || i18nLocale === 'uz'
+    ? i18nLocale
+    : locale;
   // Build nav labels at render time so they react to locale changes.
   const baseNav = [
     {
       key: 'sales-group',
-      label: 'Продажи',
+      label: tr('nav.salesGroup', 'Продажи'),
       children: [
-        { key: 'dashboard', label: t('nav.dashboard') || 'Dashboard', icon: <BarChartOutlined />, path: '/dashboard' },
-        { key: 'leads', label: t('nav.leads') || 'Leads', icon: <TeamOutlined />, path: '/leads' },
-        { key: 'contacts', label: t('nav.contacts') || 'Контакты', icon: <UserOutlined />, path: '/contacts' },
-        { key: 'companies', label: t('nav.companies') || 'Компании', icon: <BankOutlined />, path: '/companies' },
-        { key: 'deals', label: t('nav.deals') || 'Сделки', icon: <DollarOutlined />, path: '/deals' },
-        { key: 'tasks', label: t('nav.tasks') || 'Задачи', icon: <CheckSquareOutlined />, path: '/tasks' },
-        { key: 'projects', label: t('nav.projects') || 'Проекты', icon: <FolderOutlined />, path: '/projects' },
-        { key: 'products', label: t('nav.products') || 'Продукты', icon: <AppstoreOutlined />, path: '/products' },
+        { key: 'dashboard', label: tr('nav.dashboard', 'Дашборд'), icon: <BarChartOutlined />, path: '/dashboard' },
+        { key: 'leads', label: tr('nav.leads', 'Лиды'), icon: <TeamOutlined />, path: '/leads' },
+        { key: 'contacts', label: tr('nav.contacts', 'Контакты'), icon: <UserOutlined />, path: '/contacts' },
+        { key: 'companies', label: tr('nav.companies', 'Компании'), icon: <BankOutlined />, path: '/companies' },
+        { key: 'deals', label: tr('nav.deals', 'Сделки'), icon: <DollarOutlined />, path: '/deals' },
+        { key: 'tasks', label: tr('nav.tasks', 'Задачи'), icon: <CheckSquareOutlined />, path: '/tasks' },
+        { key: 'projects', label: tr('nav.projects', 'Проекты'), icon: <FolderOutlined />, path: '/projects' },
+        { key: 'products', label: tr('nav.products', 'Продукты'), icon: <AppstoreOutlined />, path: '/products' },
       ],
     },
     {
       key: 'communications-group',
-      label: 'Коммуникации',
+      label: tr('nav.communicationsGroup', 'Коммуникации'),
       children: [
-        { key: 'chat', label: t('nav.chat') || 'Чат', icon: <MessageOutlined />, path: '/chat' },
-        { key: 'calls', label: t('nav.calls') || 'Звонки', icon: <PhoneOutlined />, path: '/calls' },
-        { key: 'reminders', label: t('nav.reminders') || 'Напоминания', icon: <ClockCircleOutlined />, path: '/reminders' },
-        { key: 'crm-emails', label: t('nav.crmEmails') || 'Emails', icon: <MailOutlined />, path: '/crm-emails' },
-        { key: 'massmail', label: t('nav.massmail') || 'Massmail', icon: <FileTextOutlined />, path: '/massmail' },
-        { key: 'sms-center', label: t('nav.smsCenter') || 'SMS', icon: <MessageOutlined />, path: '/sms' },
-        { key: 'memos', label: t('nav.memos') || 'Заметки', icon: <FileTextOutlined />, path: '/memos' },
+        { key: 'chat', label: tr('nav.chat', 'Чаты'), icon: <MessageOutlined />, path: '/chat' },
+        { key: 'calls', label: tr('nav.calls', 'Звонки'), icon: <PhoneOutlined />, path: '/calls' },
+        { key: 'reminders', label: tr('nav.reminders', 'Напоминания'), icon: <ClockCircleOutlined />, path: '/reminders' },
+        { key: 'crm-emails', label: tr('nav.crmEmails', 'CRM Email'), icon: <MailOutlined />, path: '/crm-emails' },
+        { key: 'massmail', label: tr('nav.massmail', 'Массовые рассылки'), icon: <FileTextOutlined />, path: '/massmail' },
+        { key: 'sms-center', label: tr('nav.smsCenter', 'SMS'), icon: <MessageOutlined />, path: '/sms' },
+        { key: 'memos', label: tr('nav.memos', 'Заметки'), icon: <FileTextOutlined />, path: '/memos' },
       ],
     },
     {
       key: 'marketing-group',
-      label: 'Маркетинг',
+      label: tr('nav.marketingGroup', 'Маркетинг'),
       children: [
-        { key: 'campaigns', label: t('nav.campaigns') || 'Кампании', icon: <CustomerServiceOutlined />, path: '/campaigns' },
-        { key: 'segments', label: t('nav.segments') || 'Сегменты', icon: <TeamOutlined />, path: '/marketing/segments' },
-        { key: 'templates', label: t('nav.templates') || 'Шаблоны', icon: <FileTextOutlined />, path: '/marketing/templates' },
-        { key: 'analytics', label: t('nav.analytics') || 'Аналитика', icon: <BarChartOutlined />, path: '/analytics' },
+        { key: 'campaigns', label: tr('nav.campaigns', 'Кампании'), icon: <CustomerServiceOutlined />, path: '/campaigns' },
+        { key: 'segments', label: tr('nav.segments', 'Сегменты'), icon: <TeamOutlined />, path: '/marketing/segments' },
+        { key: 'templates', label: tr('nav.templates', 'Шаблоны'), icon: <FileTextOutlined />, path: '/marketing/templates' },
+        { key: 'analytics', label: tr('nav.analytics', 'Аналитика'), icon: <BarChartOutlined />, path: '/analytics' },
       ],
     },
     {
       key: 'operations-group',
-      label: 'Операции',
+      label: tr('nav.operationsGroup', 'Операции'),
       children: [
-        { key: 'payments', label: t('nav.payments') || 'Платежи', icon: <DollarOutlined />, path: '/payments' },
-        { key: 'integrations', label: t('nav.integrations') || 'Интеграции', icon: <SettingOutlined />, path: '/integrations' },
-        { key: 'telephony', label: t('nav.telephony') || 'Телефония', icon: <PhoneOutlined />, path: '/telephony' },
-        { key: 'operations', label: t('nav.operations') || 'Операции', icon: <SettingOutlined />, path: '/operations' },
+        { key: 'payments', label: tr('nav.payments', 'Платежи'), icon: <DollarOutlined />, path: '/payments' },
+        { key: 'integrations', label: tr('nav.integrations', 'Интеграции'), icon: <SettingOutlined />, path: '/integrations' },
+        { key: 'telephony', label: tr('nav.telephony', 'Телефония'), icon: <PhoneOutlined />, path: '/telephony' },
+        { key: 'operations', label: tr('nav.operations', 'Операции'), icon: <SettingOutlined />, path: '/operations' },
       ],
     },
     {
       key: 'system-group',
-      label: 'Система',
+      label: tr('nav.systemGroup', 'Система'),
       children: [
-        { key: 'settings', label: t('nav.settings') || 'Настройки', icon: <SettingOutlined />, path: '/settings' },
-        { key: 'reference-data', label: t('nav.referenceData') || 'Справочники', icon: <AppstoreOutlined />, path: '/reference-data' },
-        { key: 'landing-builder', label: t('nav.landingBuilder') || 'Landing Builder', icon: <AppstoreOutlined />, path: '/landing-builder' },
-        { key: 'users', label: t('nav.users') || 'Пользователи', icon: <UserOutlined />, path: '/users' },
-        { key: 'help-center', label: t('nav.helpCenter') || 'Справка', icon: <QuestionCircleOutlined />, path: '/help' },
+        { key: 'settings', label: tr('nav.settings', 'Настройки'), icon: <SettingOutlined />, path: '/settings' },
+        { key: 'reference-data', label: tr('nav.referenceData', 'Справочники'), icon: <AppstoreOutlined />, path: '/reference-data' },
+        { key: 'landing-builder', label: tr('nav.landingBuilder', 'Конструктор лендингов'), icon: <AppstoreOutlined />, path: '/landing-builder' },
+        { key: 'users', label: tr('nav.users', 'Пользователи'), icon: <UserOutlined />, path: '/users' },
+        { key: 'help-center', label: tr('nav.helpCenter', 'Справка'), icon: <QuestionCircleOutlined />, path: '/help' },
       ],
     },
   ];
@@ -139,7 +155,46 @@ export function AppLayout({
     return null;
   };
 
-  const selectedNavLabel = findNavLabel(baseNav, selectedKey) || t('nav.dashboard') || 'Dashboard';
+  const selectedNavLabel = findNavLabel(baseNav, selectedKey) || tr('nav.dashboard', 'Дашборд');
+  const integrationLabelMap = {
+    sms: activeLocale === 'ru' ? 'SMS' : 'SMS',
+    telephony: activeLocale === 'ru' ? 'Телефония' : activeLocale === 'uz' ? 'Telefoniya' : 'Telephony',
+    whatsapp: 'WhatsApp',
+    facebook: 'Facebook',
+    instagram: 'Instagram',
+    telegram: 'Telegram',
+    ai: 'AI',
+  };
+  const integrationIconMap = {
+    sms: MessageOutlined,
+    telephony: PhoneOutlined,
+    whatsapp: WhatsAppOutlined,
+    facebook: FacebookOutlined,
+    instagram: InstagramOutlined,
+    telegram: SendOutlined,
+    ai: RobotOutlined,
+  };
+  const hasActiveTelephony = Array.isArray(activeIntegrations)
+    && activeIntegrations.some((integration) => integration?.key === 'telephony');
+  const [wsIndicatorStatus, setWsIndicatorStatus] = useState(
+    wsConnected ? 'success' : (wsReconnecting ? 'processing' : 'error')
+  );
+
+  useEffect(() => {
+    if (wsConnected) {
+      setWsIndicatorStatus('success');
+      return undefined;
+    }
+    if (wsReconnecting) {
+      setWsIndicatorStatus('processing');
+      return undefined;
+    }
+
+    const timeoutId = window.setTimeout(() => {
+      setWsIndicatorStatus('error');
+    }, 1200);
+    return () => window.clearTimeout(timeoutId);
+  }, [wsConnected, wsReconnecting]);
 
   useEffect(() => {
     setMobileMenuOpen(false);
@@ -179,48 +234,81 @@ export function AppLayout({
   });
 
   // User dropdown menu items
+  // Locale dropdown menu items
+  const localeMenuItems = [
+    {
+      key: 'en',
+      label: activeLocale === 'en' ? 'English ✓' : 'English',
+      onClick: () => onLocaleChange('en'),
+    },
+    {
+      key: 'ru',
+      label: activeLocale === 'ru' ? 'Русский ✓' : 'Русский',
+      onClick: () => onLocaleChange('ru'),
+    },
+    {
+      key: 'uz',
+      label: activeLocale === 'uz' ? "O'zbekcha ✓" : "O'zbekcha",
+      onClick: () => onLocaleChange('uz'),
+    },
+  ];
+
+  const themeMenuItems = [
+    {
+      key: 'light',
+      icon: <SunOutlined />,
+      label: theme === 'light'
+        ? `${tr('nav.themeLight', 'Светлая')} ✓`
+        : tr('nav.themeLight', 'Светлая'),
+      onClick: () => {
+        if (theme !== 'light') toggleTheme();
+      },
+    },
+    {
+      key: 'dark',
+      icon: <MoonOutlined />,
+      label: theme === 'dark'
+        ? `${tr('nav.themeDark', 'Темная')} ✓`
+        : tr('nav.themeDark', 'Темная'),
+      onClick: () => {
+        if (theme !== 'dark') toggleTheme();
+      },
+    },
+  ];
+
   const userMenuItems = [
     {
       key: 'profile',
       icon: <UserOutlined />,
-      label: 'Профиль',
+      label: tr('nav.profile', 'Профиль'),
       onClick: () => navigate('/profile'),
     },
     ...(Array.isArray(allowedNavKeys) && allowedNavKeys.includes('settings')
       ? [{
           key: 'settings',
           icon: <SettingOutlined />,
-          label: 'Настройки',
+          label: tr('nav.settings', 'Настройки'),
           onClick: () => navigate('/settings'),
         }]
       : []),
     {
-      type: 'divider',
+      key: 'language',
+      icon: <GlobalOutlined />,
+      label: `${tr('nav.language', 'Язык')} (${activeLocale.toUpperCase()})`,
+      children: localeMenuItems,
     },
+    {
+      key: 'theme',
+      icon: theme === 'dark' ? <MoonOutlined /> : <SunOutlined />,
+      label: `${tr('nav.theme', 'Тема')} (${theme === 'dark' ? tr('nav.themeDark', 'Темная') : tr('nav.themeLight', 'Светлая')})`,
+      children: themeMenuItems,
+    },
+    { type: 'divider' },
     {
       key: 'logout',
       icon: <LogoutOutlined />,
-      label: 'Выход',
+      label: tr('nav.logout', 'Выход'),
       onClick: onLogout,
-    },
-  ];
-
-  // Locale dropdown menu items
-  const localeMenuItems = [
-    {
-      key: 'en',
-      label: 'English',
-      onClick: () => onLocaleChange('en'),
-    },
-    {
-      key: 'ru',
-      label: 'Русский',
-      onClick: () => onLocaleChange('ru'),
-    },
-    {
-      key: 'uz',
-      label: "O'zbekcha",
-      onClick: () => onLocaleChange('uz'),
     },
   ];
 
@@ -404,30 +492,42 @@ export function AppLayout({
           </Space>
 
           <Space size={isMobile ? 'small' : 'middle'} wrap={false}>
-            {/* Theme Toggle */}
-            <Space size="small">
-              {!isMobile && <SunOutlined style={{ color: theme === 'light' ? '#1890ff' : '#999' }} />}
-              <Switch checked={theme === 'dark'} onChange={toggleTheme} size="small" />
-              {!isMobile && <MoonOutlined style={{ color: theme === 'dark' ? '#1890ff' : '#999' }} />}
-            </Space>
-
-            {/* Locale Selector */}
-            <Dropdown menu={{ items: localeMenuItems }} placement="bottomRight">
-              <Button size={isMobile ? 'small' : 'middle'}>{locale.toUpperCase()}</Button>
-            </Dropdown>
-
             {/* User Menu */}
-            <Button
-              size={isMobile ? 'small' : 'middle'}
-              icon={<PhoneOutlined />}
-              onClick={onOpenDialer}
-            />
+            {hasActiveTelephony && (
+              <Button
+                size={isMobile ? 'small' : 'middle'}
+                icon={<PhoneOutlined />}
+                onClick={onOpenDialer}
+              />
+            )}
 
             <Dropdown menu={{ items: userMenuItems }} placement="bottomRight">
               <Space style={{ cursor: 'pointer' }}>
-                <Badge dot={wsConnected} color={wsConnected ? 'green' : 'red'}>
-                  {wsConnected ? <WifiOutlined /> : <DisconnectOutlined />}
-                </Badge>
+                <Space size={6}>
+                  {wsIndicatorStatus === 'error'
+                    ? <DisconnectOutlined style={{ color: theme === 'dark' ? '#cbd5e1' : '#52525b' }} />
+                    : <ApiOutlined style={{ color: theme === 'dark' ? '#cbd5e1' : '#52525b' }} />}
+                  <Badge status={wsIndicatorStatus} />
+                </Space>
+                {Array.isArray(activeIntegrations) && activeIntegrations.length > 0 && (
+                  <Space size={8}>
+                    {activeIntegrations.map((integration) => {
+                      const IconComponent = integrationIconMap[integration.key];
+                      if (!IconComponent) return null;
+                      return (
+                        <Tooltip
+                          key={integration.key}
+                          title={integrationLabelMap[integration.key] || integration.key}
+                        >
+                          <Space size={4}>
+                            <IconComponent style={{ color: theme === 'dark' ? '#cbd5e1' : '#52525b' }} />
+                            <Badge status={integration.status || 'success'} />
+                          </Space>
+                        </Tooltip>
+                      );
+                    })}
+                  </Space>
+                )}
                 {incomingCallsCount > 0 && (
                   <Badge count={incomingCallsCount}>
                     <PhoneOutlined />

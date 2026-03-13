@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Modal, Table, Tag, Spin, Empty, Typography, Space, Button } from 'antd';
 import { CloseOutlined, FilterOutlined } from '@ant-design/icons';
+import { useTheme } from '../../lib/hooks/useTheme.js';
 
 const { Title, Text } = Typography;
 
@@ -28,6 +29,8 @@ function DrillDownModal({
   onItemClick,
   loading = false,
 }) {
+  const { theme } = useTheme();
+  const isDark = theme === 'dark';
   const [localData, setLocalData] = useState(data);
   const [pagination, setPagination] = useState({
     current: 1,
@@ -97,8 +100,16 @@ function DrillDownModal({
       )}
 
       {/* Статистика */}
-      <div style={{ marginBottom: 16, padding: '12px', backgroundColor: '#f5f5f5', borderRadius: 4 }}>
-        <Space split={<span style={{ color: '#d9d9d9' }}>|</span>}>
+      <div
+        style={{
+          marginBottom: 16,
+          padding: '12px',
+          backgroundColor: isDark ? '#1e232e' : '#f5f5f5',
+          border: `1px solid ${isDark ? '#2d3343' : '#e5e7eb'}`,
+          borderRadius: 4,
+        }}
+      >
+        <Space split={<span style={{ color: isDark ? '#64748b' : '#d9d9d9' }}>|</span>}>
           <Text>
             <strong>Всего записей:</strong> {data.length}
           </Text>

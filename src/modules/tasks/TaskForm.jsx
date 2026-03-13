@@ -5,38 +5,59 @@ import { useEffect, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
 
+import { App, Button, Card, Col, DatePicker, Input, Result, Row, Select, Skeleton, Space, Switch, Typography } from 'antd';
 import EntitySelect from '../../components/EntitySelect';
+import FormPermissionGuard from '../../components/permissions/FormPermissionGuard';
 import ReferenceSelect from '../../components/ReferenceSelect';
 import {
-    createTask,
-    getProject,
-    getProjects,
-    getTask,
-    getTasks,
-    getUser,
-    getUsers,
-    updateTask
+  createTask,
+  getProject,
+  getProjects,
+  getTask,
+  getTasks,
+  getUser,
+  getUsers,
+  updateTask,
 } from '../../lib/api';
-import { normalizePayload } from '../../lib/utils/payload';
+import { t } from '../../lib/i18n';
 import { canWrite } from '../../lib/rbac';
+import { normalizePayload } from '../../lib/utils/payload';
 import { navigate } from '../../router';
-import FormPermissionGuard from '../../components/permissions/FormPermissionGuard';
 
-import { App, Button, Card, DatePicker, Input, Switch } from 'antd';
+const { Text, Title } = Typography;
 const { TextArea } = Input;
-const Label = ({ children, ...props }) => <label style={{ display: 'block', marginBottom: 6, fontWeight: 500 }} {...props}>{children}</label>;
+
+const FieldLabel = ({ children, ...props }) => (
+  <Text strong style={{ display: 'block', marginBottom: 6 }} {...props}>
+    {children}
+  </Text>
+);
+
+const FieldError = ({ message }) => (
+  message ? (
+    <Text type="danger" style={{ display: 'block', marginTop: 6 }}>
+      {message}
+    </Text>
+  ) : null
+);
+
+const priorityOptions = [
+  { value: 1, label: t('taskFormPage.priority.low') },
+  { value: 2, label: t('taskFormPage.priority.medium') },
+  { value: 3, label: t('taskFormPage.priority.high') },
+];
 
 const schema = z.object({
-  name: z.string().min(1, 'Введите название'),
+  name: z.string().min(1, t('taskFormPage.validation.nameRequired')),
   description: z.string().optional(),
   note: z.string().optional(),
-  stage: z.any().refine((val) => val !== undefined && val !== null && val !== '', { message: 'Выберите этап' }),
+  stage: z.any().refine((val) => val !== undefined && val !== null && val !== '', { message: t('taskFormPage.validation.stageRequired') }),
   start_date: z.any().optional(),
   due_date: z.any().optional(),
   closing_date: z.any().optional(),
   lead_time: z.string().optional(),
-  next_step: z.string().min(1, 'Введите следующий шаг'),
-  next_step_date: z.any().refine((val) => val, { message: 'Выберите дату следующего шага' }),
+  next_step: z.string().min(1, t('taskFormPage.validation.nextStepRequired')),
+  next_step_date: z.any().refine((val) => val, { message: t('taskFormPage.validation.nextStepDateRequired') }),
   project: z.any().optional(),
   task: z.any().optional(),
   owner: z.any().optional(),
@@ -52,11 +73,13 @@ const schema = z.object({
 function TaskForm({ id }) {
   const { message } = App.useApp();
   const notify = ({ title, description, variant }) => {
-    const text = description || title || 'Уведомление';
+    const text = description || title || t('taskFormPage.messages.notification');
     if (variant === 'destructive') message.error(text);
     else message.success(text);
   };
+
   const [loading, setLoading] = useState(false);
+  const [loadError, setLoadError] = useState(false);
   const [saving, setSaving] = useState(false);
   const isEdit = !!id;
   const canManage = canWrite('tasks.change_task');
@@ -118,6 +141,7 @@ function TaskForm({ id }) {
 
   const loadTask = async () => {
     setLoading(true);
+    setLoadError(false);
     try {
       const task = await getTask(id);
       reset({
@@ -128,7 +152,8 @@ function TaskForm({ id }) {
         next_step_date: task.next_step_date ? dayjs(task.next_step_date) : null,
       });
     } catch (error) {
-      notify({ title: 'Ошибка', description: 'Ошибка загрузки данных задачи', variant: 'destructive' });
+      setLoadError(true);
+      notify({ title: t('taskFormPage.messages.error'), description: t('taskFormPage.messages.loadError'), variant: 'destructive' });
     } finally {
       setLoading(false);
     }
@@ -136,9 +161,10 @@ function TaskForm({ id }) {
 
   const onSubmit = async (values) => {
     if (!canManage) {
-      notify({ title: 'Недостаточно прав', description: 'У вас нет прав для изменения задач', variant: 'destructive' });
+      notify({ title: t('taskFormPage.messages.noPermissionTitle'), description: t('taskFormPage.messages.noPermissionDescription'), variant: 'destructive' });
       return;
     }
+
     setSaving(true);
     try {
       const payload = normalizePayload(
@@ -149,238 +175,262 @@ function TaskForm({ id }) {
           closing_date: values.closing_date ? values.closing_date.format('YYYY-MM-DD') : null,
           next_step_date: values.next_step_date ? values.next_step_date.format('YYYY-MM-DD') : null,
         },
-        { preserveEmptyArrays: ['responsible', 'subscribers', 'tags'] }
+        { preserveEmptyArrays: ['responsible', 'subscribers', 'tags'] },
       );
 
       if (isEdit) {
         await updateTask(id, payload);
-        notify({ title: 'Задача обновлена', description: 'Задача обновлена' });
+        notify({ title: t('taskFormPage.messages.updated'), description: t('taskFormPage.messages.updated') });
       } else {
         await createTask(payload);
-        notify({ title: 'Задача создана', description: 'Задача создана' });
+        notify({ title: t('taskFormPage.messages.created'), description: t('taskFormPage.messages.created') });
       }
       navigate('/tasks');
     } catch (error) {
-      notify({ title: 'Ошибка', description: `Ошибка ${isEdit ? 'обновления' : 'создания'} задачи`, variant: 'destructive' });
+      notify({ title: t('taskFormPage.messages.error'), description: isEdit ? t('taskFormPage.messages.updateError') : t('taskFormPage.messages.createError'), variant: 'destructive' });
     } finally {
       setSaving(false);
     }
   };
 
   if (loading) {
-    return <div>Загрузка...</div>;
+    return <Skeleton active paragraph={{ rows: 8 }} />;
+  }
+
+  if (isEdit && loadError) {
+    return (
+      <Result
+        status="error"
+        title={t('taskFormPage.messages.error')}
+        subTitle={t('taskFormPage.messages.loadError')}
+        extra={[
+          <Button key="retry" onClick={loadTask}>Повторить</Button>,
+          <Button key="list" type="primary" onClick={() => navigate('/tasks')}>{t('taskFormPage.permission.backToList')}</Button>,
+        ]}
+      />
+    );
   }
 
   return (
     <FormPermissionGuard
       allowed={canManage}
       listPath="/tasks"
-      listButtonText="К списку задач"
-      description="У вас нет прав для создания или редактирования задач."
+      listButtonText={t('taskFormPage.permission.backToList')}
+      description={t('taskFormPage.permission.description')}
     >
-      <div>
-        <Button onClick={() => navigate('/tasks')}>
-          <ArrowLeft />
-          Назад
+      <Space direction="vertical" size={16} style={{ width: '100%' }}>
+        <Button onClick={() => navigate('/tasks')} icon={<ArrowLeft size={16} />}>
+          {t('taskFormPage.actions.back')}
         </Button>
 
-        <h2>
-          {isEdit ? 'Редактировать задачу' : 'Создать новую задачу'}
-        </h2>
-
-        <Card>
+        <Card title={<Title level={4} style={{ margin: 0 }}>{isEdit ? t('taskFormPage.titleEdit') : t('taskFormPage.titleCreate')}</Title>}>
           <form onSubmit={handleSubmit(onSubmit)}>
-          <section>
-            <h3>Основная информация</h3>
-            <div>
-              <div>
-                <Label htmlFor="name">Название задачи *</Label>
-                <Input id="name" placeholder="Подготовить коммерческое предложение" {...register('name')} />
-                {errors.name && <p>{errors.name.message}</p>}
-              </div>
-              <div>
-                <Label htmlFor="priority">Приоритет</Label>
-                <Input id="priority" type="number" min={1} max={3} value={priorityValue || ''} onChange={(e) => setValue('priority', e.target.value)} />
-              </div>
-            </div>
+            <Space direction="vertical" size={20} style={{ width: '100%' }}>
+              <section>
+                <Title level={5}>{t('taskFormPage.sections.main')}</Title>
+                <Space direction="vertical" size={16} style={{ width: '100%' }}>
+                  <Row gutter={[16, 16]}>
+                    <Col xs={24} md={16}>
+                      <FieldLabel htmlFor="name">{t('taskFormPage.fields.name')} *</FieldLabel>
+                      <Input id="name" placeholder={t('taskFormPage.placeholders.name')} {...register('name')} />
+                      <FieldError message={errors.name?.message} />
+                    </Col>
+                    <Col xs={24} md={8}>
+                      <FieldLabel htmlFor="priority">{t('taskFormPage.fields.priority')}</FieldLabel>
+                      <Select
+                        id="priority"
+                        placeholder={t('taskFormPage.placeholders.priority')}
+                        options={priorityOptions}
+                        allowClear
+                        value={priorityValue || undefined}
+                        onChange={(val) => setValue('priority', val ?? '')}
+                        style={{ width: '100%' }}
+                      />
+                    </Col>
+                  </Row>
 
-            <div>
-              <Label htmlFor="description">Описание</Label>
-              <TextArea id="description" rows={4} placeholder="Детальное описание задачи" {...register('description')} />
-            </div>
+                  <div>
+                    <FieldLabel htmlFor="description">{t('taskFormPage.fields.description')}</FieldLabel>
+                    <TextArea id="description" rows={4} placeholder={t('taskFormPage.placeholders.description')} {...register('description')} />
+                  </div>
 
-            <div>
-              <Label htmlFor="note">Заметка</Label>
-              <TextArea id="note" rows={3} placeholder="Внутренние заметки" {...register('note')} />
-            </div>
+                  <div>
+                    <FieldLabel htmlFor="note">{t('taskFormPage.fields.note')}</FieldLabel>
+                    <TextArea id="note" rows={3} placeholder={t('taskFormPage.placeholders.note')} {...register('note')} />
+                  </div>
 
-            <div>
-              <div>
-                <Label htmlFor="stage">Этап *</Label>
-                <ReferenceSelect
-                  id="stage"
-                  type="task-stages"
-                  placeholder="Выберите этап"
-                  allowClear
-                  value={stageValue || ''}
-                  onChange={(val) => setValue('stage', val)}
-                />
-                {errors.stage && <p>{errors.stage.message}</p>}
-              </div>
-              <div>
-                <Label htmlFor="start_date">Дата начала</Label>
-                <DatePicker id="start_date" value={startDate || null} onChange={(val) => setValue('start_date', val)} format="DD.MM.YYYY" />
-              </div>
-              <div>
-                <Label htmlFor="due_date">Срок выполнения</Label>
-                <DatePicker id="due_date" value={dueDate || null} onChange={(val) => setValue('due_date', val)} format="DD.MM.YYYY" />
-              </div>
-            </div>
+                  <Row gutter={[16, 16]}>
+                    <Col xs={24} md={8}>
+                      <FieldLabel htmlFor="stage">{t('taskFormPage.fields.stage')} *</FieldLabel>
+                      <ReferenceSelect
+                        id="stage"
+                        type="task-stages"
+                        placeholder={t('taskFormPage.placeholders.stage')}
+                        allowClear
+                        value={stageValue || ''}
+                        onChange={(val) => setValue('stage', val)}
+                      />
+                      <FieldError message={errors.stage?.message} />
+                    </Col>
+                    <Col xs={24} md={8}>
+                      <FieldLabel htmlFor="start_date">{t('taskFormPage.fields.startDate')}</FieldLabel>
+                      <DatePicker id="start_date" value={startDate || null} onChange={(val) => setValue('start_date', val)} format="DD.MM.YYYY" style={{ width: '100%' }} />
+                    </Col>
+                    <Col xs={24} md={8}>
+                      <FieldLabel htmlFor="due_date">{t('taskFormPage.fields.dueDate')}</FieldLabel>
+                      <DatePicker id="due_date" value={dueDate || null} onChange={(val) => setValue('due_date', val)} format="DD.MM.YYYY" style={{ width: '100%' }} />
+                    </Col>
+                  </Row>
 
-            <div>
-              <div>
-                <Label htmlFor="closing_date">Дата закрытия</Label>
-                <DatePicker id="closing_date" value={closingDate || null} onChange={(val) => setValue('closing_date', val)} format="DD.MM.YYYY" />
-              </div>
-              <div>
-                <Label htmlFor="lead_time">Lead time</Label>
-                <Input id="lead_time" placeholder="DD HH:MM:SS" {...register('lead_time')} />
-              </div>
-            </div>
+                  <Row gutter={[16, 16]}>
+                    <Col xs={24} md={12}>
+                      <FieldLabel htmlFor="closing_date">{t('taskFormPage.fields.closingDate')}</FieldLabel>
+                      <DatePicker id="closing_date" value={closingDate || null} onChange={(val) => setValue('closing_date', val)} format="DD.MM.YYYY" style={{ width: '100%' }} />
+                    </Col>
+                    <Col xs={24} md={12}>
+                      <FieldLabel htmlFor="lead_time">{t('taskFormPage.fields.leadTime')}</FieldLabel>
+                      <Input id="lead_time" placeholder={t('taskFormPage.placeholders.leadTime')} {...register('lead_time')} />
+                    </Col>
+                  </Row>
 
-            <div>
-              <div>
-                <Label htmlFor="next_step">Следующий шаг *</Label>
-                <Input id="next_step" placeholder="Согласовать требования" {...register('next_step')} />
-                {errors.next_step && <p>{errors.next_step.message}</p>}
-              </div>
-              <div>
-                <Label htmlFor="next_step_date">Дата следующего шага *</Label>
-                <DatePicker id="next_step_date" value={nextStepDate || null} onChange={(val) => setValue('next_step_date', val)} format="DD.MM.YYYY" />
-                {errors.next_step_date && <p>{errors.next_step_date.message}</p>}
-              </div>
-            </div>
-          </section>
+                  <Row gutter={[16, 16]}>
+                    <Col xs={24} md={12}>
+                      <FieldLabel htmlFor="next_step">{t('taskFormPage.fields.nextStep')} *</FieldLabel>
+                      <Input id="next_step" placeholder={t('taskFormPage.placeholders.nextStep')} {...register('next_step')} />
+                      <FieldError message={errors.next_step?.message} />
+                    </Col>
+                    <Col xs={24} md={12}>
+                      <FieldLabel htmlFor="next_step_date">{t('taskFormPage.fields.nextStepDate')} *</FieldLabel>
+                      <DatePicker id="next_step_date" value={nextStepDate || null} onChange={(val) => setValue('next_step_date', val)} format="DD.MM.YYYY" style={{ width: '100%' }} />
+                      <FieldError message={errors.next_step_date?.message} />
+                    </Col>
+                  </Row>
+                </Space>
+              </section>
 
-          <section>
-            <h3>Связанные записи</h3>
-            <div>
-              <div>
-                <Label>Проект</Label>
-                <EntitySelect
-                  value={projectValue || ''}
-                  placeholder="Выберите проект"
-                  fetchOptions={getProjects}
-                  fetchById={getProject}
-                  onChange={(val) => setValue('project', val)}
-                />
-              </div>
-              <div>
-                <Label>Родительская задача</Label>
-                <EntitySelect
-                  value={taskValue || ''}
-                  placeholder="Выберите задачу"
-                  fetchOptions={getTasks}
-                  fetchById={getTask}
-                  onChange={(val) => setValue('task', val)}
-                />
-              </div>
-            </div>
-          </section>
+              <section>
+                <Title level={5}>{t('taskFormPage.sections.related')}</Title>
+                <Row gutter={[16, 16]}>
+                  <Col xs={24} md={12}>
+                    <FieldLabel>{t('taskFormPage.fields.project')}</FieldLabel>
+                    <EntitySelect
+                      value={projectValue || ''}
+                      placeholder={t('taskFormPage.placeholders.project')}
+                      fetchOptions={getProjects}
+                      fetchById={getProject}
+                      onChange={(val) => setValue('project', val)}
+                    />
+                  </Col>
+                  <Col xs={24} md={12}>
+                    <FieldLabel>{t('taskFormPage.fields.parentTask')}</FieldLabel>
+                    <EntitySelect
+                      value={taskValue || ''}
+                      placeholder={t('taskFormPage.placeholders.parentTask')}
+                      fetchOptions={getTasks}
+                      fetchById={getTask}
+                      onChange={(val) => setValue('task', val)}
+                    />
+                  </Col>
+                </Row>
+              </section>
 
-          <section>
-            <h3>Ответственные</h3>
-            <div>
-              <div>
-                <Label>Владелец</Label>
-                <EntitySelect
-                  value={ownerValue || ''}
-                  placeholder="Выберите пользователя"
-                  fetchOptions={getUsers}
-                  fetchById={getUser}
-                  onChange={(val) => setValue('owner', val)}
-                />
-              </div>
-              <div>
-                <Label>Со-владелец</Label>
-                <EntitySelect
-                  value={coOwnerValue || ''}
-                  placeholder="Выберите пользователя"
-                  fetchOptions={getUsers}
-                  fetchById={getUser}
-                  onChange={(val) => setValue('co_owner', val)}
-                />
-              </div>
-            </div>
+              <section>
+                <Title level={5}>{t('taskFormPage.sections.assignees')}</Title>
+                <Space direction="vertical" size={16} style={{ width: '100%' }}>
+                  <Row gutter={[16, 16]}>
+                    <Col xs={24} md={12}>
+                      <FieldLabel>{t('taskFormPage.fields.owner')}</FieldLabel>
+                      <EntitySelect
+                        value={ownerValue || ''}
+                        placeholder={t('taskFormPage.placeholders.user')}
+                        fetchOptions={getUsers}
+                        fetchById={getUser}
+                        onChange={(val) => setValue('owner', val)}
+                      />
+                    </Col>
+                    <Col xs={24} md={12}>
+                      <FieldLabel>{t('taskFormPage.fields.coOwner')}</FieldLabel>
+                      <EntitySelect
+                        value={coOwnerValue || ''}
+                        placeholder={t('taskFormPage.placeholders.user')}
+                        fetchOptions={getUsers}
+                        fetchById={getUser}
+                        onChange={(val) => setValue('co_owner', val)}
+                      />
+                    </Col>
+                  </Row>
 
-            <div>
-              <div>
-                <Label>Ответственные</Label>
-                <EntitySelect
-                  mode="multiple"
-                  value={responsibleValue || []}
-                  placeholder="Выберите пользователей"
-                  fetchOptions={getUsers}
-                  fetchById={getUser}
-                  onChange={(val) => setValue('responsible', val)}
-                />
-              </div>
-              <div>
-                <Label>Подписчики</Label>
-                <EntitySelect
-                  mode="multiple"
-                  value={subscribersValue || []}
-                  placeholder="Выберите пользователей"
-                  fetchOptions={getUsers}
-                  fetchById={getUser}
-                  onChange={(val) => setValue('subscribers', val)}
-                />
-              </div>
-            </div>
+                  <Row gutter={[16, 16]}>
+                    <Col xs={24} md={12}>
+                      <FieldLabel>{t('taskFormPage.fields.responsible')}</FieldLabel>
+                      <EntitySelect
+                        mode="multiple"
+                        value={responsibleValue || []}
+                        placeholder={t('taskFormPage.placeholders.users')}
+                        fetchOptions={getUsers}
+                        fetchById={getUser}
+                        onChange={(val) => setValue('responsible', val)}
+                      />
+                    </Col>
+                    <Col xs={24} md={12}>
+                      <FieldLabel>{t('taskFormPage.fields.subscribers')}</FieldLabel>
+                      <EntitySelect
+                        mode="multiple"
+                        value={subscribersValue || []}
+                        placeholder={t('taskFormPage.placeholders.users')}
+                        fetchOptions={getUsers}
+                        fetchById={getUser}
+                        onChange={(val) => setValue('subscribers', val)}
+                      />
+                    </Col>
+                  </Row>
 
-            <div>
-              <div>
-                <Label>Теги</Label>
-                <ReferenceSelect
-                  type="task-tags"
-                  placeholder="Выберите теги"
-                  mode="multiple"
-                  allowClear
-                  value={tagsValue || []}
-                  onChange={(val) => setValue('tags', val)}
-                />
-              </div>
-            </div>
-          </section>
+                  <div>
+                    <FieldLabel>{t('taskFormPage.fields.tags')}</FieldLabel>
+                    <ReferenceSelect
+                      type="task-tags"
+                      placeholder={t('taskFormPage.placeholders.tags')}
+                      mode="multiple"
+                      allowClear
+                      value={tagsValue || []}
+                      onChange={(val) => setValue('tags', val)}
+                    />
+                  </div>
+                </Space>
+              </section>
 
-          <section>
-            <h3>Статус</h3>
-            <div>
-              <div>
-                <Switch id="active" checked={!!activeValue} onChange={(val) => setValue('active', val)} />
-                <Label htmlFor="active">Активна</Label>
-              </div>
-              <div>
-                <Switch id="remind_me" checked={!!remindMeValue} onChange={(val) => setValue('remind_me', val)} />
-                <Label htmlFor="remind_me">Напоминать</Label>
-              </div>
-            </div>
-          </section>
+              <section>
+                <Title level={5}>{t('taskFormPage.sections.status')}</Title>
+                <Row gutter={[16, 16]}>
+                  <Col xs={24} md={12}>
+                    <Space align="center">
+                      <Switch id="active" checked={!!activeValue} onChange={(val) => setValue('active', val)} />
+                      <Text>{t('taskFormPage.fields.active')}</Text>
+                    </Space>
+                  </Col>
+                  <Col xs={24} md={12}>
+                    <Space align="center">
+                      <Switch id="remind_me" checked={!!remindMeValue} onChange={(val) => setValue('remind_me', val)} />
+                      <Text>{t('taskFormPage.fields.remindMe')}</Text>
+                    </Space>
+                  </Col>
+                </Row>
+              </section>
 
-            <div>
-              {canManage && (
-                <Button type="submit" loading={saving}>
-                  <Save />
-                  {isEdit ? 'Обновить' : 'Создать'}
+              <Space size={12}>
+                {canManage && (
+                  <Button type="primary" htmlType="submit" loading={saving} icon={<Save size={16} />}>
+                    {isEdit ? t('taskFormPage.actions.update') : t('taskFormPage.actions.create')}
+                  </Button>
+                )}
+                <Button htmlType="button" onClick={() => navigate('/tasks')}>
+                  {t('taskFormPage.actions.cancel')}
                 </Button>
-              )}
-              <Button onClick={() => navigate('/tasks')}>
-                Отмена
-              </Button>
-            </div>
+              </Space>
+            </Space>
           </form>
         </Card>
-      </div>
+      </Space>
     </FormPermissionGuard>
   );
 }

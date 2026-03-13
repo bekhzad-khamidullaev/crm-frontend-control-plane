@@ -1,13 +1,22 @@
-import { App as AntApp, ConfigProvider, Empty, Skeleton, theme as antdTheme } from 'antd';
+import { App as AntApp, Button, ConfigProvider, Empty, Result, Skeleton, theme as antdTheme } from 'antd';
+import enUS from 'antd/locale/en_US';
 import ruRU from 'antd/locale/ru_RU';
-import { Suspense, lazy, useEffect, useState } from 'react';
+import uzUZ from 'antd/locale/uz_UZ';
+import { Suspense, lazy, useEffect, useRef, useState } from 'react';
 import { AppLayout } from './components/AppLayout.jsx';
-import TelephonyDialerModal from './components/TelephonyDialerModal.jsx';
 import { clearToken, getToken, getUserFromToken, isAuthenticated } from './lib/api/auth.js';
+import { getAIProviders } from './lib/api/integrations/ai.js';
+import { getFacebookPages } from './lib/api/integrations/facebook.js';
+import { getInstagramAccounts } from './lib/api/integrations/instagram.js';
+import { getTelegramBots } from './lib/api/integrations/telegram.js';
+import { getWhatsAppAccounts } from './lib/api/integrations/whatsapp.js';
 import { canAccessRoute as canAccessRouteByPolicy } from './lib/rbac.js';
+import smsApi from './lib/api/sms.js';
+import { getVoIPConnections } from './lib/api/telephony.js';
 import { getProfile } from './lib/api/user.js';
 import { mergeRoles, rolesFromProfile, rolesFromTokenPayload } from './lib/roles.js';
 import { useTheme } from './lib/hooks/useTheme.js';
+import { applyLegacyContentLocalization } from './lib/i18n/legacy-content-dom.js';
 import { setLocale } from './lib/i18n/index.js';
 import {
     addIncomingCall,
@@ -18,16 +27,13 @@ import {
     setWsReconnecting,
     subscribe,
 } from './lib/store/index.js';
-import sipClient from './lib/telephony/SIPClient.js';
-import { loadTelephonyRuntimeConfig } from './lib/telephony/runtimeConfig.js';
-import callsWebSocket from './lib/websocket/CallsWebSocket.js';
-import chatWebSocket from './lib/websocket/ChatWebSocket.js';
-import IncomingCallModal from './modules/calls/IncomingCallModal.jsx';
 import { navigate, onRouteChange, parseHash } from './router.js';
 
 // Lazy load all page components for better code splitting
 const Dashboard = lazy(() => import('./pages/dashboard.jsx'));
 const LoginPage = lazy(() => import('./pages/login.jsx'));
+const TelephonyDialerModal = lazy(() => import('./components/TelephonyDialerModal.jsx'));
+const IncomingCallModal = lazy(() => import('./modules/calls/IncomingCallModal.jsx'));
 
 // Leads module
 // Leads module
@@ -150,29 +156,99 @@ function normalizeLocale(raw) {
   return 'ru';
 }
 
+function getProfileLocale(profile) {
+  const raw =
+    profile?.language_code
+    || profile?.language
+    || profile?.locale
+    || profile?.ui_language
+    || profile?.preferred_language
+    || null;
+  if (!raw) return null;
+  return normalizeLocale(raw);
+}
+
 function normalizeUser(raw, fallback = {}) {
-  const firstName = raw?.first_name || fallback?.first_name || '';
-  const lastName = raw?.last_name || fallback?.last_name || '';
-  const fullName =
-    raw?.full_name ||
-    raw?.name ||
-    raw?.display_name ||
-    [firstName, lastName].filter(Boolean).join(' ').trim() ||
-    '';
-  const username = raw?.username || fallback?.username || '';
-  const name = fullName || username || fallback?.name || 'User';
+  const toStr = (value) => {
+    if (value === null || value === undefined) return '';
+    const normalized = String(value).trim();
+    return normalized;
+  };
+
+  const pick = (...values) => values.map(toStr).find(Boolean) || '';
+  const rawUser = raw?.user && typeof raw.user === 'object' ? raw.user : {};
+  const fallbackUser = fallback?.user && typeof fallback.user === 'object' ? fallback.user : {};
+
+  const firstName = pick(
+    raw?.first_name,
+    raw?.firstName,
+    raw?.given_name,
+    rawUser?.first_name,
+    rawUser?.firstName,
+    fallback?.first_name,
+    fallback?.firstName,
+    fallbackUser?.first_name,
+    fallbackUser?.firstName,
+  );
+
+  const lastName = pick(
+    raw?.last_name,
+    raw?.lastName,
+    raw?.family_name,
+    rawUser?.last_name,
+    rawUser?.lastName,
+    fallback?.last_name,
+    fallback?.lastName,
+    fallbackUser?.last_name,
+    fallbackUser?.lastName,
+  );
+
+  const fullName = pick(
+    raw?.full_name,
+    raw?.fullName,
+    raw?.name,
+    raw?.display_name,
+    raw?.displayName,
+    rawUser?.full_name,
+    rawUser?.fullName,
+    rawUser?.name,
+    rawUser?.display_name,
+    [firstName, lastName].filter(Boolean).join(' '),
+    fallback?.full_name,
+    fallback?.fullName,
+    fallback?.name,
+    fallback?.display_name,
+  );
+
+  const username = pick(
+    raw?.username,
+    raw?.login,
+    rawUser?.username,
+    rawUser?.login,
+    fallback?.username,
+    fallbackUser?.username,
+  );
+
+  const email = pick(
+    raw?.email,
+    rawUser?.email,
+    fallback?.email,
+    fallbackUser?.email,
+  );
+
+  const name = pick(fullName, username, email.split('@')[0], 'User');
 
   return {
-    id: raw?.id ?? raw?.user_id ?? fallback?.id ?? null,
+    id: raw?.id ?? raw?.user_id ?? rawUser?.id ?? fallback?.id ?? fallbackUser?.id ?? null,
     username: username || name,
     name,
-    email: raw?.email || fallback?.email || '',
+    email,
   };
 }
 
 function readStoredRoles() {
   try {
-    const raw = sessionStorage.getItem('enterprise_crm_roles') || localStorage.getItem('enterprise_crm_roles');
+    const raw = sessionStorage.getItem('enterprise_crm_roles');
     if (!raw) return [];
     const parsed = JSON.parse(raw);
     if (Array.isArray(parsed)) return parsed;
@@ -198,7 +274,12 @@ function persistPermissions(rawPermissions = []) {
   const permissions = normalizePermissions(rawPermissions);
   const serialized = JSON.stringify(permissions);
   sessionStorage.setItem('enterprise_crm_permissions', serialized);
-  localStorage.setItem('enterprise_crm_permissions', serialized);
+  localStorage.removeItem('enterprise_crm_permissions');
+}
+
+function normalizeList(response) {
+  if (Array.isArray(response)) return response;
+  return Array.isArray(response?.results) ? response.results : [];
 }
 
 function App() {
@@ -206,17 +287,133 @@ function App() {
   const [route, setRoute] = useState(parseHash());
   const [user, setUser] = useState(null);
   const [wsConnected, setWsConnectedState] = useState(false);
+  const [wsReconnecting, setWsReconnectingState] = useState(false);
   const [incomingCalls, setIncomingCalls] = useState([]);
   const [currentIncomingCall, setCurrentIncomingCall] = useState(null);
   const [chatWsConnected, setChatWsConnectedState] = useState(false);
   const [unreadCount, setUnreadCount] = useState(0);
+  const [activeIntegrations, setActiveIntegrations] = useState([]);
   const [locale, setLocaleState] = useState('ru');
   const [localeInitialized, setLocaleInitialized] = useState(false);
   const [dialerVisible, setDialerVisible] = useState(false);
+  const telephonyModulesRef = useRef({
+    loaded: false,
+    sipClient: null,
+    loadTelephonyRuntimeConfig: null,
+    callsWebSocket: null,
+    chatWebSocket: null,
+  });
+
+  const ensureTelephonyModules = async () => {
+    if (telephonyModulesRef.current.loaded) {
+      return telephonyModulesRef.current;
+    }
+    const [
+      { default: sipClient },
+      { loadTelephonyRuntimeConfig },
+      { default: callsWebSocket },
+      { default: chatWebSocket },
+    ] = await Promise.all([
+      import('./lib/telephony/SIPClient.js'),
+      import('./lib/telephony/runtimeConfig.js'),
+      import('./lib/websocket/CallsWebSocket.js'),
+      import('./lib/websocket/ChatWebSocket.js'),
+    ]);
+    telephonyModulesRef.current = {
+      loaded: true,
+      sipClient,
+      loadTelephonyRuntimeConfig,
+      callsWebSocket,
+      chatWebSocket,
+    };
+    return telephonyModulesRef.current;
+  };
+
+  const disconnectTelephony = () => {
+    const runtime = telephonyModulesRef.current;
+    runtime.callsWebSocket?.disconnect?.();
+    runtime.chatWebSocket?.disconnect?.();
+    runtime.sipClient?.stop?.();
+  };
+
+  const loadActiveIntegrations = async () => {
+    const [
+      smsResult,
+      telephonyResult,
+      whatsappResult,
+      facebookResult,
+      instagramResult,
+      telegramResult,
+      aiResult,
+    ] = await Promise.allSettled([
+      smsApi.providers(),
+      getVoIPConnections({ page_size: 100 }),
+      getWhatsAppAccounts({ page_size: 100 }),
+      getFacebookPages({ page_size: 100 }),
+      getInstagramAccounts({ page_size: 100 }),
+      getTelegramBots({ page_size: 100 }),
+      getAIProviders({ page_size: 100 }),
+    ]);
+
+    const next = [];
+
+    if (smsResult.status === 'fulfilled') {
+      const items = normalizeList(smsResult.value);
+      if (items.some((item) => item?.configured === true)) {
+        next.push({ key: 'sms', status: 'success' });
+      }
+    }
+
+    if (telephonyResult.status === 'fulfilled') {
+      const items = normalizeList(telephonyResult.value);
+      if (items.some((item) => item?.active === true || item?.is_active === true)) {
+        next.push({ key: 'telephony', status: 'success' });
+      }
+    }
+
+    if (whatsappResult.status === 'fulfilled') {
+      const items = normalizeList(whatsappResult.value);
+      if (items.some((item) => item?.is_active === true)) {
+        next.push({ key: 'whatsapp', status: 'success' });
+      }
+    }
+
+    if (facebookResult.status === 'fulfilled') {
+      const items = normalizeList(facebookResult.value);
+      if (items.some((item) => item?.is_active === true)) {
+        next.push({ key: 'facebook', status: 'success' });
+      }
+    }
+
+    if (instagramResult.status === 'fulfilled') {
+      const items = normalizeList(instagramResult.value);
+      if (items.some((item) => item?.is_active === true)) {
+        next.push({ key: 'instagram', status: 'success' });
+      }
+    }
+
+    if (telegramResult.status === 'fulfilled') {
+      const items = normalizeList(telegramResult.value);
+      if (items.some((item) => item?.is_active === true)) {
+        next.push({ key: 'telegram', status: 'success' });
+      }
+    }
+
+    if (aiResult.status === 'fulfilled') {
+      const items = normalizeList(aiResult.value);
+      if (items.some((item) => item?.is_active === true)) {
+        next.push({ key: 'ai', status: 'success' });
+      }
+    }
+
+    setActiveIntegrations(next);
+  };
 
   useEffect(() => {
     // Initialize locale on mount
-    const savedLocale = normalizeLocale(localStorage.getItem('enterprise_crm_locale') || 'ru');
+    const persistedLocaleRaw = localStorage.getItem('enterprise_crm_locale') || localStorage.getItem('locale');
+    const hasPersistedLocale = Boolean(persistedLocaleRaw);
+    const savedLocale = normalizeLocale(persistedLocaleRaw || 'ru');
     handleLocaleChange(savedLocale).finally(() => setLocaleInitialized(true));
 
     // Check auth on mount
@@ -231,6 +428,11 @@ function App() {
       (async () => {
         try {
           const me = await getProfile();
+          const profileLocale = getProfileLocale(me);
+          // Preserve explicit local user choice across page reloads.
+          if (!hasPersistedLocale && profileLocale) {
+            await handleLocaleChange(profileLocale);
+          }
           const roles = mergeRoles(
             readStoredRoles(),
             rolesFromProfile(me),
@@ -239,13 +441,10 @@ function App() {
           if (roles.length > 0) {
             const serializedRoles = JSON.stringify(roles);
             sessionStorage.setItem('enterprise_crm_roles', serializedRoles);
-            localStorage.setItem('enterprise_crm_roles', serializedRoles);
+            localStorage.removeItem('enterprise_crm_roles');
           }
           persistPermissions(me?.permissions || []);
           setUser((prev) => normalizeUser(me || {}, prev || tokenUser));
-          // Keep UI language stable from local preference/default.
-          // Profile language can differ and currently cause mixed UI on pages
-          // that still contain hardcoded RU labels.
         } catch (e) {
           console.warn('Failed to preload user profile/roles:', e);
         }
@@ -253,9 +452,19 @@ function App() {
 
       // Initialize WebSocket connections if we have a token
       if (token) {
-        initializeWebSocket(token);
-        initializeChatWebSocket(token);
-        initializeSipClient();
+        (async () => {
+          try {
+            const runtime = await ensureTelephonyModules();
+            initializeWebSocket(runtime.callsWebSocket, token);
+            initializeChatWebSocket(runtime.chatWebSocket, token);
+            initializeSipClient(runtime.sipClient, runtime.loadTelephonyRuntimeConfig);
+          } catch (error) {
+            console.error('[App] Failed to initialize telephony runtime:', error);
+          }
+        })();
+        loadActiveIntegrations().catch((error) => {
+          console.warn('Failed to load active integrations:', error);
+        });
       }
     } else {
       // Not authenticated, redirect to login if not already there
@@ -288,6 +497,7 @@ function App() {
     // Subscribe to store changes for incoming calls and chats
     const unsubscribeStore = subscribe((state) => {
       setWsConnectedState(state.telephony.wsConnected);
+      setWsReconnectingState(state.telephony.wsReconnecting);
       setIncomingCalls(state.telephony.incomingCalls);
       setChatWsConnectedState(state.chat.chatWsConnected);
       setUnreadCount(state.chat.unreadCount);
@@ -301,9 +511,43 @@ function App() {
     return () => {
       unsubscribeRoute();
       unsubscribeStore();
-      callsWebSocket.disconnect();
-      chatWebSocket.disconnect();
-      sipClient.stop();
+      disconnectTelephony();
+    };
+  }, []);
+
+  useEffect(() => {
+    if (!isAuthenticated()) return undefined;
+
+    const intervalId = window.setInterval(() => {
+      loadActiveIntegrations().catch((error) => {
+        console.warn('Failed to refresh active integrations:', error);
+      });
+    }, 60000);
+
+    return () => window.clearInterval(intervalId);
+  }, []);
+
+  useEffect(() => {
+    const syncLocaleState = (raw) => {
+      setLocaleState(normalizeLocale(raw));
+    };
+
+    const onLocaleChanged = (event) => {
+      syncLocaleState(event?.detail);
+    };
+
+    const onStorage = (event) => {
+      if (event.key === 'enterprise_crm_locale' || event.key === 'locale') {
+        syncLocaleState(event.newValue);
+      }
+    };
+
+    window.addEventListener('enterprise_crm:locale-change', onLocaleChanged);
+    window.addEventListener('storage', onStorage);
+
+    return () => {
+      window.removeEventListener('enterprise_crm:locale-change', onLocaleChanged);
+      window.removeEventListener('storage', onStorage);
     };
   }, []);
 
@@ -316,7 +560,7 @@ function App() {
     }
   }, [route.name]);
 
-  const initializeSipClient = async () => {
+  const initializeSipClient = async (sipClient, loadTelephonyRuntimeConfig) => {
     try {
       const runtime = await loadTelephonyRuntimeConfig().catch(() => null);
       const sip = runtime?.sipConfig;
@@ -344,7 +588,7 @@ function App() {
     }
   };
 
-  const initializeWebSocket = (token) => {
+  const initializeWebSocket = (callsWebSocket, token) => {
     // Setup event listeners
     callsWebSocket.on('connected', () => {
       console.log('[App] WebSocket connected');
@@ -375,7 +619,7 @@ function App() {
     callsWebSocket.connect(token);
   };
 
-  const initializeChatWebSocket = (token) => {
+  const initializeChatWebSocket = (chatWebSocket, token) => {
     // Setup event listeners
     chatWebSocket.on('connected', () => {
       console.log('[App] Chat WebSocket connected');
@@ -401,6 +645,7 @@ function App() {
     await setLocale(nextLocale);
     setLocaleState(nextLocale);
     localStorage.setItem('enterprise_crm_locale', nextLocale);
+    localStorage.setItem('locale', nextLocale);
     window.dispatchEvent(new CustomEvent('enterprise_crm:locale-change', { detail: nextLocale }));
   };
 
@@ -410,10 +655,9 @@ function App() {
     localStorage.removeItem('enterprise_crm_roles');
     sessionStorage.removeItem('enterprise_crm_permissions');
     localStorage.removeItem('enterprise_crm_permissions');
-    callsWebSocket.disconnect();
-    chatWebSocket.disconnect();
-    sipClient.stop();
+    disconnectTelephony();
     setUser(null);
+    setActiveIntegrations([]);
     navigate('/login');
   };
 
@@ -509,18 +753,30 @@ function App() {
   const renderContent = () => {
     if (route.name === 'forbidden') {
       return (
-        <div style={{ padding: 24 }}>
-          <h2>Access denied</h2>
-          <p>You do not have permission to view this page.</p>
-        </div>
+        <Result
+          status="403"
+          title="Access denied"
+          subTitle="You do not have permission to view this page."
+          extra={
+            <Button type="primary" onClick={() => navigate('/dashboard')}>
+              Back to Dashboard
+            </Button>
+          }
+        />
       );
     }
     if (route.name === 'not-found') {
       return (
-        <div style={{ padding: 24 }}>
-          <h2>Page not found</h2>
-          <p>The page you are looking for does not exist.</p>
-        </div>
+        <Result
+          status="404"
+          title="Page not found"
+          subTitle="The page you are looking for does not exist."
+          extra={
+            <Button type="primary" onClick={() => navigate('/dashboard')}>
+              Go to Dashboard
+            </Button>
+          }
+        />
       );
     }
     if (!PUBLIC_ROUTE_NAMES.has(route.name) && !canAccessRoute(route.name)) {
@@ -670,13 +926,23 @@ function App() {
   // Show login page without layout when protected route is opened by anonymous user.
   if ((!isAuthenticated() && !isPublicRoute) || route.name === 'login') {
     return (
-      <LoginPage
-        onLogin={(userData) => {
-          setUser(userData);
-          // After successful login, navigate to dashboard
-          navigate('/dashboard');
-        }}
-      />
+      <Suspense
+        fallback={
+          <div style={{ padding: 64, display: 'flex', justifyContent: 'center' }}>
+            <div style={{ width: '100%', maxWidth: 420 }}>
+              <Skeleton active paragraph={{ rows: 6 }} />
+            </div>
+          </div>
+        }
+      >
+        <LoginPage
+          onLogin={(userData) => {
+            setUser(userData);
+            // After successful login, navigate to dashboard
+            navigate('/dashboard');
+          }}
+        />
+      </Suspense>
     );
   }
 
@@ -707,6 +973,8 @@ function App() {
       allowedNavKeys={allowedNavKeys}
       user={user}
       wsConnected={wsConnected}
+      wsReconnecting={wsReconnecting}
+      activeIntegrations={activeIntegrations}
       incomingCallsCount={incomingCalls.length}
       unreadCount={unreadCount}
       onOpenDialer={() => setDialerVisible(true)}
@@ -724,18 +992,20 @@ function App() {
         {renderContent()}
       </Suspense>
 
-      <IncomingCallModal
-        visible={!!currentIncomingCall}
-        callData={currentIncomingCall}
-        onAnswer={handleAnswerCall}
-        onReject={handleRejectCall}
-        onDismiss={handleDismissIncomingCall}
-      />
+      <Suspense fallback={null}>
+        <IncomingCallModal
+          visible={!!currentIncomingCall}
+          callData={currentIncomingCall}
+          onAnswer={handleAnswerCall}
+          onReject={handleRejectCall}
+          onDismiss={handleDismissIncomingCall}
+        />
 
-      <TelephonyDialerModal
-        visible={dialerVisible}
-        onClose={() => setDialerVisible(false)}
-      />
+        <TelephonyDialerModal
+          visible={dialerVisible}
+          onClose={() => setDialerVisible(false)}
+        />
+      </Suspense>
     </AppLayout>
   );
 }
@@ -743,14 +1013,14 @@ function App() {
 // Wrapper component that provides theme to App
 function AppWithTheme() {
   const { theme } = useTheme();
-  const [locale, setLocale] = useState(() => normalizeLocale(localStorage.getItem('enterprise_crm_locale') || 'ru'));
+  const [activeLocale, setActiveLocale] = useState(() => normalizeLocale(localStorage.getItem('enterprise_crm_locale') || 'ru'));
   useEffect(() => {
     const onLocaleChanged = (event) => {
-      setLocale(normalizeLocale(event?.detail));
+      setActiveLocale(normalizeLocale(event?.detail));
     };
     const onStorage = (event) => {
       if (event.key === 'enterprise_crm_locale') {
-        setLocale(normalizeLocale(event.newValue));
+        setActiveLocale(normalizeLocale(event.newValue));
       }
     };
     window.addEventListener('enterprise_crm:locale-change', onLocaleChanged);
@@ -760,8 +1030,20 @@ function AppWithTheme() {
       window.removeEventListener('storage', onStorage);
     };
   }, []);
-  // Keep AntD locale in Russian to avoid mixed-language UI on legacy pages.
-  const antdLocale = ruRU;
+
+  useEffect(() => {
+    // Keep i18n locale and persisted keys in sync with the visible locale switcher.
+    setLocale(activeLocale);
+    localStorage.setItem('enterprise_crm_locale', activeLocale);
+    localStorage.setItem('locale', activeLocale);
+  }, [activeLocale]);
+
+  useEffect(() => {
+    applyLegacyContentLocalization(activeLocale);
+  }, [activeLocale]);
+
+  const antdLocale = activeLocale === 'en' ? enUS : activeLocale === 'uz' ? uzUZ : ruRU;
+  const emptyDescription = activeLocale === 'en' ? 'No data' : activeLocale === 'uz' ? "Ma'lumot yo'q" : 'Нет данных';
 
   // Ant Design theme configuration
   const themeConfig = {
@@ -772,6 +1054,7 @@ function AppWithTheme() {
       colorSuccess: theme === 'dark' ? '#4ade80' : '#16a34a', // green-400 : green-600
       colorWarning: theme === 'dark' ? '#fbbf24' : '#d97706', // amber-400 : amber-600
       colorError: theme === 'dark' ? '#f87171' : '#dc2626',   // red-400 : red-600
+      zIndexPopupBase: 1200, // Keep dropdowns/selects above sticky header (z-index: 1100)
       borderRadius: 6,
       colorBgContainer: theme === 'dark' ? '#161b22' : '#ffffff', // softer dark container
       colorBgElevated: theme === 'dark' ? '#1e232e' : '#ffffff', // elevated dark
@@ -880,7 +1163,7 @@ function AppWithTheme() {
     <ConfigProvider
       theme={themeConfig}
       locale={antdLocale}
-      renderEmpty={() => <Empty description="Нет данных" />}
+      renderEmpty={() => <Empty description={emptyDescription} />}
     >
       <AntApp>
         <App />

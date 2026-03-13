@@ -14,11 +14,28 @@ interface FiltersProps {
   loading?: boolean;
 }
 
+const normalizeOptionValue = (value: unknown, options: Array<{ value: unknown }>) => {
+  const matched = options.find((option) => String(option.value) === String(value));
+  return matched ? matched.value : value;
+};
+
 export const ContactsTableFilters: React.FC<FiltersProps> = ({ filters, onFilterChange, loading }) => {
   const [search, setSearch] = useState(String(filters?.search || ''));
   const debouncedSearch = useDebounce(search, 400);
   const lastSearchRef = React.useRef('');
   const { data: companies } = useCompanies({ page: 1, pageSize: 1000 });
+  const companyOptions = React.useMemo(
+    () =>
+      (companies?.results || []).map((company: any) => ({
+        value: company.id,
+        label: company.full_name || company.name,
+      })),
+    [companies],
+  );
+  const normalizedCompanyValue = React.useMemo(
+    () => normalizeOptionValue(filters?.company, companyOptions),
+    [filters?.company, companyOptions],
+  );
 
   useEffect(() => {
     setSearch(String(filters?.search || ''));
@@ -48,15 +65,12 @@ export const ContactsTableFilters: React.FC<FiltersProps> = ({ filters, onFilter
           placeholder="Компания"
           allowClear
           showSearch
-          optionFilterProp="children"
+          optionFilterProp="label"
           onChange={(val) => onFilterChange({ company: val })}
-          value={(filters?.company as any) ?? undefined}
+          value={(normalizedCompanyValue as any) ?? undefined}
           loading={loading}
-        >
-          {companies?.results?.map((c: any) => (
-            <Select.Option key={c.id} value={c.id}>{c.full_name || c.name}</Select.Option>
-          ))}
-        </Select>
+          options={companyOptions}
+        />
       </Col>
       <Col xs={24} sm={12} lg={6}>
         <UserSelect

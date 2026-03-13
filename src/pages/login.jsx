@@ -1,6 +1,8 @@
 import { App, Button, Card, Form, Input, Space, Typography, theme as antdTheme } from 'antd';
 import { useState } from 'react';
 import brandLogo from '../assets/brand/logo.svg';
+import brandLogoDark from '../assets/brand/logo-dark.svg';
+import { useTheme } from '../lib/hooks/useTheme';
 
 import {
     clearToken,
@@ -10,6 +12,7 @@ import {
     setToken,
 } from '../lib/api/auth';
 import { authApi } from '../lib/api/client';
+import { t } from '../lib/i18n/index.js';
 import { mergeRoles, rolesFromProfile, rolesFromTokenPayload } from '../lib/roles';
 import { navigate } from '../router';
 
@@ -17,7 +20,7 @@ const { Text } = Typography;
 
 function readStoredRoles() {
   try {
-    const raw = sessionStorage.getItem('enterprise_crm_roles') || localStorage.getItem('enterprise_crm_roles');
+    const raw = sessionStorage.getItem('enterprise_crm_roles');
     if (!raw) return [];
     const parsed = JSON.parse(raw);
     if (Array.isArray(parsed)) return parsed;
@@ -43,7 +46,7 @@ function persistPermissions(rawPermissions = []) {
   const permissions = normalizePermissions(rawPermissions);
   const serialized = JSON.stringify(permissions);
   sessionStorage.setItem('enterprise_crm_permissions', serialized);
-  localStorage.setItem('enterprise_crm_permissions', serialized);
+  localStorage.removeItem('enterprise_crm_permissions');
 }
 
 function LoginPage({ onLogin }) {
@@ -51,6 +54,7 @@ function LoginPage({ onLogin }) {
   const [form] = Form.useForm();
   const { message } = App.useApp();
   const { token } = antdTheme.useToken();
+  const { theme } = useTheme();
 
   const onSubmit = async (values) => {
     setLoading(true);
@@ -62,7 +66,7 @@ function LoginPage({ onLogin }) {
 
       if (isTokenTooLarge(response.access)) {
         message.error({
-          content: `Токен слишком большой для Authorization header (> ${MAX_HEADER_SAFE_LENGTH} байт). Включите cookie auth или уменьшите JWT на backend.`,
+          content: t('loginPage.errors.tokenTooLarge', { limit: String(MAX_HEADER_SAFE_LENGTH) }),
           duration: 5,
         });
         clearToken();
@@ -83,7 +87,7 @@ function LoginPage({ onLogin }) {
         if (roles.length > 0) {
           const serializedRoles = JSON.stringify(roles);
           sessionStorage.setItem('enterprise_crm_roles', serializedRoles);
-          localStorage.setItem('enterprise_crm_roles', serializedRoles);
+          localStorage.removeItem('enterprise_crm_roles');
         }
         persistPermissions(me?.permissions || response.all_permissions || response.permissions || []);
       } catch (e) {
@@ -99,11 +103,11 @@ function LoginPage({ onLogin }) {
       };
 
       onLogin(user);
-      message.success('Добро пожаловать!');
+      message.success(t('loginPage.messages.welcome'));
       navigate('/dashboard');
     } catch (error) {
       console.error('Login error:', error);
-      message.error(error?.details?.detail || 'Неверное имя пользователя или пароль');
+      message.error(error?.details?.detail || t('loginPage.errors.invalidCredentials'));
     } finally {
       setLoading(false);
     }
@@ -133,7 +137,7 @@ function LoginPage({ onLogin }) {
         <Space direction="vertical" size="large" style={{ width: '100%' }}>
           <div style={{ textAlign: 'center' }}>
             <img
-              src={brandLogo}
+              src={theme === 'dark' ? brandLogoDark : brandLogo}
               alt="Enterprise CRM"
               style={{
                 width: 'min(280px, 100%)',
@@ -151,23 +155,23 @@ function LoginPage({ onLogin }) {
                 margin: '0 auto',
               }}
             >
-              Введите свои данные для входа в систему
+              {t('loginPage.subtitle')}
             </Text>
           </div>
 
           <Form form={form} name="login" onFinish={onSubmit} layout="vertical" size="large">
             <Form.Item
               name="username"
-              label="Имя пользователя"
-              rules={[{ required: true, message: 'Введите имя пользователя' }]}
+              label={t('loginPage.fields.username.label')}
+              rules={[{ required: true, message: t('loginPage.fields.username.required') }]}
             >
               <Input id="login_username" placeholder="admin" autoComplete="username" />
             </Form.Item>
 
             <Form.Item
               name="password"
-              label="Пароль"
-              rules={[{ required: true, message: 'Введите пароль' }]}
+              label={t('loginPage.fields.password.label')}
+              rules={[{ required: true, message: t('loginPage.fields.password.required') }]}
             >
               <Input.Password
                 id="login_password"
@@ -178,7 +182,7 @@ function LoginPage({ onLogin }) {
 
             <Form.Item style={{ marginBottom: 0, marginTop: 8 }}>
               <Button type="primary" htmlType="submit" loading={loading} block>
-                Войти
+                {t('loginPage.submit')}
               </Button>
             </Form.Item>
           </Form>

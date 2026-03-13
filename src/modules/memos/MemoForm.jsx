@@ -1,21 +1,41 @@
-import React, { useEffect, useState } from 'react';
-import { useForm } from 'react-hook-form';
-import { z } from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
 import dayjs from 'dayjs';
-import { ArrowLeft, Save, FileText } from 'lucide-react';
+import { ArrowLeft, FileText, Save } from 'lucide-react';
+import { useEffect, useState } from 'react';
+import { useForm } from 'react-hook-form';
+import { z } from 'zod';
 
+import { App, Button, Card, Col, DatePicker, Input, Result, Row, Select, Skeleton, Space, Switch, Typography } from 'antd';
+import EntitySelect from '../../components/EntitySelect.jsx';
+import FormPermissionGuard from '../../components/permissions/FormPermissionGuard';
+import ReferenceSelect from '../../components/ReferenceSelect';
+import { getDeal, getDeals, getProject, getProjects, getTask, getTasks, getUser, getUsers } from '../../lib/api';
+import { canWrite } from '../../lib/rbac';
 import { getMemo, createMemo, updateMemo } from '../../lib/api/memos';
 import { navigate } from '../../router';
-import { canWrite } from '../../lib/rbac';
-import FormPermissionGuard from '../../components/permissions/FormPermissionGuard';
 
-import { App, Button, Card, DatePicker, Input, Result, Skeleton, Switch } from 'antd';
-import EntitySelect from '../../components/EntitySelect.jsx';
-import ReferenceSelect from '../../components/ReferenceSelect';
-import { getUsers, getUser, getDeal, getDeals, getProject, getProjects, getTask, getTasks } from '../../lib/api';
+const { Text, Title } = Typography;
 const { TextArea } = Input;
-const Label = ({ children, ...props }) => <label style={{ display: 'block', marginBottom: 6, fontWeight: 500 }} {...props}>{children}</label>;
+
+const FieldLabel = ({ children, ...props }) => (
+  <Text strong style={{ display: 'block', marginBottom: 6 }} {...props}>
+    {children}
+  </Text>
+);
+
+const FieldError = ({ message }) => (
+  message ? (
+    <Text type="danger" style={{ display: 'block', marginTop: 6 }}>
+      {message}
+    </Text>
+  ) : null
+);
+
+const stageOptions = [
+  { value: 'pen', label: 'В ожидании' },
+  { value: 'pos', label: 'Отложено' },
+  { value: 'rev', label: 'Рассмотрено' },
+];
 
 const schema = z.object({
   name: z.string().min(1, 'Введите название'),
@@ -40,6 +60,7 @@ export default function MemoForm({ id }) {
     if (variant === 'destructive') message.error(text);
     else message.success(text);
   };
+
   const [loading, setLoading] = useState(false);
   const [loadError, setLoadError] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -111,12 +132,14 @@ export default function MemoForm({ id }) {
       notify({ title: 'Недостаточно прав', description: 'У вас нет прав для изменения мемо', variant: 'destructive' });
       return;
     }
+
     setSaving(true);
     try {
       const payload = {
         ...values,
         review_date: values.review_date ? values.review_date.format('YYYY-MM-DD') : null,
       };
+
       if (isEdit) {
         await updateMemo(id, payload);
         notify({ title: 'Мемо обновлено', description: 'Мемо обновлено' });
@@ -142,7 +165,10 @@ export default function MemoForm({ id }) {
         status="error"
         title="Не удалось загрузить мемо для редактирования"
         subTitle="Попробуйте повторить загрузку или вернитесь к списку мемо."
-        extra={<Button onClick={fetchData}>Повторить</Button>}
+        extra={[
+          <Button key="retry" onClick={fetchData}>Повторить</Button>,
+          <Button key="list" type="primary" onClick={() => navigate('/memos')}>К списку мемо</Button>,
+        ]}
       />
     );
   }
@@ -154,148 +180,164 @@ export default function MemoForm({ id }) {
       listButtonText="К списку мемо"
       description="У вас нет прав для создания или редактирования мемо."
     >
-      <div>
-        <Button onClick={() => navigate('/memos')}>
-          <ArrowLeft />
+      <Space direction="vertical" size={16} style={{ width: '100%' }}>
+        <Button onClick={() => navigate('/memos')} icon={<ArrowLeft size={16} />}>
           Назад
         </Button>
 
-        <Card>
-          <div>
-            <FileText />
-            <h2>{isEdit ? 'Редактирование мемо' : 'Новое мемо'}</h2>
-          </div>
-
+        <Card
+          title={(
+            <Space>
+              <FileText size={18} />
+              <Title level={4} style={{ margin: 0 }}>
+                {isEdit ? 'Редактирование мемо' : 'Новое мемо'}
+              </Title>
+            </Space>
+          )}
+        >
           <form onSubmit={handleSubmit(onFinish)}>
-            <div>
-              <Label htmlFor="name">Название *</Label>
-              <Input id="name" placeholder="Например: Итоги встречи" {...register('name')} />
-              {errors.name && <p>{errors.name.message}</p>}
-            </div>
-
-            <div>
-              <Label htmlFor="description">Описание</Label>
-              <TextArea id="description" rows={3} placeholder="Краткое описание" {...register('description')} />
-            </div>
-
-            <div>
-              <Label htmlFor="note">Заключение</Label>
-              <TextArea id="note" rows={4} placeholder="Ключевые выводы и договоренности" {...register('note')} />
-            </div>
-
-            <div>
+            <Space direction="vertical" size={16} style={{ width: '100%' }}>
               <div>
-                <Switch checked={!!draftValue} onChange={(val) => setValue('draft', val)} />
-                <Label>Черновик</Label>
+                <FieldLabel htmlFor="name">Название *</FieldLabel>
+                <Input id="name" placeholder="Например: Итоги встречи" {...register('name')} />
+                <FieldError message={errors.name?.message} />
               </div>
-              <div>
-                <Switch checked={!!notifiedValue} onChange={(val) => setValue('notified', val)} />
-                <Label>Уведомить получателей</Label>
-              </div>
-            </div>
 
-            <div>
               <div>
-                <Label>Стадия</Label>
-                <select
-                 
-                  value={stageValue || ''}
-                  onChange={(e) => setValue('stage', e.target.value)}
-                >
-                  <option value="">Выберите стадию</option>
-                  <option value="pen">В ожидании</option>
-                  <option value="pos">Отложено</option>
-                  <option value="rev">Рассмотрено</option>
-                </select>
+                <FieldLabel htmlFor="description">Описание</FieldLabel>
+                <TextArea id="description" rows={3} placeholder="Краткое описание" {...register('description')} />
               </div>
+
               <div>
-                <Label>Дата обзора</Label>
-                <DatePicker value={reviewDate || null} onChange={(val) => setValue('review_date', val)} format="YYYY-MM-DD" />
+                <FieldLabel htmlFor="note">Заключение</FieldLabel>
+                <TextArea id="note" rows={4} placeholder="Ключевые выводы и договоренности" {...register('note')} />
               </div>
-            </div>
 
-            <div>
-              <Label>Получатель *</Label>
-              <EntitySelect
-                placeholder="Выберите пользователя"
-                fetchList={getUsers}
-                fetchById={getUser}
-                allowClear
-                value={toValue}
-                onChange={(val) => setValue('to', val)}
-              />
-              {errors.to && <p>{errors.to.message}</p>}
-            </div>
+              <Row gutter={[16, 16]}>
+                <Col xs={24} md={12}>
+                  <Space align="center">
+                    <Switch checked={!!draftValue} onChange={(val) => setValue('draft', val)} />
+                    <Text>Черновик</Text>
+                  </Space>
+                </Col>
+                <Col xs={24} md={12}>
+                  <Space align="center">
+                    <Switch checked={!!notifiedValue} onChange={(val) => setValue('notified', val)} />
+                    <Text>Уведомить получателей</Text>
+                  </Space>
+                </Col>
+              </Row>
 
-            <div>
+              <Row gutter={[16, 16]}>
+                <Col xs={24} md={12}>
+                  <FieldLabel>Стадия</FieldLabel>
+                  <Select
+                    value={stageValue || undefined}
+                    onChange={(value) => setValue('stage', value ?? '')}
+                    placeholder="Выберите стадию"
+                    allowClear
+                    options={stageOptions}
+                  />
+                </Col>
+                <Col xs={24} md={12}>
+                  <FieldLabel>Дата обзора</FieldLabel>
+                  <DatePicker
+                    value={reviewDate || null}
+                    onChange={(val) => setValue('review_date', val)}
+                    format="YYYY-MM-DD"
+                    style={{ width: '100%' }}
+                  />
+                </Col>
+              </Row>
+
               <div>
-                <Label>Сделка</Label>
+                <FieldLabel>Получатель *</FieldLabel>
                 <EntitySelect
-                  placeholder="Выберите сделку"
-                  fetchList={getDeals}
-                  fetchById={getDeal}
+                  placeholder="Выберите пользователя"
+                  fetchList={getUsers}
+                  fetchById={getUser}
                   allowClear
-                  value={dealValue}
-                  onChange={(val) => setValue('deal', val)}
+                  value={toValue}
+                  onChange={(val) => setValue('to', val)}
+                />
+                <FieldError message={errors.to?.message} />
+              </div>
+
+              <Row gutter={[16, 16]}>
+                <Col xs={24} md={12}>
+                  <FieldLabel>Сделка</FieldLabel>
+                  <EntitySelect
+                    placeholder="Выберите сделку"
+                    fetchList={getDeals}
+                    fetchById={getDeal}
+                    allowClear
+                    value={dealValue}
+                    onChange={(val) => setValue('deal', val)}
+                  />
+                </Col>
+                <Col xs={24} md={12}>
+                  <FieldLabel>Проект</FieldLabel>
+                  <EntitySelect
+                    placeholder="Выберите проект"
+                    fetchList={getProjects}
+                    fetchById={getProject}
+                    allowClear
+                    value={projectValue}
+                    onChange={(val) => setValue('project', val)}
+                  />
+                </Col>
+              </Row>
+
+              <Row gutter={[16, 16]}>
+                <Col xs={24} md={12}>
+                  <FieldLabel>Задача</FieldLabel>
+                  <EntitySelect
+                    placeholder="Выберите задачу"
+                    fetchList={getTasks}
+                    fetchById={getTask}
+                    allowClear
+                    value={taskValue}
+                    onChange={(val) => setValue('task', val)}
+                  />
+                </Col>
+                <Col xs={24} md={12}>
+                  <FieldLabel>Резолюция</FieldLabel>
+                  <ReferenceSelect
+                    type="resolutions"
+                    placeholder="Выберите резолюцию"
+                    allowClear
+                    value={resolutionValue || undefined}
+                    onChange={(val) => setValue('resolution', val ?? '')}
+                  />
+                </Col>
+              </Row>
+
+              <div>
+                <FieldLabel>Теги</FieldLabel>
+                <ReferenceSelect
+                  type="crm-tags"
+                  mode="multiple"
+                  allowClear
+                  placeholder="Выберите теги"
+                  value={tagsValue || []}
+                  onChange={(val) => setValue('tags', val)}
                 />
               </div>
-              <div>
-                <Label>Проект</Label>
-                <EntitySelect
-                  placeholder="Выберите проект"
-                  fetchList={getProjects}
-                  fetchById={getProject}
-                  allowClear
-                  value={projectValue}
-                  onChange={(val) => setValue('project', val)}
-                />
-              </div>
-            </div>
 
-            <div>
-              <div>
-                <Label>Задача</Label>
-                <EntitySelect
-                  placeholder="Выберите задачу"
-                  fetchList={getTasks}
-                  fetchById={getTask}
-                  allowClear
-                  value={taskValue}
-                  onChange={(val) => setValue('task', val)}
-                />
-              </div>
-              <div>
-                <Label>Resolution ID</Label>
-                <Input type="number" min={1} value={resolutionValue || ''} onChange={(e) => setValue('resolution', e.target.value)} />
-              </div>
-            </div>
-
-            <div>
-              <Label>Теги</Label>
-              <ReferenceSelect
-                type="crm-tags"
-                mode="multiple"
-                allowClear
-                placeholder="Выберите теги"
-                value={tagsValue || []}
-                onChange={(val) => setValue('tags', val)}
-              />
-            </div>
-
-            <div>
-              {canManage && (
-                <Button type="submit" loading={saving}>
-                  <Save />
-                  {isEdit ? 'Сохранить' : 'Создать'}
+              <Space size={12}>
+                {canManage && (
+                  <Button type="primary" htmlType="submit" loading={saving} icon={<Save size={16} />}>
+                    {isEdit ? 'Сохранить' : 'Создать'}
+                  </Button>
+                )}
+                <Button htmlType="button" onClick={() => navigate('/memos')}>
+                  Отмена
                 </Button>
-              )}
-              <Button onClick={() => navigate('/memos')}>
-                Отмена
-              </Button>
-            </div>
+              </Space>
+            </Space>
           </form>
         </Card>
-      </div>
+      </Space>
     </FormPermissionGuard>
   );
 }

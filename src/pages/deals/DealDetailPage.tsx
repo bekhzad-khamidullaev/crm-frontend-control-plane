@@ -34,6 +34,7 @@ export const DealDetailPage: React.FC<DealDetailPageProps> = ({ id }) => {
   }
 
   const d = deal as any;
+  const currencyCode = d.currency_code;
 
   return (
     <Space direction="vertical" size={16} style={{ width: '100%' }}>
@@ -55,7 +56,7 @@ export const DealDetailPage: React.FC<DealDetailPageProps> = ({ id }) => {
       </Card>
 
       <Space wrap>
-        <Card size="small" title="Сумма">{formatCurrency(d.amount, d.currency_name || 'RUB')}</Card>
+        <Card size="small" title="Сумма">{currencyCode ? formatCurrency(d.amount, currencyCode) : '-'}</Card>
         <Card size="small" title="Вероятность">{`${d.probability || 0}%`}</Card>
         <Card size="small" title="Следующий шаг">
           {deal.next_step_date ? new Date(deal.next_step_date).toLocaleDateString('ru-RU') : 'Не назначен'}
@@ -72,7 +73,7 @@ export const DealDetailPage: React.FC<DealDetailPageProps> = ({ id }) => {
               children: (
                 <Descriptions bordered column={{ xs: 1, sm: 1, md: 2 }}>
                   <Descriptions.Item label="Название">{d.name}</Descriptions.Item>
-                  <Descriptions.Item label="Сумма">{formatCurrency(d.amount, d.currency_name || 'RUB')}</Descriptions.Item>
+                  <Descriptions.Item label="Сумма">{currencyCode ? formatCurrency(d.amount, currencyCode) : '-'}</Descriptions.Item>
                   <Descriptions.Item label="Стадия"><Badge color="blue" text={d.stage_name} /></Descriptions.Item>
                   <Descriptions.Item label="Вероятность">{d.probability}%</Descriptions.Item>
                   <Descriptions.Item label="Компания">

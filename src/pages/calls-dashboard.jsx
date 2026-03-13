@@ -52,6 +52,7 @@ import {
   CallsDurationChart,
 } from '../components/CallsCharts.jsx';
 import dayjs from 'dayjs';
+import { t } from '../lib/i18n/index.js';
 
 const { Title, Text } = Typography;
 const { RangePicker } = DatePicker;
@@ -121,7 +122,7 @@ function CallsDashboard() {
       processChartData(allCalls);
     } catch (error) {
       console.error('Error loading dashboard data:', error);
-      message.error('Не удалось загрузить данные телефонии');
+      message.error(t('callsDashboardPage.messages.loadError'));
       setStatistics(null);
       setContactCenterKpi(null);
       setContactCenterDrilldown({ teams: [], agents: [] });
@@ -171,12 +172,12 @@ function CallsDashboard() {
   const formatTotalDuration = (seconds) => {
     const hours = Math.floor(seconds / 3600);
     const mins = Math.floor((seconds % 3600) / 60);
-    return `${hours}ч ${mins}м`;
+    return t('callsDashboardPage.duration.hoursMinutes', { hours: String(hours), minutes: String(mins) });
   };
 
   const formatSeconds = (seconds) => {
-    if (!seconds) return '0 c';
-    return `${Math.round(seconds)} c`;
+    if (!seconds) return t('callsDashboardPage.duration.secondsZero');
+    return t('callsDashboardPage.duration.secondsValue', { value: String(Math.round(seconds)) });
   };
 
   const calculateSuccessRate = () => {
@@ -234,35 +235,35 @@ function CallsDashboard() {
 
   const recentCallsColumns = [
     {
-      title: 'Направление',
+      title: t('callsDashboardPage.columns.direction'),
       dataIndex: 'direction',
       key: 'direction',
       width: 120,
       render: (direction) => (
         <Space>
           <PhoneTwoTone twoToneColor={direction === 'inbound' ? '#52c41a' : '#1890ff'} />
-          {direction === 'inbound' ? 'Входящий' : 'Исходящий'}
+          {direction === 'inbound' ? t('callsDashboardPage.direction.inbound') : t('callsDashboardPage.direction.outbound')}
         </Space>
       ),
     },
     {
-      title: 'Номер',
+      title: t('callsDashboardPage.columns.number'),
       dataIndex: 'phone_number',
       key: 'phone_number',
       render: (phone, record) => phone || record.number,
     },
     {
-      title: 'Статус',
+      title: t('callsDashboardPage.columns.status'),
       dataIndex: 'status',
       key: 'status',
       render: (status) => {
         const config = {
-          completed: { color: 'success', text: 'Завершен', icon: <CheckCircleOutlined /> },
-          answered: { color: 'success', text: 'Отвечен', icon: <CheckCircleOutlined /> },
-          missed: { color: 'error', text: 'Пропущен', icon: <CloseCircleOutlined /> },
-          no_answer: { color: 'error', text: 'Нет ответа', icon: <CloseCircleOutlined /> },
-          busy: { color: 'warning', text: 'Занято', icon: <CloseCircleOutlined /> },
-          failed: { color: 'error', text: 'Ошибка', icon: <CloseCircleOutlined /> },
+          completed: { color: 'success', text: t('callsDashboardPage.status.completed'), icon: <CheckCircleOutlined /> },
+          answered: { color: 'success', text: t('callsDashboardPage.status.answered'), icon: <CheckCircleOutlined /> },
+          missed: { color: 'error', text: t('callsDashboardPage.status.missed'), icon: <CloseCircleOutlined /> },
+          no_answer: { color: 'error', text: t('callsDashboardPage.status.noAnswer'), icon: <CloseCircleOutlined /> },
+          busy: { color: 'warning', text: t('callsDashboardPage.status.busy'), icon: <CloseCircleOutlined /> },
+          failed: { color: 'error', text: t('callsDashboardPage.status.failed'), icon: <CloseCircleOutlined /> },
         };
         const style = config[status] || config.completed;
         return (
@@ -273,13 +274,13 @@ function CallsDashboard() {
       },
     },
     {
-      title: 'Время',
+      title: t('callsDashboardPage.columns.time'),
       dataIndex: 'started_at',
       key: 'started_at',
       render: (date, record) => dayjs(date || record.timestamp).format('HH:mm'),
     },
     {
-      title: 'Длительность',
+      title: t('callsDashboardPage.columns.duration'),
       dataIndex: 'duration',
       key: 'duration',
       render: (duration) => formatDuration(duration),
@@ -293,15 +294,15 @@ function CallsDashboard() {
           size="small"
           onClick={() => openQaModal(record)}
         >
-          Оценить
+          {t('callsDashboardPage.columns.rate')}
         </Button>
       ),
     },
   ];
 
   const teamColumns = [
-    { title: 'Команда', dataIndex: 'group_name', key: 'group_name' },
-    { title: 'Всего', dataIndex: 'total_calls', key: 'total_calls', width: 90 },
+    { title: t('callsDashboardPage.columns.team'), dataIndex: 'group_name', key: 'group_name' },
+    { title: t('callsDashboardPage.columns.total'), dataIndex: 'total_calls', key: 'total_calls', width: 90 },
     { title: 'Answer rate', dataIndex: 'answer_rate', key: 'answer_rate', width: 110, render: (v) => `${v}%` },
     { title: 'Abandon rate', dataIndex: 'abandon_rate', key: 'abandon_rate', width: 120, render: (v) => `${v}%` },
     { title: 'AHT', dataIndex: 'aht_seconds', key: 'aht_seconds', width: 100, render: formatSeconds },
@@ -310,9 +311,9 @@ function CallsDashboard() {
   ];
 
   const agentColumns = [
-    { title: 'Агент', dataIndex: 'agent_name', key: 'agent_name' },
+    { title: t('callsDashboardPage.columns.agent'), dataIndex: 'agent_name', key: 'agent_name' },
     { title: 'Ext', dataIndex: 'extension', key: 'extension', width: 100 },
-    { title: 'Всего', dataIndex: 'total_calls', key: 'total_calls', width: 90 },
+    { title: t('callsDashboardPage.columns.total'), dataIndex: 'total_calls', key: 'total_calls', width: 90 },
     { title: 'Answer rate', dataIndex: 'answer_rate', key: 'answer_rate', width: 110, render: (v) => `${v}%` },
     { title: 'Abandon rate', dataIndex: 'abandon_rate', key: 'abandon_rate', width: 120, render: (v) => `${v}%` },
     { title: 'AHT', dataIndex: 'aht_seconds', key: 'aht_seconds', width: 100, render: formatSeconds },
@@ -339,7 +340,7 @@ function CallsDashboard() {
 
   const qaColumns = [
     {
-      title: 'Сессия',
+      title: t('callsDashboardPage.qa.session'),
       dataIndex: 'call_session_id',
       key: 'call_session_id',
       width: 180,
@@ -374,7 +375,7 @@ function CallsDashboard() {
       ),
     },
     {
-      title: 'Дата',
+      title: t('callsDashboardPage.qa.date'),
       dataIndex: 'reviewed_at',
       key: 'reviewed_at',
       width: 160,
@@ -405,7 +406,7 @@ function CallsDashboard() {
     try {
       const values = await qaForm.validateFields();
       if (!selectedQaCall?.id) {
-        message.error('Не выбран звонок для QA');
+        message.error(t('callsDashboardPage.messages.qaCallNotSelected'));
         return;
       }
       setQaSubmitting(true);
@@ -413,13 +414,13 @@ function CallsDashboard() {
         call_log: selectedQaCall.id,
         ...values,
       });
-      message.success('QA оценка сохранена');
+      message.success(t('callsDashboardPage.messages.qaSaved'));
       closeQaModal();
       loadData();
     } catch (error) {
       if (error?.errorFields) return;
       console.error('Failed to save QA score', error);
-      message.error('Не удалось сохранить QA оценку');
+      message.error(t('callsDashboardPage.messages.qaSaveError'));
     } finally {
       setQaSubmitting(false);
     }
@@ -437,11 +438,11 @@ function CallsDashboard() {
         payload.date_to = dateRange[1].format('YYYY-MM-DD');
       }
       await generatePilotWeeklyReport(payload);
-      message.success('Weekly board report сгенерирован');
+      message.success(t('callsDashboardPage.messages.weeklyGenerated'));
       loadData();
     } catch (error) {
       console.error('Failed to generate weekly report', error);
-      message.error('Не удалось сгенерировать weekly report');
+      message.error(t('callsDashboardPage.messages.weeklyGenerateError'));
     } finally {
       setReportGenerating(false);
     }
@@ -463,7 +464,7 @@ function CallsDashboard() {
       window.URL.revokeObjectURL(url);
     } catch (error) {
       console.error('Failed to export weekly report', error);
-      message.error('Не удалось экспортировать weekly report');
+      message.error(t('callsDashboardPage.messages.weeklyExportError'));
     }
   };
 
@@ -475,7 +476,7 @@ function CallsDashboard() {
       loadData();
     } catch (error) {
       console.error('Failed to run automation now', error);
-      message.error('Не удалось запустить automation');
+      message.error(t('callsDashboardPage.messages.automationRunError'));
     } finally {
       setAutomationRunning(false);
     }
@@ -483,7 +484,7 @@ function CallsDashboard() {
 
   const weeklyReportColumns = [
     {
-      title: 'Период',
+      title: t('callsDashboardPage.weekly.period'),
       key: 'period',
       render: (_, record) => `${record.week_start_date} - ${record.week_end_date}`,
     },
@@ -506,14 +507,14 @@ function CallsDashboard() {
       render: (_, record) => `${record?.payload?.delta?.qa_pass_rate ?? 0} pp`,
     },
     {
-      title: 'Создан',
+      title: t('callsDashboardPage.weekly.createdAt'),
       dataIndex: 'created_at',
       key: 'created_at',
       width: 170,
       render: (value) => dayjs(value).format('DD.MM.YYYY HH:mm'),
     },
     {
-      title: 'Экспорт',
+      title: t('callsDashboardPage.weekly.export'),
       key: 'export',
       width: 130,
       render: (_, record) => (
@@ -526,14 +527,14 @@ function CallsDashboard() {
 
   const automationRunColumns = [
     {
-      title: 'Старт',
+      title: t('callsDashboardPage.automation.start'),
       dataIndex: 'started_at',
       key: 'started_at',
       width: 170,
       render: (value) => dayjs(value).format('DD.MM.YYYY HH:mm'),
     },
     {
-      title: 'Статус',
+      title: t('callsDashboardPage.automation.status'),
       dataIndex: 'status',
       key: 'status',
       width: 110,
@@ -563,7 +564,7 @@ function CallsDashboard() {
       render: (_, record) => record?.run_context?.telegram?.sent ?? 0,
     },
     {
-      title: 'Ошибка',
+      title: t('callsDashboardPage.automation.error'),
       dataIndex: 'error_message',
       key: 'error_message',
       ellipsis: true,
@@ -574,7 +575,7 @@ function CallsDashboard() {
   return (
     <div>
       <div style={{ marginBottom: 24, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-        <Title level={2} style={{ margin: 0 }}>Дашборд телефонии</Title>
+        <Title level={2} style={{ margin: 0 }}>{t('callsDashboardPage.title')}</Title>
         <Space>
           <Button type="primary" loading={reportGenerating} onClick={handleGenerateWeeklyReport}>
             Weekly Report
@@ -584,10 +585,10 @@ function CallsDashboard() {
             onChange={handlePeriodChange}
             style={{ width: 150 }}
           >
-            <Option value="today">Сегодня</Option>
-            <Option value="week">Неделя</Option>
-            <Option value="month">Месяц</Option>
-            <Option value="year">Год</Option>
+            <Option value="today">{t('callsDashboardPage.period.today')}</Option>
+            <Option value="week">{t('callsDashboardPage.period.week')}</Option>
+            <Option value="month">{t('callsDashboardPage.period.month')}</Option>
+            <Option value="year">{t('callsDashboardPage.period.year')}</Option>
           </Select>
           <RangePicker
             value={dateRange}
@@ -595,7 +596,7 @@ function CallsDashboard() {
             format="DD.MM.YYYY"
           />
           <Button icon={<ReloadOutlined />} onClick={loadData}>
-            Обновить
+            {t('callsDashboardPage.common.refresh')}
           </Button>
         </Space>
       </div>
@@ -605,7 +606,7 @@ function CallsDashboard() {
         <Col xs={24} sm={12} lg={6}>
           <Card loading={loading}>
             <Statistic
-              title="Всего звонков"
+              title={t('callsDashboardPage.stats.totalCalls')}
               value={statistics?.total || 0}
               prefix={<PhoneOutlined />}
               valueStyle={{ color: '#1890ff' }}
@@ -615,7 +616,7 @@ function CallsDashboard() {
         <Col xs={24} sm={12} lg={6}>
           <Card loading={loading}>
             <Statistic
-              title="Входящие"
+              title={t('callsDashboardPage.stats.inbound')}
               value={statistics?.inbound || 0}
               prefix={<PhoneTwoTone twoToneColor="#52c41a" />}
               valueStyle={{ color: '#52c41a' }}
@@ -625,7 +626,7 @@ function CallsDashboard() {
         <Col xs={24} sm={12} lg={6}>
           <Card loading={loading}>
             <Statistic
-              title="Исходящие"
+              title={t('callsDashboardPage.stats.outbound')}
               value={statistics?.outbound || 0}
               prefix={<PhoneTwoTone twoToneColor="#1890ff" />}
               valueStyle={{ color: '#1890ff' }}
@@ -635,7 +636,7 @@ function CallsDashboard() {
         <Col xs={24} sm={12} lg={6}>
           <Card loading={loading}>
             <Statistic
-              title="Успешность"
+              title={t('callsDashboardPage.stats.successRate')}
               value={calculateSuccessRate()}
               suffix="%"
               prefix={<CheckCircleOutlined />}
@@ -764,7 +765,7 @@ function CallsDashboard() {
         <Col xs={24} sm={12} lg={6}>
           <Card loading={loading}>
             <Statistic
-              title="Завершенные"
+              title={t('callsDashboardPage.stats.completed')}
               value={statistics?.completed ?? statistics?.answered ?? statistics?.connected ?? 0}
               prefix={<CheckCircleOutlined />}
               valueStyle={{ color: '#52c41a' }}
@@ -774,7 +775,7 @@ function CallsDashboard() {
         <Col xs={24} sm={12} lg={6}>
           <Card loading={loading}>
             <Statistic
-              title="Пропущенные"
+              title={t('callsDashboardPage.stats.missed')}
               value={statistics?.missed ?? statistics?.missed_calls ?? statistics?.no_answer ?? 0}
               prefix={<CloseCircleOutlined />}
               valueStyle={{ color: '#ff4d4f' }}
@@ -784,8 +785,8 @@ function CallsDashboard() {
         <Col xs={24} sm={12} lg={6}>
           <Card loading={loading}>
             <Statistic
-              title="Общее время"
-              value={statistics ? formatTotalDuration(statistics.totalDuration || statistics.total_duration || 0) : '0ч 0м'}
+              title={t('callsDashboardPage.stats.totalDuration')}
+              value={statistics ? formatTotalDuration(statistics.totalDuration || statistics.total_duration || 0) : t('callsDashboardPage.duration.hoursMinutes', { hours: '0', minutes: '0' })}
               prefix={<ClockCircleOutlined />}
             />
           </Card>
@@ -793,7 +794,7 @@ function CallsDashboard() {
         <Col xs={24} sm={12} lg={6}>
           <Card loading={loading}>
             <Statistic
-              title="Средняя длительность"
+              title={t('callsDashboardPage.stats.averageDuration')}
               value={statistics ? formatDuration(Math.round(statistics.averageDuration || statistics.average_duration || 0)) : '0:00'}
               prefix={<ClockCircleOutlined />}
             />
@@ -821,7 +822,7 @@ function CallsDashboard() {
       </Row>
 
       {/* Recent Calls */}
-      <Card title="Последние звонки" loading={loading}>
+      <Card title={t('callsDashboardPage.recent.title')} loading={loading}>
         <Table
           dataSource={recentCalls}
           columns={recentCallsColumns}
@@ -830,7 +831,7 @@ function CallsDashboard() {
           locale={{
             emptyText: (
               <Empty
-                description="Нет данных о звонках"
+                description={t('callsDashboardPage.recent.empty')}
                 image={Empty.PRESENTED_IMAGE_SIMPLE}
               />
             ),
@@ -840,7 +841,7 @@ function CallsDashboard() {
 
       <Row gutter={[16, 16]} style={{ marginTop: 24 }}>
         <Col xs={24} lg={12}>
-          <Card title="Drilldown по командам" loading={loading}>
+          <Card title={t('callsDashboardPage.drilldown.teams')} loading={loading}>
             <Table
               dataSource={contactCenterDrilldown?.teams || []}
               columns={teamColumns}
@@ -851,7 +852,7 @@ function CallsDashboard() {
           </Card>
         </Col>
         <Col xs={24} lg={12}>
-          <Card title="Drilldown по агентам" loading={loading}>
+          <Card title={t('callsDashboardPage.drilldown.agents')} loading={loading}>
             <Table
               dataSource={contactCenterDrilldown?.agents || []}
               columns={agentColumns}
@@ -928,41 +929,41 @@ function CallsDashboard() {
       </Row>
 
       <Modal
-        title={`QA оценка звонка ${selectedQaCall?.session_id || ''}`}
+        title={`${t('callsDashboardPage.qa.modalTitle')} ${selectedQaCall?.session_id || ''}`}
         open={qaModalVisible}
         forceRender
         onOk={handleSubmitQa}
         onCancel={closeQaModal}
         confirmLoading={qaSubmitting}
-        okText="Сохранить"
-        cancelText="Отмена"
+        okText={t('callsDashboardPage.qa.save')}
+        cancelText={t('callsDashboardPage.qa.cancel')}
       >
         <Form layout="vertical" form={qaForm}>
           <Form.Item
             name="script_adherence_score"
             label="Script Adherence (0-100)"
-            rules={[{ required: true, message: 'Укажите оценку скрипта' }]}
+            rules={[{ required: true, message: t('callsDashboardPage.qa.validation.script') }]}
           >
             <InputNumber min={0} max={100} style={{ width: '100%' }} />
           </Form.Item>
           <Form.Item
             name="communication_score"
             label="Communication (0-100)"
-            rules={[{ required: true, message: 'Укажите оценку коммуникации' }]}
+            rules={[{ required: true, message: t('callsDashboardPage.qa.validation.communication') }]}
           >
             <InputNumber min={0} max={100} style={{ width: '100%' }} />
           </Form.Item>
           <Form.Item
             name="resolution_quality_score"
             label="Resolution Quality (0-100)"
-            rules={[{ required: true, message: 'Укажите оценку результата' }]}
+            rules={[{ required: true, message: t('callsDashboardPage.qa.validation.result') }]}
           >
             <InputNumber min={0} max={100} style={{ width: '100%' }} />
           </Form.Item>
           <Form.Item
             name="outcome_tag"
             label="Outcome"
-            rules={[{ required: true, message: 'Выберите outcome' }]}
+            rules={[{ required: true, message: t('callsDashboardPage.qa.validation.outcome') }]}
           >
             <Select
               options={Object.entries(outcomeLabelMap).map(([value, label]) => ({ value, label }))}

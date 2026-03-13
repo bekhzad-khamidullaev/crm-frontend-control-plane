@@ -29,7 +29,7 @@ export function isTokenTooLarge(token) {
  * Set authentication token
  * @param {string} token - Authentication token (can be Token or JWT)
  * @param {object} options - Options (for backward compatibility)
- * @param {boolean} options.persist - Whether to save to localStorage
+ * @param {boolean} options.persist - Whether to save to sessionStorage
  */
 export function setToken(token, refreshToken = null, { persist = true } = {}) {
   // Support both Token Auth and JWT
@@ -39,15 +39,15 @@ export function setToken(token, refreshToken = null, { persist = true } = {}) {
   if (persist) {
     try {
       if (_accessToken) {
-        localStorage.setItem(ACCESS_KEY, _accessToken);
+        sessionStorage.setItem(ACCESS_KEY, _accessToken);
       } else {
-        localStorage.removeItem(ACCESS_KEY);
+        sessionStorage.removeItem(ACCESS_KEY);
       }
       
       if (_refreshToken) {
-        localStorage.setItem(REFRESH_KEY, _refreshToken);
+        sessionStorage.setItem(REFRESH_KEY, _refreshToken);
       } else {
-        localStorage.removeItem(REFRESH_KEY);
+        sessionStorage.removeItem(REFRESH_KEY);
       }
     } catch { /* ignore */ }
   }
@@ -61,9 +61,17 @@ export function getToken() {
   if (_accessToken) return _accessToken;
   
   try {
-    const saved = localStorage.getItem(ACCESS_KEY);
+    const saved = sessionStorage.getItem(ACCESS_KEY);
     if (saved) { 
       _accessToken = normalizeToken(saved);
+      return _accessToken;
+    }
+    // Migrate old persistent tokens to session storage and erase long-lived copy.
+    const legacy = localStorage.getItem(ACCESS_KEY);
+    if (legacy) {
+      _accessToken = normalizeToken(legacy);
+      sessionStorage.setItem(ACCESS_KEY, _accessToken);
+      localStorage.removeItem(ACCESS_KEY);
       return _accessToken;
     }
   } catch { /* ignore */ }
@@ -79,9 +87,16 @@ export function getRefreshToken() {
   if (_refreshToken) return _refreshToken;
   
   try {
-    const saved = localStorage.getItem(REFRESH_KEY);
+    const saved = sessionStorage.getItem(REFRESH_KEY);
     if (saved) { 
       _refreshToken = normalizeToken(saved);
+      return _refreshToken;
+    }
+    const legacy = localStorage.getItem(REFRESH_KEY);
+    if (legacy) {
+      _refreshToken = normalizeToken(legacy);
+      sessionStorage.setItem(REFRESH_KEY, _refreshToken);
+      localStorage.removeItem(REFRESH_KEY);
       return _refreshToken;
     }
   } catch { /* ignore */ }
@@ -97,6 +112,8 @@ export function clearToken() {
   _refreshToken = null;
   
   try {
+    sessionStorage.removeItem(ACCESS_KEY);
+    sessionStorage.removeItem(REFRESH_KEY);
     localStorage.removeItem(ACCESS_KEY);
     localStorage.removeItem(REFRESH_KEY);
     localStorage.removeItem('authToken'); // legacy

@@ -42,6 +42,13 @@ interface LeadFormProps {
   id?: number;
 }
 
+const normalizeSexValue = (value: unknown) => {
+  if (typeof value !== 'string') return value;
+  const normalized = value.trim().toUpperCase();
+  if (normalized === 'M' || normalized === 'F' || normalized === 'O') return normalized;
+  return value;
+};
+
 export const LeadForm: React.FC<LeadFormProps> = ({ id }) => {
   const [form] = Form.useForm();
   const { message } = App.useApp();
@@ -57,6 +64,7 @@ export const LeadForm: React.FC<LeadFormProps> = ({ id }) => {
     if (lead) {
       form.setFieldsValue({
         ...lead,
+        sex: normalizeSexValue(lead.sex),
         birth_date: lead.birth_date ? dayjs(lead.birth_date) : null,
         was_in_touch: lead.was_in_touch ? dayjs(lead.was_in_touch) : null,
       });
@@ -67,6 +75,7 @@ export const LeadForm: React.FC<LeadFormProps> = ({ id }) => {
     try {
       const payload: any = {
         ...values,
+        sex: normalizeSexValue(values.sex),
         birth_date: values.birth_date ? values.birth_date.format('YYYY-MM-DD') : null,
         was_in_touch: values.was_in_touch ? values.was_in_touch.format('YYYY-MM-DD') : null,
       };

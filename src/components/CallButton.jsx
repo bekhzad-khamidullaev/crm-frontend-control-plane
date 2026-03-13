@@ -1,11 +1,12 @@
 import { CheckCircleOutlined, ClockCircleOutlined, PhoneOutlined } from '@ant-design/icons';
-import { App, Button, Modal, Space, Typography } from 'antd';
+import { App, Button, Descriptions, Divider, Modal, Space, Tag, Typography } from 'antd';
 import { useEffect, useRef, useState } from 'react';
 import { initiateCall } from '../lib/api/telephony.js';
-import { getProfile } from '../lib/api/user.js';
 import { addCallToHistory, clearActiveCall, setActiveCall } from '../lib/store/index.js';
+import { navigate } from '../router.js';
 import sipClient from '../lib/telephony/SIPClient.js';
 import { loadTelephonyRuntimeConfig } from '../lib/telephony/runtimeConfig.js';
+import { DEFAULT_TELEPHONY_ROUTE_MODE } from '../lib/telephony/constants.js';
 import { TELEPHONY_MODAL_PROPS } from '../shared/ui/telephonyModal.js';
 
 const { Text, Title } = Typography;
@@ -15,6 +16,7 @@ function CallButton({ phone, name, entityType, entityId, size = 'middle', type =
   const [modalVisible, setModalVisible] = useState(false);
   const [callStatus, setCallStatus] = useState('idle'); // idle, calling, connected, completed
   const [callDuration, setCallDuration] = useState(0);
+  const [connectedCallData, setConnectedCallData] = useState(null);
   const audioRef = useRef(null);
   const timerRef = useRef(null);
   const currentCallTokenRef = useRef(null);
@@ -62,13 +64,13 @@ function CallButton({ phone, name, entityType, entityId, size = 'middle', type =
     return false;
   };
 
-  const startServerOriginateCall = async (profile) => {
+  const startServerOriginateCall = async (runtime) => {
     if (fallbackAttemptedRef.current) return false;
     fallbackAttemptedRef.current = true;
 
-    const fromNumber = String(profile?.pbx_number || '').trim();
+    const fromNumber = String(runtime?.profile?.pbx_number || '').trim();
     const toNumber = normalizePhone(phone).replace(/^\+/, '');
-    const provider = normalizeProvider(profile?.telephony_provider);
+    const provider = normalizeProvider(runtime?.sipConfig?.provider);
     if (!toNumber) return false;
 
     await initiateCall({
@@ -105,6 +107,8 @@ function CallButton({ phone, name, entityType, entityId, size = 'middle', type =
     const handleCallAnswered = (callData) => {
       if (!isOwnCall(callData)) return;
       console.log('[CallButton] Call answered:', callData);
+      setConnectedCallData(callData || null);
+      setModalVisible(true);
       setCallStatus('connected');
       startTimer();
     };
@@ -121,9 +125,9 @@ function CallButton({ phone, name, entityType, entityId, size = 'middle', type =
       if (failed) {
         const isNotFound = /not found/i.test(String(reason));
         if (isNotFound) {
-          const profile = await getProfile().catch(() => null);
+          const runtime = await loadTelephonyRuntimeConfig().catch(() => null);
           try {
-            const started = await startServerOriginateCall(profile);
+            const started = await startServerOriginateCall(runtime);
             if (started) return;
           } catch (fallbackError) {
             console.error('[CallButton] Fallback originate failed after SIP Not Found:', fallbackError);
@@ -162,6 +166,7 @@ function CallButton({ phone, name, entityType, entityId, size = 'middle', type =
     fallbackAttemptedRef.current = false;
     setModalVisible(true);
     setCallStatus('idle');
+    setConnectedCallData(null);
   };
 
   const ensureSipReady = async () => {
@@ -200,10 +205,10 @@ function CallButton({ phone, name, entityType, entityId, size = 'middle', type =
     if (mode === 'browser') {
       // Route call based on user's telephony settings.
       try {
-        const profile = await getProfile().catch(() => null);
-        const routeMode = String(profile?.telephony_route_mode || 'auto').toLowerCase();
+        const runtime = await loadTelephonyRuntimeConfig().catch(() => null);
+        const routeMode = String(runtime?.sipConfig?.routeMode || DEFAULT_TELEPHONY_ROUTE_MODE).toLowerCase();
         if (routeMode === 'provider' || routeMode === 'asterisk') {
-          const started = await startServerOriginateCall(profile);
+          const started = await startServerOriginateCall(runtime);
           if (!started) throw new Error('Не удалось отправить звонок через сервер');
           return;
         }
@@ -242,9 +247,9 @@ function CallButton({ phone, name, entityType, entityId, size = 'middle', type =
         console.error('[CallButton] Error starting call:', error);
         const reason = String(error?.message || '').trim();
         if (/not found/i.test(reason)) {
-          const profile = await getProfile().catch(() => null);
+          const runtime = await loadTelephonyRuntimeConfig().catch(() => null);
           try {
-            const started = await startServerOriginateCall(profile);
+            const started = await startServerOriginateCall(runtime);
             if (started) return;
           } catch (fallbackError) {
             console.error('[CallButton] Fallback originate failed:', fallbackError);
@@ -308,6 +313,7 @@ function CallButton({ phone, name, entityType, entityId, size = 'middle', type =
     setModalVisible(false);
     setCallStatus('idle');
     setCallDuration(0);
+    setConnectedCallData(null);
     currentCallTokenRef.current = null;
     fallbackAttemptedRef.current = false;
   };
@@ -319,6 +325,25 @@ function CallButton({ phone, name, entityType, entityId, size = 'middle', type =
   };
 
   const renderModalContent = () => {
+    const entityTypeLabel = entityType === 'lead'
+      ? 'Лид'
+      : entityType === 'company'
+        ? 'Компания'
+        : entityType === 'contact'
+          ? 'Контакт'
+          : 'Клиент';
+    const callDirectionLabel = connectedCallData?.direction === 'outbound' ? 'Исходящий' : 'Входящий';
+
+    const handleOpenEntityCard = () => {
+      if (!entityType || !entityId) return;
+      const path = entityType === 'lead'
+        ? `/leads/${entityId}`
+        : entityType === 'company'
+          ? `/companies/${entityId}`
+          : `/contacts/${entityId}`;
+      navigate(path);
+    };
+
     switch (callStatus) {
       case 'idle':
         return (
@@ -364,9 +389,12 @@ function CallButton({ phone, name, entityType, entityId, size = 'middle', type =
           <Space direction="vertical" size="middle" style={{ width: '100%' }}>
             <div style={{ textAlign: 'center' }}>
               <PhoneOutlined style={{ fontSize: 48, color: '#52c41a' }} />
-              <Title level={4} style={{ marginTop: 8 }}>
+              <Title level={4} style={{ marginTop: 8, marginBottom: 0 }}>
                 {name}
               </Title>
+              <Text style={{ fontSize: 22, fontWeight: 500 }}>
+                {phone}
+              </Text>
               <div style={{
                 fontSize: 32,
                 fontWeight: 'bold',
@@ -377,13 +405,31 @@ function CallButton({ phone, name, entityType, entityId, size = 'middle', type =
               </div>
             </div>
 
+            <Divider style={{ margin: '4px 0' }} />
+
+            <Descriptions bordered size="small" column={1}>
+              <Descriptions.Item label="Статус звонка">
+                <Tag color="green">Разговор</Tag>
+              </Descriptions.Item>
+              <Descriptions.Item label="Направление">{callDirectionLabel}</Descriptions.Item>
+              <Descriptions.Item label="Тип сущности">{entityTypeLabel}</Descriptions.Item>
+              <Descriptions.Item label="ID сущности">{entityId || '-'}</Descriptions.Item>
+              <Descriptions.Item label="Номер">{connectedCallData?.phoneNumber || phone || '-'}</Descriptions.Item>
+            </Descriptions>
+
+            {entityId ? (
+              <Button size="large" block onClick={handleOpenEntityCard}>
+                Открыть карточку клиента
+              </Button>
+            ) : null}
+
             <Button
               type="primary"
               danger
               size="large"
               block
               onClick={endCall}
-              style={{ height: 48 }}
+              style={{ height: 52, fontWeight: 600 }}
             >
               Завершить звонок
             </Button>
@@ -443,7 +489,7 @@ function CallButton({ phone, name, entityType, entityId, size = 'middle', type =
         open={modalVisible}
         onCancel={closeModal}
         footer={null}
-        width={400}
+        width={callStatus === 'connected' ? 760 : 400}
       >
         {renderModalContent()}
         {/* Audio element for WebRTC */}

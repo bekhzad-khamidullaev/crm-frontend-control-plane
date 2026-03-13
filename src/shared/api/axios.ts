@@ -24,7 +24,7 @@ export const apiClient = axios.create({
  */
 apiClient.interceptors.request.use(
   (config: InternalAxiosRequestConfig) => {
-    const token = localStorage.getItem('crm_access_token');
+    const token = sessionStorage.getItem('crm_access_token');
     if (token && config.headers) {
       config.headers.Authorization = `Bearer ${token}`;
     }
@@ -46,7 +46,7 @@ apiClient.interceptors.response.use(
       originalRequest._retry = true;
 
       try {
-        const refreshToken = localStorage.getItem('crm_refresh_token');
+        const refreshToken = sessionStorage.getItem('crm_refresh_token');
         if (!refreshToken) {
           throw new Error('No refresh token available');
         }
@@ -55,7 +55,7 @@ apiClient.interceptors.response.use(
           refresh: refreshToken,
         });
 
-        localStorage.setItem('crm_access_token', data.access);
+        sessionStorage.setItem('crm_access_token', data.access);
         if (originalRequest.headers) {
           originalRequest.headers.Authorization = `Bearer ${data.access}`;
         }
@@ -63,8 +63,8 @@ apiClient.interceptors.response.use(
         return apiClient(originalRequest);
       } catch (refreshError) {
         // Refresh failed - logout user
-        localStorage.removeItem('crm_access_token');
-        localStorage.removeItem('crm_refresh_token');
+        sessionStorage.removeItem('crm_access_token');
+        sessionStorage.removeItem('crm_refresh_token');
         window.location.href = '/#/login';
         return Promise.reject(refreshError);
       }

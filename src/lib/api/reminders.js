@@ -150,3 +150,31 @@ export async function getRemindersByOwner(ownerId, params = {}) {
 export async function getRemindersByContent(contentType, objectId, params = {}) {
   return getReminders({ ...params, content_type: contentType, object_id: objectId });
 }
+
+/**
+ * Get available reminder content types for binding.
+ * @returns {Promise<{results: Array<{id: number, label: string, key: string, model: string}>}>}
+ */
+export async function getReminderContentTypes() {
+  return api.get('/api/reminders/content-types/');
+}
+
+/**
+ * Get objects for reminder binding by content type.
+ * @param {number} contentType - Content type ID
+ * @param {Object} [params] - Query parameters (search, page_size)
+ * @returns {Promise<{results: Array<{id: number, name: string}>}>}
+ */
+export async function getReminderObjects(contentType, params = {}) {
+  return api.get('/api/reminders/objects/', { params: { ...params, content_type: contentType } });
+}
+
+/**
+ * Get single object for reminder binding by content type and object id.
+ * @param {number} contentType - Content type ID
+ * @param {number|string} objectId - Object ID
+ * @returns {Promise<{id: number, name: string}>}
+ */
+export async function getReminderObject(contentType, objectId) {
+  return api.get(`/api/reminders/objects/${objectId}/`, { params: { content_type: contentType } });
+}

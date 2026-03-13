@@ -32,6 +32,11 @@ export const getInstagramAccount = (id) =>
 export const connectInstagram = (data) =>
   api.post('/api/settings/instagram/accounts/', { body: normalizePayload(data) });
 
+export const discoverInstagramAccounts = (accessToken) =>
+  api.post('/api/settings/instagram/accounts/discover/', {
+    body: { access_token: accessToken },
+  });
+
 /**
  * Update Instagram account settings
  * @param {string|number} id

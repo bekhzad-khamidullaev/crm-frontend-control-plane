@@ -12,7 +12,7 @@ OpenAPI.BASE = resolveApiBase(import.meta.env.VITE_API_BASE_URL);
 
 // Configure token resolver
 OpenAPI.TOKEN = async () => {
-  const token = localStorage.getItem('access_token');
+  const token = sessionStorage.getItem('crm_access_token') || sessionStorage.getItem('access_token');
   return token || '';
 };
 

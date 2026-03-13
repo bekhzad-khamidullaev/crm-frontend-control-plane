@@ -84,7 +84,6 @@ export default function QuickActions({
     if (!allowDelete) return;
     try {
       await onDelete(record);
-      message.success('Удалено успешно');
       setDeleteModalOpen(false);
     } catch (error) {
       message.error('Не удалось удалить');
@@ -94,7 +93,6 @@ export default function QuickActions({
   const handleDuplicate = async () => {
     try {
       await onDuplicate(record);
-      message.success('Дублировано успешно');
     } catch (error) {
       message.error('Не удалось дублировать');
     }

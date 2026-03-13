@@ -14,6 +14,11 @@ export const getWhatsAppAccount = (id) =>
 export const connectWhatsAppAccount = (data) =>
   api.post('/api/settings/whatsapp/accounts/', { body: data });
 
+export const discoverWhatsAppAssets = (accessToken) =>
+  api.post('/api/settings/whatsapp/accounts/discover/', {
+    body: { access_token: accessToken },
+  });
+
 export const updateWhatsAppAccount = (id, data) =>
   api.patch(`/api/settings/whatsapp/accounts/${id}/`, { body: data });
 

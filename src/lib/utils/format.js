@@ -3,12 +3,36 @@
  * Импортируйте отсюда, а не дублируйте логику в компонентах.
  */
 
+export const APP_LOCALE = 'ru-RU';
+
 /**
  * Список стандартных ISO 4217 кодов валют, поддерживаемых через Intl.NumberFormat.
  */
 const ISO_CURRENCY_CODES = new Set([
   'RUB', 'USD', 'EUR', 'GBP', 'KZT', 'UZS', 'CNY', 'JPY', 'CHF', 'TRY',
 ]);
+
+const CURRENCY_ALIASES = {
+  '₽': 'RUB',
+  'РУБ': 'RUB',
+  'РУБ.': 'RUB',
+  'RUR': 'RUB',
+  'РУБЛЬ': 'RUB',
+  'РУБЛИ': 'RUB',
+  'РУБЛЕЙ': 'RUB',
+  '$': 'USD',
+  'US$': 'USD',
+  'ДОЛЛАР': 'USD',
+  'ДОЛЛАРЫ': 'USD',
+  'ДОЛЛАРОВ': 'USD',
+  '€': 'EUR',
+  'ЕВРО': 'EUR',
+  'СУМ': 'UZS',
+  'СУМЫ': 'UZS',
+  "SO'M": 'UZS',
+  "SO`M": 'UZS',
+  SUM: 'UZS',
+};
 
 /**
  * Единая валюта отображения по всему приложению.
@@ -23,6 +47,22 @@ export const APP_CURRENCY_CODE = (() => {
     return 'RUB';
   }
 })();
+
+export function normalizeCurrencyCode(value) {
+  if (value === null || value === undefined) return APP_CURRENCY_CODE;
+
+  const raw = String(value).trim();
+  if (!raw) return APP_CURRENCY_CODE;
+
+  const normalized = raw.toUpperCase();
+  if (ISO_CURRENCY_CODES.has(normalized)) return normalized;
+  if (CURRENCY_ALIASES[normalized]) return CURRENCY_ALIASES[normalized];
+
+  const normalizedNoDots = normalized.replace(/\./g, '');
+  if (CURRENCY_ALIASES[normalizedNoDots]) return CURRENCY_ALIASES[normalizedNoDots];
+
+  return APP_CURRENCY_CODE;
+}
 
 /**
  * Форматирует денежную сумму единообразно по всему приложению.
@@ -39,12 +79,13 @@ export const APP_CURRENCY_CODE = (() => {
  * formatCurrency(1234, 'UZS')    // → "1 234 UZS"
  * formatCurrency(null)           // → "0 ₽"
  */
-export function formatCurrency(value, _currencyCode = 'RUB') {
-  const num = parseFloat(value) || 0;
-  const code = APP_CURRENCY_CODE;
+export function formatCurrency(value, currencyCode = APP_CURRENCY_CODE) {
+  const parsed = parseFloat(value);
+  const num = Number.isFinite(parsed) ? parsed : 0;
+  const code = normalizeCurrencyCode(currencyCode);
 
   if (ISO_CURRENCY_CODES.has(code)) {
-    return new Intl.NumberFormat('ru-RU', {
+    return new Intl.NumberFormat(APP_LOCALE, {
       style: 'currency',
       currency: code,
       minimumFractionDigits: 0,
@@ -53,7 +94,7 @@ export function formatCurrency(value, _currencyCode = 'RUB') {
   }
 
   // Нестандартный символ или название валюты
-  return `${num.toLocaleString('ru-RU')} ${code}`;
+  return `${num.toLocaleString(APP_LOCALE)} ${code}`;
 }
 
 /**
@@ -65,7 +106,7 @@ export function formatCurrency(value, _currencyCode = 'RUB') {
 export function formatNumber(value) {
   const num = parseFloat(value);
   if (!Number.isFinite(num)) return '—';
-  return num.toLocaleString('ru-RU');
+  return num.toLocaleString(APP_LOCALE);
 }
 
 /**
@@ -79,6 +120,6 @@ export function formatDate(value, mode = 'date') {
   if (!value) return '—';
   const date = new Date(value);
   if (isNaN(date.getTime())) return '—';
-  if (mode === 'datetime') return date.toLocaleString('ru-RU');
-  return date.toLocaleDateString('ru-RU');
+  if (mode === 'datetime') return date.toLocaleString(APP_LOCALE);
+  return date.toLocaleDateString(APP_LOCALE);
 }

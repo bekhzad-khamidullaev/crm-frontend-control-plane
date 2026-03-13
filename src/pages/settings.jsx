@@ -34,6 +34,7 @@ import {
   UploadOutlined,
 } from '@ant-design/icons';
 import settingsApi from '../lib/api/settings.js';
+import { useTheme } from '../lib/hooks/useTheme.js';
 import { exportCrmDataExcel, importCrmDataExcel } from '../lib/api/crmData.js';
 import {
   executeDsrRequest,
@@ -43,6 +44,7 @@ import {
   runRetentionPolicies,
 } from '../lib/api/compliance.js';
 import { formatValueForUi, isPlainObject as isPlainObjectValue } from '../lib/utils/value-display.js';
+import { t } from '../lib/i18n/index.js';
 
 const { Text } = Typography;
 
@@ -114,9 +116,13 @@ function inferFieldType(key, value) {
   return 'text';
 }
 
-function SettingField({ fieldKey, path, value }) {
+function SettingField({ fieldKey, path, value, isDark = false }) {
   const type = inferFieldType(fieldKey, value);
   const label = prettifyKey(fieldKey);
+  const tr = (key, fallback, vars = {}) => {
+    const localized = t(key, vars);
+    return localized === key ? fallback : localized;
+  };
 
   if (type === 'group') {
     return (
@@ -124,13 +130,17 @@ function SettingField({ fieldKey, path, value }) {
         size="small"
         variant="borderless"
         styles={{ body: { padding: 16 } }}
-        style={{ background: '#fafafa', marginBottom: 16 }}
+        style={{
+          background: isDark ? '#1e232e' : '#fafafa',
+          border: `1px solid ${isDark ? '#2d3343' : '#f0f0f0'}`,
+          marginBottom: 16,
+        }}
       >
         <Space direction="vertical" size={12} style={{ width: '100%' }}>
           <div>
             <Text strong>{label}</Text>
             <div>
-              <Text type="secondary">Настройка группы параметров.</Text>
+              <Text type="secondary">{tr('settingsPage.field.groupDescription', 'Настройка группы параметров.')}</Text>
             </div>
           </div>
           <Row gutter={[16, 16]}>
@@ -140,6 +150,7 @@ function SettingField({ fieldKey, path, value }) {
                   fieldKey={childKey}
                   path={[...path, childKey]}
                   value={childValue}
+                  isDark={isDark}
                 />
               </Col>
             ))}
@@ -155,7 +166,7 @@ function SettingField({ fieldKey, path, value }) {
         <Select
           mode="tags"
           open={false}
-          placeholder="Добавьте значения"
+          placeholder={tr('settingsPage.field.addValues', 'Добавьте значения')}
           tokenSeparators={[',']}
         />
       </Form.Item>
@@ -189,7 +200,7 @@ function SettingField({ fieldKey, path, value }) {
   if (type === 'textarea') {
     return (
       <Form.Item label={label} name={path}>
-        <Input.TextArea rows={4} placeholder={`Введите ${label.toLowerCase()}`} />
+        <Input.TextArea rows={4} placeholder={`${tr('settingsPage.field.enter', 'Введите')} ${label.toLowerCase()}`} />
       </Form.Item>
     );
   }
@@ -198,7 +209,7 @@ function SettingField({ fieldKey, path, value }) {
     <Form.Item label={label} name={path}>
       <Input
         type={type === 'url' ? 'url' : 'text'}
-        placeholder={`Введите ${label.toLowerCase()}`}
+        placeholder={`${tr('settingsPage.field.enter', 'Введите')} ${label.toLowerCase()}`}
       />
     </Form.Item>
   );
@@ -213,7 +224,12 @@ function SettingsConfigurator({
   onReload,
   onSave,
   saving,
+  isDark = false,
 }) {
+  const tr = (key, fallback, vars = {}) => {
+    const localized = t(key, vars);
+    return localized === key ? fallback : localized;
+  };
   const [form] = Form.useForm();
 
   useEffect(() => {
@@ -234,7 +250,7 @@ function SettingsConfigurator({
       />
 
       {!fieldEntries.length ? (
-        <Empty description="Сервер ещё не вернул параметры для этой секции" />
+        <Empty description={tr('settingsPage.empty.section', 'Сервер ещё не вернул параметры для этой секции')} />
       ) : (
         <Form
           form={form}
@@ -248,17 +264,17 @@ function SettingsConfigurator({
                 md={inferFieldType(fieldKey, value) === 'group' ? 24 : 12}
                 key={fieldKey}
               >
-                <SettingField fieldKey={fieldKey} path={[fieldKey]} value={normalizeForForm(value, fieldKey)} />
+                <SettingField fieldKey={fieldKey} path={[fieldKey]} value={normalizeForForm(value, fieldKey)} isDark={isDark} />
               </Col>
             ))}
           </Row>
 
           <Space>
             <Button type="primary" htmlType="submit" loading={saving}>
-              Сохранить
+              {tr('actions.save', 'Сохранить')}
             </Button>
             <Button icon={<ReloadOutlined />} onClick={onReload} loading={loading}>
-              Обновить
+              {tr('actions.refresh', 'Обновить')}
             </Button>
           </Space>
         </Form>
@@ -268,8 +284,12 @@ function SettingsConfigurator({
 }
 
 function ComplianceSummary({ report }) {
+  const tr = (key, fallback, vars = {}) => {
+    const localized = t(key, vars);
+    return localized === key ? fallback : localized;
+  };
   if (!report || !Object.keys(report).length) {
-    return <Empty description="Нет данных по compliance-отчёту" />;
+    return <Empty description={tr('settingsPage.empty.complianceReport', 'Нет данных по compliance-отчёту')} />;
   }
 
   const normalizedEntries = Object.entries(report).map(([key, value]) => [key, formatValueForUi(value, { key })]);
@@ -310,6 +330,12 @@ function ComplianceSummary({ report }) {
 }
 
 function SettingsPage() {
+  const tr = (key, fallback, vars = {}) => {
+    const localized = t(key, vars);
+    return localized === key ? fallback : localized;
+  };
+  const { theme } = useTheme();
+  const isDark = theme === 'dark';
   const [massmailSettings, setMassmailSettings] = useState({});
   const [remindersSettings, setRemindersSettings] = useState({});
   const [settingsLoading, setSettingsLoading] = useState({ massmail: false, reminders: false });
@@ -346,7 +372,7 @@ function SettingsPage() {
       setMassmailSettings(data ?? {});
     } catch (error) {
       console.error('Error loading massmail settings:', error);
-      message.error('Не удалось загрузить настройки рассылок');
+      message.error(tr('settingsPage.messages.massmailLoadError', 'Не удалось загрузить настройки рассылок'));
     } finally {
       setSettingsLoadingState('massmail', false);
     }
@@ -359,7 +385,7 @@ function SettingsPage() {
       setRemindersSettings(data ?? {});
     } catch (error) {
       console.error('Error loading reminder settings:', error);
-      message.error('Не удалось загрузить настройки напоминаний');
+      message.error(tr('settingsPage.messages.remindersLoadError', 'Не удалось загрузить настройки напоминаний'));
     } finally {
       setSettingsLoadingState('reminders', false);
     }
@@ -373,7 +399,7 @@ function SettingsPage() {
       setDomains(Array.isArray(list) ? list : []);
     } catch (error) {
       console.error('Error loading public domains:', error);
-      message.error('Не удалось загрузить список доменов');
+      message.error(tr('settingsPage.messages.domainsLoadError', 'Не удалось загрузить список доменов'));
       setDomains([]);
     } finally {
       setDomainsLoading(false);
@@ -398,7 +424,7 @@ function SettingsPage() {
       setRetentionItems(normalizeList(retentionResp));
     } catch (error) {
       console.error('Error loading compliance data:', error);
-      message.error('Не удалось загрузить compliance данные');
+      message.error(tr('settingsPage.messages.complianceLoadError', 'Не удалось загрузить compliance данные'));
     } finally {
       setComplianceLoading(false);
     }
@@ -407,11 +433,11 @@ function SettingsPage() {
   const handleExecuteDsr = async (record) => {
     try {
       await executeDsrRequest(record.id);
-      message.success('DSR выполнен');
+      message.success(tr('settingsPage.messages.dsrExecuted', 'DSR выполнен'));
       loadComplianceData();
     } catch (error) {
       console.error('Error executing DSR:', error);
-      message.error('Не удалось выполнить DSR');
+      message.error(tr('settingsPage.messages.dsrExecuteError', 'Не удалось выполнить DSR'));
     }
   };
 
@@ -419,11 +445,11 @@ function SettingsPage() {
     try {
       setComplianceLoading(true);
       const result = await runRetentionPolicies();
-      message.success(`Retention выполнен: ${result?.count || 0} политик`);
+      message.success(tr('settingsPage.messages.retentionExecuted', 'Retention выполнен: {count} политик', { count: result?.count || 0 }));
       await loadComplianceData();
     } catch (error) {
       console.error('Error running retention:', error);
-      message.error('Не удалось выполнить retention политики');
+      message.error(tr('settingsPage.messages.retentionExecuteError', 'Не удалось выполнить retention политики'));
     } finally {
       setComplianceLoading(false);
     }
@@ -433,11 +459,11 @@ function SettingsPage() {
     setSettingsSavingState(key, true);
     try {
       await request(payload);
-      message.success('Настройки сохранены');
+      message.success(tr('settingsPage.messages.saved', 'Настройки сохранены'));
       await reload();
     } catch (error) {
       console.error(`Error saving ${key} settings:`, error);
-      message.error('Ошибка сохранения настроек');
+      message.error(tr('settingsPage.messages.saveError', 'Ошибка сохранения настроек'));
     } finally {
       setSettingsSavingState(key, false);
     }
@@ -445,16 +471,16 @@ function SettingsPage() {
 
   const domainColumns = [
     {
-      title: 'Домен',
+      title: tr('settingsPage.table.domain', 'Домен'),
       dataIndex: 'domain',
       key: 'domain',
       render: (value, record) => value || record,
     },
     {
-      title: 'Статус',
+      title: tr('settingsPage.table.status', 'Статус'),
       key: 'status',
       width: 160,
-      render: () => <Tag color="blue">Публичный</Tag>,
+      render: () => <Tag color="blue">{tr('settingsPage.domains.public', 'Публичный')}</Tag>,
     },
   ];
 
@@ -472,13 +498,13 @@ function SettingsPage() {
       label: (
         <span>
           <MailOutlined />
-          Рассылки
+          {tr('settingsPage.tabs.massmail', 'Рассылки')}
         </span>
       ),
       children: (
         <SettingsConfigurator
-          title="Настройки массовых рассылок"
-          description="Параметры рассылок редактируются через визуальные контролы, без JSON."
+          title={tr('settingsPage.massmail.title', 'Настройки массовых рассылок')}
+          description={tr('settingsPage.massmail.description', 'Параметры рассылок редактируются через визуальные контролы, без JSON.')}
           icon={<MailOutlined />}
           data={massmailSettings}
           loading={settingsLoading.massmail}
@@ -487,6 +513,7 @@ function SettingsPage() {
           onSave={(payload) =>
             saveSettings('massmail', payload, settingsApi.updateMassmail, loadMassmailSettings)
           }
+          isDark={isDark}
         />
       ),
     },
@@ -495,13 +522,13 @@ function SettingsPage() {
       label: (
         <span>
           <BellOutlined />
-          Напоминания
+          {tr('settingsPage.tabs.reminders', 'Напоминания')}
         </span>
       ),
       children: (
         <SettingsConfigurator
-          title="Настройки напоминаний"
-          description="Параметры напоминаний редактируются через переключатели, поля времени и лимиты."
+          title={tr('settingsPage.reminders.title', 'Настройки напоминаний')}
+          description={tr('settingsPage.reminders.description', 'Параметры напоминаний редактируются через переключатели, поля времени и лимиты.')}
           icon={<BellOutlined />}
           data={remindersSettings}
           loading={settingsLoading.reminders}
@@ -510,6 +537,7 @@ function SettingsPage() {
           onSave={(payload) =>
             saveSettings('reminders', payload, settingsApi.updateReminders, loadReminderSettings)
           }
+          isDark={isDark}
         />
       ),
     },
@@ -518,14 +546,14 @@ function SettingsPage() {
       label: (
         <span>
           <DatabaseOutlined />
-          Данные CRM
+          {tr('settingsPage.tabs.crmData', 'Данные CRM')}
         </span>
       ),
       children: (
-        <Card title="Импорт и экспорт CRM">
+        <Card title={tr('settingsPage.crmData.title', 'Импорт и экспорт CRM')}>
           <Alert
-            message="Обмен данными через Excel"
-            description="Экспорт формирует Excel-файл по всем сущностям CRM. Для импорта используйте тот же формат."
+            message={tr('settingsPage.crmData.alertTitle', 'Обмен данными через Excel')}
+            description={tr('settingsPage.crmData.alertDescription', 'Экспорт формирует Excel-файл по всем сущностям CRM. Для импорта используйте тот же формат.')}
             type="info"
             showIcon
             style={{ marginBottom: 16 }}
@@ -535,8 +563,8 @@ function SettingsPage() {
               <Col xs={24} md={12}>
                 <Card size="small">
                   <Space direction="vertical" size={12} style={{ width: '100%' }}>
-                    <Text strong>Экспорт данных</Text>
-                    <Text type="secondary">Скачать полный Excel-файл с текущими данными CRM.</Text>
+                    <Text strong>{tr('settingsPage.crmData.export.title', 'Экспорт данных')}</Text>
+                    <Text type="secondary">{tr('settingsPage.crmData.export.description', 'Скачать полный Excel-файл с текущими данными CRM.')}</Text>
                     <Button
                       type="primary"
                       icon={<DownloadOutlined />}
@@ -553,16 +581,16 @@ function SettingsPage() {
                           link.click();
                           document.body.removeChild(link);
                           window.URL.revokeObjectURL(url);
-                          message.success('Экспорт CRM завершён');
+                          message.success(tr('settingsPage.messages.exportDone', 'Экспорт CRM завершён'));
                         } catch (error) {
                           console.error('Error exporting CRM data:', error);
-                          message.error('Не удалось экспортировать данные CRM');
+                          message.error(tr('settingsPage.messages.exportError', 'Не удалось экспортировать данные CRM'));
                         } finally {
                           setDataExchangeLoading(false);
                         }
                       }}
                     >
-                      Экспортировать в Excel
+                      {tr('settingsPage.crmData.export.action', 'Экспортировать в Excel')}
                     </Button>
                   </Space>
                 </Card>
@@ -570,8 +598,8 @@ function SettingsPage() {
               <Col xs={24} md={12}>
                 <Card size="small">
                   <Space direction="vertical" size={12} style={{ width: '100%' }}>
-                    <Text strong>Импорт данных</Text>
-                    <Text type="secondary">Загрузите подготовленный Excel-файл и запустите обработку.</Text>
+                    <Text strong>{tr('settingsPage.crmData.import.title', 'Импорт данных')}</Text>
+                    <Text type="secondary">{tr('settingsPage.crmData.import.description', 'Загрузите подготовленный Excel-файл и запустите обработку.')}</Text>
                     <Space wrap>
                       <Upload
                         maxCount={1}
@@ -584,7 +612,7 @@ function SettingsPage() {
                         }}
                         accept=".xlsx"
                       >
-                        <Button icon={<UploadOutlined />}>Выбрать Excel файл</Button>
+                        <Button icon={<UploadOutlined />}>{tr('settingsPage.crmData.import.selectFile', 'Выбрать Excel файл')}</Button>
                       </Upload>
                       <Button
                         type="primary"
@@ -596,16 +624,16 @@ function SettingsPage() {
                             setDataExchangeLoading(true);
                             const result = await importCrmDataExcel(importFile);
                             setImportResult(result);
-                            message.success('Импорт CRM завершён');
+                            message.success(tr('settingsPage.messages.importDone', 'Импорт CRM завершён'));
                           } catch (error) {
                             console.error('Error importing CRM data:', error);
-                            message.error('Ошибка импорта CRM данных');
+                            message.error(tr('settingsPage.messages.importError', 'Ошибка импорта CRM данных'));
                           } finally {
                             setDataExchangeLoading(false);
                           }
                         }}
                       >
-                        Импортировать
+                        {tr('settingsPage.crmData.import.action', 'Импортировать')}
                       </Button>
                     </Space>
                   </Space>
@@ -614,27 +642,27 @@ function SettingsPage() {
             </Row>
 
             {importResult ? (
-              <Card size="small" title="Результат последнего импорта">
+              <Card size="small" title={tr('settingsPage.crmData.lastImport', 'Результат последнего импорта')}>
                 <Row gutter={[16, 16]} style={{ marginBottom: 16 }}>
                   <Col xs={24} md={8}>
-                    <Statistic title="Создано" value={importResult.created || 0} />
+                    <Statistic title={tr('settingsPage.crmData.stats.created', 'Создано')} value={importResult.created || 0} />
                   </Col>
                   <Col xs={24} md={8}>
-                    <Statistic title="Обновлено" value={importResult.updated || 0} />
+                    <Statistic title={tr('settingsPage.crmData.stats.updated', 'Обновлено')} value={importResult.updated || 0} />
                   </Col>
                   <Col xs={24} md={8}>
-                    <Statistic title="Ошибок" value={importResult.errors || 0} />
+                    <Statistic title={tr('settingsPage.crmData.stats.errors', 'Ошибок')} value={importResult.errors || 0} />
                   </Col>
                 </Row>
                 <Table
                   pagination={false}
                   dataSource={importSheetRows}
                   columns={[
-                    { title: 'Лист', dataIndex: 'name', key: 'name' },
-                    { title: 'Создано', dataIndex: 'created', key: 'created' },
-                    { title: 'Обновлено', dataIndex: 'updated', key: 'updated' },
+                    { title: tr('settingsPage.crmData.table.sheet', 'Лист'), dataIndex: 'name', key: 'name' },
+                    { title: tr('settingsPage.crmData.table.created', 'Создано'), dataIndex: 'created', key: 'created' },
+                    { title: tr('settingsPage.crmData.table.updated', 'Обновлено'), dataIndex: 'updated', key: 'updated' },
                     {
-                      title: 'Ошибки',
+                      title: tr('settingsPage.crmData.table.errors', 'Ошибки'),
                       dataIndex: 'errors',
                       key: 'errors',
                       render: (value) => <Tag color={value ? 'red' : 'green'}>{value}</Tag>,
@@ -652,15 +680,15 @@ function SettingsPage() {
       label: (
         <span>
           <GlobalOutlined />
-          Домены
+          {tr('settingsPage.tabs.domains', 'Домены')}
         </span>
       ),
       children: (
         <Card
-          title="Публичные домены email"
+          title={tr('settingsPage.domains.title', 'Публичные домены email')}
           extra={
             <Button icon={<ReloadOutlined />} onClick={loadPublicDomains}>
-              Обновить
+              {tr('actions.refresh', 'Обновить')}
             </Button>
           }
         >
@@ -679,34 +707,34 @@ function SettingsPage() {
       label: (
         <span>
           <SettingOutlined />
-          Compliance
+          {tr('settingsPage.tabs.compliance', 'Compliance')}
         </span>
       ),
       children: (
         <Space direction="vertical" style={{ width: '100%' }} size="large">
           <Card
-            title="Compliance overview"
+            title={tr('settingsPage.compliance.overviewTitle', 'Compliance overview')}
             extra={
               <Button icon={<ReloadOutlined />} onClick={loadComplianceData} loading={complianceLoading}>
-                Обновить
+                {tr('actions.refresh', 'Обновить')}
               </Button>
             }
           >
             <Alert
               type="info"
               showIcon
-              message="Сводка по согласию, DSR и retention"
-              description="Показатели представлены в виде карточек и таблиц без сырого JSON."
+              message={tr('settingsPage.compliance.summaryTitle', 'Сводка по согласию, DSR и retention')}
+              description={tr('settingsPage.compliance.summaryDescription', 'Показатели представлены в виде карточек и таблиц без сырого JSON.')}
               style={{ marginBottom: 16 }}
             />
             <ComplianceSummary report={complianceReport} />
           </Card>
 
           <Card
-            title="DSR Requests"
+            title={tr('settingsPage.compliance.dsrTitle', 'DSR Requests')}
             extra={
               <Button icon={<ReloadOutlined />} onClick={loadComplianceData} loading={complianceLoading}>
-                Обновить
+                {tr('actions.refresh', 'Обновить')}
               </Button>
             }
           >
@@ -717,9 +745,9 @@ function SettingsPage() {
               pagination={false}
               columns={[
                 { title: 'ID', dataIndex: 'id', key: 'id', width: 220 },
-                { title: 'Тип', dataIndex: 'request_type', key: 'request_type', render: prettifyKey },
+                { title: tr('settingsPage.table.type', 'Тип'), dataIndex: 'request_type', key: 'request_type', render: prettifyKey },
                 {
-                  title: 'Статус',
+                  title: tr('settingsPage.table.status', 'Статус'),
                   dataIndex: 'status',
                   key: 'status',
                   render: (value) => {
@@ -727,9 +755,9 @@ function SettingsPage() {
                     return <Tag color={color}>{prettifyKey(value)}</Tag>;
                   },
                 },
-                { title: 'Причина', dataIndex: 'reason', key: 'reason', render: (value) => value || '-' },
+                { title: tr('settingsPage.table.reason', 'Причина'), dataIndex: 'reason', key: 'reason', render: (value) => value || '-' },
                 {
-                  title: 'Действия',
+                  title: tr('settingsPage.table.actions', 'Действия'),
                   key: 'actions',
                   render: (_, record) => (
                     <Button
@@ -737,7 +765,7 @@ function SettingsPage() {
                       disabled={record.status === 'completed' || record.status === 'in_progress'}
                       onClick={() => handleExecuteDsr(record)}
                     >
-                      Выполнить
+                      {tr('settingsPage.compliance.execute', 'Выполнить')}
                     </Button>
                   ),
                 },
@@ -750,10 +778,10 @@ function SettingsPage() {
             extra={
               <Space>
                 <Button icon={<ReloadOutlined />} onClick={loadComplianceData} loading={complianceLoading}>
-                  Обновить
+                {tr('actions.refresh', 'Обновить')}
                 </Button>
                 <Button type="primary" onClick={handleRunRetention} loading={complianceLoading}>
-                  Запустить retention
+                  {tr('settingsPage.compliance.runRetention', 'Запустить retention')}
                 </Button>
               </Space>
             }
@@ -764,21 +792,25 @@ function SettingsPage() {
               dataSource={retentionItems}
               pagination={false}
               columns={[
-                { title: 'Название', dataIndex: 'name', key: 'name' },
-                { title: 'Сущность', dataIndex: 'entity', key: 'entity', render: prettifyKey },
-                { title: 'Действие', dataIndex: 'action', key: 'action', render: prettifyKey },
-                { title: 'Срок хранения (дни)', dataIndex: 'retention_days', key: 'retention_days' },
+                { title: tr('settingsPage.table.name', 'Название'), dataIndex: 'name', key: 'name' },
+                { title: tr('settingsPage.table.entity', 'Сущность'), dataIndex: 'entity', key: 'entity', render: prettifyKey },
+                { title: tr('settingsPage.table.action', 'Действие'), dataIndex: 'action', key: 'action', render: prettifyKey },
+                { title: tr('settingsPage.table.retentionDays', 'Срок хранения (дни)'), dataIndex: 'retention_days', key: 'retention_days' },
                 {
-                  title: 'Активность',
+                  title: tr('settingsPage.table.activity', 'Активность'),
                   dataIndex: 'is_active',
                   key: 'is_active',
-                  render: (value) => (value ? <Tag color="green">Активна</Tag> : <Tag>Неактивна</Tag>),
+                  render: (value) => (value ? <Tag color="green">{tr('settingsPage.status.active', 'Активна')}</Tag> : <Tag>{tr('settingsPage.status.inactive', 'Неактивна')}</Tag>),
                 },
                 {
-                  title: 'Последний запуск',
+                  title: tr('settingsPage.table.lastRun', 'Последний запуск'),
                   dataIndex: 'last_run_at',
                   key: 'last_run_at',
-                  render: (value) => (value ? new Date(value).toLocaleString('ru-RU') : '-'),
+                  render: (value) => {
+                    const localeMap = { ru: 'ru-RU', en: 'en-US', uz: 'uz-UZ' };
+                    const activeLocale = String(localStorage.getItem('enterprise_crm_locale') || 'ru').slice(0, 2);
+                    return value ? new Date(value).toLocaleString(localeMap[activeLocale] || 'ru-RU') : '-';
+                  },
                 },
               ]}
             />
@@ -790,7 +822,7 @@ function SettingsPage() {
 
   return (
     <div style={{ padding: 24 }}>
-      <Card title={<><SettingOutlined /> Настройки системы</>}>
+      <Card title={<><SettingOutlined /> {tr('settingsPage.title', 'Настройки системы')}</>}>
         <Tabs defaultActiveKey="massmail" items={tabItems} />
       </Card>
     </div>

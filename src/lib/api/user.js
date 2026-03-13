@@ -125,7 +125,23 @@ export async function getUserStats() {
  * @returns {Promise<Object>}
  */
 export async function getUserActivity(params = {}) {
-  return api.get('/api/dashboard/activity/', { params });
+  const data = await api.get('/api/dashboard/activity/', { params });
+
+  const normalizeItem = (item = {}) => ({
+    ...item,
+    action: item.action || item.message || item.type || 'activity',
+    timestamp: item.timestamp || item.created_at || item.updated_at || null,
+  });
+
+  if (Array.isArray(data)) {
+    return { results: data.map(normalizeItem) };
+  }
+
+  if (Array.isArray(data?.results)) {
+    return { ...data, results: data.results.map(normalizeItem) };
+  }
+
+  return { results: [] };
 }
 
 /**

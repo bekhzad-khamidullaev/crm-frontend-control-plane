@@ -4,6 +4,25 @@
 const listeners = new Set();
 const persistedKeys = new Set(['auth']);
 
+function normalizeLocale(raw) {
+  const value = String(raw || '').toLowerCase();
+  if (value.startsWith('uz')) return 'uz';
+  if (value.startsWith('en')) return 'en';
+  return 'ru';
+}
+
+function readStoredLocale() {
+  try {
+    return normalizeLocale(
+      localStorage.getItem('enterprise_crm_locale')
+      || localStorage.getItem('locale')
+      || 'ru',
+    );
+  } catch {
+    return 'ru';
+  }
+}
+
 const initialState = {
   auth: {
     user: null,
@@ -11,7 +30,7 @@ const initialState = {
     roles: [],
   },
   ui: {
-    locale: (localStorage.getItem('locale') || 'en'),
+    locale: readStoredLocale(),
     theme: 'light',
     density: 'comfortable',
   },
@@ -78,8 +97,10 @@ function notify() {
 }
 
 export function setLocale(locale) {
-  state = { ...state, ui: { ...state.ui, locale } };
-  localStorage.setItem('locale', locale);
+  const nextLocale = normalizeLocale(locale);
+  state = { ...state, ui: { ...state.ui, locale: nextLocale } };
+  localStorage.setItem('locale', nextLocale);
+  localStorage.setItem('enterprise_crm_locale', nextLocale);
   notify();
 }
 

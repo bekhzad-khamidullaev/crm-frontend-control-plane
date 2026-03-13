@@ -61,13 +61,24 @@ console.warn = (...args) => {
 // Mock fetch for API calls
 global.fetch = vi.fn();
 
+function createStorageMock() {
+  const store = new Map();
+  return {
+    getItem: vi.fn((key) => (store.has(String(key)) ? store.get(String(key)) : null)),
+    setItem: vi.fn((key, value) => {
+      store.set(String(key), String(value));
+    }),
+    removeItem: vi.fn((key) => {
+      store.delete(String(key));
+    }),
+    clear: vi.fn(() => {
+      store.clear();
+    }),
+  };
+}
+
 // Mock localStorage
-const localStorageMock = {
-  getItem: vi.fn(),
-  setItem: vi.fn(),
-  removeItem: vi.fn(),
-  clear: vi.fn(),
-};
+const localStorageMock = createStorageMock();
 
 Object.defineProperty(window, 'localStorage', {
   value: localStorageMock,
@@ -75,7 +86,7 @@ Object.defineProperty(window, 'localStorage', {
 
 // Mock sessionStorage
 Object.defineProperty(window, 'sessionStorage', {
-  value: localStorageMock,
+  value: createStorageMock(),
 });
 
 // Mock antd App to prevent message, notification, and modal errors

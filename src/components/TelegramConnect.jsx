@@ -5,15 +5,35 @@
 
 import React, { useState } from 'react';
 import { Form, Input, Button, Space, Alert, Typography, Card, App } from 'antd';
-import { SendOutlined } from '@ant-design/icons';
+import { SendOutlined, CopyOutlined } from '@ant-design/icons';
 import { connectTelegramBot, setTelegramWebhook } from '../lib/api/integrations/telegram';
+import { apiConfig } from '../lib/api/client';
+import { t } from '../lib/i18n';
 
 const { Link, Paragraph } = Typography;
 
+const getDefaultTelegramWebhookUrl = () => {
+  if (typeof window === 'undefined') return '';
+
+  const fallbackOrigin = window.location.origin;
+  try {
+    const origin = new URL(apiConfig?.baseUrl || fallbackOrigin, fallbackOrigin).origin;
+    return `${origin.replace(/\/+$/, '')}/api/telegram/webhook/`;
+  } catch {
+    return `${fallbackOrigin.replace(/\/+$/, '')}/api/telegram/webhook/`;
+  }
+};
+
 export default function TelegramConnect({ onSuccess, onCancel }) {
   const { message } = App.useApp();
+  const tr = (key, fallback, vars = {}) => {
+    const localized = t(key, vars);
+    return localized === key ? fallback : localized;
+  };
   const [form] = Form.useForm();
   const [loading, setLoading] = useState(false);
+  const defaultWebhookUrl = getDefaultTelegramWebhookUrl();
+  const webhookUrlValue = Form.useWatch('webhook_url', form);
 
   const getErrorText = (error, fallback) => {
     const details = error?.details || {};
@@ -35,27 +55,54 @@ export default function TelegramConnect({ onSuccess, onCancel }) {
         await setTelegramWebhook(botId, { webhook_url: values.webhook_url });
       }
 
-      message.success('Telegram бот успешно подключен');
+      message.success(tr('telegramConnect.messages.connected', 'Telegram бот успешно подключен'));
       onSuccess?.(result);
     } catch (error) {
       console.error('Error connecting Telegram:', error);
-      message.error(getErrorText(error, 'Ошибка подключения Telegram бота'));
+      message.error(getErrorText(error, tr('telegramConnect.messages.connectError', 'Ошибка подключения Telegram бота')));
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleCopyWebhookUrl = async () => {
+    const value = (webhookUrlValue || '').trim();
+    if (!value) {
+      message.warning(tr('telegramConnect.messages.webhookEmpty', 'Webhook URL пустой'));
+      return;
+    }
+
+    try {
+      if (navigator?.clipboard?.writeText) {
+        await navigator.clipboard.writeText(value);
+      } else {
+        const textarea = document.createElement('textarea');
+        textarea.value = value;
+        textarea.setAttribute('readonly', '');
+        textarea.style.position = 'absolute';
+        textarea.style.left = '-9999px';
+        document.body.appendChild(textarea);
+        textarea.select();
+        document.execCommand('copy');
+        document.body.removeChild(textarea);
+      }
+      message.success(tr('telegramConnect.messages.webhookCopied', 'Webhook URL скопирован'));
+    } catch (error) {
+      message.error(tr('telegramConnect.messages.webhookCopyError', 'Не удалось скопировать Webhook URL'));
     }
   };
 
   return (
     <div>
       <Alert
-        message="Подключение Telegram бота"
-        description="Для подключения вам потребуется создать бота через @BotFather и получить токен"
+        message={tr('telegramConnect.alert.title', 'Подключение Telegram бота')}
+        description={tr('telegramConnect.alert.description', 'Для подключения вам потребуется создать бота через @BotFather и получить токен')}
         type="info"
         showIcon
         style={{ marginBottom: 24 }}
       />
 
-      <Card title="Инструкция по созданию бота" style={{ marginBottom: 24 }}>
+      <Card title={tr('telegramConnect.guide.title', 'Инструкция по созданию бота')} style={{ marginBottom: 24 }}>
         <Typography>
           <Paragraph>
             <strong>1. Создайте бота через @BotFather</strong>
@@ -83,7 +130,7 @@ export default function TelegramConnect({ onSuccess, onCancel }) {
             • <code>/setdescription</code> - установить описание бота
           </Paragraph>
           <Paragraph>
-            • <code>/setabouttext</code> - текст "О боте"
+            {tr('telegramConnect.guide.aboutText', '• /setabouttext - текст "О боте"')}
           </Paragraph>
           <Paragraph>
             • <code>/setuserpic</code> - установить аватар бота
@@ -97,19 +144,20 @@ export default function TelegramConnect({ onSuccess, onCancel }) {
       <Form
         form={form}
         layout="vertical"
+        initialValues={{ webhook_url: defaultWebhookUrl }}
         onFinish={handleConnect}
       >
         <Form.Item
           label="Bot Token"
           name="bot_token"
-          rules={[
-            { required: true, message: 'Введите токен бота' },
+            rules={[
+            { required: true, message: tr('telegramConnect.validation.enterToken', 'Введите токен бота') },
             { 
               pattern: /^\d+:[A-Za-z0-9_-]+$/, 
-              message: 'Неверный формат токена (должен быть: 123456:ABC-DEF...)' 
+              message: tr('telegramConnect.validation.tokenFormat', 'Неверный формат токена (должен быть: 123456:ABC-DEF...)') 
             },
           ]}
-          extra="Токен бота, который вы получили от @BotFather"
+          extra={tr('telegramConnect.fields.tokenExtra', 'Токен бота, который вы получили от @BotFather')}
         >
           <Input.Password
             prefix={<SendOutlined />}
@@ -125,7 +173,19 @@ export default function TelegramConnect({ onSuccess, onCancel }) {
                 При необходимости укажите URL, на который Telegram будет отправлять события:
               </Paragraph>
               <Form.Item name="webhook_url" style={{ marginBottom: 0 }}>
-                <Input placeholder="https://crm.example.com/api/telegram/webhook/" />
+                <Input
+                  placeholder={defaultWebhookUrl || 'https://crm.example.com/api/telegram/webhook/'}
+                  addonAfter={
+                    <Button
+                      type="text"
+                      size="small"
+                      icon={<CopyOutlined />}
+                      onClick={handleCopyWebhookUrl}
+                    >
+                      {tr('telegramConnect.actions.copy', 'Скопировать')}
+                    </Button>
+                  }
+                />
               </Form.Item>
             </div>
           }
@@ -135,12 +195,12 @@ export default function TelegramConnect({ onSuccess, onCancel }) {
         />
 
         <Alert
-          message="Важные заметки"
+          message={tr('telegramConnect.notes.title', 'Важные заметки')}
           description={
             <ul style={{ marginBottom: 0 }}>
-              <li>Убедитесь, что ваш сервер доступен из интернета для получения webhook'ов</li>
+              <li>{tr('telegramConnect.notes.serverReachable', "Убедитесь, что ваш сервер доступен из интернета для получения webhook'ов")}</li>
               <li>Telegram требует HTTPS для webhook (в dev режиме можно использовать ngrok)</li>
-              <li>Бот будет получать все сообщения, отправленные ему пользователями</li>
+              <li>{tr('telegramConnect.notes.botReceivesAll', 'Бот будет получать все сообщения, отправленные ему пользователями')}</li>
             </ul>
           }
           type="warning"
@@ -151,11 +211,11 @@ export default function TelegramConnect({ onSuccess, onCancel }) {
         <Form.Item>
           <Space>
             <Button type="primary" htmlType="submit" loading={loading} icon={<SendOutlined />}>
-              Подключить Telegram бота
+              {tr('telegramConnect.actions.connect', 'Подключить Telegram бота')}
             </Button>
             {onCancel && (
               <Button onClick={onCancel}>
-                Отмена
+                {tr('actions.cancel', 'Отмена')}
               </Button>
             )}
           </Space>

@@ -3,6 +3,7 @@ import {
   App,
   Tabs,
   Button,
+  Segmented,
   Space,
   Typography,
   Row,
@@ -28,8 +29,57 @@ import { getOverview, getDashboardAnalytics, getFunnelData, getActivityFeed } fr
 import predictions from '../lib/api/predictions.js';
 import { AnalyticsCard, AnimatedChart, PredictionChart } from '../components/analytics';
 import { formatCurrency } from '../lib/utils/format.js';
+import { useTheme } from '../lib/hooks/useTheme.js';
+import { t } from '../lib/i18n';
 
 const { Text, Title } = Typography;
+const PERIOD_VALUES = ['7d', '30d', '90d'];
+const DEFAULT_PERIOD = '30d';
+const TAB_VALUES = ['overview', 'activity', 'predictions', 'system'];
+const DEFAULT_TAB = 'overview';
+
+function readHashState() {
+  if (typeof window === 'undefined') {
+    return { path: '/analytics', params: new URLSearchParams() };
+  }
+
+  const raw = (window.location.hash || '').replace(/^#/, '');
+  const [rawPath = '/analytics', rawQuery = ''] = raw.split('?');
+  return {
+    path: rawPath || '/analytics',
+    params: new URLSearchParams(rawQuery),
+  };
+}
+
+function getPeriodFromHash() {
+  const value = readHashState().params.get('period');
+  return PERIOD_VALUES.includes(value) ? value : DEFAULT_PERIOD;
+}
+
+function getTabFromHash() {
+  const value = readHashState().params.get('tab');
+  return TAB_VALUES.includes(value) ? value : DEFAULT_TAB;
+}
+
+function replaceHashQuery(updates) {
+  if (typeof window === 'undefined') return;
+  const { path, params } = readHashState();
+
+  Object.entries(updates).forEach(([key, value]) => {
+    if (value === null || value === undefined || value === '') {
+      params.delete(key);
+      return;
+    }
+    params.set(key, String(value));
+  });
+
+  const query = params.toString();
+  const nextHash = `#${path}${query ? `?${query}` : ''}`;
+
+  if (window.location.hash !== nextHash) {
+    window.history.replaceState(null, '', `${window.location.pathname}${window.location.search}${nextHash}`);
+  }
+}
 
 const chartColors = {
   primary: 'rgba(24, 144, 255, 0.7)',
@@ -37,21 +87,44 @@ const chartColors = {
   success: 'rgba(82, 196, 26, 0.7)',
   successBorder: 'rgba(82, 196, 26, 1)',
 };
-
-const riskToneStyles = {
-  danger: {
-    borderColor: '#fecaca',
-    background: '#fef2f2',
-  },
-  warning: {
-    borderColor: '#fde68a',
-    background: '#fffbeb',
-  },
-  neutral: {
-    borderColor: '#e5e7eb',
-    background: '#ffffff',
-  },
+const trStatic = (key, fallback, vars = {}) => {
+  const localized = t(key, vars);
+  return localized === key ? fallback : localized;
 };
+
+function getRiskToneStyles(isDark) {
+  if (isDark) {
+    return {
+      danger: {
+        borderColor: '#7f1d1d',
+        background: 'rgba(127, 29, 29, 0.28)',
+      },
+      warning: {
+        borderColor: '#78350f',
+        background: 'rgba(120, 53, 15, 0.28)',
+      },
+      neutral: {
+        borderColor: '#2d3343',
+        background: '#161b22',
+      },
+    };
+  }
+
+  return {
+    danger: {
+      borderColor: '#fecaca',
+      background: '#fef2f2',
+    },
+    warning: {
+      borderColor: '#fde68a',
+      background: '#fffbeb',
+    },
+    neutral: {
+      borderColor: '#e5e7eb',
+      background: '#ffffff',
+    },
+  };
+}
 
 function normalizeSeries(data) {
   if (!data) return { labels: [], values: [] };
@@ -65,7 +138,7 @@ function normalizeSeries(data) {
         item?.name ||
         item?.stage ||
         item?.month ||
-        `Серия ${index + 1}`
+        trStatic('analyticsPage.common.series', 'Series {{index}}', { index: index + 1 })
     );
     const values = data.map((item) =>
       Number(item?.value ?? item?.count ?? item?.total ?? item?.amount ?? item?.y ?? 0)
@@ -183,16 +256,16 @@ function formatPredictionStatusLabel(status, count, rawValue) {
   }
 
   if (!Number.isNaN(count)) {
-    if (count === 0) return 'Пусто';
-    if (count === 1) return '1 запись';
-    return `${count} записей`;
+    if (count === 0) return trStatic('analyticsPage.predictions.empty', 'Empty');
+    if (count === 1) return trStatic('analyticsPage.predictions.oneRecord', '1 record');
+    return trStatic('analyticsPage.predictions.nRecords', '{{count}} records', { count });
   }
 
   if (rawValue === null || rawValue === undefined) {
-    return 'Нет данных';
+    return trStatic('analyticsPage.common.noData', 'No data');
   }
 
-  return 'Технический статус';
+  return trStatic('analyticsPage.predictions.technicalStatus', 'Technical status');
 }
 
 function normalizePredictionStatus(statusPayload) {
@@ -252,7 +325,14 @@ function renderGrowthTag(value) {
 
 export default function AnalyticsPage() {
   const { message } = App.useApp();
-  const [period, setPeriod] = useState('30d');
+  const tr = (key, fallback, vars = {}) => {
+    const localized = t(key, vars);
+    return localized === key ? fallback : localized;
+  };
+  const { theme } = useTheme();
+  const isDark = theme === 'dark';
+  const [period, setPeriod] = useState(getPeriodFromHash);
+  const [activeTab, setActiveTab] = useState(getTabFromHash);
   const [overview, setOverview] = useState(null);
   const [analytics, setAnalytics] = useState(null);
   const [funnel, setFunnel] = useState([]);
@@ -399,17 +479,16 @@ export default function AnalyticsPage() {
     loadCore();
     loadPredictions();
     loadAuthStats();
-    message.success('Данные обновлены');
   };
 
   const handleRunPredictions = async () => {
     setLoadingPredictions(true);
     try {
       await predictions.predictAll();
-      message.success('Прогнозы запущены');
+      message.success(tr('analyticsPage.messages.predictionsStarted', 'Predictions started'));
       await loadPredictions();
     } catch (error) {
-      message.error('Не удалось запустить прогнозы');
+      message.error(tr('analyticsPage.messages.predictionsStartError', 'Failed to start predictions'));
     } finally {
       setLoadingPredictions(false);
     }
@@ -418,6 +497,23 @@ export default function AnalyticsPage() {
   useEffect(() => {
     loadCore();
   }, [period]);
+
+  useEffect(() => {
+    replaceHashQuery({ period, tab: activeTab });
+  }, [period, activeTab]);
+
+  useEffect(() => {
+    const onHashChange = () => {
+      const nextPeriod = getPeriodFromHash();
+      const nextTab = getTabFromHash();
+
+      setPeriod((current) => (current === nextPeriod ? current : nextPeriod));
+      setActiveTab((current) => (current === nextTab ? current : nextTab));
+    };
+
+    window.addEventListener('hashchange', onHashChange);
+    return () => window.removeEventListener('hashchange', onHashChange);
+  }, []);
 
   useEffect(() => {
     loadPredictions();
@@ -431,7 +527,7 @@ export default function AnalyticsPage() {
       labels: monthlyGrowth.labels,
       datasets: [
         {
-          label: 'Выручка',
+          label: tr('analyticsPage.charts.revenue', 'Revenue'),
           data: monthlyGrowth.revenue || [],
           backgroundColor: chartColors.primary,
           borderColor: chartColors.primaryBorder,
@@ -449,14 +545,14 @@ export default function AnalyticsPage() {
       labels: monthlyGrowth.labels,
       datasets: [
         {
-          label: 'Лиды',
+          label: tr('analyticsPage.charts.leads', 'Leads'),
           data: monthlyGrowth.leads || [],
           backgroundColor: chartColors.primary,
           borderColor: chartColors.primaryBorder,
           borderWidth: 2,
         },
         {
-          label: 'Сделки',
+          label: tr('analyticsPage.charts.deals', 'Deals'),
           data: monthlyGrowth.deals || [],
           backgroundColor: chartColors.success,
           borderColor: chartColors.successBorder,
@@ -468,14 +564,14 @@ export default function AnalyticsPage() {
 
   const funnelChartData = useMemo(() => {
     const items = Array.isArray(funnel) ? funnel : [];
-    const labels = items.map((item, index) => item?.label || item?.stage || item?.name || `Этап ${index + 1}`);
+    const labels = items.map((item, index) => item?.label || item?.stage || item?.name || tr('analyticsPage.charts.stage', 'Stage {{index}}', { index: index + 1 }));
     const values = items.map((item) => Number(item?.value ?? item?.count ?? 0));
     if (!labels.length) return null;
     return {
       labels,
       datasets: [
         {
-          label: 'Воронка продаж',
+          label: tr('analyticsPage.charts.salesFunnel', 'Sales funnel'),
           data: values,
           backgroundColor: chartColors.primary,
           borderColor: chartColors.primaryBorder,
@@ -491,15 +587,15 @@ export default function AnalyticsPage() {
   }, [activity]);
 
   const revenuePrediction = useMemo(
-    () => buildPredictionPayload(revenueForecast, 'Прогноз выручки'),
+    () => buildPredictionPayload(revenueForecast, tr('analyticsPage.predictions.revenueForecast', 'Revenue forecast')),
     [revenueForecast]
   );
   const leadsPrediction = useMemo(
-    () => buildPredictionPayload(leadsForecast, 'Прогноз лидов'),
+    () => buildPredictionPayload(leadsForecast, tr('analyticsPage.predictions.leadsForecast', 'Leads forecast')),
     [leadsForecast]
   );
   const clientsPrediction = useMemo(
-    () => buildPredictionPayload(clientsForecast, 'Прогноз клиентов'),
+    () => buildPredictionPayload(clientsForecast, tr('analyticsPage.predictions.clientsForecast', 'Clients forecast')),
     [clientsForecast]
   );
 
@@ -520,7 +616,7 @@ export default function AnalyticsPage() {
       labels: rowsWithCount.map((row) => `${row.groupLabel}: ${row.metricLabel}`),
       datasets: [
         {
-          label: 'Количество',
+          label: tr('analyticsPage.common.count', 'Count'),
           data: rowsWithCount.map((row) => row.count),
           backgroundColor: chartColors.primary,
           borderColor: chartColors.primaryBorder,
@@ -536,52 +632,52 @@ export default function AnalyticsPage() {
   const conversionRate = Number(overview?.conversion_rate || 0);
   const revenueGrowth = Number(overview?.revenue_growth || 0);
   const executiveSummary = [
-    overdueTasks > 0 ? `Просрочено задач: ${overdueTasks}` : null,
-    conversionRate ? `Конверсия: ${conversionRate}%` : null,
-    revenueGrowth ? `Рост выручки: ${revenueGrowth > 0 ? '+' : ''}${revenueGrowth}%` : null,
+    overdueTasks > 0 ? tr('analyticsPage.summary.overdueTasks', 'Overdue tasks: {{count}}', { count: overdueTasks }) : null,
+    conversionRate ? tr('analyticsPage.summary.conversion', 'Conversion: {{value}}%', { value: conversionRate }) : null,
+    revenueGrowth ? tr('analyticsPage.summary.revenueGrowth', 'Revenue growth: {{value}}%', { value: `${revenueGrowth > 0 ? '+' : ''}${revenueGrowth}` }) : null,
   ].filter(Boolean).join(' • ');
 
   const focusCards = [
     {
       key: 'pipeline',
-      title: 'Сделки в работе',
+      title: tr('analyticsPage.focus.pipelineTitle', 'Deals in progress'),
       value: overview?.total_deals || 0,
-      description: 'Общий объём коммерческой работы в системе.',
+      description: tr('analyticsPage.focus.pipelineDescription', 'Total commercial workload in the system.'),
     },
     {
       key: 'pending',
-      title: 'Задачи в ожидании',
+      title: tr('analyticsPage.focus.pendingTitle', 'Pending tasks'),
       value: pendingTasks,
-      description: 'Показывает текущую нагрузку на команду.',
+      description: tr('analyticsPage.focus.pendingDescription', 'Shows current team workload.'),
     },
     {
       key: 'predictions',
-      title: 'Активные прогнозы',
+      title: tr('analyticsPage.focus.predictionsTitle', 'Active predictions'),
       value: predictionStatusRows.length,
-      description: 'Сколько прогнозных сигналов уже доступно для анализа.',
+      description: tr('analyticsPage.focus.predictionsDescription', 'How many predictive signals are already available for analysis.'),
     },
   ];
 
   const riskCards = [
     {
       key: 'overdue',
-      title: 'Просроченные задачи',
+      title: tr('analyticsPage.risks.overdueTitle', 'Overdue tasks'),
       value: overdueTasks,
-      description: 'Требуют реакции в первую очередь.',
+      description: tr('analyticsPage.risks.overdueDescription', 'Require immediate attention first.'),
       tone: overdueTasks > 0 ? 'danger' : 'neutral',
     },
     {
       key: 'conversion',
-      title: 'Конверсия',
+      title: tr('analyticsPage.risks.conversionTitle', 'Conversion'),
       value: `${conversionRate}%`,
-      description: 'Если метрика ниже ожиданий, проверьте follow-up и качество входящего потока.',
+      description: tr('analyticsPage.risks.conversionDescription', 'If metric is below target, check follow-up and incoming lead quality.'),
       tone: conversionRate > 0 && conversionRate < 15 ? 'warning' : 'neutral',
     },
     {
       key: 'growth',
-      title: 'Рост выручки',
+      title: tr('analyticsPage.risks.growthTitle', 'Revenue growth'),
       value: `${revenueGrowth > 0 ? '+' : ''}${revenueGrowth}%`,
-      description: 'Сигнал о текущем темпе продаж за период.',
+      description: tr('analyticsPage.risks.growthDescription', 'Signal of current sales pace for selected period.'),
       tone: revenueGrowth < 0 ? 'danger' : 'neutral',
     },
   ];
@@ -589,12 +685,12 @@ export default function AnalyticsPage() {
   const tabs = [
     {
       key: 'overview',
-      label: 'Решения',
+      label: tr('analyticsPage.tabs.decisions', 'Decisions'),
       children: (
         <Space direction="vertical" size="large" style={{ width: '100%' }}>
           <AnalyticsSection
-            title="Исполнительное резюме"
-            description={executiveSummary || 'Сводка ключевых метрик и рисков за выбранный период.'}
+            title={tr('analyticsPage.sections.executiveSummary', 'Executive summary')}
+            description={executiveSummary || tr('analyticsPage.sections.executiveSummaryDescription', 'Summary of key metrics and risks for selected period.')}
           >
             <Row gutter={[16, 16]}>
               <Col xs={24} lg={16}>
@@ -607,10 +703,10 @@ export default function AnalyticsPage() {
                 </Row>
               </Col>
               <Col xs={24} lg={8}>
-                <AnalyticsCard title="Риски" loading={loadingAnalytics || loadingOverview} error={analyticsError || overviewError}>
+                <AnalyticsCard title={tr('analyticsPage.sections.risks', 'Risks')} loading={loadingAnalytics || loadingOverview} error={analyticsError || overviewError}>
                   <Space direction="vertical" size="middle" style={{ width: '100%' }}>
                     {riskCards.map((risk) => (
-                      <RiskRow key={risk.key} {...risk} />
+                      <RiskRow key={risk.key} {...risk} isDark={isDark} />
                     ))}
                   </Space>
                 </AnalyticsCard>
@@ -619,31 +715,31 @@ export default function AnalyticsPage() {
           </AnalyticsSection>
 
           <AnalyticsSection
-            title="Ключевые показатели"
-            description="Быстрый снимок по объёму базы, сделкам и выручке."
+            title={tr('analyticsPage.sections.keyMetrics', 'Key metrics')}
+            description={tr('analyticsPage.sections.keyMetricsDescription', 'Quick snapshot of base size, deals and revenue.')}
           >
-            <AnalyticsCard title="Ключевые показатели" loading={loadingOverview} error={overviewError}>
+            <AnalyticsCard title={tr('analyticsPage.sections.keyMetrics', 'Key metrics')} loading={loadingOverview} error={overviewError}>
               <Row gutter={[16, 16]}>
                 <Col xs={24} sm={12} lg={6}>
                   <Statistic
-                    title="Всего лидов"
+                    title={tr('analyticsPage.metrics.totalLeads', 'Total leads')}
                     value={overview?.total_leads || 0}
                     suffix={renderGrowthTag(overview?.leads_growth)}
                   />
                 </Col>
                 <Col xs={24} sm={12} lg={6}>
-                  <Statistic title="Всего контактов" value={overview?.total_contacts || 0} />
+                  <Statistic title={tr('analyticsPage.metrics.totalContacts', 'Total contacts')} value={overview?.total_contacts || 0} />
                 </Col>
                 <Col xs={24} sm={12} lg={6}>
                   <Statistic
-                    title="Всего сделок"
+                    title={tr('analyticsPage.metrics.totalDeals', 'Total deals')}
                     value={overview?.total_deals || 0}
                     suffix={renderGrowthTag(overview?.deals_growth)}
                   />
                 </Col>
                 <Col xs={24} sm={12} lg={6}>
                   <Statistic
-                    title="Выручка"
+                    title={tr('analyticsPage.metrics.revenue', 'Revenue')}
                     value={overview?.total_revenue || 0}
                     formatter={(value) => formatCurrency(value)}
                     suffix={renderGrowthTag(overview?.revenue_growth)}
@@ -651,31 +747,31 @@ export default function AnalyticsPage() {
                 </Col>
               </Row>
               {overview?.conversion_rate !== undefined && (
-                <Text type="secondary">Конверсия: {overview.conversion_rate}%</Text>
+                <Text type="secondary">{tr('analyticsPage.summary.conversion', 'Conversion: {{value}}%', { value: overview.conversion_rate })}</Text>
               )}
             </AnalyticsCard>
           </AnalyticsSection>
 
           <AnalyticsSection
-            title="Тренды"
-            description="Динамика выручки и движения по воронке для оценки темпа."
+            title={tr('analyticsPage.sections.trends', 'Trends')}
+            description={tr('analyticsPage.sections.trendsDescription', 'Revenue dynamics and funnel movement for pace evaluation.')}
           >
             <Row gutter={[16, 16]}>
               <Col xs={24} lg={12}>
-                <AnalyticsCard title="Динамика выручки" loading={loadingAnalytics} error={analyticsError}>
+                <AnalyticsCard title={tr('analyticsPage.charts.revenueDynamics', 'Revenue dynamics')} loading={loadingAnalytics} error={analyticsError}>
                   {revenueChartData ? (
                     <AnimatedChart type="line" data={revenueChartData} height={280} />
                   ) : (
-                    <Empty description="Нет данных по выручке" />
+                    <Empty description={tr('analyticsPage.empty.noRevenueData', 'No revenue data')} />
                   )}
                 </AnalyticsCard>
               </Col>
               <Col xs={24} lg={12}>
-                <AnalyticsCard title="Лиды и сделки" loading={loadingAnalytics} error={analyticsError}>
+                <AnalyticsCard title={tr('analyticsPage.charts.leadsAndDeals', 'Leads and deals')} loading={loadingAnalytics} error={analyticsError}>
                   {leadsDealsChartData ? (
                     <AnimatedChart type="bar" data={leadsDealsChartData} height={280} />
                   ) : (
-                    <Empty description="Нет данных по лидам и сделкам" />
+                    <Empty description={tr('analyticsPage.empty.noLeadsDealsData', 'No leads and deals data')} />
                   )}
                 </AnalyticsCard>
               </Col>
@@ -683,33 +779,33 @@ export default function AnalyticsPage() {
           </AnalyticsSection>
 
           <AnalyticsSection
-            title="Операционный контроль"
-            description="Что происходит с воронкой и задачами команды прямо сейчас."
+            title={tr('analyticsPage.sections.operations', 'Operational control')}
+            description={tr('analyticsPage.sections.operationsDescription', 'What is happening with funnel and team tasks right now.')}
           >
             <Row gutter={[16, 16]}>
               <Col xs={24} lg={12}>
-                <AnalyticsCard title="Воронка продаж" loading={loadingFunnel} error={funnelError}>
+                <AnalyticsCard title={tr('analyticsPage.charts.salesFunnel', 'Sales funnel')} loading={loadingFunnel} error={funnelError}>
                   {funnelChartData ? (
                     <AnimatedChart type="bar" data={funnelChartData} height={280} />
                   ) : (
-                    <Empty description="Нет данных по воронке" />
+                    <Empty description={tr('analyticsPage.empty.noFunnelData', 'No funnel data')} />
                   )}
                 </AnalyticsCard>
               </Col>
               <Col xs={24} lg={12}>
-                <AnalyticsCard title="Статусы задач" loading={loadingAnalytics} error={analyticsError}>
+                <AnalyticsCard title={tr('analyticsPage.sections.taskStatuses', 'Task statuses')} loading={loadingAnalytics} error={analyticsError}>
                   <Row gutter={[16, 16]}>
                     <Col span={12}>
-                      <Statistic title="Ожидают" value={analytics?.tasks_by_status?.pending || 0} />
+                      <Statistic title={tr('analyticsPage.tasks.pending', 'Pending')} value={analytics?.tasks_by_status?.pending || 0} />
                     </Col>
                     <Col span={12}>
-                      <Statistic title="В работе" value={analytics?.tasks_by_status?.in_progress || 0} />
+                      <Statistic title={tr('analyticsPage.tasks.inProgress', 'In progress')} value={analytics?.tasks_by_status?.in_progress || 0} />
                     </Col>
                     <Col span={12}>
-                      <Statistic title="Завершены" value={analytics?.tasks_by_status?.completed || 0} />
+                      <Statistic title={tr('analyticsPage.tasks.completed', 'Completed')} value={analytics?.tasks_by_status?.completed || 0} />
                     </Col>
                     <Col span={12}>
-                      <Statistic title="Просрочены" value={analytics?.tasks_by_status?.overdue || 0} />
+                      <Statistic title={tr('analyticsPage.tasks.overdue', 'Overdue')} value={analytics?.tasks_by_status?.overdue || 0} />
                     </Col>
                   </Row>
                 </AnalyticsCard>
@@ -721,16 +817,16 @@ export default function AnalyticsPage() {
     },
     {
       key: 'activity',
-      label: 'Команда',
+      label: tr('analyticsPage.tabs.team', 'Team'),
       children: (
         <Space direction="vertical" size="large" style={{ width: '100%' }}>
           <AnalyticsSection
-            title="Активность команды"
-            description="Последние действия пользователей и системный auth-снимок."
+            title={tr('analyticsPage.sections.teamActivity', 'Team activity')}
+            description={tr('analyticsPage.sections.teamActivityDescription', 'Latest user actions and system auth snapshot.')}
           >
             <Row gutter={[16, 16]}>
               <Col xs={24} lg={16}>
-                <AnalyticsCard title="Лента активности" loading={loadingActivity} error={activityError}>
+                <AnalyticsCard title={tr('analyticsPage.sections.activityFeed', 'Activity feed')} loading={loadingActivity} error={activityError}>
                   {activityItems.length ? (
                     <List
                       itemLayout="horizontal"
@@ -741,7 +837,7 @@ export default function AnalyticsPage() {
                           item?.action ||
                           item?.event ||
                           item?.message ||
-                          'Событие';
+                          tr('analyticsPage.activity.event', 'Event');
                         const description = item?.description || item?.details || item?.summary || '';
                         const timestamp =
                           item?.timestamp || item?.created_at || item?.date || item?.created || '';
@@ -764,16 +860,16 @@ export default function AnalyticsPage() {
                       }}
                     />
                   ) : (
-                    <Empty description="Нет активности за период" />
+                    <Empty description={tr('analyticsPage.empty.noActivity', 'No activity for selected period')} />
                   )}
                 </AnalyticsCard>
               </Col>
               <Col xs={24} lg={8}>
-                <AnalyticsCard title="Auth snapshot" loading={loadingAuthStats} error={authError}>
+                <AnalyticsCard title={tr('analyticsPage.sections.authSnapshot', 'Auth snapshot')} loading={loadingAuthStats} error={authError}>
                   {authStats ? (
                     <AuthStatsSnapshot sections={authStatsSections} />
                   ) : (
-                    <Empty description="Нет auth-данных" />
+                    <Empty description={tr('analyticsPage.empty.noAuthData', 'No auth data')} />
                   )}
                 </AnalyticsCard>
               </Col>
@@ -784,7 +880,7 @@ export default function AnalyticsPage() {
     },
     {
       key: 'predictions',
-      label: 'Прогнозы и действия',
+      label: tr('analyticsPage.tabs.predictionsActions', 'Predictions and actions'),
       children: (
         <Space direction="vertical" size="large" style={{ width: '100%' }}>
           <Space>
@@ -793,20 +889,20 @@ export default function AnalyticsPage() {
               onClick={handleRunPredictions}
               loading={loadingPredictions}
             >
-              Запустить прогнозы
+              {tr('analyticsPage.actions.runPredictions', 'Run predictions')}
             </Button>
             {predictionStatus && (
-              <Text type="secondary">Статус: {predictionStatus?.status || 'в работе'}</Text>
+              <Text type="secondary">{tr('analyticsPage.predictions.status', 'Status')}: {predictionStatus?.status || tr('analyticsPage.predictions.inProgress', 'in progress')}</Text>
             )}
           </Space>
 
           <AnalyticsSection
-            title="Прогнозы по ключевым метрикам"
-            description="Оценка будущей выручки, лидов и клиентской базы."
+            title={tr('analyticsPage.sections.predictionsByMetrics', 'Predictions by key metrics')}
+            description={tr('analyticsPage.sections.predictionsByMetricsDescription', 'Estimate of future revenue, leads and client base.')}
           >
             <Row gutter={[16, 16]}>
               <Col xs={24} lg={12}>
-                <AnalyticsCard title="Прогноз выручки" loading={loadingPredictions} error={predictionError}>
+                <AnalyticsCard title={tr('analyticsPage.predictions.revenueForecast', 'Revenue forecast')} loading={loadingPredictions} error={predictionError}>
                   {revenuePrediction ? (
                     revenuePrediction.type === 'interval' ? (
                       <PredictionChart
@@ -838,12 +934,12 @@ export default function AnalyticsPage() {
                       />
                     )
                   ) : (
-                    <Empty description="Нет прогноза по выручке" />
+                    <Empty description={tr('analyticsPage.empty.noRevenueForecast', 'No revenue forecast')} />
                   )}
                 </AnalyticsCard>
               </Col>
               <Col xs={24} lg={12}>
-                <AnalyticsCard title="Прогноз лидов" loading={loadingPredictions} error={predictionError}>
+                <AnalyticsCard title={tr('analyticsPage.predictions.leadsForecast', 'Leads forecast')} loading={loadingPredictions} error={predictionError}>
                   {leadsPrediction ? (
                     leadsPrediction.type === 'interval' ? (
                       <PredictionChart
@@ -875,7 +971,7 @@ export default function AnalyticsPage() {
                       />
                     )
                   ) : (
-                    <Empty description="Нет прогноза по лидам" />
+                    <Empty description={tr('analyticsPage.empty.noLeadsForecast', 'No leads forecast')} />
                   )}
                 </AnalyticsCard>
               </Col>
@@ -883,12 +979,12 @@ export default function AnalyticsPage() {
           </AnalyticsSection>
 
           <AnalyticsSection
-            title="Состояние прогнозных моделей"
-            description="Текущее состояние моделей и доступных сигналов."
+            title={tr('analyticsPage.sections.predictionModelsState', 'Prediction models state')}
+            description={tr('analyticsPage.sections.predictionModelsStateDescription', 'Current model state and available signals.')}
           >
             <Row gutter={[16, 16]}>
               <Col xs={24} lg={12}>
-                <AnalyticsCard title="Прогноз клиентов" loading={loadingPredictions} error={predictionError}>
+                <AnalyticsCard title={tr('analyticsPage.predictions.clientsForecast', 'Clients forecast')} loading={loadingPredictions} error={predictionError}>
                   {clientsPrediction ? (
                     clientsPrediction.type === 'interval' ? (
                       <PredictionChart
@@ -920,12 +1016,12 @@ export default function AnalyticsPage() {
                       />
                     )
                   ) : (
-                    <Empty description="Нет прогноза по клиентам" />
+                    <Empty description={tr('analyticsPage.empty.noClientsForecast', 'No clients forecast')} />
                   )}
                 </AnalyticsCard>
               </Col>
               <Col xs={24} lg={12}>
-                <AnalyticsCard title="Статус прогнозов" loading={loadingPredictions} error={predictionError}>
+                <AnalyticsCard title={tr('analyticsPage.sections.predictionStatus', 'Prediction status')} loading={loadingPredictions} error={predictionError}>
                   {predictionStatusRows.length ? (
                     <Space direction="vertical" size="middle" style={{ width: '100%' }}>
                       {predictionStatusChartData ? (
@@ -938,35 +1034,35 @@ export default function AnalyticsPage() {
                         dataSource={predictionStatusRows}
                         columns={[
                           {
-                            title: 'Группа',
+                            title: tr('analyticsPage.table.group', 'Group'),
                             dataIndex: 'groupLabel',
                             key: 'groupLabel',
                             render: (value) => <Text strong>{value}</Text>,
                           },
                           {
-                            title: 'Метрика',
+                            title: tr('analyticsPage.table.metric', 'Metric'),
                             dataIndex: 'metricLabel',
                             key: 'metricLabel',
                           },
                           {
-                            title: 'Количество',
+                            title: tr('analyticsPage.common.count', 'Count'),
                             dataIndex: 'count',
                             key: 'count',
                             render: (value) =>
                               Number.isNaN(value) ? <Text type="secondary">-</Text> : <Text>{value}</Text>,
                           },
                           {
-                            title: 'Статус',
+                            title: tr('analyticsPage.table.status', 'Status'),
                             dataIndex: 'status',
                             key: 'status',
-                            render: (value) => <Text type="secondary">{value || 'Нет данных'}</Text>,
+                            render: (value) => <Text type="secondary">{value || tr('analyticsPage.common.noData', 'No data')}</Text>,
                           },
                         ]}
                         rowKey="key"
                       />
                     </Space>
                   ) : (
-                    <Empty description="Нет статуса прогнозов" />
+                    <Empty description={tr('analyticsPage.empty.noPredictionStatus', 'No prediction status')} />
                   )}
                 </AnalyticsCard>
               </Col>
@@ -974,12 +1070,12 @@ export default function AnalyticsPage() {
           </AnalyticsSection>
 
           <AnalyticsSection
-            title="Рекомендованные действия"
-            description="Следующие действия, которые модель считает приоритетными."
+            title={tr('analyticsPage.sections.recommendedActions', 'Recommended actions')}
+            description={tr('analyticsPage.sections.recommendedActionsDescription', 'Next actions considered high priority by model.')}
           >
             <Row gutter={[16, 16]}>
               <Col xs={24} lg={12}>
-                <AnalyticsCard title="Рекомендованные действия (клиенты)" loading={loadingPredictions} error={predictionError}>
+                <AnalyticsCard title={tr('analyticsPage.sections.recommendedActionsClients', 'Recommended actions (clients)')} loading={loadingPredictions} error={predictionError}>
                   {nextActionsClients.length ? (
                     <Table
                       dataSource={nextActionsClients}
@@ -988,12 +1084,12 @@ export default function AnalyticsPage() {
                       pagination={{ pageSize: 5 }}
                     />
                   ) : (
-                    <Empty description="Нет рекомендаций по клиентам" />
+                    <Empty description={tr('analyticsPage.empty.noClientRecommendations', 'No client recommendations')} />
                   )}
                 </AnalyticsCard>
               </Col>
               <Col xs={24} lg={12}>
-                <AnalyticsCard title="Рекомендованные действия (сделки)" loading={loadingPredictions} error={predictionError}>
+                <AnalyticsCard title={tr('analyticsPage.sections.recommendedActionsDeals', 'Recommended actions (deals)')} loading={loadingPredictions} error={predictionError}>
                   {nextActionsDeals.length ? (
                     <Table
                       dataSource={nextActionsDeals}
@@ -1002,7 +1098,7 @@ export default function AnalyticsPage() {
                       pagination={{ pageSize: 5 }}
                     />
                   ) : (
-                    <Empty description="Нет рекомендаций по сделкам" />
+                    <Empty description={tr('analyticsPage.empty.noDealRecommendations', 'No deal recommendations')} />
                   )}
                 </AnalyticsCard>
               </Col>
@@ -1013,17 +1109,17 @@ export default function AnalyticsPage() {
     },
     {
       key: 'system',
-      label: 'Система',
+      label: tr('analyticsPage.tabs.system', 'System'),
       children: (
         <AnalyticsSection
-          title="Системные метрики"
-          description="Служебные auth-показатели и технический срез по системе."
+          title={tr('analyticsPage.sections.systemMetrics', 'System metrics')}
+          description={tr('analyticsPage.sections.systemMetricsDescription', 'Service auth indicators and technical system snapshot.')}
         >
-          <AnalyticsCard title="Auth Stats" loading={loadingAuthStats} error={authError}>
+          <AnalyticsCard title={tr('analyticsPage.sections.authStats', 'Auth stats')} loading={loadingAuthStats} error={authError}>
             {authStats ? (
               <AuthStatsDetails sections={authStatsSections} />
             ) : (
-              <Empty description="Нет системных данных" />
+              <Empty description={tr('analyticsPage.empty.noSystemData', 'No system data')} />
             )}
           </AnalyticsCard>
         </AnalyticsSection>
@@ -1035,19 +1131,29 @@ export default function AnalyticsPage() {
     <Space direction="vertical" size="large" style={{ width: '100%' }}>
       <Space style={{ width: '100%', justifyContent: 'space-between' }} wrap>
         <div>
-          <Title level={2} style={{ marginBottom: 4 }}>Аналитика</Title>
-          <Text type="secondary">Экран для принятия решений по продажам, активности команды и прогнозам.</Text>
+          <Title level={2} style={{ marginBottom: 4 }}>{tr('analyticsPage.title', 'Analytics')}</Title>
+          <Text type="secondary">{tr('analyticsPage.subtitle', 'Decision-making screen for sales, team activity and predictions.')}</Text>
         </div>
         <Space wrap>
+          <Segmented
+            value={period}
+            options={[
+              { label: tr('dashboardPage.periods.d7', '7 days'), value: '7d' },
+              { label: tr('dashboardPage.periods.d30', '30 days'), value: '30d' },
+              { label: tr('dashboardPage.periods.d90', '90 days'), value: '90d' },
+            ]}
+            onChange={(value) => setPeriod(String(value))}
+          />
           <Button icon={<ReloadOutlined />} onClick={handleRefresh}>
-            Обновить
+            {tr('actions.refresh', 'Refresh')}
           </Button>
         </Space>
       </Space>
 
       <Tabs
         items={tabs}
-        activeKey={period === '7d' || period === '30d' || period === '90d' ? undefined : undefined}
+        activeKey={activeTab}
+        onChange={setActiveTab}
       />
     </Space>
   );
@@ -1076,8 +1182,9 @@ function DecisionCard({ title, value, description }) {
   );
 }
 
-function RiskRow({ title, value, description, tone }) {
-  const toneStyle = riskToneStyles[tone] || riskToneStyles.neutral;
+function RiskRow({ title, value, description, tone, isDark = false }) {
+  const toneStyles = getRiskToneStyles(isDark);
+  const toneStyle = toneStyles[tone] || toneStyles.neutral;
   return (
     <div
       style={{
@@ -1121,30 +1228,30 @@ function AuthStatsSnapshot({ sections }) {
   return (
     <Space direction="vertical" size="middle" style={{ width: '100%' }}>
       <Descriptions size="small" column={1}>
-        <Descriptions.Item label="Период">
-          {sections.periodDays ? `${sections.periodDays} дней` : '-'}
+        <Descriptions.Item label={trStatic('analyticsPage.auth.period', 'Period')}>
+          {sections.periodDays ? trStatic('analyticsPage.auth.days', '{{count}} days', { count: sections.periodDays }) : '-'}
         </Descriptions.Item>
-        <Descriptions.Item label="JWT adoption">
+        <Descriptions.Item label={trStatic('analyticsPage.auth.jwtAdoption', 'JWT adoption')}>
           {sections.userAdoption.jwt_adoption_rate ?? 0}%
         </Descriptions.Item>
-        <Descriptions.Item label="Success rate">
+        <Descriptions.Item label={trStatic('analyticsPage.auth.successRate', 'Success rate')}>
           {sections.summary.success_rate ?? 0}%
         </Descriptions.Item>
-        <Descriptions.Item label="Запросы">
+        <Descriptions.Item label={trStatic('analyticsPage.auth.requests', 'Requests')}>
           {sections.summary.total_requests ?? 0}
         </Descriptions.Item>
       </Descriptions>
 
       {sections.topUsers.length ? (
         <div>
-          <Text strong>Топ пользователи</Text>
+          <Text strong>{trStatic('analyticsPage.auth.topUsers', 'Top users')}</Text>
           <List
             size="small"
             dataSource={sections.topUsers.slice(0, 5)}
             renderItem={(item) => (
               <List.Item>
                 <Space style={{ width: '100%', justifyContent: 'space-between' }}>
-                  <Text>{item.username || 'Unknown'}</Text>
+                  <Text>{item.username || trStatic('analyticsPage.common.unknown', 'Unknown')}</Text>
                   <Text type="secondary">{item.auth_type}: {item.count}</Text>
                 </Space>
               </List.Item>
@@ -1161,13 +1268,13 @@ function AuthStatsDetails({ sections }) {
     <Space direction="vertical" size="large" style={{ width: '100%' }}>
       <Row gutter={[16, 16]}>
         <Col xs={24} md={8}>
-          <Statistic title="Период" value={sections.periodDays ?? 0} suffix="дней" />
+          <Statistic title={trStatic('analyticsPage.auth.period', 'Period')} value={sections.periodDays ?? 0} suffix={trStatic('analyticsPage.auth.daysShort', 'days')} />
         </Col>
         <Col xs={24} md={8}>
-          <Statistic title="Success rate" value={sections.summary.success_rate ?? 0} suffix="%" />
+          <Statistic title={trStatic('analyticsPage.auth.successRate', 'Success rate')} value={sections.summary.success_rate ?? 0} suffix="%" />
         </Col>
         <Col xs={24} md={8}>
-          <Statistic title="JWT adoption" value={sections.userAdoption.jwt_adoption_rate ?? 0} suffix="%" />
+          <Statistic title={trStatic('analyticsPage.auth.jwtAdoption', 'JWT adoption')} value={sections.userAdoption.jwt_adoption_rate ?? 0} suffix="%" />
         </Col>
       </Row>
 
@@ -1185,24 +1292,24 @@ function AuthStatsDetails({ sections }) {
       </Descriptions>
 
       <AuthStatsTable
-        title="Top endpoints"
+        title={trStatic('analyticsPage.auth.topEndpoints', 'Top endpoints')}
         rows={sections.topEndpoints}
-        fallback="Нет данных по endpoints"
+        fallback={trStatic('analyticsPage.empty.noEndpointsData', 'No endpoints data')}
       />
       <AuthStatsTable
-        title="Top users"
+        title={trStatic('analyticsPage.auth.topUsers', 'Top users')}
         rows={sections.topUsers}
-        fallback="Нет данных по пользователям"
+        fallback={trStatic('analyticsPage.empty.noUsersData', 'No users data')}
       />
       <AuthStatsTable
-        title="Daily breakdown"
+        title={trStatic('analyticsPage.auth.dailyBreakdown', 'Daily breakdown')}
         rows={sections.dailyBreakdown}
-        fallback="Нет посуточной статистики"
+        fallback={trStatic('analyticsPage.empty.noDailyData', 'No daily data')}
       />
       <AuthStatsTable
-        title="Failed attempts"
+        title={trStatic('analyticsPage.auth.failedAttempts', 'Failed attempts')}
         rows={sections.failedAttempts}
-        fallback="Нет failed attempts"
+        fallback={trStatic('analyticsPage.empty.noFailedAttempts', 'No failed attempts')}
       />
     </Space>
   );

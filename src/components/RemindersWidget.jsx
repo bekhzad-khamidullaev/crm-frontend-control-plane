@@ -19,6 +19,7 @@ import {
 } from '../lib/api/reminders';
 import { canWrite } from '../lib/rbac.js';
 import { navigate } from '../router';
+import { formatDate } from '../lib/utils/format';
 
 const RemindersWidget = ({ maxItems = 5 }) => {
   const canManage = canWrite('common.change_reminder');
@@ -186,7 +187,7 @@ const RemindersWidget = ({ maxItems = 5 }) => {
                       </div>
                     )}
                     <small style={{ color: '#999' }}>
-                      {reminder.reminder_date ? new Date(reminder.reminder_date).toLocaleString('ru') : '-'}
+                      {formatDate(reminder.reminder_date, 'datetime')}
                     </small>
                   </div>
                 }

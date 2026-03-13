@@ -7,6 +7,7 @@ import { App, Button, Card, Descriptions, Empty, Result, Skeleton, Space, Tabs, 
 import ActivityLog from '../../components/ActivityLog';
 import { getTask, deleteTask, getUsers } from '../../lib/api/client';
 import { getTaskStages, getTaskTags } from '../../lib/api/reference';
+import { t } from '../../lib/i18n';
 import { canWrite } from '../../lib/rbac.js';
 import { navigate } from '../../router';
 
@@ -33,7 +34,7 @@ function TaskDetail({ id }) {
       const data = await getTask(id);
       setTask(data);
     } catch {
-      message.error('Ошибка загрузки данных задачи');
+      message.error(t('taskDetailPage.messages.loadError'));
       setTask(null);
     } finally {
       setLoading(false);
@@ -60,10 +61,10 @@ function TaskDetail({ id }) {
   const handleDelete = async () => {
     try {
       await deleteTask(id);
-      message.success('Задача удалена');
+      message.success(t('taskDetailPage.messages.deleted'));
       navigate('/tasks');
     } catch {
-      message.error('Ошибка удаления задачи');
+      message.error(t('taskDetailPage.messages.deleteError'));
     }
   };
 
@@ -102,11 +103,11 @@ function TaskDetail({ id }) {
     return (
       <Result
         status="404"
-        title="Задача не найдена"
-        subTitle="Запись могла быть удалена или больше не доступна"
+        title={t('taskDetailPage.notFound.title')}
+        subTitle={t('taskDetailPage.notFound.subtitle')}
         extra={
           <Button type="primary" onClick={() => navigate('/tasks')}>
-            Вернуться к задачам
+            {t('taskDetailPage.notFound.back')}
           </Button>
         }
       />
@@ -122,15 +123,15 @@ function TaskDetail({ id }) {
     <Space direction="vertical" size={16} style={{ width: '100%' }}>
       <Space wrap>
         <Button icon={<ArrowLeft size={14} />} onClick={() => navigate('/tasks')}>
-          Назад
+          {t('taskDetailPage.actions.back')}
         </Button>
         {canManage ? (
           <>
             <Button type="primary" icon={<Edit size={14} />} onClick={() => navigate(`/tasks/${id}/edit`)}>
-              Редактировать
+              {t('taskDetailPage.actions.edit')}
             </Button>
             <Button danger icon={<Trash2 size={14} />} onClick={handleDelete}>
-              Удалить
+              {t('taskDetailPage.actions.delete')}
             </Button>
           </>
         ) : null}
@@ -142,34 +143,34 @@ function TaskDetail({ id }) {
           items={[
             {
               key: 'details',
-              label: 'Детали',
+              label: t('taskDetailPage.tabs.details'),
               children: (
                 <Descriptions bordered column={1} size="small">
-                  <Descriptions.Item label="Название">{task.name}</Descriptions.Item>
-                  <Descriptions.Item label="Этап">{stage ? <Tag color={stage.done ? 'green' : stage.in_progress ? 'blue' : 'default'}>{stage.name}</Tag> : '-'}</Descriptions.Item>
-                  <Descriptions.Item label="Приоритет">{task.priority ? `Приоритет ${task.priority}` : '-'}</Descriptions.Item>
-                  <Descriptions.Item label="Дата начала">{task.start_date ? dayjs(task.start_date).format('DD.MM.YYYY') : '-'}</Descriptions.Item>
-                  <Descriptions.Item label="Срок выполнения">{task.due_date ? dayjs(task.due_date).format('DD.MM.YYYY') : '-'}</Descriptions.Item>
-                  <Descriptions.Item label="Дата закрытия">{task.closing_date ? dayjs(task.closing_date).format('DD.MM.YYYY') : '-'}</Descriptions.Item>
-                  <Descriptions.Item label="Следующий шаг">{task.next_step || '-'}</Descriptions.Item>
-                  <Descriptions.Item label="Дата следующего шага">{task.next_step_date ? dayjs(task.next_step_date).format('DD.MM.YYYY') : '-'}</Descriptions.Item>
-                  <Descriptions.Item label="Активна">{task.active ? <Tag color="green">Да</Tag> : <Tag>Нет</Tag>}</Descriptions.Item>
-                  <Descriptions.Item label="Напоминать">{task.remind_me ? <Tag color="gold">Да</Tag> : <Tag>Нет</Tag>}</Descriptions.Item>
-                  <Descriptions.Item label="Владелец">{task.owner ? userMap[task.owner] || '-' : '-'}</Descriptions.Item>
-                  <Descriptions.Item label="Со-владелец">{task.co_owner ? userMap[task.co_owner] || '-' : '-'}</Descriptions.Item>
-                  <Descriptions.Item label="Ответственные">{responsibleNames.length ? responsibleNames.join(', ') : '-'}</Descriptions.Item>
-                  <Descriptions.Item label="Подписчики">{subscriberNames.length ? subscriberNames.join(', ') : '-'}</Descriptions.Item>
-                  <Descriptions.Item label="Теги">{tagNames.length ? tagNames.map((tag) => <Tag key={tag}>{tag}</Tag>) : '-'}</Descriptions.Item>
-                  <Descriptions.Item label="Дата создания">{task.creation_date ? dayjs(task.creation_date).format('DD.MM.YYYY HH:mm') : '-'}</Descriptions.Item>
-                  <Descriptions.Item label="Последнее обновление">{task.update_date ? dayjs(task.update_date).format('DD.MM.YYYY HH:mm') : '-'}</Descriptions.Item>
-                  <Descriptions.Item label="Описание">{task.description || '-'}</Descriptions.Item>
-                  <Descriptions.Item label="Заметка">{task.note || '-'}</Descriptions.Item>
+                  <Descriptions.Item label={t('taskDetailPage.fields.name')}>{task.name}</Descriptions.Item>
+                  <Descriptions.Item label={t('taskDetailPage.fields.stage')}>{stage ? <Tag color={stage.done ? 'green' : stage.in_progress ? 'blue' : 'default'}>{stage.name}</Tag> : '-'}</Descriptions.Item>
+                  <Descriptions.Item label={t('taskDetailPage.fields.priority')}>{task.priority ? t('taskDetailPage.priorityValue', { value: task.priority }) : '-'}</Descriptions.Item>
+                  <Descriptions.Item label={t('taskDetailPage.fields.startDate')}>{task.start_date ? dayjs(task.start_date).format('DD.MM.YYYY') : '-'}</Descriptions.Item>
+                  <Descriptions.Item label={t('taskDetailPage.fields.dueDate')}>{task.due_date ? dayjs(task.due_date).format('DD.MM.YYYY') : '-'}</Descriptions.Item>
+                  <Descriptions.Item label={t('taskDetailPage.fields.closingDate')}>{task.closing_date ? dayjs(task.closing_date).format('DD.MM.YYYY') : '-'}</Descriptions.Item>
+                  <Descriptions.Item label={t('taskDetailPage.fields.nextStep')}>{task.next_step || '-'}</Descriptions.Item>
+                  <Descriptions.Item label={t('taskDetailPage.fields.nextStepDate')}>{task.next_step_date ? dayjs(task.next_step_date).format('DD.MM.YYYY') : '-'}</Descriptions.Item>
+                  <Descriptions.Item label={t('taskDetailPage.fields.active')}>{task.active ? <Tag color="green">{t('taskDetailPage.yes')}</Tag> : <Tag>{t('taskDetailPage.no')}</Tag>}</Descriptions.Item>
+                  <Descriptions.Item label={t('taskDetailPage.fields.remindMe')}>{task.remind_me ? <Tag color="gold">{t('taskDetailPage.yes')}</Tag> : <Tag>{t('taskDetailPage.no')}</Tag>}</Descriptions.Item>
+                  <Descriptions.Item label={t('taskDetailPage.fields.owner')}>{task.owner ? userMap[task.owner] || '-' : '-'}</Descriptions.Item>
+                  <Descriptions.Item label={t('taskDetailPage.fields.coOwner')}>{task.co_owner ? userMap[task.co_owner] || '-' : '-'}</Descriptions.Item>
+                  <Descriptions.Item label={t('taskDetailPage.fields.responsible')}>{responsibleNames.length ? responsibleNames.join(', ') : '-'}</Descriptions.Item>
+                  <Descriptions.Item label={t('taskDetailPage.fields.subscribers')}>{subscriberNames.length ? subscriberNames.join(', ') : '-'}</Descriptions.Item>
+                  <Descriptions.Item label={t('taskDetailPage.fields.tags')}>{tagNames.length ? tagNames.map((tag) => <Tag key={tag}>{tag}</Tag>) : '-'}</Descriptions.Item>
+                  <Descriptions.Item label={t('taskDetailPage.fields.createdAt')}>{task.creation_date ? dayjs(task.creation_date).format('DD.MM.YYYY HH:mm') : '-'}</Descriptions.Item>
+                  <Descriptions.Item label={t('taskDetailPage.fields.updatedAt')}>{task.update_date ? dayjs(task.update_date).format('DD.MM.YYYY HH:mm') : '-'}</Descriptions.Item>
+                  <Descriptions.Item label={t('taskDetailPage.fields.description')}>{task.description || '-'}</Descriptions.Item>
+                  <Descriptions.Item label={t('taskDetailPage.fields.note')}>{task.note || '-'}</Descriptions.Item>
                 </Descriptions>
               ),
             },
             {
               key: 'activity',
-              label: 'История активности',
+              label: t('taskDetailPage.tabs.activity'),
               children: <ActivityLog entityType="task" entityId={task.id} />,
             },
           ]}

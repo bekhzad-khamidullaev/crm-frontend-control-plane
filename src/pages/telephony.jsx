@@ -2,6 +2,8 @@ import React, { useEffect, useMemo, useState } from 'react';
 import dayjs from 'dayjs';
 import { Tabs, Card, Button, Form, Input, InputNumber, Switch, Table, App, Space, Modal, Spin, Row, Col, Statistic, Descriptions, Tag, DatePicker, Empty } from 'antd';
 import CrudPage from '../components/CrudPage.jsx';
+import EntitySelect from '../components/EntitySelect.jsx';
+import { t } from '../lib/i18n/index.js';
 import {
   getVoIPConnections,
   getVoIPConnection,
@@ -15,18 +17,12 @@ import {
   scheduleColdCall,
   bulkColdCall,
 } from '../lib/api/telephony.js';
-import { getUsers, getUser } from '../lib/api/client.js';
+import { getContacts, getContact, getLead, getLeads, getUser, getUsers } from '../lib/api/client.js';
+import { getCampaign, getCampaigns } from '../lib/api/marketing.js';
+import { CONNECTION_TYPE_OPTIONS, TELEPHONY_PROVIDER_OPTIONS } from '../lib/telephony/constants.js';
 
-const providerOptions = [
-  { label: 'Zadarma', value: 'Zadarma' },
-  { label: 'OnlinePBX', value: 'OnlinePBX' },
-];
-
-const typeOptions = [
-  { label: 'PBX', value: 'pbx' },
-  { label: 'SIP', value: 'sip' },
-  { label: 'VoIP', value: 'voip' },
-];
+const providerOptions = TELEPHONY_PROVIDER_OPTIONS;
+const typeOptions = CONNECTION_TYPE_OPTIONS;
 
 const formatLabel = (value) =>
   value
@@ -37,7 +33,7 @@ const formatLabel = (value) =>
 const formatDetailValue = (value) => {
   if (value === null || value === undefined || value === '') return '-';
   if (Array.isArray(value)) return value.length ? value.join(', ') : '-';
-  if (typeof value === 'object') return '[сложное значение]';
+  if (typeof value === 'object') return t('telephonyPage.common.complexValue');
   return String(value);
 };
 
@@ -68,7 +64,7 @@ function CallQueueTab() {
       setData(items);
       setSummary(Array.isArray(res) ? null : res);
     } catch (error) {
-      message.error('Не удалось загрузить очередь звонков');
+      message.error(t('telephonyPage.messages.queueLoadError'));
       setData([]);
       setSummary(null);
     } finally {
@@ -93,51 +89,51 @@ function CallQueueTab() {
   const columns = useMemo(
     () => [
       {
-        title: 'Номер',
+        title: t('telephonyPage.queue.columns.number'),
         key: 'phone',
         width: 160,
         render: (_, record) =>
           record.phone_number || record.to_number || record.number || record.caller_id || '-',
       },
       {
-        title: 'Клиент',
+        title: t('telephonyPage.queue.columns.client'),
         key: 'client',
         render: (_, record) =>
           record.client_name || record.contact_name || record.lead_name || record.name || '-',
       },
       {
-        title: 'Статус',
+        title: t('telephonyPage.queue.columns.status'),
         key: 'status',
         width: 140,
         render: (_, record) => renderStatusTag(record.status || record.state || record.queue_status),
       },
       {
-        title: 'Приоритет',
+        title: t('telephonyPage.queue.columns.priority'),
         dataIndex: 'priority',
         key: 'priority',
         width: 110,
         render: (value) => (value === null || value === undefined ? '-' : value),
       },
       {
-        title: 'Оператор',
+        title: t('telephonyPage.queue.columns.operator'),
         key: 'agent',
         render: (_, record) =>
           record.user_name || record.owner_name || record.agent_name || record.assignee || '-',
       },
       {
-        title: 'Создано',
+        title: t('telephonyPage.queue.columns.createdAt'),
         key: 'created_at',
         width: 180,
         render: (_, record) =>
           record.created_at || record.created || record.created_date || record.timestamp || '-',
       },
       {
-        title: 'Действия',
+        title: t('telephonyPage.queue.columns.actions'),
         key: 'actions',
         width: 120,
         render: (_, record) => (
           <Button type="link" onClick={() => setDetailModal({ open: true, record })}>
-            Детали
+            {t('telephonyPage.common.details')}
           </Button>
         ),
       },
@@ -146,20 +142,20 @@ function CallQueueTab() {
   );
 
   return (
-    <Card title="Очередь звонков" extra={<Button onClick={load}>Обновить</Button>}>
+    <Card title={t('telephonyPage.queue.title')} extra={<Button onClick={load}>{t('telephonyPage.common.refresh')}</Button>}>
       {stats && (
         <Row gutter={16} style={{ marginBottom: 16 }}>
           <Col xs={24} sm={12} md={6}>
-            <Statistic title="Всего" value={stats.total ?? data.length} />
+            <Statistic title={t('telephonyPage.queue.stats.total')} value={stats.total ?? data.length} />
           </Col>
           <Col xs={24} sm={12} md={6}>
-            <Statistic title="Ожидание" value={stats.waiting ?? 0} />
+            <Statistic title={t('telephonyPage.queue.stats.waiting')} value={stats.waiting ?? 0} />
           </Col>
           <Col xs={24} sm={12} md={6}>
-            <Statistic title="В работе" value={stats.active ?? 0} />
+            <Statistic title={t('telephonyPage.queue.stats.active')} value={stats.active ?? 0} />
           </Col>
           <Col xs={24} sm={12} md={6}>
-            <Statistic title="Ошибки" value={stats.failed ?? 0} />
+            <Statistic title={t('telephonyPage.queue.stats.errors')} value={stats.failed ?? 0} />
           </Col>
         </Row>
       )}
@@ -175,7 +171,7 @@ function CallQueueTab() {
       />
 
       <Modal
-        title="Детали очереди"
+        title={t('telephonyPage.queue.detailTitle')}
         open={detailModal.open}
         onCancel={() => setDetailModal({ open: false, record: null })}
         footer={null}
@@ -239,31 +235,31 @@ function IncomingCallsTab() {
       const details = await getIncomingCall(record.id);
       setDetailModal({ open: true, loading: false, data: details });
     } catch (error) {
-      message.error('Не удалось загрузить детали звонка');
+      message.error(t('telephonyPage.messages.callDetailsError'));
       setDetailModal({ open: true, loading: false, data: null });
     }
   };
 
   return (
-    <Card title="Входящие звонки" extra={<Button onClick={load}>Обновить</Button>}>
+    <Card title={t('telephonyPage.incoming.title')} extra={<Button onClick={load}>{t('telephonyPage.common.refresh')}</Button>}>
       <Table
         dataSource={data}
         rowKey="id"
         loading={loading}
         columns={[
-          { title: 'Номер отображения', dataIndex: 'caller_id', key: 'caller_id', width: 160 },
-          { title: 'Клиент', dataIndex: 'client_name', key: 'client_name' },
-          { title: 'Тип', dataIndex: 'client_type', key: 'client_type', width: 120 },
-          { title: 'Пользователь', dataIndex: 'user_name', key: 'user_name' },
-          { title: 'Показано', dataIndex: 'is_consumed', key: 'is_consumed', render: (value) => value ? 'Да' : 'Нет' },
-          { title: 'Создано', dataIndex: 'created_at', key: 'created_at', width: 180 },
+          { title: t('telephonyPage.incoming.columns.callerId'), dataIndex: 'caller_id', key: 'caller_id', width: 160 },
+          { title: t('telephonyPage.incoming.columns.client'), dataIndex: 'client_name', key: 'client_name' },
+          { title: t('telephonyPage.incoming.columns.type'), dataIndex: 'client_type', key: 'client_type', width: 120 },
+          { title: t('telephonyPage.incoming.columns.user'), dataIndex: 'user_name', key: 'user_name' },
+          { title: t('telephonyPage.incoming.columns.shown'), dataIndex: 'is_consumed', key: 'is_consumed', render: (value) => value ? t('telephonyPage.common.yes') : t('telephonyPage.common.no') },
+          { title: t('telephonyPage.incoming.columns.createdAt'), dataIndex: 'created_at', key: 'created_at', width: 180 },
           {
-            title: 'Действия',
+            title: t('telephonyPage.incoming.columns.actions'),
             key: 'actions',
             width: 120,
             render: (_, record) => (
               <Button type="link" onClick={() => openDetails(record)}>
-                Детали
+                {t('telephonyPage.common.details')}
               </Button>
             ),
           },
@@ -271,7 +267,7 @@ function IncomingCallsTab() {
         pagination={{ pageSize: 10 }}
       />
       <Modal
-        title="Детали входящего звонка"
+        title={t('telephonyPage.incoming.detailTitle')}
         open={detailModal.open}
         onCancel={() => setDetailModal({ open: false, loading: false, data: null })}
         footer={null}
@@ -304,7 +300,7 @@ function IncomingCallsTab() {
               ))}
           </Space>
         ) : (
-          <Empty description="Нет данных" />
+          <Empty description={t('telephonyPage.common.noData')} />
         )}
       </Modal>
     </Card>
@@ -320,10 +316,10 @@ function ColdCallTab() {
   const submitImmediate = async (values) => {
     try {
       await initiateCall(values);
-      message.success('Звонок инициирован');
+      message.success(t('telephonyPage.messages.callInitiated'));
       form.resetFields();
     } catch (error) {
-      message.error('Не удалось инициировать звонок');
+      message.error(t('telephonyPage.messages.callInitiateError'));
     }
   };
 
@@ -337,10 +333,10 @@ function ColdCallTab() {
         contact_id: values.contact_id,
         campaign_id: values.campaign_id,
       });
-      message.success('Звонок запланирован');
+      message.success(t('telephonyPage.messages.callScheduled'));
       scheduleForm.resetFields();
     } catch (error) {
-      message.error('Не удалось запланировать звонок');
+      message.error(t('telephonyPage.messages.callScheduleError'));
     }
   };
 
@@ -356,85 +352,120 @@ function ColdCallTab() {
         campaign_id: values.campaign_id,
         delay_between_calls: values.delay_between_calls,
       });
-      message.success('Bulk расписание отправлено');
+      message.success(t('telephonyPage.messages.bulkSent'));
       bulkForm.resetFields();
     } catch (error) {
-      message.error('Не удалось отправить bulk');
+      message.error(t('telephonyPage.messages.bulkError'));
     }
   };
 
   return (
     <Space direction="vertical" size="middle" style={{ width: '100%' }}>
-      <Card title="Инициировать звонок">
+      <Card title={t('telephonyPage.cold.initiateTitle')}>
         <Form form={form} layout="vertical" onFinish={submitImmediate}>
-          <Form.Item label="To number" name="to_number" rules={[{ required: true, message: 'Введите номер' }]}>
+          <Form.Item label={t('telephonyPage.cold.toNumber')} name="to_number" rules={[{ required: true, message: t('telephonyPage.cold.validation.enterNumber') }]}>
             <Input />
           </Form.Item>
-          <Form.Item label="From number" name="from_number">
+          <Form.Item label={t('telephonyPage.cold.fromNumber')} name="from_number">
             <Input />
           </Form.Item>
-          <Form.Item label="Лид" name="lead_id">
-            <InputNumber style={{ width: '100%' }} />
+          <Form.Item label={t('telephonyPage.cold.lead')} name="lead_id">
+            <EntitySelect
+              placeholder="Выберите лид"
+              fetchList={getLeads}
+              fetchById={getLead}
+              allowClear
+            />
           </Form.Item>
-          <Form.Item label="Контакт" name="contact_id">
-            <InputNumber style={{ width: '100%' }} />
+          <Form.Item label={t('telephonyPage.cold.contact')} name="contact_id">
+            <EntitySelect
+              placeholder="Выберите контакт"
+              fetchList={getContacts}
+              fetchById={getContact}
+              allowClear
+            />
           </Form.Item>
-          <Form.Item label="Кампания" name="campaign_id">
-            <InputNumber style={{ width: '100%' }} />
+          <Form.Item label={t('telephonyPage.cold.campaign')} name="campaign_id">
+            <EntitySelect
+              placeholder="Выберите кампанию"
+              fetchList={getCampaigns}
+              fetchById={getCampaign}
+              allowClear
+            />
           </Form.Item>
           <Button type="primary" htmlType="submit">
-            Вызвать
+            {t('telephonyPage.cold.callNow')}
           </Button>
         </Form>
       </Card>
 
-      <Card title="Запланировать звонок">
+      <Card title={t('telephonyPage.cold.scheduleTitle')}>
         <Form form={scheduleForm} layout="vertical" onFinish={submitSchedule}>
-          <Form.Item label="To number" name="to_number">
+          <Form.Item label={t('telephonyPage.cold.toNumber')} name="to_number">
             <Input />
           </Form.Item>
-          <Form.Item label="From number" name="from_number">
+          <Form.Item label={t('telephonyPage.cold.fromNumber')} name="from_number">
             <Input />
           </Form.Item>
-          <Form.Item label="Дата и время" name="scheduled_time">
+          <Form.Item label={t('telephonyPage.cold.dateTime')} name="scheduled_time">
             <DatePicker
               showTime
               format="DD.MM.YYYY HH:mm"
               style={{ width: '100%' }}
-              placeholder="Выберите дату и время"
+              placeholder={t('telephonyPage.cold.selectDateTime')}
             />
           </Form.Item>
-          <Form.Item label="Лид" name="lead_id">
-            <InputNumber style={{ width: '100%' }} />
+          <Form.Item label={t('telephonyPage.cold.lead')} name="lead_id">
+            <EntitySelect
+              placeholder="Выберите лид"
+              fetchList={getLeads}
+              fetchById={getLead}
+              allowClear
+            />
           </Form.Item>
-          <Form.Item label="Контакт" name="contact_id">
-            <InputNumber style={{ width: '100%' }} />
+          <Form.Item label={t('telephonyPage.cold.contact')} name="contact_id">
+            <EntitySelect
+              placeholder="Выберите контакт"
+              fetchList={getContacts}
+              fetchById={getContact}
+              allowClear
+            />
           </Form.Item>
-          <Form.Item label="Кампания" name="campaign_id">
-            <InputNumber style={{ width: '100%' }} />
+          <Form.Item label={t('telephonyPage.cold.campaign')} name="campaign_id">
+            <EntitySelect
+              placeholder="Выберите кампанию"
+              fetchList={getCampaigns}
+              fetchById={getCampaign}
+              allowClear
+            />
           </Form.Item>
           <Button type="primary" htmlType="submit">
-            Запланировать
+            {t('telephonyPage.cold.schedule')}
           </Button>
         </Form>
       </Card>
 
-      <Card title="Bulk звонки">
+      <Card title={t('telephonyPage.cold.bulkTitle')}>
         <Form form={bulkForm} layout="vertical" onFinish={submitBulk}>
-          <Form.Item label="Phone numbers (по одному на строку)" name="phone_numbers" rules={[{ required: true, message: 'Введите номера' }]}>
+          <Form.Item label={t('telephonyPage.cold.phoneNumbers')} name="phone_numbers" rules={[{ required: true, message: t('telephonyPage.cold.validation.enterNumbers') }]}>
             <Input.TextArea rows={4} />
           </Form.Item>
-          <Form.Item label="From number" name="from_number">
+          <Form.Item label={t('telephonyPage.cold.fromNumber')} name="from_number">
             <Input />
           </Form.Item>
-          <Form.Item label="Кампания" name="campaign_id">
-            <InputNumber style={{ width: '100%' }} />
+          <Form.Item label={t('telephonyPage.cold.campaign')} name="campaign_id">
+            <EntitySelect
+              placeholder="Выберите кампанию"
+              fetchList={getCampaigns}
+              fetchById={getCampaign}
+              allowClear
+            />
           </Form.Item>
-          <Form.Item label="Delay between calls (сек)" name="delay_between_calls">
+          <Form.Item label={t('telephonyPage.cold.delayBetweenCalls')} name="delay_between_calls">
             <InputNumber style={{ width: '100%' }} />
           </Form.Item>
           <Button type="primary" htmlType="submit">
-            Запустить bulk
+            {t('telephonyPage.cold.runBulk')}
           </Button>
         </Form>
       </Card>
@@ -446,10 +477,10 @@ export default function TelephonyPage() {
   const tabs = [
     {
       key: 'connections',
-      label: 'Подключения',
+      label: t('telephonyPage.tabs.connections'),
       children: (
         <CrudPage
-          title="VoIP подключения"
+          title={t('telephonyPage.connections.title')}
           api={{
             list: getVoIPConnections,
             retrieve: getVoIPConnection,
@@ -458,32 +489,32 @@ export default function TelephonyPage() {
             remove: deleteVoIPConnection,
           }}
           columns={[
-            { title: 'Провайдер', dataIndex: 'provider', key: 'provider' },
-            { title: 'Тип', dataIndex: 'type', key: 'type', width: 120 },
-            { title: 'Номер', dataIndex: 'number', key: 'number' },
-            { title: 'Номер отображения', dataIndex: 'callerid', key: 'callerid' },
-            { title: 'Активно', dataIndex: 'active', key: 'active', render: (value) => value ? 'Да' : 'Нет' },
+            { title: t('telephonyPage.connections.columns.provider'), dataIndex: 'provider', key: 'provider' },
+            { title: t('telephonyPage.connections.columns.type'), dataIndex: 'type', key: 'type', width: 120 },
+            { title: t('telephonyPage.connections.columns.number'), dataIndex: 'number', key: 'number' },
+            { title: t('telephonyPage.connections.columns.callerId'), dataIndex: 'callerid', key: 'callerid' },
+            { title: t('telephonyPage.connections.columns.active'), dataIndex: 'active', key: 'active', render: (value) => value ? t('telephonyPage.common.yes') : t('telephonyPage.common.no') },
           ]}
           fields={[
-            { name: 'provider', label: 'Провайдер', type: 'select', options: providerOptions, required: true },
-            { name: 'type', label: 'Тип', type: 'select', options: typeOptions, required: true },
-            { name: 'number', label: 'Номер', type: 'text', required: true },
-            { name: 'callerid', label: 'Номер отображения', type: 'text', required: true },
+            { name: 'provider', label: t('telephonyPage.connections.fields.provider'), type: 'select', options: providerOptions, required: true },
+            { name: 'type', label: t('telephonyPage.connections.fields.type'), type: 'select', options: typeOptions, required: true },
+            { name: 'number', label: t('telephonyPage.connections.fields.number'), type: 'text', required: true },
+            { name: 'callerid', label: t('telephonyPage.connections.fields.callerId'), type: 'text', required: true },
             {
               name: 'owner',
-              label: 'Владелец',
+              label: t('telephonyPage.connections.fields.owner'),
               type: 'entity',
               fetchList: getUsers,
               fetchById: getUser,
             },
-            { name: 'active', label: 'Активно', type: 'switch' },
+            { name: 'active', label: t('telephonyPage.connections.fields.active'), type: 'switch' },
           ]}
         />
       ),
     },
-    { key: 'incoming', label: 'Входящие', children: <IncomingCallsTab /> },
-    { key: 'queue', label: 'Очередь', children: <CallQueueTab /> },
-    { key: 'cold-calls', label: 'Cold Calls', children: <ColdCallTab /> },
+    { key: 'incoming', label: t('telephonyPage.tabs.incoming'), children: <IncomingCallsTab /> },
+    { key: 'queue', label: t('telephonyPage.tabs.queue'), children: <CallQueueTab /> },
+    { key: 'cold-calls', label: t('telephonyPage.tabs.coldCalls'), children: <ColdCallTab /> },
   ];
 
   return <Tabs items={tabs} />;

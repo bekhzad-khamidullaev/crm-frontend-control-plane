@@ -66,7 +66,7 @@ export const routeMeta = {
  'profile': { auth: true, title: 'Profile' },
  'settings': { auth: true, title: 'Settings' },
  'integrations': { auth: true, title: 'Integrations' },
- 'landing-builder': { auth: true, roles: ['admin', 'manager'], title: 'Landing Builder' },
+ 'landing-builder': { auth: true, title: 'Landing Builder' },
  'landing-public': { auth: false, title: 'Public Landing' },
  'landing-preview': { auth: false, title: 'Landing Preview' },
  'crm-landing': { auth: false, title: 'CRM Landing' },

@@ -1,5 +1,10 @@
 {
   "nav": {
+    "salesGroup": "Sales",
+    "communicationsGroup": "Communications",
+    "marketingGroup": "Marketing",
+    "operationsGroup": "Operations",
+    "systemGroup": "System",
     "dashboard": "Dashboard",
     "analytics": "Analytics",
     "leads": "Leads",
@@ -23,7 +28,7 @@
     "helpCenter": "Help Center",
     "reportsAndAnalytics": "Reports & Analytics",
     "crmEmails": "Emails",
-    "massmail": "Massmail",
+    "massmail": "Bulk Mail",
     "smsCenter": "SMS",
     "landingBuilder": "Landing Builder",
     "operations": "Operations",
@@ -32,7 +37,11 @@
     "users": "Users",
     "profile": "Profile",
     "settings": "Settings",
-    "logout": "Logout"
+    "logout": "Logout",
+    "themeLight": "Light theme",
+    "themeDark": "Dark theme",
+    "language": "Language",
+    "theme": "Theme"
   },
   "actions": {
     "edit": "Edit",
@@ -41,7 +50,12 @@
     "cancel": "Cancel",
     "create": "Create",
     "search": "Search",
-    "retry": "Retry"
+    "retry": "Retry",
+    "refresh": "Refresh",
+    "back": "Back",
+    "saveChanges": "Save changes",
+    "reset": "Reset",
+    "update": "Update"
   },
   "helpCenterPage": {
     "alertTitle": "Help Center",
@@ -81,6 +95,437 @@
     },
     "kpi": {
       "conversion": "Conversion: {value}%"
+    }
+  },
+  "dashboardPage": {
+    "title": "Dashboard",
+    "subtitle": "Key CRM indicators",
+    "cards": {
+      "leads": "Leads",
+      "contacts": "Contacts",
+      "deals": "Deals",
+      "revenue": "Revenue"
+    },
+    "periods": {
+      "d7": "7 days",
+      "d30": "30 days",
+      "d90": "90 days"
+    },
+    "lastActivity": {
+      "title": "Last Activity",
+      "empty": "No activity for the selected period",
+      "fallbackEvent": "Event",
+      "fallbackDescription": "No description"
+    },
+    "errors": {
+      "loadData": "Failed to load dashboard data"
+    }
+  },
+  "loginPage": {
+    "subtitle": "Enter your credentials to sign in",
+    "submit": "Sign in",
+    "fields": {
+      "username": {
+        "label": "Username",
+        "required": "Enter username"
+      },
+      "password": {
+        "label": "Password",
+        "required": "Enter password"
+      }
+    },
+    "messages": {
+      "welcome": "Welcome!"
+    },
+    "errors": {
+      "invalidCredentials": "Invalid username or password",
+      "tokenTooLarge": "Token is too large for Authorization header (> {limit} bytes). Enable cookie auth or reduce JWT size on backend."
+    }
+  },
+  "usersPage": {
+    "tabs": {
+      "users": "Users",
+      "profiles": "Profiles",
+      "security": "Security"
+    },
+    "columns": {
+      "firstName": "First Name",
+      "lastName": "Last Name",
+      "fullName": "Full Name"
+    },
+    "security": {
+      "twoFaTitle": "2FA Status",
+      "twoFaEmpty": "No 2FA data",
+      "sessionsTitle": "Sessions",
+      "revokeAll": "Revoke all",
+      "createdAt": "Created At",
+      "active": "Active"
+    },
+    "messages": {
+      "securityLoadError": "Failed to load security data",
+      "sessionsRevoked": "All sessions revoked",
+      "revokeError": "Failed to revoke sessions"
+    },
+    "common": {
+      "refresh": "Refresh",
+      "yes": "Yes",
+      "no": "No"
+    }
+  },
+  "smsCenterPage": {
+    "tabs": {
+      "providers": "Providers",
+      "history": "History",
+      "status": "Status",
+      "send": "Send"
+    },
+    "common": {
+      "refresh": "Refresh",
+      "loading": "Loading...",
+      "channel": "Channel",
+      "yes": "Yes",
+      "no": "No"
+    },
+    "providers": {
+      "title": "SMS Providers",
+      "columns": {
+        "name": "Name"
+      }
+    },
+    "history": {
+      "title": "SMS History",
+      "columns": {
+        "recipient": "Recipient",
+        "text": "Text",
+        "status": "Status",
+        "date": "Date"
+      }
+    },
+    "status": {
+      "title": "SMS Status",
+      "empty": "No SMS status data",
+      "value": "Value"
+    },
+    "send": {
+      "title": "Send SMS",
+      "bulkTitle": "Send SMS (Bulk)",
+      "submit": "Send",
+      "fields": {
+        "phone": "Phone",
+        "phones": "Phones (one per line)",
+        "text": "Text",
+        "async": "Send asynchronously"
+      },
+      "placeholders": {
+        "selectChannel": "Select channel"
+      },
+      "validation": {
+        "channelRequired": "Select a channel",
+        "numbersRequired": "Enter phone numbers",
+        "phoneRequired": "Enter phone number",
+        "textRequired": "Enter text"
+      }
+    },
+    "messages": {
+      "sent": "SMS sent",
+      "queued": "SMS queued",
+      "bulkQueued": "SMS queued: {count} recipients",
+      "sendError": "Failed to send SMS"
+    }
+  },
+  "telephonyPage": {
+    "tabs": {
+      "connections": "Connections",
+      "incoming": "Incoming",
+      "queue": "Queue",
+      "coldCalls": "Cold Calls"
+    },
+    "common": {
+      "refresh": "Refresh",
+      "details": "Details",
+      "noData": "No data",
+      "yes": "Yes",
+      "no": "No",
+      "complexValue": "[complex value]"
+    },
+    "messages": {
+      "queueLoadError": "Failed to load call queue",
+      "callDetailsError": "Failed to load call details",
+      "callInitiated": "Call initiated",
+      "callInitiateError": "Failed to initiate call",
+      "callScheduled": "Call scheduled",
+      "callScheduleError": "Failed to schedule call",
+      "bulkSent": "Bulk schedule sent",
+      "bulkError": "Failed to send bulk"
+    },
+    "queue": {
+      "title": "Call Queue",
+      "detailTitle": "Queue Details",
+      "columns": {
+        "number": "Number",
+        "client": "Client",
+        "status": "Status",
+        "priority": "Priority",
+        "operator": "Operator",
+        "createdAt": "Created At",
+        "actions": "Actions"
+      },
+      "stats": {
+        "total": "Total",
+        "waiting": "Waiting",
+        "active": "Active",
+        "errors": "Errors"
+      }
+    },
+    "incoming": {
+      "title": "Incoming Calls",
+      "detailTitle": "Incoming Call Details",
+      "columns": {
+        "callerId": "Caller ID",
+        "client": "Client",
+        "type": "Type",
+        "user": "User",
+        "shown": "Shown",
+        "createdAt": "Created At",
+        "actions": "Actions"
+      }
+    },
+    "cold": {
+      "initiateTitle": "Initiate Call",
+      "scheduleTitle": "Schedule Call",
+      "bulkTitle": "Bulk Calls",
+      "toNumber": "To number",
+      "fromNumber": "From number",
+      "lead": "Lead",
+      "contact": "Contact",
+      "campaign": "Campaign",
+      "dateTime": "Date and Time",
+      "selectDateTime": "Select date and time",
+      "phoneNumbers": "Phone numbers (one per line)",
+      "delayBetweenCalls": "Delay between calls (sec)",
+      "callNow": "Call",
+      "schedule": "Schedule",
+      "runBulk": "Run bulk",
+      "validation": {
+        "enterNumber": "Enter number",
+        "enterNumbers": "Enter numbers"
+      }
+    },
+    "connections": {
+      "title": "VoIP Connections",
+      "columns": {
+        "provider": "Provider",
+        "type": "Type",
+        "number": "Number",
+        "callerId": "Caller ID",
+        "active": "Active"
+      },
+      "fields": {
+        "provider": "Provider",
+        "type": "Type",
+        "number": "Number",
+        "callerId": "Caller ID",
+        "owner": "Owner",
+        "active": "Active"
+      }
+    }
+  },
+  "callsDashboardPage": {
+    "title": "Telephony Dashboard",
+    "common": {
+      "refresh": "Refresh"
+    },
+    "period": {
+      "today": "Today",
+      "week": "Week",
+      "month": "Month",
+      "year": "Year"
+    },
+    "columns": {
+      "direction": "Direction",
+      "number": "Number",
+      "status": "Status",
+      "time": "Time",
+      "duration": "Duration",
+      "rate": "Rate",
+      "team": "Team",
+      "total": "Total",
+      "agent": "Agent"
+    },
+    "direction": {
+      "inbound": "Inbound",
+      "outbound": "Outbound"
+    },
+    "status": {
+      "completed": "Completed",
+      "answered": "Answered",
+      "missed": "Missed",
+      "noAnswer": "No answer",
+      "busy": "Busy",
+      "failed": "Failed"
+    },
+    "stats": {
+      "totalCalls": "Total Calls",
+      "inbound": "Inbound",
+      "outbound": "Outbound",
+      "successRate": "Success Rate",
+      "completed": "Completed",
+      "missed": "Missed",
+      "totalDuration": "Total Duration",
+      "averageDuration": "Average Duration"
+    },
+    "duration": {
+      "hoursMinutes": "{hours}h {minutes}m",
+      "secondsZero": "0 s",
+      "secondsValue": "{value} s"
+    },
+    "recent": {
+      "title": "Recent Calls",
+      "empty": "No call data"
+    },
+    "drilldown": {
+      "teams": "Team Drilldown",
+      "agents": "Agent Drilldown"
+    },
+    "weekly": {
+      "period": "Period",
+      "createdAt": "Created At",
+      "export": "Export"
+    },
+    "automation": {
+      "start": "Start",
+      "status": "Status",
+      "error": "Error"
+    },
+    "qa": {
+      "session": "Session",
+      "date": "Date",
+      "modalTitle": "Call QA score",
+      "save": "Save",
+      "cancel": "Cancel",
+      "validation": {
+        "script": "Specify script score",
+        "communication": "Specify communication score",
+        "result": "Specify result score",
+        "outcome": "Select outcome"
+      }
+    },
+    "messages": {
+      "loadError": "Failed to load telephony data",
+      "qaCallNotSelected": "No call selected for QA",
+      "qaSaved": "QA score saved",
+      "qaSaveError": "Failed to save QA score",
+      "weeklyGenerated": "Weekly board report generated",
+      "weeklyGenerateError": "Failed to generate weekly report",
+      "weeklyExportError": "Failed to export weekly report",
+      "automationRunError": "Failed to run automation"
+    }
+  },
+  "operationsPage": {
+    "tabs": {
+      "requests": "Requests",
+      "outputs": "Outputs",
+      "shipments": "Shipments"
+    },
+    "common": {
+      "yes": "Yes",
+      "no": "No"
+    },
+    "fields": {
+      "description": "Description",
+      "firstName": "First Name",
+      "middleName": "Middle Name",
+      "lastName": "Last Name",
+      "phone": "Phone",
+      "country": "Country",
+      "city": "City",
+      "owner": "Owner",
+      "company": "Company",
+      "contact": "Contact",
+      "lead": "Lead",
+      "deal": "Deal",
+      "product": "Product",
+      "quantity": "Quantity",
+      "amount": "Amount",
+      "currency": "Currency",
+      "shippingDate": "Shipping Date",
+      "plannedShippingDate": "Planned Date",
+      "actualShippingDate": "Actual Date",
+      "shipped": "Shipped",
+      "serialNumber": "Serial Number"
+    },
+    "columns": {
+      "ticket": "Ticket",
+      "firstName": "First Name",
+      "lastName": "Last Name",
+      "phone": "Phone",
+      "company": "Company",
+      "contact": "Contact",
+      "lead": "Lead",
+      "deal": "Deal",
+      "product": "Product",
+      "quantity": "Quantity",
+      "amount": "Amount",
+      "currency": "Currency",
+      "shipped": "Shipped"
+    }
+  },
+  "referenceDataPage": {
+    "tabs": {
+      "countries": "Countries",
+      "cities": "Cities",
+      "industries": "Industries",
+      "leadSources": "Lead Sources",
+      "clientTypes": "Client Types",
+      "closingReasons": "Closing Reasons",
+      "dealStages": "Deal Stages",
+      "taskStages": "Task Stages",
+      "projectStages": "Project Stages",
+      "crmTags": "CRM Tags",
+      "taskTags": "Task Tags",
+      "departments": "Departments",
+      "currencies": "Currencies",
+      "currencyRates": "Currency Rates",
+      "productCategories": "Product Categories"
+    },
+    "alert": {
+      "title": "Reference Data",
+      "description": "System reference lists (statuses, types, countries, tags, etc.) used in CRM records and business flows."
+    },
+    "common": {
+      "ru": "RU",
+      "en": "EN",
+      "uz": "UZ",
+      "yes": "Yes",
+      "no": "No",
+      "name": "Name",
+      "code": "Code",
+      "rate": "Rate",
+      "autoUpdate": "Auto Update",
+      "actions": "Actions",
+      "country": "Country",
+      "countryRu": "Country RU",
+      "countryEn": "Country EN",
+      "countryUz": "Country UZ",
+      "index": "Index",
+      "default": "Default",
+      "successful": "Successful",
+      "inProgress": "In Progress",
+      "done": "Done",
+      "forContent": "For Content"
+    },
+    "members": {
+      "title": "Members",
+      "user": "User",
+      "role": "Role",
+      "count": "Members",
+      "composition": "Composition",
+      "empty": "No members in this department"
+    },
+    "currencyRates": {
+      "rates": "Rates",
+      "loadError": "Failed to load rates",
+      "empty": "No available currency rate data"
     }
   },
   "leads": {
@@ -184,6 +629,1380 @@
       "showStatistics": "Show Statistics",
       "noDataAvailable": "Data unavailable",
       "loadingError": "Failed to load data"
+    }
+  },
+  "tasksListPage": {
+    "columns": {
+      "task": "Task",
+      "stage": "Stage",
+      "responsible": "Responsible",
+      "dueDate": "Due Date",
+      "actions": "Actions"
+    },
+    "actions": {
+      "view": "View",
+      "edit": "Edit",
+      "delete": "Delete",
+      "create": "Create task",
+      "refresh": "Refresh"
+    },
+    "messages": {
+      "stagesLoadWarning": "Failed to load task stages",
+      "usersLoadWarning": "Failed to load users",
+      "listLoadError": "Failed to load task list",
+      "loadError": "Task loading error",
+      "deleted": "Task deleted",
+      "deleteError": "Failed to delete task",
+      "stagesNotConfigured": "Task stages are not configured",
+      "statusUpdated": "Task status updated",
+      "statusUpdateError": "Failed to update task status"
+    },
+    "deadline": {
+      "daysLeft": "{count} d.",
+      "overdue": "overdue"
+    },
+    "deleteModal": {
+      "title": "Delete this task?",
+      "description": "This action cannot be undone.",
+      "confirm": "Yes",
+      "cancel": "No"
+    },
+    "title": "Tasks",
+    "subtitle": "Task list",
+    "searchPlaceholder": "Search by title, description...",
+    "pagination": {
+      "total": "Total: {total}"
+    },
+    "empty": "No tasks"
+  },
+  "projectsListPage": {
+    "columns": {
+      "project": "Project",
+      "stage": "Stage",
+      "owner": "Owner",
+      "dueDate": "Due Date",
+      "actions": "Actions"
+    },
+    "actions": {
+      "view": "View",
+      "edit": "Edit",
+      "delete": "Delete",
+      "create": "Create project",
+      "refresh": "Refresh"
+    },
+    "messages": {
+      "stagesLoadWarning": "Failed to load project stages",
+      "usersLoadWarning": "Failed to load users",
+      "listLoadError": "Failed to load project list",
+      "loadError": "Project loading error",
+      "deleted": "Project deleted",
+      "deleteError": "Failed to delete project",
+      "reopened": "Project reopened",
+      "completed": "Project completed",
+      "statusUpdateError": "Failed to update project status"
+    },
+    "title": "Projects",
+    "subtitle": "Project list",
+    "searchPlaceholder": "Search projects...",
+    "pagination": {
+      "total": "Total: {total}"
+    },
+    "empty": "No projects"
+  },
+  "taskDetailPage": {
+    "actions": {
+      "back": "Back",
+      "edit": "Edit",
+      "delete": "Delete"
+    },
+    "messages": {
+      "loadError": "Failed to load task details",
+      "deleted": "Task deleted",
+      "deleteError": "Failed to delete task"
+    },
+    "notFound": {
+      "title": "Task not found",
+      "subtitle": "The record may have been deleted or is no longer available",
+      "back": "Back to tasks"
+    },
+    "tabs": {
+      "details": "Details",
+      "activity": "Activity history"
+    },
+    "fields": {
+      "name": "Name",
+      "stage": "Stage",
+      "priority": "Priority",
+      "startDate": "Start date",
+      "dueDate": "Due date",
+      "closingDate": "Closing date",
+      "nextStep": "Next step",
+      "nextStepDate": "Next step date",
+      "active": "Active",
+      "remindMe": "Remind me",
+      "owner": "Owner",
+      "coOwner": "Co-owner",
+      "responsible": "Responsible",
+      "subscribers": "Subscribers",
+      "tags": "Tags",
+      "createdAt": "Created at",
+      "updatedAt": "Last updated",
+      "description": "Description",
+      "note": "Note"
+    },
+    "priorityValue": "Priority {value}",
+    "yes": "Yes",
+    "no": "No"
+  },
+  "projectDetailPage": {
+    "actions": {
+      "back": "Back",
+      "edit": "Edit",
+      "assign": "Assign",
+      "reopen": "Reopen",
+      "complete": "Complete",
+      "delete": "Delete"
+    },
+    "messages": {
+      "loadError": "Failed to load project details",
+      "deleted": "Project deleted",
+      "deleteError": "Failed to delete project",
+      "completed": "Project completed",
+      "completeError": "Failed to complete project",
+      "reopened": "Project reopened",
+      "reopenError": "Failed to reopen project",
+      "assignmentsUpdated": "Assignments updated",
+      "assignmentsError": "Assignment error"
+    },
+    "loadError": {
+      "title": "Failed to open project",
+      "subtitle": "Try loading again",
+      "retry": "Retry"
+    },
+    "notFound": {
+      "title": "Project not found",
+      "subtitle": "The record may be deleted or you do not have access",
+      "back": "Back to projects"
+    },
+    "tabs": {
+      "details": "Details",
+      "activity": "Activity history"
+    },
+    "fields": {
+      "name": "Name",
+      "stage": "Stage",
+      "priority": "Priority",
+      "startDate": "Start date",
+      "dueDate": "Due date",
+      "closingDate": "Closing date",
+      "nextStep": "Next step",
+      "nextStepDate": "Next step date",
+      "active": "Active",
+      "remindMe": "Remind me",
+      "owner": "Owner",
+      "coOwner": "Co-owner",
+      "responsible": "Responsible",
+      "subscribers": "Subscribers",
+      "tags": "Tags",
+      "createdAt": "Created at",
+      "updatedAt": "Last updated",
+      "description": "Description",
+      "note": "Note"
+    },
+    "priorityValue": "Priority {value}",
+    "yes": "Yes",
+    "no": "No",
+    "assignModal": {
+      "title": "Project assignments",
+      "save": "Save",
+      "cancel": "Cancel",
+      "placeholders": {
+        "owner": "Owner",
+        "coOwner": "Co-owner",
+        "responsible": "Responsible",
+        "subscribers": "Subscribers"
+      }
+    }
+  },
+  "taskFormPage": {
+    "titleEdit": "Edit task",
+    "titleCreate": "Create new task",
+    "loading": "Loading...",
+    "sections": {
+      "main": "Main information",
+      "related": "Related records",
+      "assignees": "Assignees",
+      "status": "Status"
+    },
+    "fields": {
+      "name": "Task name",
+      "priority": "Priority",
+      "description": "Description",
+      "note": "Note",
+      "stage": "Stage",
+      "startDate": "Start date",
+      "dueDate": "Due date",
+      "closingDate": "Closing date",
+      "leadTime": "Lead time",
+      "nextStep": "Next step",
+      "nextStepDate": "Next step date",
+      "project": "Project",
+      "parentTask": "Parent task",
+      "owner": "Owner",
+      "coOwner": "Co-owner",
+      "responsible": "Responsible",
+      "subscribers": "Subscribers",
+      "tags": "Tags",
+      "active": "Active",
+      "remindMe": "Remind me"
+    },
+    "placeholders": {
+      "name": "Prepare a commercial offer",
+      "priority": "Select priority",
+      "description": "Detailed task description",
+      "note": "Internal notes",
+      "stage": "Select stage",
+      "leadTime": "DD HH:MM:SS",
+      "nextStep": "Align requirements",
+      "project": "Select project",
+      "parentTask": "Select task",
+      "user": "Select user",
+      "users": "Select users",
+      "tags": "Select tags"
+    },
+    "priority": {
+      "low": "Low",
+      "medium": "Medium",
+      "high": "High"
+    },
+    "validation": {
+      "nameRequired": "Enter name",
+      "stageRequired": "Select stage",
+      "nextStepRequired": "Enter next step",
+      "nextStepDateRequired": "Select next step date"
+    },
+    "permission": {
+      "backToList": "Back to task list",
+      "description": "You do not have permission to create or edit tasks."
+    },
+    "actions": {
+      "back": "Back",
+      "update": "Update",
+      "create": "Create",
+      "cancel": "Cancel"
+    },
+    "messages": {
+      "notification": "Notification",
+      "error": "Error",
+      "loadError": "Failed to load task data",
+      "noPermissionTitle": "Insufficient permissions",
+      "noPermissionDescription": "You do not have permission to modify tasks",
+      "updated": "Task updated",
+      "created": "Task created",
+      "updateError": "Failed to update task",
+      "createError": "Failed to create task"
+    }
+  },
+  "projectFormPage": {
+    "titleEdit": "Edit project",
+    "titleCreate": "Create new project",
+    "sections": {
+      "main": "Main information",
+      "assignees": "Assignees",
+      "status": "Status"
+    },
+    "fields": {
+      "name": "Project name",
+      "priority": "Priority",
+      "description": "Description",
+      "note": "Note",
+      "stage": "Stage",
+      "startDate": "Start date",
+      "dueDate": "Due date",
+      "closingDate": "Closing date",
+      "nextStep": "Next step",
+      "nextStepDate": "Next step date",
+      "owner": "Owner",
+      "coOwner": "Co-owner",
+      "responsible": "Responsible",
+      "subscribers": "Subscribers",
+      "tags": "Tags",
+      "active": "Active",
+      "remindMe": "Remind me"
+    },
+    "placeholders": {
+      "name": "CRM implementation",
+      "priority": "Select priority",
+      "description": "Detailed project description",
+      "note": "Internal notes",
+      "stage": "Select stage",
+      "nextStep": "Define goals",
+      "user": "Select user",
+      "users": "Select users",
+      "tags": "Select tags"
+    },
+    "priority": {
+      "low": "Low",
+      "medium": "Medium",
+      "high": "High"
+    },
+    "validation": {
+      "nameRequired": "Enter name",
+      "nextStepRequired": "Enter next step",
+      "nextStepDateRequired": "Select next step date"
+    },
+    "permission": {
+      "backToList": "Back to project list",
+      "description": "You do not have permission to create or edit projects."
+    },
+    "actions": {
+      "back": "Back",
+      "update": "Update",
+      "create": "Create",
+      "cancel": "Cancel"
+    },
+    "messages": {
+      "notification": "Notification",
+      "error": "Error",
+      "loadError": "Failed to load project data",
+      "noPermissionTitle": "Insufficient permissions",
+      "noPermissionDescription": "You do not have permission to modify projects",
+      "updated": "Project updated",
+      "created": "Project created",
+      "updateError": "Failed to update project",
+      "createError": "Failed to create project"
+    },
+    "loadError": {
+      "title": "Failed to load project for editing",
+      "subtitle": "The form cannot be filled until project data is loaded.",
+      "retry": "Retry"
+    }
+  },
+  "integrationCard": {
+    "status": {
+      "connected": "Connected",
+      "disconnected": "Not connected",
+      "error": "Error"
+    },
+    "actions": {
+      "refresh": "Refresh",
+      "settings": "Settings",
+      "disconnect": "Disconnect",
+      "configure": "Configure",
+      "connect": "Connect"
+    },
+    "messages": {
+      "connectionErrorTitle": "Connection error",
+      "connectError": "Failed to connect {title}",
+      "disconnectError": "Failed to disconnect {title}",
+      "disconnected": "{title} disconnected"
+    }
+  },
+  "integrationsPage": {
+    "title": "Integrations",
+    "actions": {
+      "refreshAll": "Refresh all",
+      "test": "Test",
+      "disconnect": "Disconnect",
+      "webhook": "Webhook",
+      "edit": "Edit",
+      "makeDefault": "Set default",
+      "copy": "Copy",
+      "deleteProviderConfirm": "Delete AI provider?"
+    },
+    "messages": {
+      "settingsSaved": "Settings saved",
+      "aiProviderUpdated": "AI provider updated",
+      "aiProviderAdded": "AI provider added",
+      "aiProviderSaveError": "Failed to save AI provider",
+      "testOkOutput": "Test OK: {output}",
+      "connectionChecked": "Connection verified",
+      "aiProviderTestError": "Failed to test AI provider",
+      "aiProviderDeleted": "AI provider deleted",
+      "aiProviderDeleteError": "Failed to delete AI provider",
+      "aiProviderDefaultSet": "Provider \"{name}\" set as default",
+      "aiProviderDefaultSetError": "Failed to set default provider",
+      "facebookTestOk": "Facebook connection verified",
+      "facebookTestError": "Failed to verify Facebook connection",
+      "facebookDisconnected": "Facebook page disconnected",
+      "facebookDisconnectError": "Failed to disconnect Facebook page",
+      "instagramTestOk": "Instagram connection verified",
+      "instagramTestError": "Failed to verify Instagram connection",
+      "instagramDisconnected": "Instagram account disconnected",
+      "instagramDisconnectError": "Failed to disconnect Instagram account",
+      "telegramTestOk": "Telegram connection verified",
+      "telegramTestError": "Failed to verify Telegram connection",
+      "telegramDisconnected": "Telegram bot disconnected",
+      "telegramDisconnectError": "Failed to disconnect Telegram bot",
+      "whatsappTestOk": "WhatsApp connection verified",
+      "whatsappTestError": "Failed to verify WhatsApp connection",
+      "whatsappDisconnected": "WhatsApp account disconnected",
+      "whatsappDisconnectError": "Failed to disconnect WhatsApp account",
+      "botNotDetected": "Unable to identify bot",
+      "webhookUpdated": "Webhook updated",
+      "webhookUpdateError": "Failed to update webhook",
+      "urlEmpty": "URL is empty",
+      "urlCopied": "URL copied",
+      "urlCopyError": "Failed to copy URL"
+    },
+    "cards": {
+      "instagram": {
+        "title": "Instagram",
+        "description": "Instagram Business accounts"
+      },
+      "telegram": {
+        "title": "Telegram",
+        "description": "Telegram bots for incoming messages"
+      },
+      "ai": {
+        "title": "AI Providers",
+        "description": "OpenAI, Gemini, Claude and compatible models for CRM AI features"
+      },
+      "sms": {
+        "title": "SMS",
+        "description": "SMS providers and sending status"
+      },
+      "telephony": {
+        "title": "Telephony",
+        "description": "VoIP/SIP connections for CRM calls"
+      },
+      "whatsapp": {
+        "title": "WhatsApp Business",
+        "description": "Cloud API accounts for omnichannel support and sales"
+      },
+      "facebook": {
+        "title": "Facebook Messenger",
+        "description": "Connected pages for message processing"
+      }
+    },
+    "table": {
+      "account": "Account",
+      "number": "Number",
+      "phoneId": "Phone ID",
+      "status": "Status",
+      "lastActivity": "Last activity",
+      "actions": "Actions",
+      "page": "Page",
+      "sync": "Sync",
+      "bot": "Bot",
+      "username": "Username",
+      "name": "Name",
+      "provider": "Provider",
+      "model": "Model",
+      "key": "Key"
+    },
+    "status": {
+      "active": "Active",
+      "activeFeminine": "Active",
+      "paused": "Paused",
+      "default": "Default"
+    },
+    "stats": {
+      "channels": "Channels",
+      "configuredChannels": "Configured channels",
+      "connections": "Connections",
+      "activeProvider": "Active provider",
+      "callsToday": "Calls today",
+      "missed": "Missed",
+      "pages": "Pages",
+      "messages": "Messages",
+      "followers": "Followers",
+      "accounts": "Accounts",
+      "messagesReceived": "Messages received",
+      "messagesSent": "Messages sent",
+      "comments": "Comments",
+      "bots": "Bots",
+      "activeChats": "Active chats",
+      "providers": "Providers",
+      "active": "Active",
+      "default": "Default"
+    },
+    "modals": {
+      "smsSettings": "SMS settings",
+      "telephonySettings": "Telephony settings",
+      "connectWhatsapp": "Connect WhatsApp Business",
+      "connectFacebook": "Connect Facebook",
+      "connectInstagram": "Connect Instagram",
+      "connectTelegram": "Connect Telegram",
+      "telegramWebhook": "Telegram webhook",
+      "editAiProvider": "Edit AI provider",
+      "addAiProvider": "Add AI provider"
+    },
+    "validation": {
+      "url": "Enter a valid URL",
+      "providerName": "Enter provider name",
+      "providerSelect": "Select a provider",
+      "modelSelect": "Select or enter a model",
+      "apiKey": "Enter API key"
+    },
+    "placeholders": {
+      "webhookUrl": "Leave empty to auto-generate URL",
+      "customModel": "Enter model supported by your provider",
+      "modelSelect": "Select model"
+    },
+    "form": {
+      "name": "Name",
+      "provider": "Provider",
+      "model": "Model",
+      "apiKey": "API Key",
+      "apiKeyOptional": "API Key (leave empty to keep current)",
+      "active": "Active",
+      "default": "Default"
+    }
+  },
+  "settingsPage": {
+    "title": "System settings",
+    "field": {
+      "groupDescription": "Setting group configuration.",
+      "addValues": "Add values",
+      "enter": "Enter"
+    },
+    "empty": {
+      "section": "Server has not returned parameters for this section yet",
+      "complianceReport": "No compliance report data"
+    },
+    "messages": {
+      "massmailLoadError": "Failed to load mailing settings",
+      "remindersLoadError": "Failed to load reminder settings",
+      "domainsLoadError": "Failed to load domains list",
+      "complianceLoadError": "Failed to load compliance data",
+      "dsrExecuted": "DSR executed",
+      "dsrExecuteError": "Failed to execute DSR",
+      "retentionExecuted": "Retention executed: {count} policies",
+      "retentionExecuteError": "Failed to execute retention policies",
+      "saved": "Settings saved",
+      "saveError": "Failed to save settings",
+      "exportDone": "CRM export completed",
+      "exportError": "Failed to export CRM data",
+      "importDone": "CRM import completed",
+      "importError": "CRM data import error"
+    },
+    "tabs": {
+      "massmail": "Mailings",
+      "reminders": "Reminders",
+      "crmData": "CRM data",
+      "domains": "Domains",
+      "compliance": "Compliance"
+    },
+    "massmail": {
+      "title": "Bulk mailing settings",
+      "description": "Mailing parameters are edited via visual controls without JSON."
+    },
+    "reminders": {
+      "title": "Reminder settings",
+      "description": "Reminder parameters are edited with toggles, time fields, and limits."
+    },
+    "crmData": {
+      "title": "CRM import and export",
+      "alertTitle": "Data exchange via Excel",
+      "alertDescription": "Export builds an Excel file for all CRM entities. Use the same format for import.",
+      "export": {
+        "title": "Data export",
+        "description": "Download a full Excel file with current CRM data.",
+        "action": "Export to Excel"
+      },
+      "import": {
+        "title": "Data import",
+        "description": "Upload a prepared Excel file and start processing.",
+        "selectFile": "Choose Excel file",
+        "action": "Import"
+      },
+      "lastImport": "Last import result",
+      "stats": {
+        "created": "Created",
+        "updated": "Updated",
+        "errors": "Errors"
+      },
+      "table": {
+        "sheet": "Sheet",
+        "created": "Created",
+        "updated": "Updated",
+        "errors": "Errors"
+      }
+    },
+    "domains": {
+      "title": "Public email domains",
+      "public": "Public"
+    },
+    "compliance": {
+      "overviewTitle": "Compliance overview",
+      "summaryTitle": "Consent, DSR and retention summary",
+      "summaryDescription": "Metrics are shown as cards and tables without raw JSON.",
+      "dsrTitle": "DSR Requests",
+      "execute": "Execute",
+      "runRetention": "Run retention"
+    },
+    "table": {
+      "domain": "Domain",
+      "status": "Status",
+      "type": "Type",
+      "reason": "Reason",
+      "actions": "Actions",
+      "name": "Name",
+      "entity": "Entity",
+      "action": "Action",
+      "retentionDays": "Retention period (days)",
+      "activity": "Activity",
+      "lastRun": "Last run"
+    },
+    "status": {
+      "active": "Active",
+      "inactive": "Inactive"
+    }
+  },
+  "common": {
+    "next": "Next",
+    "important": "Important",
+    "yes": "Yes",
+    "no": "No",
+    "loading": "Loading..."
+  },
+  "smsSettings": {
+    "header": {
+      "message": "SMS providers",
+      "description": "Add and edit SMS providers directly in this window. After saving, you can immediately run a test send."
+    },
+    "providers": {
+      "title": "Available providers"
+    },
+    "serviceStatus": {
+      "title": "Service status"
+    },
+    "test": {
+      "title": "Test send",
+      "channel": "Channel",
+      "recipient": "Recipient number",
+      "messageText": "Message text"
+    },
+    "table": {
+      "channelId": "Channel ID",
+      "provider": "Provider",
+      "status": "Status",
+      "actions": "Actions"
+    },
+    "status": {
+      "notConfigured": "Not configured",
+      "inactive": "Inactive",
+      "ready": "Ready"
+    },
+    "statusItem": "Status {index}",
+    "common": {
+      "channel": "Channel"
+    },
+    "boolean": {
+      "yes": "Yes",
+      "no": "No"
+    },
+    "empty": {
+      "noData": "No data"
+    },
+    "actions": {
+      "copy": "Copy",
+      "sendTest": "Send test"
+    },
+    "confirm": {
+      "deleteProviderTitle": "Delete SMS provider?",
+      "deleteProviderDescription": "This action will remove the channel and its settings."
+    },
+    "form": {
+      "providerType": "Provider type",
+      "name": "Name",
+      "active": "Active",
+      "sender": "Sender (from)",
+      "password": "Password",
+      "passwordOptional": "Password (leave blank to keep)",
+      "token": "Token",
+      "tokenOptional": "Token (leave blank to keep)",
+      "authType": "Auth type",
+      "apiUrl": "API URL",
+      "statusUrl": "Status URL",
+      "bearerToken": "Bearer Token",
+      "bearerTokenOptional": "Bearer Token (leave blank to keep)",
+      "login": "Login"
+    },
+    "modal": {
+      "addProvider": "Add SMS provider",
+      "editProvider": "Edit SMS provider"
+    },
+    "placeholders": {
+      "selectProvider": "Select provider",
+      "providerName": "For example: Eskiz Prod"
+    },
+    "validation": {
+      "selectChannel": "Select channel",
+      "enterNumber": "Enter number",
+      "invalidPhone": "Invalid phone format",
+      "enterMessageText": "Enter message text",
+      "selectProvider": "Select provider",
+      "apiUrl": "Specify API URL",
+      "bearerToken": "Specify Bearer Token",
+      "login": "Specify login",
+      "password": "Specify password"
+    },
+    "messages": {
+      "loadProvidersError": "Failed to load SMS providers",
+      "loadStatusError": "Failed to load SMS status",
+      "testSent": "Test SMS sent",
+      "providerError": "Provider returned an error",
+      "sendError": "Failed to send SMS",
+      "eskizCredentialsError": "For Eskiz, provide token or email/password",
+      "providerUpdated": "SMS provider updated",
+      "providerAdded": "SMS provider added",
+      "providerSaveError": "Failed to save SMS provider",
+      "providerDeleted": "SMS provider deleted",
+      "providerDeleteError": "Failed to delete SMS provider",
+      "urlEmpty": "URL is empty",
+      "urlCopied": "URL copied",
+      "urlCopyError": "Failed to copy URL"
+    }
+  },
+  "instagramConnect": {
+    "alert": {
+      "title": "Connect Instagram Business",
+      "description": "You need an Instagram Business account and an access token from Facebook Developers."
+    },
+    "steps": {
+      "createApp": "Create app",
+      "getToken": "Get token",
+      "connect": "Connect",
+      "inputData": "Input data"
+    },
+    "guides": {
+      "step1Title": "Step 1: Create an app in Facebook Developers",
+      "step2Title": "Step 2: Get access token",
+      "step1Item3": "3. Add the \"Instagram Basic Display\" or \"Instagram Graph API\" product",
+      "step2Item1": "1. In app settings, open \"Instagram Basic Display\" or \"Instagram Graph API\""
+    },
+    "fields": {
+      "tokenExtra": "Facebook access token for Instagram Business API",
+      "accountId": "Instagram Business account ID",
+      "accountIdExtra": "Numeric ID of your Instagram Business account",
+      "usernameExtra": "Instagram Business account username"
+    },
+    "placeholders": {
+      "selectAccount": "Select Instagram account"
+    },
+    "actions": {
+      "loadFromMeta": "Load accounts from Meta",
+      "connect": "Connect Instagram"
+    },
+    "warning": {
+      "businessAccount": "Make sure your Instagram account is a Business account and connected to a Facebook page"
+    },
+    "validation": {
+      "enterToken": "Enter access token",
+      "tokenShort": "Token is too short",
+      "enterAccountId": "Enter account ID",
+      "accountIdDigits": "Account ID must contain only digits",
+      "enterUsername": "Enter username"
+    },
+    "messages": {
+      "connected": "Instagram connected",
+      "connectError": "Instagram connection error",
+      "enterAccessToken": "Enter Access Token first",
+      "accountsNotFound": "No Instagram accounts found for this token",
+      "accountsFound": "Accounts found: {count}",
+      "loadAccountsError": "Failed to load Instagram accounts"
+    }
+  },
+  "facebookConnect": {
+    "alert": {
+      "title": "Connect Facebook Messenger",
+      "description": "You need a Facebook page and access token with manage_pages and pages_messaging scopes."
+    },
+    "guide": {
+      "title": "Connection guide",
+      "itemMessengerSettings": "• In \"Messenger\" → \"Settings\", find \"Access Tokens\""
+    },
+    "fields": {
+      "tokenExtra": "Long-lived access token for your Facebook page",
+      "pageId": "Facebook page ID",
+      "pageIdExtra": "Your Facebook page ID (can be found in page settings)",
+      "pageName": "Page name",
+      "pageNameExtra": "Page display name in Facebook"
+    },
+    "placeholders": {
+      "selectPage": "Select page"
+    },
+    "permissions": {
+      "title": "Permissions check"
+    },
+    "actions": {
+      "connect": "Connect Facebook Messenger"
+    },
+    "validation": {
+      "enterToken": "Enter page access token",
+      "tokenShort": "Token is too short",
+      "enterPageId": "Enter page ID",
+      "enterPageName": "Enter page name"
+    },
+    "messages": {
+      "connected": "Facebook Messenger connected",
+      "connectError": "Facebook Messenger connection error",
+      "enterToken": "Enter Page Access Token first",
+      "pagesNotFound": "No pages found for this token",
+      "pagesFound": "Pages found: {count}",
+      "loadPagesError": "Failed to load pages from Meta"
+    }
+  },
+  "telegramConnect": {
+    "alert": {
+      "title": "Connect Telegram bot",
+      "description": "Create a bot via @BotFather and get the token."
+    },
+    "guide": {
+      "title": "Bot creation guide",
+      "aboutText": "• /setabouttext - about text"
+    },
+    "fields": {
+      "tokenExtra": "Bot token received from @BotFather"
+    },
+    "notes": {
+      "title": "Important notes",
+      "serverReachable": "Make sure your server is reachable from the internet for webhook delivery",
+      "botReceivesAll": "The bot will receive all messages sent to it by users"
+    },
+    "actions": {
+      "copy": "Copy",
+      "connect": "Connect Telegram bot"
+    },
+    "validation": {
+      "enterToken": "Enter bot token",
+      "tokenFormat": "Invalid token format (must be: 123456:ABC-DEF...)"
+    },
+    "messages": {
+      "connected": "Telegram bot connected successfully",
+      "connectError": "Telegram bot connection error",
+      "webhookEmpty": "Webhook URL is empty",
+      "webhookCopied": "Webhook URL copied",
+      "webhookCopyError": "Failed to copy Webhook URL"
+    }
+  },
+  "whatsappConnect": {
+    "alert": {
+      "title": "Connect WhatsApp Cloud API",
+      "description": "Provide Access token and auto-load Business Account/Phone Number ID from Meta."
+    },
+    "fields": {
+      "accountName": "Account name",
+      "active": "Active",
+      "autoSync": "Auto sync",
+      "autoLeads": "Auto leads"
+    },
+    "placeholders": {
+      "selectPhoneFromMeta": "Select number from Meta",
+      "selectBusinessAccount": "Select business account"
+    },
+    "actions": {
+      "loadFromMeta": "Load numbers from Meta",
+      "connect": "Connect WhatsApp"
+    },
+    "validation": {
+      "enterAccountName": "Enter account name",
+      "enterPhone": "Enter WhatsApp number",
+      "selectPhoneId": "Select phone_number_id",
+      "selectBusinessAccount": "Select business account",
+      "enterAccessToken": "Enter access token"
+    },
+    "messages": {
+      "connected": "WhatsApp Business connected",
+      "connectError": "WhatsApp Business connection error",
+      "enterToken": "Enter Access token first",
+      "numbersNotFound": "No WhatsApp numbers found for this token",
+      "numbersFound": "Numbers found: {count}",
+      "loadMetaError": "Failed to load data from Meta"
+    }
+  },
+  "telephonySettings": {
+    "header": {
+      "title": "Telephony: connection and routing rule setup",
+      "description": "Fill fields step by step: 1) base routing and WebRTC, 2) routing patterns, 3) operator/number connections."
+    },
+    "sections": {
+      "base": "1. Base routing and WebRTC (STUN/TURN)",
+      "routing": "2. Pattern-based routing",
+      "voip": "3. VoIP connections"
+    },
+    "table": {
+      "provider": "Provider",
+      "type": "Type",
+      "number": "Number",
+      "callerId": "Caller ID",
+      "owner": "Owner",
+      "status": "Status",
+      "actions": "Actions"
+    },
+    "status": {
+      "active": "Active",
+      "inactive": "Inactive"
+    },
+    "actions": {
+      "deactivate": "Deactivate",
+      "activate": "Activate",
+      "saveBase": "Save base settings",
+      "applyPreset": "Apply preset",
+      "addConnection": "Add connection"
+    },
+    "confirm": {
+      "areYouSure": "Are you sure?"
+    },
+    "messages": {
+      "loadSettingsError": "Failed to load telephony settings",
+      "loadConnectionsError": "Failed to load connections",
+      "connectionUpdated": "Connection updated",
+      "connectionCreated": "Connection created",
+      "saveConnectionError": "Failed to save connection",
+      "connectionDeleted": "Connection deleted",
+      "deleteConnectionError": "Failed to delete connection",
+      "connectionDeactivated": "Connection deactivated",
+      "connectionActivated": "Connection activated",
+      "toggleStatusError": "Failed to change status",
+      "settingsSaved": "Telephony settings saved",
+      "saveSettingsError": "Failed to save telephony settings",
+      "routingSaved": "Routing patterns saved in browser",
+      "routingSaveError": "Failed to save routing patterns",
+      "presetApplied": "Preset \"{label}\" applied",
+      "routingLoadError": "Failed to load routing rules",
+      "routingTargetsLoadError": "Failed to load routing numbers and groups"
+    },
+    "routing": {
+      "infoTitle": "Rules are applied by priority: smaller number means earlier evaluation.",
+      "infoDescription": "Patterns use RegExp format. This block stores rules in browser and is suitable for preconfiguring dialplan patterns.",
+      "empty": "No patterns yet. Add your first rule.",
+      "placeholders": {
+        "ruleName": "For example: Internal 1xx -> PBX",
+        "calledPattern": "Example: ^1\\d{2}$ or ^\\+?\\d{10,15}$",
+        "callerPattern": "Example: ^\\+998 or ^8800",
+        "description": "Briefly describe the business goal of the rule"
+      },
+      "actions": {
+        "route_to_number": "Route to internal number",
+        "route_to_group": "Route to group",
+        "route_to_queue": "Route to group queue",
+        "forward_external": "Forward to external number",
+        "route_to_voicemail": "Route to voicemail",
+        "play_announcement": "Play announcement",
+        "hangup": "Hang up",
+        "addRule": "Add rule",
+        "savePatternRouting": "Save pattern routing"
+      },
+      "fields": {
+        "ruleName": "Rule name",
+        "description": "Description (optional)",
+        "calledPattern": "Called number pattern (required)",
+        "calledPatternLabel": "Called number pattern",
+        "callerPattern": "Caller number pattern (optional)",
+        "callerPatternLabel": "Caller number pattern",
+        "action": "Routing action",
+        "targetInternalNumber": "Target internal number",
+        "targetGroup": "Target group",
+        "targetQueueGroup": "Target queue group",
+        "externalNumber": "External number",
+        "announcementText": "Announcement text",
+        "timeCondition": "Time condition (optional)",
+        "timeConditionExtra": "For example: weekdays 09:00-18:00",
+        "priority": "Priority (lower = higher)"
+      },
+      "ruleTitle": "Rule #{{number}}",
+      "targetsHint": "Routing targets are taken from internal numbers and groups directories.",
+      "loading": "Loading routing rules..."
+    },
+    "connectionHelp": {
+      "title": "What to fill in?",
+      "description": "Provider = your operator/PBX. Type = connection format. Number = internal/external number for outbound calls. Caller ID = number seen by customer."
+    },
+    "placeholders": {
+      "provider": "For example: Asterisk / OnlinePBX / Zadarma",
+      "connectionType": "Select type",
+      "callerId": "For example: +998712001122",
+      "turnServer": "turn:turn.company.com:3478?transport=udp",
+      "turnUsername": "crm_turn_user",
+      "turnPassword": "********",
+      "externalNumber": "+998901234567",
+      "timeCondition": "weekdays 09:00-18:00",
+      "selectInternalNumber": "Select internal number",
+      "selectGroup": "Select group",
+      "announcementText": "Text that caller will hear",
+      "numberByType": {
+        "pbx": "For example: 101",
+        "sip": "For example: 1001 or sip_user_1001",
+        "voip": "For example: +998901234567"
+      },
+      "enterNumber": "Enter number"
+    },
+    "validation": {
+      "invalidRegexp": "{{label}}: invalid RegExp",
+      "selectMode": "Select mode",
+      "selectProvider": "Select provider",
+      "enterTurnServer": "Enter TURN server",
+      "enterTurnUsername": "Enter TURN username",
+      "enterTurnPassword": "Enter TURN password",
+      "enterRuleName": "Specify rule name",
+      "enterCalledPattern": "Enter called number pattern",
+      "selectAction": "Select action",
+      "selectInternalNumber": "Select internal number",
+      "selectGroup": "Select group",
+      "enterExternalNumber": "Enter external number",
+      "externalNumberFormat": "Use international format, for example +998901234567",
+      "enterAnnouncementText": "Enter announcement text",
+      "selectType": "Select type",
+      "enterNumber": "Enter number",
+      "pbxNumberFormat": "For PBX use extension (2-10 symbols: digits, *, #)",
+      "voipNumberFormat": "For external number use international format, e.g. +998901234567",
+      "enterCallerId": "Enter caller ID"
+    },
+    "routeModes": {
+      "auto": "CRM chooses route automatically: SIP/WebRTC first, then fallback.",
+      "internal": "Outgoing calls prioritize internal PBX numbers.",
+      "external": "Calls are treated as external and use external route.",
+      "provider": "Outgoing calls are initiated via selected provider API.",
+      "asterisk": "Routing via Asterisk dialplan/AMI."
+    },
+    "mode": {
+      "current": "Current mode: {{mode}}"
+    },
+    "fields": {
+      "routeMode": "Call routing mode",
+      "routeModeExtra": "Select the primary way to route outgoing calls from CRM.",
+      "preferredProvider": "Preferred provider",
+      "preferredProviderExtra": "Used in Provider/API mode and as fallback in Auto mode.",
+      "stunServers": "STUN servers",
+      "stunTooltip": "One per line or comma-separated. Example: stun:stun.l.google.com:19302",
+      "stunExtra": "Needed to determine WebRTC client network route.",
+      "enableTurnRelay": "Enable TURN relay",
+      "turnRelayExtra": "Recommended for users behind NAT/CGNAT and corporate networks.",
+      "turnServer": "TURN server",
+      "turnServerExtra": "turn: and turns: (TLS) schemes are supported.",
+      "turnUsername": "TURN username",
+      "turnPassword": "TURN password",
+      "connectionType": "Connection type",
+      "connectionTypeExtra": "PBX: internal extension. SIP: SIP account. VoIP: virtual external number.",
+      "provider": "Provider",
+      "providerExtra": "Select platform CRM will use to initiate calls.",
+      "number": "Number",
+      "numberByType": {
+        "pbx": "Internal number (extension)",
+        "sip": "SIP number/login",
+        "voip": "External number"
+      },
+      "active": "Active",
+      "callerId": "Caller ID",
+      "callerIdTooltip": "Number shown on outgoing calls",
+      "callerIdExtra": "Usually matches your company external number."
+    },
+    "options": {
+      "typePbx": "PBX extension (internal)",
+      "typeSip": "SIP account",
+      "typeVoip": "Virtual external number"
+    },
+    "modal": {
+      "editConnection": "Edit connection",
+      "newConnection": "New connection"
+    }
+  },
+  "callsList": {
+    "title": "Call history",
+    "subtitle": "VoIP log and analytics",
+    "messages": {
+      "loadError": "Failed to load call history",
+      "noteAdded": "Note added",
+      "noteAddError": "Failed to add note",
+      "detailsError": "Failed to load call details"
+    },
+    "status": {
+      "answered": "Answered",
+      "completed": "Completed",
+      "missed": "Missed",
+      "noAnswer": "No answer",
+      "busy": "Busy",
+      "failed": "Failed",
+      "ringing": "Ringing"
+    },
+    "direction": {
+      "inbound": "Inbound",
+      "outbound": "Outbound"
+    },
+    "table": {
+      "direction": "Direction",
+      "phoneNumber": "Phone number",
+      "status": "Status",
+      "dateTime": "Date and time",
+      "duration": "Duration",
+      "notes": "Notes",
+      "recording": "Recording",
+      "actions": "Actions"
+    },
+    "stats": {
+      "total": "Total",
+      "answered": "Answered",
+      "missed": "Missed",
+      "durationSec": "Duration, sec"
+    },
+    "filters": {
+      "searchByNumber": "Search by number",
+      "direction": "Direction",
+      "status": "Status"
+    },
+    "modals": {
+      "recordingTitle": "Recording playback",
+      "recordingNotFound": "Recording not found",
+      "noteTitle": "Call note",
+      "detailsTitle": "Call details",
+      "detailsUnavailable": "Data unavailable"
+    },
+    "fields": {
+      "note": "Note"
+    },
+    "placeholders": {
+      "note": "Enter note"
+    },
+    "validation": {
+      "noteRequired": "Add note text"
+    },
+    "actions": {
+      "recording": "Recording",
+      "listen": "Listen",
+      "note": "Note",
+      "details": "Details"
+    }
+  },
+  "profilePage": {
+    "title": "User profile",
+    "tabs": {
+      "mainInfo": "Main information",
+      "changePassword": "Change password",
+      "settings": "Settings",
+      "activity": "Activity"
+    },
+    "actions": {
+      "changePhoto": "Change photo",
+      "deletePhoto": "Delete photo",
+      "changePassword": "Change password",
+      "saveSettings": "Save settings"
+    },
+    "fields": {
+      "fullName": "Full name",
+      "username": "Username",
+      "email": "Email"
+    },
+    "stats": {
+      "totalLeads": "Total leads",
+      "totalDeals": "Total deals"
+    },
+    "languages": {
+      "ru": "Russian",
+      "en": "English",
+      "uz": "Uzbek"
+    },
+    "regional": {
+      "title": "Regional settings",
+      "language": "Language",
+      "timezone": "Timezone",
+      "activateTimezone": "Use this timezone"
+    },
+    "timezones": {
+      "moscow": "Moscow (UTC+3)",
+      "tashkent": "Tashkent (UTC+5)",
+      "almaty": "Almaty (UTC+6)"
+    },
+    "telephony": {
+      "title": "Telephony settings",
+      "agentSettingsTitle": "Personal agent settings",
+      "agentSettingsDescription": "Only personal call settings are configured here. System SIP/WebRTC and routing are managed by admin in Integrations -> Telephony.",
+      "pbxNumber": "Internal number (PBX)",
+      "pbxTooltip": "Your internal phone number in the system",
+      "pbxExtra": "Example: 101, 7477. Main number for internal calls.",
+      "displayName": "Display name",
+      "displayNameTooltip": "Name shown to call recipient",
+      "displayNameExtra": "If empty, profile name is used."
+    },
+    "placeholders": {
+      "displayName": "John Doe",
+      "pbxNumber": "1001"
+    },
+    "password": {
+      "current": "Current password",
+      "new": "New password",
+      "confirm": "Confirm new password"
+    },
+    "activity": {
+      "totalActions": "Total actions",
+      "callsToday": "Calls today",
+      "leadConversion": "Lead conversion",
+      "recentActions": "Recent actions",
+      "callHistory": "Call history"
+    },
+    "callTable": {
+      "number": "Number",
+      "type": "Type",
+      "inbound": "Inbound",
+      "outbound": "Outbound",
+      "duration": "Duration",
+      "time": "Time"
+    },
+    "validation": {
+      "enterEmail": "Enter email",
+      "validEmail": "Enter valid email",
+      "enterCurrentPassword": "Enter current password",
+      "enterNewPassword": "Enter new password",
+      "passwordMin": "Password must be at least 8 characters",
+      "confirmNewPassword": "Confirm new password"
+    },
+    "messages": {
+      "loadError": "Failed to load profile",
+      "profileUpdated": "Profile updated",
+      "profileUpdateError": "Failed to update profile",
+      "avatarUpdated": "Avatar updated",
+      "avatarUploadError": "Failed to upload avatar",
+      "avatarDeleted": "Avatar removed",
+      "avatarDeleteError": "Failed to remove avatar",
+      "passwordMismatch": "Passwords do not match",
+      "passwordUpdated": "Password updated",
+      "passwordUpdateError": "Failed to update password",
+      "preferencesSaved": "Settings saved",
+      "preferencesSaveError": "Failed to save settings"
+    }
+  },
+  "analyticsPage": {
+    "title": "Analytics",
+    "subtitle": "Decision-making screen for sales, team activity and predictions.",
+    "messages": {
+      "predictionsStarted": "Predictions started",
+      "predictionsStartError": "Failed to start predictions"
+    },
+    "tabs": {
+      "decisions": "Decisions",
+      "team": "Team",
+      "predictionsActions": "Predictions and actions",
+      "system": "System"
+    },
+    "sections": {
+      "executiveSummary": "Executive summary",
+      "executiveSummaryDescription": "Summary of key metrics and risks for selected period.",
+      "risks": "Risks",
+      "keyMetrics": "Key metrics",
+      "keyMetricsDescription": "Quick snapshot of base size, deals and revenue.",
+      "trends": "Trends",
+      "trendsDescription": "Revenue dynamics and funnel movement for pace evaluation.",
+      "operations": "Operational control",
+      "operationsDescription": "What is happening with funnel and team tasks right now.",
+      "taskStatuses": "Task statuses",
+      "teamActivity": "Team activity",
+      "teamActivityDescription": "Latest user actions and system auth snapshot.",
+      "activityFeed": "Activity feed",
+      "authSnapshot": "Auth snapshot",
+      "predictionsByMetrics": "Predictions by key metrics",
+      "predictionsByMetricsDescription": "Estimate of future revenue, leads and client base.",
+      "predictionModelsState": "Prediction models state",
+      "predictionModelsStateDescription": "Current model state and available signals.",
+      "predictionStatus": "Prediction status",
+      "recommendedActions": "Recommended actions",
+      "recommendedActionsDescription": "Next actions considered high priority by model.",
+      "recommendedActionsClients": "Recommended actions (clients)",
+      "recommendedActionsDeals": "Recommended actions (deals)",
+      "systemMetrics": "System metrics",
+      "systemMetricsDescription": "Service auth indicators and technical system snapshot.",
+      "authStats": "Auth stats"
+    },
+    "charts": {
+      "revenue": "Revenue",
+      "leads": "Leads",
+      "deals": "Deals",
+      "stage": "Stage {{index}}",
+      "salesFunnel": "Sales funnel",
+      "revenueDynamics": "Revenue dynamics",
+      "leadsAndDeals": "Leads and deals"
+    },
+    "metrics": {
+      "totalLeads": "Total leads",
+      "totalContacts": "Total contacts",
+      "totalDeals": "Total deals",
+      "revenue": "Revenue"
+    },
+    "tasks": {
+      "pending": "Pending",
+      "inProgress": "In progress",
+      "completed": "Completed",
+      "overdue": "Overdue"
+    },
+    "predictions": {
+      "status": "Status",
+      "inProgress": "in progress",
+      "revenueForecast": "Revenue forecast",
+      "leadsForecast": "Leads forecast",
+      "clientsForecast": "Clients forecast",
+      "empty": "Empty",
+      "oneRecord": "1 record",
+      "nRecords": "{{count}} records",
+      "technicalStatus": "Technical status"
+    },
+    "summary": {
+      "overdueTasks": "Overdue tasks: {{count}}",
+      "conversion": "Conversion: {{value}}%",
+      "revenueGrowth": "Revenue growth: {{value}}%"
+    },
+    "focus": {
+      "pipelineTitle": "Deals in progress",
+      "pipelineDescription": "Total commercial workload in the system.",
+      "pendingTitle": "Pending tasks",
+      "pendingDescription": "Shows current team workload.",
+      "predictionsTitle": "Active predictions",
+      "predictionsDescription": "How many predictive signals are already available for analysis."
+    },
+    "risks": {
+      "overdueTitle": "Overdue tasks",
+      "overdueDescription": "Require immediate attention first.",
+      "conversionTitle": "Conversion",
+      "conversionDescription": "If metric is below target, check follow-up and incoming lead quality.",
+      "growthTitle": "Revenue growth",
+      "growthDescription": "Signal of current sales pace for selected period."
+    },
+    "actions": {
+      "runPredictions": "Run predictions"
+    },
+    "activity": {
+      "event": "Event"
+    },
+    "common": {
+      "count": "Count",
+      "noData": "No data",
+      "series": "Series {{index}}",
+      "unknown": "Unknown"
+    },
+    "empty": {
+      "noRevenueData": "No revenue data",
+      "noLeadsDealsData": "No leads and deals data",
+      "noFunnelData": "No funnel data",
+      "noActivity": "No activity for selected period",
+      "noAuthData": "No auth data",
+      "noRevenueForecast": "No revenue forecast",
+      "noLeadsForecast": "No leads forecast",
+      "noClientsForecast": "No clients forecast",
+      "noPredictionStatus": "No prediction status",
+      "noClientRecommendations": "No client recommendations",
+      "noDealRecommendations": "No deal recommendations",
+      "noSystemData": "No system data",
+      "noEndpointsData": "No endpoints data",
+      "noUsersData": "No users data",
+      "noDailyData": "No daily data",
+      "noFailedAttempts": "No failed attempts"
+    },
+    "table": {
+      "group": "Group",
+      "metric": "Metric",
+      "status": "Status"
+    },
+    "auth": {
+      "period": "Period",
+      "days": "{{count}} days",
+      "daysShort": "days",
+      "jwtAdoption": "JWT adoption",
+      "successRate": "Success rate",
+      "requests": "Requests",
+      "topUsers": "Top users",
+      "topEndpoints": "Top endpoints",
+      "dailyBreakdown": "Daily breakdown",
+      "failedAttempts": "Failed attempts"
     }
   }
 }

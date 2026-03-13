@@ -1,14 +1,20 @@
 import { DeleteOutlined, EditOutlined, PlusOutlined } from '@ant-design/icons';
-import { App, Button, Card, Input, Popconfirm, Select, Space, Table, Tag, Typography } from 'antd';
+import { App, Button, Card, Popconfirm, Select, Space, Table, Tag, Typography } from 'antd';
 import { useEffect, useState } from 'react';
 import { deleteProduct, getProductCategories, getProducts } from '../../lib/api/products';
 import { canWrite } from '../../lib/rbac.js';
 import { formatCurrency } from '../../lib/utils/format';
 import { navigate } from '../../router';
+import { EntityListToolbar } from '../../shared/ui/EntityListToolbar';
+import { LIST_HEADER_STYLE, LIST_STACK_STYLE, LIST_TITLE_STYLE } from '../../shared/ui/listLayout';
 
 const { Option } = Select;
-const { Search } = Input;
 const { Text, Title } = Typography;
+
+const normalizeOptionValue = (value, options = []) => {
+  const matched = options.find((option) => String(option?.value) === String(value));
+  return matched ? matched.value : value;
+};
 
 function ProductsList() {
   const { message } = App.useApp();
@@ -80,6 +86,12 @@ function ProductsList() {
     loadProducts(1, searchText, value);
   };
 
+  const handleResetFilters = () => {
+    setSearchText('');
+    setSelectedCategory(null);
+    loadProducts(1, '', null);
+  };
+
   const handleTableChange = (newPagination) => {
     const nextPage = newPagination?.current || 1;
     const nextPageSize = newPagination?.pageSize || pagination.pageSize;
@@ -133,7 +145,7 @@ function ProductsList() {
       dataIndex: 'price',
       key: 'price',
       width: 150,
-      render: (price, record) => <span>{formatCurrency(price, record.currency_name || 'RUB')}</span>,
+      render: (price, record) => <span>{record.currency_code ? formatCurrency(price, record.currency_code) : '-'}</span>,
     },
     {
       title: 'Тип',
@@ -168,12 +180,36 @@ function ProductsList() {
     },
   ];
 
+  const categoryOptions = categories.map((cat) => ({ value: cat.id, label: cat.name }));
+  const normalizedSelectedCategory = normalizeOptionValue(selectedCategory, categoryOptions);
+  const selectedCategoryLabel = categories.find((cat) => String(cat.id) === String(normalizedSelectedCategory))?.name;
+  const activeFilters = [];
+  if (searchText) {
+    activeFilters.push({
+      key: 'search',
+      label: 'Поиск',
+      value: searchText,
+      onClear: () => {
+        setSearchText('');
+        loadProducts(1, '', selectedCategory);
+      },
+    });
+  }
+  if (selectedCategoryLabel) {
+    activeFilters.push({
+      key: 'category',
+      label: 'Категория',
+      value: selectedCategoryLabel,
+      onClear: () => handleCategoryChange(null),
+    });
+  }
+
   return (
     <Card>
-      <Space direction="vertical" size={16} style={{ width: '100%' }}>
-        <Space wrap style={{ width: '100%', justifyContent: 'space-between' }}>
+      <Space direction="vertical" size={16} style={LIST_STACK_STYLE}>
+        <Space wrap style={LIST_HEADER_STYLE}>
           <div>
-            <Title level={3} style={{ margin: 0 }}>Каталог продуктов</Title>
+            <Title level={3} style={LIST_TITLE_STYLE}>Каталог продуктов</Title>
             <Text type="secondary">Единый список продуктов с поиском и фильтрацией</Text>
           </div>
           {canManage ? (
@@ -181,15 +217,31 @@ function ProductsList() {
           ) : null}
         </Space>
 
-        <Space wrap>
-          <Search placeholder="Поиск по названию" style={{ width: 260 }} allowClear onSearch={handleSearch} />
-          <Select placeholder="Все категории" style={{ width: 220 }} allowClear onChange={handleCategoryChange} value={selectedCategory}>
-            {categories.map((cat) => (
-              <Option key={cat.id} value={cat.id}>{cat.name}</Option>
-            ))}
-          </Select>
-          <Button onClick={() => loadProducts(1, searchText, selectedCategory)} loading={loading}>Обновить</Button>
-        </Space>
+        <EntityListToolbar
+          searchValue={searchText}
+          searchPlaceholder="Поиск по названию"
+          onSearchChange={handleSearch}
+          filters={(
+            <Select
+              placeholder="Все категории"
+              style={{ width: 220 }}
+              allowClear
+              onChange={handleCategoryChange}
+              value={normalizedSelectedCategory}
+            >
+              {categories.map((cat) => (
+                <Option key={cat.id} value={cat.id}>
+                  {cat.name}
+                </Option>
+              ))}
+            </Select>
+          )}
+          onRefresh={() => loadProducts(1, searchText, selectedCategory)}
+          onReset={handleResetFilters}
+          loading={loading}
+          resultSummary={`Всего: ${pagination.total}`}
+          activeFilters={activeFilters}
+        />
 
         {error ? <Text type="danger">{error}</Text> : null}
 

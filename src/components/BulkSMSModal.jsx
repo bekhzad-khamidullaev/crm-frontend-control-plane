@@ -47,13 +47,20 @@ export default function BulkSMSModal({
     try {
       const phoneNumbers = recipients.map(r => r.phone);
       
-      await smsApi.sendBulk({
+      const response = await smsApi.sendBulk({
         channel_id: values.channel_id,
         phone_numbers: phoneNumbers,
         text: values.message,
       });
 
-      message.success(`SMS отправлено ${phoneNumbers.length} получателям`);
+      if (response?.status === 'queued') {
+        message.success(`SMS поставлено в очередь: ${phoneNumbers.length} получателей`);
+      } else if (response?.status === 'error' || response?.error) {
+        message.error(response?.error || response?.detail || 'Ошибка массовой отправки SMS');
+        return;
+      } else {
+        message.success(`SMS отправлено ${phoneNumbers.length} получателям`);
+      }
       form.resetFields();
       onClose();
     } catch (error) {

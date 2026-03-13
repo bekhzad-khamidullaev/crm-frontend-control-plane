@@ -37,10 +37,13 @@ import ChatMessageItem from '../../components/ChatMessageItem.jsx';
 import ChatMessageComposer from '../../components/ChatMessageComposer.jsx';
 import CallButton from '../../components/CallButton.jsx';
 import { getUserFromToken } from '../../lib/api/auth.js';
+import { useTheme } from '../../lib/hooks/useTheme.js';
 
 const { Text } = Typography;
 
 function ChatWidget({ entityType, entityId, entityName, entityPhone }) {
+  const { theme } = useTheme();
+  const isDark = theme === 'dark';
   const [messages, setMessages] = useState([]);
   const [loading, setLoading] = useState(false);
   const [loadError, setLoadError] = useState(false);
@@ -362,8 +365,9 @@ function ChatWidget({ entityType, entityId, entityName, entityPhone }) {
           flex: 1,
           overflowY: 'auto',
           padding: 20,
-          background:
-            'linear-gradient(180deg, rgba(248,250,252,0.95) 0%, rgba(255,255,255,1) 100%)',
+          background: isDark
+            ? 'linear-gradient(180deg, rgba(17,21,28,0.95) 0%, rgba(22,27,34,1) 100%)'
+            : 'linear-gradient(180deg, rgba(248,250,252,0.95) 0%, rgba(255,255,255,1) 100%)',
         }}
       >
         {loading ? (
@@ -408,10 +412,10 @@ function ChatWidget({ entityType, entityId, entityName, entityPhone }) {
               <div
                 style={{
                   marginTop: 12,
-                  color: '#64748b',
+                  color: isDark ? '#cbd5e1' : '#64748b',
                   fontSize: 12,
-                  background: '#f8fafc',
-                  border: '1px solid #e2e8f0',
+                  background: isDark ? '#1e232e' : '#f8fafc',
+                  border: `1px solid ${isDark ? '#2d3343' : '#e2e8f0'}`,
                   borderRadius: 999,
                   display: 'inline-flex',
                   padding: '6px 10px',

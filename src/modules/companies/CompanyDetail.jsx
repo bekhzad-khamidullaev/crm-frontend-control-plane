@@ -54,6 +54,8 @@ import { getClientTypeLabel } from '../../features/reference/lib/clientTypeLabel
 
 const { Title, Text } = Typography;
 
+const idsEqual = (left, right) => String(left) === String(right);
+
 function CompanyDetail({ id }) {
   const canManage = canWrite('crm.change_company');
   const [company, setCompany] = useState(null);
@@ -204,19 +206,19 @@ function CompanyDetail({ id }) {
   }
 
   const locale = getLocale();
-  const clientType = clientTypes.find((item) => item.id === company.type);
+  const clientType = clientTypes.find((item) => idsEqual(item.id, company.type));
   const typeLabel = getClientTypeLabel(clientType?.name, locale) || '-';
   const companyName = company.full_name || company.name || company.company_name || 'Компания';
-  const ownerName = users.find((u) => u.id === company.owner)?.username || '-';
-  const departmentName = departments.find((d) => d.id === company.department)?.name || '-';
-  const countryName = countries.find((c) => c.id === company.country)?.name || '-';
-  const cityName = cities.find((c) => c.id === company.city)?.name || company.city_name || '-';
-  const leadSourceName = leadSources.find((ls) => ls.id === company.lead_source)?.name || '-';
+  const ownerName = users.find((u) => idsEqual(u.id, company.owner))?.username || '-';
+  const departmentName = departments.find((d) => idsEqual(d.id, company.department))?.name || '-';
+  const countryName = countries.find((c) => idsEqual(c.id, company.country))?.name || '-';
+  const cityName = cities.find((c) => idsEqual(c.id, company.city))?.name || company.city_name || '-';
+  const leadSourceName = leadSources.find((ls) => idsEqual(ls.id, company.lead_source))?.name || '-';
   const industryNames = Array.isArray(company.industry)
-    ? company.industry.map((id) => industries.find((ind) => ind.id === id)?.name).filter(Boolean)
+    ? company.industry.map((id) => industries.find((ind) => idsEqual(ind.id, id))?.name).filter(Boolean)
     : [];
   const tagNames = Array.isArray(company.tags)
-    ? company.tags.map((id) => crmTags.find((tag) => tag.id === id)?.name).filter(Boolean)
+    ? company.tags.map((id) => crmTags.find((tag) => idsEqual(tag.id, id))?.name).filter(Boolean)
     : [];
   const contactsCount = contacts.length;
   const dealsCount = deals.length;

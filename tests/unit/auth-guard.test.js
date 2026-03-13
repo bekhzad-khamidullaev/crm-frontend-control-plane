@@ -79,6 +79,58 @@ describe('Auth Guard', () => {
       expect(result).toBe(false);
       expect(router.navigate).toHaveBeenCalledWith('/forbidden');
     });
+
+    it('does not trust roles from localStorage fallback', () => {
+      auth.isAuthenticated.mockReturnValue(true);
+      auth.getToken.mockReturnValue('valid-token');
+      auth.isTokenExpired.mockReturnValue(false);
+      auth.parseJWT.mockReturnValue({});
+      localStorage.setItem('enterprise_crm_roles', JSON.stringify(['manager']));
+
+      const result = checkAuth({ name: 'leads-edit' }, true, ['manager']);
+
+      expect(result).toBe(false);
+      expect(router.navigate).toHaveBeenCalledWith('/forbidden');
+    });
+
+    it('allows roles from sessionStorage fallback', () => {
+      auth.isAuthenticated.mockReturnValue(true);
+      auth.getToken.mockReturnValue('valid-token');
+      auth.isTokenExpired.mockReturnValue(false);
+      auth.parseJWT.mockReturnValue({});
+      sessionStorage.setItem('enterprise_crm_roles', JSON.stringify(['manager']));
+
+      const result = checkAuth({ name: 'leads-edit' }, true, ['manager']);
+
+      expect(result).toBe(true);
+      expect(router.navigate).not.toHaveBeenCalled();
+    });
+
+    it('does not trust permissions from localStorage fallback', () => {
+      auth.isAuthenticated.mockReturnValue(true);
+      auth.getToken.mockReturnValue('valid-token');
+      auth.isTokenExpired.mockReturnValue(false);
+      auth.parseJWT.mockReturnValue({ roles: ['manager'] });
+      localStorage.setItem('enterprise_crm_permissions', JSON.stringify(['crm.view_lead']));
+
+      const result = checkAuth({ name: 'leads-list' }, true, ['manager'], ['crm.view_lead']);
+
+      expect(result).toBe(false);
+      expect(router.navigate).toHaveBeenCalledWith('/forbidden');
+    });
+
+    it('allows permissions from sessionStorage fallback', () => {
+      auth.isAuthenticated.mockReturnValue(true);
+      auth.getToken.mockReturnValue('valid-token');
+      auth.isTokenExpired.mockReturnValue(false);
+      auth.parseJWT.mockReturnValue({ roles: ['manager'] });
+      sessionStorage.setItem('enterprise_crm_permissions', JSON.stringify(['crm.view_lead']));
+
+      const result = checkAuth({ name: 'leads-list' }, true, ['manager'], ['crm.view_lead']);
+
+      expect(result).toBe(true);
+      expect(router.navigate).not.toHaveBeenCalled();
+    });
   });
 
   describe('authGuardMiddleware', () => {

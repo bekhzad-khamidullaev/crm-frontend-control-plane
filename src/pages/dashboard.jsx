@@ -18,11 +18,52 @@ import {
 } from 'antd';
 import { useEffect, useMemo, useState } from 'react';
 import { getActivityFeed, getOverview, normalizeOverview } from '../lib/api/analytics.js';
+import { t } from '../lib/i18n/index.js';
 
 const { Title, Text } = Typography;
+const PERIOD_VALUES = ['7d', '30d', '90d'];
+const DEFAULT_PERIOD = '30d';
+
+function readHashState() {
+  if (typeof window === 'undefined') {
+    return { path: '/dashboard', params: new URLSearchParams() };
+  }
+
+  const raw = (window.location.hash || '').replace(/^#/, '');
+  const [rawPath = '/dashboard', rawQuery = ''] = raw.split('?');
+  return {
+    path: rawPath || '/dashboard',
+    params: new URLSearchParams(rawQuery),
+  };
+}
+
+function getPeriodFromHash() {
+  const value = readHashState().params.get('period');
+  return PERIOD_VALUES.includes(value) ? value : DEFAULT_PERIOD;
+}
+
+function replaceHashQuery(updates) {
+  if (typeof window === 'undefined') return;
+  const { path, params } = readHashState();
+
+  Object.entries(updates).forEach(([key, value]) => {
+    if (value === null || value === undefined || value === '') {
+      params.delete(key);
+      return;
+    }
+    params.set(key, String(value));
+  });
+
+  const query = params.toString();
+  const nextHash = `#${path}${query ? `?${query}` : ''}`;
+
+  if (window.location.hash !== nextHash) {
+    window.history.replaceState(null, '', `${window.location.pathname}${window.location.search}${nextHash}`);
+  }
+}
 
 function Dashboard() {
-  const [period, setPeriod] = useState('30d');
+  const [period, setPeriod] = useState(getPeriodFromHash);
   const [overview, setOverview] = useState(null);
   const [activity, setActivity] = useState([]);
   const [loadingOverview, setLoadingOverview] = useState(false);
@@ -33,30 +74,44 @@ function Dashboard() {
     void loadData();
   }, [period]);
 
+  useEffect(() => {
+    replaceHashQuery({ period });
+  }, [period]);
+
+  useEffect(() => {
+    const onHashChange = () => {
+      const nextPeriod = getPeriodFromHash();
+      setPeriod((current) => (current === nextPeriod ? current : nextPeriod));
+    };
+
+    window.addEventListener('hashchange', onHashChange);
+    return () => window.removeEventListener('hashchange', onHashChange);
+  }, []);
+
   const cards = useMemo(() => {
     const data = overview || {};
     return [
       {
         key: 'leads',
-        title: 'Лиды',
+        title: t('dashboardPage.cards.leads'),
         value: Number(data.total_leads || data.leads || 0),
         icon: <UserOutlined />,
       },
       {
         key: 'contacts',
-        title: 'Контакты',
+        title: t('dashboardPage.cards.contacts'),
         value: Number(data.total_contacts || data.contacts || 0),
         icon: <TeamOutlined />,
       },
       {
         key: 'deals',
-        title: 'Сделки',
+        title: t('dashboardPage.cards.deals'),
         value: Number(data.total_deals || data.deals || 0),
         icon: <BarChartOutlined />,
       },
       {
         key: 'revenue',
-        title: 'Выручка',
+        title: t('dashboardPage.cards.revenue'),
         value: Number(data.total_revenue || data.revenue || 0),
         icon: <DollarCircleOutlined />,
         precision: 2,
@@ -79,7 +134,7 @@ function Dashboard() {
       setActivity(Array.isArray(activityRes) ? activityRes : []);
     } catch (e) {
       console.error('Dashboard load error:', e);
-      setError('Не удалось загрузить данные дашборда');
+      setError(t('dashboardPage.errors.loadData'));
       setOverview(null);
       setActivity([]);
     } finally {
@@ -94,15 +149,15 @@ function Dashboard() {
         <Space direction="vertical" size={12} style={{ width: '100%' }}>
           <Space style={{ width: '100%', justifyContent: 'space-between' }} wrap>
             <Space direction="vertical" size={0}>
-              <Title level={3} style={{ margin: 0 }}>Дашборд</Title>
-              <Text type="secondary">Ключевые показатели CRM</Text>
+              <Title level={3} style={{ margin: 0 }}>{t('dashboardPage.title')}</Title>
+              <Text type="secondary">{t('dashboardPage.subtitle')}</Text>
             </Space>
             <Segmented
               value={period}
               options={[
-                { label: '7 дней', value: '7d' },
-                { label: '30 дней', value: '30d' },
-                { label: '90 дней', value: '90d' },
+                { label: t('dashboardPage.periods.d7'), value: '7d' },
+                { label: t('dashboardPage.periods.d30'), value: '30d' },
+                { label: t('dashboardPage.periods.d90'), value: '90d' },
               ]}
               onChange={(value) => setPeriod(String(value))}
             />
@@ -129,16 +184,16 @@ function Dashboard() {
         </Row>
       </Spin>
 
-      <Card title="Последняя активность">
+      <Card title={t('dashboardPage.lastActivity.title')}>
         <Spin spinning={loadingActivity}>
           <List
             dataSource={activity}
-            locale={{ emptyText: 'Нет активности за выбранный период' }}
+            locale={{ emptyText: t('dashboardPage.lastActivity.empty') }}
             renderItem={(item, index) => (
               <List.Item key={`${item?.id || 'row'}-${index}`}>
                 <Space direction="vertical" size={0} style={{ width: '100%' }}>
-                  <Text strong>{item?.title || item?.event || 'Событие'}</Text>
-                  <Text type="secondary">{item?.description || item?.message || 'Без описания'}</Text>
+                  <Text strong>{item?.title || item?.event || t('dashboardPage.lastActivity.fallbackEvent')}</Text>
+                  <Text type="secondary">{item?.description || item?.message || t('dashboardPage.lastActivity.fallbackDescription')}</Text>
                 </Space>
               </List.Item>
             )}

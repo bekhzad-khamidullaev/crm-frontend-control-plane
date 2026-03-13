@@ -224,22 +224,20 @@
   }
 }
 
-/* Dark mode support */
-@media (prefers-color-scheme: dark) {
-  .chart-skeleton {
-    background: linear-gradient(
-      90deg,
-      #2a2a2a 0%,
-      #3a3a3a 50%,
-      #2a2a2a 100%
-    );
-  }
-  
-  .chart-loading-overlay {
-    background: linear-gradient(
-      135deg,
-      rgba(24, 144, 255, 0.1) 0%,
-      rgba(82, 196, 26, 0.1) 100%
-    );
-  }
+/* Dark mode support (sync with app `.dark` class toggle) */
+.dark .chart-skeleton {
+  background: linear-gradient(
+    90deg,
+    #2a2a2a 0%,
+    #3a3a3a 50%,
+    #2a2a2a 100%
+  );
+}
+
+.dark .chart-loading-overlay {
+  background: linear-gradient(
+    135deg,
+    rgba(24, 144, 255, 0.1) 0%,
+    rgba(82, 196, 26, 0.1) 100%
+  );
 }

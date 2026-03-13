@@ -10,6 +10,7 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { initiateCall } from '../lib/api/telephony.js';
 import sipClient from '../lib/telephony/SIPClient.js';
 import { loadTelephonyRuntimeConfig } from '../lib/telephony/runtimeConfig.js';
+import { DEFAULT_TELEPHONY_ROUTE_MODE } from '../lib/telephony/constants.js';
 import { TELEPHONY_MODAL_PROPS } from '../shared/ui/telephonyModal.js';
 
 const DTMF_KEYS = ['1', '2', '3', '4', '5', '6', '7', '8', '9', '*', '0', '#'];
@@ -135,7 +136,7 @@ export default function TelephonyDialerModal({ visible, onClose, initialNumber =
   const [registering, setRegistering] = useState(false);
   const [sipStatus, setSipStatus] = useState(sipClient.isRegistered ? 'registered' : 'offline');
   const [numberLabel, setNumberLabel] = useState('-');
-  const [routeMode, setRouteMode] = useState('auto');
+  const [routeMode, setRouteMode] = useState(DEFAULT_TELEPHONY_ROUTE_MODE);
   const [callStatus, setCallStatus] = useState('idle');
   const [muted, setMuted] = useState(false);
   const [callDuration, setCallDuration] = useState(0);
@@ -245,7 +246,7 @@ export default function TelephonyDialerModal({ visible, onClose, initialNumber =
     try {
       const runtime = await loadTelephonyRuntimeConfig();
       runtimeRef.current = runtime;
-      setRouteMode(runtime?.sipConfig?.routeMode || 'auto');
+      setRouteMode(runtime?.sipConfig?.routeMode || DEFAULT_TELEPHONY_ROUTE_MODE);
 
       const activeNumber = String(runtime?.sipConfig?.phoneNumber || '').trim();
       setNumberLabel(activeNumber || '-');
@@ -329,7 +330,7 @@ export default function TelephonyDialerModal({ visible, onClose, initialNumber =
     const dial = validatedDial?.sipDial || normalizeDialForSip(dialNumber);
     if (!dial) throw new Error('Введите корректный номер');
 
-    const mode = runtime?.sipConfig?.routeMode || 'auto';
+    const mode = runtime?.sipConfig?.routeMode || DEFAULT_TELEPHONY_ROUTE_MODE;
     if (mode === 'internal' && !isLikelyInternalExtension(dial)) {
       throw new Error('Для режима internal доступен только внутренний короткий номер');
     }

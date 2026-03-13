@@ -1,11 +1,13 @@
 import { useLeads } from '@/entities/lead/api/queries';
 import { Select, SelectProps } from 'antd';
 import React, { useMemo } from 'react';
+import { normalizeSelectValue } from './selectValue';
 
 export interface LeadSelectProps extends SelectProps {}
 
 export const LeadSelect: React.FC<LeadSelectProps> = (props) => {
-  const { data, isLoading } = useLeads({ page: 1, pageSize: 100 });
+  const { value, ...restProps } = props;
+  const { data, isLoading } = useLeads({ page: 1, pageSize: 500 });
 
   const options = useMemo(() => {
     return (
@@ -15,18 +17,20 @@ export const LeadSelect: React.FC<LeadSelectProps> = (props) => {
       })) || []
     );
   }, [data]);
+  const normalizedValue = useMemo(() => normalizeSelectValue(value, options), [value, options]);
 
   return (
     <Select
       placeholder="Выберите лид"
       loading={isLoading}
       options={options}
+      value={normalizedValue}
       allowClear
       showSearch
       filterOption={(input, option) =>
         (String(option?.label) ?? '').toLowerCase().includes(input.toLowerCase())
       }
-      {...props}
+      {...restProps}
     />
   );
 };

@@ -11,6 +11,11 @@ dist-ssr/
 .env.development.local
 .env.staging.local
 
+# TLS materials
+ssl-certs/*.pem
+ssl-certs/*.key
+ssl-certs/*.crt
+
 # Editor files
 .vscode/*
 !.vscode/settings.json

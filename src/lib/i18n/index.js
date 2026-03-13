@@ -1,19 +1,46 @@
-// Minimal i18n service with async locale loading (static map to satisfy Vite)
-const catalogs = {};
-let current = 'en';
+import enCatalog from '../../locales/en.json';
+import ruCatalog from '../../locales/ru.json';
+import uzCatalog from '../../locales/uz.json';
 
-const loaders = {
-  en: () => import('../../locales/en.json').then((m) => m.default || m),
-  ru: () => import('../../locales/ru.json').then((m) => m.default || m),
-  uz: () => import('../../locales/uz.json').then((m) => m.default || m),
+// Keep catalogs eagerly loaded to avoid rendering raw translation keys.
+const catalogs = {
+  en: enCatalog,
+  ru: ruCatalog,
+  uz: uzCatalog,
 };
+const DEFAULT_LOCALE = 'ru';
+
+function normalizeLocale(raw) {
+  const value = String(raw || '').toLowerCase();
+  if (value.startsWith('uz')) return 'uz';
+  if (value.startsWith('en')) return 'en';
+  return 'ru';
+}
+
+function detectInitialLocale() {
+  if (typeof window === 'undefined') return DEFAULT_LOCALE;
+  try {
+    const enterpriseLocale = localStorage.getItem('enterprise_crm_locale');
+    if (enterpriseLocale) return normalizeLocale(enterpriseLocale);
+
+    const legacyLocale = localStorage.getItem('locale');
+    if (legacyLocale) {
+      const normalized = normalizeLocale(legacyLocale);
+      localStorage.setItem('enterprise_crm_locale', normalized);
+      return normalized;
+    }
+
+    return DEFAULT_LOCALE;
+  } catch {
+    return DEFAULT_LOCALE;
+  }
+}
+
+let current = detectInitialLocale();
 
 export async function setLocale(locale) {
-  const loader = loaders[locale] || loaders.en;
-  if (!catalogs[locale]) {
-    catalogs[locale] = await loader();
-  }
-  current = loaders[locale] ? locale : 'en';
+  const normalizedLocale = normalizeLocale(locale);
+  current = catalogs[normalizedLocale] ? normalizedLocale : DEFAULT_LOCALE;
   document.documentElement.lang = current;
 }
 

@@ -259,6 +259,54 @@ export async function patchVoIPConnection(id, data) {
   return api.patch(`/api/voip/connections/${id}/`, { body: data });
 }
 
+// ============================================================================
+// Call Routing Rules
+// ============================================================================
+
+export async function getRoutingRules(params = {}) {
+  return api.get('/api/voip/routing-rules/', { params });
+}
+
+export async function createRoutingRule(data) {
+  return api.post('/api/voip/routing-rules/', { body: data });
+}
+
+export async function updateRoutingRule(id, data) {
+  return api.put(`/api/voip/routing-rules/${id}/`, { body: data });
+}
+
+export async function patchRoutingRule(id, data) {
+  return api.patch(`/api/voip/routing-rules/${id}/`, { body: data });
+}
+
+export async function deleteRoutingRule(id) {
+  return api.delete(`/api/voip/routing-rules/${id}/`);
+}
+
+export async function getInternalNumbers(params = {}) {
+  return api.get('/api/voip/internal-numbers/', { params });
+}
+
+export async function getNumberGroups(params = {}) {
+  return api.get('/api/voip/number-groups/', { params });
+}
+
+export async function getVoipSystemSettings() {
+  try {
+    return await api.get('/api/voip/system-settings/current/');
+  } catch (error) {
+    return api.get('/api/voip/system-settings/');
+  }
+}
+
+export async function updateVoipSystemSettings(data) {
+  try {
+    return await api.patch('/api/voip/system-settings/current/', { body: data });
+  } catch (error) {
+    return api.patch('/api/voip/system-settings/1/', { body: data });
+  }
+}
+
 /**
  * Delete VoIP connection
  * @param {number} id - Connection ID

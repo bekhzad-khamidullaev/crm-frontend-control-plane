@@ -26,6 +26,7 @@ import dayjs from 'dayjs';
 import relativeTime from 'dayjs/plugin/relativeTime';
 import 'dayjs/locale/ru';
 import { canWrite } from '../lib/rbac.js';
+import { useTheme } from '../lib/hooks/useTheme.js';
 
 dayjs.extend(relativeTime);
 dayjs.locale('ru');
@@ -42,6 +43,8 @@ function ChatMessageItem({
   onCopy,
   showAvatar = true,
 }) {
+  const { theme } = useTheme();
+  const isDark = theme === 'dark';
   const [isHovered, setIsHovered] = useState(false);
   const canManageOwnMessage = canWrite('chat.change_chatmessage');
 
@@ -95,9 +98,10 @@ function ChatMessageItem({
     padding: '8px 12px',
     borderRadius: 12,
     maxWidth: 400,
-    backgroundColor: isCurrentUser ? '#1890ff' : '#f0f0f0',
-    color: isCurrentUser ? '#fff' : 'rgba(0, 0, 0, 0.85)',
+    backgroundColor: isCurrentUser ? '#1890ff' : isDark ? '#1e232e' : '#f0f0f0',
+    color: isCurrentUser ? '#fff' : isDark ? '#e2e8f0' : 'rgba(0, 0, 0, 0.85)',
     wordBreak: 'break-word',
+    border: isCurrentUser ? 'none' : `1px solid ${isDark ? '#2d3343' : '#e5e7eb'}`,
   };
 
   const containerStyle = {
@@ -190,13 +194,13 @@ function ChatMessageItem({
 
         <Space
           size={4}
-          style={{
-            marginTop: 4,
-            fontSize: 11,
-            color: '#999',
-            marginLeft: isCurrentUser ? 0 : 4,
-            marginRight: isCurrentUser ? 4 : 0,
-            justifyContent: isCurrentUser ? 'flex-end' : 'flex-start',
+            style={{
+              marginTop: 4,
+              fontSize: 11,
+              color: isDark ? '#94a3b8' : '#999',
+              marginLeft: isCurrentUser ? 0 : 4,
+              marginRight: isCurrentUser ? 4 : 0,
+              justifyContent: isCurrentUser ? 'flex-end' : 'flex-start',
             display: 'flex',
           }}
         >

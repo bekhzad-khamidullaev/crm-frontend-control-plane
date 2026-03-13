@@ -9,6 +9,7 @@ import {
   Input,
   Space,
   Tag,
+  theme,
   Tooltip,
   Typography,
 } from 'antd';
@@ -46,6 +47,8 @@ export const EntityListToolbar: React.FC<EntityListToolbarProps> = ({
   loading,
   resultSummary,
 }) => {
+  const { token } = theme.useToken();
+  const isDark = token.colorBgContainer === '#161b22' || token.colorTextBase === '#f1f5f9';
   const screens = Grid.useBreakpoint();
   const isMobile = !screens.lg;
   const hasActiveFilters = activeFilters.length > 0;
@@ -55,9 +58,9 @@ export const EntityListToolbar: React.FC<EntityListToolbarProps> = ({
       style={{
         marginBottom: 16,
         padding: 16,
-        border: '1px solid #f0f0f0',
+        border: `1px solid ${isDark ? '#2d3343' : '#f0f0f0'}`,
         borderRadius: 12,
-        background: '#fff',
+        background: isDark ? '#161b22' : '#fff',
       }}
     >
       <Space

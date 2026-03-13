@@ -7,11 +7,47 @@
  */
 
 import React, { useState, useEffect } from 'react';
-import { Select, Spin } from 'antd';
+import { Select } from 'antd';
 import { api } from '../lib/api/client';
 import * as referenceApi from '../lib/api/reference';
 
 const { Option } = Select;
+
+const listLoaders = {
+  stages: referenceApi.getStages,
+  'task-stages': referenceApi.getTaskStages,
+  'project-stages': referenceApi.getProjectStages,
+  'lead-sources': referenceApi.getLeadSources,
+  industries: referenceApi.getIndustries,
+  countries: referenceApi.getCountries,
+  cities: referenceApi.getCities,
+  currencies: referenceApi.getCurrencies,
+  'client-types': referenceApi.getClientTypes,
+  'closing-reasons': referenceApi.getClosingReasons,
+  resolutions: referenceApi.getResolutions,
+  departments: referenceApi.getDepartments,
+  'crm-tags': referenceApi.getCrmTags,
+  'task-tags': referenceApi.getTaskTags,
+};
+
+const byIdLoaders = {
+  stages: referenceApi.getStage,
+  'task-stages': referenceApi.getTaskStage,
+  'project-stages': referenceApi.getProjectStage,
+  'lead-sources': referenceApi.getLeadSource,
+  industries: referenceApi.getIndustry,
+  countries: referenceApi.getCountry,
+  cities: referenceApi.getCity,
+  currencies: referenceApi.getCurrency,
+  'client-types': referenceApi.getClientType,
+  'closing-reasons': referenceApi.getClosingReason,
+  resolutions: referenceApi.getResolution,
+  departments: referenceApi.getDepartment,
+  'crm-tags': referenceApi.getCrmTag,
+  'task-tags': referenceApi.getTaskTag,
+};
+
+const toItems = (response) => (Array.isArray(response) ? response : (response?.results || []));
 
 const ReferenceSelect = ({
   type,
@@ -37,6 +73,10 @@ const ReferenceSelect = ({
     loadData();
   }, [type, endpoint, JSON.stringify(params)]);
 
+  useEffect(() => {
+    ensureSelectedValuesLoaded();
+  }, [value, data, type, endpoint, valueKey]);
+
   const loadData = async () => {
     setLoading(true);
     try {
@@ -45,53 +85,16 @@ const ReferenceSelect = ({
       // Выбираем нужный API метод на основе типа
       if (endpoint) {
         response = await api.get(endpoint, { params });
-      } else switch (type) {
-        case 'stages':
-          response = await referenceApi.getStages();
-          break;
-        case 'task-stages':
-          response = await referenceApi.getTaskStages();
-          break;
-        case 'project-stages':
-          response = await referenceApi.getProjectStages();
-          break;
-        case 'lead-sources':
-          response = await referenceApi.getLeadSources();
-          break;
-        case 'industries':
-          response = await referenceApi.getIndustries();
-          break;
-        case 'countries':
-          response = await referenceApi.getCountries();
-          break;
-        case 'cities':
-          response = await referenceApi.getCities();
-          break;
-        case 'currencies':
-          response = await referenceApi.getCurrencies();
-          break;
-        case 'client-types':
-          response = await referenceApi.getClientTypes();
-          break;
-        case 'closing-reasons':
-          response = await referenceApi.getClosingReasons();
-          break;
-        case 'departments':
-          response = await referenceApi.getDepartments();
-          break;
-        case 'crm-tags':
-          response = await referenceApi.getCrmTags();
-          break;
-        case 'task-tags':
-          response = await referenceApi.getTaskTags();
-          break;
-        default:
+      } else {
+        const loadList = listLoaders[type];
+        if (!loadList) {
           console.warn(`Unknown reference type: ${type}`);
           return;
+        }
+        response = await loadList(params);
       }
 
-      const items = Array.isArray(response) ? response : (response?.results || []);
-      setData(items);
+      setData(toItems(response));
     } catch (error) {
       console.error(`Error loading ${type}:`, error);
     } finally {
@@ -99,9 +102,61 @@ const ReferenceSelect = ({
     }
   };
 
+  const ensureSelectedValuesLoaded = async () => {
+    if (endpoint) return;
+
+    const rawValues = Array.isArray(value) ? value : [value];
+    const selectedValues = rawValues.filter((item) => item !== undefined && item !== null && item !== '');
+
+    if (!selectedValues.length) return;
+
+    const missingValues = selectedValues.filter(
+      (selectedValue) => !data.some((item) => String(item?.[valueKey]) === String(selectedValue))
+    );
+
+    if (!missingValues.length) return;
+
+    const loadById = byIdLoaders[type];
+    if (!loadById) return;
+
+    try {
+      const results = await Promise.allSettled(
+        missingValues.map((itemValue) => loadById(itemValue))
+      );
+
+      const loadedItems = results
+        .filter((result) => result.status === 'fulfilled' && result.value)
+        .map((result) => result.value);
+
+      if (!loadedItems.length) return;
+
+      setData((prev) => {
+        const next = [...prev];
+        loadedItems.forEach((item) => {
+          const itemValue = item?.[valueKey];
+          if (!next.some((existing) => String(existing?.[valueKey]) === String(itemValue))) {
+            next.push(item);
+          }
+        });
+        return next;
+      });
+    } catch (error) {
+      console.error(`Error loading selected ${type} values:`, error);
+    }
+  };
+
+  const normalizeSingleValue = (currentValue) => {
+    const matched = data.find((item) => String(item?.[valueKey]) === String(currentValue));
+    return matched ? matched[valueKey] : currentValue;
+  };
+
+  const selectValue = Array.isArray(value)
+    ? value.map((itemValue) => normalizeSingleValue(itemValue))
+    : normalizeSingleValue(value);
+
   return (
     <Select
-      value={value}
+      value={selectValue}
       onChange={onChange}
       placeholder={placeholder || `Выберите ${getTypeName(type)}`}
       allowClear={allowClear}
@@ -111,7 +166,7 @@ const ReferenceSelect = ({
       style={style}
       mode={mode}
       filterOption={(input, option) =>
-        (option?.children ?? '').toLowerCase().includes(input.toLowerCase())
+        String(option?.children ?? '').toLowerCase().includes(input.toLowerCase())
       }
       {...restProps}
     >
@@ -137,6 +192,7 @@ function getTypeName(type) {
     'currencies': 'валюту',
     'client-types': 'тип клиента',
     'closing-reasons': 'причину закрытия',
+    'resolutions': 'резолюцию',
     'departments': 'отдел',
     'crm-tags': 'тег',
     'task-tags': 'тег задачи',
