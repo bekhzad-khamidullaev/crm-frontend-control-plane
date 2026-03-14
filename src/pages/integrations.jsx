@@ -184,7 +184,8 @@ export default function IntegrationsPage() {
         typeof stats.configured_providers === 'number'
           ? stats.configured_providers
           : configuredCountFromList;
-      const connected = configuredCount > 0;
+      const successfulSends = Number(stats.total_sent || 0);
+      const connected = configuredCount > 0 && successfulSends > 0;
       setStatuses((prev) => ({
         ...prev,
         sms: {
@@ -192,6 +193,7 @@ export default function IntegrationsPage() {
           stats: {
             [tr('integrationsPage.stats.channels', 'Каналов')]: list.length,
             [tr('integrationsPage.stats.configuredChannels', 'Настроенных каналов')]: configuredCount,
+            [tr('integrationsPage.stats.successfulSends', 'Успешных отправок')]: successfulSends,
             ...stats,
           },
         },
