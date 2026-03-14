@@ -227,6 +227,39 @@ const ADMIN_PERMISSIONS = ['auth.view_user', 'settings.view_systemsettings'];
   if (routeMeta[route]) routeMeta[route].permissions = ADMIN_PERMISSIONS;
 });
 
+[
+  ['leads-list', 'crm.leads'],
+  ['leads-new', 'crm.leads'],
+  ['leads-detail', 'crm.leads'],
+  ['leads-edit', 'crm.leads'],
+  ['deals-list', 'crm.deals'],
+  ['deals-new', 'crm.deals'],
+  ['deals-detail', 'crm.deals'],
+  ['deals-edit', 'crm.deals'],
+  ['tasks-list', 'tasks.core'],
+  ['tasks-new', 'tasks.core'],
+  ['tasks-detail', 'tasks.core'],
+  ['tasks-edit', 'tasks.core'],
+  ['projects-list', 'tasks.core'],
+  ['projects-new', 'tasks.core'],
+  ['projects-detail', 'tasks.core'],
+  ['projects-edit', 'tasks.core'],
+  ['memos-list', 'tasks.core'],
+  ['memos-new', 'tasks.core'],
+  ['memos-detail', 'tasks.core'],
+  ['memos-edit', 'tasks.core'],
+  ['reminders-list', 'tasks.core'],
+  ['reminders-new', 'tasks.core'],
+  ['reminders-detail', 'tasks.core'],
+  ['reminders-edit', 'tasks.core'],
+  ['calls-list', 'communications.voip'],
+  ['calls-dashboard', 'communications.voip'],
+  ['telephony', 'communications.voip'],
+  ['analytics', 'analytics.core'],
+].forEach(([route, feature]) => {
+  if (routeMeta[route]) routeMeta[route].feature = feature;
+});
+
 export function getRouteMeta(name) {
  return routeMeta[name] || { auth: false };
 }
