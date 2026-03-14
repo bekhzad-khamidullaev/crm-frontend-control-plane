@@ -12,7 +12,7 @@ services:
     ports:
       - "127.0.0.1:8080:80"
     environment:
-      - API_BASE_URL=https://crm.windevs.uz
+      - API_BASE_URL=https://api.crm.windevs.uz
       - API_PREFIX=/api
       - PBX_SERVER=wss://crm.windevs.uz/asterisk/ws
     volumes:
@@ -35,7 +35,7 @@ services:
     ports:
       - "127.0.0.1:8081:80"
     environment:
-      - API_BASE_URL=https://crm.windevs.uz
+      - API_BASE_URL=https://api.crm.windevs.uz
       - API_PREFIX=/api
       - PBX_SERVER=wss://crm.windevs.uz/asterisk/ws
     profiles:

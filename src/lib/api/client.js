@@ -7,21 +7,21 @@ import {
   MAX_HEADER_SAFE_LENGTH,
   setToken,
 } from './auth.js';
-import resolveApiBase from '../../shared/api/resolveApiBase';
+import { getRuntimeAppConfig, resolveConfiguredApiBase } from '../../shared/api/resolveApiBase';
 
 // Runtime config (injected via window.__APP_CONFIG__ for deployments outside Vite)
-const runtimeConfig = typeof window !== 'undefined' ? window.__APP_CONFIG__ || {} : {};
+const runtimeConfig = getRuntimeAppConfig();
 const rawBase =
-  import.meta.env.VITE_API_BASE_URL ||
   runtimeConfig.apiBaseUrl ||
   runtimeConfig.BASE_URL ||
+  import.meta.env.VITE_API_BASE_URL ||
   '';
-const API_BASE_URL = resolveApiBase(rawBase);
-const API_PREFIX = (import.meta.env.VITE_API_PREFIX || runtimeConfig.apiPrefix || '').replace(/\/$/, '');
-const API_TIMEOUT = Number(import.meta.env.VITE_API_TIMEOUT || runtimeConfig.apiTimeout || 15000);
-const AUTH_MODE = (import.meta.env.VITE_AUTH_MODE || runtimeConfig.authMode || 'jwt').toLowerCase();
+const API_BASE_URL = resolveConfiguredApiBase(rawBase);
+const API_PREFIX = (runtimeConfig.apiPrefix || import.meta.env.VITE_API_PREFIX || '').replace(/\/$/, '');
+const API_TIMEOUT = Number(runtimeConfig.apiTimeout || import.meta.env.VITE_API_TIMEOUT || 15000);
+const AUTH_MODE = (runtimeConfig.authMode || import.meta.env.VITE_AUTH_MODE || 'jwt').toLowerCase();
 const SEND_COOKIES =
-  (import.meta.env.VITE_API_SEND_COOKIES || runtimeConfig.apiSendCookies || '').toString() === 'true' ||
+  (runtimeConfig.apiSendCookies || import.meta.env.VITE_API_SEND_COOKIES || '').toString() === 'true' ||
   AUTH_MODE === 'session';
 const resolveCredentials = (mode = AUTH_MODE) => (SEND_COOKIES || mode === 'session' ? 'include' : 'omit');
 const _MAX_AUTH_HEADER_LENGTH = MAX_HEADER_SAFE_LENGTH;

@@ -1,14 +1,14 @@
 import ReactDOM from 'react-dom/client';
 import AppWithTheme from './App.jsx';
 import { setupGlobalErrorHandler } from './lib/api/interceptor';
-import resolveApiBase from './shared/api/resolveApiBase';
+import { resolveConfiguredApiBase } from './shared/api/resolveApiBase';
 import { OpenAPI } from './shared/api/generated/core/OpenAPI';
 import './styles/charts-animations.css';
 import './styles/chat.css';
 import './styles/custom-theme.css';
 
 // Configure OpenAPI for generated services
-OpenAPI.BASE = resolveApiBase(import.meta.env.VITE_API_BASE_URL);
+OpenAPI.BASE = resolveConfiguredApiBase(import.meta.env.VITE_API_BASE_URL);
 OpenAPI.TOKEN = () => sessionStorage.getItem('crm_access_token') || undefined;
 
 // Setup global error handler for 401 errors

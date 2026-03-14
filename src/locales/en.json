@@ -118,8 +118,41 @@
       "fallbackDescription": "No description"
     },
     "errors": {
-      "loadData": "Failed to load dashboard data"
+      "loadData": "Failed to load dashboard data",
+      "licenseFeatureDisabled": "Feature unavailable by license",
+      "licenseFeatureDisabledDescription": "Your current plan does not include module: {feature}. Contact your license administrator."
     }
+  },
+  "licenseFeatures": {
+    "analyticsCore": "Analytics",
+    "dashboardCore": "Dashboard",
+    "dealsCore": "Deals",
+    "contactsCore": "Contacts",
+    "leadsCore": "Leads",
+    "telephonyCore": "Telephony",
+    "crmLeads": "Leads",
+    "crmContacts": "Contacts",
+    "crmCompanies": "Companies",
+    "crmDeals": "Deals",
+    "crmProducts": "Products",
+    "crmPayments": "Payments",
+    "tasksCore": "Tasks",
+    "tasksProjects": "Projects",
+    "tasksReminders": "Reminders",
+    "tasksMemos": "Notes",
+    "communicationsVoip": "Telephony",
+    "communicationsChat": "Chats",
+    "communicationsSms": "SMS",
+    "communicationsEmail": "CRM Email",
+    "marketingCampaigns": "Campaigns",
+    "marketingSegments": "Segments",
+    "marketingTemplates": "Templates",
+    "integrationsCore": "Integrations",
+    "referenceCore": "Reference Data",
+    "settingsCore": "Settings",
+    "usersCore": "Users",
+    "helpCenter": "Help Center",
+    "landingBuilder": "Landing Builder"
   },
   "loginPage": {
     "subtitle": "Enter your credentials to sign in",

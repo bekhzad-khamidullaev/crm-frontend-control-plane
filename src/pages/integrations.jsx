@@ -31,17 +31,20 @@ import {
   getFacebookPages,
   disconnectFacebook,
   testFacebookPage,
+  updateFacebookPage,
 } from '../lib/api/integrations/facebook.js';
 import {
   getInstagramAccounts,
   disconnectInstagram,
   testInstagramAccount,
+  updateInstagramAccount,
 } from '../lib/api/integrations/instagram.js';
 import {
   getTelegramBots,
   disconnectTelegramBot,
   testTelegramBot,
   setTelegramWebhook,
+  updateTelegramBot,
 } from '../lib/api/integrations/telegram.js';
 import {
   getAIProviders,
@@ -54,6 +57,7 @@ import {
   getWhatsAppAccounts,
   testWhatsAppAccount,
   disconnectWhatsAppAccount,
+  updateWhatsAppAccount,
 } from '../lib/api/integrations/whatsapp.js';
 import { apiConfig } from '../lib/api/client';
 import { t } from '../lib/i18n';
@@ -67,6 +71,14 @@ const normalizeList = (response) => {
   if (Array.isArray(response)) return response;
   return Array.isArray(response?.results) ? response.results : [];
 };
+
+const parseMultiline = (value) =>
+  String(value || '')
+    .split('\n')
+    .map((item) => item.trim())
+    .filter(Boolean);
+
+const stringifyMultiline = (items) => (Array.isArray(items) ? items.join('\n') : '');
 
 const getDefaultTelegramWebhookUrl = () => {
   if (typeof window === 'undefined') return '';
@@ -143,6 +155,9 @@ export default function IntegrationsPage() {
   const [webhookModal, setWebhookModal] = useState({ open: false, bot: null });
   const [webhookSaving, setWebhookSaving] = useState(false);
   const [webhookForm] = Form.useForm();
+  const [integrationEditModal, setIntegrationEditModal] = useState({ open: false, type: null, record: null });
+  const [integrationEditSaving, setIntegrationEditSaving] = useState(false);
+  const [integrationEditForm] = Form.useForm();
 
   const getErrorText = (error, fallback) => {
     const details = error?.details || {};
@@ -593,6 +608,114 @@ export default function IntegrationsPage() {
     }
   };
 
+  const openIntegrationEditModal = (type, record) => {
+    if (!record?.id) return;
+    const valuesByType = {
+      whatsapp: {
+        business_name: record.business_name || '',
+        phone_number: record.phone_number || '',
+        webhook_url: record.webhook_url || '',
+        is_active: !!record.is_active,
+        auto_sync_messages: !!record.auto_sync_messages,
+        auto_create_leads: !!record.auto_create_leads,
+      },
+      facebook: {
+        page_name: record.page_name || '',
+        webhook_url: record.webhook_url || '',
+        is_active: !!record.is_active,
+        auto_sync_messages: !!record.auto_sync_messages,
+        auto_sync_comments: !!record.auto_sync_comments,
+        auto_sync_posts: !!record.auto_sync_posts,
+      },
+      instagram: {
+        username: record.username || '',
+        webhook_url: record.webhook_url || '',
+        is_active: !!record.is_active,
+        auto_sync_messages: !!record.auto_sync_messages,
+        auto_sync_comments: !!record.auto_sync_comments,
+      },
+      telegram: {
+        webhook_url: record.webhook_url || getDefaultTelegramWebhookUrl(),
+        welcome_message: record.welcome_message || '',
+        allowed_chat_ids_text: stringifyMultiline(record.allowed_chat_ids),
+        is_active: !!record.is_active,
+        auto_reply: !!record.auto_reply,
+        use_webhook: record.use_webhook !== false,
+      },
+    };
+    integrationEditForm.setFieldsValue(valuesByType[type] || {});
+    setIntegrationEditModal({ open: true, type, record });
+  };
+
+  const closeIntegrationEditModal = () => {
+    setIntegrationEditModal({ open: false, type: null, record: null });
+    integrationEditForm.resetFields();
+  };
+
+  const handleIntegrationEditSave = async () => {
+    const { type, record } = integrationEditModal;
+    if (!type || !record?.id) return;
+    try {
+      const values = await integrationEditForm.validateFields();
+      setIntegrationEditSaving(true);
+
+      if (type === 'whatsapp') {
+        await updateWhatsAppAccount(record.id, {
+          business_name: values.business_name,
+          phone_number: values.phone_number,
+          webhook_url: values.webhook_url || '',
+          is_active: !!values.is_active,
+          auto_sync_messages: !!values.auto_sync_messages,
+          auto_create_leads: !!values.auto_create_leads,
+        });
+        await loadWhatsAppStatus();
+      }
+
+      if (type === 'facebook') {
+        await updateFacebookPage(record.id, {
+          page_name: values.page_name,
+          webhook_url: values.webhook_url || '',
+          is_active: !!values.is_active,
+          auto_sync_messages: !!values.auto_sync_messages,
+          auto_sync_comments: !!values.auto_sync_comments,
+          auto_sync_posts: !!values.auto_sync_posts,
+        });
+        await loadFacebookStatus();
+      }
+
+      if (type === 'instagram') {
+        await updateInstagramAccount(record.id, {
+          username: values.username,
+          webhook_url: values.webhook_url || '',
+          is_active: !!values.is_active,
+          auto_sync_messages: !!values.auto_sync_messages,
+          auto_sync_comments: !!values.auto_sync_comments,
+        });
+        await loadInstagramStatus();
+      }
+
+      if (type === 'telegram') {
+        await updateTelegramBot(record.id, {
+          webhook_url: values.webhook_url || '',
+          welcome_message: values.welcome_message || '',
+          allowed_chat_ids: parseMultiline(values.allowed_chat_ids_text),
+          is_active: !!values.is_active,
+          auto_reply: !!values.auto_reply,
+          use_webhook: !!values.use_webhook,
+        });
+        await loadTelegramStatus();
+      }
+
+      message.success(tr('integrationsPage.messages.settingsSaved', 'Настройки сохранены'));
+      closeIntegrationEditModal();
+    } catch (error) {
+      if (error?.errorFields) return;
+      message.error(getErrorText(error, tr('integrationsPage.messages.saveError', 'Не удалось сохранить настройки')));
+    } finally {
+      setIntegrationEditSaving(false);
+    }
+  };
+
   const openWebhookModal = (bot) => {
     webhookForm.setFieldsValue({ webhook_url: bot?.webhook_url || getDefaultTelegramWebhookUrl() });
     setWebhookModal({ open: true, bot });
@@ -688,6 +811,7 @@ export default function IntegrationsPage() {
             error={statuses.sms.error}
             loading={loading.sms}
             onConnect={() => openModal('sms')}
+            onSettings={() => openModal('sms')}
             onRefresh={loadSMSStatus}
           />
 
@@ -701,6 +825,7 @@ export default function IntegrationsPage() {
             error={statuses.telephony.error}
             loading={loading.telephony}
             onConnect={() => openModal('telephony')}
+            onSettings={() => openModal('telephony')}
             onRefresh={loadTelephonyStatus}
           />
 
@@ -714,6 +839,7 @@ export default function IntegrationsPage() {
             error={statuses.whatsapp.error}
             loading={loading.whatsapp}
             onConnect={() => openModal('whatsapp')}
+            onSettings={() => openModal('whatsapp')}
             onRefresh={loadWhatsAppStatus}
           >
             {whatsAppAccounts.length > 0 && (
@@ -743,6 +869,9 @@ export default function IntegrationsPage() {
                     key: 'actions',
                     render: (_, record) => (
                       <Space>
+                        <Button type="link" onClick={() => openIntegrationEditModal('whatsapp', record)}>
+                          {tr('integrationsPage.actions.edit', 'Редактировать')}
+                        </Button>
                         <Button type="link" onClick={() => handleWhatsAppTest(record)}>
                           {tr('integrationsPage.actions.test', 'Тест')}
                         </Button>
@@ -769,6 +898,7 @@ export default function IntegrationsPage() {
             error={statuses.facebook.error}
             loading={loading.facebook}
             onConnect={() => openModal('facebook')}
+            onSettings={() => openModal('facebook')}
             onRefresh={loadFacebookStatus}
           >
             {facebookPages.length > 0 && (
@@ -796,6 +926,9 @@ export default function IntegrationsPage() {
                     key: 'actions',
                     render: (_, record) => (
                       <Space>
+                        <Button type="link" onClick={() => openIntegrationEditModal('facebook', record)}>
+                          {tr('integrationsPage.actions.edit', 'Редактировать')}
+                        </Button>
                         <Button type="link" onClick={() => handleFacebookTest(record)}>
                           {tr('integrationsPage.actions.test', 'Тест')}
                         </Button>
@@ -822,6 +955,7 @@ export default function IntegrationsPage() {
             error={statuses.instagram.error}
             loading={loading.instagram}
             onConnect={() => openModal('instagram')}
+            onSettings={() => openModal('instagram')}
             onRefresh={loadInstagramStatus}
           >
             {instagramAccounts.length > 0 && (
@@ -849,6 +983,9 @@ export default function IntegrationsPage() {
                     key: 'actions',
                     render: (_, record) => (
                       <Space>
+                        <Button type="link" onClick={() => openIntegrationEditModal('instagram', record)}>
+                          {tr('integrationsPage.actions.edit', 'Редактировать')}
+                        </Button>
                         <Button type="link" onClick={() => handleInstagramTest(record)}>
                           {tr('integrationsPage.actions.test', 'Тест')}
                         </Button>
@@ -875,6 +1012,7 @@ export default function IntegrationsPage() {
             error={statuses.telegram.error}
             loading={loading.telegram}
             onConnect={() => openModal('telegram')}
+            onSettings={() => openModal('telegram')}
             onRefresh={loadTelegramStatus}
           >
             {telegramBots.length > 0 && (
@@ -903,6 +1041,9 @@ export default function IntegrationsPage() {
                     key: 'actions',
                     render: (_, record) => (
                       <Space>
+                        <Button type="link" onClick={() => openIntegrationEditModal('telegram', record)}>
+                          {tr('integrationsPage.actions.edit', 'Редактировать')}
+                        </Button>
                         <Button type="link" onClick={() => handleTelegramTest(record)}>
                           {tr('integrationsPage.actions.test', 'Тест')}
                         </Button>
@@ -932,6 +1073,7 @@ export default function IntegrationsPage() {
             error={statuses.ai.error}
             loading={loading.ai}
             onConnect={() => openAIModal()}
+            onSettings={() => openAIModal()}
             onRefresh={loadAIStatus}
           >
             {aiProviders.length > 0 && (
@@ -1022,7 +1164,8 @@ export default function IntegrationsPage() {
         open={modalVisible.telephony}
         onCancel={() => closeModal('telephony')}
         footer={null}
-        width={700}
+        width={980}
+        style={{ top: 20 }}
       >
         <TelephonySettings onSuccess={() => handleIntegrationSuccess('telephony')} />
       </Modal>
@@ -1188,6 +1331,93 @@ export default function IntegrationsPage() {
               <Switch />
             </Form.Item>
           </Space>
+        </Form>
+      </Modal>
+
+      <Modal
+        title={tr('integrationsPage.modals.editIntegration', 'Редактирование интеграции')}
+        open={integrationEditModal.open}
+        forceRender
+        onCancel={closeIntegrationEditModal}
+        onOk={handleIntegrationEditSave}
+        okText={tr('actions.save', 'Сохранить')}
+        confirmLoading={integrationEditSaving}
+      >
+        <Form form={integrationEditForm} layout="vertical">
+          {integrationEditModal.type === 'whatsapp' && (
+            <>
+              <Form.Item label={tr('integrationsPage.form.accountName', 'Название аккаунта')} name="business_name" rules={[{ required: true, message: tr('integrationsPage.validation.accountName', 'Введите название аккаунта') }]}>
+                <Input />
+              </Form.Item>
+              <Form.Item label={tr('integrationsPage.form.phone', 'Номер')} name="phone_number">
+                <Input />
+              </Form.Item>
+              <Form.Item label="Webhook URL" name="webhook_url" rules={[{ type: 'url', message: tr('integrationsPage.validation.url', 'Укажите корректный URL') }]}>
+                <Input placeholder="https://crm.example.com/integrations/whatsapp/webhook/" />
+              </Form.Item>
+              <Space size="large">
+                <Form.Item label={tr('integrationsPage.form.active', 'Активен')} name="is_active" valuePropName="checked"><Switch /></Form.Item>
+                <Form.Item label={tr('integrationsPage.form.autoSync', 'Автосинк')} name="auto_sync_messages" valuePropName="checked"><Switch /></Form.Item>
+                <Form.Item label={tr('integrationsPage.form.autoLeads', 'Авто-лиды')} name="auto_create_leads" valuePropName="checked"><Switch /></Form.Item>
+              </Space>
+            </>
+          )}
+
+          {integrationEditModal.type === 'facebook' && (
+            <>
+              <Form.Item label={tr('integrationsPage.form.pageName', 'Название страницы')} name="page_name" rules={[{ required: true, message: tr('integrationsPage.validation.pageName', 'Введите название страницы') }]}>
+                <Input />
+              </Form.Item>
+              <Form.Item label="Webhook URL" name="webhook_url" rules={[{ type: 'url', message: tr('integrationsPage.validation.url', 'Укажите корректный URL') }]}>
+                <Input placeholder="https://crm.example.com/integrations/facebook/webhook/" />
+              </Form.Item>
+              <Space size="large">
+                <Form.Item label={tr('integrationsPage.form.active', 'Активна')} name="is_active" valuePropName="checked"><Switch /></Form.Item>
+                <Form.Item label={tr('integrationsPage.form.autoMessages', 'Автосинк сообщений')} name="auto_sync_messages" valuePropName="checked"><Switch /></Form.Item>
+                <Form.Item label={tr('integrationsPage.form.autoComments', 'Автосинк комментариев')} name="auto_sync_comments" valuePropName="checked"><Switch /></Form.Item>
+                <Form.Item label={tr('integrationsPage.form.autoPosts', 'Автосинк постов')} name="auto_sync_posts" valuePropName="checked"><Switch /></Form.Item>
+              </Space>
+            </>
+          )}
+
+          {integrationEditModal.type === 'instagram' && (
+            <>
+              <Form.Item label="Username" name="username" rules={[{ required: true, message: tr('integrationsPage.validation.username', 'Введите username') }]}>
+                <Input />
+              </Form.Item>
+              <Form.Item label="Webhook URL" name="webhook_url" rules={[{ type: 'url', message: tr('integrationsPage.validation.url', 'Укажите корректный URL') }]}>
+                <Input placeholder="https://crm.example.com/integrations/instagram/webhook/" />
+              </Form.Item>
+              <Space size="large">
+                <Form.Item label={tr('integrationsPage.form.active', 'Активен')} name="is_active" valuePropName="checked"><Switch /></Form.Item>
+                <Form.Item label={tr('integrationsPage.form.autoMessages', 'Автосинк сообщений')} name="auto_sync_messages" valuePropName="checked"><Switch /></Form.Item>
+                <Form.Item label={tr('integrationsPage.form.autoComments', 'Автосинк комментариев')} name="auto_sync_comments" valuePropName="checked"><Switch /></Form.Item>
+              </Space>
+            </>
+          )}
+
+          {integrationEditModal.type === 'telegram' && (
+            <>
+              <Form.Item label="Webhook URL" name="webhook_url" rules={[{ type: 'url', message: tr('integrationsPage.validation.url', 'Укажите корректный URL') }]}>
+                <Input placeholder={getDefaultTelegramWebhookUrl()} />
+              </Form.Item>
+              <Form.Item label={tr('integrationsPage.form.welcomeMessage', 'Приветственное сообщение')} name="welcome_message">
+                <Input.TextArea rows={3} />
+              </Form.Item>
+              <Form.Item
+                label={tr('integrationsPage.form.allowedChatIds', 'Разрешённые chat_id')}
+                name="allowed_chat_ids_text"
+                extra={tr('integrationsPage.form.allowedChatIdsHint', 'По одному ID чата на строку. Пусто = разрешены все чаты.')}
+              >
+                <Input.TextArea rows={4} placeholder={'123456789\n-1001234567890'} />
+              </Form.Item>
+              <Space size="large">
+                <Form.Item label={tr('integrationsPage.form.active', 'Активен')} name="is_active" valuePropName="checked"><Switch /></Form.Item>
+                <Form.Item label={tr('integrationsPage.form.autoReply', 'Автоответ')} name="auto_reply" valuePropName="checked"><Switch /></Form.Item>
+                <Form.Item label={tr('integrationsPage.form.useWebhook', 'Использовать webhook')} name="use_webhook" valuePropName="checked"><Switch /></Form.Item>
+              </Space>
+            </>
+          )}
         </Form>
       </Modal>
     </div>

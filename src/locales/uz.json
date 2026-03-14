@@ -118,8 +118,41 @@
       "fallbackDescription": "Tavsif yo'q"
     },
     "errors": {
-      "loadData": "Boshqaruv paneli ma'lumotlarini yuklab bo'lmadi"
+      "loadData": "Boshqaruv paneli ma'lumotlarini yuklab bo'lmadi",
+      "licenseFeatureDisabled": "Funksiya litsenziya bo'yicha mavjud emas",
+      "licenseFeatureDisabledDescription": "Joriy tarifda modul mavjud emas: {feature}. Litsenziya administratoriga murojaat qiling."
     }
+  },
+  "licenseFeatures": {
+    "analyticsCore": "Analitika",
+    "dashboardCore": "Boshqaruv paneli",
+    "dealsCore": "Bitimlar",
+    "contactsCore": "Kontaktlar",
+    "leadsCore": "Lidlar",
+    "telephonyCore": "Telefoniya",
+    "crmLeads": "Lidlar",
+    "crmContacts": "Kontaktlar",
+    "crmCompanies": "Kompaniyalar",
+    "crmDeals": "Bitimlar",
+    "crmProducts": "Mahsulotlar",
+    "crmPayments": "To'lovlar",
+    "tasksCore": "Vazifalar",
+    "tasksProjects": "Loyihalar",
+    "tasksReminders": "Eslatmalar",
+    "tasksMemos": "Eslatmalar",
+    "communicationsVoip": "Telefoniya",
+    "communicationsChat": "Chatlar",
+    "communicationsSms": "SMS",
+    "communicationsEmail": "CRM Email",
+    "marketingCampaigns": "Kampaniyalar",
+    "marketingSegments": "Segmentlar",
+    "marketingTemplates": "Shablonlar",
+    "integrationsCore": "Integratsiyalar",
+    "referenceCore": "Ma'lumotnomalar",
+    "settingsCore": "Sozlamalar",
+    "usersCore": "Foydalanuvchilar",
+    "helpCenter": "Yordam",
+    "landingBuilder": "Lending konstruktori"
   },
   "loginPage": {
     "subtitle": "Tizimga kirish uchun ma'lumotlaringizni kiriting",

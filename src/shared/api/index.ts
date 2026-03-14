@@ -5,10 +5,10 @@
 
 import apiClient from './axios';
 import { OpenAPI } from './generated/core/OpenAPI';
-import resolveApiBase from './resolveApiBase';
+import { resolveConfiguredApiBase } from './resolveApiBase';
 
 // Configure the OpenAPI client to use our axios instance
-OpenAPI.BASE = resolveApiBase(import.meta.env.VITE_API_BASE_URL);
+OpenAPI.BASE = resolveConfiguredApiBase(import.meta.env.VITE_API_BASE_URL);
 
 // Configure token resolver
 OpenAPI.TOKEN = async () => {

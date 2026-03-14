@@ -205,7 +205,12 @@ export default function TelephonySettings({ onSuccess }) {
     setTableLoading(true);
     try {
       const response = await getVoIPConnections();
-      setConnections(response.results || []);
+      const list = Array.isArray(response?.results)
+        ? response.results
+        : Array.isArray(response)
+          ? response
+          : [];
+      setConnections(list);
     } catch (error) {
       console.error('Error loading VoIP connections:', error);
       message.error(tr('telephonySettings.messages.loadConnectionsError', 'Ошибка загрузки подключений'));

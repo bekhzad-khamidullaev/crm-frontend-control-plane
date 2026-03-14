@@ -118,8 +118,41 @@
       "fallbackDescription": "Без описания"
     },
     "errors": {
-      "loadData": "Не удалось загрузить данные дашборда"
+      "loadData": "Не удалось загрузить данные дашборда",
+      "licenseFeatureDisabled": "Функция недоступна по лицензии",
+      "licenseFeatureDisabledDescription": "Текущий тариф не включает модуль: {feature}. Обратитесь к администратору лицензий."
     }
+  },
+  "licenseFeatures": {
+    "analyticsCore": "Аналитика",
+    "dashboardCore": "Дашборд",
+    "dealsCore": "Сделки",
+    "contactsCore": "Контакты",
+    "leadsCore": "Лиды",
+    "telephonyCore": "Телефония",
+    "crmLeads": "Лиды",
+    "crmContacts": "Контакты",
+    "crmCompanies": "Компании",
+    "crmDeals": "Сделки",
+    "crmProducts": "Продукты",
+    "crmPayments": "Платежи",
+    "tasksCore": "Задачи",
+    "tasksProjects": "Проекты",
+    "tasksReminders": "Напоминания",
+    "tasksMemos": "Заметки",
+    "communicationsVoip": "Телефония",
+    "communicationsChat": "Чаты",
+    "communicationsSms": "SMS",
+    "communicationsEmail": "CRM Email",
+    "marketingCampaigns": "Кампании",
+    "marketingSegments": "Сегменты",
+    "marketingTemplates": "Шаблоны",
+    "integrationsCore": "Интеграции",
+    "referenceCore": "Справочники",
+    "settingsCore": "Настройки",
+    "usersCore": "Пользователи",
+    "helpCenter": "Справка",
+    "landingBuilder": "Конструктор лендингов"
   },
   "loginPage": {
     "subtitle": "Введите свои данные для входа в систему",

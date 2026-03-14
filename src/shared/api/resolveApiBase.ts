@@ -39,4 +39,16 @@ export function resolveApiBase(rawBase?: string) {
   }
 }
 
+export function getRuntimeAppConfig() {
+  if (typeof window === 'undefined') return {};
+  const config = window.__APP_CONFIG__;
+  return config && typeof config === 'object' ? config : {};
+}
+
+export function resolveConfiguredApiBase(staticBase?: string) {
+  const runtimeConfig = getRuntimeAppConfig() as Record<string, string>;
+  const runtimeBase = runtimeConfig.apiBaseUrl || runtimeConfig.BASE_URL || '';
+  return resolveApiBase(runtimeBase || staticBase);
+}
+
 export default resolveApiBase;

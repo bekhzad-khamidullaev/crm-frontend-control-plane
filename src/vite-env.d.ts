@@ -12,6 +12,17 @@ interface ImportMeta {
   readonly env: ImportMetaEnv;
 }
 
+interface Window {
+  __APP_CONFIG__?: {
+    apiBaseUrl?: string;
+    BASE_URL?: string;
+    apiPrefix?: string;
+    apiTimeout?: number | string;
+    authMode?: string;
+    apiSendCookies?: boolean | string;
+  };
+}
+
 declare module '*.jsx' {
   import type { ComponentType } from 'react';
   const Component: ComponentType<any>;

@@ -18,6 +18,8 @@ import {
 } from 'antd';
 import { useEffect, useMemo, useState } from 'react';
 import { getActivityFeed, getOverview, normalizeOverview } from '../lib/api/analytics.js';
+import parseLicenseRestriction from '../lib/api/licenseError';
+import resolveFeatureName from '../lib/api/licenseFeatureName';
 import { t } from '../lib/i18n/index.js';
 
 const { Title, Text } = Typography;
@@ -68,7 +70,7 @@ function Dashboard() {
   const [activity, setActivity] = useState([]);
   const [loadingOverview, setLoadingOverview] = useState(false);
   const [loadingActivity, setLoadingActivity] = useState(false);
-  const [error, setError] = useState('');
+  const [error, setError] = useState(null);
 
   useEffect(() => {
     void loadData();
@@ -120,7 +122,7 @@ function Dashboard() {
   }, [overview]);
 
   async function loadData() {
-    setError('');
+    setError(null);
     setLoadingOverview(true);
     setLoadingActivity(true);
 
@@ -134,7 +136,29 @@ function Dashboard() {
       setActivity(Array.isArray(activityRes) ? activityRes : []);
     } catch (e) {
       console.error('Dashboard load error:', e);
-      setError(t('dashboardPage.errors.loadData'));
+      const licenseError = parseLicenseRestriction(e);
+      const statusCode = Number(
+        e?.status ||
+        e?.response?.status ||
+        e?.details?.status ||
+        0
+      );
+      if (licenseError || statusCode === 403) {
+        const blockedFeature = resolveFeatureName(licenseError?.feature || 'analytics.core', t);
+        setError({
+          message: t('dashboardPage.errors.licenseFeatureDisabled'),
+          description: t('dashboardPage.errors.licenseFeatureDisabledDescription', {
+            feature: blockedFeature,
+          }),
+          type: 'warning',
+        });
+      } else {
+        setError({
+          message: t('dashboardPage.errors.loadData'),
+          description: null,
+          type: 'error',
+        });
+      }
       setOverview(null);
       setActivity([]);
     } finally {
@@ -163,7 +187,14 @@ function Dashboard() {
             />
           </Space>
 
-          {error ? <Alert type="error" showIcon message={error} /> : null}
+          {error ? (
+            <Alert
+              type={error.type || 'error'}
+              showIcon
+              message={error.message}
+              description={error.description || undefined}
+            />
+          ) : null}
         </Space>
       </Card>
 
