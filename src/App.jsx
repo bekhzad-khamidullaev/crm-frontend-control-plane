@@ -13,7 +13,6 @@ import { getWhatsAppAccounts } from './lib/api/integrations/whatsapp.js';
 import { canAccessRoute as canAccessRouteByPolicy } from './lib/rbac.js';
 import smsApi from './lib/api/sms.js';
 import { getVoIPConnections } from './lib/api/telephony.js';
-import { getLicenseEntitlements } from './lib/api/license.js';
 import { getProfile } from './lib/api/user.js';
 import { mergeRoles, rolesFromProfile, rolesFromTokenPayload } from './lib/roles.js';
 import { getFrontendVersionInfo } from './shared/version.js';
@@ -295,24 +294,6 @@ function persistPermissions(rawPermissions = []) {
   localStorage.removeItem('enterprise_crm_permissions');
 }
 
-function normalizeFeatures(rawFeatures = []) {
-  if (!Array.isArray(rawFeatures)) return [];
-  const normalized = new Set();
-  rawFeatures.forEach((feature) => {
-    const value = String(feature || '').trim().toLowerCase();
-    if (!value) return;
-    normalized.add(value);
-  });
-  return Array.from(normalized);
-}
-
-function persistLicenseFeatures(rawFeatures = []) {
-  const features = normalizeFeatures(rawFeatures);
-  const serialized = JSON.stringify(features);
-  sessionStorage.setItem('enterprise_crm_license_features', serialized);
-  localStorage.removeItem('enterprise_crm_license_features');
-}
-
 function normalizeList(response) {
   if (Array.isArray(response)) return response;
   return Array.isArray(response?.results) ? response.results : [];
@@ -484,16 +465,6 @@ function App() {
           setUser((prev) => normalizeUser(me || {}, prev || tokenUser));
         } catch (e) {
           console.warn('Failed to preload user profile/roles:', e);
-        }
-      })();
-
-      (async () => {
-        try {
-          const license = await getLicenseEntitlements();
-          persistLicenseFeatures(license?.features || []);
-        } catch (e) {
-          console.warn('Failed to preload license entitlements:', e);
-          sessionStorage.removeItem('enterprise_crm_license_features');
         }
       })();
 
@@ -702,8 +673,6 @@ function App() {
     localStorage.removeItem('enterprise_crm_roles');
     sessionStorage.removeItem('enterprise_crm_permissions');
     localStorage.removeItem('enterprise_crm_permissions');
-    sessionStorage.removeItem('enterprise_crm_license_features');
-    localStorage.removeItem('enterprise_crm_license_features');
     disconnectTelephony();
     setUser(null);
     setActiveIntegrations([]);

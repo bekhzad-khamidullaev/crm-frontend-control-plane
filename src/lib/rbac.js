@@ -40,17 +40,6 @@ function normalizePermissions(rawPermissions = []) {
   return Array.from(normalized);
 }
 
-function normalizeFeatures(rawFeatures = []) {
-  if (!Array.isArray(rawFeatures)) return [];
-  const normalized = new Set();
-  rawFeatures.forEach((feature) => {
-    const value = String(feature || '').trim().toLowerCase();
-    if (!value) return;
-    normalized.add(value);
-  });
-  return Array.from(normalized);
-}
-
 function getStoredRoles() {
   try {
     const raw = sessionStorage.getItem('enterprise_crm_roles');
@@ -71,19 +60,6 @@ function getStoredPermissions() {
     const parsed = JSON.parse(raw);
     if (Array.isArray(parsed)) return normalizePermissions(parsed);
     if (parsed && Array.isArray(parsed.permissions)) return normalizePermissions(parsed.permissions);
-  } catch {
-    return [];
-  }
-  return [];
-}
-
-function getStoredLicenseFeatures() {
-  try {
-    const raw = sessionStorage.getItem('enterprise_crm_license_features');
-    if (!raw) return [];
-    const parsed = JSON.parse(raw);
-    if (Array.isArray(parsed)) return normalizeFeatures(parsed);
-    if (parsed && Array.isArray(parsed.features)) return normalizeFeatures(parsed.features);
   } catch {
     return [];
   }
@@ -118,16 +94,6 @@ export function hasAnyPermission(requiredPermissions = []) {
   return currentPermissions.some((permission) => normalizedRequired.includes(permission));
 }
 
-export function hasAnyFeature(requiredFeatures = []) {
-  const normalizedRequired = normalizeFeatures(
-    Array.isArray(requiredFeatures) ? requiredFeatures : [requiredFeatures],
-  );
-  if (normalizedRequired.length === 0) return true;
-  const currentFeatures = getStoredLicenseFeatures();
-  if (currentFeatures.length === 0) return false;
-  return currentFeatures.some((feature) => normalizedRequired.includes(feature));
-}
-
 export function canWrite(requiredPermissions = null) {
   if (requiredPermissions) {
     return hasAnyPermission(requiredPermissions);
@@ -146,9 +112,7 @@ export function canAccessRoute(routeName) {
   if (!isAuthenticated()) return false;
   const requiredRoles = normalizeRoles(Array.isArray(meta.roles) ? meta.roles : []);
   const requiredPermissions = normalizePermissions(Array.isArray(meta.permissions) ? meta.permissions : []);
-  const requiredFeatures = normalizeFeatures(Array.isArray(meta.features) ? meta.features : meta.feature ? [meta.feature] : []);
   const hasRoles = requiredRoles.length === 0 || hasAnyRole(requiredRoles);
   const hasPermissions = requiredPermissions.length === 0 || hasAnyPermission(requiredPermissions);
-  const hasFeatures = requiredFeatures.length === 0 || hasAnyFeature(requiredFeatures);
-  return hasRoles && hasPermissions && hasFeatures;
+  return hasRoles && hasPermissions;
 }
