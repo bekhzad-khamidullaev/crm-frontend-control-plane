@@ -124,7 +124,7 @@ export function hasAnyFeature(requiredFeatures = []) {
   );
   if (normalizedRequired.length === 0) return true;
   const currentFeatures = getStoredLicenseFeatures();
-  if (currentFeatures.length === 0) return true;
+  if (currentFeatures.length === 0) return false;
   return currentFeatures.some((feature) => normalizedRequired.includes(feature));
 }
 

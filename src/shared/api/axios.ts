@@ -2,7 +2,7 @@ import { message } from 'antd';
 import axios, { AxiosError, InternalAxiosRequestConfig } from 'axios';
 import resolveApiBase from './resolveApiBase';
 import parseLicenseRestriction from '../../lib/api/licenseError';
-import resolveFeatureName from '../../lib/api/licenseFeatureName';
+import { emitLicenseRestriction } from '../../lib/api/licenseRestrictionBus';
 
 const API_BASE_URL = resolveApiBase(import.meta.env.VITE_API_BASE_URL);
 
@@ -76,8 +76,7 @@ apiClient.interceptors.response.use(
     if (error.response?.status === 403) {
       const licenseError = parseLicenseRestriction(error);
       if (licenseError) {
-        const featureName = resolveFeatureName(licenseError.feature, null);
-        message.warning(`Функция недоступна по лицензии: ${featureName}`);
+        emitLicenseRestriction(licenseError);
       } else {
         message.error('У вас нет прав для выполнения этого действия');
       }

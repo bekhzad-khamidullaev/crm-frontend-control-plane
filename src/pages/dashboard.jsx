@@ -18,8 +18,6 @@ import {
 } from 'antd';
 import { useEffect, useMemo, useState } from 'react';
 import { getActivityFeed, getOverview, normalizeOverview } from '../lib/api/analytics.js';
-import parseLicenseRestriction from '../lib/api/licenseError';
-import resolveFeatureName from '../lib/api/licenseFeatureName';
 import { t } from '../lib/i18n/index.js';
 
 const { Title, Text } = Typography;
@@ -136,22 +134,9 @@ function Dashboard() {
       setActivity(Array.isArray(activityRes) ? activityRes : []);
     } catch (e) {
       console.error('Dashboard load error:', e);
-      const licenseError = parseLicenseRestriction(e);
-      const statusCode = Number(
-        e?.status ||
-        e?.response?.status ||
-        e?.details?.status ||
-        0
-      );
-      if (licenseError || statusCode === 403) {
-        const blockedFeature = resolveFeatureName(licenseError?.feature || 'analytics.core', t);
-        setError({
-          message: t('dashboardPage.errors.licenseFeatureDisabled'),
-          description: t('dashboardPage.errors.licenseFeatureDisabledDescription', {
-            feature: blockedFeature,
-          }),
-          type: 'warning',
-        });
+      const statusCode = Number(e?.status || e?.response?.status || e?.details?.status || 0);
+      if (statusCode === 403) {
+        setError(null);
       } else {
         setError({
           message: t('dashboardPage.errors.loadData'),

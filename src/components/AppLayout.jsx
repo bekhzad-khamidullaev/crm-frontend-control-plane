@@ -29,12 +29,14 @@ import {
     UserOutlined,
     WhatsAppOutlined,
 } from '@ant-design/icons';
-import { Avatar, Badge, Button, ConfigProvider, Drawer, Dropdown, Grid, Layout, Menu, Space, Tooltip, Typography } from 'antd';
+import { Alert, Avatar, Badge, Button, ConfigProvider, Drawer, Dropdown, Grid, Layout, Menu, Space, Tooltip, Typography } from 'antd';
 import { useEffect, useState } from 'react';
 import brandMark from '../assets/brand/favicon.svg';
 import brandLogo from '../assets/brand/logo.svg';
 import brandLogoDark from '../assets/brand/logo-dark.svg';
 import { useTheme } from '../lib/hooks/useTheme.js';
+import resolveFeatureName from '../lib/api/licenseFeatureName';
+import { LICENSE_RESTRICTION_EVENT } from '../lib/api/licenseRestrictionBus.js';
 import { getLocale, t } from '../lib/i18n/index.js';
 import { navigate } from '../router.js';
 
@@ -63,6 +65,7 @@ export function AppLayout({
   const screens = Grid.useBreakpoint();
   const isMobile = !screens.lg;
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [licenseRestriction, setLicenseRestriction] = useState(null);
   const siderWidth = 256;
   const drawerWidth = screens.sm ? 300 : '86vw';
   const tr = (key, fallback) => {
@@ -207,6 +210,26 @@ export function AppLayout({
   useEffect(() => {
     setMobileMenuOpen(false);
   }, [selectedKey, isMobile]);
+
+  useEffect(() => {
+    setLicenseRestriction(null);
+  }, [selectedKey]);
+
+  useEffect(() => {
+    const handleRestriction = (event) => {
+      const detail = event?.detail;
+      if (!detail || typeof detail !== 'object') return;
+      setLicenseRestriction({
+        code: detail.code || 'LICENSE_FEATURE_DISABLED',
+        feature: String(detail.feature || 'unknown.feature'),
+      });
+    };
+
+    window.addEventListener(LICENSE_RESTRICTION_EVENT, handleRestriction);
+    return () => {
+      window.removeEventListener(LICENSE_RESTRICTION_EVENT, handleRestriction);
+    };
+  }, []);
 
   useEffect(() => {
     if (!isMobile) {
@@ -573,6 +596,31 @@ export function AppLayout({
             maxWidth: '100%',
           }}
         >
+          {licenseRestriction ? (
+            <div
+              style={{
+                marginBottom: 12,
+                borderRadius: 12,
+                border: `1px solid ${theme === 'dark' ? 'rgba(250, 204, 21, 0.35)' : 'rgba(217, 119, 6, 0.35)'}`,
+                background: theme === 'dark' ? 'rgba(64, 45, 12, 0.55)' : 'rgba(255, 248, 220, 0.62)',
+                backdropFilter: 'blur(14px)',
+                WebkitBackdropFilter: 'blur(14px)',
+                boxShadow: theme === 'dark' ? '0 10px 24px rgba(0,0,0,0.28)' : '0 10px 24px rgba(217,119,6,0.12)',
+              }}
+            >
+              <Alert
+                type="warning"
+                showIcon
+                closable
+                onClose={() => setLicenseRestriction(null)}
+                message={t('dashboardPage.errors.licenseFeatureDisabled')}
+                description={t('dashboardPage.errors.licenseFeatureDisabledDescription', {
+                  feature: resolveFeatureName(licenseRestriction.feature, t),
+                })}
+                style={{ background: 'transparent', border: 'none' }}
+              />
+            </div>
+          ) : null}
           {children}
         </Content>
       </Layout>

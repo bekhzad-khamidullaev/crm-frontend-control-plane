@@ -7,6 +7,7 @@ import {
   MAX_HEADER_SAFE_LENGTH,
   setToken,
 } from './auth.js';
+import { emitLicenseRestriction, parseLicenseRestrictionPayload } from './licenseRestrictionBus.js';
 import { getRuntimeAppConfig, resolveConfiguredApiBase } from '../../shared/api/resolveApiBase';
 
 // Runtime config (injected via window.__APP_CONFIG__ for deployments outside Vite)
@@ -306,6 +307,7 @@ async function request(method, path, options = {}) {
   try {
     const response = await withTimeout(fetchPromise, API_TIMEOUT, controller);
     const payload = await parseResponseBody(response, options.responseType, !response.ok);
+    const licenseRestriction = parseLicenseRestrictionPayload(payload);
 
     // On 401, always clear tokens and require re-login
     // (automatic refresh can cause issues if backend doesn't support it properly)
@@ -315,6 +317,9 @@ async function request(method, path, options = {}) {
     }
 
     if (response.status === 403 && authAllowed) {
+      if (licenseRestriction) {
+        emitLicenseRestriction(licenseRestriction);
+      }
       throw normalizeError(response, payload, url);
     }
 
