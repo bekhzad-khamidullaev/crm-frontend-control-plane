@@ -1,4 +1,12 @@
 export const LICENSE_RESTRICTION_EVENT = 'crm:license-restriction';
+const RESTRICTIVE_CODES = new Set([
+  'LICENSE_FEATURE_DISABLED',
+  'LICENSE_SEAT_LIMIT_EXCEEDED',
+  'LICENSE_EXPIRED',
+  'LICENSE_REVOKED',
+  'LICENSE_INVALID_SIGNATURE',
+  'LICENSE_BINDING_MISMATCH',
+]);
 
 function readValue(source, path) {
   return path.reduce((acc, key) => (acc && typeof acc === 'object' ? acc[key] : undefined), source);
@@ -12,7 +20,7 @@ export function parseLicenseRestrictionPayload(payload) {
     readValue(payload, ['details', 'code']) ||
     readValue(payload, ['error', 'code']);
 
-  if (code !== 'LICENSE_FEATURE_DISABLED') return null;
+  if (!RESTRICTIVE_CODES.has(code)) return null;
 
   const feature =
     readValue(payload, ['feature']) ||
@@ -21,7 +29,13 @@ export function parseLicenseRestrictionPayload(payload) {
     readValue(payload, ['meta', 'feature']) ||
     'unknown.feature';
 
-  return { code, feature: String(feature) };
+  const message =
+    readValue(payload, ['message']) ||
+    readValue(payload, ['details', 'message']) ||
+    readValue(payload, ['error', 'message']) ||
+    '';
+
+  return { code, feature: String(feature), message: String(message || '') };
 }
 
 export function emitLicenseRestriction(restriction) {
@@ -31,6 +45,7 @@ export function emitLicenseRestriction(restriction) {
       detail: {
         code: restriction.code || 'LICENSE_FEATURE_DISABLED',
         feature: restriction.feature || 'unknown.feature',
+        message: restriction.message || '',
         timestamp: Date.now(),
       },
     }),

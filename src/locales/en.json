@@ -35,6 +35,7 @@
     "referenceData": "Reference Data",
     "telephony": "Telephony",
     "users": "Users",
+    "licensing": "Licensing",
     "profile": "Profile",
     "settings": "Settings",
     "logout": "Logout",
@@ -120,7 +121,105 @@
     "errors": {
       "loadData": "Failed to load dashboard data",
       "licenseFeatureDisabled": "Feature unavailable by license",
-      "licenseFeatureDisabledDescription": "Your current plan does not include module: {feature}. Contact your license administrator."
+      "licenseFeatureDisabledDescription": "Your current plan does not include module: {feature}. Contact your license administrator.",
+      "licenseSeatLimitExceeded": "Seat limit exceeded",
+      "licenseExpired": "License has expired",
+      "licenseRevoked": "License has been revoked",
+      "licenseInvalid": "License is invalid",
+      "licenseRestrictionDescription": "Operation is restricted by current license state. Check licensing page."
+    }
+  },
+  "licensingPage": {
+    "title": "Licensing control",
+    "subtitle": "Assign license, run offline activation, and review license audit history for this instance.",
+    "tabs": {
+      "overview": "Overview",
+      "install": "Install & verify",
+      "offline": "Offline activation",
+      "events": "Audit events"
+    },
+    "status": {
+      "active": "Active",
+      "grace": "Grace period",
+      "expired": "Expired",
+      "revoked": "Revoked",
+      "invalid": "Invalid",
+      "unknown": "Unknown"
+    },
+    "health": {
+      "title": "License health"
+    },
+    "state": {
+      "hint": "Recommended actions depend on the current license status.",
+      "activePrimary": "Verify artifact",
+      "activeSecondary": "Open events",
+      "gracePrimary": "Install renewal",
+      "graceSecondary": "Offline challenge",
+      "expiredPrimary": "Install new license",
+      "expiredSecondary": "Generate challenge",
+      "revokedPrimary": "Offline reactivation",
+      "revokedSecondary": "Open audit events",
+      "invalidPrimary": "Regenerate challenge",
+      "invalidSecondary": "Inspect audit events"
+    },
+    "cards": {
+      "seatsUsed": "Seats used",
+      "seatsAvailable": "Seats available",
+      "seatsUtilization": "Seat utilization %"
+    },
+    "info": {
+      "title": "License info",
+      "status": "Status",
+      "plan": "Plan",
+      "customer": "Customer",
+      "instanceId": "Instance ID",
+      "licenseId": "License ID",
+      "installedAt": "Installed at",
+      "validFrom": "Valid from",
+      "expiresAt": "Expires at",
+      "graceUntil": "Grace until",
+      "healthReason": "Health reason"
+    },
+    "features": {
+      "title": "Entitled features",
+      "empty": "No entitled features"
+    },
+    "events": {
+      "empty": "No events yet",
+      "columns": {
+        "when": "When",
+        "type": "Type",
+        "severity": "Severity",
+        "details": "Details"
+      }
+    },
+    "install": {
+      "title": "Install signed license artifact",
+      "description": "Paste canonical payload and signature received from control-plane signer.",
+      "payload": "Payload",
+      "payloadRequired": "Payload is required",
+      "signature": "Signature",
+      "signatureRequired": "Signature is required",
+      "verify": "Verify",
+      "install": "Install"
+    },
+    "offline": {
+      "title": "Air-gapped challenge-response flow",
+      "description": "Generate challenge and transfer it to control-plane. Receive signed artifact and install it in this CRM instance.",
+      "generate": "Generate challenge",
+      "copy": "Copy challenge JSON",
+      "empty": "Challenge is not generated yet"
+    },
+    "messages": {
+      "loadError": "Failed to load license data",
+      "verifySuccess": "License artifact is valid",
+      "verifyError": "License verification failed",
+      "installSuccess": "License installed successfully",
+      "installError": "Failed to install license",
+      "challengeLoaded": "Challenge loaded",
+      "challengeError": "Failed to load challenge",
+      "challengeCopied": "Challenge copied",
+      "copyError": "Failed to copy"
     }
   },
   "licenseFeatures": {

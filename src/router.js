@@ -63,6 +63,7 @@ export const routeMeta = {
  'sms-center': { auth: true, title: 'SMS Center' },
  'telephony': { auth: true, title: 'Telephony' },
  'users': { auth: true, title: 'Users' },
+ 'licensing': { auth: true, title: 'Licensing' },
  'profile': { auth: true, title: 'Profile' },
  'settings': { auth: true, title: 'Settings' },
  'integrations': { auth: true, title: 'Integrations' },
@@ -153,6 +154,7 @@ const ADMIN_PERMISSIONS = ['auth.view_user', 'settings.view_systemsettings'];
   'users',
   'settings',
   'integrations',
+  'licensing',
 ].forEach((route) => {
   if (routeMeta[route]) routeMeta[route].roles = ADMIN_ROLES;
 });
@@ -210,6 +212,7 @@ const ADMIN_PERMISSIONS = ['auth.view_user', 'settings.view_systemsettings'];
   ['calls-list', 'voip.view_calllog'],
   ['calls-dashboard', 'voip.view_calllog'],
   ['telephony', 'voip.view_connection'],
+  ['licensing', 'settings.view_systemsettings'],
   ['massmail', 'massmail.view_mailingout'],
   ['analytics', 'analytics.view_incomestat'],
   ['landing-builder', 'landings.view_landingpage'],
@@ -221,6 +224,7 @@ const ADMIN_PERMISSIONS = ['auth.view_user', 'settings.view_systemsettings'];
   'users',
   'settings',
   'integrations',
+  'licensing',
   'reference-data',
   'operations',
 ].forEach((route) => {
@@ -247,6 +251,7 @@ const ADMIN_PERMISSIONS = ['auth.view_user', 'settings.view_systemsettings'];
   ['operations', 'settings.core'],
   ['settings', 'settings.core'],
   ['integrations', 'integrations.core'],
+  ['licensing', 'settings.core'],
   ['reference-data', 'reference.core'],
   ['landing-builder', 'landing.builder'],
   ['users', 'users.core'],
@@ -401,6 +406,7 @@ export function parseHash() {
   if (segments[0] === 'sms') return { name: 'sms-center', params: {} };
   if (segments[0] === 'telephony') return { name: 'telephony', params: {} };
   if (segments[0] === 'users') return { name: 'users', params: {} };
+  if (segments[0] === 'licensing' || segments[0] === 'license') return { name: 'licensing', params: {} };
   if (segments[0] === 'profile') return { name: 'profile', params: {} };
   if (segments[0] === 'settings') return { name: 'settings', params: {} };
   if (segments[0] === 'integrations') return { name: 'integrations', params: {} };

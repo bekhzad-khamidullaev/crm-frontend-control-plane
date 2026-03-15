@@ -150,6 +150,7 @@ const AnalyticsPage = lazy(() => import('./pages/analytics.jsx'));
 const SmsCenterPage = lazy(() => import('./pages/sms-center.jsx'));
 const TelephonyPage = lazy(() => import('./pages/telephony.jsx'));
 const UsersPage = lazy(() => import('./pages/users.jsx'));
+const LicensingPage = lazy(() => import('./pages/licensing.jsx'));
 
 function normalizeLocale(raw) {
   const value = String(raw || '').toLowerCase().trim();
@@ -761,6 +762,7 @@ function App() {
     'help-center': 'help-center',
     telephony: 'telephony',
     users: 'users',
+    licensing: 'licensing',
     settings: 'settings',
     integrations: 'integrations',
     'landing-builder': 'landing-builder',
@@ -794,6 +796,7 @@ function App() {
     if (name === 'help-center') return 'help-center';
     if (name === 'telephony') return 'telephony';
     if (name === 'users') return 'users';
+    if (name === 'licensing') return 'licensing';
     if (name === 'landing-builder') return 'landing-builder';
     return name;
   };
@@ -948,6 +951,8 @@ function App() {
         return <TelephonyPage />;
       case 'users':
         return <UsersPage />;
+      case 'licensing':
+        return <LicensingPage />;
       case 'chat':
       case 'chat-list':
         return <ChatPage />;

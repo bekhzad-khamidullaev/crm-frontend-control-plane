@@ -13,6 +13,7 @@ import {
     FolderOutlined,
     GlobalOutlined,
     InstagramOutlined,
+    KeyOutlined,
     LogoutOutlined,
     MailOutlined,
     MenuFoldOutlined,
@@ -130,6 +131,7 @@ export function AppLayout({
       label: tr('nav.systemGroup', 'Система'),
       children: [
         { key: 'settings', label: tr('nav.settings', 'Настройки'), icon: <SettingOutlined />, path: '/settings' },
+        { key: 'licensing', label: tr('nav.licensing', 'Лицензирование'), icon: <KeyOutlined />, path: '/licensing' },
         { key: 'reference-data', label: tr('nav.referenceData', 'Справочники'), icon: <AppstoreOutlined />, path: '/reference-data' },
         { key: 'landing-builder', label: tr('nav.landingBuilder', 'Конструктор лендингов'), icon: <AppstoreOutlined />, path: '/landing-builder' },
         { key: 'users', label: tr('nav.users', 'Пользователи'), icon: <UserOutlined />, path: '/users' },
@@ -222,6 +224,7 @@ export function AppLayout({
       setLicenseRestriction({
         code: detail.code || 'LICENSE_FEATURE_DISABLED',
         feature: String(detail.feature || 'unknown.feature'),
+        message: String(detail.message || ''),
       });
     };
 
@@ -613,10 +616,35 @@ export function AppLayout({
                 showIcon
                 closable
                 onClose={() => setLicenseRestriction(null)}
-                message={t('dashboardPage.errors.licenseFeatureDisabled')}
-                description={t('dashboardPage.errors.licenseFeatureDisabledDescription', {
-                  feature: resolveFeatureName(licenseRestriction.feature, t),
-                })}
+                message={(() => {
+                  if (licenseRestriction.code === 'LICENSE_SEAT_LIMIT_EXCEEDED') {
+                    return t('dashboardPage.errors.licenseSeatLimitExceeded');
+                  }
+                  if (licenseRestriction.code === 'LICENSE_EXPIRED') {
+                    return t('dashboardPage.errors.licenseExpired');
+                  }
+                  if (licenseRestriction.code === 'LICENSE_REVOKED') {
+                    return t('dashboardPage.errors.licenseRevoked');
+                  }
+                  if (
+                    licenseRestriction.code === 'LICENSE_INVALID_SIGNATURE'
+                    || licenseRestriction.code === 'LICENSE_BINDING_MISMATCH'
+                  ) {
+                    return t('dashboardPage.errors.licenseInvalid');
+                  }
+                  return t('dashboardPage.errors.licenseFeatureDisabled');
+                })()}
+                description={(() => {
+                  if (licenseRestriction.message) {
+                    return licenseRestriction.message;
+                  }
+                  if (licenseRestriction.code === 'LICENSE_FEATURE_DISABLED') {
+                    return t('dashboardPage.errors.licenseFeatureDisabledDescription', {
+                      feature: resolveFeatureName(licenseRestriction.feature, t),
+                    });
+                  }
+                  return t('dashboardPage.errors.licenseRestrictionDescription');
+                })()}
                 style={{ background: 'transparent', border: 'none' }}
               />
             </div>

@@ -41,7 +41,8 @@ function findFirst(paths: string[][], candidates: any[]): any {
 
 export type LicenseRestriction = {
   code: string;
-  feature: string;
+  feature?: string;
+  message?: string;
 };
 
 export function parseLicenseRestriction(error: AnyError | null | undefined): LicenseRestriction | null {
@@ -55,7 +56,15 @@ export function parseLicenseRestriction(error: AnyError | null | undefined): Lic
     candidates
   );
 
-  if (code !== 'LICENSE_FEATURE_DISABLED') return null;
+  const restrictiveCodes = new Set([
+    'LICENSE_FEATURE_DISABLED',
+    'LICENSE_SEAT_LIMIT_EXCEEDED',
+    'LICENSE_EXPIRED',
+    'LICENSE_REVOKED',
+    'LICENSE_INVALID_SIGNATURE',
+    'LICENSE_BINDING_MISMATCH',
+  ]);
+  if (!restrictiveCodes.has(String(code || ''))) return null;
 
   const feature = findFirst(
     [
@@ -65,11 +74,21 @@ export function parseLicenseRestriction(error: AnyError | null | undefined): Lic
       ['meta', 'feature'],
     ],
     candidates
-  ) || 'unknown.feature';
+  );
+
+  const message = findFirst(
+    [
+      ['message'],
+      ['details', 'message'],
+      ['error', 'message'],
+    ],
+    candidates
+  );
 
   return {
-    code,
-    feature,
+    code: String(code),
+    feature: feature ? String(feature) : undefined,
+    message: message ? String(message) : undefined,
   };
 }
 
