@@ -35,6 +35,7 @@
     "referenceData": "Ma'lumotnomalar",
     "telephony": "Telefoniya",
     "users": "Foydalanuvchilar",
+    "licensing": "Litsenziyalash",
     "profile": "Profil",
     "settings": "Sozlamalar",
     "logout": "Chiqish",
@@ -120,7 +121,105 @@
     "errors": {
       "loadData": "Boshqaruv paneli ma'lumotlarini yuklab bo'lmadi",
       "licenseFeatureDisabled": "Funksiya litsenziya bo'yicha mavjud emas",
-      "licenseFeatureDisabledDescription": "Joriy tarifda modul mavjud emas: {feature}. Litsenziya administratoriga murojaat qiling."
+      "licenseFeatureDisabledDescription": "Joriy tarifda modul mavjud emas: {feature}. Litsenziya administratoriga murojaat qiling.",
+      "licenseSeatLimitExceeded": "Foydalanuvchi o'rinlari limiti oshib ketdi",
+      "licenseExpired": "Litsenziya muddati tugagan",
+      "licenseRevoked": "Litsenziya bekor qilingan",
+      "licenseInvalid": "Litsenziya yaroqsiz",
+      "licenseRestrictionDescription": "Amal joriy litsenziya holati bilan cheklangan. Litsenziyalash bo'limini tekshiring."
+    }
+  },
+  "licensingPage": {
+    "title": "Litsenziya boshqaruvi",
+    "subtitle": "Joriy instans uchun litsenziya tayinlash, offline aktivatsiya va audit tarixini boshqarish.",
+    "tabs": {
+      "overview": "Umumiy ko'rinish",
+      "install": "O'rnatish va tekshirish",
+      "offline": "Offline aktivatsiya",
+      "events": "Audit hodisalari"
+    },
+    "status": {
+      "active": "Faol",
+      "grace": "Imtiyoz davri",
+      "expired": "Muddati tugagan",
+      "revoked": "Bekor qilingan",
+      "invalid": "Yaroqsiz",
+      "unknown": "Noma'lum"
+    },
+    "health": {
+      "title": "Litsenziya holati"
+    },
+    "state": {
+      "hint": "Tavsiya etilgan amallar joriy litsenziya holatiga bog'liq.",
+      "activePrimary": "Artefaktni tekshirish",
+      "activeSecondary": "Hodisalarni ochish",
+      "gracePrimary": "Uzatmani o'rnatish",
+      "graceSecondary": "Offline challenge",
+      "expiredPrimary": "Yangi litsenziyani o'rnatish",
+      "expiredSecondary": "Challenge yaratish",
+      "revokedPrimary": "Offline qayta aktivatsiya",
+      "revokedSecondary": "Audit hodisalarini ochish",
+      "invalidPrimary": "Challenge'ni qayta yaratish",
+      "invalidSecondary": "Audit hodisalarini tekshirish"
+    },
+    "cards": {
+      "seatsUsed": "Band o'rinlar",
+      "seatsAvailable": "Bo'sh o'rinlar",
+      "seatsUtilization": "O'rinlar utilizatsiyasi %"
+    },
+    "info": {
+      "title": "Litsenziya ma'lumotlari",
+      "status": "Holat",
+      "plan": "Tarif",
+      "customer": "Mijoz",
+      "instanceId": "Instance ID",
+      "licenseId": "License ID",
+      "installedAt": "O'rnatilgan vaqt",
+      "validFrom": "Amal qilish boshlanishi",
+      "expiresAt": "Amal qilish muddati",
+      "graceUntil": "Imtiyoz davri oxiri",
+      "healthReason": "Holat sababi"
+    },
+    "features": {
+      "title": "Ruxsat etilgan funksiyalar",
+      "empty": "Ruxsat etilgan funksiyalar yo'q"
+    },
+    "events": {
+      "empty": "Hodisalar yo'q",
+      "columns": {
+        "when": "Qachon",
+        "type": "Turi",
+        "severity": "Muhimlik",
+        "details": "Tafsilotlar"
+      }
+    },
+    "install": {
+      "title": "Imzolangan litsenziya artefaktini o'rnatish",
+      "description": "Control-plane'dan olingan canonical payload va imzoni kiriting.",
+      "payload": "Payload",
+      "payloadRequired": "Payload majburiy",
+      "signature": "Imzo",
+      "signatureRequired": "Imzo majburiy",
+      "verify": "Tekshirish",
+      "install": "O'rnatish"
+    },
+    "offline": {
+      "title": "Air-gapped challenge-response",
+      "description": "Challenge yarating va control-plane'ga yuboring. Imzolangan artifactni olib, ushbu CRM instansiga o'rnating.",
+      "generate": "Challenge yaratish",
+      "copy": "Challenge JSON nusxalash",
+      "empty": "Challenge hali yaratilmagan"
+    },
+    "messages": {
+      "loadError": "Litsenziya ma'lumotlarini yuklab bo'lmadi",
+      "verifySuccess": "Litsenziya artefakti yaroqli",
+      "verifyError": "Litsenziyani tekshirish muvaffaqiyatsiz",
+      "installSuccess": "Litsenziya muvaffaqiyatli o'rnatildi",
+      "installError": "Litsenziyani o'rnatib bo'lmadi",
+      "challengeLoaded": "Challenge yuklandi",
+      "challengeError": "Challenge'ni yuklab bo'lmadi",
+      "challengeCopied": "Challenge nusxalandi",
+      "copyError": "Nusxalab bo'lmadi"
     }
   },
   "licenseFeatures": {

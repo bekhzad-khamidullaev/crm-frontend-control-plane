@@ -63,6 +63,7 @@ export const routeMeta = {
  'sms-center': { auth: true, title: 'SMS Center' },
  'telephony': { auth: true, title: 'Telephony' },
  'users': { auth: true, title: 'Users' },
+ 'licensing': { auth: true, title: 'Licensing' },
  'profile': { auth: true, title: 'Profile' },
  'settings': { auth: true, title: 'Settings' },
  'integrations': { auth: true, title: 'Integrations' },
@@ -153,6 +154,7 @@ const ADMIN_PERMISSIONS = ['auth.view_user', 'settings.view_systemsettings'];
   'users',
   'settings',
   'integrations',
+  'licensing',
 ].forEach((route) => {
   if (routeMeta[route]) routeMeta[route].roles = ADMIN_ROLES;
 });
@@ -210,6 +212,7 @@ const ADMIN_PERMISSIONS = ['auth.view_user', 'settings.view_systemsettings'];
   ['calls-list', 'voip.view_calllog'],
   ['calls-dashboard', 'voip.view_calllog'],
   ['telephony', 'voip.view_connection'],
+  ['licensing', 'settings.view_systemsettings'],
   ['massmail', 'massmail.view_mailingout'],
   ['analytics', 'analytics.view_incomestat'],
   ['landing-builder', 'landings.view_landingpage'],
@@ -221,43 +224,11 @@ const ADMIN_PERMISSIONS = ['auth.view_user', 'settings.view_systemsettings'];
   'users',
   'settings',
   'integrations',
+  'licensing',
   'reference-data',
   'operations',
 ].forEach((route) => {
   if (routeMeta[route]) routeMeta[route].permissions = ADMIN_PERMISSIONS;
-});
-
-[
-  ['leads-list', 'crm.leads'],
-  ['leads-new', 'crm.leads'],
-  ['leads-detail', 'crm.leads'],
-  ['leads-edit', 'crm.leads'],
-  ['deals-list', 'crm.deals'],
-  ['deals-new', 'crm.deals'],
-  ['deals-detail', 'crm.deals'],
-  ['deals-edit', 'crm.deals'],
-  ['tasks-list', 'tasks.core'],
-  ['tasks-new', 'tasks.core'],
-  ['tasks-detail', 'tasks.core'],
-  ['tasks-edit', 'tasks.core'],
-  ['projects-list', 'tasks.core'],
-  ['projects-new', 'tasks.core'],
-  ['projects-detail', 'tasks.core'],
-  ['projects-edit', 'tasks.core'],
-  ['memos-list', 'tasks.core'],
-  ['memos-new', 'tasks.core'],
-  ['memos-detail', 'tasks.core'],
-  ['memos-edit', 'tasks.core'],
-  ['reminders-list', 'tasks.core'],
-  ['reminders-new', 'tasks.core'],
-  ['reminders-detail', 'tasks.core'],
-  ['reminders-edit', 'tasks.core'],
-  ['calls-list', 'communications.voip'],
-  ['calls-dashboard', 'communications.voip'],
-  ['telephony', 'communications.voip'],
-  ['analytics', 'analytics.core'],
-].forEach(([route, feature]) => {
-  if (routeMeta[route]) routeMeta[route].feature = feature;
 });
 
 export function getRouteMeta(name) {
@@ -378,6 +349,7 @@ export function parseHash() {
   if (segments[0] === 'sms') return { name: 'sms-center', params: {} };
   if (segments[0] === 'telephony') return { name: 'telephony', params: {} };
   if (segments[0] === 'users') return { name: 'users', params: {} };
+  if (segments[0] === 'licensing' || segments[0] === 'license') return { name: 'licensing', params: {} };
   if (segments[0] === 'profile') return { name: 'profile', params: {} };
   if (segments[0] === 'settings') return { name: 'settings', params: {} };
   if (segments[0] === 'integrations') return { name: 'integrations', params: {} };

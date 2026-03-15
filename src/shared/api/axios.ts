@@ -1,10 +1,8 @@
 import { message } from 'antd';
 import axios, { AxiosError, InternalAxiosRequestConfig } from 'axios';
-import resolveApiBase from './resolveApiBase';
-import parseLicenseRestriction from '../../lib/api/licenseError';
-import resolveFeatureName from '../../lib/api/licenseFeatureName';
+import { resolveConfiguredApiBase } from './resolveApiBase';
 
-const API_BASE_URL = resolveApiBase(import.meta.env.VITE_API_BASE_URL);
+const API_BASE_URL = resolveConfiguredApiBase(import.meta.env.VITE_API_BASE_URL);
 
 /**
  * Central Axios instance for all API calls
@@ -74,13 +72,7 @@ apiClient.interceptors.response.use(
 
     // 403 - Forbidden
     if (error.response?.status === 403) {
-      const licenseError = parseLicenseRestriction(error);
-      if (licenseError) {
-        const featureName = resolveFeatureName(licenseError.feature, null);
-        message.warning(`Функция недоступна по лицензии: ${featureName}`);
-      } else {
-        message.error('У вас нет прав для выполнения этого действия');
-      }
+      message.error('У вас нет прав для выполнения этого действия');
     }
 
     // 500+ - Server errors

@@ -35,6 +35,7 @@
     "referenceData": "Справочники",
     "telephony": "Телефония",
     "users": "Пользователи",
+    "licensing": "Лицензирование",
     "profile": "Профиль",
     "settings": "Настройки",
     "logout": "Выход",
@@ -120,7 +121,105 @@
     "errors": {
       "loadData": "Не удалось загрузить данные дашборда",
       "licenseFeatureDisabled": "Функция недоступна по лицензии",
-      "licenseFeatureDisabledDescription": "Текущий тариф не включает модуль: {feature}. Обратитесь к администратору лицензий."
+      "licenseFeatureDisabledDescription": "Текущий тариф не включает модуль: {feature}. Обратитесь к администратору лицензий.",
+      "licenseSeatLimitExceeded": "Превышен лимит пользовательских мест",
+      "licenseExpired": "Срок лицензии истек",
+      "licenseRevoked": "Лицензия отозвана",
+      "licenseInvalid": "Лицензия недействительна",
+      "licenseRestrictionDescription": "Операция ограничена текущим состоянием лицензии. Проверьте раздел лицензирования."
+    }
+  },
+  "licensingPage": {
+    "title": "Управление лицензией",
+    "subtitle": "Назначение лицензии, offline активация и журнал действий для текущего инстанса.",
+    "tabs": {
+      "overview": "Обзор",
+      "install": "Установка и проверка",
+      "offline": "Offline активация",
+      "events": "Журнал событий"
+    },
+    "status": {
+      "active": "Активна",
+      "grace": "Льготный период",
+      "expired": "Истекла",
+      "revoked": "Отозвана",
+      "invalid": "Недействительна",
+      "unknown": "Неизвестно"
+    },
+    "health": {
+      "title": "Состояние лицензии"
+    },
+    "state": {
+      "hint": "Рекомендуемые действия зависят от текущего статуса лицензии.",
+      "activePrimary": "Проверить артефакт",
+      "activeSecondary": "Открыть события",
+      "gracePrimary": "Установить продление",
+      "graceSecondary": "Offline challenge",
+      "expiredPrimary": "Установить новую лицензию",
+      "expiredSecondary": "Сгенерировать challenge",
+      "revokedPrimary": "Offline реактивация",
+      "revokedSecondary": "Открыть аудит событий",
+      "invalidPrimary": "Пересоздать challenge",
+      "invalidSecondary": "Проверить аудит событий"
+    },
+    "cards": {
+      "seatsUsed": "Использовано мест",
+      "seatsAvailable": "Доступно мест",
+      "seatsUtilization": "Утилизация мест %"
+    },
+    "info": {
+      "title": "Сведения о лицензии",
+      "status": "Статус",
+      "plan": "План",
+      "customer": "Клиент",
+      "instanceId": "Instance ID",
+      "licenseId": "License ID",
+      "installedAt": "Установлена",
+      "validFrom": "Действует с",
+      "expiresAt": "Действует до",
+      "graceUntil": "Льготный период до",
+      "healthReason": "Причина состояния"
+    },
+    "features": {
+      "title": "Разрешенные функции",
+      "empty": "Разрешенные функции отсутствуют"
+    },
+    "events": {
+      "empty": "События отсутствуют",
+      "columns": {
+        "when": "Когда",
+        "type": "Тип",
+        "severity": "Критичность",
+        "details": "Детали"
+      }
+    },
+    "install": {
+      "title": "Установка подписанного артефакта лицензии",
+      "description": "Вставьте canonical payload и подпись, полученные из control-plane.",
+      "payload": "Payload",
+      "payloadRequired": "Payload обязателен",
+      "signature": "Подпись",
+      "signatureRequired": "Подпись обязательна",
+      "verify": "Проверить",
+      "install": "Установить"
+    },
+    "offline": {
+      "title": "Air-gapped challenge-response",
+      "description": "Сгенерируйте challenge, передайте его в control-plane, получите signed artifact и установите его в CRM.",
+      "generate": "Сгенерировать challenge",
+      "copy": "Скопировать challenge JSON",
+      "empty": "Challenge еще не сгенерирован"
+    },
+    "messages": {
+      "loadError": "Не удалось загрузить данные лицензии",
+      "verifySuccess": "Артефакт лицензии валиден",
+      "verifyError": "Проверка лицензии не пройдена",
+      "installSuccess": "Лицензия успешно установлена",
+      "installError": "Не удалось установить лицензию",
+      "challengeLoaded": "Challenge успешно получен",
+      "challengeError": "Не удалось получить challenge",
+      "challengeCopied": "Challenge скопирован",
+      "copyError": "Не удалось скопировать"
     }
   },
   "licenseFeatures": {

@@ -13,7 +13,6 @@ import { getWhatsAppAccounts } from './lib/api/integrations/whatsapp.js';
 import { canAccessRoute as canAccessRouteByPolicy } from './lib/rbac.js';
 import smsApi from './lib/api/sms.js';
 import { getVoIPConnections } from './lib/api/telephony.js';
-import { getLicenseEntitlements } from './lib/api/license.js';
 import { getProfile } from './lib/api/user.js';
 import { mergeRoles, rolesFromProfile, rolesFromTokenPayload } from './lib/roles.js';
 import { getFrontendVersionInfo } from './shared/version.js';
@@ -150,6 +149,7 @@ const AnalyticsPage = lazy(() => import('./pages/analytics.jsx'));
 const SmsCenterPage = lazy(() => import('./pages/sms-center.jsx'));
 const TelephonyPage = lazy(() => import('./pages/telephony.jsx'));
 const UsersPage = lazy(() => import('./pages/users.jsx'));
+const LicensingPage = lazy(() => import('./pages/licensing.jsx'));
 
 function normalizeLocale(raw) {
   const value = String(raw || '').toLowerCase().trim();
@@ -292,24 +292,6 @@ function persistPermissions(rawPermissions = []) {
   const serialized = JSON.stringify(permissions);
   sessionStorage.setItem('enterprise_crm_permissions', serialized);
   localStorage.removeItem('enterprise_crm_permissions');
-}
-
-function normalizeFeatures(rawFeatures = []) {
-  if (!Array.isArray(rawFeatures)) return [];
-  const normalized = new Set();
-  rawFeatures.forEach((feature) => {
-    const value = String(feature || '').trim().toLowerCase();
-    if (!value) return;
-    normalized.add(value);
-  });
-  return Array.from(normalized);
-}
-
-function persistLicenseFeatures(rawFeatures = []) {
-  const features = normalizeFeatures(rawFeatures);
-  const serialized = JSON.stringify(features);
-  sessionStorage.setItem('enterprise_crm_license_features', serialized);
-  localStorage.removeItem('enterprise_crm_license_features');
 }
 
 function normalizeList(response) {
@@ -483,16 +465,6 @@ function App() {
           setUser((prev) => normalizeUser(me || {}, prev || tokenUser));
         } catch (e) {
           console.warn('Failed to preload user profile/roles:', e);
-        }
-      })();
-
-      (async () => {
-        try {
-          const license = await getLicenseEntitlements();
-          persistLicenseFeatures(license?.features || []);
-        } catch (e) {
-          console.warn('Failed to preload license entitlements:', e);
-          sessionStorage.removeItem('enterprise_crm_license_features');
         }
       })();
 
@@ -701,8 +673,6 @@ function App() {
     localStorage.removeItem('enterprise_crm_roles');
     sessionStorage.removeItem('enterprise_crm_permissions');
     localStorage.removeItem('enterprise_crm_permissions');
-    sessionStorage.removeItem('enterprise_crm_license_features');
-    localStorage.removeItem('enterprise_crm_license_features');
     disconnectTelephony();
     setUser(null);
     setActiveIntegrations([]);
@@ -761,6 +731,7 @@ function App() {
     'help-center': 'help-center',
     telephony: 'telephony',
     users: 'users',
+    licensing: 'licensing',
     settings: 'settings',
     integrations: 'integrations',
     'landing-builder': 'landing-builder',
@@ -794,6 +765,7 @@ function App() {
     if (name === 'help-center') return 'help-center';
     if (name === 'telephony') return 'telephony';
     if (name === 'users') return 'users';
+    if (name === 'licensing') return 'licensing';
     if (name === 'landing-builder') return 'landing-builder';
     return name;
   };
@@ -948,6 +920,8 @@ function App() {
         return <TelephonyPage />;
       case 'users':
         return <UsersPage />;
+      case 'licensing':
+        return <LicensingPage />;
       case 'chat':
       case 'chat-list':
         return <ChatPage />;
