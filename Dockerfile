@@ -9,7 +9,10 @@ WORKDIR /app
 COPY package*.json ./
 
 # Install dependencies
-RUN npm ci --only=production=false \
+RUN npm set fetch-retries 5 \
+    && npm set fetch-retry-mintimeout 20000 \
+    && npm set fetch-retry-maxtimeout 120000 \
+    && npm ci --only=production=false \
     && npm install --no-save @rollup/rollup-linux-x64-musl
 
 # Copy source code
