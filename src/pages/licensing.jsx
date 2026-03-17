@@ -5,10 +5,12 @@ import {
   Card,
   Col,
   Descriptions,
+  Drawer,
   Empty,
   Form,
   Input,
   Row,
+  Select,
   Space,
   Statistic,
   Table,
@@ -35,6 +37,16 @@ import {
   installLicenseArtifact,
   verifyLicenseArtifact,
 } from '../lib/api/license.js';
+import {
+  approveCpRuntimeRequest,
+  assignCpDeploymentLicense,
+  getCpCustomerDetail,
+  getCpCustomers,
+  getCpDeployments,
+  getCpRuntimeUnlicensedRequests,
+  getCpSubscriptions,
+  getCpUnlicensedDeployments,
+} from '../lib/api/licenseControl.js';
 import { t } from '../lib/i18n/index.js';
 import resolveFeatureName from '../lib/api/licenseFeatureName';
 
@@ -110,6 +122,12 @@ function normalizeEvents(response) {
     createdAt: event.created_at || null,
     details: event.details || {},
   }));
+}
+
+function normalizeCollection(response) {
+  if (Array.isArray(response)) return response;
+  if (Array.isArray(response?.results)) return response.results;
+  return [];
 }
 
 function getStatusMeta(status) {
@@ -227,9 +245,24 @@ function StateActions({ status, onOpenInstall, onOpenOffline, onOpenEvents }) {
 
 export default function LicensingPage() {
   const [loading, setLoading] = useState(false);
+  const [cpLoading, setCpLoading] = useState(false);
   const [licenseResponse, setLicenseResponse] = useState(null);
   const [challenge, setChallenge] = useState(null);
   const [events, setEvents] = useState([]);
+  const [cpAvailable, setCpAvailable] = useState(false);
+  const [cpCustomers, setCpCustomers] = useState([]);
+  const [cpDeployments, setCpDeployments] = useState([]);
+  const [cpSubscriptions, setCpSubscriptions] = useState([]);
+  const [cpUnlicensedDeployments, setCpUnlicensedDeployments] = useState([]);
+  const [cpUnlicensedRequests, setCpUnlicensedRequests] = useState([]);
+  const [rowSubscriptionMap, setRowSubscriptionMap] = useState({});
+  const [rowAssignLoading, setRowAssignLoading] = useState({});
+  const [requestDeploymentMap, setRequestDeploymentMap] = useState({});
+  const [requestSubscriptionMap, setRequestSubscriptionMap] = useState({});
+  const [requestActionLoading, setRequestActionLoading] = useState({});
+  const [customerDrawerOpen, setCustomerDrawerOpen] = useState(false);
+  const [customerDrawerLoading, setCustomerDrawerLoading] = useState(false);
+  const [customerDetail, setCustomerDetail] = useState(null);
   const [artifactForm] = Form.useForm();
   const [submitting, setSubmitting] = useState(false);
   const [activeTab, setActiveTab] = useState('overview');
@@ -251,6 +284,99 @@ export default function LicensingPage() {
       message.error(tr('licensingPage.messages.loadError', 'Failed to load license data'));
     } finally {
       setLoading(false);
+    }
+  };
+
+  const loadControlPlaneData = async () => {
+    setCpLoading(true);
+    try {
+      const [
+        customersResponse,
+        deploymentsResponse,
+        subscriptionsResponse,
+        unlicensedDeploymentsResponse,
+        unlicensedRequestsResponse,
+      ] = await Promise.all([
+        getCpCustomers({ page_size: 500 }),
+        getCpDeployments({ page_size: 500 }),
+        getCpSubscriptions({ page_size: 500 }),
+        getCpUnlicensedDeployments(),
+        getCpRuntimeUnlicensedRequests(),
+      ]);
+      setCpCustomers(normalizeCollection(customersResponse));
+      setCpDeployments(normalizeCollection(deploymentsResponse));
+      setCpSubscriptions(normalizeCollection(subscriptionsResponse));
+      setCpUnlicensedDeployments(normalizeCollection(unlicensedDeploymentsResponse));
+      setCpUnlicensedRequests(normalizeCollection(unlicensedRequestsResponse));
+      setCpAvailable(true);
+    } catch (error) {
+      setCpAvailable(false);
+      setCpCustomers([]);
+      setCpDeployments([]);
+      setCpSubscriptions([]);
+      setCpUnlicensedDeployments([]);
+      setCpUnlicensedRequests([]);
+      if (activeTab === 'control-plane') {
+        message.error(tr('licensingPage.messages.controlPlaneLoadError', 'Failed to load control-plane license queue'));
+      }
+    } finally {
+      setCpLoading(false);
+    }
+  };
+
+  const handleAssignDeploymentLicense = async (deploymentId) => {
+    const subscriptionId = rowSubscriptionMap[deploymentId];
+    if (!subscriptionId) {
+      message.warning(tr('licensingPage.messages.selectSubscriptionFirst', 'Select subscription first'));
+      return;
+    }
+    setRowAssignLoading((prev) => ({ ...prev, [deploymentId]: true }));
+    try {
+      await assignCpDeploymentLicense(deploymentId, subscriptionId);
+      message.success(tr('licensingPage.messages.licenseAssigned', 'License assigned successfully'));
+      await loadControlPlaneData();
+    } catch {
+      message.error(tr('licensingPage.messages.licenseAssignError', 'Failed to assign license'));
+    } finally {
+      setRowAssignLoading((prev) => ({ ...prev, [deploymentId]: false }));
+    }
+  };
+
+  const handleApproveRuntimeRequest = async (requestId) => {
+    const deploymentId = requestDeploymentMap[requestId];
+    const subscriptionId = requestSubscriptionMap[requestId];
+    if (!deploymentId || !subscriptionId) {
+      message.warning(tr('licensingPage.messages.selectDeploymentAndSubscription', 'Select deployment and subscription'));
+      return;
+    }
+    setRequestActionLoading((prev) => ({ ...prev, [requestId]: true }));
+    try {
+      await approveCpRuntimeRequest(requestId, {
+        deployment_id: deploymentId,
+        subscription_id: subscriptionId,
+        review_note: 'Approved from unlicensed queue',
+      });
+      message.success(tr('licensingPage.messages.requestApproved', 'Runtime request approved'));
+      await loadControlPlaneData();
+    } catch {
+      message.error(tr('licensingPage.messages.requestApproveError', 'Failed to approve runtime request'));
+    } finally {
+      setRequestActionLoading((prev) => ({ ...prev, [requestId]: false }));
+    }
+  };
+
+  const openCustomerDetail = async (customerId) => {
+    if (!customerId) return;
+    setCustomerDrawerOpen(true);
+    setCustomerDrawerLoading(true);
+    try {
+      const payload = await getCpCustomerDetail(customerId);
+      setCustomerDetail(payload || null);
+    } catch {
+      setCustomerDetail(null);
+      message.error(tr('licensingPage.messages.customerDetailError', 'Failed to load customer detail'));
+    } finally {
+      setCustomerDrawerLoading(false);
     }
   };
 
@@ -309,6 +435,7 @@ export default function LicensingPage() {
 
   React.useEffect(() => {
     loadAll();
+    loadControlPlaneData();
   }, []);
 
   const eventColumns = [
@@ -344,6 +471,162 @@ export default function LicensingPage() {
           {JSON.stringify(details || {}, null, 2)}
         </Text>
       ),
+    },
+  ];
+
+  const deploymentOptions = useMemo(
+    () => cpDeployments.map((dep) => ({ label: `${dep.instance_id} (${dep.environment})`, value: dep.id })),
+    [cpDeployments],
+  );
+
+  const unlicensedDeploymentColumns = [
+    {
+      title: tr('licensingPage.control.unlicensed.columns.customer', 'Customer'),
+      key: 'customer',
+      width: 260,
+      render: (_, row) => (
+        <Space direction="vertical" size={2}>
+          <Button type="link" style={{ padding: 0, height: 'auto' }} onClick={() => openCustomerDetail(row?.customer?.id)}>
+            {row?.customer?.legal_name || '-'}
+          </Button>
+          <Text type="secondary">{row?.customer?.code || '-'}</Text>
+          <Text type="secondary">{row?.customer?.contact_email || '-'}</Text>
+        </Space>
+      ),
+    },
+    {
+      title: tr('licensingPage.control.unlicensed.columns.instance', 'Instance'),
+      dataIndex: 'instance_id',
+      key: 'instance_id',
+      width: 220,
+      render: (value, row) => (
+        <Space direction="vertical" size={2}>
+          <Text code>{value || '-'}</Text>
+          <Text type="secondary">{String(row?.environment || '').toUpperCase()}</Text>
+        </Space>
+      ),
+    },
+    {
+      title: tr('licensingPage.control.unlicensed.columns.lastRequest', 'Last runtime request'),
+      key: 'latest_runtime_request',
+      width: 220,
+      render: (_, row) => {
+        const req = row?.latest_runtime_request;
+        if (!req) return <Text type="secondary">-</Text>;
+        return (
+          <Space direction="vertical" size={2}>
+            <Tag color="warning">{req.status}</Tag>
+            <Text type="secondary">{formatDate(req.created_at)}</Text>
+          </Space>
+        );
+      },
+    },
+    {
+      title: tr('licensingPage.control.unlicensed.columns.assign', 'Assign license'),
+      key: 'assign',
+      width: 360,
+      render: (_, row) => {
+        const options = cpSubscriptions
+          .filter((sub) => sub.customer === row?.customer?.id)
+          .map((sub) => ({
+            label: `${sub.plan_code || sub.plan} • ${sub.status} • ${formatDate(sub.valid_to)}`,
+            value: sub.id,
+          }));
+        return (
+          <Space>
+            <Select
+              showSearch
+              placeholder={tr('licensingPage.control.placeholders.selectSubscription', 'Select subscription')}
+              style={{ width: 220 }}
+              options={options}
+              value={rowSubscriptionMap[row.id]}
+              onChange={(value) => setRowSubscriptionMap((prev) => ({ ...prev, [row.id]: value }))}
+            />
+            <Button
+              type="primary"
+              onClick={() => handleAssignDeploymentLicense(row.id)}
+              loading={Boolean(rowAssignLoading[row.id])}
+            >
+              {tr('licensingPage.control.actions.assignLicense', 'Assign')}
+            </Button>
+          </Space>
+        );
+      },
+    },
+  ];
+
+  const unlicensedRequestColumns = [
+    {
+      title: tr('licensingPage.control.requests.columns.instance', 'Instance'),
+      dataIndex: 'instance_id',
+      key: 'instance_id',
+      width: 230,
+      render: (value) => <Text code>{value || '-'}</Text>,
+    },
+    {
+      title: tr('licensingPage.control.requests.columns.status', 'Status'),
+      dataIndex: 'status',
+      key: 'status',
+      width: 140,
+      render: (value) => <Tag color="processing">{value}</Tag>,
+    },
+    {
+      title: tr('licensingPage.control.requests.columns.fingerprint', 'Fingerprint'),
+      key: 'fingerprint',
+      width: 220,
+      render: (_, row) => <Text type="secondary">{row?.request_payload?.fingerprint || '-'}</Text>,
+    },
+    {
+      title: tr('licensingPage.control.requests.columns.createdAt', 'Created at'),
+      dataIndex: 'created_at',
+      key: 'created_at',
+      width: 170,
+      render: (value) => formatDate(value),
+    },
+    {
+      title: tr('licensingPage.control.requests.columns.inlineApprove', 'Inline assignment'),
+      key: 'approve',
+      width: 500,
+      render: (_, row) => {
+        const selectedDeploymentId = requestDeploymentMap[row.id];
+        const selectedDeployment = cpDeployments.find((dep) => dep.id === selectedDeploymentId);
+        const subscriptions = cpSubscriptions
+          .filter((sub) => !selectedDeployment || sub.customer === selectedDeployment.customer)
+          .map((sub) => ({
+            label: `${sub.plan_code || sub.plan} • ${sub.status} • ${formatDate(sub.valid_to)}`,
+            value: sub.id,
+          }));
+        return (
+          <Space wrap>
+            <Select
+              showSearch
+              style={{ width: 210 }}
+              placeholder={tr('licensingPage.control.placeholders.selectDeployment', 'Select deployment')}
+              options={deploymentOptions}
+              value={selectedDeploymentId}
+              onChange={(value) => {
+                setRequestDeploymentMap((prev) => ({ ...prev, [row.id]: value }));
+                setRequestSubscriptionMap((prev) => ({ ...prev, [row.id]: undefined }));
+              }}
+            />
+            <Select
+              showSearch
+              style={{ width: 220 }}
+              placeholder={tr('licensingPage.control.placeholders.selectSubscription', 'Select subscription')}
+              options={subscriptions}
+              value={requestSubscriptionMap[row.id]}
+              onChange={(value) => setRequestSubscriptionMap((prev) => ({ ...prev, [row.id]: value }))}
+            />
+            <Button
+              type="primary"
+              onClick={() => handleApproveRuntimeRequest(row.id)}
+              loading={Boolean(requestActionLoading[row.id])}
+            >
+              {tr('licensingPage.control.actions.approveRequest', 'Approve')}
+            </Button>
+          </Space>
+        );
+      },
     },
   ];
 
@@ -542,6 +825,75 @@ export default function LicensingPage() {
       ),
     },
     {
+      key: 'control-plane',
+      label: tr('licensingPage.tabs.controlPlane', 'Control-plane queue'),
+      children: (
+        <Space direction="vertical" size="middle" style={{ width: '100%' }}>
+          {!cpAvailable ? (
+            <Alert
+              type="info"
+              showIcon
+              message={tr('licensingPage.control.unavailableTitle', 'Control-plane API unavailable')}
+              description={tr('licensingPage.control.unavailableDescription', 'This environment does not expose cp/* endpoints or current user has no access.')}
+            />
+          ) : (
+            <>
+              <Row gutter={[16, 16]}>
+                <Col xs={24} md={8}>
+                  <Card>
+                    <Statistic
+                      title={tr('licensingPage.control.cards.customers', 'Customers')}
+                      value={cpCustomers.length}
+                    />
+                  </Card>
+                </Col>
+                <Col xs={24} md={8}>
+                  <Card>
+                    <Statistic
+                      title={tr('licensingPage.control.cards.unlicensedDeployments', 'Unlicensed deployments')}
+                      value={cpUnlicensedDeployments.length}
+                    />
+                  </Card>
+                </Col>
+                <Col xs={24} md={8}>
+                  <Card>
+                    <Statistic
+                      title={tr('licensingPage.control.cards.runtimeQueue', 'Runtime queue')}
+                      value={cpUnlicensedRequests.length}
+                    />
+                  </Card>
+                </Col>
+              </Row>
+
+              <Card title={tr('licensingPage.control.unlicensed.title', 'Installations without license')}>
+                <Table
+                  rowKey={(row) => row.id}
+                  dataSource={cpUnlicensedDeployments}
+                  columns={unlicensedDeploymentColumns}
+                  loading={cpLoading}
+                  pagination={{ pageSize: 10 }}
+                  scroll={{ x: 1300 }}
+                  locale={{ emptyText: tr('licensingPage.control.unlicensed.empty', 'No unlicensed deployments') }}
+                />
+              </Card>
+
+              <Card title={tr('licensingPage.control.requests.title', 'Runtime requests without issued license')}>
+                <Table
+                  rowKey={(row) => row.id}
+                  dataSource={cpUnlicensedRequests}
+                  columns={unlicensedRequestColumns}
+                  loading={cpLoading}
+                  pagination={{ pageSize: 10 }}
+                  scroll={{ x: 1500 }}
+                  locale={{ emptyText: tr('licensingPage.control.requests.empty', 'No pending runtime requests') }}
+                />
+              </Card>
+            </>
+          )}
+        </Space>
+      ),
+    },
+    {
       key: 'events',
       label: tr('licensingPage.tabs.events', 'Audit events'),
       children: (
@@ -574,9 +926,68 @@ export default function LicensingPage() {
           <Button icon={<ReloadOutlined />} onClick={loadAll} loading={loading}>
             {tr('actions.refresh', 'Refresh')}
           </Button>
+          <Button icon={<ReloadOutlined />} onClick={loadControlPlaneData} loading={cpLoading}>
+            {tr('actions.refreshControl', 'Refresh control-plane')}
+          </Button>
         </Space>
       </Card>
       <Tabs activeKey={activeTab} onChange={setActiveTab} items={tabs} />
+      <Drawer
+        title={tr('licensingPage.control.customerDetail.title', 'Customer details')}
+        width={860}
+        open={customerDrawerOpen}
+        onClose={() => setCustomerDrawerOpen(false)}
+      >
+        {customerDrawerLoading ? (
+          <Text type="secondary">{tr('common.loading', 'Loading...')}</Text>
+        ) : !customerDetail ? (
+          <Empty description={tr('licensingPage.control.customerDetail.empty', 'No customer details')} />
+        ) : (
+          <Space direction="vertical" size="middle" style={{ width: '100%' }}>
+            <Card>
+              <Descriptions column={1} size="small">
+                <Descriptions.Item label={tr('licensingPage.info.customer', 'Customer')}>
+                  {customerDetail?.customer?.legal_name || '-'}
+                </Descriptions.Item>
+                <Descriptions.Item label={tr('licensingPage.control.customerDetail.code', 'Customer code')}>
+                  <Text code>{customerDetail?.customer?.code || '-'}</Text>
+                </Descriptions.Item>
+                <Descriptions.Item label={tr('licensingPage.control.customerDetail.email', 'Contact email')}>
+                  {customerDetail?.customer?.contact_email || '-'}
+                </Descriptions.Item>
+              </Descriptions>
+            </Card>
+
+            <Card title={tr('licensingPage.control.customerDetail.deployments', 'Deployments')}>
+              <Table
+                rowKey={(row) => row.id}
+                dataSource={normalizeCollection(customerDetail?.deployments)}
+                pagination={{ pageSize: 6 }}
+                columns={[
+                  { title: tr('licensingPage.control.customerDetail.instance', 'Instance'), dataIndex: 'instance_id', key: 'instance_id', render: (v) => <Text code>{v}</Text> },
+                  { title: tr('licensingPage.control.customerDetail.environment', 'Environment'), dataIndex: 'environment', key: 'environment', render: (v) => String(v || '').toUpperCase() },
+                  { title: tr('licensingPage.control.customerDetail.license', 'License'), key: 'license', render: (_, row) => row?.has_active_license ? <Tag color="success">ACTIVE</Tag> : <Tag color="warning">MISSING</Tag> },
+                  { title: tr('licensingPage.control.customerDetail.lastIssued', 'Last issued'), key: 'last_license', render: (_, row) => formatDate(row?.last_license?.issued_at) },
+                ]}
+              />
+            </Card>
+
+            <Card title={tr('licensingPage.control.customerDetail.subscriptions', 'Subscriptions')}>
+              <Table
+                rowKey={(row) => row.id}
+                dataSource={normalizeCollection(customerDetail?.subscriptions)}
+                pagination={{ pageSize: 6 }}
+                columns={[
+                  { title: tr('licensingPage.info.plan', 'Plan'), dataIndex: 'plan_code', key: 'plan_code' },
+                  { title: tr('licensingPage.control.customerDetail.subStatus', 'Status'), dataIndex: 'status', key: 'status', render: (v) => <Tag color={v === 'active' ? 'success' : 'default'}>{v}</Tag> },
+                  { title: tr('licensingPage.info.validFrom', 'Valid from'), dataIndex: 'valid_from', key: 'valid_from', render: (v) => formatDate(v) },
+                  { title: tr('licensingPage.info.expiresAt', 'Expires at'), dataIndex: 'valid_to', key: 'valid_to', render: (v) => formatDate(v) },
+                ]}
+              />
+            </Card>
+          </Space>
+        )}
+      </Drawer>
     </Space>
   );
 }
