@@ -106,6 +106,10 @@ export async function getCpOverview() {
   return api.get('/api/cp/overview/');
 }
 
+export async function getLicenseMe() {
+  return api.get('/api/license/me/');
+}
+
 export async function approveCpRuntimeRequest(requestId, payload) {
   return api.post(`/api/cp/runtime-license-requests/${requestId}/approve/`, { body: payload });
 }

@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
-import { Alert, Button, Card, Col, Row, Space, Statistic, Tabs, Typography } from "antd";
+import { Alert, Button, Card, Col, Descriptions, Row, Space, Statistic, Tabs, Tag, Typography } from "antd";
 import { ReloadOutlined } from "@ant-design/icons";
-import { getCpOverview } from "../../lib/api/licenseControl.js";
+import { getCpOverview, getLicenseMe } from "../../lib/api/licenseControl.js";
 import CustomersSection from "./sections/CustomersSection.jsx";
 import DeploymentsSection from "./sections/DeploymentsSection.jsx";
 import SubscriptionsSection from "./sections/SubscriptionsSection.jsx";
@@ -13,19 +13,33 @@ const { Text } = Typography;
 
 export default function ControlPlaneAdminPage() {
   const [overview, setOverview] = useState(null);
+  const [licenseMe, setLicenseMe] = useState(null);
+  const [overviewError, setOverviewError] = useState(null);
+  const [licenseError, setLicenseError] = useState(null);
   const [loading, setLoading] = useState(false);
   const [refreshKey, setRefreshKey] = useState(0);
 
   const loadOverview = async () => {
     setLoading(true);
-    try {
-      const response = await getCpOverview();
-      setOverview(response || null);
-    } catch {
+    const [overviewResult, licenseResult] = await Promise.allSettled([getCpOverview(), getLicenseMe()]);
+
+    if (overviewResult.status === "fulfilled") {
+      setOverview(overviewResult.value || null);
+      setOverviewError(null);
+    } else {
       setOverview(null);
-    } finally {
-      setLoading(false);
+      setOverviewError(overviewResult.reason || new Error("Failed to load control-plane overview"));
     }
+
+    if (licenseResult.status === "fulfilled") {
+      setLicenseMe(licenseResult.value || null);
+      setLicenseError(null);
+    } else {
+      setLicenseMe(null);
+      setLicenseError(licenseResult.reason || new Error("Failed to load license summary"));
+    }
+
+    setLoading(false);
   };
 
   useEffect(() => {
@@ -34,9 +48,32 @@ export default function ControlPlaneAdminPage() {
 
   const refreshAll = () => setRefreshKey((v) => v + 1);
 
+  const licenseStatus = String(licenseMe?.status || "").trim();
+  const licenseStatusKey = licenseStatus.toLowerCase();
+  const seatUsage = licenseMe?.seat_usage || {};
+  const seatUsed = seatUsage.used ?? licenseMe?.seat_usage_used ?? null;
+  const seatLimit = seatUsage.limit ?? licenseMe?.seat_usage_limit ?? licenseMe?.max_active_users ?? null;
+  const overLimit = licenseMe?.over_limit ?? (seatUsed != null && seatLimit != null ? Number(seatUsed) > Number(seatLimit) : false);
+
+  const statusTagColor =
+    licenseStatusKey === "active"
+      ? "success"
+      : licenseStatusKey === "trial"
+        ? "processing"
+        : licenseStatusKey === "suspended" || licenseStatusKey === "expired"
+          ? "warning"
+          : licenseStatusKey === "revoked" || overLimit
+            ? "error"
+            : "default";
+
+  const renderLicenseValue = (value) => {
+    if (value === null || value === undefined || value === "") return "-";
+    return String(value);
+  };
+
   return (
     <Space direction="vertical" size="middle" style={{ width: "100%" }}>
-      {!overview && !loading ? (
+      {overviewError && !loading && !overview ? (
         <Alert
           type="info"
           showIcon
@@ -58,6 +95,48 @@ export default function ControlPlaneAdminPage() {
             Refresh
           </Button>
         </Space>
+      </Card>
+      <Card size="small" title="License summary" loading={loading && !licenseMe && !licenseError}>
+        {licenseError ? (
+          <Alert
+            type="warning"
+            showIcon
+            message="License summary unavailable"
+            description="The control-plane license endpoint could not be loaded."
+          />
+        ) : licenseMe ? (
+          <Alert
+            type={overLimit ? "error" : statusTagColor === "warning" ? "warning" : "info"}
+            showIcon
+            message={
+              <Space size={8} wrap>
+                <Text strong>Current license</Text>
+                <Tag color={statusTagColor}>{licenseStatus ? licenseStatus.toUpperCase() : "UNKNOWN"}</Tag>
+                {overLimit ? <Tag color="error">OVER LIMIT</Tag> : null}
+              </Space>
+            }
+            description={
+              <Descriptions size="small" column={{ xs: 1, sm: 2, lg: 5 }} colon={false}>
+                <Descriptions.Item label="plan_code">{renderLicenseValue(licenseMe?.plan_code)}</Descriptions.Item>
+                <Descriptions.Item label="max_active_users">
+                  {renderLicenseValue(licenseMe?.max_active_users)}
+                </Descriptions.Item>
+                <Descriptions.Item label="seat_usage.used">{renderLicenseValue(seatUsed)}</Descriptions.Item>
+                <Descriptions.Item label="seat_usage.limit">{renderLicenseValue(seatLimit)}</Descriptions.Item>
+                <Descriptions.Item label="over_limit">
+                  <Tag color={overLimit ? "error" : "success"}>{overLimit ? "TRUE" : "FALSE"}</Tag>
+                </Descriptions.Item>
+              </Descriptions>
+            }
+          />
+        ) : (
+          <Alert
+            type="info"
+            showIcon
+            message="License summary not available"
+            description="The endpoint returned an empty payload."
+          />
+        )}
       </Card>
       <Row gutter={[16, 16]}>
         <Col xs={24} md={6}>
