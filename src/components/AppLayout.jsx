@@ -13,7 +13,6 @@ import {
     FolderOutlined,
     GlobalOutlined,
     InstagramOutlined,
-    KeyOutlined,
     LogoutOutlined,
     MailOutlined,
     MenuFoldOutlined,
@@ -128,7 +127,7 @@ export function AppLayout({
       label: tr('nav.systemGroup', 'Система'),
       children: [
         { key: 'settings', label: tr('nav.settings', 'Настройки'), icon: <SettingOutlined />, path: '/settings' },
-        { key: 'licensing', label: tr('nav.licensing', 'Лицензирование'), icon: <KeyOutlined />, path: '/licensing' },
+        { key: 'control-plane', label: tr('nav.controlPlane', 'Control Plane'), icon: <ApiOutlined />, path: '/control-plane' },
         { key: 'reference-data', label: tr('nav.referenceData', 'Справочники'), icon: <AppstoreOutlined />, path: '/reference-data' },
         { key: 'landing-builder', label: tr('nav.landingBuilder', 'Конструктор лендингов'), icon: <AppstoreOutlined />, path: '/landing-builder' },
         { key: 'users', label: tr('nav.users', 'Пользователи'), icon: <UserOutlined />, path: '/users' },

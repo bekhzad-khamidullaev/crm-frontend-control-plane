@@ -149,7 +149,7 @@ const AnalyticsPage = lazy(() => import('./pages/analytics.jsx'));
 const SmsCenterPage = lazy(() => import('./pages/sms-center.jsx'));
 const TelephonyPage = lazy(() => import('./pages/telephony.jsx'));
 const UsersPage = lazy(() => import('./pages/users.jsx'));
-const LicensingPage = lazy(() => import('./pages/licensing.jsx'));
+const ControlPlaneAdminPage = lazy(() => import('./pages/control-plane-admin.jsx'));
 
 function normalizeLocale(raw) {
   const value = String(raw || '').toLowerCase().trim();
@@ -751,7 +751,7 @@ function App() {
     'help-center': 'help-center',
     telephony: 'telephony',
     users: 'users',
-    licensing: 'licensing',
+    'control-plane': 'control-plane',
     settings: 'settings',
     integrations: 'integrations',
     'landing-builder': 'landing-builder',
@@ -785,7 +785,7 @@ function App() {
     if (name === 'help-center') return 'help-center';
     if (name === 'telephony') return 'telephony';
     if (name === 'users') return 'users';
-    if (name === 'licensing') return 'licensing';
+    if (name === 'control-plane') return 'control-plane';
     if (name === 'landing-builder') return 'landing-builder';
     return name;
   };
@@ -941,7 +941,9 @@ function App() {
       case 'users':
         return <UsersPage />;
       case 'licensing':
-        return <LicensingPage />;
+        return <ControlPlaneAdminPage />;
+      case 'control-plane':
+        return <ControlPlaneAdminPage />;
       case 'chat':
       case 'chat-list':
         return <ChatPage />;

@@ -45,7 +45,7 @@ describe('Router', () => {
 
     it('parses #/licensing', () => {
       location.hash = '#/licensing';
-      expect(parseHash()).toEqual({ name: 'licensing', params: {} });
+      expect(parseHash()).toEqual({ name: 'control-plane', params: {} });
     });
 
     it('parses #/leads', () => {
