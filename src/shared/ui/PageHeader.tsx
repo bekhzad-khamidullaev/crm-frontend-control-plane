@@ -2,7 +2,7 @@ import React from 'react';
 import { Breadcrumb, Flex, Grid, Typography, theme } from 'antd';
 import { HomeOutlined } from '@ant-design/icons';
 
-const { Title, Paragraph, Text } = Typography;
+const { Title, Paragraph } = Typography;
 
 export interface PageHeaderProps {
   title: string;
@@ -92,7 +92,7 @@ export const PageHeader: React.FC<PageHeaderProps> = ({
               borderTop: `1px solid ${token.colorBorderSecondary}`,
             }}
           >
-            <Text type="secondary">{children}</Text>
+            {children}
           </div>
         ) : null}
       </Flex>

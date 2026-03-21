@@ -37,6 +37,7 @@ export const EntityListPageShell: React.FC<EntityListPageShellProps> = ({
           border: `1px solid ${token.colorBorderSecondary}`,
           background: token.colorBgElevated,
           boxShadow: token.boxShadowTertiary,
+          overflow: 'hidden',
         }}
         styles={{
           body: {

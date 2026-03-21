@@ -5,17 +5,15 @@ import {
 } from '@ant-design/icons';
 import {
   Button,
+  Flex,
   Grid,
   Input,
   Space,
   Tag,
   theme,
   Tooltip,
-  Typography,
 } from 'antd';
 import React from 'react';
-
-const { Text } = Typography;
 
 export interface ActiveFilterChip {
   key: string;
@@ -48,62 +46,60 @@ export const EntityListToolbar: React.FC<EntityListToolbarProps> = ({
   resultSummary,
 }) => {
   const { token } = theme.useToken();
-  const isDark = token.colorBgContainer === '#161b22' || token.colorTextBase === '#f1f5f9';
   const screens = Grid.useBreakpoint();
   const isMobile = !screens.lg;
   const hasActiveFilters = activeFilters.length > 0;
+  const surfaceStyle: React.CSSProperties = {
+    marginBottom: 16,
+    padding: isMobile ? 14 : 16,
+    borderRadius: token.borderRadiusLG,
+    border: `1px solid ${token.colorBorderSecondary}`,
+    background: token.colorBgElevated,
+    boxShadow: token.boxShadowTertiary,
+  };
+  const chipStyle: React.CSSProperties = {
+    marginInlineEnd: 0,
+    borderRadius: token.borderRadiusSM,
+    borderColor: token.colorBorderSecondary,
+    background: token.colorFillQuaternary,
+    color: token.colorTextSecondary,
+  };
 
   return (
-    <div
-      style={{
-        marginBottom: 16,
-        padding: 16,
-        border: `1px solid ${isDark ? '#2d3343' : '#f0f0f0'}`,
-        borderRadius: 12,
-        background: isDark ? '#161b22' : '#fff',
-      }}
-    >
-      <Space
-        direction="vertical"
-        size={12}
-        style={{ width: '100%' }}
-      >
-        <div
-          style={{
-            display: 'flex',
-            flexDirection: isMobile ? 'column' : 'row',
-            gap: 12,
-            alignItems: isMobile ? 'stretch' : 'flex-start',
-            justifyContent: 'space-between',
-          }}
+    <div style={surfaceStyle}>
+      <Space direction="vertical" size={12} style={{ width: '100%' }}>
+        <Flex
+          justify="space-between"
+          align={isMobile ? 'stretch' : 'flex-start'}
+          gap={12}
+          vertical={isMobile}
         >
-          <Space
-            wrap
-            size={12}
-            style={{ flex: 1, width: '100%' }}
-          >
+          <Space wrap size={12} style={{ flex: 1, width: '100%' }}>
             <Input
               allowClear
               prefix={<SearchOutlined />}
               placeholder={searchPlaceholder}
               value={searchValue}
               onChange={(event) => onSearchChange?.(event.target.value)}
-              style={{ width: isMobile ? '100%' : 320 }}
+              style={{ width: isMobile ? '100%' : 340, maxWidth: '100%' }}
             />
             {filters}
           </Space>
 
-          <Space
-            wrap
-            style={{
-              justifyContent: isMobile ? 'space-between' : 'flex-end',
-              width: isMobile ? '100%' : 'auto',
-            }}
-          >
-            {resultSummary ? <Text type="secondary">{resultSummary}</Text> : null}
+          <Space wrap style={{ justifyContent: isMobile ? 'space-between' : 'flex-end', width: isMobile ? '100%' : 'auto' }}>
+            {resultSummary ? (
+              <Tag style={chipStyle}>
+                {resultSummary}
+              </Tag>
+            ) : null}
             {onRefresh ? (
               <Tooltip title="Обновить список">
-                <Button icon={<ReloadOutlined />} loading={loading} onClick={onRefresh} />
+                <Button
+                  aria-label="Обновить список"
+                  icon={<ReloadOutlined />}
+                  loading={loading}
+                  onClick={onRefresh}
+                />
               </Tooltip>
             ) : null}
             {hasActiveFilters && onReset ? (
@@ -112,7 +108,7 @@ export const EntityListToolbar: React.FC<EntityListToolbarProps> = ({
               </Button>
             ) : null}
           </Space>
-        </div>
+        </Flex>
 
         {hasActiveFilters ? (
           <Space wrap size={[8, 8]}>
@@ -124,7 +120,7 @@ export const EntityListToolbar: React.FC<EntityListToolbarProps> = ({
                   event.preventDefault();
                   filter.onClear?.();
                 }}
-                style={{ marginInlineEnd: 0 }}
+                style={chipStyle}
               >
                 {filter.value ? `${filter.label}: ${filter.value}` : filter.label}
               </Tag>
