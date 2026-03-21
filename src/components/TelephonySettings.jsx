@@ -144,6 +144,16 @@ export default function TelephonySettings({ onSuccess }) {
     try {
       const profile = await getVoipSystemSettings();
       settingsForm.setFieldsValue({
+        ami_host: profile.ami_host || '127.0.0.1',
+        ami_port: Number(profile.ami_port || 5038),
+        ami_username: profile.ami_username || '',
+        ami_secret: profile.ami_secret || '',
+        ami_use_ssl: !!profile.ami_use_ssl,
+        ami_connect_timeout: Number(profile.ami_connect_timeout || 5),
+        ami_reconnect_delay: Number(profile.ami_reconnect_delay || 5),
+        incoming_enabled: profile.incoming_enabled !== false,
+        incoming_poll_interval_ms: Number(profile.incoming_poll_interval_ms || 4000),
+        incoming_popup_ttl_ms: Number(profile.incoming_popup_ttl_ms || 20000),
         telephony_route_mode: profile.telephony_route_mode || DEFAULT_TELEPHONY_ROUTE_MODE,
         telephony_provider: profile.telephony_provider || DEFAULT_TELEPHONY_PROVIDER,
         webrtc_stun_servers: profile.webrtc_stun_servers || DEFAULT_STUN_SERVERS,
@@ -151,6 +161,9 @@ export default function TelephonySettings({ onSuccess }) {
         webrtc_turn_server: profile.webrtc_turn_server || '',
         webrtc_turn_username: profile.webrtc_turn_username || '',
         webrtc_turn_password: profile.webrtc_turn_password || '',
+        forward_unknown_calls: !!profile.forward_unknown_calls,
+        forward_url: profile.forward_url || '',
+        forwarding_allowed_ip: profile.forwarding_allowed_ip || '',
       });
     } catch (error) {
       console.error('Error loading telephony profile settings:', error);
@@ -226,6 +239,7 @@ export default function TelephonySettings({ onSuccess }) {
         provider: values.provider,
         type: values.type,
         number: values.number,
+        sip_server: values.type === 'sip' ? String(values.sip_server || '').trim() : '',
         callerid: values.callerid,
         active: values.active !== undefined ? values.active : true,
       };
@@ -285,6 +299,16 @@ export default function TelephonySettings({ onSuccess }) {
     setSettingsLoading(true);
     try {
       await updateVoipSystemSettings({
+        ami_host: String(values.ami_host || '').trim(),
+        ami_port: Number(values.ami_port || 5038),
+        ami_username: String(values.ami_username || '').trim(),
+        ami_secret: String(values.ami_secret || '').trim(),
+        ami_use_ssl: !!values.ami_use_ssl,
+        ami_connect_timeout: Number(values.ami_connect_timeout || 5),
+        ami_reconnect_delay: Number(values.ami_reconnect_delay || 5),
+        incoming_enabled: !!values.incoming_enabled,
+        incoming_poll_interval_ms: Number(values.incoming_poll_interval_ms || 4000),
+        incoming_popup_ttl_ms: Number(values.incoming_popup_ttl_ms || 20000),
         telephony_route_mode: values.telephony_route_mode || DEFAULT_TELEPHONY_ROUTE_MODE,
         telephony_provider: values.telephony_provider || DEFAULT_TELEPHONY_PROVIDER,
         webrtc_stun_servers: values.webrtc_stun_servers || '',
@@ -292,6 +316,9 @@ export default function TelephonySettings({ onSuccess }) {
         webrtc_turn_server: values.webrtc_turn_enabled ? (values.webrtc_turn_server || '') : '',
         webrtc_turn_username: values.webrtc_turn_enabled ? (values.webrtc_turn_username || '') : '',
         webrtc_turn_password: values.webrtc_turn_enabled ? (values.webrtc_turn_password || '') : '',
+        forward_unknown_calls: !!values.forward_unknown_calls,
+        forward_url: values.forward_unknown_calls ? String(values.forward_url || '').trim() : '',
+        forwarding_allowed_ip: String(values.forwarding_allowed_ip || '').trim(),
       });
       message.success(tr('telephonySettings.messages.settingsSaved', 'Настройки телефонии сохранены'));
       onSuccess?.();
@@ -379,6 +406,12 @@ export default function TelephonySettings({ onSuccess }) {
       title: tr('telephonySettings.table.number', 'Номер'),
       dataIndex: 'number',
       key: 'number',
+    },
+    {
+      title: tr('telephonySettings.table.sipServer', 'SIP сервер'),
+      dataIndex: 'sip_server',
+      key: 'sip_server',
+      render: (value, record) => (record.type === 'sip' ? value || '—' : '—'),
     },
     {
       title: tr('telephonySettings.table.callerId', 'Номер отображения'),
@@ -498,6 +531,90 @@ export default function TelephonySettings({ onSuccess }) {
           <Select options={TELEPHONY_PROVIDER_OPTIONS} />
         </Form.Item>
 
+        <Divider orientation="left">{tr('telephonySettings.sections.ami', 'Asterisk AMI connection')}</Divider>
+
+        <Form.Item
+          label={tr('telephonySettings.fields.amiHost', 'AMI host')}
+          name="ami_host"
+          rules={[{ required: true, message: tr('telephonySettings.validation.enterAmiHost', 'Enter AMI host') }]}
+        >
+          <Input placeholder={tr('telephonySettings.placeholders.amiHost', '127.0.0.1 or pbx.company.local')} />
+        </Form.Item>
+
+        <Form.Item
+          label={tr('telephonySettings.fields.amiPort', 'AMI port')}
+          name="ami_port"
+          rules={[{ required: true, message: tr('telephonySettings.validation.enterAmiPort', 'Enter AMI port') }]}
+        >
+          <InputNumber min={1} max={65535} style={{ width: '100%' }} />
+        </Form.Item>
+
+        <Form.Item
+          label={tr('telephonySettings.fields.amiUsername', 'AMI username')}
+          name="ami_username"
+          rules={[{ required: true, message: tr('telephonySettings.validation.enterAmiUsername', 'Enter AMI username') }]}
+        >
+          <Input placeholder={tr('telephonySettings.placeholders.amiUsername', 'crm_ami')} />
+        </Form.Item>
+
+        <Form.Item
+          label={tr('telephonySettings.fields.amiSecret', 'AMI secret')}
+          name="ami_secret"
+          rules={[{ required: true, message: tr('telephonySettings.validation.enterAmiSecret', 'Enter AMI secret') }]}
+        >
+          <Input.Password placeholder={tr('telephonySettings.placeholders.amiSecret', '********')} />
+        </Form.Item>
+
+        <Form.Item
+          label={tr('telephonySettings.fields.amiUseSsl', 'Use SSL/TLS for AMI')}
+          name="ami_use_ssl"
+          valuePropName="checked"
+        >
+          <Switch />
+        </Form.Item>
+
+        <Form.Item
+          label={tr('telephonySettings.fields.amiConnectTimeout', 'AMI connect timeout (sec)')}
+          name="ami_connect_timeout"
+          rules={[{ required: true, message: tr('telephonySettings.validation.enterAmiConnectTimeout', 'Enter connect timeout') }]}
+        >
+          <InputNumber min={1} max={120} style={{ width: '100%' }} />
+        </Form.Item>
+
+        <Form.Item
+          label={tr('telephonySettings.fields.amiReconnectDelay', 'AMI reconnect delay (sec)')}
+          name="ami_reconnect_delay"
+          rules={[{ required: true, message: tr('telephonySettings.validation.enterAmiReconnectDelay', 'Enter reconnect delay') }]}
+        >
+          <InputNumber min={1} max={300} style={{ width: '100%' }} />
+        </Form.Item>
+
+        <Divider orientation="left">{tr('telephonySettings.sections.incomingRealtime', 'Incoming call popup/realtime')}</Divider>
+
+        <Form.Item
+          label={tr('telephonySettings.fields.incomingEnabled', 'Enable incoming call popup')}
+          name="incoming_enabled"
+          valuePropName="checked"
+        >
+          <Switch />
+        </Form.Item>
+
+        <Form.Item
+          label={tr('telephonySettings.fields.incomingPollInterval', 'Incoming polling interval (ms)')}
+          name="incoming_poll_interval_ms"
+          rules={[{ required: true, message: tr('telephonySettings.validation.enterIncomingPollInterval', 'Enter polling interval') }]}
+        >
+          <InputNumber min={500} max={60000} step={100} style={{ width: '100%' }} />
+        </Form.Item>
+
+        <Form.Item
+          label={tr('telephonySettings.fields.incomingPopupTtl', 'Incoming popup lifetime (ms)')}
+          name="incoming_popup_ttl_ms"
+          rules={[{ required: true, message: tr('telephonySettings.validation.enterIncomingPopupTtl', 'Enter popup lifetime') }]}
+        >
+          <InputNumber min={1000} max={120000} step={1000} style={{ width: '100%' }} />
+        </Form.Item>
+
         <Form.Item
           label={tr('telephonySettings.fields.stunServers', 'STUN servers')}
           name="webrtc_stun_servers"
@@ -550,6 +667,43 @@ export default function TelephonySettings({ onSuccess }) {
               ) : null}
             </>
           )}
+        </Form.Item>
+
+        <Divider orientation="left">{tr('telephonySettings.sections.forwarding', 'Unknown caller forwarding')}</Divider>
+
+        <Form.Item
+          label={tr('telephonySettings.fields.forwardUnknownCalls', 'Forward unknown callers')}
+          name="forward_unknown_calls"
+          valuePropName="checked"
+          extra={tr('telephonySettings.fields.forwardUnknownCallsExtra', 'Send webhook payload when CRM cannot match caller to lead/contact/client.')}
+        >
+          <Switch />
+        </Form.Item>
+
+        <Form.Item noStyle dependencies={['forward_unknown_calls']}>
+          {({ getFieldValue }) => (
+            <>
+              {getFieldValue('forward_unknown_calls') ? (
+                <Form.Item
+                  label={tr('telephonySettings.fields.forwardUrl', 'Forward webhook URL')}
+                  name="forward_url"
+                  rules={[
+                    { required: true, message: tr('telephonySettings.validation.enterForwardUrl', 'Enter webhook URL') },
+                    { type: 'url', message: tr('telephonySettings.validation.invalidForwardUrl', 'Enter valid URL (https://...)') },
+                  ]}
+                >
+                  <Input placeholder={tr('telephonySettings.placeholders.forwardUrl', 'https://hooks.example.com/telephony/unknown-call')} />
+                </Form.Item>
+              ) : null}
+            </>
+          )}
+        </Form.Item>
+
+        <Form.Item
+          label={tr('telephonySettings.fields.forwardingAllowedIp', 'Allowed source IP/CIDR (optional)')}
+          name="forwarding_allowed_ip"
+        >
+          <Input placeholder={tr('telephonySettings.placeholders.forwardingAllowedIp', '10.0.0.5 or 10.0.0.0/24')} />
         </Form.Item>
 
         {canManage ? (
@@ -836,13 +990,16 @@ export default function TelephonySettings({ onSuccess }) {
         ) : null}
       </div>
 
-      <Table
-        columns={columns}
-        dataSource={connections}
-        rowKey="id"
-        loading={tableLoading}
-        pagination={{ pageSize: 10 }}
-      />
+      <div style={{ width: '100%', overflowX: 'auto' }}>
+        <Table
+          columns={columns}
+          dataSource={connections}
+          rowKey="id"
+          loading={tableLoading}
+          pagination={{ pageSize: 10 }}
+          scroll={{ x: 1200 }}
+        />
+      </div>
 
       <Modal
         title={editingConnection ? tr('telephonySettings.modal.editConnection', 'Edit connection') : tr('telephonySettings.modal.newConnection', 'New connection')}
@@ -861,12 +1018,17 @@ export default function TelephonySettings({ onSuccess }) {
           type="info"
           showIcon
           message={tr('telephonySettings.connectionHelp.title', 'Что заполнять?')}
-          description={tr('telephonySettings.connectionHelp.description', 'Provider = ваш оператор/АТС. Тип = формат подключения. Номер = внутренний/внешний номер для исходящего вызова. Caller ID = номер, который увидит клиент.')}
+          description={tr('telephonySettings.connectionHelp.description', 'Провайдер = платформа интеграции (Asterisk/OnlinePBX/Zadarma). Тип подключения = формат линии (PBX/SIP/VoIP). Для SIP обязательно укажите SIP сервер.')}
         />
         <Form
           form={form}
           layout="vertical"
           onFinish={handleSave}
+          onValuesChange={(changedValues) => {
+            if (changedValues.type && changedValues.type !== 'sip') {
+              form.setFieldsValue({ sip_server: '' });
+            }
+          }}
           initialValues={{ active: true, type: 'pbx', provider: DEFAULT_TELEPHONY_PROVIDER }}
         >
           <Form.Item
@@ -882,7 +1044,7 @@ export default function TelephonySettings({ onSuccess }) {
             label={tr('telephonySettings.fields.connectionType', 'Connection type')}
             name="type"
             rules={[{ required: true, message: tr('telephonySettings.validation.selectType', 'Select type') }]}
-            extra={tr('telephonySettings.fields.connectionTypeExtra', 'PBX: internal extension. SIP: SIP account. VoIP: virtual external number.')}
+            extra={tr('telephonySettings.fields.connectionTypeExtra', 'PBX: внутренний номер на вашей АТС. SIP: SIP trunk/account c обязательным SIP сервером. VoIP: внешний номер провайдера.')}
           >
             <Select placeholder={tr('telephonySettings.placeholders.connectionType', 'Выберите тип')}>
               {CONNECTION_TYPE_OPTIONS.map((option) => (
@@ -891,6 +1053,51 @@ export default function TelephonySettings({ onSuccess }) {
                 </Select.Option>
               ))}
             </Select>
+          </Form.Item>
+
+          <Form.Item noStyle dependencies={['provider', 'type']}>
+            {({ getFieldValue }) => {
+              const type = getFieldValue('type');
+              const provider = getFieldValue('provider');
+              const hintType = type === 'sip' ? 'warning' : 'info';
+              const fallback = type === 'sip'
+                ? `SIP требует поле "SIP сервер". Провайдер ${provider || 'не выбран'} отвечает за интеграцию/маршрутизацию, а SIP сервер — за регистрацию SIP аккаунта.`
+                : `Провайдер ${provider || 'не выбран'} — это платформа интеграции. Тип подключения (${(type || 'pbx').toUpperCase()}) определяет формат линии.`;
+              return (
+                <Alert
+                  style={{ marginBottom: 16 }}
+                  type={hintType}
+                  showIcon
+                  message={tr('telephonySettings.connectionHelp.providerTypeHint', fallback)}
+                />
+              );
+            }}
+          </Form.Item>
+
+          <Form.Item noStyle dependencies={['type']}>
+            {({ getFieldValue }) => {
+              if (getFieldValue('type') !== 'sip') return null;
+              return (
+                <Form.Item
+                  label={tr('telephonySettings.fields.sipServer', 'SIP сервер')}
+                  name="sip_server"
+                  rules={[
+                    { required: true, message: tr('telephonySettings.validation.enterSipServer', 'Введите SIP сервер') },
+                    {
+                      validator: (_, value) => {
+                        const val = String(value || '').trim();
+                        if (!val) return Promise.resolve();
+                        if (/^[a-zA-Z0-9.-]+(?::\d{2,5})?$/.test(val)) return Promise.resolve();
+                        return Promise.reject(new Error(tr('telephonySettings.validation.invalidSipServer', 'Формат SIP сервера: host или host:port')));
+                      },
+                    },
+                  ]}
+                  extra={tr('telephonySettings.fields.sipServerExtra', 'Домен/хост SIP сервера для регистрации trunk/account, например pbx.company.uz или pbx.company.uz:5060')}
+                >
+                  <Input placeholder={tr('telephonySettings.placeholders.sipServer', 'Например: pbx.company.uz:5060')} />
+                </Form.Item>
+              );
+            }}
           </Form.Item>
 
           <Form.Item noStyle dependencies={['type']}>

@@ -218,7 +218,7 @@ function IncomingCallsTab() {
   const load = async () => {
     setLoading(true);
     try {
-      const res = await getIncomingCalls({ page_size: 50 });
+      const res = await getIncomingCalls({ limit: 50 });
       setData(res?.results || res || []);
     } finally {
       setLoading(false);

@@ -354,7 +354,7 @@ export async function deactivateVoIPConnection(id) {
  * @returns {Promise<Object>}
  */
 export async function getRecentIncomingCalls(limit = 10) {
-  return getIncomingCalls({ page_size: limit, ordering: '-timestamp' });
+  return getIncomingCalls({ limit });
 }
 
 /**

@@ -606,6 +606,19 @@ function App() {
     }
   };
 
+  const shouldDismissIncomingOnUpdate = (data) => {
+    if (!data?.callId) return false;
+    const status = String(data.status || '').toLowerCase();
+    if (['busy', 'no_answer', 'failed', 'abandoned', 'ended', 'rejected'].includes(status)) {
+      return true;
+    }
+    // Backend can still emit answered as call_updated on final CDR/hangup path.
+    if (status === 'answered' && Number(data.duration || 0) > 0) {
+      return true;
+    }
+    return false;
+  };
+
   const initializeWebSocket = (callsWebSocket, token) => {
     // Setup event listeners
     callsWebSocket.on('connected', () => {
@@ -626,6 +639,13 @@ function App() {
     callsWebSocket.on('incomingCall', (callData) => {
       console.log('[App] Incoming call:', callData);
       addIncomingCall(callData);
+    });
+
+    callsWebSocket.on('callUpdated', (data) => {
+      console.log('[App] Call updated:', data);
+      if (shouldDismissIncomingOnUpdate(data)) {
+        removeIncomingCall(data.callId);
+      }
     });
 
     callsWebSocket.on('callEnded', (data) => {
