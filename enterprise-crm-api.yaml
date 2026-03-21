@@ -10624,24 +10624,18 @@ components:
       - provider
     ConnectionProviderEnum:
       enum:
-      - Zadarma
-      - OnlinePBX
       - Asterisk
       type: string
       description: |-
-        * `Zadarma` - Zadarma
-        * `OnlinePBX` - OnlinePBX
         * `Asterisk` - Asterisk
     ConnectionTypeEnum:
       enum:
       - pbx
       - sip
-      - voip
       type: string
       description: |-
-        * `pbx` - PBX extension
-        * `sip` - SIP connection
-        * `voip` - Virtual phone number
+        * `pbx` - Embedded Asterisk (CRM-managed)
+        * `sip` - External Asterisk via PBX Bridge
     Contact:
       type: object
       description: Mixin to add validation helpers to serializers
@@ -15953,29 +15947,17 @@ components:
     TelephonyProviderEnum:
       enum:
       - Asterisk
-      - OnlinePBX
-      - Zadarma
-      - FreeSWITCH
       type: string
       description: |-
         * `Asterisk` - Asterisk
-        * `OnlinePBX` - OnlinePBX
-        * `Zadarma` - Zadarma
-        * `FreeSWITCH` - FreeSWITCH
     TelephonyRouteModeEnum:
       enum:
-      - auto
-      - internal
-      - external
-      - provider
-      - asterisk
+      - embedded
+      - bridge
       type: string
       description: |-
-        * `auto` - Auto
-        * `internal` - Internal extension
-        * `external` - External number
-        * `provider` - Provider API
-        * `asterisk` - Asterisk server
+        * `embedded` - Embedded Asterisk (CRM-managed)
+        * `bridge` - External Asterisk via PBX Bridge
     TokenRefresh:
       type: object
       properties:

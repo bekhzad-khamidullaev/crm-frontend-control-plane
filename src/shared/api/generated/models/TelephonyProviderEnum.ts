@@ -4,8 +4,5 @@
 /* eslint-disable */
 /**
  * * `Asterisk` - Asterisk
- * * `OnlinePBX` - OnlinePBX
- * * `Zadarma` - Zadarma
- * * `FreeSWITCH` - FreeSWITCH
  */
-export type TelephonyProviderEnum = 'Asterisk' | 'OnlinePBX' | 'Zadarma' | 'FreeSWITCH';
+export type TelephonyProviderEnum = 'Asterisk';

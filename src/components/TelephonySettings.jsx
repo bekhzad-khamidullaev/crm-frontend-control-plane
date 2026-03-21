@@ -110,6 +110,13 @@ const regexValidator = (label) => (_, value) => {
   }
 };
 
+const normalizeRouteMode = (value) => {
+  const mode = String(value || '').trim().toLowerCase();
+  if (mode === 'bridge' || mode === 'external' || mode === 'provider') return 'bridge';
+  if (mode === 'embedded' || mode === 'auto' || mode === 'internal' || mode === 'asterisk') return 'embedded';
+  return DEFAULT_TELEPHONY_ROUTE_MODE;
+};
+
 export default function TelephonySettings({ onSuccess }) {
   const { message } = App.useApp();
   const tr = (key, fallback, vars = {}) => {
@@ -154,8 +161,8 @@ export default function TelephonySettings({ onSuccess }) {
         incoming_enabled: profile.incoming_enabled !== false,
         incoming_poll_interval_ms: Number(profile.incoming_poll_interval_ms || 4000),
         incoming_popup_ttl_ms: Number(profile.incoming_popup_ttl_ms || 20000),
-        telephony_route_mode: profile.telephony_route_mode || DEFAULT_TELEPHONY_ROUTE_MODE,
-        telephony_provider: profile.telephony_provider || DEFAULT_TELEPHONY_PROVIDER,
+        telephony_route_mode: normalizeRouteMode(profile.telephony_route_mode),
+        telephony_provider: DEFAULT_TELEPHONY_PROVIDER,
         webrtc_stun_servers: profile.webrtc_stun_servers || DEFAULT_STUN_SERVERS,
         webrtc_turn_enabled: !!profile.webrtc_turn_enabled,
         webrtc_turn_server: profile.webrtc_turn_server || '',
@@ -236,7 +243,7 @@ export default function TelephonySettings({ onSuccess }) {
     setLoading(true);
     try {
       const connectionData = {
-        provider: values.provider,
+        provider: DEFAULT_TELEPHONY_PROVIDER,
         type: values.type,
         number: values.number,
         sip_server: values.type === 'sip' ? String(values.sip_server || '').trim() : '',
@@ -269,7 +276,10 @@ export default function TelephonySettings({ onSuccess }) {
 
   const handleEdit = (connection) => {
     setEditingConnection(connection);
-    form.setFieldsValue(connection);
+    form.setFieldsValue({
+      ...connection,
+      provider: DEFAULT_TELEPHONY_PROVIDER,
+    });
     setModalVisible(true);
   };
 
@@ -309,8 +319,8 @@ export default function TelephonySettings({ onSuccess }) {
         incoming_enabled: !!values.incoming_enabled,
         incoming_poll_interval_ms: Number(values.incoming_poll_interval_ms || 4000),
         incoming_popup_ttl_ms: Number(values.incoming_popup_ttl_ms || 20000),
-        telephony_route_mode: values.telephony_route_mode || DEFAULT_TELEPHONY_ROUTE_MODE,
-        telephony_provider: values.telephony_provider || DEFAULT_TELEPHONY_PROVIDER,
+        telephony_route_mode: normalizeRouteMode(values.telephony_route_mode),
+        telephony_provider: DEFAULT_TELEPHONY_PROVIDER,
         webrtc_stun_servers: values.webrtc_stun_servers || '',
         webrtc_turn_enabled: !!values.webrtc_turn_enabled,
         webrtc_turn_server: values.webrtc_turn_enabled ? (values.webrtc_turn_server || '') : '',
@@ -474,11 +484,8 @@ export default function TelephonySettings({ onSuccess }) {
   ];
 
   const routeModeDescription = {
-    auto: tr('telephonySettings.routeModes.auto', 'CRM chooses route automatically: SIP/WebRTC first, then fallback.'),
-    internal: tr('telephonySettings.routeModes.internal', 'Outgoing calls prioritize internal PBX numbers.'),
-    external: tr('telephonySettings.routeModes.external', 'Calls are treated as external and use external route.'),
-    provider: tr('telephonySettings.routeModes.provider', 'Outgoing calls are initiated via selected provider API.'),
-    asterisk: tr('telephonySettings.routeModes.asterisk', 'Routing via Asterisk dialplan/AMI.'),
+    embedded: tr('telephonySettings.routeModes.embedded', 'CRM routes calls through the embedded Asterisk instance it manages.'),
+    bridge: tr('telephonySettings.routeModes.bridge', 'CRM routes calls through an external Asterisk PBX bridge.'),
   };
 
   return (
@@ -502,7 +509,7 @@ export default function TelephonySettings({ onSuccess }) {
           label={tr('telephonySettings.fields.routeMode', 'Call routing mode')}
           name="telephony_route_mode"
           rules={[{ required: true, message: tr('telephonySettings.validation.selectMode', 'Select mode') }]}
-          extra={tr('telephonySettings.fields.routeModeExtra', 'Select the primary way to route outgoing calls from CRM.')}
+          extra={tr('telephonySettings.fields.routeModeExtra', 'Choose whether CRM should route calls through embedded Asterisk or an external bridge.')}
         >
           <Select options={TELEPHONY_ROUTE_MODE_OPTIONS} />
         </Form.Item>
@@ -516,7 +523,7 @@ export default function TelephonySettings({ onSuccess }) {
                 type="warning"
                 showIcon
                 message={tr('telephonySettings.mode.current', 'Current mode: {{mode}}', { mode })}
-                description={routeModeDescription[mode]}
+                description={routeModeDescription[mode] || routeModeDescription[DEFAULT_TELEPHONY_ROUTE_MODE]}
               />
             );
           }}
@@ -526,7 +533,7 @@ export default function TelephonySettings({ onSuccess }) {
           label={tr('telephonySettings.fields.preferredProvider', 'Preferred provider')}
           name="telephony_provider"
           rules={[{ required: true, message: tr('telephonySettings.validation.selectProvider', 'Select provider') }]}
-          extra={tr('telephonySettings.fields.preferredProviderExtra', 'Used in Provider/API mode and as fallback in Auto mode.')}
+          extra={tr('telephonySettings.fields.preferredProviderExtra', 'Asterisk is the only supported provider.')}
         >
           <Select options={TELEPHONY_PROVIDER_OPTIONS} />
         </Form.Item>
@@ -1018,7 +1025,7 @@ export default function TelephonySettings({ onSuccess }) {
           type="info"
           showIcon
           message={tr('telephonySettings.connectionHelp.title', 'Что заполнять?')}
-          description={tr('telephonySettings.connectionHelp.description', 'Провайдер = платформа интеграции (Asterisk/OnlinePBX/Zadarma). Тип подключения = формат линии (PBX/SIP/VoIP). Для SIP обязательно укажите SIP сервер.')}
+          description={tr('telephonySettings.connectionHelp.description', 'Provider = Asterisk only. Connection type = PBX or SIP. For SIP, specify the SIP server.')}
         />
         <Form
           form={form}
@@ -1035,34 +1042,33 @@ export default function TelephonySettings({ onSuccess }) {
             label={tr('telephonySettings.fields.provider', 'Provider')}
             name="provider"
             rules={[{ required: true, message: tr('telephonySettings.validation.selectProvider', 'Select provider') }]}
-            extra={tr('telephonySettings.fields.providerExtra', 'Select platform CRM will use to initiate calls.')}
+            extra={tr('telephonySettings.fields.providerExtra', 'Asterisk is the only supported provider.')}
           >
-            <Select placeholder={tr('telephonySettings.placeholders.provider', 'Например: Asterisk / OnlinePBX / Zadarma')} options={TELEPHONY_PROVIDER_OPTIONS} />
+            <Select placeholder={tr('telephonySettings.placeholders.provider', 'Например: Asterisk')} options={TELEPHONY_PROVIDER_OPTIONS} />
           </Form.Item>
 
           <Form.Item
             label={tr('telephonySettings.fields.connectionType', 'Connection type')}
             name="type"
             rules={[{ required: true, message: tr('telephonySettings.validation.selectType', 'Select type') }]}
-            extra={tr('telephonySettings.fields.connectionTypeExtra', 'PBX: внутренний номер на вашей АТС. SIP: SIP trunk/account c обязательным SIP сервером. VoIP: внешний номер провайдера.')}
+            extra={tr('telephonySettings.fields.connectionTypeExtra', 'PBX: embedded Asterisk internal extension. SIP: external Asterisk trunk/account with SIP server.')}
           >
             <Select placeholder={tr('telephonySettings.placeholders.connectionType', 'Выберите тип')}>
               {CONNECTION_TYPE_OPTIONS.map((option) => (
                 <Select.Option key={option.value} value={option.value}>
-                  {option.label === 'PBX' ? tr('telephonySettings.options.typePbx', 'PBX extension (internal)') : option.label === 'SIP' ? tr('telephonySettings.options.typeSip', 'SIP account') : tr('telephonySettings.options.typeVoip', 'Virtual external number')}
+                  {option.label}
                 </Select.Option>
               ))}
             </Select>
           </Form.Item>
 
-          <Form.Item noStyle dependencies={['provider', 'type']}>
+          <Form.Item noStyle dependencies={['type']}>
             {({ getFieldValue }) => {
               const type = getFieldValue('type');
-              const provider = getFieldValue('provider');
               const hintType = type === 'sip' ? 'warning' : 'info';
               const fallback = type === 'sip'
-                ? `SIP требует поле "SIP сервер". Провайдер ${provider || 'не выбран'} отвечает за интеграцию/маршрутизацию, а SIP сервер — за регистрацию SIP аккаунта.`
-                : `Провайдер ${provider || 'не выбран'} — это платформа интеграции. Тип подключения (${(type || 'pbx').toUpperCase()}) определяет формат линии.`;
+                ? `SIP requires the "SIP server" field. Asterisk handles routing and integration, while the SIP server handles account registration.`
+                : `Asterisk is the only provider. Connection type (${(type || 'pbx').toUpperCase()}) defines the line format.`;
               return (
                 <Alert
                   style={{ marginBottom: 16 }}
@@ -1092,7 +1098,7 @@ export default function TelephonySettings({ onSuccess }) {
                       },
                     },
                   ]}
-                  extra={tr('telephonySettings.fields.sipServerExtra', 'Домен/хост SIP сервера для регистрации trunk/account, например pbx.company.uz или pbx.company.uz:5060')}
+                  extra={tr('telephonySettings.fields.sipServerExtra', 'SIP server host used for trunk/account registration, for example pbx.company.uz or pbx.company.uz:5060')}
                 >
                   <Input placeholder={tr('telephonySettings.placeholders.sipServer', 'Например: pbx.company.uz:5060')} />
                 </Form.Item>

@@ -3,8 +3,7 @@
 /* tslint:disable */
 /* eslint-disable */
 /**
- * * `pbx` - PBX extension
- * * `sip` - SIP connection
- * * `voip` - Virtual phone number
+ * * `pbx` - Embedded Asterisk (CRM-managed)
+ * * `sip` - External Asterisk via PBX Bridge
  */
-export type ConnectionTypeEnum = 'pbx' | 'sip' | 'voip';
+export type ConnectionTypeEnum = 'pbx' | 'sip';

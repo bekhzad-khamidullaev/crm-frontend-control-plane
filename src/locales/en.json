@@ -1741,10 +1741,10 @@
     },
     "connectionHelp": {
       "title": "What to fill in?",
-      "description": "Provider = your operator/PBX. Type = connection format. Number = internal/external number for outbound calls. Caller ID = number seen by customer."
+      "description": "Provider = Asterisk only. Type = PBX or SIP. Number = the internal or external line used for outbound calls. Caller ID = the number seen by the customer."
     },
     "placeholders": {
-      "provider": "For example: Asterisk / OnlinePBX / Zadarma",
+      "provider": "For example: Asterisk",
       "connectionType": "Select type",
       "callerId": "For example: +998712001122",
       "turnServer": "turn:turn.company.com:3478?transport=udp",
@@ -1753,6 +1753,7 @@
       "externalNumber": "+998901234567",
       "timeCondition": "weekdays 09:00-18:00",
       "selectInternalNumber": "Select internal number",
+      "sipServer": "For example: pbx.company.uz:5060",
       "selectGroup": "Select group",
       "announcementText": "Text that caller will hear",
       "numberByType": {
@@ -1784,20 +1785,17 @@
       "enterCallerId": "Enter caller ID"
     },
     "routeModes": {
-      "auto": "CRM chooses route automatically: SIP/WebRTC first, then fallback.",
-      "internal": "Outgoing calls prioritize internal PBX numbers.",
-      "external": "Calls are treated as external and use external route.",
-      "provider": "Outgoing calls are initiated via selected provider API.",
-      "asterisk": "Routing via Asterisk dialplan/AMI."
+      "embedded": "CRM routes calls through the embedded Asterisk instance it manages.",
+      "bridge": "CRM routes calls through an external Asterisk PBX bridge."
     },
     "mode": {
       "current": "Current mode: {{mode}}"
     },
     "fields": {
       "routeMode": "Call routing mode",
-      "routeModeExtra": "Select the primary way to route outgoing calls from CRM.",
+      "routeModeExtra": "Choose whether CRM should route calls through embedded Asterisk or an external bridge.",
       "preferredProvider": "Preferred provider",
-      "preferredProviderExtra": "Used in Provider/API mode and as fallback in Auto mode.",
+      "preferredProviderExtra": "Asterisk is the only supported provider.",
       "stunServers": "STUN servers",
       "stunTooltip": "One per line or comma-separated. Example: stun:stun.l.google.com:19302",
       "stunExtra": "Needed to determine WebRTC client network route.",
@@ -1808,9 +1806,9 @@
       "turnUsername": "TURN username",
       "turnPassword": "TURN password",
       "connectionType": "Connection type",
-      "connectionTypeExtra": "PBX: internal extension. SIP: SIP account. VoIP: virtual external number.",
+      "connectionTypeExtra": "PBX: embedded Asterisk internal extension. SIP: external Asterisk trunk/account with SIP server.",
       "provider": "Provider",
-      "providerExtra": "Select platform CRM will use to initiate calls.",
+      "providerExtra": "Asterisk is the only supported provider.",
       "number": "Number",
       "numberByType": {
         "pbx": "Internal number (extension)",
@@ -1824,8 +1822,7 @@
     },
     "options": {
       "typePbx": "PBX extension (internal)",
-      "typeSip": "SIP account",
-      "typeVoip": "Virtual external number"
+      "typeSip": "SIP account"
     },
     "modal": {
       "editConnection": "Edit connection",

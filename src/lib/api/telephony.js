@@ -29,9 +29,20 @@ export async function initiateCall(data) {
 }
 
 /**
+ * Reject active incoming call
+ * Falls back to backend call-control when local SIP session is unavailable.
+ * @param {string} sessionId - Session or call identifier
+ * @returns {Promise<Object>}
+ */
+export async function rejectActiveCall(sessionId) {
+  return api.post('/api/voip/call-control/reject/', {
+    body: { session_id: sessionId },
+  });
+}
+
+/**
  * End active call
- * Note: These call control endpoints don't exist in API.yaml
- * Call control should be handled by WebRTC/SIP client (JsSIP)
+ * Note: These call control endpoints are only available via backend VoIP control.
  * @param {string} callId - Call ID
  * @returns {Promise<Object>}
  */
@@ -83,8 +94,8 @@ export async function getSIPConfig() {
 /**
  * Save SIP configuration
  * @param {Object} data
- * @param {string} data.provider - Provider (Zadarma, OnlinePBX, etc.)
- * @param {string} data.type - Connection type (sip, pbx, voip)
+ * @param {string} data.provider - Provider (Asterisk only)
+ * @param {string} data.type - Connection type (sip, pbx)
  * @param {string} data.number - Phone number
  * @param {string} data.callerid - Caller ID
  * @returns {Promise<Object>}
@@ -294,7 +305,7 @@ export async function getNumberGroups(params = {}) {
 export async function getVoipSystemSettings() {
   try {
     return await api.get('/api/voip/system-settings/current/');
-  } catch (error) {
+  } catch {
     return api.get('/api/voip/system-settings/');
   }
 }
@@ -302,7 +313,7 @@ export async function getVoipSystemSettings() {
 export async function updateVoipSystemSettings(data) {
   try {
     return await api.patch('/api/voip/system-settings/current/', { body: data });
-  } catch (error) {
+  } catch {
     return api.patch('/api/voip/system-settings/1/', { body: data });
   }
 }

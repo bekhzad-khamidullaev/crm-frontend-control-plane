@@ -33,11 +33,9 @@ export class VoIpService {
         /**
          * Specify VoIP service provider
          *
-         * * `Zadarma` - Zadarma
-         * * `OnlinePBX` - OnlinePBX
          * * `Asterisk` - Asterisk
          */
-        provider?: 'Asterisk' | 'OnlinePBX' | 'Zadarma',
+        provider?: 'Asterisk',
     }): CancelablePromise<PaginatedConnectionList> {
         return __request(OpenAPI, {
             method: 'GET',

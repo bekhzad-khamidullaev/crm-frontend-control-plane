@@ -37,20 +37,14 @@ export type PatchedUserProfile = {
     /**
      * How outbound calls should be routed from the CRM UI
      *
-     * * `auto` - Auto
-     * * `internal` - Internal extension
-     * * `external` - External number
-     * * `provider` - Provider API
-     * * `asterisk` - Asterisk server
+     * * `embedded` - Embedded Asterisk (CRM-managed)
+     * * `bridge` - External Asterisk via PBX Bridge
      */
     telephony_route_mode?: (TelephonyRouteModeEnum | BlankEnum);
     /**
      * Used by server originate mode
      *
      * * `Asterisk` - Asterisk
-     * * `OnlinePBX` - OnlinePBX
-     * * `Zadarma` - Zadarma
-     * * `FreeSWITCH` - FreeSWITCH
      */
     telephony_provider?: (TelephonyProviderEnum | BlankEnum);
     /**
@@ -65,4 +59,3 @@ export type PatchedUserProfile = {
     webrtc_turn_username?: string;
     webrtc_turn_password?: string;
 };
-

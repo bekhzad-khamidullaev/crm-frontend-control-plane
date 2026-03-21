@@ -84,29 +84,9 @@ function validateDialInput(rawValue, routeMode) {
     };
   }
 
-  const mode = String(routeMode || 'auto').toLowerCase();
+  const mode = String(routeMode || DEFAULT_TELEPHONY_ROUTE_MODE).toLowerCase();
   const sipDial = normalizeDialForSip(value);
   const providerDial = normalizeProviderDial(value).replace(/^\+/, '');
-
-  if (mode === 'internal') {
-    if (value.includes('+')) {
-      return {
-        isValid: false,
-        message: 'Для внутреннего режима используйте короткий внутренний номер без "+"',
-        sipDial,
-        providerDial,
-      };
-    }
-    if (!isLikelyInternalExtension(sipDial)) {
-      return {
-        isValid: false,
-        message: 'Внутренний номер должен содержать от 2 до 6 цифр',
-        sipDial,
-        providerDial,
-      };
-    }
-    return { isValid: true, message: '', sipDial, providerDial };
-  }
 
   if (hasStarHash) {
     return {
@@ -115,6 +95,18 @@ function validateDialInput(rawValue, routeMode) {
       sipDial,
       providerDial,
     };
+  }
+
+  if (mode === 'embedded') {
+    if (digits.length < 2 || digits.length > 15) {
+      return {
+        isValid: false,
+        message: 'Номер для встроенного режима должен содержать от 2 до 15 цифр',
+        sipDial,
+        providerDial,
+      };
+    }
+    return { isValid: true, message: '', sipDial, providerDial };
   }
 
   if (digits.length < 7 || digits.length > 15) {
@@ -330,14 +322,6 @@ export default function TelephonyDialerModal({ visible, onClose, initialNumber =
     const dial = validatedDial?.sipDial || normalizeDialForSip(dialNumber);
     if (!dial) throw new Error('Введите корректный номер');
 
-    const mode = runtime?.sipConfig?.routeMode || DEFAULT_TELEPHONY_ROUTE_MODE;
-    if (mode === 'internal' && !isLikelyInternalExtension(dial)) {
-      throw new Error('Для режима internal доступен только внутренний короткий номер');
-    }
-    if (mode === 'external' && isLikelyInternalExtension(dial)) {
-      throw new Error('Для режима external используйте внешний номер');
-    }
-
     const registered = await ensureSipReady();
     if (!registered) throw new Error('SIP клиент не готов');
 
@@ -356,9 +340,9 @@ export default function TelephonyDialerModal({ visible, onClose, initialNumber =
     try {
       setCallStatus('calling');
       const runtime = runtimeRef.current || (await loadBackendTelephony());
-      const mode = runtime?.sipConfig?.routeMode || 'auto';
+      const mode = String(runtime?.sipConfig?.routeMode || DEFAULT_TELEPHONY_ROUTE_MODE).toLowerCase();
 
-      if (mode === 'provider' || mode === 'asterisk') {
+      if (mode === 'bridge') {
         await startProviderCall(runtime, validated.providerDial);
         return;
       }

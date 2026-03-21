@@ -23,6 +23,7 @@ import {
 } from '@ant-design/icons';
 
 import { api } from '../../lib/api/client.js';
+import { rejectActiveCall } from '../../lib/api/telephony.js';
 import sipClient from '../../lib/telephony/SIPClient.js';
 import { navigate } from '../../router.js';
 import { VoIpColdCallsService } from '../../shared/api/generated/services/VoIpColdCallsService.ts';
@@ -188,9 +189,24 @@ function IncomingCallModal({ visible, callData, onAnswer, onReject, onDismiss })
     }
   };
 
-  const handleReject = () => {
+  const handleReject = async () => {
     onReject?.(callData);
-    sipClient.rejectCall();
+
+    const hasSipSession = Boolean(sipClient.callSession);
+    if (hasSipSession) {
+      sipClient.rejectCall();
+      return;
+    }
+
+    const sessionId = String(callData?.sessionId || callData?.callId || '').trim();
+    if (!sessionId) return;
+
+    try {
+      await rejectActiveCall(sessionId);
+    } catch (error) {
+      console.error('Failed to reject call via backend call-control:', error);
+      message.error('Не удалось отклонить звонок на стороне PBX');
+    }
   };
 
   const handleCreateLead = async () => {

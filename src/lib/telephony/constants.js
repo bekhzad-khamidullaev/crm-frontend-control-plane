@@ -1,8 +1,5 @@
 export const TELEPHONY_PROVIDERS = Object.freeze([
   'Asterisk',
-  'OnlinePBX',
-  'Zadarma',
-  'FreeSWITCH',
 ]);
 
 export const TELEPHONY_PROVIDER_OPTIONS = Object.freeze(
@@ -11,25 +8,18 @@ export const TELEPHONY_PROVIDER_OPTIONS = Object.freeze(
 
 export const TELEPHONY_PROVIDER_TAG_COLORS = Object.freeze({
   Asterisk: 'geekblue',
-  OnlinePBX: 'blue',
-  Zadarma: 'green',
-  FreeSWITCH: 'purple',
 });
 
 export const CONNECTION_TYPE_OPTIONS = Object.freeze([
-  { label: 'PBX', value: 'pbx' },
-  { label: 'SIP', value: 'sip' },
-  { label: 'VoIP', value: 'voip' },
+  { label: 'Embedded Asterisk (CRM-managed)', value: 'pbx' },
+  { label: 'External Asterisk (PBX Bridge)', value: 'sip' },
 ]);
 
 export const TELEPHONY_ROUTE_MODE_OPTIONS = Object.freeze([
-  { value: 'auto', label: 'Auto (SIP + fallback)' },
-  { value: 'internal', label: 'Внутренние номера' },
-  { value: 'external', label: 'Внешние номера' },
-  { value: 'provider', label: 'Через API провайдера' },
-  { value: 'asterisk', label: 'Через Asterisk сервер' },
+  { value: 'embedded', label: 'Embedded Asterisk (CRM-managed)' },
+  { value: 'bridge', label: 'External Asterisk via PBX Bridge' },
 ]);
 
-export const DEFAULT_TELEPHONY_ROUTE_MODE = 'auto';
+export const DEFAULT_TELEPHONY_ROUTE_MODE = 'embedded';
 export const DEFAULT_TELEPHONY_PROVIDER = 'Asterisk';
 export const DEFAULT_STUN_SERVERS = 'stun:stun.l.google.com:19302';

@@ -207,7 +207,7 @@ function CallButton({ phone, name, entityType, entityId, size = 'middle', type =
       try {
         const runtime = await loadTelephonyRuntimeConfig().catch(() => null);
         const routeMode = String(runtime?.sipConfig?.routeMode || DEFAULT_TELEPHONY_ROUTE_MODE).toLowerCase();
-        if (routeMode === 'provider' || routeMode === 'asterisk') {
+        if (routeMode === 'bridge') {
           const started = await startServerOriginateCall(runtime);
           if (!started) throw new Error('Не удалось отправить звонок через сервер');
           return;
@@ -216,12 +216,6 @@ function CallButton({ phone, name, entityType, entityId, size = 'middle', type =
         const dialNumber = normalizeDialForSip(phone);
         if (!dialNumber) {
           throw new Error('Неверный формат номера');
-        }
-        if (routeMode === 'internal' && !isLikelyInternalExtension(dialNumber)) {
-          throw new Error('В режиме "Внутренний" разрешены только короткие внутренние номера');
-        }
-        if (routeMode === 'external' && isLikelyInternalExtension(dialNumber)) {
-          throw new Error('В режиме "Внешний" используйте внешний номер');
         }
         if (!sipClient.isRegistered) {
           const registered = await ensureSipReady();

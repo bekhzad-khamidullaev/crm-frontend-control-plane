@@ -5,7 +5,19 @@ import {
   DEFAULT_TELEPHONY_PROVIDER,
   DEFAULT_TELEPHONY_ROUTE_MODE,
 } from './constants.js';
-const ENV_SIP_WS_URL = String(import.meta.env.VITE_SIP_SERVER || '').trim();
+const appConfig = (typeof window !== 'undefined' && window.__APP_CONFIG__) || {};
+const ENV_SIP_WS_URL = String(appConfig.SIP_SERVER || import.meta.env.VITE_SIP_SERVER || '').trim();
+
+function normalizeRouteMode(rawValue) {
+  const value = String(rawValue || '').trim().toLowerCase();
+  if (['embedded', 'auto', 'internal', 'asterisk'].includes(value)) return 'embedded';
+  if (['bridge', 'external', 'provider'].includes(value)) return 'bridge';
+  return DEFAULT_TELEPHONY_ROUTE_MODE;
+}
+
+function normalizeProvider(_rawValue) {
+  return 'Asterisk';
+}
 
 function parseSipIdentity(sipUriRaw) {
   const sipUri = String(sipUriRaw || '').trim();
@@ -126,8 +138,8 @@ function buildSipConfigFromBackend(profile, activeConnection, runtimeSettings) {
       String(activeConnection?.number || '').trim() ||
       String(activeConnection?.callerid || '').trim() ||
       String(profile?.pbx_number || '').trim(),
-    routeMode: String(runtimeSettings?.telephony_route_mode || DEFAULT_TELEPHONY_ROUTE_MODE).toLowerCase(),
-    provider: String(runtimeSettings?.telephony_provider || activeConnection?.provider || DEFAULT_TELEPHONY_PROVIDER).trim(),
+    routeMode: normalizeRouteMode(runtimeSettings?.telephony_route_mode),
+    provider: normalizeProvider(runtimeSettings?.telephony_provider || activeConnection?.provider || DEFAULT_TELEPHONY_PROVIDER),
     profile,
     activeConnection,
   };

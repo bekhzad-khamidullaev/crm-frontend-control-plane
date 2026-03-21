@@ -3,10 +3,7 @@
 /* tslint:disable */
 /* eslint-disable */
 /**
- * * `auto` - Auto
- * * `internal` - Internal extension
- * * `external` - External number
- * * `provider` - Provider API
- * * `asterisk` - Asterisk server
+ * * `embedded` - Embedded Asterisk (CRM-managed)
+ * * `bridge` - External Asterisk via PBX Bridge
  */
-export type TelephonyRouteModeEnum = 'auto' | 'internal' | 'external' | 'provider' | 'asterisk';
+export type TelephonyRouteModeEnum = 'embedded' | 'bridge';

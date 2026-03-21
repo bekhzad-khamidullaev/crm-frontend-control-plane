@@ -1741,10 +1741,10 @@
     },
     "connectionHelp": {
       "title": "Nimani to'ldirish kerak?",
-      "description": "Provider = operator/ATS. Type = ulanish formati. Number = chiquvchi qo'ng'iroq uchun ichki/tashqi raqam. Caller ID = mijoz ko'radigan raqam."
+      "description": "Provider = faqat Asterisk. Type = PBX yoki SIP. Number = chiquvchi qo'ng'iroq uchun ichki yoki tashqi raqam. Caller ID = mijoz ko'radigan raqam."
     },
     "placeholders": {
-      "provider": "Masalan: Asterisk / OnlinePBX / Zadarma",
+      "provider": "Masalan: Asterisk",
       "connectionType": "Turni tanlang",
       "callerId": "Masalan: +998712001122",
       "turnServer": "turn:turn.company.com:3478?transport=udp",
@@ -1753,6 +1753,7 @@
       "externalNumber": "+998901234567",
       "timeCondition": "weekdays 09:00-18:00",
       "selectInternalNumber": "Ichki raqamni tanlang",
+      "sipServer": "Masalan: pbx.company.uz:5060",
       "selectGroup": "Guruhni tanlang",
       "announcementText": "Qo'ng'iroq qiluvchi eshitadigan matn",
       "numberByType": {
@@ -1784,20 +1785,17 @@
       "enterCallerId": "Enter caller ID"
     },
     "routeModes": {
-      "auto": "CRM chooses route automatically: SIP/WebRTC first, then fallback.",
-      "internal": "Outgoing calls prioritize internal PBX numbers.",
-      "external": "Calls are treated as external and use external route.",
-      "provider": "Outgoing calls are initiated via selected provider API.",
-      "asterisk": "Routing via Asterisk dialplan/AMI."
+      "embedded": "CRM qo'ng'iroqlarni o'zi boshqaradigan o'rnatilgan Asterisk orqali yo'naltiradi.",
+      "bridge": "CRM qo'ng'iroqlarni tashqi Asterisk PBX bridge orqali yo'naltiradi."
     },
     "mode": {
       "current": "Current mode: {{mode}}"
     },
     "fields": {
       "routeMode": "Call routing mode",
-      "routeModeExtra": "Select the primary way to route outgoing calls from CRM.",
+      "routeModeExtra": "Qo'ng'iroqlarni o'rnatilgan Asterisk yoki tashqi bridge orqali yo'naltirishni tanlang.",
       "preferredProvider": "Preferred provider",
-      "preferredProviderExtra": "Used in Provider/API mode and as fallback in Auto mode.",
+      "preferredProviderExtra": "Faqat Asterisk qo'llab-quvvatlanadi.",
       "stunServers": "STUN servers",
       "stunTooltip": "One per line or comma-separated. Example: stun:stun.l.google.com:19302",
       "stunExtra": "Needed to determine WebRTC client network route.",
@@ -1808,9 +1806,9 @@
       "turnUsername": "TURN username",
       "turnPassword": "TURN password",
       "connectionType": "Connection type",
-      "connectionTypeExtra": "PBX: internal extension. SIP: SIP account. VoIP: virtual external number.",
+      "connectionTypeExtra": "PBX: o'rnatilgan Asterisk ichki raqami. SIP: SIP serverli tashqi Asterisk trunk/account.",
       "provider": "Provider",
-      "providerExtra": "Select platform CRM will use to initiate calls.",
+      "providerExtra": "Faqat Asterisk qo'llab-quvvatlanadi.",
       "number": "Number",
       "numberByType": {
         "pbx": "Internal number (extension)",
@@ -1824,8 +1822,7 @@
     },
     "options": {
       "typePbx": "PBX extension (internal)",
-      "typeSip": "SIP account",
-      "typeVoip": "Virtual external number"
+      "typeSip": "SIP account"
     },
     "modal": {
       "editConnection": "Ulanishni tahrirlash",

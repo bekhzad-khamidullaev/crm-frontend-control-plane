@@ -9,8 +9,6 @@ export type PatchedConnection = {
     /**
      * Specify VoIP service provider
      *
-     * * `Zadarma` - Zadarma
-     * * `OnlinePBX` - OnlinePBX
      * * `Asterisk` - Asterisk
      */
     provider?: ConnectionProviderEnum;
@@ -24,4 +22,3 @@ export type PatchedConnection = {
     callerid?: string;
     active?: boolean;
 };
-

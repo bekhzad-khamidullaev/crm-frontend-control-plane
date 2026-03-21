@@ -9,8 +9,6 @@ export type Connection = {
     /**
      * Specify VoIP service provider
      *
-     * * `Zadarma` - Zadarma
-     * * `OnlinePBX` - OnlinePBX
      * * `Asterisk` - Asterisk
      */
     provider: ConnectionProviderEnum;
@@ -24,4 +22,3 @@ export type Connection = {
     callerid: string;
     active?: boolean;
 };
-

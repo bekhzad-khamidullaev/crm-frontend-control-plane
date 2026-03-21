@@ -3,8 +3,6 @@
 /* tslint:disable */
 /* eslint-disable */
 /**
- * * `Zadarma` - Zadarma
- * * `OnlinePBX` - OnlinePBX
  * * `Asterisk` - Asterisk
  */
-export type ConnectionProviderEnum = 'Zadarma' | 'OnlinePBX' | 'Asterisk';
+export type ConnectionProviderEnum = 'Asterisk';

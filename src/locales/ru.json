@@ -1741,10 +1741,10 @@
     },
     "connectionHelp": {
       "title": "Что заполнять?",
-      "description": "Provider = ваш оператор/АТС. Тип = формат подключения. Номер = внутренний/внешний номер для исходящего вызова. Caller ID = номер, который увидит клиент."
+      "description": "Provider = только Asterisk. Type = PBX или SIP. Number = внутренний или внешний номер для исходящего вызова. Caller ID = номер, который увидит клиент."
     },
     "placeholders": {
-      "provider": "Например: Asterisk / OnlinePBX / Zadarma",
+      "provider": "Например: Asterisk",
       "connectionType": "Выберите тип",
       "callerId": "Например: +998712001122",
       "turnServer": "turn:turn.company.com:3478?transport=udp",
@@ -1753,6 +1753,7 @@
       "externalNumber": "+998901234567",
       "timeCondition": "weekdays 09:00-18:00",
       "selectInternalNumber": "Выберите внутренний номер",
+      "sipServer": "Например: pbx.company.uz:5060",
       "selectGroup": "Выберите группу",
       "announcementText": "Текст, который услышит звонящий",
       "numberByType": {
@@ -1784,20 +1785,17 @@
       "enterCallerId": "Enter caller ID"
     },
     "routeModes": {
-      "auto": "CRM chooses route automatically: SIP/WebRTC first, then fallback.",
-      "internal": "Outgoing calls prioritize internal PBX numbers.",
-      "external": "Calls are treated as external and use external route.",
-      "provider": "Outgoing calls are initiated via selected provider API.",
-      "asterisk": "Routing via Asterisk dialplan/AMI."
+      "embedded": "CRM маршрутизирует звонки через встроенный Asterisk, которым она управляет.",
+      "bridge": "CRM маршрутизирует звонки через внешний мост Asterisk PBX."
     },
     "mode": {
       "current": "Current mode: {{mode}}"
     },
     "fields": {
       "routeMode": "Call routing mode",
-      "routeModeExtra": "Select the primary way to route outgoing calls from CRM.",
+      "routeModeExtra": "Выберите, маршрутизировать ли звонки через встроенный Asterisk или внешний мост.",
       "preferredProvider": "Preferred provider",
-      "preferredProviderExtra": "Used in Provider/API mode and as fallback in Auto mode.",
+      "preferredProviderExtra": "Поддерживается только Asterisk.",
       "stunServers": "STUN servers",
       "stunTooltip": "One per line or comma-separated. Example: stun:stun.l.google.com:19302",
       "stunExtra": "Needed to determine WebRTC client network route.",
@@ -1808,9 +1806,9 @@
       "turnUsername": "TURN username",
       "turnPassword": "TURN password",
       "connectionType": "Connection type",
-      "connectionTypeExtra": "PBX: internal extension. SIP: SIP account. VoIP: virtual external number.",
+      "connectionTypeExtra": "PBX: внутренний номер встроенного Asterisk. SIP: trunk/account внешнего Asterisk с SIP сервером.",
       "provider": "Provider",
-      "providerExtra": "Select platform CRM will use to initiate calls.",
+      "providerExtra": "Поддерживается только Asterisk.",
       "number": "Number",
       "numberByType": {
         "pbx": "Internal number (extension)",
@@ -1824,8 +1822,7 @@
     },
     "options": {
       "typePbx": "PBX extension (internal)",
-      "typeSip": "SIP account",
-      "typeVoip": "Virtual external number"
+      "typeSip": "SIP account"
     },
     "modal": {
       "editConnection": "Редактировать подключение",
