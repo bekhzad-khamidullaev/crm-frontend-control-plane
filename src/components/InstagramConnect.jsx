@@ -177,6 +177,14 @@ export default function InstagramConnect({ onSuccess, onCancel }) {
             />
           </Form.Item>
 
+          <Form.Item
+            label="App Secret"
+            name="app_secret"
+            extra={tr('instagramConnect.fields.appSecretExtra', 'Используется для проверки подписи webhook (X-Hub-Signature-256)')}
+          >
+            <Input.Password placeholder="Meta app secret" />
+          </Form.Item>
+
           <Form.Item>
             <Button icon={<ReloadOutlined />} onClick={handleDiscover} loading={discovering}>
               {tr('instagramConnect.actions.loadFromMeta', 'Загрузить аккаунты из Meta')}

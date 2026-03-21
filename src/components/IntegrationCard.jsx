@@ -3,15 +3,14 @@
  * Universal component for displaying integration status with connect/disconnect functionality
  */
 
-import React, { useState, useEffect } from 'react';
-import { Card, Button, Space, Tag, Statistic, Row, Col, Switch, App, Spin, Alert } from 'antd';
+import React, { useState } from 'react';
+import { Card, Button, Space, Tag, Statistic, Row, Col, App, Spin, Alert } from 'antd';
 import {
   CheckCircleOutlined,
   CloseCircleOutlined,
   ReloadOutlined,
   SettingOutlined,
   LineChartOutlined,
-  ApiOutlined,
 } from '@ant-design/icons';
 import { t } from '../lib/i18n';
 
@@ -28,15 +27,22 @@ export default function IntegrationCard({
   onRefresh,
   loading = false,
   error = null,
+  disabled = false,
+  disabledReason = '',
   children,
 }) {
   const { message } = App.useApp();
   const [actionLoading, setActionLoading] = useState(false);
+  const tt = (key, fallback) => {
+    const translated = t(key);
+    return translated === key ? fallback : translated;
+  };
 
   const isConnected = status === 'connected';
   const hasError = status === 'error';
 
   const handleConnect = async () => {
+    if (disabled) return;
     setActionLoading(true);
     try {
       await onConnect();
@@ -48,6 +54,7 @@ export default function IntegrationCard({
   };
 
   const handleDisconnect = async () => {
+    if (disabled) return;
     if (!onDisconnect) return;
     setActionLoading(true);
     try {
@@ -86,6 +93,7 @@ export default function IntegrationCard({
               icon={<ReloadOutlined />}
               onClick={onRefresh}
               loading={loading}
+              disabled={disabled}
               size="small"
             >
               {t('integrationCard.actions.refresh')}
@@ -95,6 +103,7 @@ export default function IntegrationCard({
             <Button
               icon={<SettingOutlined />}
               onClick={onSettings}
+              disabled={disabled}
               size="small"
             >
               {t('integrationCard.actions.settings')}
@@ -115,6 +124,14 @@ export default function IntegrationCard({
               type="error"
               showIcon
               closable
+            />
+          )}
+          {disabled && (
+            <Alert
+              message={tt('integrationCard.messages.restrictedTitle', 'Действие ограничено лицензией')}
+              description={disabledReason || tt('integrationCard.messages.restrictedDescription', 'Обновите лицензию для доступа к интеграциям')}
+              type="warning"
+              showIcon
             />
           )}
 
@@ -138,18 +155,18 @@ export default function IntegrationCard({
             {isConnected ? (
               <Space>
                 {onDisconnect && (
-                  <Button danger onClick={handleDisconnect} loading={actionLoading}>
+                  <Button danger onClick={handleDisconnect} loading={actionLoading} disabled={disabled}>
                     {t('integrationCard.actions.disconnect')}
                   </Button>
                 )}
                 {onSettings && (
-                  <Button onClick={onSettings}>
+                  <Button onClick={onSettings} disabled={disabled}>
                     {t('integrationCard.actions.configure')}
                   </Button>
                 )}
               </Space>
             ) : (
-              <Button type="primary" onClick={handleConnect} loading={actionLoading}>
+              <Button type="primary" onClick={handleConnect} loading={actionLoading} disabled={disabled}>
                 {t('integrationCard.actions.connect')} {title}
               </Button>
             )}

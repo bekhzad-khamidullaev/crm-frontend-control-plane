@@ -1,6 +1,10 @@
 import { describe, expect, it } from 'vitest';
 import parseLicenseRestriction from '../../src/lib/api/licenseError';
-import { parseLicenseRestrictionPayload } from '../../src/lib/api/licenseRestrictionBus.js';
+import {
+  LICENSE_RESTRICTION_EVENT,
+  emitLicenseRestriction,
+  parseLicenseRestrictionPayload,
+} from '../../src/lib/api/licenseRestrictionBus.js';
 
 describe('license restriction parsing', () => {
   it('parses feature-disabled errors', () => {
@@ -48,6 +52,29 @@ describe('license restriction parsing', () => {
       code: 'LICENSE_EXPIRED',
       feature: 'unknown.feature',
       message: 'Expired',
+    });
+  });
+
+  it('emits browser event for license restriction payload', () => {
+    let received = null;
+    const listener = (event: Event) => {
+      const customEvent = event as CustomEvent;
+      received = customEvent.detail;
+    };
+    window.addEventListener(LICENSE_RESTRICTION_EVENT, listener as EventListener);
+
+    emitLicenseRestriction({
+      code: 'LICENSE_FEATURE_DISABLED',
+      feature: 'integrations.core',
+      message: 'Blocked',
+    });
+
+    window.removeEventListener(LICENSE_RESTRICTION_EVENT, listener as EventListener);
+
+    expect(received).toMatchObject({
+      code: 'LICENSE_FEATURE_DISABLED',
+      feature: 'integrations.core',
+      message: 'Blocked',
     });
   });
 });

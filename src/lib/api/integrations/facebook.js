@@ -49,10 +49,31 @@ export const getFacebookStatus = async () => {
   };
 };
 
-const notSupported = (feature) =>
-  Promise.reject(new Error(`${feature} is not available in Django-CRM API.yaml.`));
+export const getFacebookConversations = (params = {}) =>
+  api.get('/api/settings/omnichannel/timeline/', {
+    params: { ...params, channel: 'facebook' },
+  });
 
-export const getFacebookConversations = () => notSupported('Facebook conversations');
-export const getFacebookMessages = () => notSupported('Facebook messages');
-export const sendFacebookMessage = () => notSupported('Facebook send message');
-export const getFacebookStats = () => notSupported('Facebook stats');
+export const getFacebookMessages = getFacebookConversations;
+
+export const sendFacebookMessage = ({ channel_id, recipient_id, text }) =>
+  api.post('/api/settings/omnichannel/send/', {
+    body: {
+      channel: 'facebook',
+      channel_id,
+      recipient_id,
+      text,
+    },
+  });
+
+export const getFacebookStats = async () => {
+  const response = await getFacebookConversations({ limit: 200 });
+  const items = response?.results || [];
+  const inbound = items.filter((item) => item.direction === 'in').length;
+  const outbound = items.filter((item) => item.direction === 'out').length;
+  return {
+    total: items.length,
+    inbound,
+    outbound,
+  };
+};

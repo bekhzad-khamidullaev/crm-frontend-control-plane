@@ -4,7 +4,7 @@
  */
 
 import React, { useEffect, useState } from 'react';
-import { Card, Space, Button, Modal, App, Table, Tag, Form, Input, InputNumber, Select, Switch, Popconfirm } from 'antd';
+import { Card, Space, Button, Modal, App, Table, Tag, Form, Input, InputNumber, Select, Switch, Popconfirm, Alert } from 'antd';
 import {
   ApiOutlined,
   MessageOutlined,
@@ -60,6 +60,8 @@ import {
   updateWhatsAppAccount,
 } from '../lib/api/integrations/whatsapp.js';
 import { apiConfig } from '../lib/api/client';
+import { getOmnichannelTimeline } from '../lib/api/compliance.js';
+import { LICENSE_RESTRICTION_EVENT } from '../lib/api/licenseRestrictionBus.js';
 import { t } from '../lib/i18n';
 
 const formatDateTime = (value) => {
@@ -158,6 +160,8 @@ export default function IntegrationsPage() {
   const [integrationEditModal, setIntegrationEditModal] = useState({ open: false, type: null, record: null });
   const [integrationEditSaving, setIntegrationEditSaving] = useState(false);
   const [integrationEditForm] = Form.useForm();
+  const [omnichannelSummary, setOmnichannelSummary] = useState({ count: 0, queue: 0, active: 0, resolved: 0 });
+  const [licenseRestriction, setLicenseRestriction] = useState(null);
 
   const getErrorText = (error, fallback) => {
     const details = error?.details || {};
@@ -173,6 +177,23 @@ export default function IntegrationsPage() {
     loadAllStatuses();
   }, []);
 
+  useEffect(() => {
+    const onLicenseRestriction = (event) => {
+      const detail = event?.detail || {};
+      const feature = String(detail.feature || '');
+      if (feature && !feature.startsWith('integrations.') && feature !== 'unknown.feature') return;
+      setLicenseRestriction({
+        code: String(detail.code || 'LICENSE_FEATURE_DISABLED'),
+        feature: feature || 'integrations.core',
+        message: String(detail.message || ''),
+      });
+      message.warning(detail.message || tr('integrationsPage.messages.restricted', 'Лицензия ограничивает доступ к интеграциям'));
+    };
+
+    window.addEventListener(LICENSE_RESTRICTION_EVENT, onLicenseRestriction);
+    return () => window.removeEventListener(LICENSE_RESTRICTION_EVENT, onLicenseRestriction);
+  }, [message]);
+
   const loadAllStatuses = async () => {
     await Promise.all([
       loadSMSStatus(),
@@ -182,7 +203,23 @@ export default function IntegrationsPage() {
       loadInstagramStatus(),
       loadTelegramStatus(),
       loadAIStatus(),
+      loadOmnichannelSummary(),
     ]);
+  };
+
+  const loadOmnichannelSummary = async () => {
+    try {
+      const response = await getOmnichannelTimeline({ limit: 200 });
+      const items = Array.isArray(response?.results) ? response.results : [];
+      setOmnichannelSummary({
+        count: response?.count || items.length,
+        queue: items.filter((item) => item.queue_bucket === 'queue').length,
+        active: items.filter((item) => item.queue_bucket === 'active').length,
+        resolved: items.filter((item) => item.queue_bucket === 'resolved').length,
+      });
+    } catch (error) {
+      setOmnichannelSummary({ count: 0, queue: 0, active: 0, resolved: 0 });
+    }
   };
 
   const loadSMSStatus = async () => {
@@ -403,7 +440,26 @@ export default function IntegrationsPage() {
     }
   };
 
-  const openModal = (type) => setModalVisible((prev) => ({ ...prev, [type]: true }));
+  const integrationsRestricted = !!(
+    licenseRestriction
+    && (
+      String(licenseRestriction.feature || '').startsWith('integrations.')
+      || String(licenseRestriction.feature || '') === 'unknown.feature'
+    )
+  );
+  const integrationsRestrictionMessage =
+    licenseRestriction?.message || tr('integrationsPage.messages.restricted', 'Лицензия ограничивает доступ к интеграциям');
+
+  const ensureIntegrationsAccess = () => {
+    if (!integrationsRestricted) return true;
+    message.warning(integrationsRestrictionMessage);
+    return false;
+  };
+
+  const openModal = (type) => {
+    if (!ensureIntegrationsAccess()) return;
+    setModalVisible((prev) => ({ ...prev, [type]: true }));
+  };
   const closeModal = (type) => setModalVisible((prev) => ({ ...prev, [type]: false }));
 
   const handleIntegrationSuccess = async (type) => {
@@ -419,6 +475,7 @@ export default function IntegrationsPage() {
   };
 
   const openAIModal = (record = null) => {
+    if (!ensureIntegrationsAccess()) return;
     if (record) {
       aiForm.setFieldsValue({
         name: record.name,
@@ -492,6 +549,7 @@ export default function IntegrationsPage() {
   };
 
   const handleAITest = async (record) => {
+    if (!ensureIntegrationsAccess()) return;
     setAITestingId(record.id);
     try {
       const result = await testAIProviderConnection(record.id);
@@ -505,6 +563,7 @@ export default function IntegrationsPage() {
   };
 
   const handleAIDelete = async (record) => {
+    if (!ensureIntegrationsAccess()) return;
     try {
       await deleteAIProvider(record.id);
       message.success(tr('integrationsPage.messages.aiProviderDeleted', 'AI провайдер удален'));
@@ -515,6 +574,7 @@ export default function IntegrationsPage() {
   };
 
   const handleAIMakeDefault = async (record) => {
+    if (!ensureIntegrationsAccess()) return;
     if (!record?.id) return;
     setAIDefaultingId(record.id);
     try {
@@ -609,6 +669,7 @@ export default function IntegrationsPage() {
   };
 
   const openIntegrationEditModal = (type, record) => {
+    if (!ensureIntegrationsAccess()) return;
     if (!record?.id) return;
     const valuesByType = {
       whatsapp: {
@@ -795,12 +856,25 @@ export default function IntegrationsPage() {
           </Space>
         }
         extra={
-          <Button icon={<ReloadOutlined />} onClick={loadAllStatuses}>
+          <Button icon={<ReloadOutlined />} onClick={loadAllStatuses} disabled={integrationsRestricted}>
             {t('integrationsPage.actions.refreshAll')}
           </Button>
         }
       >
         <Space direction="vertical" style={{ width: '100%' }} size="large">
+          <Alert
+            type="info"
+            showIcon
+            message={tr('integrationsPage.messages.omnichannelSummary', 'Omnichannel: всего {count}, в очереди {queue}, в работе {active}, закрыто {resolved}', omnichannelSummary)}
+          />
+          {integrationsRestricted && (
+            <Alert
+              type="warning"
+              showIcon
+              message={tr('integrationsPage.messages.restricted', 'Лицензия ограничивает доступ к интеграциям')}
+              description={integrationsRestrictionMessage}
+            />
+          )}
           <IntegrationCard
             title="SMS"
             description={tr('integrationsPage.cards.sms.description', 'Провайдеры и статус отправки SMS')}
@@ -813,6 +887,8 @@ export default function IntegrationsPage() {
             onConnect={() => openModal('sms')}
             onSettings={() => openModal('sms')}
             onRefresh={loadSMSStatus}
+            disabled={integrationsRestricted}
+            disabledReason={integrationsRestrictionMessage}
           />
 
           <IntegrationCard
@@ -827,6 +903,8 @@ export default function IntegrationsPage() {
             onConnect={() => openModal('telephony')}
             onSettings={() => openModal('telephony')}
             onRefresh={loadTelephonyStatus}
+            disabled={integrationsRestricted}
+            disabledReason={integrationsRestrictionMessage}
           />
 
           <IntegrationCard
@@ -841,6 +919,8 @@ export default function IntegrationsPage() {
             onConnect={() => openModal('whatsapp')}
             onSettings={() => openModal('whatsapp')}
             onRefresh={loadWhatsAppStatus}
+            disabled={integrationsRestricted}
+            disabledReason={integrationsRestrictionMessage}
           >
             {whatsAppAccounts.length > 0 && (
               <Table
@@ -869,13 +949,13 @@ export default function IntegrationsPage() {
                     key: 'actions',
                     render: (_, record) => (
                       <Space>
-                        <Button type="link" onClick={() => openIntegrationEditModal('whatsapp', record)}>
+                        <Button type="link" disabled={integrationsRestricted} onClick={() => openIntegrationEditModal('whatsapp', record)}>
                           {tr('integrationsPage.actions.edit', 'Редактировать')}
                         </Button>
-                        <Button type="link" onClick={() => handleWhatsAppTest(record)}>
+                        <Button type="link" disabled={integrationsRestricted} onClick={() => handleWhatsAppTest(record)}>
                           {tr('integrationsPage.actions.test', 'Тест')}
                         </Button>
-                        <Button type="link" danger onClick={() => handleWhatsAppDisconnect(record)}>
+                        <Button type="link" danger disabled={integrationsRestricted} onClick={() => handleWhatsAppDisconnect(record)}>
                           {tr('integrationsPage.actions.disconnect', 'Отключить')}
                         </Button>
                       </Space>
@@ -900,6 +980,8 @@ export default function IntegrationsPage() {
             onConnect={() => openModal('facebook')}
             onSettings={() => openModal('facebook')}
             onRefresh={loadFacebookStatus}
+            disabled={integrationsRestricted}
+            disabledReason={integrationsRestrictionMessage}
           >
             {facebookPages.length > 0 && (
               <Table
@@ -926,13 +1008,13 @@ export default function IntegrationsPage() {
                     key: 'actions',
                     render: (_, record) => (
                       <Space>
-                        <Button type="link" onClick={() => openIntegrationEditModal('facebook', record)}>
+                        <Button type="link" disabled={integrationsRestricted} onClick={() => openIntegrationEditModal('facebook', record)}>
                           {tr('integrationsPage.actions.edit', 'Редактировать')}
                         </Button>
-                        <Button type="link" onClick={() => handleFacebookTest(record)}>
+                        <Button type="link" disabled={integrationsRestricted} onClick={() => handleFacebookTest(record)}>
                           {tr('integrationsPage.actions.test', 'Тест')}
                         </Button>
-                        <Button type="link" danger onClick={() => handleFacebookDisconnect(record)}>
+                        <Button type="link" danger disabled={integrationsRestricted} onClick={() => handleFacebookDisconnect(record)}>
                           {tr('integrationsPage.actions.disconnect', 'Отключить')}
                         </Button>
                       </Space>
@@ -957,6 +1039,8 @@ export default function IntegrationsPage() {
             onConnect={() => openModal('instagram')}
             onSettings={() => openModal('instagram')}
             onRefresh={loadInstagramStatus}
+            disabled={integrationsRestricted}
+            disabledReason={integrationsRestrictionMessage}
           >
             {instagramAccounts.length > 0 && (
               <Table
@@ -983,13 +1067,13 @@ export default function IntegrationsPage() {
                     key: 'actions',
                     render: (_, record) => (
                       <Space>
-                        <Button type="link" onClick={() => openIntegrationEditModal('instagram', record)}>
+                        <Button type="link" disabled={integrationsRestricted} onClick={() => openIntegrationEditModal('instagram', record)}>
                           {tr('integrationsPage.actions.edit', 'Редактировать')}
                         </Button>
-                        <Button type="link" onClick={() => handleInstagramTest(record)}>
+                        <Button type="link" disabled={integrationsRestricted} onClick={() => handleInstagramTest(record)}>
                           {tr('integrationsPage.actions.test', 'Тест')}
                         </Button>
-                        <Button type="link" danger onClick={() => handleInstagramDisconnect(record)}>
+                        <Button type="link" danger disabled={integrationsRestricted} onClick={() => handleInstagramDisconnect(record)}>
                           {tr('integrationsPage.actions.disconnect', 'Отключить')}
                         </Button>
                       </Space>
@@ -1014,6 +1098,8 @@ export default function IntegrationsPage() {
             onConnect={() => openModal('telegram')}
             onSettings={() => openModal('telegram')}
             onRefresh={loadTelegramStatus}
+            disabled={integrationsRestricted}
+            disabledReason={integrationsRestrictionMessage}
           >
             {telegramBots.length > 0 && (
               <Table
@@ -1041,16 +1127,16 @@ export default function IntegrationsPage() {
                     key: 'actions',
                     render: (_, record) => (
                       <Space>
-                        <Button type="link" onClick={() => openIntegrationEditModal('telegram', record)}>
+                        <Button type="link" disabled={integrationsRestricted} onClick={() => openIntegrationEditModal('telegram', record)}>
                           {tr('integrationsPage.actions.edit', 'Редактировать')}
                         </Button>
-                        <Button type="link" onClick={() => handleTelegramTest(record)}>
+                        <Button type="link" disabled={integrationsRestricted} onClick={() => handleTelegramTest(record)}>
                           {tr('integrationsPage.actions.test', 'Тест')}
                         </Button>
-                        <Button type="link" onClick={() => openWebhookModal(record)}>
+                        <Button type="link" disabled={integrationsRestricted} onClick={() => openWebhookModal(record)}>
                           {tr('integrationsPage.actions.webhook', 'Webhook')}
                         </Button>
-                        <Button type="link" danger onClick={() => handleTelegramDisconnect(record)}>
+                        <Button type="link" danger disabled={integrationsRestricted} onClick={() => handleTelegramDisconnect(record)}>
                           {tr('integrationsPage.actions.disconnect', 'Отключить')}
                         </Button>
                       </Space>
@@ -1075,6 +1161,8 @@ export default function IntegrationsPage() {
             onConnect={() => openAIModal()}
             onSettings={() => openAIModal()}
             onRefresh={loadAIStatus}
+            disabled={integrationsRestricted}
+            disabledReason={integrationsRestrictionMessage}
           >
             {aiProviders.length > 0 && (
               <Table
@@ -1109,17 +1197,19 @@ export default function IntegrationsPage() {
                       <Space>
                         <Button
                           type="link"
+                          disabled={integrationsRestricted}
                           loading={aiTestingId === record.id}
                           onClick={() => handleAITest(record)}
                         >
                           {tr('integrationsPage.actions.test', 'Тест')}
                         </Button>
-                        <Button type="link" onClick={() => openAIModal(record)}>
+                        <Button type="link" disabled={integrationsRestricted} onClick={() => openAIModal(record)}>
                           {tr('integrationsPage.actions.edit', 'Редактировать')}
                         </Button>
                         {!record.is_default && (
                           <Button
                             type="link"
+                            disabled={integrationsRestricted}
                             loading={aiDefaultingId === record.id}
                             onClick={() => handleAIMakeDefault(record)}
                           >
@@ -1132,7 +1222,7 @@ export default function IntegrationsPage() {
                           okText={tr('actions.delete', 'Удалить')}
                           cancelText={tr('actions.cancel', 'Отмена')}
                         >
-                          <Button type="link" danger>
+                          <Button type="link" danger disabled={integrationsRestricted}>
                             {tr('actions.delete', 'Удалить')}
                           </Button>
                         </Popconfirm>
