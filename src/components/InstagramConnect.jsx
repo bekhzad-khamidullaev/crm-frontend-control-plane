@@ -4,16 +4,20 @@
  */
 
 import React, { useState } from 'react';
-import { Form, Input, Button, Space, Alert, Typography, Steps, Card, App, Select } from 'antd';
+import { Form, Input, Button, Space, Alert, Typography, Steps, Card, App, Select, theme as antdTheme } from 'antd';
 import { InstagramOutlined, ReloadOutlined } from '@ant-design/icons';
 import { connectInstagram, discoverInstagramAccounts } from '../lib/api/integrations/instagram';
 import { t } from '../lib/i18n';
+import { useTheme } from '../lib/hooks/useTheme';
 
 const { Link, Paragraph } = Typography;
 const { Step } = Steps;
 
 export default function InstagramConnect({ onSuccess, onCancel }) {
   const { message } = App.useApp();
+  const { token } = antdTheme.useToken();
+  const { theme } = useTheme();
+  const isDark = theme === 'dark';
   const tr = (key, fallback, vars = {}) => {
     const localized = t(key, vars);
     return localized === key ? fallback : localized;
@@ -23,6 +27,12 @@ export default function InstagramConnect({ onSuccess, onCancel }) {
   const [discovering, setDiscovering] = useState(false);
   const [accounts, setAccounts] = useState([]);
   const [currentStep, setCurrentStep] = useState(0);
+  const surfaceCardStyle = {
+    borderRadius: 18,
+    border: `1px solid ${isDark ? 'rgba(148, 163, 184, 0.18)' : token.colorBorderSecondary}`,
+    background: isDark ? 'rgba(12, 19, 32, 0.92)' : token.colorBgContainer,
+    boxShadow: isDark ? '0 16px 30px rgba(2, 6, 23, 0.28)' : '0 12px 24px rgba(15, 23, 42, 0.06)',
+  };
 
   const getErrorText = (error, fallback) => {
     const details = error?.details || {};
@@ -88,23 +98,28 @@ export default function InstagramConnect({ onSuccess, onCancel }) {
   }));
 
   return (
-    <div>
+    <div style={{ color: token.colorText }}>
       <Alert
         message={tr('instagramConnect.alert.title', 'Подключение Instagram Business')}
         description={tr('instagramConnect.alert.description', 'Для подключения вам потребуется Instagram Business аккаунт и токен доступа от Facebook Developers')}
         type="info"
         showIcon
-        style={{ marginBottom: 24 }}
+        style={{
+          marginBottom: 24,
+          borderRadius: 16,
+          border: `1px solid ${isDark ? 'rgba(59, 130, 246, 0.28)' : token.colorInfoBorder}`,
+          background: isDark ? 'rgba(10, 19, 35, 0.92)' : token.colorInfoBg,
+        }}
       />
 
-      <Steps current={currentStep} style={{ marginBottom: 24 }}>
+      <Steps current={currentStep} style={{ marginBottom: 24 }} responsive>
         <Step title={tr('instagramConnect.steps.createApp', 'Создание приложения')} description="Facebook Developers" />
         <Step title={tr('instagramConnect.steps.getToken', 'Получение токена')} description="Access Token" />
         <Step title={tr('instagramConnect.steps.connect', 'Подключение')} description={tr('instagramConnect.steps.inputData', 'Ввод данных')} />
       </Steps>
 
       {currentStep === 0 && (
-        <Card>
+        <Card style={surfaceCardStyle} styles={{ body: { lineHeight: 1.6 } }}>
           <Typography>
             <Paragraph>
               <strong>{tr('instagramConnect.guides.step1Title', 'Шаг 1: Создайте приложение в Facebook Developers')}</strong>
@@ -132,7 +147,7 @@ export default function InstagramConnect({ onSuccess, onCancel }) {
       )}
 
       {currentStep === 1 && (
-        <Card>
+        <Card style={surfaceCardStyle} styles={{ body: { lineHeight: 1.6 } }}>
           <Typography>
             <Paragraph>
               <strong>{tr('instagramConnect.guides.step2Title', 'Шаг 2: Получите токен доступа')}</strong>
@@ -157,11 +172,16 @@ export default function InstagramConnect({ onSuccess, onCancel }) {
       )}
 
       {currentStep === 2 && (
-        <Form
-          form={form}
-          layout="vertical"
-          onFinish={handleConnect}
+        <Card
+          title={tr('instagramConnect.form.title', 'Данные подключения')}
+          style={surfaceCardStyle}
+          styles={{ body: { padding: 24 } }}
         >
+          <Form
+            form={form}
+            layout="vertical"
+            onFinish={handleConnect}
+          >
           <Form.Item
             label="Access Token"
             name="access_token"
@@ -242,25 +262,31 @@ export default function InstagramConnect({ onSuccess, onCancel }) {
             description={tr('instagramConnect.warning.businessAccount', 'Убедитесь, что ваш Instagram аккаунт является Business аккаунтом и подключен к Facebook странице')}
             type="warning"
             showIcon
-            style={{ marginBottom: 16 }}
+            style={{
+              marginBottom: 16,
+              borderRadius: 14,
+              border: '1px solid rgba(250, 173, 20, 0.32)',
+              background: isDark ? 'rgba(44, 28, 4, 0.92)' : token.colorWarningBg,
+            }}
           />
 
-          <Form.Item>
-            <Space>
-              <Button onClick={() => setCurrentStep(1)}>
-                {tr('actions.back', 'Назад')}
-              </Button>
-              <Button type="primary" htmlType="submit" loading={loading}>
-                {tr('instagramConnect.actions.connect', 'Подключить Instagram')}
-              </Button>
-              {onCancel && (
-                <Button onClick={onCancel}>
-                  {tr('actions.cancel', 'Отмена')}
+            <Form.Item style={{ marginBottom: 0 }}>
+              <Space wrap>
+                <Button onClick={() => setCurrentStep(1)}>
+                  {tr('actions.back', 'Назад')}
                 </Button>
-              )}
-            </Space>
-          </Form.Item>
-        </Form>
+                <Button type="primary" htmlType="submit" loading={loading}>
+                  {tr('instagramConnect.actions.connect', 'Подключить Instagram')}
+                </Button>
+                {onCancel && (
+                  <Button onClick={onCancel}>
+                    {tr('actions.cancel', 'Отмена')}
+                  </Button>
+                )}
+              </Space>
+            </Form.Item>
+          </Form>
+        </Card>
       )}
     </div>
   );

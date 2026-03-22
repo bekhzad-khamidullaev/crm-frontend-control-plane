@@ -5,15 +5,17 @@ import {
   createCpSubscription,
   deleteCpSubscription,
   getCpCustomers,
+  getCpFeatures,
   getCpPlans,
   getCpSubscriptions,
   updateCpSubscription,
 } from "../../../lib/api/licenseControl.js";
-import { formatDateTime, normalizeCollection, normalizeCount } from "./utils.js";
+import { formatBackendError, formatDateTime, normalizeCollection, normalizeCount } from "./utils.js";
 
 export default function SubscriptionsSection({ onMutated }) {
   const [rows, setRows] = useState([]);
   const [customers, setCustomers] = useState([]);
+  const [features, setFeatures] = useState([]);
   const [plans, setPlans] = useState([]);
   const [total, setTotal] = useState(0);
   const [loading, setLoading] = useState(false);
@@ -26,12 +28,29 @@ export default function SubscriptionsSection({ onMutated }) {
   const [form] = Form.useForm();
 
   const loadLookups = async () => {
-    const [customersResponse, plansResponse] = await Promise.all([
+    const [customersResponse, plansResponse, featuresResponse] = await Promise.allSettled([
       getCpCustomers({ page_size: 500, ordering: "legal_name" }),
       getCpPlans({ page_size: 500, ordering: "code" }),
+      getCpFeatures({ page_size: 500, ordering: "code" }),
     ]);
-    setCustomers(normalizeCollection(customersResponse));
-    setPlans(normalizeCollection(plansResponse));
+
+    if (customersResponse.status === "fulfilled") {
+      setCustomers(normalizeCollection(customersResponse.value));
+    } else {
+      message.error(formatBackendError(customersResponse.reason, "Failed to load customers"));
+    }
+
+    if (plansResponse.status === "fulfilled") {
+      setPlans(normalizeCollection(plansResponse.value));
+    } else {
+      message.error(formatBackendError(plansResponse.reason, "Failed to load plans"));
+    }
+
+    if (featuresResponse.status === "fulfilled") {
+      setFeatures(normalizeCollection(featuresResponse.value));
+    } else {
+      message.error(formatBackendError(featuresResponse.reason, "Failed to load features"));
+    }
   };
 
   const load = async (override = {}) => {
@@ -50,8 +69,8 @@ export default function SubscriptionsSection({ onMutated }) {
       setPage(nextPage);
       setPageSize(nextPageSize);
       setSearch(nextSearch);
-    } catch {
-      message.error("Failed to load subscriptions");
+    } catch (error) {
+      message.error(formatBackendError(error, "Failed to load subscriptions"));
     } finally {
       setLoading(false);
     }
@@ -64,6 +83,10 @@ export default function SubscriptionsSection({ onMutated }) {
 
   const customerMap = useMemo(() => new Map(customers.map((c) => [c.id, c.legal_name])), [customers]);
   const planMap = useMemo(() => new Map(plans.map((p) => [p.id, p.code])), [plans]);
+  const featureOptions = useMemo(
+    () => features.map((feature) => ({ value: feature.id, label: `${feature.name || feature.code} [${feature.code}]` })),
+    [features]
+  );
 
   const openCreate = () => {
     setEditing(null);
@@ -74,6 +97,7 @@ export default function SubscriptionsSection({ onMutated }) {
       valid_from: null,
       valid_to: null,
       max_active_users: 1,
+      extra_features: [],
     });
     setOpen(true);
   };
@@ -87,6 +111,7 @@ export default function SubscriptionsSection({ onMutated }) {
       valid_from: row.valid_from ? dayjs(row.valid_from) : null,
       valid_to: row.valid_to ? dayjs(row.valid_to) : null,
       max_active_users: row.max_active_users,
+      extra_features: Array.isArray(row.extra_features) ? row.extra_features : [],
     });
     setOpen(true);
   };
@@ -107,7 +132,7 @@ export default function SubscriptionsSection({ onMutated }) {
       onMutated?.();
       message.success("Subscription saved");
     } catch (error) {
-      if (!error?.errorFields) message.error("Failed to save subscription");
+      if (!error?.errorFields) message.error(formatBackendError(error, "Failed to save subscription"));
     } finally {
       setSaving(false);
     }
@@ -119,8 +144,8 @@ export default function SubscriptionsSection({ onMutated }) {
       await load();
       onMutated?.();
       message.success("Subscription deleted");
-    } catch {
-      message.error("Failed to delete subscription");
+    } catch (error) {
+      message.error(formatBackendError(error, "Failed to delete subscription"));
     }
   };
 
@@ -144,7 +169,23 @@ export default function SubscriptionsSection({ onMutated }) {
         dataSource={rows}
         columns={[
           { title: "Customer", key: "customer", render: (_, row) => row.customer_name || customerMap.get(row.customer) || row.customer },
-          { title: "Plan", key: "plan", render: (_, row) => row.plan_code || planMap.get(row.plan) || row.plan },
+          {
+            title: "Plan",
+            key: "plan",
+            render: (_, row) => row.plan_name ? `${row.plan_name} (${row.plan_code})` : row.plan_code || planMap.get(row.plan) || row.plan,
+          },
+          {
+            title: "Edition",
+            dataIndex: "plan_edition_code",
+            key: "plan_edition_code",
+            render: (value) => value || "—",
+          },
+          {
+            title: "Add-ons",
+            dataIndex: "extra_feature_codes",
+            key: "extra_feature_codes",
+            render: (value) => Array.isArray(value) && value.length > 0 ? value.join(", ") : "—",
+          },
           {
             title: "Status",
             dataIndex: "status",
@@ -206,6 +247,9 @@ export default function SubscriptionsSection({ onMutated }) {
           </Form.Item>
           <Form.Item name="max_active_users" label="Max active users" rules={[{ required: true }]}>
             <Input type="number" min={1} />
+          </Form.Item>
+          <Form.Item name="extra_features" label="Add-on features">
+            <Select mode="multiple" options={featureOptions} />
           </Form.Item>
         </Form>
       </Modal>

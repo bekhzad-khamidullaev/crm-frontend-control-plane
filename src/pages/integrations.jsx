@@ -4,7 +4,7 @@
  */
 
 import React, { useEffect, useState } from 'react';
-import { Card, Space, Button, Modal, App, Table, Tag, Form, Input, InputNumber, Select, Switch, Popconfirm, Alert } from 'antd';
+import { Card, Space, Button, Modal, App, Table, Tag, Form, Input, InputNumber, Select, Switch, Popconfirm, Alert, theme as antdTheme } from 'antd';
 import {
   ApiOutlined,
   MessageOutlined,
@@ -19,6 +19,7 @@ import {
 } from '@ant-design/icons';
 import dayjs from 'dayjs';
 import IntegrationCard from '../components/IntegrationCard';
+import LicenseRestrictedAction from '../components/LicenseRestrictedAction.jsx';
 import SMSSettings from '../components/SMSSettings';
 import TelephonySettings from '../components/TelephonySettings';
 import FacebookConnect from '../components/FacebookConnect.jsx';
@@ -27,6 +28,7 @@ import TelegramConnect from '../components/TelegramConnect.jsx';
 import WhatsAppConnect from '../components/WhatsAppConnect.jsx';
 import smsApi from '../lib/api/sms.js';
 import { getTelephonyStats, getVoIPConnections } from '../lib/api/telephony';
+import { useTheme } from '../lib/hooks/useTheme.js';
 import {
   getFacebookPages,
   disconnectFacebook,
@@ -60,8 +62,13 @@ import {
   updateWhatsAppAccount,
 } from '../lib/api/integrations/whatsapp.js';
 import { apiConfig } from '../lib/api/client';
-import { getOmnichannelTimeline } from '../lib/api/compliance.js';
+import {
+  getOmnichannelDiagnostics,
+  getOmnichannelTimeline,
+  replayOmnichannelEvent,
+} from '../lib/api/compliance.js';
 import { LICENSE_RESTRICTION_EVENT } from '../lib/api/licenseRestrictionBus.js';
+import { getFeatureRestrictionReason } from '../lib/api/licenseRestrictionState.js';
 import { t } from '../lib/i18n';
 
 const formatDateTime = (value) => {
@@ -119,8 +126,11 @@ const getProviderModelOptions = (provider, currentValue) => {
   return options;
 };
 
-export default function IntegrationsPage() {
+export default function IntegrationsPage({ embedded = false } = {}) {
+  const { token } = antdTheme.useToken();
   const { message } = App.useApp();
+  const { theme: currentTheme } = useTheme();
+  const isDark = currentTheme === 'dark';
   const tr = (key, fallback, vars = {}) => {
     const localized = t(key, vars);
     return localized === key ? fallback : localized;
@@ -161,6 +171,14 @@ export default function IntegrationsPage() {
   const [integrationEditSaving, setIntegrationEditSaving] = useState(false);
   const [integrationEditForm] = Form.useForm();
   const [omnichannelSummary, setOmnichannelSummary] = useState({ count: 0, queue: 0, active: 0, resolved: 0 });
+  const [omnichannelDiagnostics, setOmnichannelDiagnostics] = useState({
+    summary: {},
+    channels: [],
+    recent_failures: [],
+    replay_candidates: [],
+  });
+  const [omnichannelDiagnosticsLoading, setOmnichannelDiagnosticsLoading] = useState(false);
+  const [omnichannelReplayId, setOmnichannelReplayId] = useState(null);
   const [licenseRestriction, setLicenseRestriction] = useState(null);
 
   const getErrorText = (error, fallback) => {
@@ -204,6 +222,7 @@ export default function IntegrationsPage() {
       loadTelegramStatus(),
       loadAIStatus(),
       loadOmnichannelSummary(),
+      loadOmnichannelDiagnostics(),
     ]);
   };
 
@@ -219,6 +238,47 @@ export default function IntegrationsPage() {
       });
     } catch (error) {
       setOmnichannelSummary({ count: 0, queue: 0, active: 0, resolved: 0 });
+    }
+  };
+
+  const loadOmnichannelDiagnostics = async () => {
+    setOmnichannelDiagnosticsLoading(true);
+    try {
+      const response = await getOmnichannelDiagnostics({ limit: 10 });
+      setOmnichannelDiagnostics({
+        summary: response?.summary || {},
+        channels: Array.isArray(response?.channels) ? response.channels : [],
+        recent_failures: Array.isArray(response?.recent_failures) ? response.recent_failures : [],
+        replay_candidates: Array.isArray(response?.replay_candidates) ? response.replay_candidates : [],
+      });
+    } catch (error) {
+      setOmnichannelDiagnostics({
+        summary: {},
+        channels: [],
+        recent_failures: [],
+        replay_candidates: [],
+      });
+    } finally {
+      setOmnichannelDiagnosticsLoading(false);
+    }
+  };
+
+  const handleOmnichannelReplay = async (record) => {
+    if (!ensureIntegrationsAccess()) return;
+    if (!record?.id) return;
+    setOmnichannelReplayId(record.id);
+    try {
+      const result = await replayOmnichannelEvent(record.id);
+      if (result?.success) {
+        message.success(tr('integrationsPage.messages.replayOk', 'Событие повторно обработано'));
+      } else {
+        message.warning(getErrorText(result, tr('integrationsPage.messages.replayPartial', 'Replay завершился с предупреждением')));
+      }
+      await Promise.all([loadOmnichannelSummary(), loadOmnichannelDiagnostics()]);
+    } catch (error) {
+      message.error(getErrorText(error, tr('integrationsPage.messages.replayError', 'Не удалось выполнить replay события')));
+    } finally {
+      setOmnichannelReplayId(null);
     }
   };
 
@@ -448,7 +508,17 @@ export default function IntegrationsPage() {
     )
   );
   const integrationsRestrictionMessage =
-    licenseRestriction?.message || tr('integrationsPage.messages.restricted', 'Лицензия ограничивает доступ к интеграциям');
+    licenseRestriction?.message || getFeatureRestrictionReason('integrations.core', t);
+  const restrictionShell = {
+    border: isDark ? 'rgba(245, 158, 11, 0.38)' : 'rgba(217, 119, 6, 0.28)',
+    background: isDark
+      ? 'linear-gradient(180deg, rgba(69, 43, 12, 0.96), rgba(33, 22, 8, 0.94))'
+      : 'linear-gradient(180deg, rgba(255, 251, 235, 0.98), rgba(255, 247, 214, 0.94))',
+    title: isDark ? '#fff7ed' : '#7c2d12',
+    text: isDark ? '#fde68a' : '#9a3412',
+    meta: isDark ? '#fbbf24' : '#b45309',
+    shadow: '0 14px 28px rgba(217, 119, 6, 0.12)',
+  };
 
   const ensureIntegrationsAccess = () => {
     if (!integrationsRestricted) return true;
@@ -846,20 +916,33 @@ export default function IntegrationsPage() {
     await copyUrlToClipboard(value);
   };
 
+  const diagnosticsSummary = omnichannelDiagnostics.summary || {};
+  const diagnosticsRows = (
+    omnichannelDiagnostics.recent_failures?.length
+      ? omnichannelDiagnostics.recent_failures
+      : omnichannelDiagnostics.replay_candidates
+  ) || [];
+
   return (
-    <div style={{ padding: 24 }}>
+    <div style={{ padding: embedded ? 0 : 24 }}>
       <Card
-        title={
+        style={{
+          borderRadius: token.borderRadiusLG,
+          border: embedded ? 'none' : `1px solid ${token.colorBorderSecondary}`,
+          background: token.colorBgElevated,
+          boxShadow: embedded ? 'none' : token.boxShadowTertiary,
+        }}
+        title={embedded ? null : (
           <Space>
             <ApiOutlined />
             <span>{t('integrationsPage.title')}</span>
           </Space>
-        }
-        extra={
+        )}
+        extra={embedded ? null : (
           <Button icon={<ReloadOutlined />} onClick={loadAllStatuses} disabled={integrationsRestricted}>
             {t('integrationsPage.actions.refreshAll')}
           </Button>
-        }
+        )}
       >
         <Space direction="vertical" style={{ width: '100%' }} size="large">
           <Alert
@@ -867,13 +950,144 @@ export default function IntegrationsPage() {
             showIcon
             message={tr('integrationsPage.messages.omnichannelSummary', 'Omnichannel: всего {count}, в очереди {queue}, в работе {active}, закрыто {resolved}', omnichannelSummary)}
           />
+          <Card
+            size="small"
+            title={tr('integrationsPage.cards.omnichannelDiagnostics.title', 'Meta and Inbox Diagnostics')}
+            extra={(
+              <Button
+                icon={<ReloadOutlined />}
+                onClick={loadOmnichannelDiagnostics}
+                loading={omnichannelDiagnosticsLoading}
+                disabled={integrationsRestricted}
+              >
+                {tr('integrationsPage.actions.refreshDiagnostics', 'Обновить диагностику')}
+              </Button>
+            )}
+          >
+            <Space direction="vertical" size="middle" style={{ width: '100%' }}>
+              <Space wrap size={[8, 8]}>
+                <Tag color={diagnosticsSummary.transport_health === 'degraded' ? 'error' : 'success'}>
+                  {tr('integrationsPage.diagnostics.transport', 'Transport')}: {diagnosticsSummary.transport_health || 'unknown'}
+                </Tag>
+                <Tag color={diagnosticsSummary.business_health === 'degraded' ? 'warning' : 'success'}>
+                  {tr('integrationsPage.diagnostics.business', 'Business')}: {diagnosticsSummary.business_health || 'unknown'}
+                </Tag>
+                <Tag>{tr('integrationsPage.diagnostics.failed', 'Ошибок')}: {diagnosticsSummary.failed_events || 0}</Tag>
+                <Tag>{tr('integrationsPage.diagnostics.replayable', 'Replay-ready')}: {diagnosticsSummary.replayable_events || 0}</Tag>
+                <Tag>{tr('integrationsPage.diagnostics.archived', 'Archived')}: {diagnosticsSummary.archived_events || 0}</Tag>
+                <Tag>{tr('integrationsPage.diagnostics.signatureRejected', 'Signature rejected')}: {diagnosticsSummary.signature_rejected_events || 0}</Tag>
+                <Tag>{tr('integrationsPage.diagnostics.unassigned', 'Без привязки')}: {diagnosticsSummary.unassigned_events || 0}</Tag>
+                <Tag>{tr('integrationsPage.diagnostics.breached', 'SLA breach')}: {diagnosticsSummary.breached_sla || 0}</Tag>
+              </Space>
+              {omnichannelDiagnostics.channels?.length > 0 && (
+                <Space wrap size={[8, 8]}>
+                  {omnichannelDiagnostics.channels.map((channel) => (
+                    <Tag
+                      key={channel.channel}
+                      color={channel.health === 'degraded' ? 'volcano' : 'green'}
+                    >
+                      {channel.channel}: {channel.total} / archived {channel.archived_events || 0} / failed {channel.failed} / replay {channel.replayable}
+                    </Tag>
+                  ))}
+                </Space>
+              )}
+              <Table
+                size="small"
+                pagination={false}
+                rowKey={(record) => record.id}
+                dataSource={diagnosticsRows}
+                locale={{
+                  emptyText: tr('integrationsPage.diagnostics.empty', 'Ошибок и replay-ready событий пока нет'),
+                }}
+                columns={[
+                  {
+                    title: tr('integrationsPage.table.channel', 'Канал'),
+                    dataIndex: 'channel_type',
+                    key: 'channel_type',
+                    render: (value) => <Tag>{value || '-'}</Tag>,
+                  },
+                  {
+                    title: tr('integrationsPage.table.status', 'Статус'),
+                    key: 'status',
+                    render: (_, record) => (
+                      <Space size={4} wrap>
+                        <Tag color={['failed', 'error', 'dead_letter'].includes(String(record.queue_state || '').toLowerCase()) ? 'error' : 'default'}>
+                          {record.queue_state || record.status || '-'}
+                        </Tag>
+                        {record.signature_valid === false && <Tag color="volcano">Signature</Tag>}
+                        {record.replayable && <Tag color="processing">Replay</Tag>}
+                      </Space>
+                    ),
+                  },
+                  {
+                    title: tr('integrationsPage.table.message', 'Сообщение'),
+                    key: 'text',
+                    render: (_, record) => record.text || record.external_id || '-',
+                  },
+                  {
+                    title: tr('integrationsPage.table.created', 'Создано'),
+                    dataIndex: 'created_at',
+                    key: 'created_at',
+                    render: formatDateTime,
+                  },
+                  {
+                    title: tr('integrationsPage.table.actions', 'Действия'),
+                    key: 'actions',
+                    render: (_, record) => (
+                      <LicenseRestrictedAction
+                        restricted={integrationsRestricted}
+                        reason={integrationsRestrictionMessage}
+                        feature="integrations.core"
+                      >
+                        <Button
+                          size="small"
+                          onClick={() => handleOmnichannelReplay(record)}
+                          loading={omnichannelReplayId === record.id}
+                          disabled={!record.replayable || integrationsRestricted}
+                        >
+                          {tr('integrationsPage.actions.replay', 'Replay')}
+                        </Button>
+                      </LicenseRestrictedAction>
+                    ),
+                  },
+                ]}
+              />
+            </Space>
+          </Card>
           {integrationsRestricted && (
-            <Alert
-              type="warning"
-              showIcon
-              message={tr('integrationsPage.messages.restricted', 'Лицензия ограничивает доступ к интеграциям')}
-              description={integrationsRestrictionMessage}
-            />
+            <div
+              style={{
+                padding: 1,
+                borderRadius: 16,
+                border: `1px solid ${restrictionShell.border}`,
+                background: restrictionShell.background,
+                boxShadow: restrictionShell.shadow,
+              }}
+            >
+              <Alert
+                type="warning"
+                showIcon
+                message={(
+                  <span style={{ color: restrictionShell.title, fontWeight: 700 }}>
+                    {tr('integrationsPage.messages.restricted', 'Лицензия ограничивает доступ к интеграциям')}
+                  </span>
+                )}
+                description={(
+                  <Space direction="vertical" size={2} style={{ width: '100%' }}>
+                    <span style={{ color: restrictionShell.text, lineHeight: 1.55 }}>
+                      {integrationsRestrictionMessage}
+                    </span>
+                    <span style={{ color: restrictionShell.meta, fontSize: 12, lineHeight: 1.45 }}>
+                      {tr(
+                        'integrationsPage.messages.restrictedHint',
+                        'Connect, test, and edit controls stay disabled until the license is refreshed.',
+                      )}
+                    </span>
+                  </Space>
+                )}
+                style={{ background: 'transparent', border: 'none' }}
+              />
+            </div>
           )}
           <IntegrationCard
             title="SMS"
@@ -935,7 +1149,18 @@ export default function IntegrationsPage() {
                     dataIndex: 'is_active',
                     key: 'is_active',
                     render: (value) => (
-                      <Tag color={value ? 'green' : 'default'}>{value ? tr('integrationsPage.status.active', 'Активен') : tr('integrationsPage.status.paused', 'Пауза')}</Tag>
+                      <Tag
+                        color={value ? 'success' : 'default'}
+                        bordered={false}
+                        style={{
+                          fontWeight: 600,
+                          borderRadius: 999,
+                          paddingInline: 10,
+                          border: `1px solid ${value ? 'rgba(82, 196, 26, 0.32)' : 'rgba(148, 163, 184, 0.24)'}`,
+                        }}
+                      >
+                        {value ? tr('integrationsPage.status.active', 'Активен') : tr('integrationsPage.status.paused', 'Пауза')}
+                      </Tag>
                     ),
                   },
                   {
@@ -949,15 +1174,21 @@ export default function IntegrationsPage() {
                     key: 'actions',
                     render: (_, record) => (
                       <Space>
-                        <Button type="link" disabled={integrationsRestricted} onClick={() => openIntegrationEditModal('whatsapp', record)}>
-                          {tr('integrationsPage.actions.edit', 'Редактировать')}
-                        </Button>
-                        <Button type="link" disabled={integrationsRestricted} onClick={() => handleWhatsAppTest(record)}>
-                          {tr('integrationsPage.actions.test', 'Тест')}
-                        </Button>
-                        <Button type="link" danger disabled={integrationsRestricted} onClick={() => handleWhatsAppDisconnect(record)}>
-                          {tr('integrationsPage.actions.disconnect', 'Отключить')}
-                        </Button>
+                        <LicenseRestrictedAction restricted={integrationsRestricted} reason={integrationsRestrictionMessage} feature="integrations.core">
+                          <Button type="link" disabled={integrationsRestricted} onClick={() => openIntegrationEditModal('whatsapp', record)}>
+                            {tr('integrationsPage.actions.edit', 'Редактировать')}
+                          </Button>
+                        </LicenseRestrictedAction>
+                        <LicenseRestrictedAction restricted={integrationsRestricted} reason={integrationsRestrictionMessage} feature="integrations.core">
+                          <Button type="link" disabled={integrationsRestricted} onClick={() => handleWhatsAppTest(record)}>
+                            {tr('integrationsPage.actions.test', 'Тест')}
+                          </Button>
+                        </LicenseRestrictedAction>
+                        <LicenseRestrictedAction restricted={integrationsRestricted} reason={integrationsRestrictionMessage} feature="integrations.core">
+                          <Button type="link" danger disabled={integrationsRestricted} onClick={() => handleWhatsAppDisconnect(record)}>
+                            {tr('integrationsPage.actions.disconnect', 'Отключить')}
+                          </Button>
+                        </LicenseRestrictedAction>
                       </Space>
                     ),
                   },
@@ -994,7 +1225,18 @@ export default function IntegrationsPage() {
                     dataIndex: 'is_active',
                     key: 'is_active',
                     render: (value) => (
-                      <Tag color={value ? 'green' : 'default'}>{value ? tr('integrationsPage.status.activeFeminine', 'Активна') : tr('integrationsPage.status.paused', 'Пауза')}</Tag>
+                      <Tag
+                        color={value ? 'success' : 'default'}
+                        bordered={false}
+                        style={{
+                          fontWeight: 600,
+                          borderRadius: 999,
+                          paddingInline: 10,
+                          border: `1px solid ${value ? 'rgba(82, 196, 26, 0.32)' : 'rgba(148, 163, 184, 0.24)'}`,
+                        }}
+                      >
+                        {value ? tr('integrationsPage.status.activeFeminine', 'Активна') : tr('integrationsPage.status.paused', 'Пауза')}
+                      </Tag>
                     ),
                   },
                   {
@@ -1008,15 +1250,21 @@ export default function IntegrationsPage() {
                     key: 'actions',
                     render: (_, record) => (
                       <Space>
-                        <Button type="link" disabled={integrationsRestricted} onClick={() => openIntegrationEditModal('facebook', record)}>
-                          {tr('integrationsPage.actions.edit', 'Редактировать')}
-                        </Button>
-                        <Button type="link" disabled={integrationsRestricted} onClick={() => handleFacebookTest(record)}>
-                          {tr('integrationsPage.actions.test', 'Тест')}
-                        </Button>
-                        <Button type="link" danger disabled={integrationsRestricted} onClick={() => handleFacebookDisconnect(record)}>
-                          {tr('integrationsPage.actions.disconnect', 'Отключить')}
-                        </Button>
+                        <LicenseRestrictedAction restricted={integrationsRestricted} reason={integrationsRestrictionMessage} feature="integrations.core">
+                          <Button type="link" disabled={integrationsRestricted} onClick={() => openIntegrationEditModal('facebook', record)}>
+                            {tr('integrationsPage.actions.edit', 'Редактировать')}
+                          </Button>
+                        </LicenseRestrictedAction>
+                        <LicenseRestrictedAction restricted={integrationsRestricted} reason={integrationsRestrictionMessage} feature="integrations.core">
+                          <Button type="link" disabled={integrationsRestricted} onClick={() => handleFacebookTest(record)}>
+                            {tr('integrationsPage.actions.test', 'Тест')}
+                          </Button>
+                        </LicenseRestrictedAction>
+                        <LicenseRestrictedAction restricted={integrationsRestricted} reason={integrationsRestrictionMessage} feature="integrations.core">
+                          <Button type="link" danger disabled={integrationsRestricted} onClick={() => handleFacebookDisconnect(record)}>
+                            {tr('integrationsPage.actions.disconnect', 'Отключить')}
+                          </Button>
+                        </LicenseRestrictedAction>
                       </Space>
                     ),
                   },
@@ -1053,7 +1301,18 @@ export default function IntegrationsPage() {
                     dataIndex: 'is_active',
                     key: 'is_active',
                     render: (value) => (
-                      <Tag color={value ? 'green' : 'default'}>{value ? tr('integrationsPage.status.active', 'Активен') : tr('integrationsPage.status.paused', 'Пауза')}</Tag>
+                      <Tag
+                        color={value ? 'success' : 'default'}
+                        bordered={false}
+                        style={{
+                          fontWeight: 600,
+                          borderRadius: 999,
+                          paddingInline: 10,
+                          border: `1px solid ${value ? 'rgba(82, 196, 26, 0.32)' : 'rgba(148, 163, 184, 0.24)'}`,
+                        }}
+                      >
+                        {value ? tr('integrationsPage.status.active', 'Активен') : tr('integrationsPage.status.paused', 'Пауза')}
+                      </Tag>
                     ),
                   },
                   {
@@ -1067,15 +1326,21 @@ export default function IntegrationsPage() {
                     key: 'actions',
                     render: (_, record) => (
                       <Space>
-                        <Button type="link" disabled={integrationsRestricted} onClick={() => openIntegrationEditModal('instagram', record)}>
-                          {tr('integrationsPage.actions.edit', 'Редактировать')}
-                        </Button>
-                        <Button type="link" disabled={integrationsRestricted} onClick={() => handleInstagramTest(record)}>
-                          {tr('integrationsPage.actions.test', 'Тест')}
-                        </Button>
-                        <Button type="link" danger disabled={integrationsRestricted} onClick={() => handleInstagramDisconnect(record)}>
-                          {tr('integrationsPage.actions.disconnect', 'Отключить')}
-                        </Button>
+                        <LicenseRestrictedAction restricted={integrationsRestricted} reason={integrationsRestrictionMessage} feature="integrations.core">
+                          <Button type="link" disabled={integrationsRestricted} onClick={() => openIntegrationEditModal('instagram', record)}>
+                            {tr('integrationsPage.actions.edit', 'Редактировать')}
+                          </Button>
+                        </LicenseRestrictedAction>
+                        <LicenseRestrictedAction restricted={integrationsRestricted} reason={integrationsRestrictionMessage} feature="integrations.core">
+                          <Button type="link" disabled={integrationsRestricted} onClick={() => handleInstagramTest(record)}>
+                            {tr('integrationsPage.actions.test', 'Тест')}
+                          </Button>
+                        </LicenseRestrictedAction>
+                        <LicenseRestrictedAction restricted={integrationsRestricted} reason={integrationsRestrictionMessage} feature="integrations.core">
+                          <Button type="link" danger disabled={integrationsRestricted} onClick={() => handleInstagramDisconnect(record)}>
+                            {tr('integrationsPage.actions.disconnect', 'Отключить')}
+                          </Button>
+                        </LicenseRestrictedAction>
                       </Space>
                     ),
                   },
@@ -1113,7 +1378,18 @@ export default function IntegrationsPage() {
                     dataIndex: 'is_active',
                     key: 'is_active',
                     render: (value) => (
-                      <Tag color={value ? 'green' : 'default'}>{value ? tr('integrationsPage.status.active', 'Активен') : tr('integrationsPage.status.paused', 'Пауза')}</Tag>
+                      <Tag
+                        color={value ? 'success' : 'default'}
+                        bordered={false}
+                        style={{
+                          fontWeight: 600,
+                          borderRadius: 999,
+                          paddingInline: 10,
+                          border: `1px solid ${value ? 'rgba(82, 196, 26, 0.32)' : 'rgba(148, 163, 184, 0.24)'}`,
+                        }}
+                      >
+                        {value ? tr('integrationsPage.status.active', 'Активен') : tr('integrationsPage.status.paused', 'Пауза')}
+                      </Tag>
                     ),
                   },
                   {
@@ -1127,18 +1403,26 @@ export default function IntegrationsPage() {
                     key: 'actions',
                     render: (_, record) => (
                       <Space>
-                        <Button type="link" disabled={integrationsRestricted} onClick={() => openIntegrationEditModal('telegram', record)}>
-                          {tr('integrationsPage.actions.edit', 'Редактировать')}
-                        </Button>
-                        <Button type="link" disabled={integrationsRestricted} onClick={() => handleTelegramTest(record)}>
-                          {tr('integrationsPage.actions.test', 'Тест')}
-                        </Button>
-                        <Button type="link" disabled={integrationsRestricted} onClick={() => openWebhookModal(record)}>
-                          {tr('integrationsPage.actions.webhook', 'Webhook')}
-                        </Button>
-                        <Button type="link" danger disabled={integrationsRestricted} onClick={() => handleTelegramDisconnect(record)}>
-                          {tr('integrationsPage.actions.disconnect', 'Отключить')}
-                        </Button>
+                        <LicenseRestrictedAction restricted={integrationsRestricted} reason={integrationsRestrictionMessage} feature="integrations.core">
+                          <Button type="link" disabled={integrationsRestricted} onClick={() => openIntegrationEditModal('telegram', record)}>
+                            {tr('integrationsPage.actions.edit', 'Редактировать')}
+                          </Button>
+                        </LicenseRestrictedAction>
+                        <LicenseRestrictedAction restricted={integrationsRestricted} reason={integrationsRestrictionMessage} feature="integrations.core">
+                          <Button type="link" disabled={integrationsRestricted} onClick={() => handleTelegramTest(record)}>
+                            {tr('integrationsPage.actions.test', 'Тест')}
+                          </Button>
+                        </LicenseRestrictedAction>
+                        <LicenseRestrictedAction restricted={integrationsRestricted} reason={integrationsRestrictionMessage} feature="integrations.core">
+                          <Button type="link" disabled={integrationsRestricted} onClick={() => openWebhookModal(record)}>
+                            {tr('integrationsPage.actions.webhook', 'Webhook')}
+                          </Button>
+                        </LicenseRestrictedAction>
+                        <LicenseRestrictedAction restricted={integrationsRestricted} reason={integrationsRestrictionMessage} feature="integrations.core">
+                          <Button type="link" danger disabled={integrationsRestricted} onClick={() => handleTelegramDisconnect(record)}>
+                            {tr('integrationsPage.actions.disconnect', 'Отключить')}
+                          </Button>
+                        </LicenseRestrictedAction>
                       </Space>
                     ),
                   },
@@ -1177,10 +1461,32 @@ export default function IntegrationsPage() {
                     key: 'status',
                     render: (_, record) => (
                       <Space>
-                        <Tag color={record.is_active ? 'green' : 'default'}>
+                        <Tag
+                          color={record.is_active ? 'success' : 'default'}
+                          bordered={false}
+                          style={{
+                            fontWeight: 600,
+                            borderRadius: 999,
+                            paddingInline: 10,
+                            border: `1px solid ${record.is_active ? 'rgba(82, 196, 26, 0.32)' : 'rgba(148, 163, 184, 0.24)'}`,
+                          }}
+                        >
                           {record.is_active ? tr('integrationsPage.status.active', 'Активен') : tr('integrationsPage.status.paused', 'Пауза')}
                         </Tag>
-                        {record.is_default && <Tag color="blue">{tr('integrationsPage.status.default', 'По умолчанию')}</Tag>}
+                        {record.is_default && (
+                          <Tag
+                            color="processing"
+                            bordered={false}
+                            style={{
+                              fontWeight: 600,
+                              borderRadius: 999,
+                              paddingInline: 10,
+                              border: '1px solid rgba(24, 144, 255, 0.32)',
+                            }}
+                          >
+                            {tr('integrationsPage.status.default', 'По умолчанию')}
+                          </Tag>
+                        )}
                       </Space>
                     ),
                   },

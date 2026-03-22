@@ -41,30 +41,57 @@ export const EntityListPageShell: React.FC<EntityListPageShellProps> = ({
         }}
         styles={{
           body: {
-            padding: isMobile ? 16 : 24,
+            padding: 0,
           },
         }}
       >
-        <Space direction="vertical" size={16} style={{ width: '100%' }}>
-          {toolbar ? <div>{toolbar}</div> : null}
-          {error ? (
-            <Alert
-              type="error"
-              showIcon
+        <Space direction="vertical" size={0} style={{ width: '100%' }}>
+          {toolbar ? (
+            <div
               style={{
-                borderRadius: token.borderRadiusLG,
+                padding: isMobile ? 16 : 20,
+                borderBottom: `1px solid ${token.colorBorderSecondary}`,
+                background: token.colorBgContainer,
               }}
-              message={error}
-              action={
-                onRetry ? (
-                  <Button size="small" onClick={onRetry}>
-                    {retryLabel}
-                  </Button>
-                ) : undefined
-              }
-            />
+            >
+              {toolbar}
+            </div>
           ) : null}
-          <Flex vertical gap={16}>
+          {error ? (
+            <div
+              style={{
+                padding: isMobile ? 16 : 20,
+                paddingBottom: toolbar ? 0 : isMobile ? 16 : 20,
+              }}
+            >
+              <Alert
+                type="error"
+                showIcon
+                style={{
+                  borderRadius: token.borderRadiusLG,
+                  border: `1px solid ${token.colorBorderSecondary}`,
+                  background: token.colorBgContainer,
+                }}
+                message={error}
+                action={
+                  onRetry ? (
+                    <Button size="small" onClick={onRetry}>
+                      {retryLabel}
+                    </Button>
+                  ) : undefined
+                }
+              />
+            </div>
+          ) : null}
+          <Flex
+            vertical
+            gap={16}
+            style={{
+              padding: isMobile ? 16 : 20,
+              background: token.colorBgContainer,
+              borderTop: `1px solid ${token.colorBorderSecondary}`,
+            }}
+          >
             {children}
           </Flex>
         </Space>

@@ -7,7 +7,7 @@ import {
   getCpDeployments,
   updateCpDeployment,
 } from "../../../lib/api/licenseControl.js";
-import { formatDateTime, normalizeCollection, normalizeCount } from "./utils.js";
+import { formatBackendError, formatDateTime, normalizeCollection, normalizeCount } from "./utils.js";
 
 export default function DeploymentsSection({ onMutated }) {
   const [rows, setRows] = useState([]);
@@ -23,8 +23,12 @@ export default function DeploymentsSection({ onMutated }) {
   const [form] = Form.useForm();
 
   const loadCustomers = async () => {
-    const response = await getCpCustomers({ page_size: 500, ordering: "legal_name" });
-    setCustomers(normalizeCollection(response));
+    try {
+      const response = await getCpCustomers({ page_size: 500, ordering: "legal_name" });
+      setCustomers(normalizeCollection(response));
+    } catch (error) {
+      message.error(formatBackendError(error, "Failed to load customers"));
+    }
   };
 
   const load = async (override = {}) => {
@@ -43,8 +47,8 @@ export default function DeploymentsSection({ onMutated }) {
       setPage(nextPage);
       setPageSize(nextPageSize);
       setSearch(nextSearch);
-    } catch {
-      message.error("Failed to load deployments");
+    } catch (error) {
+      message.error(formatBackendError(error, "Failed to load deployments"));
     } finally {
       setLoading(false);
     }
@@ -90,7 +94,7 @@ export default function DeploymentsSection({ onMutated }) {
       onMutated?.();
       message.success("Deployment saved");
     } catch (error) {
-      if (!error?.errorFields) message.error("Failed to save deployment");
+      if (!error?.errorFields) message.error(formatBackendError(error, "Failed to save deployment"));
     } finally {
       setSaving(false);
     }
@@ -102,8 +106,8 @@ export default function DeploymentsSection({ onMutated }) {
       await load();
       onMutated?.();
       message.success("Deployment deleted");
-    } catch {
-      message.error("Failed to delete deployment");
+    } catch (error) {
+      message.error(formatBackendError(error, "Failed to delete deployment"));
     }
   };
 

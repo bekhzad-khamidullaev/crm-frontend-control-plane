@@ -29,13 +29,20 @@ import {
     UserOutlined,
     WhatsAppOutlined,
 } from '@ant-design/icons';
-import { Avatar, Badge, Button, ConfigProvider, Drawer, Dropdown, Grid, Layout, Menu, Space, Tooltip, Typography } from 'antd';
+import { Alert, Avatar, Badge, Button, ConfigProvider, Drawer, Dropdown, Grid, Layout, Menu, Space, Tooltip, Typography } from 'antd';
 import { useEffect, useState } from 'react';
 import brandMark from '../assets/brand/favicon.svg';
 import brandLogo from '../assets/brand/logo.svg';
 import brandLogoDark from '../assets/brand/logo-dark.svg';
+import { LICENSE_RESTRICTION_EVENT } from '../lib/api/licenseRestrictionBus.js';
+import {
+  getLicenseRestrictionMessage,
+  readStoredLicenseRestriction,
+  storeLicenseRestriction,
+} from '../lib/api/licenseRestrictionState.js';
 import { useTheme } from '../lib/hooks/useTheme.js';
 import { getLocale, t } from '../lib/i18n/index.js';
+import { SETTINGS_WORKSPACE_NAV_KEY } from '../lib/settingsWorkspaceNavigation.js';
 import { navigate } from '../router.js';
 
 const { Header, Sider, Content } = Layout;
@@ -55,6 +62,7 @@ export function AppLayout({
   incomingCallsCount,
   unreadCount,
   allowedNavKeys,
+  settingsWorkspacePath = '/settings',
   onOpenDialer,
   onLogout,
   children,
@@ -63,8 +71,79 @@ export function AppLayout({
   const screens = Grid.useBreakpoint();
   const isMobile = !screens.lg;
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [licenseRestriction, setLicenseRestriction] = useState(() => readStoredLicenseRestriction());
   const siderWidth = 256;
   const drawerWidth = screens.sm ? 300 : '86vw';
+  const shell = theme === 'dark'
+    ? {
+        pageBg: 'var(--crm-app-body-bg, #08111f)',
+        surface: 'var(--crm-app-surface, rgba(12, 19, 32, 0.94))',
+        surfaceSolid: 'var(--crm-app-surface-solid, #0c1523)',
+        surfaceElevated: 'var(--crm-app-surface-elevated, #132033)',
+        border: 'var(--crm-app-border, rgba(148, 163, 184, 0.28))',
+        text: 'var(--crm-app-text, #e5eef8)',
+        textMuted: 'var(--crm-app-text-muted, #cad6e2)',
+        shadow: 'var(--crm-app-shadow, 0 18px 40px rgba(2, 6, 23, 0.42))',
+        shadowStrong: 'var(--crm-app-shadow-strong, 0 24px 52px rgba(2, 6, 23, 0.58))',
+        menuSelected: 'var(--crm-app-menu-selected, linear-gradient(135deg, rgba(125, 211, 252, 0.3), rgba(96, 165, 250, 0.18)))',
+        menuHover: 'var(--crm-app-menu-hover, rgba(148, 163, 184, 0.14))',
+        accentBorder: 'var(--crm-app-accent-border, rgba(226, 232, 240, 0.34))',
+      }
+    : {
+        pageBg: 'var(--crm-app-body-bg, #f8fafc)',
+        surface: 'var(--crm-app-surface, rgba(255, 255, 255, 0.88))',
+        surfaceSolid: 'var(--crm-app-surface-solid, #ffffff)',
+        surfaceElevated: 'var(--crm-app-surface-elevated, #ffffff)',
+        border: 'var(--crm-app-border, #e2e8f0)',
+        text: 'var(--crm-app-text, #0f172a)',
+        textMuted: 'var(--crm-app-text-muted, #64748b)',
+        shadow: 'var(--crm-app-shadow, 0 12px 30px rgba(15, 23, 42, 0.08))',
+        shadowStrong: 'var(--crm-app-shadow-strong, 0 18px 40px rgba(15, 23, 42, 0.12))',
+        menuSelected: 'var(--crm-app-menu-selected, #eef6ff)',
+        menuHover: 'var(--crm-app-menu-hover, #f8fafc)',
+        accentBorder: 'var(--crm-app-accent-border, #dbeafe)',
+      };
+  const licenseShell = theme === 'dark'
+    ? {
+        border: 'rgba(245, 158, 11, 0.42)',
+        background: 'linear-gradient(180deg, rgba(69, 43, 12, 0.96), rgba(33, 22, 8, 0.94))',
+        title: '#fff7ed',
+        text: '#fde68a',
+        meta: '#fbbf24',
+        shadow: '0 16px 32px rgba(0, 0, 0, 0.34)',
+      }
+    : {
+        border: 'rgba(217, 119, 6, 0.28)',
+        background: 'linear-gradient(180deg, rgba(255, 251, 235, 0.98), rgba(255, 247, 214, 0.94))',
+        title: '#7c2d12',
+        text: '#9a3412',
+        meta: '#b45309',
+        shadow: '0 14px 28px rgba(217, 119, 6, 0.12)',
+      };
+  const menuTheme = {
+    components: {
+      Menu: theme === 'dark'
+        ? {
+            darkItemBg: 'transparent',
+            darkSubMenuItemBg: 'transparent',
+            darkItemColor: shell.textMuted,
+            darkItemHoverColor: shell.text,
+            darkItemSelectedColor: shell.text,
+            darkItemSelectedBg: shell.menuSelected,
+            darkItemHoverBg: shell.menuHover,
+            darkGroupTitleColor: '#64748b',
+          }
+        : {
+            itemBg: 'transparent',
+            itemColor: shell.textMuted,
+            itemHoverColor: shell.text,
+            itemSelectedColor: shell.text,
+            itemSelectedBg: shell.menuSelected,
+            itemHoverBg: shell.menuHover,
+            groupTitleColor: shell.textMuted,
+          },
+    },
+  };
   const tr = (key, fallback) => {
     const localized = t(key);
     return localized === key ? fallback : localized;
@@ -117,7 +196,6 @@ export function AppLayout({
       label: tr('nav.operationsGroup', 'Операции'),
       children: [
         { key: 'payments', label: tr('nav.payments', 'Платежи'), icon: <DollarOutlined />, path: '/payments' },
-        { key: 'integrations', label: tr('nav.integrations', 'Интеграции'), icon: <SettingOutlined />, path: '/integrations' },
         { key: 'telephony', label: tr('nav.telephony', 'Телефония'), icon: <PhoneOutlined />, path: '/telephony' },
         { key: 'operations', label: tr('nav.operations', 'Операции'), icon: <SettingOutlined />, path: '/operations' },
       ],
@@ -126,7 +204,12 @@ export function AppLayout({
       key: 'system-group',
       label: tr('nav.systemGroup', 'Система'),
       children: [
-        { key: 'settings', label: tr('nav.settings', 'Настройки'), icon: <SettingOutlined />, path: '/settings' },
+        {
+          key: SETTINGS_WORKSPACE_NAV_KEY,
+          label: tr('nav.settingsWorkspace', 'Настройки и интеграции'),
+          icon: <SettingOutlined />,
+          path: settingsWorkspacePath,
+        },
         { key: 'control-plane', label: tr('nav.controlPlane', 'Control Plane'), icon: <ApiOutlined />, path: '/control-plane' },
         { key: 'reference-data', label: tr('nav.referenceData', 'Справочники'), icon: <AppstoreOutlined />, path: '/reference-data' },
         { key: 'landing-builder', label: tr('nav.landingBuilder', 'Конструктор лендингов'), icon: <AppstoreOutlined />, path: '/landing-builder' },
@@ -188,6 +271,7 @@ export function AppLayout({
   const [wsIndicatorStatus, setWsIndicatorStatus] = useState(
     wsConnected ? 'success' : (wsReconnecting ? 'processing' : 'error')
   );
+  const licenseRestrictionCopy = getLicenseRestrictionMessage(licenseRestriction, t);
 
   useEffect(() => {
     if (wsConnected) {
@@ -204,6 +288,27 @@ export function AppLayout({
     }, 1200);
     return () => window.clearTimeout(timeoutId);
   }, [wsConnected, wsReconnecting]);
+
+  useEffect(() => {
+    const handleLicenseRestriction = (event) => {
+      const detail = event?.detail || {};
+      const nextRestriction = {
+        code: detail.code || 'LICENSE_FEATURE_DISABLED',
+        feature: String(detail.feature || 'unknown.feature'),
+        message: String(detail.message || ''),
+      };
+      setLicenseRestriction(nextRestriction);
+      storeLicenseRestriction(nextRestriction);
+    };
+
+    window.addEventListener(LICENSE_RESTRICTION_EVENT, handleLicenseRestriction);
+    return () => window.removeEventListener(LICENSE_RESTRICTION_EVENT, handleLicenseRestriction);
+  }, []);
+
+  const handleCloseLicenseRestriction = () => {
+    setLicenseRestriction(null);
+    storeLicenseRestriction(null);
+  };
 
   useEffect(() => {
     setMobileMenuOpen(false);
@@ -285,6 +390,50 @@ export function AppLayout({
     },
   ];
 
+  const buildUserMenuGroupLabel = (title, value) => (
+    <span
+      style={{
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        gap: 12,
+        width: '100%',
+      }}
+    >
+      <span>{title}</span>
+      <span
+        style={{
+          fontSize: 12,
+          color: shell.textMuted,
+          fontWeight: 500,
+          letterSpacing: '0.01em',
+        }}
+      >
+        {value}
+      </span>
+    </span>
+  );
+
+  const buildVersionMenuLabel = () => (
+    <span
+      style={{
+        display: 'flex',
+        flexDirection: 'column',
+        gap: 2,
+        width: '100%',
+        opacity: 0.88,
+      }}
+    >
+      <span style={{ fontWeight: 500 }}>{tr('nav.version', 'Версия CRM')}</span>
+      <span style={{ fontSize: 12, color: shell.textMuted, lineHeight: 1.45 }}>
+        {[
+          frontendVersionText ? `FE ${frontendVersionText}` : 'FE —',
+          backendVersion ? `BE ${backendVersion}` : 'BE —',
+        ].join(' | ')}
+      </span>
+    </span>
+  );
+
   const userMenuItems = [
     {
       key: 'profile',
@@ -292,24 +441,27 @@ export function AppLayout({
       label: tr('nav.profile', 'Профиль'),
       onClick: () => navigate('/profile'),
     },
-    ...(Array.isArray(allowedNavKeys) && allowedNavKeys.includes('settings')
+    ...(Array.isArray(allowedNavKeys) && allowedNavKeys.includes(SETTINGS_WORKSPACE_NAV_KEY)
       ? [{
-          key: 'settings',
+          key: SETTINGS_WORKSPACE_NAV_KEY,
           icon: <SettingOutlined />,
-          label: tr('nav.settings', 'Настройки'),
-          onClick: () => navigate('/settings'),
+          label: tr('nav.settingsWorkspace', 'Настройки и интеграции'),
+          onClick: () => navigate(settingsWorkspacePath),
         }]
       : []),
     {
-      key: 'language',
-      icon: <GlobalOutlined />,
-      label: `${tr('nav.language', 'Язык')} (${activeLocale.toUpperCase()})`,
+      key: 'language-group',
+      type: 'group',
+      label: buildUserMenuGroupLabel(tr('nav.language', 'Язык'), activeLocale.toUpperCase()),
       children: localeMenuItems,
     },
     {
-      key: 'theme',
-      icon: theme === 'dark' ? <MoonOutlined /> : <SunOutlined />,
-      label: `${tr('nav.theme', 'Тема')} (${theme === 'dark' ? tr('nav.themeDark', 'Темная') : tr('nav.themeLight', 'Светлая')})`,
+      key: 'theme-group',
+      type: 'group',
+      label: buildUserMenuGroupLabel(
+        tr('nav.theme', 'Тема'),
+        theme === 'dark' ? tr('nav.themeDark', 'Темная') : tr('nav.themeLight', 'Светлая')
+      ),
       children: themeMenuItems,
     },
     ...(userIsAdmin
@@ -317,11 +469,7 @@ export function AppLayout({
           key: 'system-version',
           icon: <ApiOutlined />,
           disabled: true,
-          label: [
-            tr('nav.version', 'Версия CRM'),
-            frontendVersionText ? `FE ${frontendVersionText}` : 'FE —',
-            backendVersion ? `BE ${backendVersion}` : 'BE —',
-          ].join(' | '),
+          label: buildVersionMenuLabel(),
         }]
       : []),
     { type: 'divider' },
@@ -334,26 +482,29 @@ export function AppLayout({
   ];
 
   return (
-    <Layout style={{ minHeight: '100dvh' }}>
+    <Layout style={{ minHeight: '100dvh', background: shell.pageBg }}>
       {!isMobile && (
         <Sider
-        collapsible
-        collapsed={collapsed}
-        onCollapse={onToggleCollapsed}
-        trigger={null}
-        width={256}
-        theme={theme === 'dark' ? 'dark' : 'light'}
-        style={{
-          overflow: 'auto',
-          height: '100vh',
-          position: 'fixed',
-          left: 0,
-          top: 0,
-          bottom: 0,
-          borderRight: `1px solid ${theme === 'dark' ? '#2d3343' : '#e4e4e7'}`,
-          background: theme === 'dark' ? '#161b22' : '#ffffff',
-        }}
-      >
+          collapsible
+          collapsed={collapsed}
+          onCollapse={onToggleCollapsed}
+          trigger={null}
+          width={256}
+          theme={theme === 'dark' ? 'dark' : 'light'}
+          style={{
+            overflow: 'auto',
+            height: '100vh',
+            position: 'fixed',
+            left: 0,
+            top: 0,
+            bottom: 0,
+            borderRight: `1px solid ${shell.border}`,
+            background: theme === 'dark' ? shell.surfaceSolid : shell.surface,
+            boxShadow: shell.shadowStrong,
+            backdropFilter: 'none',
+            WebkitBackdropFilter: 'none',
+          }}
+        >
         <div
           style={{
             height: 64,
@@ -361,16 +512,19 @@ export function AppLayout({
             alignItems: 'center',
             justifyContent: collapsed ? 'center' : 'space-between',
             padding: collapsed ? '0' : '0 16px',
-            borderBottom: `1px solid ${theme === 'dark' ? '#2d3343' : '#e4e4e7'}`,
+            borderBottom: `1px solid ${shell.border}`,
+            background: theme === 'dark' ? shell.surfaceSolid : shell.surface,
           }}
         >
           <Space>
             {collapsed ? (
               <Avatar
                 style={{
-                  backgroundColor: theme === 'dark' ? '#2d3343' : '#f1f5f9',
-                  color: theme === 'dark' ? '#f1f5f9' : '#09090b',
+                  backgroundColor: shell.surfaceElevated,
+                  color: shell.text,
+                  border: `1px solid ${shell.border}`,
                   verticalAlign: 'middle',
+                  boxShadow: theme === 'dark' ? '0 8px 18px rgba(2, 6, 23, 0.28)' : 'none',
                 }}
                 size="large"
                 src={brandMark}
@@ -388,40 +542,25 @@ export function AppLayout({
           {!collapsed && (
             <Button
               type="text"
-              icon={<MenuFoldOutlined style={{ color: theme === 'dark' ? '#f1f5f9' : '#09090b' }} />}
+              icon={<MenuFoldOutlined style={{ color: shell.text }} />}
               onClick={onToggleCollapsed}
             />
           )}
         </div>
 
-        <ConfigProvider
-          theme={{
-            components: {
-              Menu: theme === 'dark' ? {
-                darkItemBg: '#161b22',
-                darkSubMenuItemBg: '#161b22',
-                darkItemColor: '#cbd5e1',
-                darkItemHoverColor: '#ffffff',
-                darkItemSelectedColor: '#ffffff',
-                darkItemSelectedBg: '#2d3343',
-                darkItemHoverBg: '#1e232e',
-              } : {
-                itemBg: '#ffffff',
-                itemColor: '#52525b',
-                itemHoverColor: '#09090b',
-                itemSelectedColor: '#09090b',
-                itemSelectedBg: '#f4f4f5',
-                itemHoverBg: '#f4f4f5',
-              },
-            },
-          }}
-        >
+        <ConfigProvider theme={menuTheme}>
           <Menu
             theme={theme === 'dark' ? 'dark' : 'light'}
             mode="inline"
             selectedKeys={[selectedKey]}
             items={menuItems}
-            style={{ borderRight: 0, height: 'calc(100vh - 64px)', overflowY: 'auto', paddingBottom: 16 }}
+            style={{
+              borderRight: 0,
+              height: 'calc(100vh - 64px)',
+              overflowY: 'auto',
+              padding: '12px 10px 18px',
+              background: 'transparent',
+            }}
           />
         </ConfigProvider>
       </Sider>
@@ -434,69 +573,60 @@ export function AppLayout({
         onClose={() => setMobileMenuOpen(false)}
         styles={{
           header: {
-            background: theme === 'dark' ? '#161b22' : '#ffffff',
-            borderBottom: `1px solid ${theme === 'dark' ? '#2d3343' : '#e4e4e7'}`,
+            background: shell.surfaceSolid,
+            borderBottom: `1px solid ${shell.border}`,
             paddingTop: 'env(safe-area-inset-top)',
           },
           body: {
-            background: theme === 'dark' ? '#161b22' : '#ffffff',
+            background: shell.surfaceSolid,
             padding: 0,
             paddingBottom: 'env(safe-area-inset-bottom)',
           },
         }}
       >
-        <ConfigProvider
-          theme={{
-            components: {
-              Menu: theme === 'dark'
-                ? {
-                  darkItemBg: '#161b22',
-                  darkSubMenuItemBg: '#161b22',
-                  darkItemColor: '#cbd5e1',
-                  darkItemHoverColor: '#ffffff',
-                  darkItemSelectedColor: '#ffffff',
-                  darkItemSelectedBg: '#2d3343',
-                  darkItemHoverBg: '#1e232e',
-                }
-                : {
-                  itemBg: '#ffffff',
-                  itemColor: '#52525b',
-                  itemHoverColor: '#09090b',
-                  itemSelectedColor: '#09090b',
-                  itemSelectedBg: '#f4f4f5',
-                  itemHoverBg: '#f4f4f5',
-                },
-            },
-          }}
-        >
+        <ConfigProvider theme={menuTheme}>
           <Menu
             theme={theme === 'dark' ? 'dark' : 'light'}
             mode="inline"
             selectedKeys={[selectedKey]}
             items={menuItems}
-            style={{ borderRight: 0, height: '100%', overflowY: 'auto', paddingBottom: 16 }}
+            style={{
+              borderRight: 0,
+              height: '100%',
+              overflowY: 'auto',
+              padding: '12px 10px 18px',
+              background: 'transparent',
+            }}
           />
         </ConfigProvider>
       </Drawer>
 
-      <Layout style={{ marginLeft: isMobile ? 0 : (collapsed ? 80 : siderWidth), transition: 'all 0.2s' }}>
+      <Layout
+        style={{
+          marginLeft: isMobile ? 0 : collapsed ? 80 : siderWidth,
+          transition: 'all 0.2s',
+          background: 'transparent',
+        }}
+      >
         <Header
           style={{
             padding: isMobile
               ? '0 calc(12px + env(safe-area-inset-right)) 0 calc(12px + env(safe-area-inset-left))'
               : '0 24px',
-            background: theme === 'dark' ? '#161b22' : '#ffffff',
-            borderBottom: `1px solid ${theme === 'dark' ? '#2d3343' : '#e4e4e7'}`,
+            background: theme === 'dark' ? shell.surfaceSolid : shell.surface,
+            borderBottom: `1px solid ${shell.border}`,
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'space-between',
             position: 'sticky',
             top: 0,
             zIndex: 1100,
-            boxShadow: theme === 'dark' ? '0 1px 4px rgba(0,0,0,.5)' : '0 1px 4px rgba(0,0,0,.08)',
+            boxShadow: shell.shadow,
+            backdropFilter: 'none',
+            WebkitBackdropFilter: 'none',
           }}
         >
-          <Space>
+          <Space align="center">
             {isMobile && (
               <Button type="text" icon={<MenuUnfoldOutlined />} onClick={() => setMobileMenuOpen(true)} />
             )}
@@ -507,12 +637,21 @@ export function AppLayout({
                 onClick={onToggleCollapsed}
               />
             )}
-            <Text type="secondary" ellipsis style={{ maxWidth: isMobile ? 160 : 'none' }}>
+            <Text
+              ellipsis
+              style={{
+                maxWidth: isMobile ? 160 : 'none',
+                lineHeight: 1.2,
+                color: shell.textMuted,
+                fontWeight: 500,
+                letterSpacing: '-0.01em',
+              }}
+            >
               {selectedNavLabel}
             </Text>
           </Space>
 
-          <Space size={isMobile ? 'small' : 'middle'} wrap={false}>
+          <Space size={isMobile ? 'small' : 'middle'} wrap={false} align="center">
             {/* User Menu */}
             {hasActiveTelephony && (
               <Button
@@ -522,16 +661,29 @@ export function AppLayout({
               />
             )}
 
-            <Dropdown menu={{ items: userMenuItems }} placement="bottomRight">
-              <Space style={{ cursor: 'pointer' }}>
-                <Space size={6}>
+            <ConfigProvider theme={menuTheme}>
+              <Dropdown menu={{ items: userMenuItems }} placement="bottomRight">
+              <Space
+                align="center"
+                style={{
+                  cursor: 'pointer',
+                  padding: '8px 12px',
+                  borderRadius: 999,
+                  border: `1px solid ${theme === 'dark' ? shell.accentBorder : shell.border}`,
+                  background: theme === 'dark' ? shell.surfaceSolid : shell.surface,
+                  boxShadow: shell.shadow,
+                  backdropFilter: 'none',
+                  WebkitBackdropFilter: 'none',
+                }}
+              >
+                <Space size={6} align="center">
                   {wsIndicatorStatus === 'error'
-                    ? <DisconnectOutlined style={{ color: theme === 'dark' ? '#cbd5e1' : '#52525b' }} />
-                    : <ApiOutlined style={{ color: theme === 'dark' ? '#cbd5e1' : '#52525b' }} />}
+                    ? <DisconnectOutlined style={{ color: shell.textMuted }} />
+                    : <ApiOutlined style={{ color: shell.textMuted }} />}
                   <Badge status={wsIndicatorStatus} />
                 </Space>
                 {Array.isArray(activeIntegrations) && activeIntegrations.length > 0 && (
-                  <Space size={8}>
+                  <Space size={8} align="center">
                     {activeIntegrations.map((integration) => {
                       const IconComponent = integrationIconMap[integration.key];
                       if (!IconComponent) return null;
@@ -540,8 +692,8 @@ export function AppLayout({
                           key={integration.key}
                           title={integrationLabelMap[integration.key] || integration.key}
                         >
-                          <Space size={4}>
-                            <IconComponent style={{ color: theme === 'dark' ? '#cbd5e1' : '#52525b' }} />
+                          <Space size={4} align="center">
+                            <IconComponent style={{ color: shell.textMuted }} />
                             <Badge status={integration.status || 'success'} />
                           </Space>
                         </Tooltip>
@@ -559,10 +711,20 @@ export function AppLayout({
                     <MessageOutlined />
                   </Badge>
                 )}
-                <Avatar size="small">{(user?.name || user?.username || 'U').charAt(0).toUpperCase()}</Avatar>
-                {!isMobile && <Text>{user?.name || user?.username || 'User'}</Text>}
+                <Avatar
+                  size="small"
+                  style={{
+                    backgroundColor: shell.surfaceElevated,
+                    color: shell.text,
+                    border: `1px solid ${shell.border}`,
+                  }}
+                >
+                  {(user?.name || user?.username || 'U').charAt(0).toUpperCase()}
+                </Avatar>
+                {!isMobile && <Text style={{ color: shell.text, fontWeight: 500 }}>{user?.name || user?.username || 'User'}</Text>}
               </Space>
-            </Dropdown>
+              </Dropdown>
+            </ConfigProvider>
           </Space>
         </Header>
 
@@ -572,8 +734,48 @@ export function AppLayout({
             minHeight: 280,
             overflowX: 'hidden',
             maxWidth: '100%',
+            background: theme === 'dark' ? shell.surfaceSolid : 'transparent',
+            borderRadius: theme === 'dark' ? 24 : 0,
           }}
         >
+          {licenseRestriction ? (
+            <div
+              style={{
+                marginBottom: 12,
+                padding: 1,
+                borderRadius: 16,
+                border: `1px solid ${licenseShell.border}`,
+                background: licenseShell.background,
+                boxShadow: licenseShell.shadow,
+              }}
+            >
+              <Alert
+                type="warning"
+                showIcon
+                closable
+                onClose={handleCloseLicenseRestriction}
+                message={
+                  <Text strong style={{ color: licenseShell.title }}>
+                    {licenseRestrictionCopy.message}
+                  </Text>
+                }
+                description={(
+                  <Space direction="vertical" size={2} style={{ width: '100%' }}>
+                    <Text style={{ color: licenseShell.text, lineHeight: 1.55 }}>
+                      {licenseRestrictionCopy.description}
+                    </Text>
+                    <Text style={{ color: licenseShell.meta, fontSize: 12, lineHeight: 1.45 }}>
+                      {t(
+                        'license.banner.helper',
+                        'License-gated sections stay disabled until the restriction is cleared.',
+                      )}
+                    </Text>
+                  </Space>
+                )}
+                style={{ background: 'transparent', border: 'none' }}
+              />
+            </div>
+          ) : null}
           {children}
         </Content>
       </Layout>

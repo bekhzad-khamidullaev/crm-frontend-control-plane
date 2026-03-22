@@ -15,6 +15,7 @@ import {
   Spin,
   Statistic,
   Typography,
+  theme,
 } from 'antd';
 import { useEffect, useMemo, useState } from 'react';
 import { getActivityFeed, getOverview, normalizeOverview } from '../lib/api/analytics.js';
@@ -63,6 +64,7 @@ function replaceHashQuery(updates) {
 }
 
 function Dashboard() {
+  const { token } = theme.useToken();
   const [period, setPeriod] = useState(getPeriodFromHash);
   const [overview, setOverview] = useState(null);
   const [activity, setActivity] = useState([]);
@@ -154,7 +156,14 @@ function Dashboard() {
 
   return (
     <Space direction="vertical" size={16} style={{ width: '100%' }}>
-      <Card>
+      <Card
+        style={{
+          borderRadius: token.borderRadiusLG,
+          border: `1px solid ${token.colorBorderSecondary}`,
+          background: token.colorBgElevated,
+          boxShadow: token.boxShadowTertiary,
+        }}
+      >
         <Space direction="vertical" size={12} style={{ width: '100%' }}>
           <Space style={{ width: '100%', justifyContent: 'space-between' }} wrap>
             <Space direction="vertical" size={0}>
@@ -187,7 +196,14 @@ function Dashboard() {
         <Row gutter={[16, 16]}>
           {cards.map((card) => (
             <Col xs={24} sm={12} lg={6} key={card.key}>
-              <Card>
+              <Card
+                style={{
+                  borderRadius: token.borderRadiusLG,
+                  border: `1px solid ${token.colorBorderSecondary}`,
+                  background: token.colorBgContainer,
+                  boxShadow: token.boxShadowTertiary,
+                }}
+              >
                 <Statistic
                   title={card.title}
                   value={card.value}
@@ -200,7 +216,15 @@ function Dashboard() {
         </Row>
       </Spin>
 
-      <Card title={t('dashboardPage.lastActivity.title')}>
+      <Card
+        title={t('dashboardPage.lastActivity.title')}
+        style={{
+          borderRadius: token.borderRadiusLG,
+          border: `1px solid ${token.colorBorderSecondary}`,
+          background: token.colorBgElevated,
+          boxShadow: token.boxShadowTertiary,
+        }}
+      >
         <Spin spinning={loadingActivity}>
           <List
             dataSource={activity}

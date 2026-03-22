@@ -51,7 +51,7 @@ export const EntityListToolbar: React.FC<EntityListToolbarProps> = ({
   const hasActiveFilters = activeFilters.length > 0;
   const surfaceStyle: React.CSSProperties = {
     marginBottom: 16,
-    padding: isMobile ? 14 : 16,
+    padding: isMobile ? 16 : 20,
     borderRadius: token.borderRadiusLG,
     border: `1px solid ${token.colorBorderSecondary}`,
     background: token.colorBgElevated,
@@ -61,34 +61,88 @@ export const EntityListToolbar: React.FC<EntityListToolbarProps> = ({
     marginInlineEnd: 0,
     borderRadius: token.borderRadiusSM,
     borderColor: token.colorBorderSecondary,
-    background: token.colorFillQuaternary,
+    background: token.colorFillAlter,
     color: token.colorTextSecondary,
+    fontWeight: 500,
+  };
+  const actionButtonStyle: React.CSSProperties = {
+    borderRadius: token.borderRadiusLG,
   };
 
   return (
     <div style={surfaceStyle}>
-      <Space direction="vertical" size={12} style={{ width: '100%' }}>
+      <Space direction="vertical" size={16} style={{ width: '100%' }}>
         <Flex
           justify="space-between"
           align={isMobile ? 'stretch' : 'flex-start'}
-          gap={12}
+          gap={16}
           vertical={isMobile}
         >
-          <Space wrap size={12} style={{ flex: 1, width: '100%' }}>
-            <Input
-              allowClear
-              prefix={<SearchOutlined />}
-              placeholder={searchPlaceholder}
-              value={searchValue}
-              onChange={(event) => onSearchChange?.(event.target.value)}
-              style={{ width: isMobile ? '100%' : 340, maxWidth: '100%' }}
-            />
-            {filters}
-          </Space>
+          <div style={{ flex: 1, minWidth: 0 }}>
+            <Space direction="vertical" size={12} style={{ width: '100%' }}>
+              <Space wrap size={12} style={{ width: '100%' }}>
+                <Input
+                  allowClear
+                  prefix={<SearchOutlined />}
+                  placeholder={searchPlaceholder}
+                  value={searchValue}
+                  onPressEnter={(event) =>
+                    onSearchChange?.((event.target as HTMLInputElement).value)
+                  }
+                  onChange={(event) => onSearchChange?.(event.target.value)}
+                  style={{
+                    width: isMobile ? '100%' : 360,
+                    maxWidth: '100%',
+                    borderRadius: token.borderRadiusLG,
+                    borderColor: token.colorBorderSecondary,
+                    background: token.colorBgContainer,
+                  }}
+                />
+                {filters}
+              </Space>
 
-          <Space wrap style={{ justifyContent: isMobile ? 'space-between' : 'flex-end', width: isMobile ? '100%' : 'auto' }}>
+              {hasActiveFilters ? (
+                <Flex wrap gap={8}>
+                  {activeFilters.map((filter) => (
+                    <Tag
+                      key={filter.key}
+                      closable={Boolean(filter.onClear)}
+                      onClose={(event) => {
+                        event.preventDefault();
+                        filter.onClear?.();
+                      }}
+                      style={chipStyle}
+                    >
+                      {filter.value ? `${filter.label}: ${filter.value}` : filter.label}
+                    </Tag>
+                  ))}
+                </Flex>
+              ) : null}
+            </Space>
+          </div>
+
+          <Space
+            wrap
+            size={10}
+            style={{
+              justifyContent: isMobile ? 'space-between' : 'flex-end',
+              width: isMobile ? '100%' : 'auto',
+              flexShrink: 0,
+            }}
+          >
             {resultSummary ? (
-              <Tag style={chipStyle}>
+              <Tag
+                bordered={false}
+                style={{
+                  ...chipStyle,
+                  paddingInline: 12,
+                  minHeight: 28,
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  background: token.colorBgContainer,
+                  color: token.colorTextBase,
+                }}
+              >
                 {resultSummary}
               </Tag>
             ) : null}
@@ -97,36 +151,25 @@ export const EntityListToolbar: React.FC<EntityListToolbarProps> = ({
                 <Button
                   aria-label="Обновить список"
                   icon={<ReloadOutlined />}
+                  size={isMobile ? 'small' : 'middle'}
                   loading={loading}
                   onClick={onRefresh}
+                  style={actionButtonStyle}
                 />
               </Tooltip>
             ) : null}
             {hasActiveFilters && onReset ? (
-              <Button icon={<ClearOutlined />} onClick={onReset}>
+              <Button
+                icon={<ClearOutlined />}
+                size={isMobile ? 'small' : 'middle'}
+                onClick={onReset}
+                style={actionButtonStyle}
+              >
                 Сбросить
               </Button>
             ) : null}
           </Space>
         </Flex>
-
-        {hasActiveFilters ? (
-          <Space wrap size={[8, 8]}>
-            {activeFilters.map((filter) => (
-              <Tag
-                key={filter.key}
-                closable={Boolean(filter.onClear)}
-                onClose={(event) => {
-                  event.preventDefault();
-                  filter.onClear?.();
-                }}
-                style={chipStyle}
-              >
-                {filter.value ? `${filter.label}: ${filter.value}` : filter.label}
-              </Tag>
-            ))}
-          </Space>
-        ) : null}
       </Space>
     </div>
   );

@@ -10,7 +10,15 @@ import { getFacebookPages } from './lib/api/integrations/facebook.js';
 import { getInstagramAccounts } from './lib/api/integrations/instagram.js';
 import { getTelegramBots } from './lib/api/integrations/telegram.js';
 import { getWhatsAppAccounts } from './lib/api/integrations/whatsapp.js';
-import { canAccessRoute as canAccessRouteByPolicy } from './lib/rbac.js';
+import { clearStoredLicenseFeatures, persistLicenseFeatures } from './lib/api/licenseFeatures.js';
+import { getLicenseMe } from './lib/api/licenseControl.js';
+import { canAccessRoute as canAccessRouteByPolicy, getRouteAccessState } from './lib/rbac.js';
+import {
+  canAccessSettingsWorkspace,
+  getSettingsWorkspacePath,
+  normalizeSettingsWorkspaceSelectedKey,
+  SETTINGS_WORKSPACE_NAV_KEY,
+} from './lib/settingsWorkspaceNavigation.js';
 import smsApi from './lib/api/sms.js';
 import { getVoIPConnections } from './lib/api/telephony.js';
 import { getProfile } from './lib/api/user.js';
@@ -19,6 +27,12 @@ import { getFrontendVersionInfo } from './shared/version.js';
 import { useTheme } from './lib/hooks/useTheme.js';
 import { applyLegacyContentLocalization } from './lib/i18n/legacy-content-dom.js';
 import { setLocale } from './lib/i18n/index.js';
+import {
+  buildRouteLicenseRestriction,
+  clearStoredRouteLicenseRestriction,
+  readStoredRouteLicenseRestriction,
+  storeRouteLicenseRestriction,
+} from './lib/licensePageRestriction.js';
 import {
     addIncomingCall,
     removeIncomingCall,
@@ -29,6 +43,7 @@ import {
     subscribe,
 } from './lib/store/index.js';
 import { navigate, onRouteChange, parseHash } from './router.js';
+const LicenseRestrictedResult = lazy(() => import('./components/LicenseRestrictedResult.jsx'));
 
 // Lazy load all page components for better code splitting
 const Dashboard = lazy(() => import('./pages/dashboard.jsx'));
@@ -81,8 +96,7 @@ const ChatPage = lazy(() => import('./pages/chat-page.jsx'));
 
 // Other pages
 const ProfilePage = lazy(() => import('./pages/profile.jsx'));
-const SettingsPage = lazy(() => import('./pages/settings.jsx'));
-const IntegrationsPage = lazy(() => import('./pages/integrations.jsx'));
+const SettingsIntegrationsWorkspacePage = lazy(() => import('./pages/settings-integrations-workspace.jsx'));
 const LandingBuilderPage = lazy(() => import('./pages/landing-builder.jsx'));
 const PublicLandingPage = lazy(() => import('./pages/public-landing.jsx'));
 const CrmSalesLandingPage = lazy(() => import('./pages/crm-sales-landing.jsx'));
@@ -312,6 +326,7 @@ function App() {
   const [activeIntegrations, setActiveIntegrations] = useState([]);
   const [locale, setLocaleState] = useState('ru');
   const [localeInitialized, setLocaleInitialized] = useState(false);
+  const [licenseReady, setLicenseReady] = useState(false);
   const [dialerVisible, setDialerVisible] = useState(false);
   const frontendVersion = getFrontendVersionInfo();
   const telephonyModulesRef = useRef({
@@ -443,7 +458,7 @@ function App() {
       setUser(tokenUser);
 
       // Hydrate full user profile from API (stable after page reload)
-      (async () => {
+      const profilePreloadPromise = (async () => {
         try {
           const me = await getProfile();
           const profileLocale = getProfileLocale(me);
@@ -468,6 +483,20 @@ function App() {
         }
       })();
 
+      const licensePreloadPromise = (async () => {
+        try {
+          const license = await getLicenseMe();
+          persistLicenseFeatures(license?.features || []);
+        } catch (e) {
+          console.warn('Failed to preload license entitlements:', e);
+          clearStoredLicenseFeatures();
+        }
+      })();
+
+      Promise.allSettled([profilePreloadPromise, licensePreloadPromise]).finally(() => {
+        setLicenseReady(true);
+      });
+
       // Initialize WebSocket connections if we have a token
       if (token) {
         (async () => {
@@ -485,6 +514,7 @@ function App() {
         });
       }
     } else {
+      setLicenseReady(true);
       // Not authenticated, redirect to login if not already there
       if (route.name !== 'login' && !PUBLIC_ROUTE_NAMES.has(route.name)) {
         navigate('/login');
@@ -570,13 +600,23 @@ function App() {
   }, []);
 
   useEffect(() => {
+    if (!licenseReady) return;
     if (!isAuthenticated()) return;
     if (PUBLIC_ROUTE_NAMES.has(route.name)) return;
     if (route.name === 'login' || route.name === 'forbidden' || route.name === 'not-found') return;
-    if (!canAccessRoute(route.name)) {
+    const accessState = getRouteAccessState(route.name);
+    if (!accessState.allowed) {
+      const licenseRestriction = buildRouteLicenseRestriction(route.name, accessState);
+      if (licenseRestriction) {
+        storeRouteLicenseRestriction(licenseRestriction);
+      } else {
+        clearStoredRouteLicenseRestriction();
+      }
       navigate('/forbidden');
+      return;
     }
-  }, [route.name]);
+    clearStoredRouteLicenseRestriction();
+  }, [route.name, licenseReady]);
 
   const initializeSipClient = async (sipClient, loadTelephonyRuntimeConfig) => {
     try {
@@ -693,6 +733,8 @@ function App() {
     localStorage.removeItem('enterprise_crm_roles');
     sessionStorage.removeItem('enterprise_crm_permissions');
     localStorage.removeItem('enterprise_crm_permissions');
+    clearStoredLicenseFeatures();
+    clearStoredRouteLicenseRestriction();
     disconnectTelephony();
     setUser(null);
     setActiveIntegrations([]);
@@ -722,6 +764,7 @@ function App() {
   };
 
   const canAccessRoute = (routeName) => {
+    if (!licenseReady) return true;
     return canAccessRouteByPolicy(routeName);
   };
 
@@ -752,14 +795,19 @@ function App() {
     telephony: 'telephony',
     users: 'users',
     'control-plane': 'control-plane',
-    settings: 'settings',
-    integrations: 'integrations',
     'landing-builder': 'landing-builder',
   };
+
+  const settingsWorkspaceAllowed = canAccessSettingsWorkspace(canAccessRoute);
+  const settingsWorkspacePath = getSettingsWorkspacePath(canAccessRoute);
 
   const allowedNavKeys = Object.entries(navAccessMap)
     .filter(([, routeName]) => canAccessRoute(routeName))
     .map(([key]) => key);
+
+  if (settingsWorkspaceAllowed) {
+    allowedNavKeys.push(SETTINGS_WORKSPACE_NAV_KEY);
+  }
 
   const getSelectedKey = () => {
     const name = route.name;
@@ -787,11 +835,23 @@ function App() {
     if (name === 'users') return 'users';
     if (name === 'control-plane') return 'control-plane';
     if (name === 'landing-builder') return 'landing-builder';
-    return name;
+    return normalizeSettingsWorkspaceSelectedKey(name);
   };
 
   const renderContent = () => {
     if (route.name === 'forbidden') {
+      const routeLicenseRestriction = readStoredRouteLicenseRestriction();
+      if (routeLicenseRestriction) {
+        return (
+          <LicenseRestrictedResult
+            restriction={routeLicenseRestriction}
+            onBack={() => {
+              clearStoredRouteLicenseRestriction();
+              navigate('/dashboard');
+            }}
+          />
+        );
+      }
       return (
         <Result
           status="403"
@@ -950,9 +1010,9 @@ function App() {
       case 'profile':
         return <ProfilePage />;
       case 'settings':
-        return <SettingsPage />;
+        return <SettingsIntegrationsWorkspacePage defaultTab="system" />;
       case 'integrations':
-        return <IntegrationsPage />;
+        return <SettingsIntegrationsWorkspacePage defaultTab="integrations" />;
       case 'landing-builder':
         return <LandingBuilderPage />;
       case 'landing-public':
@@ -1015,6 +1075,7 @@ function App() {
       onLocaleChange={handleLocaleChange}
       selectedKey={getSelectedKey()}
       allowedNavKeys={allowedNavKeys}
+      settingsWorkspacePath={settingsWorkspacePath}
       user={user}
       frontendVersion={frontendVersion}
       wsConnected={wsConnected}
@@ -1088,30 +1149,43 @@ function AppWithTheme() {
   }, [activeLocale]);
 
   const antdLocale = activeLocale === 'en' ? enUS : activeLocale === 'uz' ? uzUZ : ruRU;
-  const emptyDescription = activeLocale === 'en' ? 'No data' : activeLocale === 'uz' ? "Ma'lumot yo'q" : 'Нет данных';
+  const emptyDescription =
+    activeLocale === 'en' ? 'No data' : activeLocale === 'uz' ? "Ma'lumot yo'q" : 'Нет данных';
+  const isDark = theme === 'dark';
 
   // Ant Design theme configuration
   const themeConfig = {
-    algorithm: theme === 'dark' ? antdTheme.darkAlgorithm : antdTheme.defaultAlgorithm,
+    algorithm: isDark ? antdTheme.darkAlgorithm : antdTheme.defaultAlgorithm,
     token: {
-      colorPrimary: theme === 'dark' ? '#fafafa' : '#18181b', // zinc-50 : zinc-900
-      colorInfo: theme === 'dark' ? '#8ab4f8' : '#4285f4', // Better blue visibility in dark
-      colorSuccess: theme === 'dark' ? '#4ade80' : '#16a34a', // green-400 : green-600
-      colorWarning: theme === 'dark' ? '#fbbf24' : '#d97706', // amber-400 : amber-600
-      colorError: theme === 'dark' ? '#f87171' : '#dc2626',   // red-400 : red-600
+      colorPrimary: isDark ? '#f8fafc' : '#18181b',
+      colorInfo: isDark ? '#7dd3fc' : '#2563eb',
+      colorSuccess: isDark ? '#4ade80' : '#16a34a',
+      colorWarning: isDark ? '#fbbf24' : '#d97706',
+      colorError: isDark ? '#f87171' : '#dc2626',
       zIndexPopupBase: 1200, // Keep dropdowns/selects above sticky header (z-index: 1100)
-      borderRadius: 6,
-      colorBgContainer: theme === 'dark' ? '#161b22' : '#ffffff', // softer dark container
-      colorBgElevated: theme === 'dark' ? '#1e232e' : '#ffffff', // elevated dark
-      colorBgLayout: theme === 'dark' ? 'transparent' : '#f8fafc', // transparent to show body gradient
-      colorBorderSecondary: theme === 'dark' ? '#2d3343' : '#e4e4e7',
-      colorBorder: theme === 'dark' ? '#2d3343' : '#e4e4e7',
-      colorTextBase: theme === 'dark' ? '#f1f5f9' : '#09090b',
-      colorTextSecondary: theme === 'dark' ? '#d4d4d8' : '#71717a', // Adjusted for dark mode: zinc-300 : zinc-500
-      colorTextLightSolid: theme === 'dark' ? '#18181b' : '#fafafa', // inverted text for primary buttons
-      fontFamily: 'ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif',
-      boxShadow: theme === 'dark' ? '0 1px 2px 0 rgba(0, 0, 0, 0.5)' : '0 1px 2px 0 rgba(0, 0, 0, 0.05)',
-      boxShadowSecondary: theme === 'dark' ? '0 4px 6px -1px rgba(0, 0, 0, 0.5), 0 2px 4px -2px rgba(0, 0, 0, 0.5)' : '0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -2px rgba(0, 0, 0, 0.1)',
+      borderRadius: 8,
+      borderRadiusLG: 18,
+      borderRadiusSM: 10,
+      wireframe: false,
+      colorBgBase: isDark ? '#09111f' : '#f8fafc',
+      colorBgContainer: isDark ? '#132033' : '#ffffff',
+      colorBgElevated: isDark ? '#18263b' : '#ffffff',
+      colorBgLayout: isDark ? 'transparent' : '#f0f2f5',
+      colorFillAlter: isDark ? 'rgba(148, 163, 184, 0.16)' : '#eef2f7',
+      colorFillSecondary: isDark ? 'rgba(148, 163, 184, 0.24)' : '#dde5ef',
+      colorBorderSecondary: isDark ? 'rgba(148, 163, 184, 0.26)' : '#d8e1eb',
+      colorBorder: isDark ? 'rgba(148, 163, 184, 0.32)' : '#d3dde8',
+      colorTextBase: isDark ? '#f8fbff' : '#09090b',
+      colorText: isDark ? '#eef4fb' : '#18181b',
+      colorTextSecondary: isDark ? '#cad6e2' : '#5b6878',
+      colorTextTertiary: isDark ? '#aab8c8' : '#6f7b8a',
+      colorTextLightSolid: isDark ? '#020617' : '#fafafa',
+      fontFamily:
+        'ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif',
+      boxShadow: isDark ? '0 14px 30px rgba(2, 6, 23, 0.34)' : '0 10px 25px rgba(15, 23, 42, 0.08)',
+      boxShadowSecondary: isDark
+        ? '0 22px 50px rgba(2, 6, 23, 0.42)'
+        : '0 18px 40px rgba(15, 23, 42, 0.12)',
       controlHeight: 38,
       controlHeightLG: 42,
       padding: 16,
@@ -1119,89 +1193,108 @@ function AppWithTheme() {
     },
     components: {
       Card: {
-        colorBgContainer: theme === 'dark' ? '#161b22' : '#ffffff',
-        colorBorderSecondary: theme === 'dark' ? '#2d3343' : '#e4e4e7',
+        colorBgContainer: isDark ? '#132033' : '#ffffff',
+        colorBorderSecondary: isDark ? 'rgba(148, 163, 184, 0.24)' : '#dde5ef',
         borderRadiusLG: 18,
         headerFontSize: 18,
         headerFontSizeSM: 16,
         paddingLG: 20,
+        boxShadowTertiary: isDark
+          ? '0 18px 42px rgba(2, 6, 23, 0.28)'
+          : '0 10px 28px rgba(15, 23, 42, 0.08)',
       },
       Button: {
-        colorPrimaryHover: theme === 'dark' ? '#cbd5e1' : '#27272a',
-        colorPrimaryActive: theme === 'dark' ? '#94a3b8' : '#3f3f46',
-        colorBgTextHover: theme === 'dark' ? '#2d3343' : '#f4f4f5',
-        colorBgTextActive: theme === 'dark' ? '#3b4358' : '#e4e4e7',
+        colorPrimaryHover: isDark ? '#e2e8f0' : '#27272a',
+        colorPrimaryActive: isDark ? '#cbd5e1' : '#3f3f46',
+        primaryShadow: isDark
+          ? '0 10px 24px rgba(148, 163, 184, 0.18)'
+          : '0 10px 20px rgba(24, 24, 27, 0.12)',
+        colorBgTextHover: isDark ? 'rgba(148, 163, 184, 0.14)' : '#f4f4f5',
+        colorBgTextActive: isDark ? 'rgba(148, 163, 184, 0.2)' : '#e4e4e7',
         borderRadius: 12,
         controlHeight: 38,
         fontWeight: 500,
         paddingInline: 16,
       },
       Table: {
-        colorBgContainer: theme === 'dark' ? '#161b22' : '#ffffff',
-        headerBg: theme === 'dark' ? '#11151c' : '#f8fafc',
-        headerColor: theme === 'dark' ? '#cbd5e1' : '#71717a',
-        rowHoverBg: theme === 'dark' ? '#1e232e' : '#f1f5f9',
-        borderColor: theme === 'dark' ? '#2d3343' : '#e4e4e7',
-        headerSplitColor: theme === 'dark' ? '#2d3343' : '#e5e7eb',
+        colorBgContainer: isDark ? '#132033' : '#ffffff',
+        headerBg: isDark ? '#162338' : '#f3f6fa',
+        headerColor: isDark ? '#d4deea' : '#5b6878',
+        rowHoverBg: isDark ? 'rgba(51, 65, 85, 0.74)' : '#eef4fb',
+        borderColor: isDark ? 'rgba(148, 163, 184, 0.3)' : '#dde5ef',
+        headerSplitColor: isDark ? 'rgba(148, 163, 184, 0.3)' : '#dde5ef',
         cellPaddingBlock: 14,
         cellPaddingInline: 16,
         cellPaddingBlockSM: 12,
         cellPaddingInlineSM: 14,
       },
       Descriptions: {
-        colorTextSecondary: theme === 'dark' ? '#cbd5e1' : '#52525b',
-        labelBg: theme === 'dark' ? '#11151c' : '#f8fafc',
+        colorTextSecondary: isDark ? '#d7e1ec' : '#52525b',
+        labelBg: isDark ? '#162338' : '#f3f6fa',
         itemPaddingBottom: 14,
       },
       Tag: {
         borderRadiusSM: 999,
-        defaultBg: theme === 'dark' ? '#1f2937' : '#f4f4f5',
-        defaultColor: theme === 'dark' ? '#e5e7eb' : '#3f3f46',
+        defaultBg: isDark ? 'rgba(51, 65, 85, 0.7)' : '#f4f4f5',
+        defaultColor: isDark ? '#e5e7eb' : '#3f3f46',
         fontSizeSM: 12,
       },
       Tabs: {
-        itemColor: theme === 'dark' ? '#cbd5e1' : '#52525b',
-        itemSelectedColor: theme === 'dark' ? '#f8fafc' : '#18181b',
-        itemHoverColor: theme === 'dark' ? '#f8fafc' : '#09090b',
-        inkBarColor: theme === 'dark' ? '#f8fafc' : '#18181b',
-        cardBg: theme === 'dark' ? '#161b22' : '#ffffff',
+        itemColor: isDark ? '#c7d3df' : '#52525b',
+        itemSelectedColor: isDark ? '#f8fafc' : '#18181b',
+        itemHoverColor: isDark ? '#f8fafc' : '#09090b',
+        inkBarColor: isDark ? '#7dd3fc' : '#18181b',
+        cardBg: isDark ? '#132033' : '#ffffff',
         horizontalItemGutter: 24,
       },
       Layout: {
-        siderBg: theme === 'dark' ? '#161b22' : '#ffffff',
-        headerBg: theme === 'dark' ? '#161b22' : '#ffffff',
-        bodyBg: theme === 'dark' ? 'transparent' : '#f8fafc',
+        siderBg: isDark ? '#0c1523' : '#ffffff',
+        headerBg: isDark ? '#0f1828' : '#ffffff',
+        bodyBg: isDark ? 'transparent' : '#f8fafc',
       },
       Menu: {
-        itemBg: theme === 'dark' ? '#161b22' : '#ffffff',
+        itemBg: isDark ? 'transparent' : '#ffffff',
         activeBarBorderWidth: 0,
-        itemSelectedBg: theme === 'dark' ? '#2d3343' : '#f1f5f9',
-        itemSelectedColor: theme === 'dark' ? '#f1f5f9' : '#18181b', // Bright white for selected in dark
-        itemColor: theme === 'dark' ? '#cbd5e1' : '#71717a', // Bright white for items in dark
-        itemHoverColor: theme === 'dark' ? '#f1f5f9' : '#18181b',
-        itemHoverBg: theme === 'dark' ? '#1e232e' : '#f8fafc',
+        itemSelectedBg: isDark ? 'rgba(125, 211, 252, 0.28)' : '#eaf3ff',
+        itemSelectedColor: isDark ? '#f8fafc' : '#18181b',
+        itemColor: isDark ? '#cad6e2' : '#617082',
+        itemHoverColor: isDark ? '#f8fafc' : '#18181b',
+        itemHoverBg: isDark ? 'rgba(148, 163, 184, 0.18)' : '#f4f8fc',
+        groupTitleColor: isDark ? '#9cafc1' : '#617082',
       },
       Input: {
-        colorBgContainer: theme === 'dark' ? '#161b22' : '#ffffff',
-        colorBorder: theme === 'dark' ? '#2d3343' : '#e4e4e7',
-        activeBorderColor: theme === 'dark' ? '#f1f5f9' : '#18181b',
-        hoverBorderColor: theme === 'dark' ? '#46506b' : '#d4d4d8',
+        colorBgContainer: isDark ? '#162338' : '#ffffff',
+        colorBorder: isDark ? 'rgba(148, 163, 184, 0.3)' : '#d3dde8',
+        activeBorderColor: isDark ? '#7dd3fc' : '#18181b',
+        hoverBorderColor: isDark ? 'rgba(125, 211, 252, 0.6)' : '#aebbc9',
         controlHeight: 38,
+        activeShadow: isDark ? '0 0 0 3px rgba(125, 211, 252, 0.14)' : '0 0 0 2px rgba(24, 24, 27, 0.08)',
       },
       Select: {
-        colorBgContainer: theme === 'dark' ? '#161b22' : '#ffffff',
-        colorBorder: theme === 'dark' ? '#2d3343' : '#e4e4e7',
-        colorPrimaryHover: theme === 'dark' ? '#46506b' : '#d4d4d8',
-        colorPrimary: theme === 'dark' ? '#f1f5f9' : '#18181b',
-        optionSelectedBg: theme === 'dark' ? '#2d3343' : '#f1f5f9',
+        colorBgContainer: isDark ? '#162338' : '#ffffff',
+        colorBorder: isDark ? 'rgba(148, 163, 184, 0.3)' : '#d3dde8',
+        colorPrimaryHover: isDark ? 'rgba(125, 211, 252, 0.4)' : '#d4d4d8',
+        colorPrimary: isDark ? '#7dd3fc' : '#18181b',
+        optionSelectedBg: isDark ? 'rgba(125, 211, 252, 0.22)' : '#eaf3ff',
         controlHeight: 38,
       },
       Dropdown: {
-        colorBgElevated: theme === 'dark' ? '#1e232e' : '#ffffff',
-        colorText: theme === 'dark' ? '#f1f5f9' : '#09090b',
-        controlItemBgHover: theme === 'dark' ? '#2d3343' : '#f1f5f9',
-      }
-    }
+        colorBgElevated: isDark ? '#132033' : '#ffffff',
+        colorText: isDark ? '#f1f5f9' : '#09090b',
+        controlItemBgHover: isDark ? 'rgba(125, 211, 252, 0.18)' : '#f1f5f9',
+      },
+      Modal: {
+        contentBg: isDark ? '#132033' : '#ffffff',
+        headerBg: isDark ? '#132033' : '#ffffff',
+        titleColor: isDark ? '#f8fafc' : '#09090b',
+      },
+      Drawer: {
+        colorBgElevated: isDark ? '#0f1828' : '#ffffff',
+      },
+      Tooltip: {
+        colorBgSpotlight: isDark ? '#0f172a' : '#09090b',
+      },
+    },
   };
 
   return (

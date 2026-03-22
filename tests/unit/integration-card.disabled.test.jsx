@@ -1,4 +1,4 @@
-import { fireEvent, render, screen } from '@testing-library/react';
+import { act, fireEvent, render, screen } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
 import IntegrationCard from '../../src/components/IntegrationCard.jsx';
 
@@ -28,7 +28,7 @@ describe('IntegrationCard disabled mode', () => {
     expect(onConnect).not.toHaveBeenCalled();
   });
 
-  it('allows connect action when enabled', () => {
+  it('allows connect action when enabled', async () => {
     const onConnect = vi.fn().mockResolvedValue(undefined);
 
     render(
@@ -45,7 +45,9 @@ describe('IntegrationCard disabled mode', () => {
     const connectBtn = screen.getByRole('button', { name: /подключить|connect/i });
     expect(connectBtn).not.toBeDisabled();
 
-    fireEvent.click(connectBtn);
+    await act(async () => {
+      fireEvent.click(connectBtn);
+    });
     expect(onConnect).toHaveBeenCalledTimes(1);
   });
 });

@@ -231,6 +231,82 @@ const ADMIN_PERMISSIONS = ['auth.view_user', 'settings.view_systemsettings'];
   if (routeMeta[route]) routeMeta[route].permissions = ADMIN_PERMISSIONS;
 });
 
+[
+  ['dashboard', 'dashboard.core'],
+  ['chat', ['communications.chat', 'integrations.core', 'inbox.unified']],
+  ['chat-list', ['communications.chat', 'integrations.core', 'inbox.unified']],
+  ['chat-thread', ['communications.chat', 'integrations.core', 'inbox.unified']],
+  ['ai-chat', 'ai.assist'],
+  ['massmail', 'communications.email'],
+  ['sms-center', 'communications.sms'],
+  ['campaigns-list', 'marketing.campaigns'],
+  ['campaigns-new', 'marketing.campaigns'],
+  ['campaigns-detail', 'marketing.campaigns'],
+  ['campaigns-edit', 'marketing.campaigns'],
+  ['marketing-segments', 'marketing.segments'],
+  ['marketing-templates', 'marketing.templates'],
+  ['payments-list', 'crm.payments'],
+  ['payments-new', 'crm.payments'],
+  ['payments-detail', 'crm.payments'],
+  ['payments-edit', 'crm.payments'],
+  ['crm-emails', 'communications.email'],
+  ['operations', 'settings.core'],
+  ['settings', 'settings.core'],
+  ['integrations', 'integrations.core'],
+  ['reference-data', 'reference.core'],
+  ['landing-builder', 'landing.builder'],
+  ['users', 'users.core'],
+  ['help-center', 'help.center'],
+  ['leads-list', 'crm.leads'],
+  ['leads-new', 'crm.leads'],
+  ['leads-detail', 'crm.leads'],
+  ['leads-edit', 'crm.leads'],
+  ['contacts-list', 'crm.contacts'],
+  ['contacts-new', 'crm.contacts'],
+  ['contacts-detail', 'crm.contacts'],
+  ['contacts-edit', 'crm.contacts'],
+  ['companies-list', 'crm.companies'],
+  ['companies-new', 'crm.companies'],
+  ['companies-detail', 'crm.companies'],
+  ['companies-edit', 'crm.companies'],
+  ['deals-list', 'crm.deals'],
+  ['deals-new', 'crm.deals'],
+  ['deals-detail', 'crm.deals'],
+  ['deals-edit', 'crm.deals'],
+  ['tasks-list', 'tasks.core'],
+  ['tasks-new', 'tasks.core'],
+  ['tasks-detail', 'tasks.core'],
+  ['tasks-edit', 'tasks.core'],
+  ['projects-list', 'tasks.core'],
+  ['projects-new', 'tasks.core'],
+  ['projects-detail', 'tasks.core'],
+  ['projects-edit', 'tasks.core'],
+  ['memos-list', 'tasks.core'],
+  ['memos-new', 'tasks.core'],
+  ['memos-detail', 'tasks.core'],
+  ['memos-edit', 'tasks.core'],
+  ['reminders-list', 'tasks.core'],
+  ['reminders-new', 'tasks.core'],
+  ['reminders-detail', 'tasks.core'],
+  ['reminders-edit', 'tasks.core'],
+  ['calls-list', 'communications.voip'],
+  ['calls-dashboard', 'communications.voip'],
+  ['telephony', 'communications.voip'],
+  ['analytics', 'analytics.core'],
+  ['products-list', 'crm.products'],
+  ['products-new', 'crm.products'],
+  ['products-detail', 'crm.products'],
+  ['products-edit', 'crm.products'],
+].forEach(([route, feature]) => {
+  if (!routeMeta[route]) return;
+  if (Array.isArray(feature)) {
+    routeMeta[route].features = feature;
+    delete routeMeta[route].feature;
+    return;
+  }
+  routeMeta[route].feature = feature;
+});
+
 export function getRouteMeta(name) {
  return routeMeta[name] || { auth: false };
 }

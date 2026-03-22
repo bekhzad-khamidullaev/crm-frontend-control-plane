@@ -4,15 +4,19 @@
  */
 
 import React, { useState } from 'react';
-import { Form, Input, Button, Space, Alert, Typography, Card, App, Select } from 'antd';
+import { Form, Input, Button, Space, Alert, Typography, Card, App, Select, theme as antdTheme } from 'antd';
 import { FacebookOutlined, ReloadOutlined } from '@ant-design/icons';
 import { connectFacebook, discoverFacebookPages } from '../lib/api/integrations/facebook';
 import { t } from '../lib/i18n';
+import { useTheme } from '../lib/hooks/useTheme';
 
 const { Link, Paragraph } = Typography;
 
 export default function FacebookConnect({ onSuccess, onCancel }) {
   const { message } = App.useApp();
+  const { token } = antdTheme.useToken();
+  const { theme } = useTheme();
+  const isDark = theme === 'dark';
   const tr = (key, fallback, vars = {}) => {
     const localized = t(key, vars);
     return localized === key ? fallback : localized;
@@ -21,6 +25,13 @@ export default function FacebookConnect({ onSuccess, onCancel }) {
   const [loading, setLoading] = useState(false);
   const [discovering, setDiscovering] = useState(false);
   const [pages, setPages] = useState([]);
+  const surfaceCardStyle = {
+    marginBottom: 24,
+    borderRadius: 18,
+    border: `1px solid ${isDark ? 'rgba(148, 163, 184, 0.18)' : token.colorBorderSecondary}`,
+    background: isDark ? 'rgba(12, 19, 32, 0.92)' : token.colorBgContainer,
+    boxShadow: isDark ? '0 16px 30px rgba(2, 6, 23, 0.28)' : '0 12px 24px rgba(15, 23, 42, 0.06)',
+  };
 
   const getErrorText = (error, fallback) => {
     const details = error?.details || {};
@@ -84,16 +95,25 @@ export default function FacebookConnect({ onSuccess, onCancel }) {
   }));
 
   return (
-    <div>
+    <div style={{ color: token.colorText }}>
       <Alert
         message={tr('facebookConnect.alert.title', 'Подключение Facebook Messenger')}
         description={tr('facebookConnect.alert.description', 'Для подключения вам потребуется Facebook страница и токен доступа с правами manage_pages и pages_messaging')}
         type="info"
         showIcon
-        style={{ marginBottom: 24 }}
+        style={{
+          marginBottom: 24,
+          borderRadius: 16,
+          border: `1px solid ${isDark ? 'rgba(59, 130, 246, 0.28)' : token.colorInfoBorder}`,
+          background: isDark ? 'rgba(10, 19, 35, 0.92)' : token.colorInfoBg,
+        }}
       />
 
-      <Card title={tr('facebookConnect.guide.title', 'Инструкция по подключению')} style={{ marginBottom: 24 }}>
+      <Card
+        title={tr('facebookConnect.guide.title', 'Инструкция по подключению')}
+        style={{ marginBottom: 24, borderRadius: 18 }}
+        styles={{ body: { lineHeight: 1.6 } }}
+      >
         <Typography>
           <Paragraph>
             <strong>1. Создайте приложение Facebook</strong>
@@ -136,11 +156,16 @@ export default function FacebookConnect({ onSuccess, onCancel }) {
         </Typography>
       </Card>
 
-      <Form
-        form={form}
-        layout="vertical"
-        onFinish={handleConnect}
+      <Card
+        title={tr('facebookConnect.form.title', 'Данные подключения')}
+        style={surfaceCardStyle}
+        styles={{ body: { padding: 24 } }}
       >
+        <Form
+          form={form}
+          layout="vertical"
+          onFinish={handleConnect}
+        >
         <Form.Item
           label="Page Access Token"
           name="access_token"
@@ -165,7 +190,7 @@ export default function FacebookConnect({ onSuccess, onCancel }) {
         </Form.Item>
 
         <Form.Item>
-          <Button icon={<ReloadOutlined />} onClick={handleDiscover} loading={discovering}>
+          <Button type="primary" ghost={isDark} icon={<ReloadOutlined />} onClick={handleDiscover} loading={discovering}>
             Загрузить страницы из Meta
           </Button>
         </Form.Item>
@@ -205,12 +230,12 @@ export default function FacebookConnect({ onSuccess, onCancel }) {
           <Input placeholder="CRM Support" />
         </Form.Item>
 
-          <Alert
+        <Alert
           message={tr('facebookConnect.permissions.title', 'Проверка прав доступа')}
           description={
-            <div>
+            <div style={{ lineHeight: 1.65 }}>
               Убедитесь, что токен имеет следующие права:
-              <ul>
+              <ul style={{ marginTop: 8, paddingLeft: 20 }}>
                 <li>pages_messaging - для отправки и получения сообщений</li>
                 <li>pages_manage_metadata - для управления настройками</li>
                 <li>pages_read_engagement - для чтения взаимодействий</li>
@@ -219,22 +244,28 @@ export default function FacebookConnect({ onSuccess, onCancel }) {
           }
           type="warning"
           showIcon
-          style={{ marginBottom: 16 }}
+          style={{
+            marginBottom: 16,
+            borderRadius: 14,
+            border: '1px solid rgba(250, 173, 20, 0.32)',
+            background: isDark ? 'rgba(44, 28, 4, 0.92)' : token.colorWarningBg,
+          }}
         />
 
-        <Form.Item>
-          <Space>
+          <Form.Item style={{ marginBottom: 0 }}>
+            <Space wrap>
               <Button type="primary" htmlType="submit" loading={loading} icon={<FacebookOutlined />}>
-              {tr('facebookConnect.actions.connect', 'Подключить Facebook Messenger')}
+                {tr('facebookConnect.actions.connect', 'Подключить Facebook Messenger')}
               </Button>
               {onCancel && (
                 <Button onClick={onCancel}>
                   {tr('actions.cancel', 'Отмена')}
                 </Button>
               )}
-          </Space>
-        </Form.Item>
-      </Form>
+            </Space>
+          </Form.Item>
+        </Form>
+      </Card>
     </div>
   );
 }

@@ -44,14 +44,22 @@ export const PageHeader: React.FC<PageHeaderProps> = ({
         border: `1px solid ${token.colorBorderSecondary}`,
         background: token.colorBgElevated,
         boxShadow: token.boxShadowTertiary,
+        position: 'relative',
+        overflow: 'hidden',
       }}
     >
+      <div
+        style={{
+          position: 'absolute',
+          insetInline: 0,
+          top: 0,
+          height: 3,
+          background: `linear-gradient(90deg, ${token.colorPrimary} 0%, ${token.colorInfo} 100%)`,
+        }}
+      />
       <Flex vertical gap={16}>
         {breadcrumbs?.length ? (
-          <Breadcrumb
-            items={breadcrumbItems}
-            style={{ color: token.colorTextSecondary }}
-          />
+          <Breadcrumb items={breadcrumbItems} style={{ color: token.colorTextSecondary, fontWeight: 500 }} />
         ) : null}
 
         <Flex
@@ -61,16 +69,22 @@ export const PageHeader: React.FC<PageHeaderProps> = ({
           vertical={isMobile}
         >
           <div style={{ minWidth: 0, flex: 1 }}>
-            <Title level={isMobile ? 3 : 2} style={{ margin: 0 }}>
+            <Title
+              level={isMobile ? 3 : 2}
+              style={{ margin: 0, color: token.colorTextBase }}
+            >
               {title}
             </Title>
             {subtitle ? (
               <Paragraph
                 type="secondary"
                 style={{
-                  marginTop: 6,
+                  marginTop: 8,
                   marginBottom: 0,
-                  maxWidth: 960,
+                  maxWidth: 920,
+                  fontSize: isMobile ? 14 : 15,
+                  lineHeight: 1.6,
+                  color: token.colorTextSecondary,
                 }}
               >
                 {subtitle}
@@ -79,7 +93,16 @@ export const PageHeader: React.FC<PageHeaderProps> = ({
           </div>
 
           {extra ? (
-            <div style={{ width: isMobile ? '100%' : 'auto', flexShrink: 0 }}>
+            <div
+              style={{
+                width: isMobile ? '100%' : 'auto',
+                flexShrink: 0,
+                padding: isMobile ? 0 : 4,
+                borderRadius: token.borderRadiusLG,
+                background: isMobile ? 'transparent' : token.colorBgContainer,
+                border: isMobile ? 'none' : `1px solid ${token.colorBorderSecondary}`,
+              }}
+            >
               {extra}
             </div>
           ) : null}
@@ -88,7 +111,8 @@ export const PageHeader: React.FC<PageHeaderProps> = ({
         {children ? (
           <div
             style={{
-              paddingTop: 4,
+              marginTop: 4,
+              paddingTop: 8,
               borderTop: `1px solid ${token.colorBorderSecondary}`,
             }}
           >

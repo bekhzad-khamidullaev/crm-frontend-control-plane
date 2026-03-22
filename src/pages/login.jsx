@@ -12,6 +12,8 @@ import {
     setToken,
 } from '../lib/api/auth';
 import { authApi } from '../lib/api/client';
+import { clearStoredLicenseFeatures, persistLicenseFeatures } from '../lib/api/licenseFeatures.js';
+import { getLicenseMe } from '../lib/api/licenseControl.js';
 import { t } from '../lib/i18n/index.js';
 import { mergeRoles, rolesFromProfile, rolesFromTokenPayload } from '../lib/roles';
 import { navigate } from '../router';
@@ -92,6 +94,14 @@ function LoginPage({ onLogin }) {
         persistPermissions(me?.permissions || response.all_permissions || response.permissions || []);
       } catch (e) {
         console.warn('Failed to fetch user roles on login:', e);
+      }
+
+      try {
+        const license = await getLicenseMe();
+        persistLicenseFeatures(license?.features || []);
+      } catch (e) {
+        console.warn('Failed to preload license entitlements on login:', e);
+        clearStoredLicenseFeatures();
       }
 
       const userInfo = getUserFromToken();

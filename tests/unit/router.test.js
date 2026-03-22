@@ -1,6 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import * as auth from '../../src/lib/api/auth.js';
-import { navigate, onRouteChange, parseHash } from '../../src/router.js';
+import { getRouteMeta, navigate, onRouteChange, parseHash } from '../../src/router.js';
 
 vi.mock('../../src/lib/api/auth.js', () => ({
   isAuthenticated: vi.fn(),
@@ -67,6 +67,12 @@ describe('Router', () => {
       location.hash = '#/leads/123/edit';
       expect(parseHash()).toEqual({ name: 'leads-edit', params: { id: '123' } });
     });
+  });
+
+  it('exposes unified inbox route features for chat workspace', () => {
+    expect(getRouteMeta('chat').features).toEqual(
+      expect.arrayContaining(['communications.chat', 'integrations.core', 'inbox.unified']),
+    );
   });
 
   describe('navigation', () => {

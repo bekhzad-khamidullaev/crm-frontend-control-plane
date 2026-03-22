@@ -62,24 +62,38 @@ const IMPLEMENTATION_STEPS = [
 
 const PRICING = [
   {
-    plan: 'Start',
+    plan: 'Starter',
     price: '$19',
     period: '/user/mo',
-    features: ['Лиды и сделки', 'Базовые отчеты', 'Email и задачи', 'Онбординг 1 день'],
+    features: ['Лиды и сделки', 'Базовые отчеты', 'Email и задачи', 'SMB install profile'],
     recommended: false,
   },
   {
-    plan: 'Growth',
+    plan: 'Sales',
     price: '$39',
     period: '/user/mo',
-    features: ['Все из Start', 'Автоматизация процессов', 'Сквозная аналитика', 'Интеграции и API'],
+    features: ['Все из Starter', 'Автоматизация процессов', 'Сквозная аналитика', 'Sales faststart'],
     recommended: true,
+  },
+  {
+    plan: 'Omnichannel',
+    price: '$79',
+    period: '/user/mo',
+    features: ['Messenger-first workspace', 'VoIP + chat', 'Маркетинг и SLA', 'Omnichannel install profile'],
+    recommended: false,
   },
   {
     plan: 'Enterprise',
     price: 'Custom',
     period: '',
-    features: ['Выделенный менеджер', 'SLA и безопасность', 'Кастомные роли и отчеты', 'Миграция и обучение'],
+    features: ['ERP-adjacent модули', 'Документы, invoicing и fulfillment', 'Marketplace readiness', 'Миграция и обучение'],
+    recommended: false,
+  },
+  {
+    plan: 'On-prem Enterprise',
+    price: 'Custom',
+    period: '',
+    features: ['On-prem secure profile', 'Compliance и partner delivery', 'Расширенные add-ons', 'Air-gapped rollout'],
     recommended: false,
   },
 ];

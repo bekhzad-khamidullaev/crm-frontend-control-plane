@@ -1,13 +1,17 @@
 import React, { useState } from 'react';
-import { Alert, App, Button, Form, Input, Select, Space, Switch } from 'antd';
+import { Alert, App, Button, Card, Form, Input, Select, Space, Switch, theme as antdTheme } from 'antd';
 import { MessageOutlined, ReloadOutlined } from '@ant-design/icons';
 import { connectWhatsAppAccount, discoverWhatsAppAssets } from '../lib/api/integrations/whatsapp.js';
 import { t } from '../lib/i18n';
+import { useTheme } from '../lib/hooks/useTheme';
 
 const idsEqual = (left, right) => String(left) === String(right);
 
 export default function WhatsAppConnect({ onSuccess, onCancel }) {
   const { message } = App.useApp();
+  const { token } = antdTheme.useToken();
+  const { theme } = useTheme();
+  const isDark = theme === 'dark';
   const tr = (key, fallback, vars = {}) => {
     const localized = t(key, vars);
     return localized === key ? fallback : localized;
@@ -17,6 +21,13 @@ export default function WhatsAppConnect({ onSuccess, onCancel }) {
   const [discovering, setDiscovering] = useState(false);
   const [metaAssets, setMetaAssets] = useState([]);
   const selectedBusinessId = Form.useWatch('business_account_id', form);
+  const surfaceCardStyle = {
+    marginBottom: 24,
+    borderRadius: 18,
+    border: `1px solid ${isDark ? 'rgba(148, 163, 184, 0.18)' : token.colorBorderSecondary}`,
+    background: isDark ? 'rgba(12, 19, 32, 0.92)' : token.colorBgContainer,
+    boxShadow: isDark ? '0 16px 30px rgba(2, 6, 23, 0.28)' : '0 12px 24px rgba(15, 23, 42, 0.06)',
+  };
 
   const getErrorText = (error, fallback) => {
     const details = error?.details || {};
@@ -96,27 +107,37 @@ export default function WhatsAppConnect({ onSuccess, onCancel }) {
     }));
 
   return (
-    <div>
+    <div style={{ color: token.colorText }}>
       <Alert
         type="info"
         showIcon
-        style={{ marginBottom: 16 }}
+        style={{
+          marginBottom: 16,
+          borderRadius: 16,
+          border: `1px solid ${isDark ? 'rgba(59, 130, 246, 0.28)' : token.colorInfoBorder}`,
+          background: isDark ? 'rgba(10, 19, 35, 0.92)' : token.colorInfoBg,
+        }}
         message={tr('whatsappConnect.alert.title', 'Подключение WhatsApp Cloud API')}
         description={tr('whatsappConnect.alert.description', 'Укажите Access token и подтяните Business Account/Phone Number ID автоматически из Meta.')}
       />
 
-      <Form
-        form={form}
-        layout="vertical"
-        initialValues={{
-          is_active: true,
-          auto_sync_messages: true,
-          auto_create_leads: true,
-        }}
-        onFinish={handleSubmit}
+      <Card
+        title={tr('whatsappConnect.form.title', 'Данные подключения')}
+        style={surfaceCardStyle}
+        styles={{ body: { padding: 24 } }}
       >
+        <Form
+          form={form}
+          layout="vertical"
+          initialValues={{
+            is_active: true,
+            auto_sync_messages: true,
+            auto_create_leads: true,
+          }}
+          onFinish={handleSubmit}
+        >
         <Form.Item>
-          <Button icon={<ReloadOutlined />} onClick={handleDiscover} loading={discovering}>
+          <Button type="primary" ghost={isDark} icon={<ReloadOutlined />} onClick={handleDiscover} loading={discovering}>
             {tr('whatsappConnect.actions.loadFromMeta', 'Загрузить номера из Meta')}
           </Button>
         </Form.Item>
@@ -202,7 +223,7 @@ export default function WhatsAppConnect({ onSuccess, onCancel }) {
           <Input placeholder="verify-token-for-webhook" />
         </Form.Item>
 
-        <Space size="large">
+        <Space size="large" wrap>
           <Form.Item label={tr('whatsappConnect.fields.active', 'Активен')} name="is_active" valuePropName="checked">
             <Switch />
           </Form.Item>
@@ -214,15 +235,16 @@ export default function WhatsAppConnect({ onSuccess, onCancel }) {
           </Form.Item>
         </Space>
 
-        <Form.Item>
-          <Space>
-            <Button type="primary" htmlType="submit" loading={loading}>
-              {tr('whatsappConnect.actions.connect', 'Подключить WhatsApp')}
-            </Button>
-            {onCancel && <Button onClick={onCancel}>{tr('actions.cancel', 'Отмена')}</Button>}
-          </Space>
-        </Form.Item>
-      </Form>
+          <Form.Item style={{ marginBottom: 0 }}>
+            <Space wrap>
+              <Button type="primary" htmlType="submit" loading={loading}>
+                {tr('whatsappConnect.actions.connect', 'Подключить WhatsApp')}
+              </Button>
+              {onCancel && <Button onClick={onCancel}>{tr('actions.cancel', 'Отмена')}</Button>}
+            </Space>
+          </Form.Item>
+        </Form>
+      </Card>
     </div>
   );
 }

@@ -9,7 +9,60 @@ import {
   getCpUnlicensedDeployments,
   rejectCpRuntimeRequest,
 } from "../../../lib/api/licenseControl.js";
-import { formatDateTime, normalizeCollection, normalizeCount } from "./utils.js";
+import { formatBackendError, formatDateTime, normalizeCollection, normalizeCount } from "./utils.js";
+
+const normalizeMatchValue = (value) => String(value || "").trim().toLowerCase();
+
+const normalizeDomainValue = (value) => {
+  const text = normalizeMatchValue(value);
+  if (!text) return "";
+
+  try {
+    const parsed = text.includes("://") ? new URL(text) : new URL(`https://${text}`);
+    return parsed.hostname.replace(/^www\./, "");
+  } catch {
+    return text.replace(/^www\./, "").replace(/\/.*$/, "");
+  }
+};
+
+const getRequestPayloadDomain = (requestPayload) => {
+  if (!requestPayload) return "";
+
+  if (typeof requestPayload === "string") {
+    try {
+      const parsed = JSON.parse(requestPayload);
+      return normalizeMatchValue(parsed?.domain || parsed?.request_domain || "");
+    } catch {
+      return "";
+    }
+  }
+
+  return normalizeMatchValue(requestPayload?.domain || requestPayload?.request_domain || "");
+};
+
+export function getDeploymentOptionsForRequest(row, deployments) {
+  const requestInstance = normalizeMatchValue(row?.instance_id);
+  const requestDomain = normalizeDomainValue(getRequestPayloadDomain(row?.request_payload));
+  const seen = new Set();
+
+  return (deployments || [])
+    .filter((dep) => {
+      const deploymentInstance = normalizeMatchValue(dep.instance_id);
+      const deploymentDomain = normalizeDomainValue(dep.domain);
+      const matchesInstance = requestInstance && deploymentInstance === requestInstance;
+      const matchesDomain = requestDomain && deploymentDomain === requestDomain;
+      return matchesInstance || matchesDomain;
+    })
+    .filter((dep) => {
+      if (seen.has(dep.id)) return false;
+      seen.add(dep.id);
+      return true;
+    })
+    .map((dep) => ({
+      label: `${dep.instance_id} (${dep.environment}${dep.domain ? `, ${dep.domain}` : ""})`,
+      value: dep.id,
+    }));
+}
 
 export default function QueueSection({ onMutated }) {
   const [unlicensedRows, setUnlicensedRows] = useState([]);
@@ -35,12 +88,22 @@ export default function QueueSection({ onMutated }) {
   const [allSubscriptions, setAllSubscriptions] = useState([]);
 
   const loadOptions = async () => {
-    const [deploymentsResponse, subscriptionsResponse] = await Promise.all([
+    const [deploymentsResponse, subscriptionsResponse] = await Promise.allSettled([
       getCpDeployments({ page_size: 1000 }),
       getCpSubscriptions({ page_size: 1000 }),
     ]);
-    setAllDeployments(normalizeCollection(deploymentsResponse));
-    setAllSubscriptions(normalizeCollection(subscriptionsResponse));
+
+    if (deploymentsResponse.status === "fulfilled") {
+      setAllDeployments(normalizeCollection(deploymentsResponse.value));
+    } else {
+      message.error(formatBackendError(deploymentsResponse.reason, "Failed to load deployments"));
+    }
+
+    if (subscriptionsResponse.status === "fulfilled") {
+      setAllSubscriptions(normalizeCollection(subscriptionsResponse.value));
+    } else {
+      message.error(formatBackendError(subscriptionsResponse.reason, "Failed to load subscriptions"));
+    }
   };
 
   const loadUnlicensed = async (override = {}) => {
@@ -59,6 +122,8 @@ export default function QueueSection({ onMutated }) {
       setUnlicensedPage(nextPage);
       setUnlicensedPageSize(nextPageSize);
       setUnlicensedSearch(nextSearch);
+    } catch (error) {
+      message.error(formatBackendError(error, "Failed to load unlicensed deployments"));
     } finally {
       setUnlicensedLoading(false);
     }
@@ -80,6 +145,8 @@ export default function QueueSection({ onMutated }) {
       setRuntimePage(nextPage);
       setRuntimePageSize(nextPageSize);
       setRuntimeSearch(nextSearch);
+    } catch (error) {
+      message.error(formatBackendError(error, "Failed to load runtime requests"));
     } finally {
       setRuntimeLoading(false);
     }
@@ -102,6 +169,24 @@ export default function QueueSection({ onMutated }) {
     [allDeployments]
   );
 
+  useEffect(() => {
+    setRequestDeploymentMap((prev) => {
+      let changed = false;
+      const next = { ...prev };
+
+      runtimeRows.forEach((row) => {
+        if (next[row.id] != null) return;
+        const options = getDeploymentOptionsForRequest(row, allDeployments);
+        if (options.length === 1) {
+          next[row.id] = options[0].value;
+          changed = true;
+        }
+      });
+
+      return changed ? next : prev;
+    });
+  }, [allDeployments, runtimeRows]);
+
   const onAssign = async (deploymentId) => {
     const subscriptionId = rowSubscriptionMap[deploymentId];
     if (!subscriptionId) {
@@ -115,8 +200,8 @@ export default function QueueSection({ onMutated }) {
       await loadRuntime();
       onMutated?.();
       message.success("License assigned");
-    } catch {
-      message.error("Failed to assign license");
+    } catch (error) {
+      message.error(formatBackendError(error, "Failed to assign license"));
     } finally {
       setAssignLoading((prev) => ({ ...prev, [deploymentId]: false }));
     }
@@ -136,8 +221,8 @@ export default function QueueSection({ onMutated }) {
       await loadUnlicensed();
       onMutated?.();
       message.success("Request approved");
-    } catch {
-      message.error("Failed to approve request");
+    } catch (error) {
+      message.error(formatBackendError(error, "Failed to approve request"));
     } finally {
       setAssignLoading((prev) => ({ ...prev, [`req-${requestId}`]: false }));
     }
@@ -150,8 +235,8 @@ export default function QueueSection({ onMutated }) {
       await loadRuntime();
       onMutated?.();
       message.success("Request rejected");
-    } catch {
-      message.error("Failed to reject request");
+    } catch (error) {
+      message.error(formatBackendError(error, "Failed to reject request"));
     } finally {
       setAssignLoading((prev) => ({ ...prev, [`req-${requestId}`]: false }));
     }
@@ -236,7 +321,9 @@ export default function QueueSection({ onMutated }) {
               title: "Actions",
               key: "actions",
               render: (_, row) => {
-                const deploymentOptions = deploymentOptionsByInstance[row.instance_id] || [];
+                const deploymentOptions = getDeploymentOptionsForRequest(row, allDeployments);
+                const instanceDeploymentOptions = deploymentOptionsByInstance[row.instance_id] || [];
+                const availableDeploymentOptions = deploymentOptions.length ? deploymentOptions : instanceDeploymentOptions;
                 const selectedDeployment = allDeployments.find((dep) => dep.id === requestDeploymentMap[row.id]);
                 const subscriptionOptions = allSubscriptions
                   .filter((sub) => !selectedDeployment || sub.customer === selectedDeployment.customer)
@@ -249,7 +336,7 @@ export default function QueueSection({ onMutated }) {
                     <Select
                       style={{ width: 220 }}
                       placeholder="Deployment"
-                      options={deploymentOptions}
+                      options={availableDeploymentOptions}
                       value={requestDeploymentMap[row.id]}
                       onChange={(value) => {
                         setRequestDeploymentMap((prev) => ({ ...prev, [row.id]: value }));

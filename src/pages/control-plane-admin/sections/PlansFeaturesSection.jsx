@@ -12,6 +12,22 @@ import {
 } from "../../../lib/api/licenseControl.js";
 import { normalizeCollection, normalizeCount } from "./utils.js";
 
+const EDITION_OPTIONS = [
+  { value: "starter", label: "Starter" },
+  { value: "sales", label: "Sales" },
+  { value: "omnichannel", label: "Omnichannel" },
+  { value: "enterprise", label: "Enterprise" },
+  { value: "onprem-enterprise", label: "On-prem Enterprise" },
+];
+
+const INSTALL_PROFILE_OPTIONS = [
+  { value: "smb-sales", label: "SMB Sales" },
+  { value: "sales-faststart", label: "Sales Faststart" },
+  { value: "omnichannel-workspace", label: "Omnichannel Workspace" },
+  { value: "enterprise-standard", label: "Enterprise Standard" },
+  { value: "onprem-secure", label: "On-prem Secure" },
+];
+
 export default function PlansFeaturesSection({ onMutated }) {
   const [features, setFeatures] = useState([]);
   const [featuresTotal, setFeaturesTotal] = useState(0);
@@ -213,6 +229,8 @@ export default function PlansFeaturesSection({ onMutated }) {
               planForm.setFieldsValue({
                 code: "",
                 name: "",
+                edition_code: undefined,
+                install_profile_code: undefined,
                 base_user_limit: 1,
                 platform_fee_uzs: 0,
                 extra_user_fee_uzs: 0,
@@ -235,6 +253,13 @@ export default function PlansFeaturesSection({ onMutated }) {
           columns={[
             { title: "Code", dataIndex: "code", key: "code" },
             { title: "Name", dataIndex: "name", key: "name" },
+            { title: "Edition", dataIndex: "edition_code", key: "edition_code", render: (value) => value || "—" },
+            {
+              title: "Install profile",
+              dataIndex: "install_profile_code",
+              key: "install_profile_code",
+              render: (value) => value || "—",
+            },
             { title: "Base seats", dataIndex: "base_user_limit", key: "base_user_limit" },
             {
               title: "Actions",
@@ -309,6 +334,12 @@ export default function PlansFeaturesSection({ onMutated }) {
           </Form.Item>
           <Form.Item name="name" label="Name" rules={[{ required: true }]}>
             <Input />
+          </Form.Item>
+          <Form.Item name="edition_code" label="Edition" rules={[{ required: true }]}>
+            <Select options={EDITION_OPTIONS} />
+          </Form.Item>
+          <Form.Item name="install_profile_code" label="Install profile" rules={[{ required: true }]}>
+            <Select options={INSTALL_PROFILE_OPTIONS} />
           </Form.Item>
           <Form.Item name="base_user_limit" label="Base user limit" rules={[{ required: true }]}>
             <Input type="number" min={1} />

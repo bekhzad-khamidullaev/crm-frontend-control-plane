@@ -44,13 +44,23 @@ export async function setLocale(locale) {
   document.documentElement.lang = current;
 }
 
+function applyTemplateVars(template, vars) {
+  let result = template;
+  for (const [name, value] of Object.entries(vars || {})) {
+    result = result.replaceAll(`{${name}}`, String(value));
+  }
+  return result;
+}
+
 export function t(key, vars = {}) {
   const dict = catalogs[current] || {};
-  let str = (key.split('.').reduce((o, k) => (o ? o[k] : undefined), dict)) || key;
-  for (const [k, v] of Object.entries(vars)) {
-    str = str.replace(new RegExp(`{${k}}`, 'g'), v);
+  const translated = key.split('.').reduce((obj, part) => (obj ? obj[part] : undefined), dict);
+
+  if (typeof vars === 'string') {
+    return typeof translated === 'string' ? translated : vars;
   }
-  return str;
+
+  return applyTemplateVars(typeof translated === 'string' ? translated : key, vars);
 }
 
 export function getLocale() { return current; }

@@ -26,6 +26,30 @@ Object.defineProperty(window, 'matchMedia', {
   })),
 });
 
+// JSDOM does not implement pseudo-element computed styles used by rc-table/rc-util.
+const originalGetComputedStyle = window.getComputedStyle.bind(window);
+const testGetComputedStyle = (element, pseudoElt) => {
+  if (pseudoElt) {
+    return {
+      getPropertyValue: () => '',
+      overflow: 'auto',
+      overflowX: 'auto',
+      overflowY: 'auto',
+      width: '0px',
+      height: '0px',
+    };
+  }
+  return originalGetComputedStyle(element);
+};
+Object.defineProperty(window, 'getComputedStyle', {
+  writable: true,
+  value: testGetComputedStyle,
+});
+Object.defineProperty(globalThis, 'getComputedStyle', {
+  writable: true,
+  value: testGetComputedStyle,
+});
+
 // Mock ResizeObserver
 global.ResizeObserver = vi.fn().mockImplementation(() => ({
   observe: vi.fn(),
@@ -55,7 +79,37 @@ console.warn = (...args) => {
   if (message.includes('Consider adding an error boundary')) {
     return; // Skip error boundary warnings in tests
   }
+  if (message.includes('[AuthGuard]')) {
+    return;
+  }
+  if (message.includes('[antd: Input]') && message.includes('addonAfter')) {
+    return;
+  }
+  if (message.includes('[Router] Guard failed:')) {
+    return;
+  }
   originalWarn(...args);
+};
+
+const originalError = console.error;
+console.error = (...args) => {
+  const message = args.join(' ');
+  if (message.includes('[Router] Guard failed:')) {
+    return;
+  }
+  if (message.includes('[antd: Input]') && message.includes('addonAfter')) {
+    return;
+  }
+  originalError(...args);
+};
+
+const originalLog = console.log;
+console.log = (...args) => {
+  const message = args.join(' ');
+  if (message.includes('[AuthGuard]')) {
+    return;
+  }
+  originalLog(...args);
 };
 
 // Mock fetch for API calls

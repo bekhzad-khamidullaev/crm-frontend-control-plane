@@ -33,13 +33,49 @@ import {
 } from '../../lib/api/chat.js';
 import chatWebSocket from '../../lib/websocket/ChatWebSocket.js';
 import { subscribe, addChatMessage, updateChatMessage as updateStoreMessage, deleteChatMessage as deleteStoreMessage } from '../../lib/store/index.js';
-import ChatMessageItem from '../../components/ChatMessageItem.jsx';
-import ChatMessageComposer from '../../components/ChatMessageComposer.jsx';
-import CallButton from '../../components/CallButton.jsx';
+import ChatMessageItem from '../../components/ChatMessageItem';
+import ChatMessageComposer from '../../components/ChatMessageComposer';
+import CallButton from '../../components/CallButton';
 import { getUserFromToken } from '../../lib/api/auth.js';
 import { useTheme } from '../../lib/hooks/useTheme.js';
 
 const { Text } = Typography;
+const toTs = (value) => {
+  const ts = value ? new Date(value).getTime() : 0;
+  return Number.isFinite(ts) ? ts : 0;
+};
+
+const dedupeAndSortMessages = (items = []) => {
+  const byId = new Map();
+  items.forEach((item) => {
+    const key = item?.id;
+    if (key === undefined || key === null) return;
+    const prev = byId.get(key);
+    if (!prev) {
+      byId.set(key, item);
+      return;
+    }
+
+    const prevTs = toTs(prev.updated_at || prev.creation_date || prev.created_at);
+    const nextTs = toTs(item.updated_at || item.creation_date || item.created_at);
+    byId.set(key, nextTs >= prevTs ? { ...prev, ...item } : { ...item, ...prev });
+  });
+
+  return Array.from(byId.values()).sort(
+    (a, b) => toTs(a.creation_date || a.created_at) - toTs(b.creation_date || b.created_at)
+  );
+};
+
+const upsertMessage = (prevMessages, incomingMessage) => {
+  if (!incomingMessage?.id) return prevMessages;
+  const index = prevMessages.findIndex((msg) => msg.id === incomingMessage.id);
+  if (index === -1) {
+    return dedupeAndSortMessages([...prevMessages, incomingMessage]);
+  }
+  const next = [...prevMessages];
+  next[index] = { ...next[index], ...incomingMessage };
+  return dedupeAndSortMessages(next);
+};
 
 function ChatWidget({ entityType, entityId, entityName, entityPhone }) {
   const { theme } = useTheme();
@@ -63,6 +99,7 @@ function ChatWidget({ entityType, entityId, entityName, entityPhone }) {
   const [threadTab, setThreadTab] = useState('replies');
   const messagesEndRef = useRef(null);
   const currentUserId = getUserFromToken()?.id;
+  const hasMessages = messages.length > 0;
 
   useEffect(() => {
     loadMessages();
@@ -81,7 +118,7 @@ function ChatWidget({ entityType, entityId, entityName, entityPhone }) {
           object_id: data.entityId,
         };
 
-        setMessages((prev) => [...prev, newMessage]);
+        setMessages((prev) => upsertMessage(prev, newMessage));
         addChatMessage(newMessage);
         scrollToBottom();
       }
@@ -142,7 +179,7 @@ function ChatWidget({ entityType, entityId, entityName, entityPhone }) {
     try {
       const response = await getEntityChatMessages(entityType, entityId, { page_size: 50 });
       const msgs = response?.results || [];
-      setMessages(msgs);
+      setMessages(dedupeAndSortMessages(msgs));
 
       const detectedContentType = msgs.find((msg) => msg.content_type)?.content_type;
       if (detectedContentType) {
@@ -281,7 +318,7 @@ function ChatWidget({ entityType, entityId, entityName, entityPhone }) {
         parent: messageData.answer_to ? messages.find((m) => m.id === messageData.answer_to) : null,
       };
 
-      setMessages((prev) => [...prev, newMessage]);
+      setMessages((prev) => upsertMessage(prev, newMessage));
       addChatMessage(newMessage);
       setReplyTo(null);
       scrollToBottom();
@@ -321,16 +358,19 @@ function ChatWidget({ entityType, entityId, entityName, entityPhone }) {
   return (
     <Card
       style={{
-        height: 600,
+        height: 620,
         display: 'flex',
         flexDirection: 'column',
-        borderRadius: 18,
+        borderRadius: 20,
         overflow: 'hidden',
+        boxShadow: isDark
+          ? '0 10px 30px rgba(0, 0, 0, 0.18)'
+          : '0 10px 30px rgba(15, 23, 42, 0.08)',
       }}
       styles={{ body: { flex: 1, display: 'flex', flexDirection: 'column', padding: 0 } }}
       title={
-        <Space direction="vertical" size={2}>
-          <Space>
+        <Space direction="vertical" size={2} style={{ width: '100%' }}>
+          <Space align="center" wrap>
             <MessageOutlined />
             <span>Сообщения</span>
             {entityPhone && (
@@ -344,7 +384,7 @@ function ChatWidget({ entityType, entityId, entityName, entityPhone }) {
               />
             )}
           </Space>
-          <Text type="secondary">
+          <Text type="secondary" style={{ fontSize: 12 }}>
             {entityName ? `История общения по "${entityName}"` : 'История общения по текущей сущности'}
           </Text>
         </Space>
@@ -366,35 +406,41 @@ function ChatWidget({ entityType, entityId, entityName, entityPhone }) {
           overflowY: 'auto',
           padding: 20,
           background: isDark
-            ? 'linear-gradient(180deg, rgba(17,21,28,0.95) 0%, rgba(22,27,34,1) 100%)'
-            : 'linear-gradient(180deg, rgba(248,250,252,0.95) 0%, rgba(255,255,255,1) 100%)',
+            ? 'linear-gradient(180deg, rgba(15, 23, 42, 0.94) 0%, rgba(17, 24, 39, 1) 100%)'
+            : 'linear-gradient(180deg, rgba(248,250,252,0.98) 0%, rgba(255,255,255,1) 100%)',
         }}
       >
         {loading ? (
           <div style={{ textAlign: 'center', padding: 40 }}>
             <Space direction="vertical" size={12}>
               <Spin />
-              <Text type="secondary">Загружаем сообщения чата...</Text>
+              <Text type="secondary" style={{ color: isDark ? '#d6e0ea' : '#475569', fontWeight: 600 }}>
+                Загружаем сообщения чата...
+              </Text>
             </Space>
           </div>
         ) : loadError ? (
           <Empty
             description="Не удалось загрузить сообщения"
             image={Empty.PRESENTED_IMAGE_SIMPLE}
+            style={{ color: isDark ? '#d6e0ea' : '#475569' }}
           >
             <Button icon={<ReloadOutlined />} onClick={loadMessages}>
               Повторить
             </Button>
           </Empty>
-        ) : messages.length === 0 ? (
+        ) : !hasMessages ? (
           <Empty
             description={entityName ? `Для ${entityName} пока нет сообщений` : 'Пока нет сообщений'}
             image={Empty.PRESENTED_IMAGE_SIMPLE}
+            style={{ color: isDark ? '#d6e0ea' : '#475569' }}
           >
-            <Text type="secondary">Начните диалог, чтобы история общения появилась здесь.</Text>
+            <Text type="secondary" style={{ color: isDark ? '#cad6e2' : '#64748b', fontWeight: 500 }}>
+              Начните диалог, чтобы история общения появилась здесь.
+            </Text>
           </Empty>
         ) : (
-          <>
+          <div style={{ maxWidth: 920, margin: '0 auto' }}>
             {messages.map(msg => (
               <ChatMessageItem
                 key={msg.id}
@@ -412,13 +458,14 @@ function ChatWidget({ entityType, entityId, entityName, entityPhone }) {
               <div
                 style={{
                   marginTop: 12,
-                  color: isDark ? '#cbd5e1' : '#64748b',
+                  color: isDark ? '#f1f5f9' : '#475569',
                   fontSize: 12,
-                  background: isDark ? '#1e232e' : '#f8fafc',
-                  border: `1px solid ${isDark ? '#2d3343' : '#e2e8f0'}`,
+                  background: isDark ? 'rgba(17, 24, 39, 0.94)' : '#f8fafc',
+                  border: `1px solid ${isDark ? 'rgba(148, 163, 184, 0.24)' : '#e2e8f0'}`,
                   borderRadius: 999,
                   display: 'inline-flex',
                   padding: '6px 10px',
+                  fontWeight: 600,
                 }}
               >
                 <Space size={4}>
@@ -429,7 +476,7 @@ function ChatWidget({ entityType, entityId, entityName, entityPhone }) {
             )}
             
             <div ref={messagesEndRef} />
-          </>
+          </div>
         )}
       </div>
 

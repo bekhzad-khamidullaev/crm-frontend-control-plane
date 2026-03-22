@@ -1,343 +1,700 @@
-/**
- * ChatPage Component
- * Full-featured messenger-style chat page
- */
-
 import {
-    DollarOutlined,
-    MessageOutlined,
-    RiseOutlined,
-    ShopOutlined,
-    UserOutlined
-} from '@ant-design/icons';
-import {
-    Avatar,
-    Badge,
-    Empty,
-    Input,
-    Layout,
-    List,
-    message,
-    Space,
-    Spin,
-    Tabs,
-    Tag,
-    Typography
+  Alert,
+  App,
+  Badge,
+  Button,
+  Card,
+  Empty,
+  Grid,
+  Input,
+  Layout,
+  List,
+  Result,
+  Segmented,
+  Space,
+  Spin,
+  Statistic,
+  Tag,
+  Typography,
 } from 'antd';
+import {
+  CheckCircleOutlined,
+  ClockCircleOutlined,
+  FacebookOutlined,
+  InstagramOutlined,
+  MessageOutlined,
+  ReloadOutlined,
+  SendOutlined,
+  WhatsAppOutlined,
+} from '@ant-design/icons';
 import dayjs from 'dayjs';
 import 'dayjs/locale/ru';
 import relativeTime from 'dayjs/plugin/relativeTime';
-import { useEffect, useState } from 'react';
-import { getChatMessages, getChatStatistics } from '../lib/api/chat.js';
+import { useEffect, useMemo, useState } from 'react';
+import { getOmnichannelTimeline, sendOmnichannelMessage } from '../lib/api/compliance.js';
+import { readStoredLicenseFeatures } from '../lib/api/licenseFeatures.js';
 import { useTheme } from '../lib/hooks/useTheme.js';
-import { subscribe } from '../lib/store/index.js';
-import ChatWidget from '../modules/chat/ChatWidget.jsx';
 
 dayjs.extend(relativeTime);
 dayjs.locale('ru');
 
 const { Sider, Content } = Layout;
+const { Search, TextArea } = Input;
 const { Title, Text } = Typography;
-const { Search } = Input;
+
+const CHANNEL_META = {
+  whatsapp: { label: 'WhatsApp', color: 'green', icon: <WhatsAppOutlined /> },
+  telegram: { label: 'Telegram', color: 'blue', icon: <SendOutlined /> },
+  instagram: { label: 'Instagram', color: 'magenta', icon: <InstagramOutlined /> },
+  facebook: { label: 'Facebook', color: 'geekblue', icon: <FacebookOutlined /> },
+  playmobile: { label: 'SMS', color: 'gold', icon: <MessageOutlined /> },
+  eskiz: { label: 'SMS', color: 'gold', icon: <MessageOutlined /> },
+};
+
+const BUCKET_OPTIONS = [
+  { label: 'Все', value: 'all' },
+  { label: 'Очередь', value: 'queue' },
+  { label: 'В работе', value: 'active' },
+  { label: 'Закрыто', value: 'resolved' },
+  { label: 'SLA риск', value: 'breached' },
+];
+
+function channelMeta(channelType) {
+  return CHANNEL_META[channelType] || { label: channelType || 'Канал', color: 'default', icon: <MessageOutlined /> };
+}
+
+function normalizeQueueState(value) {
+  return String(value || '').trim().toLowerCase();
+}
+
+function queueStateMeta(queueState, status, slaStatus) {
+  if (slaStatus === 'breached') return { label: 'SLA risk', color: 'red' };
+  const normalized = normalizeQueueState(queueState) || normalizeQueueState(status);
+  if (!normalized) return null;
+  if (['waiting', 'queued', 'pending', 'accepted'].includes(normalized)) {
+    return { label: 'В очереди', color: 'gold' };
+  }
+  if (['in_progress', 'processing', 'active'].includes(normalized)) {
+    return { label: 'В работе', color: 'processing' };
+  }
+  if (['resolved', 'sent', 'delivered'].includes(normalized)) {
+    return { label: 'Закрыто', color: 'success' };
+  }
+  if (['failed', 'error', 'dead_letter'].includes(normalized)) {
+    return { label: 'Ошибка', color: 'error' };
+  }
+  return { label: normalized, color: 'default' };
+}
+
+function respondedAtLabel(value) {
+  return value ? `Ответ ${dayjs(value).fromNow()}` : '';
+}
+
+function normalizeList(response) {
+  return Array.isArray(response?.results) ? response.results : [];
+}
+
+function normalizeSummary(response, items) {
+  const fallback = {
+    total: items.length,
+    queue: items.filter((item) => item.queue_bucket === 'queue').length,
+    active: items.filter((item) => item.queue_bucket === 'active').length,
+    resolved: items.filter((item) => item.queue_bucket === 'resolved').length,
+    breached: items.filter((item) => item.sla_status === 'breached').length,
+    inbound: items.filter((item) => item.direction === 'in').length,
+    outbound: items.filter((item) => item.direction === 'out').length,
+  };
+  return response?.summary && typeof response.summary === 'object' ? { ...fallback, ...response.summary } : fallback;
+}
+
+function messageTimestamp(item) {
+  return item?.created_at ? new Date(item.created_at).getTime() : 0;
+}
+
+function resolveParticipantId(item) {
+  return String(
+    item?.participant_id ||
+      (item?.direction === 'in' ? item?.sender_id : item?.recipient_id) ||
+      item?.sender_id ||
+      item?.recipient_id ||
+      item?.external_id ||
+      ''
+  ).trim();
+}
+
+function buildConversationKey(item) {
+  return String(
+    item?.conversation_key ||
+      `${item?.channel || 'na'}:${item?.subject_content_type || 'na'}:${item?.subject_object_id || resolveParticipantId(item) || item?.id}`
+  );
+}
+
+function buildConversationTitle(item) {
+  const participantId = resolveParticipantId(item);
+  if (item?.subject_object_id) {
+    return `Сущность #${item.subject_object_id}`;
+  }
+  return participantId || `Диалог #${item?.id}`;
+}
+
+function groupConversations(items) {
+  const byKey = new Map();
+  items.forEach((item) => {
+    const key = buildConversationKey(item);
+    const row = byKey.get(key) || {
+      key,
+      channelId: item.channel,
+      channelType: item.channel_type,
+      channelName: item.channel_name,
+      participantId: resolveParticipantId(item),
+      title: buildConversationTitle(item),
+      subjectContentType: item.subject_content_type,
+      subjectObjectId: item.subject_object_id,
+      messages: [],
+    };
+    row.messages.push(item);
+    byKey.set(key, row);
+  });
+
+  return Array.from(byKey.values())
+    .map((conversation) => {
+      const messages = [...conversation.messages].sort((a, b) => messageTimestamp(a) - messageTimestamp(b));
+      const latest = messages[messages.length - 1];
+      const hasBreached = messages.some((item) => item.sla_status === 'breached');
+      const queueBucket = hasBreached
+        ? 'breached'
+        : latest?.queue_bucket || 'other';
+      return {
+        ...conversation,
+        messages,
+        latest,
+        preview: latest?.text || 'Без текста',
+        lastActivityAt: latest?.created_at || null,
+        latestQueueState: latest?.queue_state || null,
+        latestStatus: latest?.status || null,
+        latestRespondedAt: latest?.responded_at || null,
+        inboundCount: messages.filter((item) => item.direction === 'in').length,
+        outboundCount: messages.filter((item) => item.direction === 'out').length,
+        queueBucket,
+        latestSlaStatus: latest?.sla_status || 'ok',
+      };
+    })
+    .sort((a, b) => messageTimestamp(b.latest) - messageTimestamp(a.latest));
+}
+
+function filterConversations(conversations, { searchQuery, bucket, channel }) {
+  const needle = searchQuery.trim().toLowerCase();
+  return conversations.filter((conversation) => {
+    if (bucket !== 'all') {
+      if (bucket === 'breached') {
+        if (conversation.latestSlaStatus !== 'breached') return false;
+      } else if (conversation.queueBucket !== bucket) {
+        return false;
+      }
+    }
+    if (channel !== 'all' && conversation.channelType !== channel) {
+      return false;
+    }
+    if (!needle) return true;
+    const haystack = [
+      conversation.title,
+      conversation.preview,
+      conversation.channelName,
+      conversation.channelType,
+      conversation.participantId,
+      conversation.subjectObjectId,
+    ]
+      .filter(Boolean)
+      .join(' ')
+      .toLowerCase();
+    return haystack.includes(needle);
+  });
+}
+
+function buildSendPayload(conversation, text) {
+  const channel = conversation?.channelType;
+  const channelId = conversation?.channelId;
+  const targetId = conversation?.participantId;
+  if (!channel || !channelId || !targetId) return null;
+
+  if (channel === 'whatsapp') {
+    return { channel, channel_id: channelId, to: targetId, text };
+  }
+  if (channel === 'telegram') {
+    return { channel, channel_id: channelId, chat_id: targetId, sender_id: targetId, text };
+  }
+  if (channel === 'instagram') {
+    return { channel, channel_id: channelId, recipient_id: targetId, handle: targetId, text };
+  }
+  if (channel === 'facebook') {
+    return { channel, channel_id: channelId, recipient_id: targetId, text };
+  }
+  return null;
+}
 
 function ChatPage() {
-  const [chats, setChats] = useState([]);
-  const [filteredChats, setFilteredChats] = useState([]);
-  const [activeChat, setActiveChat] = useState(null);
-  const [loading, setLoading] = useState(false);
-  const [searchQuery, setSearchQuery] = useState('');
-  const [filter, setFilter] = useState('all'); // all, unread
-  const [statistics, setStatistics] = useState(null);
+  const { message } = App.useApp();
   const { theme } = useTheme();
+  const screens = Grid.useBreakpoint();
+  const isMobile = !screens.lg;
+  const [items, setItems] = useState([]);
+  const [summary, setSummary] = useState({
+    total: 0,
+    queue: 0,
+    active: 0,
+    resolved: 0,
+    breached: 0,
+  });
+  const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
+  const [errorState, setErrorState] = useState(null);
+  const [licenseState, setLicenseState] = useState(null);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [bucket, setBucket] = useState('all');
+  const [channel, setChannel] = useState('all');
+  const [activeConversationKey, setActiveConversationKey] = useState(null);
+  const [draft, setDraft] = useState('');
+  const [sending, setSending] = useState(false);
+  const licenseFeatures = readStoredLicenseFeatures();
 
-  const bg = theme === 'dark' ? 'transparent' : '#ffffff'; // Use transparent to inherit global body gradient
-  const bgSecondary = theme === 'dark' ? '#1e232e' : '#f8fafc';
-  const border = theme === 'dark' ? '#2d3343' : '#f0f0f0';
-  const activeBg = theme === 'dark' ? '#2d3343' : '#e6f7ff';
-  const activeBorder = theme === 'dark' ? '#4285f4' : '#1890ff';
+  const bg = theme === 'dark' ? 'transparent' : '#ffffff';
+  const bgSecondary = theme === 'dark' ? '#101827' : '#f8fafc';
+  const border = theme === 'dark' ? '#243041' : '#e2e8f0';
+  const activeBg = theme === 'dark' ? '#172132' : '#eef6ff';
 
-  useEffect(() => {
-    loadChats();
-    loadStatistics();
+  const hasInboxLicense = useMemo(
+    () => ['inbox.unified', 'integrations.core'].some((feature) => licenseFeatures.includes(feature)),
+    [licenseFeatures]
+  );
 
-    // Subscribe to store updates
-    const unsubscribe = subscribe((state) => {
-      // Update unread count badge
-      if (statistics) {
-        setStatistics({
-          ...statistics,
-          unread: state.chat.unreadCount,
-        });
-      }
-    });
+  const loadInbox = async ({ silent = false } = {}) => {
+    if (silent) {
+      setRefreshing(true);
+    } else {
+      setLoading(true);
+    }
+    setErrorState(null);
 
-    return unsubscribe;
-  }, []);
-
-  useEffect(() => {
-    filterChats();
-  }, [chats, searchQuery, filter]);
-
-  const loadChats = async () => {
-    setLoading(true);
     try {
-      const response = await getChatMessages({
-        page_size: 100,
-        ordering: '-creation_date',
-      });
-
-      // Group messages by entity
-      const chatMap = new Map();
-      
-      // Safely access results
-      const results = response?.results || response || [];
-      
-      results.forEach(msg => {
-        const entityType = msg.content_type_name || msg.content_type || 'chat';
-        const entityId = msg.object_id || msg.id;
-        const key = `${entityType}_${entityId}`;
-
-        if (!chatMap.has(key)) {
-          chatMap.set(key, {
-            id: key,
-            entityType,
-            entityId,
-            entityName: msg.content_type_name || 'Чат',
-            entityPhone: msg.related_phone,
-            lastMessage: msg.content || msg.message || '',
-            lastMessageTime: msg.creation_date || msg.created_at,
-            unreadCount: msg.is_read === false ? 1 : 0,
-            sender: msg.owner_name,
-          });
-        } else {
-          const chat = chatMap.get(key);
-          if (msg.is_read === false) {
-            chat.unreadCount++;
-          }
-        }
-      });
-
-      const chatList = Array.from(chatMap.values()).sort(
-        (a, b) => new Date(b.lastMessageTime) - new Date(a.lastMessageTime)
-      );
-
-      setChats(chatList);
+      const response = await getOmnichannelTimeline({ limit: 300 });
+      const rows = normalizeList(response);
+      setItems(rows);
+      setSummary(normalizeSummary(response, rows));
+      setLicenseState(null);
     } catch (error) {
-      console.error('Error loading chats:', error);
-      message.error('Не удалось загрузить чаты');
-      setChats([]);
+      const code = String(error?.details?.code || '');
+      if (code === 'LICENSE_FEATURE_DISABLED') {
+        setLicenseState({
+          code,
+          message: error?.details?.message || error?.details?.detail || 'Лицензия не включает unified inbox.',
+        });
+        setItems([]);
+        setSummary({ total: 0, queue: 0, active: 0, resolved: 0, breached: 0 });
+      } else {
+        setErrorState(error?.details?.message || error?.details?.detail || error?.message || 'Не удалось загрузить inbox.');
+      }
     } finally {
       setLoading(false);
+      setRefreshing(false);
     }
   };
 
-  const loadStatistics = async () => {
+  useEffect(() => {
+    loadInbox();
+  }, []);
+
+  const conversations = useMemo(() => groupConversations(items), [items]);
+  const filteredConversations = useMemo(
+    () => filterConversations(conversations, { searchQuery, bucket, channel }),
+    [bucket, channel, conversations, searchQuery]
+  );
+
+  useEffect(() => {
+    if (filteredConversations.length === 0) {
+      setActiveConversationKey(null);
+      return;
+    }
+    const exists = filteredConversations.some((item) => item.key === activeConversationKey);
+    if (!exists) {
+      setActiveConversationKey(filteredConversations[0].key);
+    }
+  }, [activeConversationKey, filteredConversations]);
+
+  const activeConversation = filteredConversations.find((item) => item.key === activeConversationKey) || null;
+  const channelOptions = useMemo(() => {
+    const dynamic = Array.from(new Set(conversations.map((item) => item.channelType).filter(Boolean))).map((value) => ({
+      label: channelMeta(value).label,
+      value,
+    }));
+    return [{ label: 'Все каналы', value: 'all' }, ...dynamic];
+  }, [conversations]);
+
+  const handleSend = async () => {
+    const text = draft.trim();
+    const payload = buildSendPayload(activeConversation, text);
+    if (!text || !payload) return;
+
+    setSending(true);
     try {
-      const stats = await getChatStatistics();
-      const data = stats?.data || stats || {};
-      setStatistics({
-        total: data.total || 0,
-        unread: data.unread || 0,
-        today: data.today || 0,
-      });
+      await sendOmnichannelMessage(payload);
+      setDraft('');
+      message.success('Сообщение отправлено');
+      await loadInbox({ silent: true });
     } catch (error) {
-      console.error('Error loading statistics:', error);
-      setStatistics({
-        total: 0,
-        unread: 0,
-        today: 0,
-      });
+      message.error(error?.details?.message || error?.details?.detail || error?.message || 'Не удалось отправить сообщение');
+    } finally {
+      setSending(false);
     }
   };
 
-  const filterChats = () => {
-    let filtered = [...chats];
+  if (loading) {
+    return (
+      <Card variant="borderless" style={{ background: bg }}>
+        <div style={{ padding: 64, textAlign: 'center' }}>
+          <Spin size="large" />
+        </div>
+      </Card>
+    );
+  }
 
-    // Apply search filter
-    if (searchQuery) {
-      filtered = filtered.filter(
-        chat =>
-          chat.entityName.toLowerCase().includes(searchQuery.toLowerCase()) ||
-          chat.lastMessage.toLowerCase().includes(searchQuery.toLowerCase())
-      );
-    }
+  if (!hasInboxLicense || licenseState) {
+    return (
+      <Result
+        status="403"
+        title="Unified Inbox недоступен"
+        subTitle={
+          licenseState?.message ||
+          'Для messenger-first workspace нужен entitlement `integrations.core` или `inbox.unified`.'
+        }
+        extra={
+          <Button icon={<ReloadOutlined />} onClick={() => loadInbox()}>
+            Обновить
+          </Button>
+        }
+      />
+    );
+  }
 
-    // Apply status filter
-    if (filter === 'unread') {
-      filtered = filtered.filter(chat => chat.unreadCount > 0);
-    }
-
-    setFilteredChats(filtered);
-  };
-
-  const getEntityIcon = (entityType) => {
-    const normalized = entityType?.toString().toLowerCase();
-    switch (normalized) {
-      case 'contact':
-        return <UserOutlined />;
-      case 'lead':
-        return <RiseOutlined />;
-      case 'deal':
-        return <DollarOutlined />;
-      case 'company':
-        return <ShopOutlined />;
-      default:
-        return <MessageOutlined />;
-    }
-  };
-
-  const getEntityColor = (entityType) => {
-    const normalized = entityType?.toString().toLowerCase();
-    switch (normalized) {
-      case 'contact':
-        return 'blue';
-      case 'lead':
-        return 'green';
-      case 'deal':
-        return 'orange';
-      case 'company':
-        return 'purple';
-      default:
-        return 'default';
-    }
-  };
-
-  const filterTabs = [
-    { key: 'all', label: `Все (${chats.length})` },
-    { key: 'unread', label: `Непрочитанные (${chats.filter(c => c.unreadCount > 0).length})` },
-  ];
+  if (errorState) {
+    return (
+      <Result
+        status="error"
+        title="Не удалось загрузить inbox"
+        subTitle={errorState}
+        extra={
+          <Button type="primary" icon={<ReloadOutlined />} onClick={() => loadInbox()}>
+            Повторить
+          </Button>
+        }
+      />
+    );
+  }
 
   return (
-    <Layout style={{ height: 'calc(100vh - 64px)', backgroundColor: bg }}>
-      {/* Sidebar with chat list */}
-      <Sider
-        width={350}
-        style={{
-          backgroundColor: bg,
-          borderRight: `1px solid ${border}`,
-          overflow: 'hidden',
-          display: 'flex',
-          flexDirection: 'column',
-        }}
+    <Space direction="vertical" size={16} style={{ width: '100%' }}>
+      <Card
+        variant="borderless"
+        style={{ background: bg }}
+        styles={{ body: { paddingBottom: 12 } }}
+        extra={
+          <Button icon={<ReloadOutlined />} loading={refreshing} onClick={() => loadInbox({ silent: true })}>
+            Обновить
+          </Button>
+        }
       >
-        <div style={{ padding: 16, borderBottom: `1px solid ${border}`, backgroundColor: bg }}>
-          <Title level={4} style={{ margin: 0, marginBottom: 16 }}>
-            <MessageOutlined /> Чаты
-          </Title>
-          
-          <Search
-            placeholder="Поиск чатов..."
-            allowClear
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            style={{ marginBottom: 12 }}
-          />
+        <Space direction="vertical" size={12} style={{ width: '100%' }}>
+          <div>
+            <Title level={3} style={{ margin: 0 }}>
+              Unified Inbox
+            </Title>
+            <Text type="secondary">
+              Messenger-first workspace для WhatsApp, Instagram, Facebook и Telegram.
+            </Text>
+          </div>
 
-          <Tabs
-            activeKey={filter}
-            onChange={setFilter}
-            items={filterTabs}
-            size="small"
-          />
-        </div>
+          <Space wrap size={16}>
+            <Statistic title="Всего" value={summary.total} />
+            <Statistic title="В очереди" value={summary.queue} />
+            <Statistic title="В работе" value={summary.active} />
+            <Statistic title="Закрыто" value={summary.resolved} />
+            <Statistic title="SLA риск" value={summary.breached} valueStyle={{ color: summary.breached ? '#cf1322' : undefined }} />
+          </Space>
+        </Space>
+      </Card>
 
-        <div style={{ flex: 1, overflowY: 'auto' }}>
-          {loading ? (
-            <div style={{ textAlign: 'center', padding: 40 }}>
-              <Spin />
-            </div>
-          ) : filteredChats.length === 0 ? (
-            <Empty
-              description="Нет чатов"
-              image={Empty.PRESENTED_IMAGE_SIMPLE}
-              style={{ marginTop: 60 }}
-            />
-          ) : (
-            <List
-              dataSource={filteredChats}
-              renderItem={(chat) => (
-                <List.Item
-                  onClick={() => setActiveChat(chat)}
-                  style={{
-                    cursor: 'pointer',
-                    backgroundColor:
-                      activeChat?.id === chat.id ? activeBg : 'transparent',
-                    padding: '12px 16px',
-                    borderLeft:
-                      activeChat?.id === chat.id ? `3px solid ${activeBorder}` : 'none',
-                  }}
-                >
-                  <List.Item.Meta
-                    avatar={
-                      <Badge count={chat.unreadCount} offset={[-5, 5]}>
-                        <Avatar icon={getEntityIcon(chat.entityType)} />
-                      </Badge>
-                    }
-                    title={
-                      <Space>
-                        <Text strong={chat.unreadCount > 0}>
-                          {chat.entityName}
-                        </Text>
-                        <Tag
-                          color={getEntityColor(chat.entityType)}
-                          style={{ fontSize: 10, padding: '0 4px' }}
-                        >
-                          {chat.entityType}
-                        </Tag>
-                      </Space>
-                    }
-                    description={
-                      <div>
-                        <Text
-                          ellipsis
-                          type="secondary"
+      <Layout style={{ minHeight: 'calc(100vh - 240px)', background: 'transparent' }}>
+        <Sider
+          width={isMobile ? '100%' : 360}
+          breakpoint="lg"
+          collapsedWidth={0}
+          theme="light"
+          style={{
+            background: bg,
+            borderRight: isMobile ? 'none' : `1px solid ${border}`,
+            paddingRight: isMobile ? 0 : 12,
+            marginBottom: isMobile ? 16 : 0,
+          }}
+        >
+          <Card variant="borderless" style={{ background: bgSecondary }}>
+            <Space direction="vertical" size={12} style={{ width: '100%' }}>
+              <Search
+                placeholder="Поиск по диалогу, каналу или участнику"
+                allowClear
+                value={searchQuery}
+                onChange={(event) => setSearchQuery(event.target.value)}
+              />
+              <Segmented
+                block
+                options={BUCKET_OPTIONS}
+                value={bucket}
+                onChange={setBucket}
+              />
+              <Segmented
+                block
+                options={channelOptions}
+                value={channel}
+                onChange={setChannel}
+              />
+
+              {filteredConversations.length === 0 ? (
+                <Empty
+                  description="Нет диалогов под выбранные фильтры"
+                  image={Empty.PRESENTED_IMAGE_SIMPLE}
+                  style={{ marginTop: 32 }}
+                />
+              ) : (
+                <List
+                  dataSource={filteredConversations}
+                  split={false}
+                  renderItem={(conversation) => {
+                    const meta = channelMeta(conversation.channelType);
+                    const isActive = conversation.key === activeConversationKey;
+                    const queueMeta = queueStateMeta(
+                      conversation.latestQueueState,
+                      conversation.latestStatus,
+                      conversation.latestSlaStatus
+                    );
+                    const responseLabel = respondedAtLabel(conversation.latestRespondedAt);
+                    return (
+                      <List.Item style={{ paddingInline: 0, border: 'none' }}>
+                        <Button
+                          type="text"
+                          onClick={() => setActiveConversationKey(conversation.key)}
                           style={{
-                            fontSize: 13,
-                            fontWeight: chat.unreadCount > 0 ? 500 : 400,
+                            width: '100%',
+                            height: 'auto',
+                            padding: 12,
+                            textAlign: 'left',
+                            borderRadius: 12,
+                            background: isActive ? activeBg : 'transparent',
+                            border: `1px solid ${isActive ? border : 'transparent'}`,
                           }}
                         >
-                          {chat.lastMessage}
-                        </Text>
-                        <div style={{ fontSize: 11, color: '#999', marginTop: 4 }}>
-                          {dayjs(chat.lastMessageTime).fromNow()}
+                          <Space direction="vertical" size={6} style={{ width: '100%' }}>
+                            <Space style={{ width: '100%', justifyContent: 'space-between' }}>
+                              <Space size={8}>
+                                <Badge color={meta.color} />
+                                <Text strong>{conversation.title}</Text>
+                              </Space>
+                              <Text type="secondary" style={{ fontSize: 12 }}>
+                                {conversation.lastActivityAt ? dayjs(conversation.lastActivityAt).fromNow() : ''}
+                              </Text>
+                            </Space>
+                            <Text type="secondary" ellipsis>
+                              {conversation.preview}
+                            </Text>
+                            <Space wrap size={6}>
+                              <Tag color={meta.color}>{meta.label}</Tag>
+                              {queueMeta && <Tag color={queueMeta.color}>{queueMeta.label}</Tag>}
+                              <Tag>{conversation.messages.length} msg</Tag>
+                              {responseLabel && <Text type="secondary">{responseLabel}</Text>}
+                            </Space>
+                          </Space>
+                        </Button>
+                      </List.Item>
+                    );
+                  }}
+                />
+              )}
+            </Space>
+          </Card>
+        </Sider>
+
+        <Content style={{ paddingLeft: isMobile ? 0 : 16 }}>
+          {!activeConversation ? (
+            <Card variant="borderless" style={{ background: bgSecondary }}>
+              <Empty
+                description="Выберите диалог, чтобы открыть conversation pane"
+                image={Empty.PRESENTED_IMAGE_SIMPLE}
+              />
+            </Card>
+          ) : (
+            <Space direction="vertical" size={16} style={{ width: '100%' }}>
+              <Card variant="borderless" style={{ background: bg }}>
+                {(() => {
+                  const activeQueueMeta = queueStateMeta(
+                    activeConversation.latestQueueState,
+                    activeConversation.latestStatus,
+                    activeConversation.latestSlaStatus
+                  );
+                  const activeResponseLabel = respondedAtLabel(activeConversation.latestRespondedAt);
+                  return (
+                <Space direction="vertical" size={8} style={{ width: '100%' }}>
+                  <Space wrap style={{ justifyContent: 'space-between', width: '100%' }}>
+                    <div>
+                      <Title level={4} style={{ margin: 0 }}>
+                        {activeConversation.title}
+                      </Title>
+                      <Text type="secondary">
+                        {channelMeta(activeConversation.channelType).label} • {activeConversation.participantId || 'participant n/a'}
+                      </Text>
+                    </div>
+                    <Space wrap size={8}>
+                      <Tag color={channelMeta(activeConversation.channelType).color}>
+                        {channelMeta(activeConversation.channelType).label}
+                      </Tag>
+                      {activeQueueMeta && <Tag color={activeQueueMeta.color}>{activeQueueMeta.label}</Tag>}
+                      {activeResponseLabel && <Tag icon={<ClockCircleOutlined />}>{activeResponseLabel}</Tag>}
+                    </Space>
+                  </Space>
+                  <Alert
+                    type="info"
+                    showIcon
+                    message="Conversation pane"
+                    description="Диалог собран по omnichannel timeline. Composer работает для Meta/Telegram-каналов с существующим outbound API."
+                  />
+                </Space>
+                  );
+                })()}
+              </Card>
+
+              <Layout style={{ background: 'transparent' }}>
+                <Content style={{ paddingRight: isMobile ? 0 : 16 }}>
+                  <Card variant="borderless" style={{ background: bgSecondary }}>
+                    <Space direction="vertical" size={12} style={{ width: '100%' }}>
+                      {activeConversation.messages.map((item) => {
+                        const inbound = item.direction === 'in';
+                        return (
+                          <div
+                            key={item.id}
+                            style={{
+                              display: 'flex',
+                              justifyContent: inbound ? 'flex-start' : 'flex-end',
+                            }}
+                          >
+                            <div
+                              style={{
+                                maxWidth: '82%',
+                                padding: '10px 12px',
+                                borderRadius: 14,
+                                background: inbound ? bg : '#1677ff',
+                                color: inbound ? 'inherit' : '#fff',
+                                border: inbound ? `1px solid ${border}` : 'none',
+                              }}
+                            >
+                              <Space direction="vertical" size={4} style={{ width: '100%' }}>
+                                <Space wrap size={6}>
+                                  <Tag color={channelMeta(item.channel_type).color}>{channelMeta(item.channel_type).label}</Tag>
+                                  <Tag>{inbound ? 'Входящее' : 'Исходящее'}</Tag>
+                                  <Tag color={item.sla_status === 'breached' ? 'red' : 'default'}>
+                                    {item.sla_status === 'breached' ? 'SLA breached' : 'SLA ok'}
+                                  </Tag>
+                                </Space>
+                                <div style={{ whiteSpace: 'pre-wrap', wordBreak: 'break-word' }}>
+                                  {item.text || 'Без текста'}
+                                </div>
+                                <Text style={{ fontSize: 12, color: inbound ? undefined : 'rgba(255,255,255,0.75)' }}>
+                                  {dayjs(item.created_at).format('DD.MM.YYYY HH:mm')} • {item.status || 'unknown'}
+                                </Text>
+                              </Space>
+                            </div>
+                          </div>
+                        );
+                      })}
+
+                      {buildSendPayload(activeConversation, draft) ? (
+                        <Space direction="vertical" size={8} style={{ width: '100%', marginTop: 8 }}>
+                          <TextArea
+                            rows={4}
+                            value={draft}
+                            onChange={(event) => setDraft(event.target.value)}
+                            placeholder="Ответить в диалоге..."
+                            maxLength={2000}
+                          />
+                          <Space style={{ justifyContent: 'space-between', width: '100%' }}>
+                            <Text type="secondary">
+                              Отправка в {channelMeta(activeConversation.channelType).label}
+                            </Text>
+                            <Button type="primary" icon={<SendOutlined />} loading={sending} onClick={handleSend}>
+                              Отправить
+                            </Button>
+                          </Space>
+                        </Space>
+                      ) : (
+                        <Alert
+                          type="warning"
+                          showIcon
+                          message="Composer пока недоступен"
+                          description="Для этого канала в текущем API нет прямого outbound adapter через unified inbox."
+                        />
+                      )}
+                    </Space>
+                  </Card>
+                </Content>
+
+                <Sider
+                  width={isMobile ? '100%' : 300}
+                  theme="light"
+                  style={{ background: 'transparent', marginTop: isMobile ? 16 : 0 }}
+                >
+                  <Card variant="borderless" style={{ background: bg }}>
+                    <Space direction="vertical" size={12} style={{ width: '100%' }}>
+                      <Title level={5} style={{ margin: 0 }}>
+                        Context Sidebar
+                      </Title>
+                      <Statistic title="Входящих" value={activeConversation.inboundCount} />
+                      <Statistic title="Исходящих" value={activeConversation.outboundCount} />
+                      <div>
+                        <Text type="secondary">Канал</Text>
+                        <div>
+                          <Tag color={channelMeta(activeConversation.channelType).color}>
+                            {channelMeta(activeConversation.channelType).label}
+                          </Tag>
                         </div>
                       </div>
-                    }
-                  />
-                </List.Item>
-              )}
-            />
+                      <div>
+                        <Text type="secondary">Участник</Text>
+                        <div>
+                          <Text copyable>{activeConversation.participantId || 'n/a'}</Text>
+                        </div>
+                      </div>
+                      <div>
+                        <Text type="secondary">Связанная сущность</Text>
+                        <div>
+                          {activeConversation.subjectObjectId ? (
+                            <Tag>
+                              {activeConversation.subjectContentType || 'subject'} #{activeConversation.subjectObjectId}
+                            </Tag>
+                          ) : (
+                            <Text type="secondary">Не привязано</Text>
+                          )}
+                        </div>
+                      </div>
+                      <div>
+                        <Text type="secondary">Последняя активность</Text>
+                        <div>
+                          <Text>{activeConversation.lastActivityAt ? dayjs(activeConversation.lastActivityAt).format('DD.MM.YYYY HH:mm') : '-'}</Text>
+                        </div>
+                      </div>
+                    </Space>
+                  </Card>
+                </Sider>
+              </Layout>
+            </Space>
           )}
-        </div>
-      </Sider>
-
-      {/* Main chat area */}
-      <Content style={{ backgroundColor: bg }}>
-        {activeChat ? (
-          <ChatWidget
-            entityType={activeChat.entityType}
-            entityId={activeChat.entityId}
-            entityName={activeChat.entityName}
-            entityPhone={activeChat.entityPhone}
-          />
-        ) : (
-          <div
-            style={{
-              height: '100%',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              backgroundColor: bgSecondary,
-            }}
-          >
-            <Empty
-              description="Выберите чат для начала общения"
-              image={Empty.PRESENTED_IMAGE_SIMPLE}
-            />
-          </div>
-        )}
-      </Content>
-    </Layout>
+        </Content>
+      </Layout>
+    </Space>
   );
 }
 

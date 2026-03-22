@@ -8,6 +8,15 @@ import { api } from './client.js';
 export const getOmnichannelTimeline = (params = {}) =>
   api.get('/api/settings/omnichannel/timeline/', { params });
 
+export const getOmnichannelDiagnostics = (params = {}) =>
+  api.get('/api/settings/omnichannel/diagnostics/', { params });
+
+export const getOmnichannelEventPayload = (id) =>
+  api.get(`/api/settings/omnichannel/${id}/payload/`);
+
+export const replayOmnichannelEvent = (id, payload = {}) =>
+  api.post(`/api/settings/omnichannel/${id}/replay/`, { body: payload });
+
 export const sendOmnichannelMessage = (payload) =>
   api.post('/api/settings/omnichannel/send/', { body: payload });
 

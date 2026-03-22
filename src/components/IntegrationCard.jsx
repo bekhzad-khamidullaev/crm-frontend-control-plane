@@ -4,7 +4,7 @@
  */
 
 import React, { useState } from 'react';
-import { Card, Button, Space, Tag, Statistic, Row, Col, App, Spin, Alert } from 'antd';
+import { Card, Button, Space, Tag, Statistic, Row, Col, App, Spin, Alert, Typography, theme as antdTheme } from 'antd';
 import {
   CheckCircleOutlined,
   CloseCircleOutlined,
@@ -13,6 +13,10 @@ import {
   LineChartOutlined,
 } from '@ant-design/icons';
 import { t } from '../lib/i18n';
+import { useTheme } from '../lib/hooks/useTheme';
+import LicenseRestrictedAction from './LicenseRestrictedAction.jsx';
+
+const { Text } = Typography;
 
 export default function IntegrationCard({
   title,
@@ -32,6 +36,9 @@ export default function IntegrationCard({
   children,
 }) {
   const { message } = App.useApp();
+  const { token } = antdTheme.useToken();
+  const { theme } = useTheme();
+  const isDark = theme === 'dark';
   const [actionLoading, setActionLoading] = useState(false);
   const tt = (key, fallback) => {
     const translated = t(key);
@@ -40,9 +47,15 @@ export default function IntegrationCard({
 
   const isConnected = status === 'connected';
   const hasError = status === 'error';
+  const isRestricted = !!disabled;
+  const restrictionTitle = tt('integrationCard.messages.restrictedTitle', 'Действие ограничено лицензией');
+  const restrictionDescription = disabledReason || tt(
+    'integrationCard.messages.restrictedDescription',
+    'Обновите лицензию для доступа к интеграциям',
+  );
 
   const handleConnect = async () => {
-    if (disabled) return;
+    if (isRestricted) return;
     setActionLoading(true);
     try {
       await onConnect();
@@ -54,7 +67,7 @@ export default function IntegrationCard({
   };
 
   const handleDisconnect = async () => {
-    if (disabled) return;
+    if (isRestricted) return;
     if (!onDisconnect) return;
     setActionLoading(true);
     try {
@@ -69,12 +82,54 @@ export default function IntegrationCard({
 
   const getStatusTag = () => {
     if (isConnected) {
-      return <Tag icon={<CheckCircleOutlined />} color="success">{t('integrationCard.status.connected')}</Tag>;
+      return (
+        <Tag
+          icon={<CheckCircleOutlined />}
+          color="success"
+          bordered={false}
+          style={{
+            fontWeight: 600,
+            borderRadius: 999,
+            paddingInline: 10,
+            border: '1px solid rgba(82, 196, 26, 0.32)',
+            boxShadow: '0 1px 0 rgba(255,255,255,0.05) inset',
+          }}
+        >
+          {t('integrationCard.status.connected')}
+        </Tag>
+      );
     }
     if (hasError) {
-      return <Tag icon={<CloseCircleOutlined />} color="error">{t('integrationCard.status.error')}</Tag>;
+      return (
+        <Tag
+          icon={<CloseCircleOutlined />}
+          color="error"
+          bordered={false}
+          style={{
+            fontWeight: 600,
+            borderRadius: 999,
+            paddingInline: 10,
+            border: '1px solid rgba(255, 77, 79, 0.32)',
+          }}
+        >
+          {t('integrationCard.status.error')}
+        </Tag>
+      );
     }
-    return <Tag color="default">{t('integrationCard.status.disconnected')}</Tag>;
+    return (
+      <Tag
+        color="default"
+        bordered={false}
+        style={{
+          fontWeight: 600,
+          borderRadius: 999,
+          paddingInline: 10,
+          border: `1px solid ${isDark ? 'rgba(148, 163, 184, 0.3)' : token.colorBorderSecondary}`,
+        }}
+      >
+        {t('integrationCard.status.disconnected')}
+      </Tag>
+    );
   };
 
   return (
@@ -89,33 +144,57 @@ export default function IntegrationCard({
       extra={
         <Space>
           {isConnected && onRefresh && (
-            <Button
-              icon={<ReloadOutlined />}
-              onClick={onRefresh}
-              loading={loading}
-              disabled={disabled}
-              size="small"
-            >
-              {t('integrationCard.actions.refresh')}
-            </Button>
+            <LicenseRestrictedAction restricted={isRestricted} reason={restrictionDescription}>
+              <Button
+                icon={<ReloadOutlined />}
+                onClick={onRefresh}
+                loading={loading}
+                disabled={isRestricted}
+                size="small"
+              >
+                {t('integrationCard.actions.refresh')}
+              </Button>
+            </LicenseRestrictedAction>
           )}
           {isConnected && onSettings && (
-            <Button
-              icon={<SettingOutlined />}
-              onClick={onSettings}
-              disabled={disabled}
-              size="small"
-            >
-              {t('integrationCard.actions.settings')}
-            </Button>
+            <LicenseRestrictedAction restricted={isRestricted} reason={restrictionDescription}>
+              <Button
+                icon={<SettingOutlined />}
+                onClick={onSettings}
+                disabled={isRestricted}
+                size="small"
+              >
+                {t('integrationCard.actions.settings')}
+              </Button>
+            </LicenseRestrictedAction>
           )}
         </Space>
       }
-      style={{ marginBottom: 16 }}
+      style={{
+        marginBottom: 16,
+        border: isRestricted ? '1px solid rgba(217, 119, 6, 0.28)' : undefined,
+        boxShadow: isRestricted ? '0 14px 30px rgba(15, 23, 42, 0.08)' : undefined,
+        background: isRestricted
+          ? isDark
+            ? 'linear-gradient(180deg, rgba(69, 43, 12, 0.28), rgba(12, 19, 32, 0.92))'
+            : 'linear-gradient(180deg, rgba(255, 251, 235, 0.72), rgba(255, 255, 255, 0.96))'
+          : undefined,
+      }}
     >
       <Spin spinning={loading}>
         <Space direction="vertical" style={{ width: '100%' }} size="middle">
-          <p style={{ margin: 0, color: '#666' }}>{description}</p>
+          <Text
+            style={{
+              display: 'block',
+              margin: 0,
+              color: token.colorTextSecondary,
+              lineHeight: 1.6,
+              fontSize: 14,
+              maxWidth: 960,
+            }}
+          >
+            {description}
+          </Text>
 
           {hasError && error && (
             <Alert
@@ -124,25 +203,50 @@ export default function IntegrationCard({
               type="error"
               showIcon
               closable
+              style={{
+                borderRadius: 14,
+                border: '1px solid rgba(255, 77, 79, 0.28)',
+                background: isDark ? 'rgba(47, 18, 24, 0.92)' : token.colorErrorBg,
+              }}
             />
           )}
-          {disabled && (
+          {isRestricted && (
             <Alert
-              message={tt('integrationCard.messages.restrictedTitle', 'Действие ограничено лицензией')}
-              description={disabledReason || tt('integrationCard.messages.restrictedDescription', 'Обновите лицензию для доступа к интеграциям')}
+              message={restrictionTitle}
+              description={(
+                <Space direction="vertical" size={2} style={{ width: '100%' }}>
+                  <div style={{ lineHeight: 1.55 }}>{restrictionDescription}</div>
+                  <div style={{ fontSize: 12, lineHeight: 1.45, color: token.colorTextSecondary }}>
+                    {tt(
+                      'integrationCard.messages.restrictedHint',
+                      'Connect, test, and settings actions remain disabled until the restriction is removed.',
+                    )}
+                  </div>
+                </Space>
+              )}
               type="warning"
               showIcon
+              style={{
+                borderRadius: 14,
+                border: '1px solid rgba(217, 119, 6, 0.28)',
+                background: isDark ? 'rgba(69, 43, 12, 0.72)' : 'rgba(255, 247, 214, 0.9)',
+              }}
             />
           )}
 
           {isConnected && stats && Object.keys(stats).length > 0 && (
-            <Row gutter={16}>
+            <Row gutter={[16, 16]}>
               {Object.entries(stats).map(([key, value]) => (
-                <Col span={8} key={key}>
+                <Col xs={24} sm={12} md={8} key={key}>
                   <Statistic
-                    title={key}
+                    title={<span style={{ color: token.colorTextSecondary, fontWeight: 600 }}>{key}</span>}
                     value={value}
                     prefix={<LineChartOutlined />}
+                    valueStyle={{
+                      color: token.colorText,
+                      fontWeight: 700,
+                      fontSize: 22,
+                    }}
                   />
                 </Col>
               ))}
@@ -155,20 +259,26 @@ export default function IntegrationCard({
             {isConnected ? (
               <Space>
                 {onDisconnect && (
-                  <Button danger onClick={handleDisconnect} loading={actionLoading} disabled={disabled}>
-                    {t('integrationCard.actions.disconnect')}
-                  </Button>
+                  <LicenseRestrictedAction restricted={isRestricted} reason={restrictionDescription}>
+                    <Button danger onClick={handleDisconnect} loading={actionLoading} disabled={isRestricted}>
+                      {t('integrationCard.actions.disconnect')}
+                    </Button>
+                  </LicenseRestrictedAction>
                 )}
                 {onSettings && (
-                  <Button onClick={onSettings} disabled={disabled}>
-                    {t('integrationCard.actions.configure')}
-                  </Button>
+                  <LicenseRestrictedAction restricted={isRestricted} reason={restrictionDescription}>
+                    <Button onClick={onSettings} disabled={isRestricted}>
+                      {t('integrationCard.actions.configure')}
+                    </Button>
+                  </LicenseRestrictedAction>
                 )}
               </Space>
             ) : (
-              <Button type="primary" onClick={handleConnect} loading={actionLoading} disabled={disabled}>
-                {t('integrationCard.actions.connect')} {title}
-              </Button>
+              <LicenseRestrictedAction restricted={isRestricted} reason={restrictionDescription}>
+                <Button type="primary" onClick={handleConnect} loading={actionLoading} disabled={isRestricted}>
+                  {t('integrationCard.actions.connect')} {title}
+                </Button>
+              </LicenseRestrictedAction>
             )}
           </div>
         </Space>

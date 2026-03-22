@@ -1,4 +1,5 @@
 import { getUserFromToken, isAuthenticated } from './api/auth.js';
+import { readStoredLicenseFeatures } from './api/licenseFeatures.js';
 import { mergeRoles, normalizeRoles, rolesFromTokenPayload } from './roles.js';
 import { getRouteMeta, parseHash } from '../router.js';
 
@@ -66,6 +67,17 @@ function getStoredPermissions() {
   return [];
 }
 
+function normalizeFeatures(rawFeatures = []) {
+  if (!Array.isArray(rawFeatures)) return [];
+  const normalized = new Set();
+  rawFeatures.forEach((feature) => {
+    const value = String(feature || '').trim().toLowerCase();
+    if (!value) return;
+    normalized.add(value);
+  });
+  return Array.from(normalized);
+}
+
 export function getCurrentRoles() {
   if (!isAuthenticated()) return [];
   const tokenRoles = rolesFromTokenPayload(getUserFromToken() || {});
@@ -94,6 +106,16 @@ export function hasAnyPermission(requiredPermissions = []) {
   return currentPermissions.some((permission) => normalizedRequired.includes(permission));
 }
 
+export function hasAnyFeature(requiredFeatures = []) {
+  const normalizedRequired = normalizeFeatures(
+    Array.isArray(requiredFeatures) ? requiredFeatures : [requiredFeatures],
+  );
+  if (normalizedRequired.length === 0) return true;
+  const currentFeatures = readStoredLicenseFeatures();
+  if (currentFeatures.length === 0) return false;
+  return currentFeatures.some((feature) => normalizedRequired.includes(feature));
+}
+
 export function canWrite(requiredPermissions = null) {
   if (requiredPermissions) {
     return hasAnyPermission(requiredPermissions);
@@ -107,12 +129,51 @@ export function canWrite(requiredPermissions = null) {
 }
 
 export function canAccessRoute(routeName) {
+  return getRouteAccessState(routeName).allowed;
+}
+
+export function getRouteAccessState(routeName) {
   const meta = getRouteMeta(routeName);
-  if (!meta || meta.auth === false) return true;
-  if (!isAuthenticated()) return false;
+  if (!meta || meta.auth === false) {
+    return { allowed: true, reason: null, feature: null, permissions: [], roles: [] };
+  }
+  if (!isAuthenticated()) {
+    return { allowed: false, reason: 'auth', feature: null, permissions: [], roles: [] };
+  }
   const requiredRoles = normalizeRoles(Array.isArray(meta.roles) ? meta.roles : []);
   const requiredPermissions = normalizePermissions(Array.isArray(meta.permissions) ? meta.permissions : []);
+  const requiredFeatures = normalizeFeatures(
+    Array.isArray(meta.features) ? meta.features : meta.feature ? [meta.feature] : [],
+  );
   const hasRoles = requiredRoles.length === 0 || hasAnyRole(requiredRoles);
   const hasPermissions = requiredPermissions.length === 0 || hasAnyPermission(requiredPermissions);
-  return hasRoles && hasPermissions;
+  const hasFeatures = requiredFeatures.length === 0 || hasAnyFeature(requiredFeatures);
+  if (hasRoles && hasPermissions && hasFeatures) {
+    return { allowed: true, reason: null, feature: null, permissions: [], roles: [] };
+  }
+  if (!hasFeatures) {
+    return {
+      allowed: false,
+      reason: 'license',
+      feature: requiredFeatures[0] || null,
+      permissions: [],
+      roles: [],
+    };
+  }
+  if (!hasPermissions) {
+    return {
+      allowed: false,
+      reason: 'permission',
+      feature: null,
+      permissions: requiredPermissions,
+      roles: [],
+    };
+  }
+  return {
+    allowed: false,
+    reason: 'role',
+    feature: null,
+    permissions: [],
+    roles: requiredRoles,
+  };
 }
