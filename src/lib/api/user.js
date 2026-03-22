@@ -23,7 +23,21 @@ export async function getProfile() {
     throw userRes.reason || profileRes.reason || new Error('Failed to load profile');
   }
 
-  return { ...user, ...profile };
+  // Merge: user data provides auth fields (permissions, is_staff, system_version);
+  // profile data overrides personal fields (avatar, position, language_code, etc.).
+  // User fields that must not be overwritten by profile: id, username, is_staff, is_superuser, permissions.
+  const { id, username, is_staff, is_superuser, permissions, system_version, ...userRest } = user;
+  return {
+    ...userRest,
+    ...profile,
+    // Always preserve identity & auth fields from /api/users/me/
+    id: id ?? profile.id,
+    username: username ?? profile.username,
+    is_staff: is_staff ?? profile.is_staff,
+    is_superuser: is_superuser ?? profile.is_superuser,
+    permissions: permissions ?? profile.permissions,
+    system_version: system_version ?? profile.system_version,
+  };
 }
 
 /**
@@ -178,20 +192,36 @@ export async function getProfileByUser(userId) {
 
 /**
  * Get user sessions
- * Uses /api/users/me/sessions/ endpoint
+ * Uses /api/settings/security/sessions/ as canonical source (richer data: IP, device, location).
+ * Falls back to /api/users/me/sessions/ if security endpoint is unavailable.
  * @returns {Promise<Array>}
  */
 export async function getUserSessions() {
-  return api.get('/api/users/me/sessions/');
+  try {
+    return await api.get('/api/settings/security/sessions/');
+  } catch (err) {
+    if (err?.status === 404 || err?.status === 403) {
+      return api.get('/api/users/me/sessions/');
+    }
+    throw err;
+  }
 }
 
 /**
  * Revoke all user sessions
- * Uses /api/users/me/sessions/revoke-all/ endpoint
+ * Uses /api/settings/security/sessions/revoke-all/ as canonical source.
+ * Falls back to /api/users/me/sessions/revoke-all/ if security endpoint is unavailable.
  * @returns {Promise<Object>}
  */
 export async function revokeAllSessions() {
-  return api.post('/api/users/me/sessions/revoke-all/');
+  try {
+    return await api.post('/api/settings/security/sessions/revoke-all/', { body: {} });
+  } catch (err) {
+    if (err?.status === 404 || err?.status === 403) {
+      return api.post('/api/users/me/sessions/revoke-all/');
+    }
+    throw err;
+  }
 }
 
 /**

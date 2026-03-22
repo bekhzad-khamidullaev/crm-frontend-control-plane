@@ -19,15 +19,6 @@ import { api as apiClient, getContacts, getDeal } from './client.js';
  * @returns {Promise<{count: number, results: Array}>}
  */
 export async function getCallLogs(params = {}) {
-  return apiClient.get('/api/call-logs/', { params });
-}
-
-/**
- * Get VoIP call logs (read-only)
- * @param {Object} params - Query parameters
- * @returns {Promise<Object|Array>}
- */
-export async function getVoipCallLogs(params = {}) {
   return apiClient.get('/api/voip/call-logs/', { params });
 }
 
@@ -37,17 +28,14 @@ export async function getVoipCallLogs(params = {}) {
  * @returns {Promise<Object>}
  */
 export async function getCallLog(logId) {
-  return apiClient.get(`/api/call-logs/${logId}/`);
-}
-
-/**
- * Get VoIP call log by ID
- * @param {string|number} logId - VoIP call log ID
- * @returns {Promise<Object>}
- */
-export async function getVoipCallLog(logId) {
   return apiClient.get(`/api/voip/call-logs/${logId}/`);
 }
+
+/** @deprecated Use getCallLog instead */
+export const getVoipCallLog = getCallLog;
+
+/** @deprecated Use getCallLogs instead */
+export const getVoipCallLogs = getCallLogs;
 
 function normalizeCallLogPayload(data = {}) {
   const payload = { ...data };
@@ -68,17 +56,17 @@ function normalizeCallLogPayload(data = {}) {
  * @returns {Promise<Object>}
  */
 export async function createCallLog(data) {
-  return apiClient.post('/api/call-logs/', { body: normalizeCallLogPayload(data) });
+  return apiClient.post('/api/voip/call-logs/', { body: normalizeCallLogPayload(data) });
 }
 
 /**
- * Update a CRM call log
+ * Update a CRM call log (add note or patch metadata)
  * @param {string|number} logId - Call log ID
  * @param {Object} data - Call log updates
  * @returns {Promise<Object>}
  */
 export async function updateCallLog(logId, data) {
-  return apiClient.patch(`/api/call-logs/${logId}/`, { body: normalizeCallLogPayload(data) });
+  return apiClient.patch(`/api/voip/call-logs/${logId}/`, { body: normalizeCallLogPayload(data) });
 }
 
 /**
@@ -87,7 +75,7 @@ export async function updateCallLog(logId, data) {
  * @returns {Promise<void>}
  */
 export async function deleteCallLog(logId) {
-  return apiClient.delete(`/api/call-logs/${logId}/`);
+  return apiClient.delete(`/api/voip/call-logs/${logId}/`);
 }
 
 /**

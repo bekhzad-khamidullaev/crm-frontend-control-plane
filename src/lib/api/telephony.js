@@ -311,11 +311,7 @@ export async function getVoipSystemSettings() {
 }
 
 export async function updateVoipSystemSettings(data) {
-  try {
-    return await api.patch('/api/voip/system-settings/current/', { body: data });
-  } catch {
-    return api.patch('/api/voip/system-settings/1/', { body: data });
-  }
+  return api.patch('/api/voip/system-settings/current/', { body: data });
 }
 
 /**

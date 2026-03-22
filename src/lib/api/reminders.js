@@ -156,15 +156,7 @@ export async function getRemindersByContent(contentType, objectId, params = {}) 
  * @returns {Promise<{results: Array<{id: number, label: string, key: string, model: string}>}>}
  */
 export async function getReminderContentTypes() {
-  try {
-    return await api.get('/api/reminders/content-types/');
-  } catch (error) {
-    // Backward compatibility for environments that still expose underscore action names.
-    if (error?.status === 404) {
-      return api.get('/api/reminders/content_types/');
-    }
-    throw error;
-  }
+  return api.get('/api/reminders/content-types/');
 }
 
 /**
@@ -175,14 +167,7 @@ export async function getReminderContentTypes() {
  */
 export async function getReminderObjects(contentType, params = {}) {
   const query = { ...params, content_type: contentType };
-  try {
-    return await api.get('/api/reminders/objects/', { params: query });
-  } catch (error) {
-    if (error?.status === 404) {
-      return api.get('/api/reminders/object_list/', { params: query });
-    }
-    throw error;
-  }
+  return api.get('/api/reminders/objects/', { params: query });
 }
 
 /**
@@ -192,13 +177,5 @@ export async function getReminderObjects(contentType, params = {}) {
  * @returns {Promise<{id: number, name: string}>}
  */
 export async function getReminderObject(contentType, objectId) {
-  const query = { content_type: contentType };
-  try {
-    return await api.get(`/api/reminders/objects/${objectId}/`, { params: query });
-  } catch (error) {
-    if (error?.status === 404) {
-      return api.get(`/api/reminders/object_detail/${objectId}/`, { params: query });
-    }
-    throw error;
-  }
+  return api.get(`/api/reminders/objects/${objectId}/`, { params: { content_type: contentType } });
 }
