@@ -1,5 +1,10 @@
 import { getUserFromToken, isAuthenticated } from './api/auth.js';
 import { readStoredLicenseFeatures } from './api/licenseFeatures.js';
+import {
+  getLicenseStateRestriction,
+  readStoredLicenseState,
+  shouldEnforceLicenseFeatures,
+} from './api/licenseState.js';
 import { mergeRoles, normalizeRoles, rolesFromTokenPayload } from './roles.js';
 import { getRouteMeta, parseHash } from '../router.js';
 
@@ -145,17 +150,35 @@ export function getRouteAccessState(routeName) {
   const requiredFeatures = normalizeFeatures(
     Array.isArray(meta.features) ? meta.features : meta.feature ? [meta.feature] : [],
   );
+  const licenseState = readStoredLicenseState();
+  const enforceLicenseFeatures = shouldEnforceLicenseFeatures(licenseState);
   const hasRoles = requiredRoles.length === 0 || hasAnyRole(requiredRoles);
   const hasPermissions = requiredPermissions.length === 0 || hasAnyPermission(requiredPermissions);
-  const hasFeatures = requiredFeatures.length === 0 || hasAnyFeature(requiredFeatures);
+  const hasFeatures = requiredFeatures.length === 0 || !enforceLicenseFeatures || hasAnyFeature(requiredFeatures);
+  if (requiredFeatures.length > 0) {
+    const licenseRestriction = getLicenseStateRestriction(licenseState);
+    if (licenseRestriction) {
+      return {
+        allowed: false,
+        reason: 'license',
+        feature: requiredFeatures[0] || null,
+        code: licenseRestriction.code,
+        message: licenseRestriction.message,
+        permissions: [],
+        roles: [],
+      };
+    }
+  }
   if (hasRoles && hasPermissions && hasFeatures) {
-    return { allowed: true, reason: null, feature: null, permissions: [], roles: [] };
+    return { allowed: true, reason: null, feature: null, code: null, message: '', permissions: [], roles: [] };
   }
   if (!hasFeatures) {
     return {
       allowed: false,
       reason: 'license',
       feature: requiredFeatures[0] || null,
+      code: 'LICENSE_FEATURE_DISABLED',
+      message: '',
       permissions: [],
       roles: [],
     };
@@ -165,6 +188,8 @@ export function getRouteAccessState(routeName) {
       allowed: false,
       reason: 'permission',
       feature: null,
+      code: null,
+      message: '',
       permissions: requiredPermissions,
       roles: [],
     };
@@ -173,6 +198,8 @@ export function getRouteAccessState(routeName) {
     allowed: false,
     reason: 'role',
     feature: null,
+    code: null,
+    message: '',
     permissions: [],
     roles: requiredRoles,
   };

@@ -58,9 +58,11 @@ export function parseLicenseRestriction(error: AnyError | null | undefined): Lic
 
   const restrictiveCodes = new Set([
     'LICENSE_FEATURE_DISABLED',
+    'LICENSE_MISSING',
     'LICENSE_SEAT_LIMIT_EXCEEDED',
     'LICENSE_EXPIRED',
     'LICENSE_REVOKED',
+    'LICENSE_SUSPENDED',
     'LICENSE_INVALID_SIGNATURE',
     'LICENSE_BINDING_MISMATCH',
   ]);

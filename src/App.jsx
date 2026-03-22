@@ -12,6 +12,7 @@ import { getTelegramBots } from './lib/api/integrations/telegram.js';
 import { getWhatsAppAccounts } from './lib/api/integrations/whatsapp.js';
 import { clearStoredLicenseFeatures, persistLicenseFeatures } from './lib/api/licenseFeatures.js';
 import { getLicenseMe } from './lib/api/licenseControl.js';
+import { clearStoredLicenseState, persistLicenseState } from './lib/api/licenseState.js';
 import { canAccessRoute as canAccessRouteByPolicy, getRouteAccessState } from './lib/rbac.js';
 import {
   canAccessSettingsWorkspace,
@@ -486,9 +487,11 @@ function App() {
       const licensePreloadPromise = (async () => {
         try {
           const license = await getLicenseMe();
+          persistLicenseState(license);
           persistLicenseFeatures(license?.features || []);
         } catch (e) {
           console.warn('Failed to preload license entitlements:', e);
+          clearStoredLicenseState();
           clearStoredLicenseFeatures();
         }
       })();
@@ -734,6 +737,7 @@ function App() {
     sessionStorage.removeItem('enterprise_crm_permissions');
     localStorage.removeItem('enterprise_crm_permissions');
     clearStoredLicenseFeatures();
+    clearStoredLicenseState();
     clearStoredRouteLicenseRestriction();
     disconnectTelephony();
     setUser(null);

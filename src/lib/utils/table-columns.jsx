@@ -84,19 +84,20 @@ export function createTwoLineColumn({
 export function createAmountColumn({
   title = 'Сумма',
   dataIndex = 'amount',
+  currencyKey = 'currency_code',
   width = 130,
   iconColor = '#52c41a',
   ...restProps
-}) {
+} = {}) {
   return {
     title,
     dataIndex,
     key: dataIndex,
     width,
-    render: (amount) => (
+    render: (amount, record) => (
       <Space>
         <DollarOutlined style={{ color: iconColor }} />
-        <span style={styles.primaryText}>{formatCurrency(amount)}</span>
+        <span style={styles.primaryText}>{formatCurrency(amount, record?.[currencyKey])}</span>
       </Space>
     ),
     sorter: (a, b) => (a[dataIndex] || 0) - (b[dataIndex] || 0),

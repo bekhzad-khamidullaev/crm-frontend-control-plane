@@ -11,7 +11,8 @@ import {
   FallOutlined,
   ClockCircleOutlined,
 } from '@ant-design/icons';
-import { getPaymentSummary, getPaymentsThisMonth } from '../lib/api/payments';
+import { getPaymentsThisMonth } from '../lib/api/payments';
+import { countDistinctCurrencies, formatCurrencyBreakdownFromItems } from '../lib/utils/format';
 
 const PaymentsWidget = () => {
   const [summary, setSummary] = useState(null);
@@ -24,35 +25,21 @@ const PaymentsWidget = () => {
   const loadPaymentsSummary = async () => {
     setLoading(true);
     try {
-      const now = new Date();
-      const firstDay = new Date(now.getFullYear(), now.getMonth(), 1)
-        .toISOString()
-        .split('T')[0];
-      const lastDay = new Date(now.getFullYear(), now.getMonth() + 1, 0)
-        .toISOString()
-        .split('T')[0];
-
-      const [summaryData, paymentsData] = await Promise.all([
-        getPaymentSummary({ date_from: firstDay, date_to: lastDay }),
-        getPaymentsThisMonth({ page_size: 100 }),
-      ]);
+      const paymentsData = await getPaymentsThisMonth({ page_size: 1000 });
 
       // Подсчитываем статистику
       const payments = paymentsData.results || [];
-      const completed = payments.filter((p) => p.status === 'completed');
-      const pending = payments.filter((p) => p.status === 'pending');
-      const failed = payments.filter((p) => p.status === 'failed');
-
-      const totalAmount = completed.reduce((sum, p) => sum + (p.amount || 0), 0);
-      const pendingAmount = pending.reduce((sum, p) => sum + (p.amount || 0), 0);
+      const received = payments.filter((p) => p.status === 'r');
+      const pending = payments.filter((p) => ['g', 'h', 'l'].includes(p.status));
+      const failed = payments.filter((p) => p.status && !['r', 'g', 'h', 'l'].includes(p.status));
 
       setSummary({
-        total: totalAmount,
-        pending: pendingAmount,
-        count: completed.length,
+        total: formatCurrencyBreakdownFromItems(received),
+        pending: formatCurrencyBreakdownFromItems(pending),
+        count: received.length,
         pendingCount: pending.length,
         failedCount: failed.length,
-        currency: payments[0]?.currency || '₽',
+        multiCurrency: countDistinctCurrencies(payments) > 1,
       });
     } catch (error) {
       console.error('Error loading payments summary:', error);
@@ -107,8 +94,6 @@ const PaymentsWidget = () => {
           <Statistic
             title="Получено"
             value={summary.total}
-            precision={2}
-            suffix={summary.currency}
             valueStyle={{ color: '#3f8600' }}
             prefix={<RiseOutlined />}
           />
@@ -120,8 +105,6 @@ const PaymentsWidget = () => {
           <Statistic
             title="Ожидается"
             value={summary.pending}
-            precision={2}
-            suffix={summary.currency}
             valueStyle={{ color: '#cf1322' }}
             prefix={<ClockCircleOutlined />}
           />
@@ -140,7 +123,7 @@ const PaymentsWidget = () => {
       )}
 
       <div style={{ marginTop: 16, fontSize: 12, color: '#999', textAlign: 'center' }}>
-        Данные за текущий месяц
+        {summary.multiCurrency ? 'Данные сгруппированы по валютам за текущий месяц' : 'Данные за текущий месяц'}
       </div>
     </Card>
   );

@@ -1,22 +1,31 @@
 import React from 'react';
-import { Card, Spin, Alert, Empty } from 'antd';
+import { Alert, Button, Card, Empty, Spin } from 'antd';
 import PropTypes from 'prop-types';
 
 /**
  * Reusable analytics card wrapper with loading and error states
  */
-function AnalyticsCard({ 
-  title, 
-  loading, 
-  error, 
-  children, 
+function AnalyticsCard({
+  title,
+  loading,
+  error,
+  children,
   extra,
+  onRetry,
   bordered = true,
   size = 'default',
   className = '',
   style = {},
   bodyStyle = {},
 }) {
+  const errorDescription =
+    typeof error === 'string'
+      ? error
+      : error?.details?.message ||
+        error?.details?.detail ||
+        error?.message ||
+        'Не удалось загрузить данные';
+
   return (
     <Card
       title={title}
@@ -36,14 +45,21 @@ function AnalyticsCard({
       ) : error ? (
         <Alert
           message="Ошибка загрузки"
-          description={error.message || 'Не удалось загрузить данные'}
+          description={errorDescription}
           type="error"
           showIcon
+          action={
+            onRetry ? (
+              <Button size="small" onClick={onRetry}>
+                Повторить
+              </Button>
+            ) : null
+          }
         />
       ) : children ? (
         children
       ) : (
-        <Empty description="Нет данных" />
+        <Empty image={Empty.PRESENTED_IMAGE_SIMPLE} description="Нет данных" />
       )}
     </Card>
   );
@@ -52,9 +68,10 @@ function AnalyticsCard({
 AnalyticsCard.propTypes = {
   title: PropTypes.node,
   loading: PropTypes.bool,
-  error: PropTypes.object,
+  error: PropTypes.oneOfType([PropTypes.object, PropTypes.string]),
   children: PropTypes.node,
   extra: PropTypes.node,
+  onRetry: PropTypes.func,
   bordered: PropTypes.bool,
   size: PropTypes.oneOf(['default', 'small']),
   className: PropTypes.string,

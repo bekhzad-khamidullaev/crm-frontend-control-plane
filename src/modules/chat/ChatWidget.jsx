@@ -85,6 +85,7 @@ function ChatWidget({ entityType, entityId, entityName, entityPhone }) {
   const [loadError, setLoadError] = useState(false);
   const [replyTo, setReplyTo] = useState(null);
   const [typingUsers, setTypingUsers] = useState([]);
+  const [sendingMessage, setSendingMessage] = useState(false);
   const [contentTypeId, setContentTypeId] = useState(null);
   const [editingMessage, setEditingMessage] = useState(null);
   const [editValue, setEditValue] = useState('');
@@ -290,6 +291,8 @@ function ChatWidget({ entityType, entityId, entityName, entityPhone }) {
   };
 
   const handleSend = async (messageData) => {
+    if (sendingMessage) return;
+    setSendingMessage(true);
     try {
       const resolvedContentType = resolveContentType();
       if (!resolvedContentType || !entityId) {
@@ -327,6 +330,8 @@ function ChatWidget({ entityType, entityId, entityName, entityPhone }) {
     } catch (error) {
       console.error('Error sending message:', error);
       antMessage.error('Ошибка отправки сообщения');
+    } finally {
+      setSendingMessage(false);
     }
   };
 
@@ -484,6 +489,7 @@ function ChatWidget({ entityType, entityId, entityName, entityPhone }) {
       <ChatMessageComposer
         onSend={handleSend}
         onTyping={handleTyping}
+        sending={sendingMessage}
         entityType={entityType}
         entityId={entityId}
         replyTo={replyTo}

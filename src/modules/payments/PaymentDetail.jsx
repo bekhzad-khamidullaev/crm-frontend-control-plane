@@ -2,7 +2,18 @@ import dayjs from 'dayjs';
 import { ArrowLeft, DollarSign, Edit, Trash2 } from 'lucide-react';
 import { useEffect, useState } from 'react';
 
-import { App, Button, Card, Descriptions, Modal, Result, Skeleton, Space, Tag, Typography } from 'antd';
+import {
+  App,
+  Button,
+  Card,
+  Descriptions,
+  Modal,
+  Result,
+  Skeleton,
+  Space,
+  Tag,
+  Typography,
+} from 'antd';
 
 import { deletePayment, getPayment } from '../../lib/api/payments';
 import { canWrite } from '../../lib/rbac.js';
@@ -23,6 +34,7 @@ export default function PaymentDetail({ id }) {
   const canManage = canWrite('crm.change_payment');
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState('');
   const [confirmOpen, setConfirmOpen] = useState(false);
 
   useEffect(() => {
@@ -32,12 +44,18 @@ export default function PaymentDetail({ id }) {
 
   const fetchData = async () => {
     setLoading(true);
+    setLoadError('');
     try {
       const res = await getPayment(id);
       setData(res);
-    } catch {
-      message.error('Не удалось загрузить платеж');
+    } catch (error) {
       setData(null);
+      setLoadError(
+        error?.details?.message ||
+          error?.details?.detail ||
+          error?.message ||
+          'Не удалось загрузить платеж'
+      );
     } finally {
       setLoading(false);
     }
@@ -55,6 +73,24 @@ export default function PaymentDetail({ id }) {
 
   if (loading) {
     return <Skeleton active paragraph={{ rows: 6 }} />;
+  }
+
+  if (loadError) {
+    return (
+      <Result
+        status="error"
+        title="Не удалось загрузить платеж"
+        subTitle={loadError}
+        extra={[
+          <Button key="retry" type="primary" onClick={fetchData}>
+            Повторить
+          </Button>,
+          <Button key="back" onClick={() => navigate('/payments')}>
+            Вернуться к платежам
+          </Button>,
+        ]}
+      />
+    );
   }
 
   if (!data) {
@@ -81,7 +117,11 @@ export default function PaymentDetail({ id }) {
             </Button>
             {canManage ? (
               <>
-                <Button type="primary" icon={<Edit size={14} />} onClick={() => navigate(`/payments/${id}/edit`)}>
+                <Button
+                  type="primary"
+                  icon={<Edit size={14} />}
+                  onClick={() => navigate(`/payments/${id}/edit`)}
+                >
                   Редактировать
                 </Button>
                 <Button danger icon={<Trash2 size={14} />} onClick={() => setConfirmOpen(true)}>
@@ -93,13 +133,20 @@ export default function PaymentDetail({ id }) {
         </Space>
 
         <Descriptions bordered column={1} size="small">
-          <Descriptions.Item label="Сумма">{data.currency_code ? formatCurrency(data.amount, data.currency_code) : '-'}</Descriptions.Item>
+          <Descriptions.Item label="Сумма">
+            {data.currency_code ? formatCurrency(data.amount, data.currency_code) : '-'}
+          </Descriptions.Item>
+          <Descriptions.Item label="Валюта">{data.currency_code || '-'}</Descriptions.Item>
           <Descriptions.Item label="Статус">
             <Tag>{statusOptions[data.status] || data.status || '—'}</Tag>
           </Descriptions.Item>
-          <Descriptions.Item label="Дата платежа">{data.payment_date ? dayjs(data.payment_date).format('DD.MM.YYYY') : '-'}</Descriptions.Item>
+          <Descriptions.Item label="Дата платежа">
+            {data.payment_date ? dayjs(data.payment_date).format('DD.MM.YYYY') : '-'}
+          </Descriptions.Item>
           <Descriptions.Item label="Сделка">{data.deal_name || '-'}</Descriptions.Item>
-          <Descriptions.Item label="Номер договора">{data.contract_number || '-'}</Descriptions.Item>
+          <Descriptions.Item label="Номер договора">
+            {data.contract_number || '-'}
+          </Descriptions.Item>
           <Descriptions.Item label="Номер счета">{data.invoice_number || '-'}</Descriptions.Item>
           <Descriptions.Item label="Номер заказа">{data.order_number || '-'}</Descriptions.Item>
         </Descriptions>

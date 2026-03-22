@@ -75,6 +75,11 @@ describe('Router', () => {
     );
   });
 
+  it('uses memo and reminder-specific license features for their routes', () => {
+    expect(getRouteMeta('memos-list').feature).toBe('tasks.memos');
+    expect(getRouteMeta('reminders-list').feature).toBe('tasks.reminders');
+  });
+
   describe('navigation', () => {
     it('updates hash and triggers route change', (done) => {
       cleanup = onRouteChange((route) => {

@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { Button, Card, Input, Select, Space, Table, Tag, message } from "antd";
+import { Alert, Button, Card, Empty, Input, Select, Space, Table, Tag, message } from "antd";
 import {
   approveCpRuntimeRequest,
   assignCpDeploymentLicense,
@@ -71,6 +71,7 @@ export default function QueueSection({ onMutated }) {
   const [unlicensedPageSize, setUnlicensedPageSize] = useState(10);
   const [unlicensedSearch, setUnlicensedSearch] = useState("");
   const [unlicensedLoading, setUnlicensedLoading] = useState(false);
+  const [unlicensedError, setUnlicensedError] = useState("");
 
   const [runtimeRows, setRuntimeRows] = useState([]);
   const [runtimeTotal, setRuntimeTotal] = useState(0);
@@ -78,6 +79,7 @@ export default function QueueSection({ onMutated }) {
   const [runtimePageSize, setRuntimePageSize] = useState(10);
   const [runtimeSearch, setRuntimeSearch] = useState("");
   const [runtimeLoading, setRuntimeLoading] = useState(false);
+  const [runtimeError, setRuntimeError] = useState("");
 
   const [assignLoading, setAssignLoading] = useState({});
   const [rowSubscriptionMap, setRowSubscriptionMap] = useState({});
@@ -86,24 +88,32 @@ export default function QueueSection({ onMutated }) {
 
   const [allDeployments, setAllDeployments] = useState([]);
   const [allSubscriptions, setAllSubscriptions] = useState([]);
+  const [optionsError, setOptionsError] = useState("");
 
   const loadOptions = async () => {
     const [deploymentsResponse, subscriptionsResponse] = await Promise.allSettled([
       getCpDeployments({ page_size: 1000 }),
       getCpSubscriptions({ page_size: 1000 }),
     ]);
+    const nextErrors = [];
 
     if (deploymentsResponse.status === "fulfilled") {
       setAllDeployments(normalizeCollection(deploymentsResponse.value));
     } else {
-      message.error(formatBackendError(deploymentsResponse.reason, "Failed to load deployments"));
+      const nextError = formatBackendError(deploymentsResponse.reason, "Failed to load deployments");
+      nextErrors.push(nextError);
+      message.error(nextError);
     }
 
     if (subscriptionsResponse.status === "fulfilled") {
       setAllSubscriptions(normalizeCollection(subscriptionsResponse.value));
     } else {
-      message.error(formatBackendError(subscriptionsResponse.reason, "Failed to load subscriptions"));
+      const nextError = formatBackendError(subscriptionsResponse.reason, "Failed to load subscriptions");
+      nextErrors.push(nextError);
+      message.error(nextError);
     }
+
+    setOptionsError(nextErrors.join(" | "));
   };
 
   const loadUnlicensed = async (override = {}) => {
@@ -111,6 +121,7 @@ export default function QueueSection({ onMutated }) {
     const nextPageSize = override.pageSize ?? unlicensedPageSize;
     const nextSearch = override.search ?? unlicensedSearch;
     setUnlicensedLoading(true);
+    setUnlicensedError("");
     try {
       const response = await getCpUnlicensedDeployments({
         page: nextPage,
@@ -123,7 +134,9 @@ export default function QueueSection({ onMutated }) {
       setUnlicensedPageSize(nextPageSize);
       setUnlicensedSearch(nextSearch);
     } catch (error) {
-      message.error(formatBackendError(error, "Failed to load unlicensed deployments"));
+      const nextError = formatBackendError(error, "Failed to load unlicensed deployments");
+      setUnlicensedError(nextError);
+      message.error(nextError);
     } finally {
       setUnlicensedLoading(false);
     }
@@ -134,6 +147,7 @@ export default function QueueSection({ onMutated }) {
     const nextPageSize = override.pageSize ?? runtimePageSize;
     const nextSearch = override.search ?? runtimeSearch;
     setRuntimeLoading(true);
+    setRuntimeError("");
     try {
       const response = await getCpRuntimeUnlicensedRequests({
         page: nextPage,
@@ -146,7 +160,9 @@ export default function QueueSection({ onMutated }) {
       setRuntimePageSize(nextPageSize);
       setRuntimeSearch(nextSearch);
     } catch (error) {
-      message.error(formatBackendError(error, "Failed to load runtime requests"));
+      const nextError = formatBackendError(error, "Failed to load runtime requests");
+      setRuntimeError(nextError);
+      message.error(nextError);
     } finally {
       setRuntimeLoading(false);
     }
@@ -244,6 +260,19 @@ export default function QueueSection({ onMutated }) {
 
   return (
     <Space direction="vertical" size="middle" style={{ width: "100%" }}>
+      {optionsError ? (
+        <Alert
+          showIcon
+          type="warning"
+          message="Assignment options are partially unavailable"
+          description={optionsError}
+          action={
+            <Button size="small" onClick={loadOptions}>
+              Retry
+            </Button>
+          }
+        />
+      ) : null}
       <Card
         title="Installations without license"
         extra={
@@ -256,10 +285,36 @@ export default function QueueSection({ onMutated }) {
           />
         }
       >
+        {unlicensedError ? (
+          <Alert
+            showIcon
+            type="warning"
+            style={{ marginBottom: 12 }}
+            message="Unlicensed deployments could not be loaded"
+            description={unlicensedError}
+            action={
+              <Button size="small" onClick={() => loadUnlicensed()}>
+                Retry
+              </Button>
+            }
+          />
+        ) : null}
         <Table
           rowKey="id"
           loading={unlicensedLoading}
           dataSource={unlicensedRows}
+          locale={{
+            emptyText: (
+              <Empty
+                image={Empty.PRESENTED_IMAGE_SIMPLE}
+                description={
+                  unlicensedSearch
+                    ? "No unlicensed deployments match the current search"
+                    : "No unlicensed deployments"
+                }
+              />
+            ),
+          }}
           pagination={{ current: unlicensedPage, pageSize: unlicensedPageSize, total: unlicensedTotal, showSizeChanger: true }}
           onChange={(pagination) => loadUnlicensed({ page: pagination.current, pageSize: pagination.pageSize })}
           columns={[
@@ -281,6 +336,8 @@ export default function QueueSection({ onMutated }) {
                   <Space>
                     <Select
                       style={{ width: 260 }}
+                      placeholder="Subscription"
+                      notFoundContent={optionsError ? "Subscription list unavailable" : undefined}
                       options={options}
                       value={rowSubscriptionMap[row.id]}
                       onChange={(value) => setRowSubscriptionMap((prev) => ({ ...prev, [row.id]: value }))}
@@ -307,10 +364,36 @@ export default function QueueSection({ onMutated }) {
           />
         }
       >
+        {runtimeError ? (
+          <Alert
+            showIcon
+            type="warning"
+            style={{ marginBottom: 12 }}
+            message="Runtime license requests could not be loaded"
+            description={runtimeError}
+            action={
+              <Button size="small" onClick={() => loadRuntime()}>
+                Retry
+              </Button>
+            }
+          />
+        ) : null}
         <Table
           rowKey="id"
           loading={runtimeLoading}
           dataSource={runtimeRows}
+          locale={{
+            emptyText: (
+              <Empty
+                image={Empty.PRESENTED_IMAGE_SIMPLE}
+                description={
+                  runtimeSearch
+                    ? "No runtime requests match the current search"
+                    : "No runtime license requests"
+                }
+              />
+            ),
+          }}
           pagination={{ current: runtimePage, pageSize: runtimePageSize, total: runtimeTotal, showSizeChanger: true }}
           onChange={(pagination) => loadRuntime({ page: pagination.current, pageSize: pagination.pageSize })}
           columns={[
@@ -337,6 +420,7 @@ export default function QueueSection({ onMutated }) {
                       style={{ width: 220 }}
                       placeholder="Deployment"
                       options={availableDeploymentOptions}
+                      notFoundContent={optionsError ? "Deployment list unavailable" : undefined}
                       value={requestDeploymentMap[row.id]}
                       onChange={(value) => {
                         setRequestDeploymentMap((prev) => ({ ...prev, [row.id]: value }));
@@ -347,6 +431,7 @@ export default function QueueSection({ onMutated }) {
                       style={{ width: 220 }}
                       placeholder="Subscription"
                       options={subscriptionOptions}
+                      notFoundContent={optionsError ? "Subscription list unavailable" : undefined}
                       value={requestSubscriptionMap[row.id]}
                       onChange={(value) => setRequestSubscriptionMap((prev) => ({ ...prev, [row.id]: value }))}
                     />

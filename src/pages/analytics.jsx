@@ -25,10 +25,15 @@ import {
 } from '@ant-design/icons';
 import 'chart.js/auto';
 import { api } from '../lib/api/client.js';
-import { getOverview, getDashboardAnalytics, getFunnelData, getActivityFeed } from '../lib/api/analytics.js';
+import {
+  getOverview,
+  getDashboardAnalytics,
+  getFunnelData,
+  getActivityFeed,
+} from '../lib/api/analytics.js';
 import predictions from '../lib/api/predictions.js';
 import { AnalyticsCard, AnimatedChart, PredictionChart } from '../components/analytics';
-import { formatCurrency } from '../lib/utils/format.js';
+import { formatCurrency, formatNumber } from '../lib/utils/format.js';
 import { useTheme } from '../lib/hooks/useTheme.js';
 import { t } from '../lib/i18n';
 
@@ -77,7 +82,11 @@ function replaceHashQuery(updates) {
   const nextHash = `#${path}${query ? `?${query}` : ''}`;
 
   if (window.location.hash !== nextHash) {
-    window.history.replaceState(null, '', `${window.location.pathname}${window.location.search}${nextHash}`);
+    window.history.replaceState(
+      null,
+      '',
+      `${window.location.pathname}${window.location.search}${nextHash}`
+    );
   }
 }
 
@@ -317,10 +326,31 @@ function renderGrowthTag(value) {
   if (numeric === 0) return null;
   const isPositive = numeric > 0;
   return (
-    <Tag color={isPositive ? 'success' : 'error'} icon={isPositive ? <ArrowUpOutlined /> : <ArrowDownOutlined />}>
+    <Tag
+      color={isPositive ? 'success' : 'error'}
+      icon={isPositive ? <ArrowUpOutlined /> : <ArrowDownOutlined />}
+    >
       {Math.abs(numeric)}%
     </Tag>
   );
+}
+
+function resolveAnalyticsCurrencyCode(...payloads) {
+  for (const payload of payloads) {
+    const candidate = [
+      payload?.currency_code,
+      payload?.revenue_currency_code,
+      payload?.revenue_currency,
+      payload?.state_currency,
+      payload?.currency,
+    ].find((value) => typeof value === 'string' && value.trim());
+
+    if (candidate) {
+      return candidate.trim().toUpperCase();
+    }
+  }
+
+  return null;
 }
 
 export default function AnalyticsPage() {
@@ -488,7 +518,9 @@ export default function AnalyticsPage() {
       message.success(tr('analyticsPage.messages.predictionsStarted', 'Predictions started'));
       await loadPredictions();
     } catch (error) {
-      message.error(tr('analyticsPage.messages.predictionsStartError', 'Failed to start predictions'));
+      message.error(
+        tr('analyticsPage.messages.predictionsStartError', 'Failed to start predictions')
+      );
     } finally {
       setLoadingPredictions(false);
     }
@@ -520,6 +552,53 @@ export default function AnalyticsPage() {
     loadAuthStats();
   }, []);
 
+  const analyticsCurrencyCode = useMemo(
+    () => resolveAnalyticsCurrencyCode(overview, analytics, revenueForecast),
+    [overview, analytics, revenueForecast]
+  );
+  const revenueMetricsUseSingleCurrency = Boolean(analyticsCurrencyCode);
+  const revenueMetricTitle = revenueMetricsUseSingleCurrency
+    ? tr('analyticsPage.metrics.revenueWithCurrency', 'Revenue ({{currency}})', {
+        currency: analyticsCurrencyCode,
+      })
+    : tr('analyticsPage.metrics.revenueRaw', 'Revenue sum');
+  const revenueMetricHint = revenueMetricsUseSingleCurrency
+    ? tr(
+        'analyticsPage.summary.revenueCurrencyHint',
+        'Revenue metrics are shown in {{currency}}.',
+        {
+          currency: analyticsCurrencyCode,
+        }
+      )
+    : tr(
+        'analyticsPage.summary.revenueMixedCurrencies',
+        'Revenue metrics aggregate raw deal amounts and can mix currencies.'
+      );
+  const formatRevenueValue = (value) =>
+    revenueMetricsUseSingleCurrency
+      ? formatCurrency(value, analyticsCurrencyCode)
+      : formatNumber(value);
+  const revenueChartOptions = {
+    plugins: {
+      tooltip: {
+        callbacks: {
+          label: (context) => {
+            const rawValue =
+              context.parsed?.y ?? context.parsed?.x ?? context.parsed ?? context.raw ?? 0;
+            return `${context.dataset.label}: ${formatRevenueValue(rawValue)}`;
+          },
+        },
+      },
+    },
+    scales: {
+      y: {
+        ticks: {
+          callback: (value) => formatRevenueValue(value),
+        },
+      },
+    },
+  };
+
   const monthlyGrowth = analytics?.monthly_growth;
   const revenueChartData = useMemo(() => {
     if (!monthlyGrowth?.labels) return null;
@@ -527,7 +606,7 @@ export default function AnalyticsPage() {
       labels: monthlyGrowth.labels,
       datasets: [
         {
-          label: tr('analyticsPage.charts.revenue', 'Revenue'),
+          label: revenueMetricTitle,
           data: monthlyGrowth.revenue || [],
           backgroundColor: chartColors.primary,
           borderColor: chartColors.primaryBorder,
@@ -537,7 +616,7 @@ export default function AnalyticsPage() {
         },
       ],
     };
-  }, [monthlyGrowth]);
+  }, [monthlyGrowth, revenueMetricTitle]);
 
   const leadsDealsChartData = useMemo(() => {
     if (!monthlyGrowth?.labels) return null;
@@ -564,7 +643,13 @@ export default function AnalyticsPage() {
 
   const funnelChartData = useMemo(() => {
     const items = Array.isArray(funnel) ? funnel : [];
-    const labels = items.map((item, index) => item?.label || item?.stage || item?.name || tr('analyticsPage.charts.stage', 'Stage {{index}}', { index: index + 1 }));
+    const labels = items.map(
+      (item, index) =>
+        item?.label ||
+        item?.stage ||
+        item?.name ||
+        tr('analyticsPage.charts.stage', 'Stage {{index}}', { index: index + 1 })
+    );
     const values = items.map((item) => Number(item?.value ?? item?.count ?? 0));
     if (!labels.length) return null;
     return {
@@ -587,24 +672,42 @@ export default function AnalyticsPage() {
   }, [activity]);
 
   const revenuePrediction = useMemo(
-    () => buildPredictionPayload(revenueForecast, tr('analyticsPage.predictions.revenueForecast', 'Revenue forecast')),
+    () =>
+      buildPredictionPayload(
+        revenueForecast,
+        tr('analyticsPage.predictions.revenueForecast', 'Revenue forecast')
+      ),
     [revenueForecast]
   );
   const leadsPrediction = useMemo(
-    () => buildPredictionPayload(leadsForecast, tr('analyticsPage.predictions.leadsForecast', 'Leads forecast')),
+    () =>
+      buildPredictionPayload(
+        leadsForecast,
+        tr('analyticsPage.predictions.leadsForecast', 'Leads forecast')
+      ),
     [leadsForecast]
   );
   const clientsPrediction = useMemo(
-    () => buildPredictionPayload(clientsForecast, tr('analyticsPage.predictions.clientsForecast', 'Clients forecast')),
+    () =>
+      buildPredictionPayload(
+        clientsForecast,
+        tr('analyticsPage.predictions.clientsForecast', 'Clients forecast')
+      ),
     [clientsForecast]
   );
 
-  const nextActionsClientsColumns = useMemo(() => buildTableColumns(nextActionsClients), [nextActionsClients]);
-  const nextActionsDealsColumns = useMemo(() => buildTableColumns(nextActionsDeals), [nextActionsDeals]);
+  const nextActionsClientsColumns = useMemo(
+    () => buildTableColumns(nextActionsClients),
+    [nextActionsClients]
+  );
+  const nextActionsDealsColumns = useMemo(
+    () => buildTableColumns(nextActionsDeals),
+    [nextActionsDeals]
+  );
   const predictionStatusRows = useMemo(
     () =>
-      normalizePredictionStatus(predictionStatus).filter((row) =>
-        !Number.isNaN(row.count) || row.status || row.rawValue !== null
+      normalizePredictionStatus(predictionStatus).filter(
+        (row) => !Number.isNaN(row.count) || row.status || row.rawValue !== null
       ),
     [predictionStatus]
   );
@@ -632,17 +735,32 @@ export default function AnalyticsPage() {
   const conversionRate = Number(overview?.conversion_rate || 0);
   const revenueGrowth = Number(overview?.revenue_growth || 0);
   const executiveSummary = [
-    overdueTasks > 0 ? tr('analyticsPage.summary.overdueTasks', 'Overdue tasks: {{count}}', { count: overdueTasks }) : null,
-    conversionRate ? tr('analyticsPage.summary.conversion', 'Conversion: {{value}}%', { value: conversionRate }) : null,
-    revenueGrowth ? tr('analyticsPage.summary.revenueGrowth', 'Revenue growth: {{value}}%', { value: `${revenueGrowth > 0 ? '+' : ''}${revenueGrowth}` }) : null,
-  ].filter(Boolean).join(' • ');
+    overdueTasks > 0
+      ? tr('analyticsPage.summary.overdueTasks', 'Overdue tasks: {{count}}', {
+          count: overdueTasks,
+        })
+      : null,
+    conversionRate
+      ? tr('analyticsPage.summary.conversion', 'Conversion: {{value}}%', { value: conversionRate })
+      : null,
+    revenueGrowth
+      ? tr('analyticsPage.summary.revenueGrowth', 'Revenue growth: {{value}}%', {
+          value: `${revenueGrowth > 0 ? '+' : ''}${revenueGrowth}`,
+        })
+      : null,
+  ]
+    .filter(Boolean)
+    .join(' • ');
 
   const focusCards = [
     {
       key: 'pipeline',
       title: tr('analyticsPage.focus.pipelineTitle', 'Deals in progress'),
       value: overview?.total_deals || 0,
-      description: tr('analyticsPage.focus.pipelineDescription', 'Total commercial workload in the system.'),
+      description: tr(
+        'analyticsPage.focus.pipelineDescription',
+        'Total commercial workload in the system.'
+      ),
     },
     {
       key: 'pending',
@@ -654,7 +772,10 @@ export default function AnalyticsPage() {
       key: 'predictions',
       title: tr('analyticsPage.focus.predictionsTitle', 'Active predictions'),
       value: predictionStatusRows.length,
-      description: tr('analyticsPage.focus.predictionsDescription', 'How many predictive signals are already available for analysis.'),
+      description: tr(
+        'analyticsPage.focus.predictionsDescription',
+        'How many predictive signals are already available for analysis.'
+      ),
     },
   ];
 
@@ -663,21 +784,30 @@ export default function AnalyticsPage() {
       key: 'overdue',
       title: tr('analyticsPage.risks.overdueTitle', 'Overdue tasks'),
       value: overdueTasks,
-      description: tr('analyticsPage.risks.overdueDescription', 'Require immediate attention first.'),
+      description: tr(
+        'analyticsPage.risks.overdueDescription',
+        'Require immediate attention first.'
+      ),
       tone: overdueTasks > 0 ? 'danger' : 'neutral',
     },
     {
       key: 'conversion',
       title: tr('analyticsPage.risks.conversionTitle', 'Conversion'),
       value: `${conversionRate}%`,
-      description: tr('analyticsPage.risks.conversionDescription', 'If metric is below target, check follow-up and incoming lead quality.'),
+      description: tr(
+        'analyticsPage.risks.conversionDescription',
+        'If metric is below target, check follow-up and incoming lead quality.'
+      ),
       tone: conversionRate > 0 && conversionRate < 15 ? 'warning' : 'neutral',
     },
     {
       key: 'growth',
       title: tr('analyticsPage.risks.growthTitle', 'Revenue growth'),
       value: `${revenueGrowth > 0 ? '+' : ''}${revenueGrowth}%`,
-      description: tr('analyticsPage.risks.growthDescription', 'Signal of current sales pace for selected period.'),
+      description: tr(
+        'analyticsPage.risks.growthDescription',
+        'Signal of current sales pace for selected period.'
+      ),
       tone: revenueGrowth < 0 ? 'danger' : 'neutral',
     },
   ];
@@ -690,7 +820,13 @@ export default function AnalyticsPage() {
         <Space direction="vertical" size="large" style={{ width: '100%' }}>
           <AnalyticsSection
             title={tr('analyticsPage.sections.executiveSummary', 'Executive summary')}
-            description={executiveSummary || tr('analyticsPage.sections.executiveSummaryDescription', 'Summary of key metrics and risks for selected period.')}
+            description={
+              executiveSummary ||
+              tr(
+                'analyticsPage.sections.executiveSummaryDescription',
+                'Summary of key metrics and risks for selected period.'
+              )
+            }
           >
             <Row gutter={[16, 16]}>
               <Col xs={24} lg={16}>
@@ -703,7 +839,12 @@ export default function AnalyticsPage() {
                 </Row>
               </Col>
               <Col xs={24} lg={8}>
-                <AnalyticsCard title={tr('analyticsPage.sections.risks', 'Risks')} loading={loadingAnalytics || loadingOverview} error={analyticsError || overviewError}>
+                <AnalyticsCard
+                  title={tr('analyticsPage.sections.risks', 'Risks')}
+                  loading={loadingAnalytics || loadingOverview}
+                  error={analyticsError || overviewError}
+                  onRetry={loadCore}
+                >
                   <Space direction="vertical" size="middle" style={{ width: '100%' }}>
                     {riskCards.map((risk) => (
                       <RiskRow key={risk.key} {...risk} isDark={isDark} />
@@ -716,9 +857,17 @@ export default function AnalyticsPage() {
 
           <AnalyticsSection
             title={tr('analyticsPage.sections.keyMetrics', 'Key metrics')}
-            description={tr('analyticsPage.sections.keyMetricsDescription', 'Quick snapshot of base size, deals and revenue.')}
+            description={tr(
+              'analyticsPage.sections.keyMetricsDescription',
+              'Quick snapshot of base size, deals and revenue.'
+            )}
           >
-            <AnalyticsCard title={tr('analyticsPage.sections.keyMetrics', 'Key metrics')} loading={loadingOverview} error={overviewError}>
+            <AnalyticsCard
+              title={tr('analyticsPage.sections.keyMetrics', 'Key metrics')}
+              loading={loadingOverview}
+              error={overviewError}
+              onRetry={loadCore}
+            >
               <Row gutter={[16, 16]}>
                 <Col xs={24} sm={12} lg={6}>
                   <Statistic
@@ -728,7 +877,10 @@ export default function AnalyticsPage() {
                   />
                 </Col>
                 <Col xs={24} sm={12} lg={6}>
-                  <Statistic title={tr('analyticsPage.metrics.totalContacts', 'Total contacts')} value={overview?.total_contacts || 0} />
+                  <Statistic
+                    title={tr('analyticsPage.metrics.totalContacts', 'Total contacts')}
+                    value={overview?.total_contacts || 0}
+                  />
                 </Col>
                 <Col xs={24} sm={12} lg={6}>
                   <Statistic
@@ -739,39 +891,72 @@ export default function AnalyticsPage() {
                 </Col>
                 <Col xs={24} sm={12} lg={6}>
                   <Statistic
-                    title={tr('analyticsPage.metrics.revenue', 'Revenue')}
+                    title={revenueMetricTitle}
                     value={overview?.total_revenue || 0}
-                    formatter={(value) => formatCurrency(value)}
+                    formatter={(value) => formatRevenueValue(value)}
                     suffix={renderGrowthTag(overview?.revenue_growth)}
                   />
                 </Col>
               </Row>
+              <Text type="secondary">{revenueMetricHint}</Text>
               {overview?.conversion_rate !== undefined && (
-                <Text type="secondary">{tr('analyticsPage.summary.conversion', 'Conversion: {{value}}%', { value: overview.conversion_rate })}</Text>
+                <Text type="secondary">
+                  {tr('analyticsPage.summary.conversion', 'Conversion: {{value}}%', {
+                    value: overview.conversion_rate,
+                  })}
+                </Text>
               )}
             </AnalyticsCard>
           </AnalyticsSection>
 
           <AnalyticsSection
             title={tr('analyticsPage.sections.trends', 'Trends')}
-            description={tr('analyticsPage.sections.trendsDescription', 'Revenue dynamics and funnel movement for pace evaluation.')}
+            description={tr(
+              'analyticsPage.sections.trendsDescription',
+              'Revenue dynamics and funnel movement for pace evaluation.'
+            )}
           >
             <Row gutter={[16, 16]}>
               <Col xs={24} lg={12}>
-                <AnalyticsCard title={tr('analyticsPage.charts.revenueDynamics', 'Revenue dynamics')} loading={loadingAnalytics} error={analyticsError}>
-                  {revenueChartData ? (
-                    <AnimatedChart type="line" data={revenueChartData} height={280} />
-                  ) : (
-                    <Empty description={tr('analyticsPage.empty.noRevenueData', 'No revenue data')} />
-                  )}
+                <AnalyticsCard
+                  title={tr('analyticsPage.charts.revenueDynamics', 'Revenue dynamics')}
+                  loading={loadingAnalytics}
+                  error={analyticsError}
+                  onRetry={loadCore}
+                >
+                  <Space direction="vertical" size="middle" style={{ width: '100%' }}>
+                    <Text type="secondary">{revenueMetricHint}</Text>
+                    {revenueChartData ? (
+                      <AnimatedChart
+                        type="line"
+                        data={revenueChartData}
+                        options={revenueChartOptions}
+                        height={280}
+                      />
+                    ) : (
+                      <Empty
+                        description={tr('analyticsPage.empty.noRevenueData', 'No revenue data')}
+                      />
+                    )}
+                  </Space>
                 </AnalyticsCard>
               </Col>
               <Col xs={24} lg={12}>
-                <AnalyticsCard title={tr('analyticsPage.charts.leadsAndDeals', 'Leads and deals')} loading={loadingAnalytics} error={analyticsError}>
+                <AnalyticsCard
+                  title={tr('analyticsPage.charts.leadsAndDeals', 'Leads and deals')}
+                  loading={loadingAnalytics}
+                  error={analyticsError}
+                  onRetry={loadCore}
+                >
                   {leadsDealsChartData ? (
                     <AnimatedChart type="bar" data={leadsDealsChartData} height={280} />
                   ) : (
-                    <Empty description={tr('analyticsPage.empty.noLeadsDealsData', 'No leads and deals data')} />
+                    <Empty
+                      description={tr(
+                        'analyticsPage.empty.noLeadsDealsData',
+                        'No leads and deals data'
+                      )}
+                    />
                   )}
                 </AnalyticsCard>
               </Col>
@@ -780,11 +965,19 @@ export default function AnalyticsPage() {
 
           <AnalyticsSection
             title={tr('analyticsPage.sections.operations', 'Operational control')}
-            description={tr('analyticsPage.sections.operationsDescription', 'What is happening with funnel and team tasks right now.')}
+            description={tr(
+              'analyticsPage.sections.operationsDescription',
+              'What is happening with funnel and team tasks right now.'
+            )}
           >
             <Row gutter={[16, 16]}>
               <Col xs={24} lg={12}>
-                <AnalyticsCard title={tr('analyticsPage.charts.salesFunnel', 'Sales funnel')} loading={loadingFunnel} error={funnelError}>
+                <AnalyticsCard
+                  title={tr('analyticsPage.charts.salesFunnel', 'Sales funnel')}
+                  loading={loadingFunnel}
+                  error={funnelError}
+                  onRetry={loadCore}
+                >
                   {funnelChartData ? (
                     <AnimatedChart type="bar" data={funnelChartData} height={280} />
                   ) : (
@@ -793,19 +986,36 @@ export default function AnalyticsPage() {
                 </AnalyticsCard>
               </Col>
               <Col xs={24} lg={12}>
-                <AnalyticsCard title={tr('analyticsPage.sections.taskStatuses', 'Task statuses')} loading={loadingAnalytics} error={analyticsError}>
+                <AnalyticsCard
+                  title={tr('analyticsPage.sections.taskStatuses', 'Task statuses')}
+                  loading={loadingAnalytics}
+                  error={analyticsError}
+                  onRetry={loadCore}
+                >
                   <Row gutter={[16, 16]}>
                     <Col span={12}>
-                      <Statistic title={tr('analyticsPage.tasks.pending', 'Pending')} value={analytics?.tasks_by_status?.pending || 0} />
+                      <Statistic
+                        title={tr('analyticsPage.tasks.pending', 'Pending')}
+                        value={analytics?.tasks_by_status?.pending || 0}
+                      />
                     </Col>
                     <Col span={12}>
-                      <Statistic title={tr('analyticsPage.tasks.inProgress', 'In progress')} value={analytics?.tasks_by_status?.in_progress || 0} />
+                      <Statistic
+                        title={tr('analyticsPage.tasks.inProgress', 'In progress')}
+                        value={analytics?.tasks_by_status?.in_progress || 0}
+                      />
                     </Col>
                     <Col span={12}>
-                      <Statistic title={tr('analyticsPage.tasks.completed', 'Completed')} value={analytics?.tasks_by_status?.completed || 0} />
+                      <Statistic
+                        title={tr('analyticsPage.tasks.completed', 'Completed')}
+                        value={analytics?.tasks_by_status?.completed || 0}
+                      />
                     </Col>
                     <Col span={12}>
-                      <Statistic title={tr('analyticsPage.tasks.overdue', 'Overdue')} value={analytics?.tasks_by_status?.overdue || 0} />
+                      <Statistic
+                        title={tr('analyticsPage.tasks.overdue', 'Overdue')}
+                        value={analytics?.tasks_by_status?.overdue || 0}
+                      />
                     </Col>
                   </Row>
                 </AnalyticsCard>
@@ -822,11 +1032,19 @@ export default function AnalyticsPage() {
         <Space direction="vertical" size="large" style={{ width: '100%' }}>
           <AnalyticsSection
             title={tr('analyticsPage.sections.teamActivity', 'Team activity')}
-            description={tr('analyticsPage.sections.teamActivityDescription', 'Latest user actions and system auth snapshot.')}
+            description={tr(
+              'analyticsPage.sections.teamActivityDescription',
+              'Latest user actions and system auth snapshot.'
+            )}
           >
             <Row gutter={[16, 16]}>
               <Col xs={24} lg={16}>
-                <AnalyticsCard title={tr('analyticsPage.sections.activityFeed', 'Activity feed')} loading={loadingActivity} error={activityError}>
+                <AnalyticsCard
+                  title={tr('analyticsPage.sections.activityFeed', 'Activity feed')}
+                  loading={loadingActivity}
+                  error={activityError}
+                  onRetry={loadCore}
+                >
                   {activityItems.length ? (
                     <List
                       itemLayout="horizontal"
@@ -838,10 +1056,13 @@ export default function AnalyticsPage() {
                           item?.event ||
                           item?.message ||
                           tr('analyticsPage.activity.event', 'Event');
-                        const description = item?.description || item?.details || item?.summary || '';
+                        const description =
+                          item?.description || item?.details || item?.summary || '';
                         const timestamp =
                           item?.timestamp || item?.created_at || item?.date || item?.created || '';
-                        const avatarLabel = (item?.user_name || item?.owner_name || 'U')[0]?.toUpperCase();
+                        const avatarLabel = (item?.user_name ||
+                          item?.owner_name ||
+                          'U')[0]?.toUpperCase();
 
                         return (
                           <List.Item>
@@ -860,12 +1081,22 @@ export default function AnalyticsPage() {
                       }}
                     />
                   ) : (
-                    <Empty description={tr('analyticsPage.empty.noActivity', 'No activity for selected period')} />
+                    <Empty
+                      description={tr(
+                        'analyticsPage.empty.noActivity',
+                        'No activity for selected period'
+                      )}
+                    />
                   )}
                 </AnalyticsCard>
               </Col>
               <Col xs={24} lg={8}>
-                <AnalyticsCard title={tr('analyticsPage.sections.authSnapshot', 'Auth snapshot')} loading={loadingAuthStats} error={authError}>
+                <AnalyticsCard
+                  title={tr('analyticsPage.sections.authSnapshot', 'Auth snapshot')}
+                  loading={loadingAuthStats}
+                  error={authError}
+                  onRetry={loadAuthStats}
+                >
                   {authStats ? (
                     <AuthStatsSnapshot sections={authStatsSections} />
                   ) : (
@@ -892,54 +1123,82 @@ export default function AnalyticsPage() {
               {tr('analyticsPage.actions.runPredictions', 'Run predictions')}
             </Button>
             {predictionStatus && (
-              <Text type="secondary">{tr('analyticsPage.predictions.status', 'Status')}: {predictionStatus?.status || tr('analyticsPage.predictions.inProgress', 'in progress')}</Text>
+              <Text type="secondary">
+                {tr('analyticsPage.predictions.status', 'Status')}:{' '}
+                {predictionStatus?.status ||
+                  tr('analyticsPage.predictions.inProgress', 'in progress')}
+              </Text>
             )}
           </Space>
 
           <AnalyticsSection
             title={tr('analyticsPage.sections.predictionsByMetrics', 'Predictions by key metrics')}
-            description={tr('analyticsPage.sections.predictionsByMetricsDescription', 'Estimate of future revenue, leads and client base.')}
+            description={tr(
+              'analyticsPage.sections.predictionsByMetricsDescription',
+              'Estimate of future revenue, leads and client base.'
+            )}
           >
             <Row gutter={[16, 16]}>
               <Col xs={24} lg={12}>
-                <AnalyticsCard title={tr('analyticsPage.predictions.revenueForecast', 'Revenue forecast')} loading={loadingPredictions} error={predictionError}>
-                  {revenuePrediction ? (
-                    revenuePrediction.type === 'interval' ? (
-                      <PredictionChart
-                        title={revenuePrediction.title}
-                        labels={revenuePrediction.labels}
-                        predictedData={revenuePrediction.predictedData}
-                        confidenceLower={revenuePrediction.confidenceLower}
-                        confidenceUpper={revenuePrediction.confidenceUpper}
-                        height={280}
-                      />
+                <AnalyticsCard
+                  title={tr('analyticsPage.predictions.revenueForecast', 'Revenue forecast')}
+                  loading={loadingPredictions}
+                  error={predictionError}
+                  onRetry={loadPredictions}
+                >
+                  <Space direction="vertical" size="middle" style={{ width: '100%' }}>
+                    <Text type="secondary">{revenueMetricHint}</Text>
+                    {revenuePrediction ? (
+                      revenuePrediction.type === 'interval' ? (
+                        <PredictionChart
+                          title={revenuePrediction.title}
+                          labels={revenuePrediction.labels}
+                          predictedData={revenuePrediction.predictedData}
+                          confidenceLower={revenuePrediction.confidenceLower}
+                          confidenceUpper={revenuePrediction.confidenceUpper}
+                          currencyCode={analyticsCurrencyCode}
+                          formatAsCurrency={revenueMetricsUseSingleCurrency}
+                          height={280}
+                        />
+                      ) : (
+                        <AnimatedChart
+                          type="line"
+                          data={{
+                            labels: revenuePrediction.labels,
+                            datasets: [
+                              {
+                                label: revenuePrediction.title,
+                                data: revenuePrediction.values,
+                                borderColor: chartColors.primaryBorder,
+                                backgroundColor: chartColors.primary,
+                                borderWidth: 2,
+                                fill: true,
+                                tension: 0.4,
+                              },
+                            ],
+                          }}
+                          options={revenueChartOptions}
+                          height={280}
+                        />
+                      )
                     ) : (
-                      <AnimatedChart
-                        type="line"
-                        data={{
-                          labels: revenuePrediction.labels,
-                          datasets: [
-                            {
-                              label: revenuePrediction.title,
-                              data: revenuePrediction.values,
-                              borderColor: chartColors.primaryBorder,
-                              backgroundColor: chartColors.primary,
-                              borderWidth: 2,
-                              fill: true,
-                              tension: 0.4,
-                            },
-                          ],
-                        }}
-                        height={280}
+                      <Empty
+                        description={tr(
+                          'analyticsPage.empty.noRevenueForecast',
+                          'No revenue forecast'
+                        )}
                       />
-                    )
-                  ) : (
-                    <Empty description={tr('analyticsPage.empty.noRevenueForecast', 'No revenue forecast')} />
-                  )}
+                    )}
+                  </Space>
                 </AnalyticsCard>
               </Col>
               <Col xs={24} lg={12}>
-                <AnalyticsCard title={tr('analyticsPage.predictions.leadsForecast', 'Leads forecast')} loading={loadingPredictions} error={predictionError}>
+                <AnalyticsCard
+                  title={tr('analyticsPage.predictions.leadsForecast', 'Leads forecast')}
+                  loading={loadingPredictions}
+                  error={predictionError}
+                  onRetry={loadPredictions}
+                >
                   {leadsPrediction ? (
                     leadsPrediction.type === 'interval' ? (
                       <PredictionChart
@@ -971,7 +1230,9 @@ export default function AnalyticsPage() {
                       />
                     )
                   ) : (
-                    <Empty description={tr('analyticsPage.empty.noLeadsForecast', 'No leads forecast')} />
+                    <Empty
+                      description={tr('analyticsPage.empty.noLeadsForecast', 'No leads forecast')}
+                    />
                   )}
                 </AnalyticsCard>
               </Col>
@@ -980,11 +1241,19 @@ export default function AnalyticsPage() {
 
           <AnalyticsSection
             title={tr('analyticsPage.sections.predictionModelsState', 'Prediction models state')}
-            description={tr('analyticsPage.sections.predictionModelsStateDescription', 'Current model state and available signals.')}
+            description={tr(
+              'analyticsPage.sections.predictionModelsStateDescription',
+              'Current model state and available signals.'
+            )}
           >
             <Row gutter={[16, 16]}>
               <Col xs={24} lg={12}>
-                <AnalyticsCard title={tr('analyticsPage.predictions.clientsForecast', 'Clients forecast')} loading={loadingPredictions} error={predictionError}>
+                <AnalyticsCard
+                  title={tr('analyticsPage.predictions.clientsForecast', 'Clients forecast')}
+                  loading={loadingPredictions}
+                  error={predictionError}
+                  onRetry={loadPredictions}
+                >
                   {clientsPrediction ? (
                     clientsPrediction.type === 'interval' ? (
                       <PredictionChart
@@ -1016,12 +1285,22 @@ export default function AnalyticsPage() {
                       />
                     )
                   ) : (
-                    <Empty description={tr('analyticsPage.empty.noClientsForecast', 'No clients forecast')} />
+                    <Empty
+                      description={tr(
+                        'analyticsPage.empty.noClientsForecast',
+                        'No clients forecast'
+                      )}
+                    />
                   )}
                 </AnalyticsCard>
               </Col>
               <Col xs={24} lg={12}>
-                <AnalyticsCard title={tr('analyticsPage.sections.predictionStatus', 'Prediction status')} loading={loadingPredictions} error={predictionError}>
+                <AnalyticsCard
+                  title={tr('analyticsPage.sections.predictionStatus', 'Prediction status')}
+                  loading={loadingPredictions}
+                  error={predictionError}
+                  onRetry={loadPredictions}
+                >
                   {predictionStatusRows.length ? (
                     <Space direction="vertical" size="middle" style={{ width: '100%' }}>
                       {predictionStatusChartData ? (
@@ -1049,20 +1328,33 @@ export default function AnalyticsPage() {
                             dataIndex: 'count',
                             key: 'count',
                             render: (value) =>
-                              Number.isNaN(value) ? <Text type="secondary">-</Text> : <Text>{value}</Text>,
+                              Number.isNaN(value) ? (
+                                <Text type="secondary">-</Text>
+                              ) : (
+                                <Text>{value}</Text>
+                              ),
                           },
                           {
                             title: tr('analyticsPage.table.status', 'Status'),
                             dataIndex: 'status',
                             key: 'status',
-                            render: (value) => <Text type="secondary">{value || tr('analyticsPage.common.noData', 'No data')}</Text>,
+                            render: (value) => (
+                              <Text type="secondary">
+                                {value || tr('analyticsPage.common.noData', 'No data')}
+                              </Text>
+                            ),
                           },
                         ]}
                         rowKey="key"
                       />
                     </Space>
                   ) : (
-                    <Empty description={tr('analyticsPage.empty.noPredictionStatus', 'No prediction status')} />
+                    <Empty
+                      description={tr(
+                        'analyticsPage.empty.noPredictionStatus',
+                        'No prediction status'
+                      )}
+                    />
                   )}
                 </AnalyticsCard>
               </Col>
@@ -1071,11 +1363,22 @@ export default function AnalyticsPage() {
 
           <AnalyticsSection
             title={tr('analyticsPage.sections.recommendedActions', 'Recommended actions')}
-            description={tr('analyticsPage.sections.recommendedActionsDescription', 'Next actions considered high priority by model.')}
+            description={tr(
+              'analyticsPage.sections.recommendedActionsDescription',
+              'Next actions considered high priority by model.'
+            )}
           >
             <Row gutter={[16, 16]}>
               <Col xs={24} lg={12}>
-                <AnalyticsCard title={tr('analyticsPage.sections.recommendedActionsClients', 'Recommended actions (clients)')} loading={loadingPredictions} error={predictionError}>
+                <AnalyticsCard
+                  title={tr(
+                    'analyticsPage.sections.recommendedActionsClients',
+                    'Recommended actions (clients)'
+                  )}
+                  loading={loadingPredictions}
+                  error={predictionError}
+                  onRetry={loadPredictions}
+                >
                   {nextActionsClients.length ? (
                     <Table
                       dataSource={nextActionsClients}
@@ -1084,12 +1387,25 @@ export default function AnalyticsPage() {
                       pagination={{ pageSize: 5 }}
                     />
                   ) : (
-                    <Empty description={tr('analyticsPage.empty.noClientRecommendations', 'No client recommendations')} />
+                    <Empty
+                      description={tr(
+                        'analyticsPage.empty.noClientRecommendations',
+                        'No client recommendations'
+                      )}
+                    />
                   )}
                 </AnalyticsCard>
               </Col>
               <Col xs={24} lg={12}>
-                <AnalyticsCard title={tr('analyticsPage.sections.recommendedActionsDeals', 'Recommended actions (deals)')} loading={loadingPredictions} error={predictionError}>
+                <AnalyticsCard
+                  title={tr(
+                    'analyticsPage.sections.recommendedActionsDeals',
+                    'Recommended actions (deals)'
+                  )}
+                  loading={loadingPredictions}
+                  error={predictionError}
+                  onRetry={loadPredictions}
+                >
                   {nextActionsDeals.length ? (
                     <Table
                       dataSource={nextActionsDeals}
@@ -1098,7 +1414,12 @@ export default function AnalyticsPage() {
                       pagination={{ pageSize: 5 }}
                     />
                   ) : (
-                    <Empty description={tr('analyticsPage.empty.noDealRecommendations', 'No deal recommendations')} />
+                    <Empty
+                      description={tr(
+                        'analyticsPage.empty.noDealRecommendations',
+                        'No deal recommendations'
+                      )}
+                    />
                   )}
                 </AnalyticsCard>
               </Col>
@@ -1113,9 +1434,17 @@ export default function AnalyticsPage() {
       children: (
         <AnalyticsSection
           title={tr('analyticsPage.sections.systemMetrics', 'System metrics')}
-          description={tr('analyticsPage.sections.systemMetricsDescription', 'Service auth indicators and technical system snapshot.')}
+          description={tr(
+            'analyticsPage.sections.systemMetricsDescription',
+            'Service auth indicators and technical system snapshot.'
+          )}
         >
-          <AnalyticsCard title={tr('analyticsPage.sections.authStats', 'Auth stats')} loading={loadingAuthStats} error={authError}>
+          <AnalyticsCard
+            title={tr('analyticsPage.sections.authStats', 'Auth stats')}
+            loading={loadingAuthStats}
+            error={authError}
+            onRetry={loadAuthStats}
+          >
             {authStats ? (
               <AuthStatsDetails sections={authStatsSections} />
             ) : (
@@ -1131,8 +1460,15 @@ export default function AnalyticsPage() {
     <Space direction="vertical" size="large" style={{ width: '100%' }}>
       <Space style={{ width: '100%', justifyContent: 'space-between' }} wrap>
         <div>
-          <Title level={2} style={{ marginBottom: 4 }}>{tr('analyticsPage.title', 'Analytics')}</Title>
-          <Text type="secondary">{tr('analyticsPage.subtitle', 'Decision-making screen for sales, team activity and predictions.')}</Text>
+          <Title level={2} style={{ marginBottom: 4 }}>
+            {tr('analyticsPage.title', 'Analytics')}
+          </Title>
+          <Text type="secondary">
+            {tr(
+              'analyticsPage.subtitle',
+              'Decision-making screen for sales, team activity and predictions.'
+            )}
+          </Text>
         </div>
         <Space wrap>
           <Segmented
@@ -1150,11 +1486,7 @@ export default function AnalyticsPage() {
         </Space>
       </Space>
 
-      <Tabs
-        items={tabs}
-        activeKey={activeTab}
-        onChange={setActiveTab}
-      />
+      <Tabs items={tabs} activeKey={activeTab} onChange={setActiveTab} />
     </Space>
   );
 }
@@ -1163,7 +1495,9 @@ function AnalyticsSection({ title, description, children }) {
   return (
     <Space direction="vertical" size="middle" style={{ width: '100%' }}>
       <div>
-        <Title level={4} style={{ marginBottom: 4 }}>{title}</Title>
+        <Title level={4} style={{ marginBottom: 4 }}>
+          {title}
+        </Title>
         {description ? <Text type="secondary">{description}</Text> : null}
       </div>
       {children}
@@ -1175,7 +1509,9 @@ function DecisionCard({ title, value, description }) {
   return (
     <AnalyticsCard title={title} loading={false} error={null}>
       <Space direction="vertical" size="small">
-        <Text strong style={{ fontSize: 28, lineHeight: 1.1 }}>{value ?? 0}</Text>
+        <Text strong style={{ fontSize: 28, lineHeight: 1.1 }}>
+          {value ?? 0}
+        </Text>
         <Text type="secondary">{description}</Text>
       </Space>
     </AnalyticsCard>
@@ -1201,7 +1537,9 @@ function RiskRow({ title, value, description, tone, isDark = false }) {
             <Text type="secondary">{description}</Text>
           </div>
         </div>
-        <Text strong style={{ fontSize: 20 }}>{value}</Text>
+        <Text strong style={{ fontSize: 20 }}>
+          {value}
+        </Text>
       </Space>
     </div>
   );
@@ -1211,7 +1549,8 @@ function normalizeAuthStats(payload) {
   if (!payload || typeof payload !== 'object') return null;
 
   const summary = payload.summary && typeof payload.summary === 'object' ? payload.summary : {};
-  const userAdoption = payload.user_adoption && typeof payload.user_adoption === 'object' ? payload.user_adoption : {};
+  const userAdoption =
+    payload.user_adoption && typeof payload.user_adoption === 'object' ? payload.user_adoption : {};
 
   return {
     periodDays: payload.period_days ?? null,
@@ -1229,7 +1568,9 @@ function AuthStatsSnapshot({ sections }) {
     <Space direction="vertical" size="middle" style={{ width: '100%' }}>
       <Descriptions size="small" column={1}>
         <Descriptions.Item label={trStatic('analyticsPage.auth.period', 'Period')}>
-          {sections.periodDays ? trStatic('analyticsPage.auth.days', '{{count}} days', { count: sections.periodDays }) : '-'}
+          {sections.periodDays
+            ? trStatic('analyticsPage.auth.days', '{{count}} days', { count: sections.periodDays })
+            : '-'}
         </Descriptions.Item>
         <Descriptions.Item label={trStatic('analyticsPage.auth.jwtAdoption', 'JWT adoption')}>
           {sections.userAdoption.jwt_adoption_rate ?? 0}%
@@ -1251,8 +1592,12 @@ function AuthStatsSnapshot({ sections }) {
             renderItem={(item) => (
               <List.Item>
                 <Space style={{ width: '100%', justifyContent: 'space-between' }}>
-                  <Text>{item.username || trStatic('analyticsPage.common.unknown', 'Unknown')}</Text>
-                  <Text type="secondary">{item.auth_type}: {item.count}</Text>
+                  <Text>
+                    {item.username || trStatic('analyticsPage.common.unknown', 'Unknown')}
+                  </Text>
+                  <Text type="secondary">
+                    {item.auth_type}: {item.count}
+                  </Text>
                 </Space>
               </List.Item>
             )}
@@ -1268,13 +1613,25 @@ function AuthStatsDetails({ sections }) {
     <Space direction="vertical" size="large" style={{ width: '100%' }}>
       <Row gutter={[16, 16]}>
         <Col xs={24} md={8}>
-          <Statistic title={trStatic('analyticsPage.auth.period', 'Period')} value={sections.periodDays ?? 0} suffix={trStatic('analyticsPage.auth.daysShort', 'days')} />
+          <Statistic
+            title={trStatic('analyticsPage.auth.period', 'Period')}
+            value={sections.periodDays ?? 0}
+            suffix={trStatic('analyticsPage.auth.daysShort', 'days')}
+          />
         </Col>
         <Col xs={24} md={8}>
-          <Statistic title={trStatic('analyticsPage.auth.successRate', 'Success rate')} value={sections.summary.success_rate ?? 0} suffix="%" />
+          <Statistic
+            title={trStatic('analyticsPage.auth.successRate', 'Success rate')}
+            value={sections.summary.success_rate ?? 0}
+            suffix="%"
+          />
         </Col>
         <Col xs={24} md={8}>
-          <Statistic title={trStatic('analyticsPage.auth.jwtAdoption', 'JWT adoption')} value={sections.userAdoption.jwt_adoption_rate ?? 0} suffix="%" />
+          <Statistic
+            title={trStatic('analyticsPage.auth.jwtAdoption', 'JWT adoption')}
+            value={sections.userAdoption.jwt_adoption_rate ?? 0}
+            suffix="%"
+          />
         </Col>
       </Row>
 
@@ -1325,7 +1682,9 @@ function AuthStatsTable({ title, rows, fallback }) {
           pagination={{ pageSize: 5 }}
           dataSource={rows}
           columns={buildTableColumns(rows)}
-          rowKey={(record, index) => record.id || record.username || record.endpoint || record.date || `${title}-${index}`}
+          rowKey={(record, index) =>
+            record.id || record.username || record.endpoint || record.date || `${title}-${index}`
+          }
         />
       ) : (
         <Empty description={fallback} />

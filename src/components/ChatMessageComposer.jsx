@@ -28,6 +28,7 @@ function ChatMessageComposer({
   onSend,
   onTyping,
   placeholder = 'Напишите сообщение...',
+  sending = false,
   entityType,
   entityId,
   replyTo = null,
@@ -64,13 +65,14 @@ function ChatMessageComposer({
     }
   };
 
-  const handleSend = () => {
+  const handleSend = async () => {
+    if (sending) return;
     if (!message.trim()) {
       messageApi.warning('Введите сообщение');
       return;
     }
 
-    onSend({
+    await onSend({
       content: message.trim(),
       answer_to: replyTo?.id,
       entityType,
@@ -90,7 +92,7 @@ function ChatMessageComposer({
   const handleKeyDown = (e) => {
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault();
-      handleSend();
+      void handleSend();
     }
   };
 
@@ -202,6 +204,7 @@ function ChatMessageComposer({
             onChange={handleMessageChange}
             onKeyDown={handleKeyDown}
             placeholder={placeholder}
+            disabled={sending}
             autoSize={{ minRows: 1, maxRows: 6 }}
             style={{
               flex: 1,
@@ -230,8 +233,9 @@ function ChatMessageComposer({
               <Button
                 type="primary"
                 icon={<SendOutlined />}
-                onClick={handleSend}
-                disabled={!message.trim()}
+                onClick={() => void handleSend()}
+                disabled={!message.trim() || sending}
+                loading={sending}
               />
             </Tooltip>
           </Space.Compact>

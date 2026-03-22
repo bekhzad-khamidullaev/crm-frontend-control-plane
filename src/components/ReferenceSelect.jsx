@@ -68,6 +68,7 @@ const ReferenceSelect = ({
 }) => {
   const [data, setData] = useState([]);
   const [loading, setLoading] = useState(false);
+  const [loadError, setLoadError] = useState('');
 
   useEffect(() => {
     loadData();
@@ -79,6 +80,7 @@ const ReferenceSelect = ({
 
   const loadData = async () => {
     setLoading(true);
+    setLoadError('');
     try {
       let response;
       
@@ -89,6 +91,7 @@ const ReferenceSelect = ({
         const loadList = listLoaders[type];
         if (!loadList) {
           console.warn(`Unknown reference type: ${type}`);
+          setLoadError('Справочник недоступен');
           return;
         }
         response = await loadList(params);
@@ -96,6 +99,7 @@ const ReferenceSelect = ({
 
       setData(toItems(response));
     } catch (error) {
+      setLoadError(`Не удалось загрузить ${getTypeName(type)}`);
       console.error(`Error loading ${type}:`, error);
     } finally {
       setLoading(false);
@@ -141,6 +145,7 @@ const ReferenceSelect = ({
         return next;
       });
     } catch (error) {
+      setLoadError(`Не удалось загрузить выбранное значение для ${getTypeName(type)}`);
       console.error(`Error loading selected ${type} values:`, error);
     }
   };
@@ -163,6 +168,8 @@ const ReferenceSelect = ({
       showSearch={showSearch}
       disabled={disabled}
       loading={loading}
+      status={loadError ? 'error' : undefined}
+      notFoundContent={loadError || undefined}
       style={style}
       mode={mode}
       filterOption={(input, option) =>

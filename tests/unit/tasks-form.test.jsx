@@ -71,8 +71,8 @@ describe('TaskForm', () => {
   it('renders create form fields', () => {
     render(<TaskForm />);
 
-    expect(screen.getByLabelText(/название задачи/i)).toBeInTheDocument();
-    expect(screen.getByLabelText(/этап/i)).toBeInTheDocument();
+    expect(screen.getByPlaceholderText('Подготовить коммерческое предложение')).toBeInTheDocument();
+    expect(screen.getByTestId('reference-task-stages')).toBeInTheDocument();
     expect(screen.getByText(/создать новую задачу/i)).toBeInTheDocument();
   });
 

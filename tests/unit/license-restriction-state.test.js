@@ -43,4 +43,26 @@ describe('licenseRestrictionState', () => {
     storeLicenseRestriction(null);
     expect(readStoredLicenseRestriction()).toBeNull();
   });
+
+  it('formats invalid-signature restriction with explicit remediation copy', () => {
+    const message = getLicenseRestrictionMessage({
+      code: 'LICENSE_INVALID_SIGNATURE',
+      feature: 'settings.core',
+      message: '',
+    });
+
+    expect(message.message).toBe('License validation failed');
+    expect(message.description).toContain('failed validation');
+  });
+
+  it('formats binding-mismatch restriction with explicit remediation copy', () => {
+    const message = getLicenseRestrictionMessage({
+      code: 'LICENSE_BINDING_MISMATCH',
+      feature: 'settings.core',
+      message: '',
+    });
+
+    expect(message.message).toBe('License binding mismatch');
+    expect(message.description).toContain('does not match this environment');
+  });
 });

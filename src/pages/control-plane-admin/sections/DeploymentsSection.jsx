@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { Button, Form, Input, Modal, Popconfirm, Select, Space, Table, message } from "antd";
+import { Alert, Button, Empty, Form, Input, Modal, Popconfirm, Select, Space, Table, message } from "antd";
 import {
   createCpDeployment,
   deleteCpDeployment,
@@ -20,14 +20,19 @@ export default function DeploymentsSection({ onMutated }) {
   const [open, setOpen] = useState(false);
   const [editing, setEditing] = useState(null);
   const [saving, setSaving] = useState(false);
+  const [loadError, setLoadError] = useState("");
+  const [customersLoadError, setCustomersLoadError] = useState("");
   const [form] = Form.useForm();
 
   const loadCustomers = async () => {
+    setCustomersLoadError("");
     try {
       const response = await getCpCustomers({ page_size: 500, ordering: "legal_name" });
       setCustomers(normalizeCollection(response));
     } catch (error) {
-      message.error(formatBackendError(error, "Failed to load customers"));
+      const nextError = formatBackendError(error, "Failed to load customers");
+      setCustomersLoadError(nextError);
+      message.error(nextError);
     }
   };
 
@@ -36,6 +41,7 @@ export default function DeploymentsSection({ onMutated }) {
     const nextPageSize = override.pageSize ?? pageSize;
     const nextSearch = override.search ?? search;
     setLoading(true);
+    setLoadError("");
     try {
       const response = await getCpDeployments({
         page: nextPage,
@@ -48,7 +54,9 @@ export default function DeploymentsSection({ onMutated }) {
       setPageSize(nextPageSize);
       setSearch(nextSearch);
     } catch (error) {
-      message.error(formatBackendError(error, "Failed to load deployments"));
+      const nextError = formatBackendError(error, "Failed to load deployments");
+      setLoadError(nextError);
+      message.error(nextError);
     } finally {
       setLoading(false);
     }
@@ -125,10 +133,46 @@ export default function DeploymentsSection({ onMutated }) {
           Add deployment
         </Button>
       </Space>
+      {loadError ? (
+        <Alert
+          showIcon
+          type="warning"
+          style={{ marginBottom: 12 }}
+          message="Deployments list is temporarily unavailable"
+          description={loadError}
+          action={
+            <Button size="small" onClick={() => load()}>
+              Retry
+            </Button>
+          }
+        />
+      ) : null}
+      {customersLoadError ? (
+        <Alert
+          showIcon
+          type="info"
+          style={{ marginBottom: 12 }}
+          message="Customer options may be incomplete"
+          description={customersLoadError}
+          action={
+            <Button size="small" onClick={loadCustomers}>
+              Retry
+            </Button>
+          }
+        />
+      ) : null}
       <Table
         rowKey="id"
         loading={loading}
         dataSource={rows}
+        locale={{
+          emptyText: (
+            <Empty
+              image={Empty.PRESENTED_IMAGE_SIMPLE}
+              description={search ? "No deployments match the current search" : "No deployments yet"}
+            />
+          ),
+        }}
         columns={[
           { title: "Instance", dataIndex: "instance_id", key: "instance_id" },
           { title: "Domain", dataIndex: "domain", key: "domain", render: (v) => v || "-" },
@@ -164,7 +208,10 @@ export default function DeploymentsSection({ onMutated }) {
       >
         <Form form={form} layout="vertical">
           <Form.Item name="customer" label="Customer" rules={[{ required: true }]}>
-            <Select options={customerOptions} />
+            <Select
+              options={customerOptions}
+              notFoundContent={customersLoadError ? "Customer list unavailable" : undefined}
+            />
           </Form.Item>
           <Form.Item name="instance_id" label="Instance ID" rules={[{ required: true }]}>
             <Input />

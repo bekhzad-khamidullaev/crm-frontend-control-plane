@@ -14,6 +14,7 @@ import {
 import { authApi } from '../lib/api/client';
 import { clearStoredLicenseFeatures, persistLicenseFeatures } from '../lib/api/licenseFeatures.js';
 import { getLicenseMe } from '../lib/api/licenseControl.js';
+import { clearStoredLicenseState, persistLicenseState } from '../lib/api/licenseState.js';
 import { t } from '../lib/i18n/index.js';
 import { mergeRoles, rolesFromProfile, rolesFromTokenPayload } from '../lib/roles';
 import { navigate } from '../router';
@@ -98,9 +99,11 @@ function LoginPage({ onLogin }) {
 
       try {
         const license = await getLicenseMe();
+        persistLicenseState(license);
         persistLicenseFeatures(license?.features || []);
       } catch (e) {
         console.warn('Failed to preload license entitlements on login:', e);
+        clearStoredLicenseState();
         clearStoredLicenseFeatures();
       }
 

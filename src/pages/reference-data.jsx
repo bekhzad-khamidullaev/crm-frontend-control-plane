@@ -58,7 +58,10 @@ async function fetchAllReferencePages(listFn, params = {}) {
 }
 
 function normalizeValue(value) {
-  return String(value || '').trim().toLowerCase().replace(/\s+/g, ' ');
+  return String(value || '')
+    .trim()
+    .toLowerCase()
+    .replace(/\s+/g, ' ');
 }
 
 function dedupeRows(rows, keySelector) {
@@ -85,22 +88,48 @@ function withAllPagesDeduped(listFn, keySelector, baseParams = {}) {
 
 function localizedNameColumns() {
   return [
-    { title: t('referenceDataPage.common.ru'), dataIndex: 'name_ru', key: 'name_ru', render: (value, record) => value || record?.name || '-' },
-    { title: t('referenceDataPage.common.en'), dataIndex: 'name_en', key: 'name_en', render: (value, record) => value || record?.name || '-' },
-    { title: t('referenceDataPage.common.uz'), dataIndex: 'name_uz', key: 'name_uz', render: (value, record) => value || record?.name || '-' },
+    {
+      title: t('referenceDataPage.common.ru'),
+      dataIndex: 'name_ru',
+      key: 'name_ru',
+      render: (value, record) => value || record?.name || '-',
+    },
+    {
+      title: t('referenceDataPage.common.en'),
+      dataIndex: 'name_en',
+      key: 'name_en',
+      render: (value, record) => value || record?.name || '-',
+    },
+    {
+      title: t('referenceDataPage.common.uz'),
+      dataIndex: 'name_uz',
+      key: 'name_uz',
+      render: (value, record) => value || record?.name || '-',
+    },
   ];
 }
 
 function CurrencyRatesTab() {
   const [data, setData] = useState([]);
   const [loading, setLoading] = useState(false);
-  const [ratesModal, setRatesModal] = useState({ open: false, data: null, title: '' });
+  const [loadError, setLoadError] = useState('');
+  const [ratesModal, setRatesModal] = useState({
+    open: false,
+    data: null,
+    title: '',
+    error: '',
+    loading: false,
+  });
 
   const fetchCurrencies = async () => {
     setLoading(true);
+    setLoadError('');
     try {
-      const res = await getCurrencies({ page_size: 200 });
-      setData(res.results || res || []);
+      const rows = await withAllPagesDeduped(getCurrencies, (row) => row?.name)();
+      setData(Array.isArray(rows) ? rows : []);
+    } catch {
+      setData([]);
+      setLoadError(t('referenceDataPage.currencyRates.loadError', 'Не удалось загрузить валюты'));
     } finally {
       setLoading(false);
     }
@@ -111,15 +140,30 @@ function CurrencyRatesTab() {
   }, []);
 
   const openRates = async (currency) => {
+    setRatesModal({
+      open: true,
+      data: null,
+      title: `${t('referenceDataPage.currencyRates.rates')}: ${currency.name}`,
+      error: '',
+      loading: true,
+    });
     try {
       const rates = await getCurrencyRates(currency.id);
       setRatesModal({
         open: true,
         data: rates,
         title: `${t('referenceDataPage.currencyRates.rates')}: ${currency.name}`,
+        error: '',
+        loading: false,
       });
-    } catch (error) {
-      setRatesModal({ open: true, data: { error: t('referenceDataPage.currencyRates.loadError') }, title: t('referenceDataPage.currencyRates.rates') });
+    } catch {
+      setRatesModal({
+        open: true,
+        data: null,
+        title: `${t('referenceDataPage.currencyRates.rates')}: ${currency.name}`,
+        error: t('referenceDataPage.currencyRates.loadError', 'Не удалось загрузить курсы валют'),
+        loading: false,
+      });
     }
   };
 
@@ -135,7 +179,11 @@ function CurrencyRatesTab() {
       title: t('referenceDataPage.common.autoUpdate'),
       dataIndex: 'auto_update',
       key: 'auto_update',
-      render: (value) => <Tag color={value ? 'green' : 'default'}>{value ? t('referenceDataPage.common.yes') : t('referenceDataPage.common.no')}</Tag>,
+      render: (value) => (
+        <Tag color={value ? 'green' : 'default'}>
+          {value ? t('referenceDataPage.common.yes') : t('referenceDataPage.common.no')}
+        </Tag>
+      ),
     },
     {
       title: t('referenceDataPage.common.actions'),
@@ -162,20 +210,46 @@ function CurrencyRatesTab() {
 
   return (
     <>
+      {loadError ? (
+        <Alert
+          showIcon
+          type="warning"
+          style={{ marginBottom: 16 }}
+          message={loadError}
+          action={
+            <Button size="small" onClick={fetchCurrencies}>
+              {t('common.retry', 'Повторить')}
+            </Button>
+          }
+        />
+      ) : null}
       <Table
         dataSource={data}
         columns={columns}
         rowKey="id"
         loading={loading}
         pagination={{ pageSize: 10 }}
+        locale={{
+          emptyText: (
+            <Empty description={t('referenceDataPage.currencyRates.empty', 'Нет валют для отображения')} />
+          ),
+        }}
       />
       <Modal
         title={ratesModal.title}
         open={ratesModal.open}
-        onCancel={() => setRatesModal({ open: false, data: null, title: '' })}
+        onCancel={() =>
+          setRatesModal({ open: false, data: null, title: '', error: '', loading: false })
+        }
         footer={null}
       >
-        {rateRows.length ? (
+        {ratesModal.loading ? (
+          <div style={{ textAlign: 'center', padding: '24px 0' }}>
+            <Spin />
+          </div>
+        ) : ratesModal.error ? (
+          <Alert showIcon type="error" message={ratesModal.error} />
+        ) : rateRows.length ? (
           <Descriptions column={1} bordered size="small">
             {rateRows.map((row) => (
               <Descriptions.Item key={row.key} label={row.label}>
@@ -184,7 +258,7 @@ function CurrencyRatesTab() {
             ))}
           </Descriptions>
         ) : (
-          <Empty description={t('referenceDataPage.currencyRates.empty')} />
+          <Empty description={t('referenceDataPage.currencyRates.empty', 'Нет курсов для отображения')} />
         )}
       </Modal>
     </>
@@ -269,7 +343,8 @@ export default function ReferenceDataPage() {
   };
 
   const nameColumn = { title: t('referenceDataPage.common.name'), dataIndex: 'name', key: 'name' };
-  const yesNo = (value) => (value ? t('referenceDataPage.common.yes') : t('referenceDataPage.common.no'));
+  const yesNo = (value) =>
+    value ? t('referenceDataPage.common.yes') : t('referenceDataPage.common.no');
 
   const tabs = [
     {
@@ -279,10 +354,7 @@ export default function ReferenceDataPage() {
         <CrudPage
           title={t('referenceDataPage.tabs.countries')}
           api={{ list: allPagesApi.countries, retrieve: getCountry }}
-          columns={[
-            nameColumn,
-            ...localizedNameColumns(),
-          ]}
+          columns={[nameColumn, ...localizedNameColumns()]}
           fields={emptyFields}
           readOnly={readOnly}
           pageSize={100}
@@ -299,10 +371,26 @@ export default function ReferenceDataPage() {
           columns={[
             nameColumn,
             ...localizedNameColumns(),
-            { title: t('referenceDataPage.common.country'), dataIndex: 'country_name', key: 'country_name' },
-            { title: t('referenceDataPage.common.countryRu'), dataIndex: 'country_name_ru', key: 'country_name_ru' },
-            { title: t('referenceDataPage.common.countryEn'), dataIndex: 'country_name_en', key: 'country_name_en' },
-            { title: t('referenceDataPage.common.countryUz'), dataIndex: 'country_name_uz', key: 'country_name_uz' },
+            {
+              title: t('referenceDataPage.common.country'),
+              dataIndex: 'country_name',
+              key: 'country_name',
+            },
+            {
+              title: t('referenceDataPage.common.countryRu'),
+              dataIndex: 'country_name_ru',
+              key: 'country_name_ru',
+            },
+            {
+              title: t('referenceDataPage.common.countryEn'),
+              dataIndex: 'country_name_en',
+              key: 'country_name_en',
+            },
+            {
+              title: t('referenceDataPage.common.countryUz'),
+              dataIndex: 'country_name_uz',
+              key: 'country_name_uz',
+            },
           ]}
           fields={emptyFields}
           readOnly={readOnly}
@@ -317,10 +405,7 @@ export default function ReferenceDataPage() {
         <CrudPage
           title={t('referenceDataPage.tabs.industries')}
           api={{ list: allPagesApi.industries, retrieve: getIndustry }}
-          columns={[
-            nameColumn,
-            ...localizedNameColumns(),
-          ]}
+          columns={[nameColumn, ...localizedNameColumns()]}
           fields={emptyFields}
           readOnly={readOnly}
           pageSize={100}
@@ -334,10 +419,7 @@ export default function ReferenceDataPage() {
         <CrudPage
           title={t('referenceDataPage.tabs.leadSources')}
           api={{ list: allPagesApi.leadSources, retrieve: getLeadSource }}
-          columns={[
-            nameColumn,
-            ...localizedNameColumns(),
-          ]}
+          columns={[nameColumn, ...localizedNameColumns()]}
           fields={emptyFields}
           readOnly={readOnly}
           pageSize={100}
@@ -351,10 +433,7 @@ export default function ReferenceDataPage() {
         <CrudPage
           title={t('referenceDataPage.tabs.clientTypes')}
           api={{ list: allPagesApi.clientTypes, retrieve: getClientType }}
-          columns={[
-            nameColumn,
-            ...localizedNameColumns(),
-          ]}
+          columns={[nameColumn, ...localizedNameColumns()]}
           fields={emptyFields}
           readOnly={readOnly}
           pageSize={100}
@@ -368,10 +447,7 @@ export default function ReferenceDataPage() {
         <CrudPage
           title={t('referenceDataPage.tabs.closingReasons')}
           api={{ list: allPagesApi.closingReasons, retrieve: getClosingReason }}
-          columns={[
-            nameColumn,
-            ...localizedNameColumns(),
-          ]}
+          columns={[nameColumn, ...localizedNameColumns()]}
           fields={emptyFields}
           readOnly={readOnly}
           pageSize={100}
@@ -388,9 +464,24 @@ export default function ReferenceDataPage() {
           columns={[
             nameColumn,
             ...localizedNameColumns(),
-            { title: t('referenceDataPage.common.index'), dataIndex: 'index_number', key: 'index_number', width: 90 },
-            { title: t('referenceDataPage.common.default'), dataIndex: 'default', key: 'default', render: yesNo },
-            { title: t('referenceDataPage.common.successful'), dataIndex: 'success_stage', key: 'success_stage', render: yesNo },
+            {
+              title: t('referenceDataPage.common.index'),
+              dataIndex: 'index_number',
+              key: 'index_number',
+              width: 90,
+            },
+            {
+              title: t('referenceDataPage.common.default'),
+              dataIndex: 'default',
+              key: 'default',
+              render: yesNo,
+            },
+            {
+              title: t('referenceDataPage.common.successful'),
+              dataIndex: 'success_stage',
+              key: 'success_stage',
+              render: yesNo,
+            },
           ]}
           fields={emptyFields}
           readOnly={readOnly}
@@ -408,10 +499,30 @@ export default function ReferenceDataPage() {
           columns={[
             nameColumn,
             ...localizedNameColumns(),
-            { title: t('referenceDataPage.common.index'), dataIndex: 'index_number', key: 'index_number', width: 90 },
-            { title: t('referenceDataPage.common.default'), dataIndex: 'default', key: 'default', render: yesNo },
-            { title: t('referenceDataPage.common.inProgress'), dataIndex: 'in_progress', key: 'in_progress', render: yesNo },
-            { title: t('referenceDataPage.common.done'), dataIndex: 'done', key: 'done', render: yesNo },
+            {
+              title: t('referenceDataPage.common.index'),
+              dataIndex: 'index_number',
+              key: 'index_number',
+              width: 90,
+            },
+            {
+              title: t('referenceDataPage.common.default'),
+              dataIndex: 'default',
+              key: 'default',
+              render: yesNo,
+            },
+            {
+              title: t('referenceDataPage.common.inProgress'),
+              dataIndex: 'in_progress',
+              key: 'in_progress',
+              render: yesNo,
+            },
+            {
+              title: t('referenceDataPage.common.done'),
+              dataIndex: 'done',
+              key: 'done',
+              render: yesNo,
+            },
           ]}
           fields={emptyFields}
           readOnly={readOnly}
@@ -429,10 +540,30 @@ export default function ReferenceDataPage() {
           columns={[
             nameColumn,
             ...localizedNameColumns(),
-            { title: t('referenceDataPage.common.index'), dataIndex: 'index_number', key: 'index_number', width: 90 },
-            { title: t('referenceDataPage.common.default'), dataIndex: 'default', key: 'default', render: yesNo },
-            { title: t('referenceDataPage.common.inProgress'), dataIndex: 'in_progress', key: 'in_progress', render: yesNo },
-            { title: t('referenceDataPage.common.done'), dataIndex: 'done', key: 'done', render: yesNo },
+            {
+              title: t('referenceDataPage.common.index'),
+              dataIndex: 'index_number',
+              key: 'index_number',
+              width: 90,
+            },
+            {
+              title: t('referenceDataPage.common.default'),
+              dataIndex: 'default',
+              key: 'default',
+              render: yesNo,
+            },
+            {
+              title: t('referenceDataPage.common.inProgress'),
+              dataIndex: 'in_progress',
+              key: 'in_progress',
+              render: yesNo,
+            },
+            {
+              title: t('referenceDataPage.common.done'),
+              dataIndex: 'done',
+              key: 'done',
+              render: yesNo,
+            },
           ]}
           fields={emptyFields}
           readOnly={readOnly}
@@ -447,10 +578,7 @@ export default function ReferenceDataPage() {
         <CrudPage
           title={t('referenceDataPage.tabs.crmTags')}
           api={{ list: allPagesApi.crmTags, retrieve: getCrmTag }}
-          columns={[
-            nameColumn,
-            ...localizedNameColumns(),
-          ]}
+          columns={[nameColumn, ...localizedNameColumns()]}
           fields={emptyFields}
           readOnly={readOnly}
           pageSize={100}
@@ -467,7 +595,11 @@ export default function ReferenceDataPage() {
           columns={[
             nameColumn,
             ...localizedNameColumns(),
-            { title: t('referenceDataPage.common.forContent'), dataIndex: 'for_content', key: 'for_content' },
+            {
+              title: t('referenceDataPage.common.forContent'),
+              dataIndex: 'for_content',
+              key: 'for_content',
+            },
           ]}
           fields={emptyFields}
           readOnly={readOnly}
@@ -485,7 +617,12 @@ export default function ReferenceDataPage() {
           columns={[
             nameColumn,
             ...localizedNameColumns(),
-            { title: t('referenceDataPage.members.count'), dataIndex: 'member_count', key: 'member_count', width: 120 },
+            {
+              title: t('referenceDataPage.members.count'),
+              dataIndex: 'member_count',
+              key: 'member_count',
+              width: 120,
+            },
             {
               title: t('referenceDataPage.members.composition'),
               key: 'members',
@@ -511,10 +648,24 @@ export default function ReferenceDataPage() {
           title={t('referenceDataPage.tabs.currencies')}
           api={{ list: allPagesApi.currencies, retrieve: getCurrency }}
           columns={[
-            { title: t('referenceDataPage.common.code'), dataIndex: 'name', key: 'name', width: 120 },
+            {
+              title: t('referenceDataPage.common.code'),
+              dataIndex: 'name',
+              key: 'name',
+              width: 120,
+            },
             ...localizedNameColumns(),
-            { title: t('referenceDataPage.common.rate'), dataIndex: 'rate_to_state_currency', key: 'rate_to_state_currency' },
-            { title: t('referenceDataPage.common.autoUpdate'), dataIndex: 'auto_update', key: 'auto_update', render: yesNo },
+            {
+              title: t('referenceDataPage.common.rate'),
+              dataIndex: 'rate_to_state_currency',
+              key: 'rate_to_state_currency',
+            },
+            {
+              title: t('referenceDataPage.common.autoUpdate'),
+              dataIndex: 'auto_update',
+              key: 'auto_update',
+              render: yesNo,
+            },
           ]}
           fields={emptyFields}
           readOnly={readOnly}
@@ -534,10 +685,7 @@ export default function ReferenceDataPage() {
         <CrudPage
           title={t('referenceDataPage.tabs.productCategories')}
           api={{ list: allPagesApi.productCategories, retrieve: getProductCategory }}
-          columns={[
-            nameColumn,
-            ...localizedNameColumns(),
-          ]}
+          columns={[nameColumn, ...localizedNameColumns()]}
           fields={emptyFields}
           readOnly={readOnly}
           pageSize={100}

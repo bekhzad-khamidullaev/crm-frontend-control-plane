@@ -5,6 +5,8 @@ import ChatPage from '../../src/pages/chat-page.jsx';
 const getOmnichannelTimeline = vi.fn();
 const sendOmnichannelMessage = vi.fn();
 const readStoredLicenseFeatures = vi.fn();
+const readStoredLicenseState = vi.fn();
+const shouldEnforceLicenseFeatures = vi.fn();
 
 vi.mock('../../src/lib/api/compliance.js', () => ({
   getOmnichannelTimeline: (...args) => getOmnichannelTimeline(...args),
@@ -15,6 +17,11 @@ vi.mock('../../src/lib/api/licenseFeatures.js', () => ({
   readStoredLicenseFeatures: () => readStoredLicenseFeatures(),
 }));
 
+vi.mock('../../src/lib/api/licenseState.js', () => ({
+  readStoredLicenseState: () => readStoredLicenseState(),
+  shouldEnforceLicenseFeatures: (...args) => shouldEnforceLicenseFeatures(...args),
+}));
+
 vi.mock('../../src/lib/hooks/useTheme.js', () => ({
   useTheme: () => ({ theme: 'light' }),
 }));
@@ -22,6 +29,8 @@ vi.mock('../../src/lib/hooks/useTheme.js', () => ({
 describe('ChatPage unified inbox', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    readStoredLicenseState.mockReturnValue({ installed: true, status: 'active', enforcement_mode: 'strict' });
+    shouldEnforceLicenseFeatures.mockImplementation((state) => state?.enforcement_mode === 'strict');
   });
 
   it('shows license state when unified inbox entitlement is missing', async () => {
@@ -31,6 +40,18 @@ describe('ChatPage unified inbox', () => {
     render(<ChatPage />);
 
     expect(await screen.findByText(/Unified Inbox недоступен/i)).toBeInTheDocument();
+  });
+
+  it('does not pre-block inbox in warn mode when features are missing', async () => {
+    readStoredLicenseFeatures.mockReturnValue([]);
+    readStoredLicenseState.mockReturnValue({ installed: false, status: 'missing', enforcement_mode: 'warn' });
+    shouldEnforceLicenseFeatures.mockReturnValue(false);
+    getOmnichannelTimeline.mockResolvedValue({ count: 0, results: [], summary: {} });
+
+    render(<ChatPage />);
+
+    expect(await screen.findByText(/Unified Inbox/i)).toBeInTheDocument();
+    expect(screen.queryByText(/Unified Inbox недоступен/i)).not.toBeInTheDocument();
   });
 
   it('renders conversations and sends outbound message for supported channel', async () => {

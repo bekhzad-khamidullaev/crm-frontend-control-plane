@@ -42,29 +42,52 @@ const toNumber = (value) => {
 
 export function normalizeOverview(data = {}) {
   if (!data || typeof data !== 'object') return {};
+  const currencyCode =
+    data.currency_code ??
+    data.revenue_currency ??
+    data.revenue_currency_code ??
+    data.state_currency ??
+    data.currency ??
+    null;
+
   // Backend analytics_overview returns nested: { deals: {total, active, total_amount}, leads: {total, new, qualified}, contacts: {total}, companies: {total} }
   // Flatten into the expected shape:
   return {
     total_leads: toNumber(
-      data.total_leads ?? data.leads_count ?? data.totalLeads ??
-      (typeof data.leads === 'object' ? (data.leads?.total ?? data.leads?.count) : data.leads)
+      data.total_leads ??
+        data.leads_count ??
+        data.totalLeads ??
+        (typeof data.leads === 'object' ? (data.leads?.total ?? data.leads?.count) : data.leads)
     ),
     total_contacts: toNumber(
-      data.total_contacts ?? data.contacts_count ?? data.totalContacts ??
-      (typeof data.contacts === 'object' ? (data.contacts?.total ?? data.contacts?.count) : data.contacts)
+      data.total_contacts ??
+        data.contacts_count ??
+        data.totalContacts ??
+        (typeof data.contacts === 'object'
+          ? (data.contacts?.total ?? data.contacts?.count)
+          : data.contacts)
     ),
     total_deals: toNumber(
-      data.total_deals ?? data.deals_count ?? data.totalDeals ??
-      (typeof data.deals === 'object' ? (data.deals?.total ?? data.deals?.count) : data.deals)
+      data.total_deals ??
+        data.deals_count ??
+        data.totalDeals ??
+        (typeof data.deals === 'object' ? (data.deals?.total ?? data.deals?.count) : data.deals)
     ),
     total_revenue: toNumber(
-      data.total_revenue ?? data.revenue_total ?? data.totalRevenue ??
-      (typeof data.deals === 'object' ? data.deals?.total_amount : undefined)
+      data.total_revenue ??
+        data.revenue_total ??
+        data.totalRevenue ??
+        (typeof data.deals === 'object' ? data.deals?.total_amount : undefined)
     ),
     leads_growth: toNumber(data.leads_growth ?? data.leads_growth_percent ?? data.leadsGrowth),
     deals_growth: toNumber(data.deals_growth ?? data.deals_growth_percent ?? data.dealsGrowth),
-    revenue_growth: toNumber(data.revenue_growth ?? data.revenue_growth_percent ?? data.revenueGrowth),
+    revenue_growth: toNumber(
+      data.revenue_growth ?? data.revenue_growth_percent ?? data.revenueGrowth
+    ),
     conversion_rate: toNumber(data.conversion_rate ?? data.conversion ?? data.conversionRate),
+    currency_code: currencyCode,
+    currency_name: data.currency_name ?? data.revenue_currency_name ?? null,
+    state_currency: data.state_currency ?? currencyCode,
   };
 }
 
@@ -73,7 +96,8 @@ export function normalizeDashboardAnalytics(data = {}) {
 
   // Backend returns monthly_growth as scalar counts, not time-series arrays.
   // Only treat it as chart-ready if it has labels/arrays form.
-  const rawGrowth = data.monthly_growth || data.monthlyGrowth || data.revenue_series || data.revenueSeries;
+  const rawGrowth =
+    data.monthly_growth || data.monthlyGrowth || data.revenue_series || data.revenueSeries;
   let monthly_growth = null;
   if (rawGrowth && Array.isArray(rawGrowth.labels)) {
     // Already in chart-ready format
@@ -87,11 +111,11 @@ export function normalizeDashboardAnalytics(data = {}) {
       leads: 'Лиды',
       revenue: 'Выручка',
     };
-    const keys = Object.keys(rawGrowth).filter(k => typeof rawGrowth[k] === 'number');
+    const keys = Object.keys(rawGrowth).filter((k) => typeof rawGrowth[k] === 'number');
     if (keys.length) {
       monthly_growth = {
-        labels: keys.map(k => LABEL_MAP[k] || k),
-        leads: keys.map(k => rawGrowth[k]),
+        labels: keys.map((k) => LABEL_MAP[k] || k),
+        leads: keys.map((k) => rawGrowth[k]),
         deals: [],
         revenue: [],
         _isSummary: true,

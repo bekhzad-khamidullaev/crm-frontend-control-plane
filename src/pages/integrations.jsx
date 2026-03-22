@@ -4,7 +4,7 @@
  */
 
 import React, { useEffect, useState } from 'react';
-import { Card, Space, Button, Modal, App, Table, Tag, Form, Input, InputNumber, Select, Switch, Popconfirm, Alert, theme as antdTheme } from 'antd';
+import { Card, Space, Button, Modal, App, Table, Tag, Form, Input, InputNumber, Select, Switch, Popconfirm, Alert, Typography, Descriptions, theme as antdTheme } from 'antd';
 import {
   ApiOutlined,
   MessageOutlined,
@@ -18,6 +18,7 @@ import {
   CopyOutlined,
 } from '@ant-design/icons';
 import dayjs from 'dayjs';
+import relativeTime from 'dayjs/plugin/relativeTime';
 import IntegrationCard from '../components/IntegrationCard';
 import LicenseRestrictedAction from '../components/LicenseRestrictedAction.jsx';
 import SMSSettings from '../components/SMSSettings';
@@ -64,6 +65,7 @@ import {
 import { apiConfig } from '../lib/api/client';
 import {
   getOmnichannelDiagnostics,
+  getOmnichannelEventPayload,
   getOmnichannelTimeline,
   replayOmnichannelEvent,
 } from '../lib/api/compliance.js';
@@ -75,6 +77,58 @@ const formatDateTime = (value) => {
   if (!value) return '-';
   return dayjs(value).isValid() ? dayjs(value).format('DD.MM.YYYY HH:mm') : String(value);
 };
+
+dayjs.extend(relativeTime);
+
+const { Text } = Typography;
+
+const formatDiagnosticsTimestamp = (value) => {
+  if (!value) return '';
+  return dayjs(value).isValid() ? dayjs(value).fromNow() : '';
+};
+
+const buildDiagnosticsExplanation = (record, tr) => {
+  const lines = [];
+  const primaryError =
+    record.processing_error ||
+    record.replay_error ||
+    record.verification_error ||
+    '';
+
+  if (record.signature_valid === false) {
+    lines.push(tr('integrationsPage.diagnostics.explanations.signature', 'Подпись webhook не прошла проверку.'));
+  }
+  if (record.sla_status === 'breached') {
+    lines.push(tr('integrationsPage.diagnostics.explanations.sla', 'Диалог уже попал в SLA risk.'));
+  }
+  if (record.replay_status === 'failed') {
+    lines.push(tr('integrationsPage.diagnostics.explanations.replayFailed', 'Последний replay завершился ошибкой.'));
+  } else if (record.replayable) {
+    lines.push(tr('integrationsPage.diagnostics.explanations.replayReady', 'Событие можно безопасно отправить на replay.'));
+  }
+  if (record.processed_at) {
+    lines.push(
+      tr('integrationsPage.diagnostics.explanations.processedAt', 'Обработано {time}', {
+        time: formatDiagnosticsTimestamp(record.processed_at),
+      })
+    );
+  }
+  if (record.replayed_at) {
+    lines.push(
+      tr('integrationsPage.diagnostics.explanations.replayedAt', 'Replay запускался {time}', {
+        time: formatDiagnosticsTimestamp(record.replayed_at),
+      })
+    );
+  }
+  if (primaryError) {
+    lines.push(primaryError);
+  }
+
+  return lines.slice(0, 3);
+};
+
+const getRawPreviewEntries = (rawPreview) =>
+  rawPreview && typeof rawPreview === 'object' ? Object.entries(rawPreview).slice(0, 3) : [];
 
 const normalizeList = (response) => {
   if (Array.isArray(response)) return response;
@@ -179,6 +233,13 @@ export default function IntegrationsPage({ embedded = false } = {}) {
   });
   const [omnichannelDiagnosticsLoading, setOmnichannelDiagnosticsLoading] = useState(false);
   const [omnichannelReplayId, setOmnichannelReplayId] = useState(null);
+  const [omnichannelEventModal, setOmnichannelEventModal] = useState({
+    open: false,
+    loading: false,
+    record: null,
+    payload: null,
+    error: '',
+  });
   const [licenseRestriction, setLicenseRestriction] = useState(null);
 
   const getErrorText = (error, fallback) => {
@@ -279,6 +340,35 @@ export default function IntegrationsPage({ embedded = false } = {}) {
       message.error(getErrorText(error, tr('integrationsPage.messages.replayError', 'Не удалось выполнить replay события')));
     } finally {
       setOmnichannelReplayId(null);
+    }
+  };
+
+  const handleOpenOmnichannelEvent = async (record) => {
+    if (!record?.id) return;
+    setOmnichannelEventModal({
+      open: true,
+      loading: true,
+      record,
+      payload: null,
+      error: '',
+    });
+    try {
+      const payload = await getOmnichannelEventPayload(record.id);
+      setOmnichannelEventModal({
+        open: true,
+        loading: false,
+        record,
+        payload,
+        error: '',
+      });
+    } catch (error) {
+      setOmnichannelEventModal({
+        open: true,
+        loading: false,
+        record,
+        payload: null,
+        error: getErrorText(error, tr('integrationsPage.messages.payloadError', 'Не удалось загрузить payload события')),
+      });
     }
   };
 
@@ -922,6 +1012,67 @@ export default function IntegrationsPage({ embedded = false } = {}) {
       ? omnichannelDiagnostics.recent_failures
       : omnichannelDiagnostics.replay_candidates
   ) || [];
+  const diagnosticsAlertType =
+    diagnosticsSummary.transport_health === 'degraded' ||
+    Number(diagnosticsSummary.failed_events || 0) > 0
+      ? 'error'
+      : diagnosticsSummary.business_health === 'degraded' ||
+          Number(diagnosticsSummary.breached_sla || 0) > 0 ||
+          Number(diagnosticsSummary.replayable_events || 0) > 0
+        ? 'warning'
+        : 'success';
+  const diagnosticsHighlights = [
+    {
+      key: 'queue',
+      label: tr('integrationsPage.diagnostics.queue', 'В очереди'),
+      value: omnichannelSummary.queue || 0,
+      tone: 'info',
+    },
+    {
+      key: 'breached',
+      label: tr('integrationsPage.diagnostics.breached', 'SLA breach'),
+      value: diagnosticsSummary.breached_sla || 0,
+      tone: Number(diagnosticsSummary.breached_sla || 0) > 0 ? 'danger' : 'default',
+    },
+    {
+      key: 'failed',
+      label: tr('integrationsPage.diagnostics.failed', 'Ошибок'),
+      value: diagnosticsSummary.failed_events || 0,
+      tone: Number(diagnosticsSummary.failed_events || 0) > 0 ? 'danger' : 'default',
+    },
+    {
+      key: 'replayable',
+      label: tr('integrationsPage.diagnostics.replayable', 'Replay-ready'),
+      value: diagnosticsSummary.replayable_events || 0,
+      tone: Number(diagnosticsSummary.replayable_events || 0) > 0 ? 'warning' : 'default',
+    },
+  ];
+  const diagnosticsToneStyles = {
+    info: {
+      border: isDark ? 'rgba(96, 165, 250, 0.34)' : 'rgba(59, 130, 246, 0.18)',
+      background: isDark ? 'rgba(30, 41, 59, 0.92)' : 'rgba(239, 246, 255, 0.92)',
+      value: isDark ? '#dbeafe' : '#1d4ed8',
+      label: isDark ? '#93c5fd' : '#2563eb',
+    },
+    warning: {
+      border: isDark ? 'rgba(251, 191, 36, 0.34)' : 'rgba(245, 158, 11, 0.2)',
+      background: isDark ? 'rgba(69, 39, 10, 0.9)' : 'rgba(255, 247, 237, 0.96)',
+      value: isDark ? '#fde68a' : '#b45309',
+      label: isDark ? '#fbbf24' : '#c2410c',
+    },
+    danger: {
+      border: isDark ? 'rgba(248, 113, 113, 0.34)' : 'rgba(239, 68, 68, 0.2)',
+      background: isDark ? 'rgba(69, 10, 10, 0.88)' : 'rgba(254, 242, 242, 0.96)',
+      value: isDark ? '#fecaca' : '#b91c1c',
+      label: isDark ? '#fca5a5' : '#dc2626',
+    },
+    default: {
+      border: isDark ? 'rgba(148, 163, 184, 0.24)' : token.colorBorderSecondary,
+      background: isDark ? 'rgba(15, 23, 42, 0.82)' : token.colorBgContainer,
+      value: isDark ? '#e2e8f0' : token.colorText,
+      label: token.colorTextSecondary,
+    },
+  };
 
   return (
     <div style={{ padding: embedded ? 0 : 24 }}>
@@ -965,6 +1116,55 @@ export default function IntegrationsPage({ embedded = false } = {}) {
             )}
           >
             <Space direction="vertical" size="middle" style={{ width: '100%' }}>
+              <Alert
+                type={diagnosticsAlertType}
+                showIcon
+                message={tr(
+                  'integrationsPage.diagnostics.overview',
+                  'Transport {transport}, business {business}, queue {queue}, breached SLA {breached}',
+                  {
+                    transport: diagnosticsSummary.transport_health || 'unknown',
+                    business: diagnosticsSummary.business_health || 'unknown',
+                    queue: omnichannelSummary.queue || 0,
+                    breached: diagnosticsSummary.breached_sla || 0,
+                  }
+                )}
+                description={tr(
+                  'integrationsPage.diagnostics.overviewDescription',
+                  'Карточки ниже помогают быстро увидеть, где нужен manual replay, разбор SLA или восстановление канала.'
+                )}
+              />
+              <div
+                style={{
+                  display: 'grid',
+                  gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))',
+                  gap: 12,
+                }}
+              >
+                {diagnosticsHighlights.map((item) => {
+                  const tone = diagnosticsToneStyles[item.tone] || diagnosticsToneStyles.default;
+                  return (
+                    <div
+                      key={item.key}
+                      style={{
+                        borderRadius: token.borderRadiusLG,
+                        border: `1px solid ${tone.border}`,
+                        background: tone.background,
+                        padding: 14,
+                        minHeight: 92,
+                        boxShadow: isDark ? '0 8px 20px rgba(2, 6, 23, 0.18)' : '0 8px 18px rgba(15, 23, 42, 0.06)',
+                      }}
+                    >
+                      <div style={{ fontSize: 12, fontWeight: 700, color: tone.label, marginBottom: 8 }}>
+                        {item.label}
+                      </div>
+                      <div style={{ fontSize: 28, lineHeight: 1, fontWeight: 800, color: tone.value }}>
+                        {item.value}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
               <Space wrap size={[8, 8]}>
                 <Tag color={diagnosticsSummary.transport_health === 'degraded' ? 'error' : 'success'}>
                   {tr('integrationsPage.diagnostics.transport', 'Transport')}: {diagnosticsSummary.transport_health || 'unknown'}
@@ -980,16 +1180,54 @@ export default function IntegrationsPage({ embedded = false } = {}) {
                 <Tag>{tr('integrationsPage.diagnostics.breached', 'SLA breach')}: {diagnosticsSummary.breached_sla || 0}</Tag>
               </Space>
               {omnichannelDiagnostics.channels?.length > 0 && (
-                <Space wrap size={[8, 8]}>
+                <div
+                  style={{
+                    display: 'grid',
+                    gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))',
+                    gap: 12,
+                  }}
+                >
                   {omnichannelDiagnostics.channels.map((channel) => (
-                    <Tag
+                    <div
                       key={channel.channel}
-                      color={channel.health === 'degraded' ? 'volcano' : 'green'}
+                      style={{
+                        borderRadius: token.borderRadiusLG,
+                        border: `1px solid ${
+                          channel.health === 'degraded'
+                            ? isDark
+                              ? 'rgba(248, 113, 113, 0.32)'
+                              : 'rgba(239, 68, 68, 0.2)'
+                            : isDark
+                              ? 'rgba(74, 222, 128, 0.24)'
+                              : 'rgba(34, 197, 94, 0.18)'
+                        }`,
+                        background: isDark ? 'rgba(15, 23, 42, 0.74)' : token.colorBgContainer,
+                        padding: 14,
+                      }}
                     >
-                      {channel.channel}: {channel.total} / archived {channel.archived_events || 0} / failed {channel.failed} / replay {channel.replayable}
-                    </Tag>
+                      <Space direction="vertical" size={10} style={{ width: '100%' }}>
+                        <Space align="center" wrap>
+                          <Text strong>{channel.channel}</Text>
+                          <Tag color={channel.health === 'degraded' ? 'error' : 'success'} style={{ marginInlineEnd: 0 }}>
+                            {channel.health === 'degraded'
+                              ? tr('integrationsPage.diagnostics.degraded', 'Degraded')
+                              : tr('integrationsPage.diagnostics.healthy', 'Healthy')}
+                          </Tag>
+                        </Space>
+                        <Space wrap size={[6, 6]}>
+                          <Tag style={{ marginInlineEnd: 0 }}>{tr('integrationsPage.diagnostics.total', 'Всего')}: {channel.total || 0}</Tag>
+                          <Tag style={{ marginInlineEnd: 0 }}>{tr('integrationsPage.diagnostics.archived', 'Archived')}: {channel.archived_events || 0}</Tag>
+                          <Tag color={(channel.failed || 0) > 0 ? 'error' : 'default'} style={{ marginInlineEnd: 0 }}>
+                            {tr('integrationsPage.diagnostics.failed', 'Ошибок')}: {channel.failed || 0}
+                          </Tag>
+                          <Tag color={(channel.replayable || 0) > 0 ? 'processing' : 'default'} style={{ marginInlineEnd: 0 }}>
+                            {tr('integrationsPage.diagnostics.replayable', 'Replay-ready')}: {channel.replayable || 0}
+                          </Tag>
+                        </Space>
+                      </Space>
+                    </div>
                   ))}
-                </Space>
+                </div>
               )}
               <Table
                 size="small"
@@ -1014,6 +1252,7 @@ export default function IntegrationsPage({ embedded = false } = {}) {
                         <Tag color={['failed', 'error', 'dead_letter'].includes(String(record.queue_state || '').toLowerCase()) ? 'error' : 'default'}>
                           {record.queue_state || record.status || '-'}
                         </Tag>
+                        {record.sla_status === 'breached' && <Tag color="warning">SLA risk</Tag>}
                         {record.signature_valid === false && <Tag color="volcano">Signature</Tag>}
                         {record.replayable && <Tag color="processing">Replay</Tag>}
                       </Space>
@@ -1022,7 +1261,35 @@ export default function IntegrationsPage({ embedded = false } = {}) {
                   {
                     title: tr('integrationsPage.table.message', 'Сообщение'),
                     key: 'text',
-                    render: (_, record) => record.text || record.external_id || '-',
+                    render: (_, record) => {
+                      const explanationLines = buildDiagnosticsExplanation(record, tr);
+                      const rawPreviewEntries = getRawPreviewEntries(record.raw_preview);
+                      return (
+                        <Space direction="vertical" size={4} style={{ width: '100%' }}>
+                          <Text strong style={{ color: token.colorText }}>
+                            {record.text || record.external_id || '-'}
+                          </Text>
+                          {explanationLines.map((line, index) => (
+                            <Text
+                              key={`${record.id}-exp-${index}`}
+                              type="secondary"
+                              style={{ fontSize: 12, lineHeight: 1.45 }}
+                            >
+                              {line}
+                            </Text>
+                          ))}
+                          {rawPreviewEntries.length > 0 && (
+                            <Space size={[4, 4]} wrap>
+                              {rawPreviewEntries.map(([key, value]) => (
+                                <Tag key={`${record.id}-${key}`} style={{ marginInlineEnd: 0 }}>
+                                  {key}: {String(value)}
+                                </Tag>
+                              ))}
+                            </Space>
+                          )}
+                        </Space>
+                      );
+                    },
                   },
                   {
                     title: tr('integrationsPage.table.created', 'Создано'),
@@ -1034,20 +1301,28 @@ export default function IntegrationsPage({ embedded = false } = {}) {
                     title: tr('integrationsPage.table.actions', 'Действия'),
                     key: 'actions',
                     render: (_, record) => (
-                      <LicenseRestrictedAction
-                        restricted={integrationsRestricted}
-                        reason={integrationsRestrictionMessage}
-                        feature="integrations.core"
-                      >
+                      <Space size={8} wrap>
                         <Button
                           size="small"
-                          onClick={() => handleOmnichannelReplay(record)}
-                          loading={omnichannelReplayId === record.id}
-                          disabled={!record.replayable || integrationsRestricted}
+                          onClick={() => handleOpenOmnichannelEvent(record)}
                         >
-                          {tr('integrationsPage.actions.replay', 'Replay')}
+                          {tr('integrationsPage.actions.details', 'Детали')}
                         </Button>
-                      </LicenseRestrictedAction>
+                        <LicenseRestrictedAction
+                          restricted={integrationsRestricted}
+                          reason={integrationsRestrictionMessage}
+                          feature="integrations.core"
+                        >
+                          <Button
+                            size="small"
+                            onClick={() => handleOmnichannelReplay(record)}
+                            loading={omnichannelReplayId === record.id}
+                            disabled={!record.replayable || integrationsRestricted}
+                          >
+                            {tr('integrationsPage.actions.replay', 'Replay')}
+                          </Button>
+                        </LicenseRestrictedAction>
+                      </Space>
                     ),
                   },
                 ]}
@@ -1543,6 +1818,186 @@ export default function IntegrationsPage({ embedded = false } = {}) {
           </IntegrationCard>
         </Space>
       </Card>
+
+      <Modal
+        title={tr('integrationsPage.modals.eventDetails', 'Детали omnichannel события')}
+        open={omnichannelEventModal.open}
+        footer={null}
+        width={860}
+        onCancel={() =>
+          setOmnichannelEventModal({
+            open: false,
+            loading: false,
+            record: null,
+            payload: null,
+            error: '',
+          })
+        }
+      >
+        <Space direction="vertical" size="large" style={{ width: '100%' }}>
+          {omnichannelEventModal.error ? (
+            <Alert type="error" showIcon message={omnichannelEventModal.error} />
+          ) : null}
+
+          <Card
+            size="small"
+            title={tr('integrationsPage.diagnostics.summaryTitle', 'Summary')}
+            loading={omnichannelEventModal.loading}
+          >
+            <Descriptions size="small" column={2} bordered>
+              <Descriptions.Item label={tr('integrationsPage.table.channel', 'Канал')}>
+                {omnichannelEventModal.payload?.channel_name ||
+                  omnichannelEventModal.record?.channel_name ||
+                  omnichannelEventModal.payload?.channel_type ||
+                  omnichannelEventModal.record?.channel_type ||
+                  '-'}
+              </Descriptions.Item>
+              <Descriptions.Item label={tr('integrationsPage.table.status', 'Статус')}>
+                <Space size={[4, 4]} wrap>
+                  <Tag>{omnichannelEventModal.payload?.queue_state || omnichannelEventModal.record?.queue_state || '-'}</Tag>
+                  {(
+                    omnichannelEventModal.payload?.sla_status ||
+                    omnichannelEventModal.record?.sla_status
+                  ) === 'breached' && <Tag color="warning">SLA risk</Tag>}
+                  {(omnichannelEventModal.payload?.replayable || omnichannelEventModal.record?.replayable) && (
+                    <Tag color="processing">Replay-ready</Tag>
+                  )}
+                  {(
+                    omnichannelEventModal.payload?.signature_valid ??
+                    omnichannelEventModal.record?.signature_valid
+                  ) === false && <Tag color="volcano">Signature</Tag>}
+                </Space>
+              </Descriptions.Item>
+              <Descriptions.Item label="External ID">
+                {omnichannelEventModal.payload?.external_id || omnichannelEventModal.record?.external_id || '-'}
+              </Descriptions.Item>
+              <Descriptions.Item label="Message ID">
+                {omnichannelEventModal.payload?.message_id || omnichannelEventModal.record?.message_id || '-'}
+              </Descriptions.Item>
+              <Descriptions.Item label={tr('integrationsPage.table.message', 'Сообщение')} span={2}>
+                {omnichannelEventModal.payload?.text ||
+                  omnichannelEventModal.record?.text ||
+                  '-'}
+              </Descriptions.Item>
+            </Descriptions>
+          </Card>
+
+          <Card
+            size="small"
+            title={tr('integrationsPage.diagnostics.routingTitle', 'Routing')}
+            loading={omnichannelEventModal.loading}
+          >
+            <Descriptions size="small" column={2} bordered>
+              <Descriptions.Item label="Sender">
+                {omnichannelEventModal.payload?.sender_id || omnichannelEventModal.record?.sender_id || '-'}
+              </Descriptions.Item>
+              <Descriptions.Item label="Recipient">
+                {omnichannelEventModal.payload?.recipient_id || omnichannelEventModal.record?.recipient_id || '-'}
+              </Descriptions.Item>
+              <Descriptions.Item label="Direction">
+                {omnichannelEventModal.payload?.direction || omnichannelEventModal.record?.direction || '-'}
+              </Descriptions.Item>
+              <Descriptions.Item label={tr('integrationsPage.table.created', 'Создано')}>
+                {formatDateTime(omnichannelEventModal.payload?.created_at || omnichannelEventModal.record?.created_at)}
+              </Descriptions.Item>
+              <Descriptions.Item label={tr('integrationsPage.diagnostics.processedAt', 'Обработано')}>
+                {formatDateTime(omnichannelEventModal.payload?.processed_at)}
+              </Descriptions.Item>
+              <Descriptions.Item label={tr('integrationsPage.diagnostics.replayedAt', 'Replay запуск')}>
+                {formatDateTime(omnichannelEventModal.payload?.replayed_at)}
+              </Descriptions.Item>
+            </Descriptions>
+          </Card>
+
+          <Card
+            size="small"
+            title={tr('integrationsPage.diagnostics.errorsTitle', 'Errors и processing')}
+            loading={omnichannelEventModal.loading}
+          >
+            <Descriptions size="small" column={1} bordered>
+              <Descriptions.Item label="Processing status">
+                {omnichannelEventModal.payload?.processing_status || omnichannelEventModal.record?.processing_status || '-'}
+              </Descriptions.Item>
+              <Descriptions.Item label="Replay status">
+                {omnichannelEventModal.payload?.replay_status || omnichannelEventModal.record?.replay_status || '-'}
+              </Descriptions.Item>
+              <Descriptions.Item label="Replay count">
+                {omnichannelEventModal.payload?.replay_count ?? omnichannelEventModal.record?.replay_count ?? 0}
+              </Descriptions.Item>
+              <Descriptions.Item label="Verification error">
+                {omnichannelEventModal.payload?.verification_error || omnichannelEventModal.record?.verification_error || '-'}
+              </Descriptions.Item>
+              <Descriptions.Item label="Processing error">
+                {omnichannelEventModal.payload?.processing_error || omnichannelEventModal.record?.processing_error || '-'}
+              </Descriptions.Item>
+              <Descriptions.Item label="Replay error">
+                {omnichannelEventModal.payload?.replay_error || omnichannelEventModal.record?.replay_error || '-'}
+              </Descriptions.Item>
+            </Descriptions>
+          </Card>
+
+          <Card
+            size="small"
+            title={tr('integrationsPage.diagnostics.explanationsTitle', 'Операторская сводка')}
+            loading={omnichannelEventModal.loading}
+          >
+            <Space direction="vertical" size={8} style={{ width: '100%' }}>
+              {buildDiagnosticsExplanation(
+                omnichannelEventModal.payload || omnichannelEventModal.record || {},
+                tr
+              ).map((line, index) => (
+                <Text key={`event-summary-${index}`} style={{ lineHeight: 1.5 }}>
+                  {line}
+                </Text>
+              ))}
+              {!buildDiagnosticsExplanation(
+                omnichannelEventModal.payload || omnichannelEventModal.record || {},
+                tr
+              ).length && (
+                <Text type="secondary">
+                  {tr('integrationsPage.diagnostics.noSummary', 'Для этого события пока нет дополнительной операторской сводки.')}
+                </Text>
+              )}
+            </Space>
+          </Card>
+
+          <Card
+            size="small"
+            title={tr('integrationsPage.diagnostics.payloadPreview', 'Payload preview')}
+            loading={omnichannelEventModal.loading}
+          >
+            {getRawPreviewEntries(
+              omnichannelEventModal.payload?.raw_preview || omnichannelEventModal.record?.raw_preview
+            ).length ? (
+              <Descriptions size="small" column={1} bordered>
+                {getRawPreviewEntries(
+                  omnichannelEventModal.payload?.raw_preview || omnichannelEventModal.record?.raw_preview
+                ).map(([key, value]) => (
+                  <Descriptions.Item key={key} label={key}>
+                    <Text code>{String(value)}</Text>
+                  </Descriptions.Item>
+                ))}
+              </Descriptions>
+            ) : (
+              <Text type="secondary">
+                {tr('integrationsPage.diagnostics.noPayloadPreview', 'Короткий preview payload недоступен.')}
+              </Text>
+            )}
+          </Card>
+
+          <Card
+            size="small"
+            title={tr('integrationsPage.diagnostics.rawArchive', 'Raw archive')}
+            loading={omnichannelEventModal.loading}
+          >
+            <Input.TextArea
+              readOnly
+              autoSize={{ minRows: 8, maxRows: 18 }}
+              value={JSON.stringify(omnichannelEventModal.payload?.raw || {}, null, 2)}
+            />
+          </Card>
+        </Space>
+      </Modal>
 
       <Modal
         title={tr('integrationsPage.modals.smsSettings', 'Настройка SMS')}

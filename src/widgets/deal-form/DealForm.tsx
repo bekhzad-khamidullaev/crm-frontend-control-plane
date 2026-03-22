@@ -6,6 +6,7 @@ import {
   Card,
   Space,
   App,
+  Modal,
   Typography,
   Row,
   Col,
@@ -64,10 +65,30 @@ export const DealForm: React.FC<DealFormProps> = ({ id }) => {
     }
   }, [deal, form]);
 
+  const handleLeave = () => {
+    if (!form.isFieldsTouched()) {
+      navigate('/deals');
+      return;
+    }
+
+    Modal.confirm({
+      title: 'Есть несохраненные изменения',
+      content: 'Выйти без сохранения?',
+      okText: 'Выйти',
+      cancelText: 'Остаться',
+      okButtonProps: { danger: true },
+      onOk: () => navigate('/deals'),
+    });
+  };
+
   const onFinish = async (values: any) => {
     try {
       const payload: any = {
         ...values,
+        amount:
+          values.amount !== undefined && values.amount !== null && values.amount !== ''
+            ? String(values.amount)
+            : null,
         closing_date: values.closing_date ? values.closing_date.format('YYYY-MM-DD') : null,
         next_step_date: values.next_step_date ? values.next_step_date.format('YYYY-MM-DD') : null,
         // Enforce null if empty for relations
@@ -102,7 +123,7 @@ export const DealForm: React.FC<DealFormProps> = ({ id }) => {
   return (
     <div>
       <Space wrap style={{ marginBottom: 16 }}>
-        <Button icon={<ArrowLeftOutlined />} onClick={() => navigate('/deals')} block={isMobile}>
+        <Button icon={<ArrowLeftOutlined />} onClick={handleLeave} block={isMobile}>
           Назад
         </Button>
       </Space>
@@ -298,7 +319,7 @@ export const DealForm: React.FC<DealFormProps> = ({ id }) => {
               >
                 {isEdit ? 'Обновить' : 'Создать'}
               </Button>
-              <Button onClick={() => navigate('/deals')} block={isMobile}>
+              <Button onClick={handleLeave} block={isMobile}>
                 Отмена
               </Button>
             </Space>

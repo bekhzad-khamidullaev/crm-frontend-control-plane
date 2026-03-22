@@ -1,14 +1,14 @@
 const LICENSE_ROUTE_RESTRICTION_STORAGE_KEY = 'enterprise_crm_route_license_restriction';
 
 export function buildRouteLicenseRestriction(routeName, accessState) {
-  if (!accessState || accessState.reason !== 'license' || !accessState.feature) {
+  if (!accessState || accessState.reason !== 'license') {
     return null;
   }
   return {
-    code: 'LICENSE_FEATURE_DISABLED',
+    code: String(accessState.code || 'LICENSE_FEATURE_DISABLED'),
     feature: String(accessState.feature || 'unknown.feature'),
     routeName: String(routeName || ''),
-    message: '',
+    message: String(accessState.message || ''),
     timestamp: Date.now(),
   };
 }
@@ -49,4 +49,3 @@ export function clearStoredRouteLicenseRestriction() {
     // ignore storage failures
   }
 }
-

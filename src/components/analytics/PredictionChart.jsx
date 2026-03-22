@@ -1,22 +1,26 @@
 import React, { useEffect, useRef } from 'react';
 import PropTypes from 'prop-types';
 import Chart from 'chart.js/auto';
-import { formatCurrency } from '../../lib/utils/format';
+import { formatCurrency, formatNumber } from '../../lib/utils/format';
 
 /**
  * Prediction/Forecast chart component with confidence intervals
  * Shows predicted values with upper and lower bounds
  */
-function PredictionChart({ 
-  labels = [], 
-  predictedData = [], 
-  confidenceLower = [], 
+function PredictionChart({
+  labels = [],
+  predictedData = [],
+  confidenceLower = [],
   confidenceUpper = [],
+  currencyCode = null,
+  formatAsCurrency = false,
   title = 'Прогноз выручки',
   height = 300,
 }) {
   const chartRef = useRef(null);
   const chartInstance = useRef(null);
+  const formatValue = (value) =>
+    formatAsCurrency && currencyCode ? formatCurrency(value, currencyCode) : formatNumber(value);
 
   useEffect(() => {
     if (!chartRef.current) return;
@@ -91,29 +95,29 @@ function PredictionChart({
           },
           tooltip: {
             callbacks: {
-              label: function(context) {
+              label: function (context) {
                 let label = context.dataset.label || '';
                 if (label) {
                   label += ': ';
                 }
                 if (context.parsed.y !== null) {
-                  label += formatCurrency(context.parsed.y);
+                  label += formatValue(context.parsed.y);
                 }
                 return label;
-              }
-            }
-          }
+              },
+            },
+          },
         },
         scales: {
           y: {
             beginAtZero: false,
             ticks: {
-              callback: function(value) {
-                return formatCurrency(value);
-              }
-            }
-          }
-        }
+              callback: function (value) {
+                return formatValue(value);
+              },
+            },
+          },
+        },
       },
     });
 
@@ -122,7 +126,15 @@ function PredictionChart({
         chartInstance.current.destroy();
       }
     };
-  }, [labels, predictedData, confidenceLower, confidenceUpper, title]);
+  }, [
+    currencyCode,
+    formatAsCurrency,
+    labels,
+    predictedData,
+    confidenceLower,
+    confidenceUpper,
+    title,
+  ]);
 
   return (
     <div style={{ position: 'relative', height: `${height}px` }}>
@@ -136,6 +148,8 @@ PredictionChart.propTypes = {
   predictedData: PropTypes.array.isRequired,
   confidenceLower: PropTypes.array,
   confidenceUpper: PropTypes.array,
+  currencyCode: PropTypes.string,
+  formatAsCurrency: PropTypes.bool,
   title: PropTypes.string,
   height: PropTypes.number,
 };

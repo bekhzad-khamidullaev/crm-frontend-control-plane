@@ -52,7 +52,7 @@ export const useCompany = (id: number, enabled: boolean = true) => {
 export const useCompanyContacts = (id: number, enabled: boolean = true) => {
   return useQuery({
     queryKey: ['companies', id, 'contacts'],
-    queryFn: () => ContactsService.contactsList({ company: id, page: 1 }), // Default to page 1, can add pagination later
+    queryFn: () => ContactsService.contactsList({ company: id, page: 1, pageSize: 1000 }),
     enabled: enabled && !!id,
   });
 };
@@ -63,7 +63,7 @@ export const useCompanyContacts = (id: number, enabled: boolean = true) => {
 export const useCompanyDeals = (id: number, enabled: boolean = true) => {
   return useQuery({
     queryKey: ['companies', id, 'deals'],
-    queryFn: () => DealsService.dealsList({ company: id, page: 1 }),
+    queryFn: () => DealsService.dealsList({ company: id, page: 1, pageSize: 1000 }),
     enabled: enabled && !!id,
   });
 };

@@ -1,12 +1,12 @@
 import { useEffect, useMemo, useState } from "react";
-import { Button, Form, Input, Modal, Popconfirm, Space, Switch, Table, Tag, message } from "antd";
+import { Alert, Button, Empty, Form, Input, Modal, Popconfirm, Space, Switch, Table, Tag, message } from "antd";
 import {
   createCpCustomer,
   deleteCpCustomer,
   getCpCustomers,
   updateCpCustomer,
 } from "../../../lib/api/licenseControl.js";
-import { normalizeCollection, normalizeCount, formatDateTime } from "./utils.js";
+import { formatBackendError, normalizeCollection, normalizeCount, formatDateTime } from "./utils.js";
 
 export default function CustomersSection({ onMutated }) {
   const [rows, setRows] = useState([]);
@@ -18,6 +18,7 @@ export default function CustomersSection({ onMutated }) {
   const [editing, setEditing] = useState(null);
   const [open, setOpen] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [loadError, setLoadError] = useState("");
   const [form] = Form.useForm();
 
   const load = async (override = {}) => {
@@ -25,6 +26,7 @@ export default function CustomersSection({ onMutated }) {
     const nextPageSize = override.pageSize ?? pageSize;
     const nextSearch = override.search ?? search;
     setLoading(true);
+    setLoadError("");
     try {
       const response = await getCpCustomers({
         page: nextPage,
@@ -36,8 +38,10 @@ export default function CustomersSection({ onMutated }) {
       setPage(nextPage);
       setPageSize(nextPageSize);
       setSearch(nextSearch);
-    } catch {
-      message.error("Failed to load customers");
+    } catch (error) {
+      const nextError = formatBackendError(error, "Failed to load customers");
+      setLoadError(nextError);
+      message.error(nextError);
     } finally {
       setLoading(false);
     }
@@ -137,11 +141,33 @@ export default function CustomersSection({ onMutated }) {
           Add customer
         </Button>
       </Space>
+      {loadError ? (
+        <Alert
+          showIcon
+          type="warning"
+          style={{ marginBottom: 12 }}
+          message="Customers list is temporarily unavailable"
+          description={loadError}
+          action={
+            <Button size="small" onClick={() => load()}>
+              Retry
+            </Button>
+          }
+        />
+      ) : null}
       <Table
         rowKey="id"
         loading={loading}
         dataSource={rows}
         columns={columns}
+        locale={{
+          emptyText: (
+            <Empty
+              image={Empty.PRESENTED_IMAGE_SIMPLE}
+              description={search ? "No customers match the current search" : "No customers yet"}
+            />
+          ),
+        }}
         pagination={{ current: page, pageSize, total, showSizeChanger: true }}
         onChange={(pagination) => load({ page: pagination.current, pageSize: pagination.pageSize })}
       />

@@ -11,6 +11,7 @@ import {
   Form,
   Input,
   InputNumber,
+  Modal,
   Row,
   Select,
   Space,
@@ -310,6 +311,35 @@ function normalizeList(response) {
   return Array.isArray(response?.results) ? response.results : [];
 }
 
+function getPreviewEntries(payload, limit = 8) {
+  if (!isPlainObject(payload)) return [];
+  return Object.entries(payload).slice(0, limit);
+}
+
+function formatJsonBlock(value) {
+  if (value == null) return '';
+  if (typeof value === 'string') return value;
+  if (Array.isArray(value) || isPlainObject(value)) {
+    try {
+      return JSON.stringify(value, null, 2);
+    } catch (error) {
+      console.error('Error stringifying log payload:', error);
+    }
+  }
+  return String(value);
+}
+
+function getIntegrationLogContext(record = {}) {
+  const metadata = isPlainObject(record.metadata) ? record.metadata : {};
+  return {
+    queueState: record.queue_state ?? metadata.queue_state ?? metadata.queueState ?? null,
+    replayable: record.replayable ?? metadata.replayable ?? metadata.replay_ready ?? null,
+    slaStatus: record.sla_status ?? metadata.sla_status ?? metadata.slaState ?? null,
+    signatureValid: record.signature_valid ?? metadata.signature_valid ?? metadata.signatureValid ?? null,
+    archivedAt: record.archived_at ?? metadata.archived_at ?? metadata.archivedAt ?? null,
+  };
+}
+
 export default function SettingsIntegrationsWorkspace({ defaultTab = 'system' } = {}) {
   const { token } = antdTheme.useToken();
   const { message } = App.useApp();
@@ -333,6 +363,13 @@ export default function SettingsIntegrationsWorkspace({ defaultTab = 'system' } 
   const [webhooks, setWebhooks] = useState([]);
   const [integrationLogs, setIntegrationLogs] = useState([]);
   const [integrationLogStats, setIntegrationLogStats] = useState({});
+  const [integrationLogModal, setIntegrationLogModal] = useState({
+    open: false,
+    loading: false,
+    record: null,
+    detail: null,
+    error: null,
+  });
   const [securitySessions, setSecuritySessions] = useState([]);
   const [securityAuditItems, setSecurityAuditItems] = useState([]);
   const [complianceReport, setComplianceReport] = useState(null);
@@ -341,6 +378,121 @@ export default function SettingsIntegrationsWorkspace({ defaultTab = 'system' } 
   const [dataExchangeLoading, setDataExchangeLoading] = useState(false);
   const [importFile, setImportFile] = useState(null);
   const [importResult, setImportResult] = useState(null);
+  const integrationLogStatusEntries = useMemo(
+    () => Object.entries(integrationLogStats?.by_status || {}),
+    [integrationLogStats]
+  );
+  const integrationTopAction = useMemo(() => {
+    const actionEntries = Object.entries(integrationLogStats?.by_action || {});
+    if (!actionEntries.length) return null;
+    return actionEntries.sort((a, b) => Number(b[1] || 0) - Number(a[1] || 0))[0];
+  }, [integrationLogStats]);
+  const integrationLogSummaryCards = useMemo(() => {
+    const totalLogs = Array.isArray(integrationLogStats?.timeline)
+      ? integrationLogStats.timeline.length
+      : integrationLogs.length;
+    const errorCount = integrationLogStatusEntries
+      .filter(([key]) => ['error', 'failed', 'failure'].includes(String(key).toLowerCase()))
+      .reduce((sum, [, value]) => sum + Number(value || 0), 0);
+    const successCount = integrationLogStatusEntries
+      .filter(([key]) => ['ok', 'success', 'completed'].includes(String(key).toLowerCase()))
+      .reduce((sum, [, value]) => sum + Number(value || 0), 0);
+    const webhookFailures = webhooks.reduce((sum, item) => sum + Number(item?.failure_count || 0), 0);
+
+    return [
+      {
+        key: 'logs',
+        label: tr('settingsWorkspace.logs.cards.total', 'Всего логов'),
+        value: totalLogs || 0,
+        tone: 'default',
+      },
+      {
+        key: 'errors',
+        label: tr('settingsWorkspace.logs.cards.errors', 'Ошибки'),
+        value: errorCount,
+        tone: errorCount > 0 ? 'danger' : 'default',
+      },
+      {
+        key: 'success',
+        label: tr('settingsWorkspace.logs.cards.success', 'Успешно'),
+        value: successCount,
+        tone: successCount > 0 ? 'success' : 'default',
+      },
+      {
+        key: 'webhooks',
+        label: tr('settingsWorkspace.logs.cards.webhookFailures', 'Ошибки webhook'),
+        value: webhookFailures,
+        tone: webhookFailures > 0 ? 'warning' : 'default',
+      },
+    ];
+  }, [integrationLogStats, integrationLogs, integrationLogStatusEntries, webhooks, tr]);
+  const integrationErrorCount =
+    integrationLogSummaryCards.find((item) => item.key === 'errors')?.value || 0;
+  const operationsAlertType =
+    integrationErrorCount > 0 || webhooks.some((item) => Number(item?.failure_count || 0) > 0)
+      ? 'warning'
+      : 'info';
+  const complianceCards = useMemo(
+    () => [
+      {
+        key: 'dsr_pending',
+        label: tr('settingsWorkspace.compliance.cards.pendingDsr', 'DSR в работе'),
+        value: dsrItems.filter((item) => item.status !== 'completed').length,
+        tone: dsrItems.some((item) => item.status !== 'completed') ? 'warning' : 'default',
+      },
+      {
+        key: 'dsr_done',
+        label: tr('settingsWorkspace.compliance.cards.completedDsr', 'DSR завершено'),
+        value: dsrItems.filter((item) => item.status === 'completed').length,
+        tone: 'success',
+      },
+      {
+        key: 'retention_active',
+        label: tr('settingsWorkspace.compliance.cards.retentionActive', 'Retention активно'),
+        value: retentionItems.filter((item) => item.is_active).length,
+        tone: retentionItems.some((item) => item.is_active) ? 'info' : 'default',
+      },
+      {
+        key: 'retention_paused',
+        label: tr('settingsWorkspace.compliance.cards.retentionPaused', 'Retention paused'),
+        value: retentionItems.filter((item) => !item.is_active).length,
+        tone: retentionItems.some((item) => !item.is_active) ? 'warning' : 'default',
+      },
+    ],
+    [dsrItems, retentionItems, tr]
+  );
+  const toneStyles = {
+    info: {
+      border: isDark ? 'rgba(96, 165, 250, 0.34)' : 'rgba(59, 130, 246, 0.18)',
+      background: isDark ? 'rgba(30, 41, 59, 0.92)' : 'rgba(239, 246, 255, 0.92)',
+      value: isDark ? '#dbeafe' : '#1d4ed8',
+      label: isDark ? '#93c5fd' : '#2563eb',
+    },
+    success: {
+      border: isDark ? 'rgba(74, 222, 128, 0.3)' : 'rgba(34, 197, 94, 0.18)',
+      background: isDark ? 'rgba(20, 46, 32, 0.9)' : 'rgba(240, 253, 244, 0.96)',
+      value: isDark ? '#bbf7d0' : '#166534',
+      label: isDark ? '#4ade80' : '#15803d',
+    },
+    warning: {
+      border: isDark ? 'rgba(251, 191, 36, 0.34)' : 'rgba(245, 158, 11, 0.2)',
+      background: isDark ? 'rgba(69, 39, 10, 0.9)' : 'rgba(255, 247, 237, 0.96)',
+      value: isDark ? '#fde68a' : '#b45309',
+      label: isDark ? '#fbbf24' : '#c2410c',
+    },
+    danger: {
+      border: isDark ? 'rgba(248, 113, 113, 0.34)' : 'rgba(239, 68, 68, 0.2)',
+      background: isDark ? 'rgba(69, 10, 10, 0.88)' : 'rgba(254, 242, 242, 0.96)',
+      value: isDark ? '#fecaca' : '#b91c1c',
+      label: isDark ? '#fca5a5' : '#dc2626',
+    },
+    default: {
+      border: isDark ? 'rgba(148, 163, 184, 0.24)' : token.colorBorderSecondary,
+      background: isDark ? 'rgba(15, 23, 42, 0.82)' : token.colorBgContainer,
+      value: isDark ? '#e2e8f0' : token.colorText,
+      label: token.colorTextSecondary,
+    },
+  };
 
   useEffect(() => {
     setActiveTab(defaultTab);
@@ -496,6 +648,35 @@ export default function SettingsIntegrationsWorkspace({ defaultTab = 'system' } 
     }
   };
 
+  const handleOpenIntegrationLog = async (record) => {
+    setIntegrationLogModal({
+      open: true,
+      loading: true,
+      record,
+      detail: null,
+      error: null,
+    });
+    try {
+      const detail = await settingsApi.integrationLogs.retrieve(record.id);
+      setIntegrationLogModal({
+        open: true,
+        loading: false,
+        record,
+        detail: detail || null,
+        error: null,
+      });
+    } catch (error) {
+      console.error('Error loading integration log detail:', error);
+      setIntegrationLogModal({
+        open: true,
+        loading: false,
+        record,
+        detail: null,
+        error,
+      });
+    }
+  };
+
   const importSheetRows = Object.entries(importResult?.sheets || {}).map(([name, stats]) => ({
     key: name,
     name,
@@ -542,9 +723,9 @@ export default function SettingsIntegrationsWorkspace({ defaultTab = 'system' } 
     },
     {
       key: 'logs',
-      title: tr('settingsWorkspace.overview.logs', 'Integration logs'),
-      value: Array.isArray(integrationLogStats?.timeline) ? integrationLogStats.timeline.length : integrationLogs.length,
-      icon: <CloudSyncOutlined style={{ color: '#722ed1' }} />,
+      title: tr('settingsWorkspace.overview.logs', 'Integration log errors'),
+      value: integrationErrorCount,
+      icon: <CloudSyncOutlined style={{ color: integrationErrorCount > 0 ? '#fa8c16' : '#722ed1' }} />,
     },
     {
       key: 'dsr',
@@ -559,6 +740,11 @@ export default function SettingsIntegrationsWorkspace({ defaultTab = 'system' } 
       icon: <DatabaseOutlined style={{ color: '#52c41a' }} />,
     },
   ];
+  const integrationLogDetail = integrationLogModal.detail || integrationLogModal.record || null;
+  const integrationLogContext = integrationLogDetail ? getIntegrationLogContext(integrationLogDetail) : {};
+  const integrationLogRequestPreview = integrationLogDetail ? getPreviewEntries(integrationLogDetail.request_data) : [];
+  const integrationLogResponsePreview = integrationLogDetail ? getPreviewEntries(integrationLogDetail.response_data) : [];
+  const integrationLogMetadataPreview = integrationLogDetail ? getPreviewEntries(integrationLogDetail.metadata) : [];
 
   const tabItems = [
     {
@@ -618,6 +804,23 @@ export default function SettingsIntegrationsWorkspace({ defaultTab = 'system' } 
       label: tr('settingsWorkspace.tabs.system', 'Система'),
       children: (
         <Space direction="vertical" size="large" style={{ width: '100%' }}>
+          <Alert
+            type={operationsAlertType}
+            showIcon
+            message={tr(
+              'settingsWorkspace.operations.healthTitle',
+              'Operations health: webhooks {webhooks}, log errors {errors}, top action {action}',
+              {
+                webhooks: webhooks.filter((item) => item.is_active).length,
+                errors: integrationErrorCount,
+                action: integrationTopAction ? prettifyKey(integrationTopAction[0]) : tr('settingsWorkspace.logs.noAction', 'нет данных'),
+              }
+            )}
+            description={tr(
+              'settingsWorkspace.operations.healthDescription',
+              'Если есть ошибки webhook или integration logs, оператору обычно стоит сначала открыть logs summary, затем recent logs и только потом уходить в channel settings.'
+            )}
+          />
           <Row gutter={[16, 16]}>
             <Col xs={24} xl={12}>
               <SettingsConfigurator
@@ -754,20 +957,69 @@ export default function SettingsIntegrationsWorkspace({ defaultTab = 'system' } 
                 title={tr('settingsWorkspace.logs.statsTitle', 'Integration logs summary')}
                 extra={<Button icon={<ReloadOutlined />} onClick={loadIntegrationLogs} loading={sectionLoading.integrationLogs}>{tr('actions.refresh', 'Обновить')}</Button>}
               >
-                <Row gutter={[12, 12]}>
-                  {Object.entries(integrationLogStats?.by_status || {}).slice(0, 6).map(([statusKey, value]) => (
-                    <Col xs={12} md={8} key={statusKey}>
-                      <Card size="small">
-                        <Statistic title={prettifyKey(statusKey)} value={value} />
-                      </Card>
-                    </Col>
-                  ))}
-                  {!Object.keys(integrationLogStats?.by_status || {}).length && (
+                <Space direction="vertical" size="middle" style={{ width: '100%' }}>
+                  <Alert
+                    type={
+                      integrationLogSummaryCards.some((item) => item.key === 'errors' && item.value > 0)
+                        ? 'warning'
+                        : 'info'
+                    }
+                    showIcon
+                    message={tr(
+                      'settingsWorkspace.logs.summaryMessage',
+                      'Integration logs: всего {total}, ошибок {errors}, top action {action}',
+                      {
+                        total: integrationLogSummaryCards.find((item) => item.key === 'logs')?.value || 0,
+                        errors: integrationLogSummaryCards.find((item) => item.key === 'errors')?.value || 0,
+                        action: integrationTopAction ? prettifyKey(integrationTopAction[0]) : tr('settingsWorkspace.logs.noAction', 'нет данных'),
+                      }
+                    )}
+                  />
+                  <div
+                    style={{
+                      display: 'grid',
+                      gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))',
+                      gap: 12,
+                    }}
+                  >
+                    {integrationLogSummaryCards.map((item) => {
+                      const tone = toneStyles[item.tone] || toneStyles.default;
+                      return (
+                        <div
+                          key={item.key}
+                          style={{
+                            borderRadius: token.borderRadiusLG,
+                            border: `1px solid ${tone.border}`,
+                            background: tone.background,
+                            padding: 14,
+                            minHeight: 88,
+                          }}
+                        >
+                          <div style={{ fontSize: 12, fontWeight: 700, color: tone.label, marginBottom: 8 }}>
+                            {item.label}
+                          </div>
+                          <div style={{ fontSize: 28, lineHeight: 1, fontWeight: 800, color: tone.value }}>
+                            {item.value}
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                  <Row gutter={[12, 12]}>
+                    {integrationLogStatusEntries.slice(0, 6).map(([statusKey, value]) => (
+                      <Col xs={12} md={8} key={statusKey}>
+                        <Card size="small">
+                          <Statistic title={prettifyKey(statusKey)} value={value} />
+                        </Card>
+                      </Col>
+                    ))}
+                  {!integrationLogStatusEntries.length && (
                     <Col span={24}>
                       <Empty description={tr('settingsWorkspace.empty.logStats', 'Статистика логов пока недоступна')} />
                     </Col>
                   )}
-                </Row>
+                  </Row>
+                </Space>
               </Card>
             </Col>
           </Row>
@@ -788,10 +1040,45 @@ export default function SettingsIntegrationsWorkspace({ defaultTab = 'system' } 
                   title: tr('settingsWorkspace.table.status', 'Статус'),
                   dataIndex: 'status',
                   key: 'status',
-                  render: (value) => <Tag color={String(value).toLowerCase() === 'success' ? 'success' : 'error'}>{value}</Tag>,
+                  render: (value) => {
+                    const normalized = String(value || '').toLowerCase();
+                    const color =
+                      normalized === 'success'
+                        ? 'success'
+                        : ['queued', 'pending', 'warning'].includes(normalized)
+                          ? 'processing'
+                          : 'error';
+                    return <Tag color={color}>{value}</Tag>;
+                  },
+                },
+                {
+                  title: tr('settingsWorkspace.table.meta', 'Операционный контекст'),
+                  key: 'meta',
+                  render: (_, record) => {
+                    const context = getIntegrationLogContext(record);
+                    return (
+                      <Space size={[4, 4]} wrap>
+                        {context.queueState && <Tag style={{ marginInlineEnd: 0 }}>{context.queueState}</Tag>}
+                        {context.replayable && <Tag color="processing" style={{ marginInlineEnd: 0 }}>Replay</Tag>}
+                        {context.slaStatus === 'breached' && <Tag color="warning" style={{ marginInlineEnd: 0 }}>SLA risk</Tag>}
+                        {context.signatureValid === false && <Tag color="volcano" style={{ marginInlineEnd: 0 }}>Signature</Tag>}
+                        {context.archivedAt && <Tag style={{ marginInlineEnd: 0 }}>Archived</Tag>}
+                      </Space>
+                    );
+                  },
                 },
                 { title: tr('settingsWorkspace.table.user', 'Пользователь'), dataIndex: 'user_email', key: 'user_email', render: (value) => value || '-' },
                 { title: tr('settingsWorkspace.table.timestamp', 'Время'), dataIndex: 'timestamp', key: 'timestamp', render: formatDateTime },
+                {
+                  title: tr('settingsWorkspace.table.actions', 'Действия'),
+                  key: 'actions',
+                  width: 120,
+                  render: (_, record) => (
+                    <Button type="link" onClick={() => handleOpenIntegrationLog(record)}>
+                      {tr('settingsWorkspace.actions.details', 'Details')}
+                    </Button>
+                  ),
+                },
               ]}
             />
           </Card>
@@ -854,6 +1141,37 @@ export default function SettingsIntegrationsWorkspace({ defaultTab = 'system' } 
               description={tr('settingsWorkspace.compliance.summaryDescription', 'Показатели представлены в виде карточек и таблиц без сырого JSON.')}
               style={{ marginBottom: 16 }}
             />
+            <div
+              style={{
+                display: 'grid',
+                gridTemplateColumns: 'repeat(auto-fit, minmax(170px, 1fr))',
+                gap: 12,
+                marginBottom: 16,
+              }}
+            >
+              {complianceCards.map((item) => {
+                const tone = toneStyles[item.tone] || toneStyles.default;
+                return (
+                  <div
+                    key={item.key}
+                    style={{
+                      borderRadius: token.borderRadiusLG,
+                      border: `1px solid ${tone.border}`,
+                      background: tone.background,
+                      padding: 14,
+                      minHeight: 88,
+                    }}
+                  >
+                    <div style={{ fontSize: 12, fontWeight: 700, color: tone.label, marginBottom: 8 }}>
+                      {item.label}
+                    </div>
+                    <div style={{ fontSize: 28, lineHeight: 1, fontWeight: 800, color: tone.value }}>
+                      {item.value}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
             <ComplianceSummary report={complianceReport} />
           </Card>
 
@@ -1061,6 +1379,183 @@ export default function SettingsIntegrationsWorkspace({ defaultTab = 'system' } 
       >
         <Tabs activeKey={activeTab} onChange={setActiveTab} items={tabItems} />
       </Card>
+      <Modal
+        title={tr('settingsWorkspace.logs.detailsTitle', 'Детали integration log')}
+        open={integrationLogModal.open}
+        onCancel={() =>
+          setIntegrationLogModal({
+            open: false,
+            loading: false,
+            record: null,
+            detail: null,
+            error: null,
+          })
+        }
+        footer={null}
+        width={920}
+      >
+        <Space direction="vertical" size="large" style={{ width: '100%' }}>
+          {integrationLogModal.error && (
+            <Alert
+              type="error"
+              showIcon
+              message={tr('settingsWorkspace.logs.detailsLoadError', 'Не удалось загрузить детали лога')}
+              description={integrationLogModal.error?.message || tr('settingsWorkspace.messages.loadError', 'Не удалось загрузить секцию {section}', { section: 'integrationLogs' })}
+            />
+          )}
+          <Card loading={integrationLogModal.loading} size="small" title={tr('settingsWorkspace.logs.detailsSummary', 'Summary')}>
+            {integrationLogDetail ? (
+              <Descriptions column={2} size="small">
+                <Descriptions.Item label={tr('settingsWorkspace.table.integration', 'Интеграция')}>
+                  {integrationLogDetail.integration || '-'}
+                </Descriptions.Item>
+                <Descriptions.Item label={tr('settingsWorkspace.table.action', 'Действие')}>
+                  {integrationLogDetail.action || '-'}
+                </Descriptions.Item>
+                <Descriptions.Item label={tr('settingsWorkspace.table.status', 'Статус')}>
+                  <Space size={[4, 4]} wrap>
+                    {integrationLogDetail.status ? <Tag color={String(integrationLogDetail.status).toLowerCase() === 'success' ? 'success' : 'processing'}>{integrationLogDetail.status}</Tag> : '-'}
+                    {integrationLogContext.queueState && <Tag>{integrationLogContext.queueState}</Tag>}
+                    {integrationLogContext.slaStatus === 'breached' && <Tag color="warning">SLA risk</Tag>}
+                    {integrationLogContext.replayable && <Tag color="processing">Replay</Tag>}
+                    {integrationLogContext.signatureValid === false && <Tag color="volcano">Signature</Tag>}
+                  </Space>
+                </Descriptions.Item>
+                <Descriptions.Item label={tr('settingsWorkspace.table.timestamp', 'Время')}>
+                  {formatDateTime(integrationLogDetail.timestamp)}
+                </Descriptions.Item>
+                <Descriptions.Item label={tr('settingsWorkspace.table.user', 'Пользователь')}>
+                  {integrationLogDetail.user_email || '-'}
+                </Descriptions.Item>
+                <Descriptions.Item label={tr('settingsWorkspace.table.duration', 'Длительность')}>
+                  {integrationLogDetail.duration_ms ? `${integrationLogDetail.duration_ms} ms` : '-'}
+                </Descriptions.Item>
+                <Descriptions.Item label={tr('settingsWorkspace.logs.archivedAt', 'Архивирован')}>
+                  {integrationLogContext.archivedAt ? formatDateTime(integrationLogContext.archivedAt) : '-'}
+                </Descriptions.Item>
+              </Descriptions>
+            ) : (
+              <Empty description={tr('settingsWorkspace.empty.logDetails', 'Детали лога пока недоступны')} />
+            )}
+          </Card>
+
+          {integrationLogDetail && (
+            <Row gutter={[16, 16]}>
+              <Col xs={24} xl={12}>
+                <Card size="small" title={tr('settingsWorkspace.logs.operationalContext', 'Operational context')}>
+                  {integrationLogMetadataPreview.length || integrationLogContext.queueState || integrationLogContext.archivedAt ? (
+                    <Descriptions column={1} size="small">
+                      {integrationLogContext.queueState && (
+                        <Descriptions.Item label={tr('settingsWorkspace.logs.queueState', 'Queue state')}>
+                          {integrationLogContext.queueState}
+                        </Descriptions.Item>
+                      )}
+                      {integrationLogContext.slaStatus && (
+                        <Descriptions.Item label={tr('settingsWorkspace.logs.slaStatus', 'SLA')}>
+                          {integrationLogContext.slaStatus}
+                        </Descriptions.Item>
+                      )}
+                      {integrationLogContext.replayable != null && (
+                        <Descriptions.Item label={tr('settingsWorkspace.logs.replayable', 'Replay')}>
+                          {integrationLogContext.replayable ? tr('status.available', 'Доступен') : tr('status.unavailable', 'Недоступен')}
+                        </Descriptions.Item>
+                      )}
+                      {integrationLogContext.signatureValid != null && (
+                        <Descriptions.Item label={tr('settingsWorkspace.logs.signature', 'Signature')}>
+                          {integrationLogContext.signatureValid ? tr('status.valid', 'Валидна') : tr('status.invalid', 'Невалидна')}
+                        </Descriptions.Item>
+                      )}
+                      {integrationLogMetadataPreview.map(([key, value]) => (
+                        <Descriptions.Item key={key} label={prettifyKey(key)}>
+                          {formatValueForUi(value)}
+                        </Descriptions.Item>
+                      ))}
+                    </Descriptions>
+                  ) : (
+                    <Empty image={Empty.PRESENTED_IMAGE_SIMPLE} description={tr('settingsWorkspace.empty.logContext', 'Операционный контекст не передан')} />
+                  )}
+                </Card>
+              </Col>
+              <Col xs={24} xl={12}>
+                <Card size="small" title={tr('settingsWorkspace.logs.errorBlock', 'Errors и processing')}>
+                  {integrationLogDetail.error_message || integrationLogDetail.stack_trace ? (
+                    <Space direction="vertical" size="middle" style={{ width: '100%' }}>
+                      {integrationLogDetail.error_message && (
+                        <Alert
+                          type="error"
+                          showIcon
+                          message={tr('settingsWorkspace.logs.errorMessage', 'Ошибка интеграции')}
+                          description={integrationLogDetail.error_message}
+                        />
+                      )}
+                      {integrationLogDetail.stack_trace && (
+                        <Input.TextArea value={formatJsonBlock(integrationLogDetail.stack_trace)} readOnly autoSize={{ minRows: 6, maxRows: 14 }} />
+                      )}
+                    </Space>
+                  ) : (
+                    <Empty image={Empty.PRESENTED_IMAGE_SIMPLE} description={tr('settingsWorkspace.empty.logErrors', 'Критические ошибки не зафиксированы')} />
+                  )}
+                </Card>
+              </Col>
+              <Col xs={24} xl={12}>
+                <Card size="small" title={tr('settingsWorkspace.logs.requestPreview', 'Request preview')}>
+                  {integrationLogRequestPreview.length ? (
+                    <Descriptions column={1} size="small">
+                      {integrationLogRequestPreview.map(([key, value]) => (
+                        <Descriptions.Item key={key} label={prettifyKey(key)}>
+                          {formatValueForUi(value)}
+                        </Descriptions.Item>
+                      ))}
+                    </Descriptions>
+                  ) : (
+                    <Empty image={Empty.PRESENTED_IMAGE_SIMPLE} description={tr('settingsWorkspace.empty.requestPreview', 'Request preview отсутствует')} />
+                  )}
+                </Card>
+              </Col>
+              <Col xs={24} xl={12}>
+                <Card size="small" title={tr('settingsWorkspace.logs.responsePreview', 'Response preview')}>
+                  {integrationLogResponsePreview.length ? (
+                    <Descriptions column={1} size="small">
+                      {integrationLogResponsePreview.map(([key, value]) => (
+                        <Descriptions.Item key={key} label={prettifyKey(key)}>
+                          {formatValueForUi(value)}
+                        </Descriptions.Item>
+                      ))}
+                    </Descriptions>
+                  ) : (
+                    <Empty image={Empty.PRESENTED_IMAGE_SIMPLE} description={tr('settingsWorkspace.empty.responsePreview', 'Response preview отсутствует')} />
+                  )}
+                </Card>
+              </Col>
+            </Row>
+          )}
+
+          {integrationLogDetail && (
+            <Card size="small" title={tr('settingsWorkspace.logs.rawArchive', 'Raw request / response')}>
+              <Space direction="vertical" size="middle" style={{ width: '100%' }}>
+                <div>
+                  <Text strong>{tr('settingsWorkspace.logs.requestData', 'Request data')}</Text>
+                  <Input.TextArea
+                    value={formatJsonBlock(integrationLogDetail.request_data)}
+                    readOnly
+                    autoSize={{ minRows: 6, maxRows: 14 }}
+                    style={{ marginTop: 8 }}
+                  />
+                </div>
+                <div>
+                  <Text strong>{tr('settingsWorkspace.logs.responseData', 'Response data')}</Text>
+                  <Input.TextArea
+                    value={formatJsonBlock(integrationLogDetail.response_data)}
+                    readOnly
+                    autoSize={{ minRows: 6, maxRows: 14 }}
+                    style={{ marginTop: 8 }}
+                  />
+                </div>
+              </Space>
+            </Card>
+          )}
+        </Space>
+      </Modal>
     </div>
   );
 }

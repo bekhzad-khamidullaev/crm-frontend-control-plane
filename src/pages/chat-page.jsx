@@ -33,6 +33,7 @@ import relativeTime from 'dayjs/plugin/relativeTime';
 import { useEffect, useMemo, useState } from 'react';
 import { getOmnichannelTimeline, sendOmnichannelMessage } from '../lib/api/compliance.js';
 import { readStoredLicenseFeatures } from '../lib/api/licenseFeatures.js';
+import { readStoredLicenseState, shouldEnforceLicenseFeatures } from '../lib/api/licenseState.js';
 import { useTheme } from '../lib/hooks/useTheme.js';
 
 dayjs.extend(relativeTime);
@@ -256,6 +257,8 @@ function ChatPage() {
   const [draft, setDraft] = useState('');
   const [sending, setSending] = useState(false);
   const licenseFeatures = readStoredLicenseFeatures();
+  const storedLicenseState = readStoredLicenseState();
+  const enforceLicenseFeatures = shouldEnforceLicenseFeatures(storedLicenseState);
 
   const bg = theme === 'dark' ? 'transparent' : '#ffffff';
   const bgSecondary = theme === 'dark' ? '#101827' : '#f8fafc';
@@ -263,8 +266,10 @@ function ChatPage() {
   const activeBg = theme === 'dark' ? '#172132' : '#eef6ff';
 
   const hasInboxLicense = useMemo(
-    () => ['inbox.unified', 'integrations.core'].some((feature) => licenseFeatures.includes(feature)),
-    [licenseFeatures]
+    () =>
+      !enforceLicenseFeatures
+      || ['inbox.unified', 'integrations.core'].some((feature) => licenseFeatures.includes(feature)),
+    [enforceLicenseFeatures, licenseFeatures]
   );
 
   const loadInbox = async ({ silent = false } = {}) => {

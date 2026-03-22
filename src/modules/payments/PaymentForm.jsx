@@ -38,8 +38,8 @@ const statusOptions = [
 ];
 
 const schema = z.object({
-  amount: z.number({ invalid_type_error: 'Введите сумму' }).min(0, 'Сумма должна быть больше 0'),
-  currency: z.any().optional(),
+  amount: z.number({ invalid_type_error: 'Введите сумму' }).min(0, 'Сумма не может быть отрицательной'),
+  currency: z.any().refine((val) => val !== undefined && val !== null && val !== '', { message: 'Выберите валюту' }),
   status: z.string().min(1, 'Выберите статус'),
   payment_date: z.any().optional(),
   deal: z.any().refine((val) => val !== undefined && val !== null && val !== '', { message: 'Выберите сделку' }),
@@ -55,6 +55,11 @@ function PaymentForm({ id }) {
     if (variant === 'destructive') message.error(text);
     else message.success(text);
   };
+  const normalizeErrorMessage = (value) => {
+    if (Array.isArray(value)) return value.filter(Boolean).join(' ');
+    if (value === null || value === undefined) return '';
+    return String(value);
+  };
 
   const [loading, setLoading] = useState(false);
   const [loadError, setLoadError] = useState(false);
@@ -68,6 +73,8 @@ function PaymentForm({ id }) {
     setValue,
     reset,
     watch,
+    setError,
+    clearErrors,
     formState: { errors },
   } = useForm({
     resolver: zodResolver(schema),
@@ -111,6 +118,28 @@ function PaymentForm({ id }) {
     }
   };
 
+  const applyServerErrors = (error) => {
+    const details = error?.details || error?.body?.details || error?.response?.data;
+    if (!details || typeof details !== 'object') return false;
+
+    let hasFieldErrors = false;
+
+    Object.entries(details).forEach(([field, value]) => {
+      const messageText = normalizeErrorMessage(value);
+      if (!messageText) return;
+
+      if (field === 'detail' || field === 'non_field_errors') {
+        notify({ title: 'Ошибка', description: messageText, variant: 'destructive' });
+        return;
+      }
+
+      setError(field, { type: 'server', message: messageText });
+      hasFieldErrors = true;
+    });
+
+    return hasFieldErrors;
+  };
+
   const onSubmit = async (values) => {
     if (!canManage) {
       notify({ title: 'Недостаточно прав', description: 'У вас нет прав для изменения платежей', variant: 'destructive' });
@@ -118,9 +147,14 @@ function PaymentForm({ id }) {
     }
 
     setSaving(true);
+    clearErrors();
     try {
       const payload = {
         ...values,
+        amount:
+          values.amount !== undefined && values.amount !== null && values.amount !== ''
+            ? String(values.amount)
+            : null,
         payment_date: values.payment_date ? values.payment_date.format('YYYY-MM-DD') : null,
       };
 
@@ -133,7 +167,10 @@ function PaymentForm({ id }) {
       }
       navigate('/payments');
     } catch (error) {
-      notify({ title: 'Ошибка', description: isEdit ? 'Ошибка обновления платежа' : 'Ошибка создания платежа', variant: 'destructive' });
+      const hasFieldErrors = applyServerErrors(error);
+      if (!hasFieldErrors) {
+        notify({ title: 'Ошибка', description: isEdit ? 'Ошибка обновления платежа' : 'Ошибка создания платежа', variant: 'destructive' });
+      }
     } finally {
       setSaving(false);
     }
@@ -186,8 +223,9 @@ function PaymentForm({ id }) {
                     type="currencies"
                     placeholder="Выберите валюту"
                     value={currencyValue || ''}
-                    onChange={(val) => setValue('currency', val)}
+                    onChange={(val) => setValue('currency', val ?? '', { shouldDirty: true, shouldValidate: true })}
                   />
+                  <FieldError message={errors.currency?.message} />
                 </Col>
               </Row>
 
@@ -197,7 +235,7 @@ function PaymentForm({ id }) {
                   <Select
                     id="status"
                     value={statusValue || undefined}
-                    onChange={(value) => setValue('status', value ?? '')}
+                    onChange={(value) => setValue('status', value ?? '', { shouldDirty: true, shouldValidate: true })}
                     placeholder="Выберите статус"
                     allowClear
                     options={statusOptions}
@@ -209,7 +247,7 @@ function PaymentForm({ id }) {
                   <DatePicker
                     id="payment_date"
                     value={paymentDate || null}
-                    onChange={(val) => setValue('payment_date', val)}
+                    onChange={(val) => setValue('payment_date', val, { shouldDirty: true, shouldValidate: true })}
                     format="YYYY-MM-DD"
                     style={{ width: '100%' }}
                   />
@@ -226,7 +264,7 @@ function PaymentForm({ id }) {
                   fetchOptions={getDeals}
                   fetchById={getDeal}
                   optionLabel={(item) => item?.name || '-'}
-                  onChange={(val) => setValue('deal', val)}
+                  onChange={(val) => setValue('deal', val ?? '', { shouldDirty: true, shouldValidate: true })}
                 />
                 <FieldError message={errors.deal?.message} />
               </div>

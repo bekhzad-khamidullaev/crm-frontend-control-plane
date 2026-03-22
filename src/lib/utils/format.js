@@ -64,6 +64,85 @@ export function normalizeCurrencyCode(value) {
   return APP_CURRENCY_CODE;
 }
 
+function toNumericValue(value) {
+  const parsed = parseFloat(value);
+  return Number.isFinite(parsed) ? parsed : null;
+}
+
+function toCurrencyString(value) {
+  if (typeof value !== 'string') return null;
+  const normalized = value.trim();
+  return normalized ? normalized : null;
+}
+
+export function resolveCurrencyCode(
+  record,
+  { currencyKeys = ['currency_code', 'currency_name'], fallback = null } = {},
+) {
+  const source = record && typeof record === 'object' ? record : {};
+
+  for (const key of currencyKeys) {
+    const rawCurrency = toCurrencyString(source?.[key]);
+    if (rawCurrency) {
+      return normalizeCurrencyCode(rawCurrency);
+    }
+  }
+
+  return fallback;
+}
+
+export function formatCurrencyForRecord(
+  value,
+  record,
+  { currencyKeys = ['currency_code', 'currency_name'], emptyFallback = '-' } = {},
+) {
+  const amount = toNumericValue(value);
+  if (amount === null) return emptyFallback;
+
+  const currencyCode = resolveCurrencyCode(record, { currencyKeys, fallback: null });
+  return currencyCode ? formatCurrency(amount, currencyCode) : formatNumber(amount);
+}
+
+export function buildCurrencyTotals(
+  items,
+  { amountKey = 'amount', currencyKey = 'currency_code', currencyKeys } = {},
+) {
+  const resolvedCurrencyKeys =
+    Array.isArray(currencyKeys) && currencyKeys.length > 0
+      ? currencyKeys
+      : [currencyKey, 'currency_name'].filter(Boolean);
+  const totals = new Map();
+
+  (Array.isArray(items) ? items : []).forEach((item) => {
+    const amount = toNumericValue(item?.[amountKey]);
+    if (amount === null) return;
+
+    const currencyCode =
+      resolveCurrencyCode(item, { currencyKeys: resolvedCurrencyKeys, fallback: null }) || 'UNKNOWN';
+    totals.set(currencyCode, (totals.get(currencyCode) || 0) + amount);
+  });
+
+  return Array.from(totals.entries()).map(([currencyCode, amount]) => ({
+    currencyCode,
+    amount,
+  }));
+}
+
+export function countDistinctCurrencies(items, options) {
+  return buildCurrencyTotals(items, options).filter(({ currencyCode }) => currencyCode !== 'UNKNOWN').length;
+}
+
+export function formatCurrencyBreakdownFromItems(items, options) {
+  const totals = buildCurrencyTotals(items, options).filter(({ amount }) => amount !== 0);
+  if (!totals.length) return '—';
+
+  return totals
+    .map(({ currencyCode, amount }) => (
+      currencyCode === 'UNKNOWN' ? formatNumber(amount) : formatCurrency(amount, currencyCode)
+    ))
+    .join(' + ');
+}
+
 /**
  * Форматирует денежную сумму единообразно по всему приложению.
  *

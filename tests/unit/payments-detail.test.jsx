@@ -1,11 +1,15 @@
 import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import * as paymentsApi from '../../src/lib/api/payments';
+import * as rbac from '../../src/lib/rbac';
 import PaymentDetail from '../../src/modules/payments/PaymentDetail';
 import * as router from '../../src/router';
 
 // Mock dependencies
 vi.mock('../../src/lib/api/payments');
+vi.mock('../../src/lib/rbac', () => ({
+  canWrite: vi.fn(),
+}));
 vi.mock('../../src/router', () => ({
   navigate: vi.fn(),
 }));
@@ -13,8 +17,8 @@ vi.mock('../../src/router', () => ({
 describe('PaymentDetail', () => {
   const mockPayment = {
     id: 1,
-    amount: 1500.50,
-    currency_name: 'RUB',
+    amount: 1500.5,
+    currency_code: 'RUB',
     status: 'r',
     deal: 5,
     deal_name: 'Important Deal',
@@ -26,26 +30,40 @@ describe('PaymentDetail', () => {
 
   beforeEach(() => {
     vi.clearAllMocks();
+    rbac.canWrite.mockReturnValue(true);
   });
 
   describe('Initial Render', () => {
     it('should show loading state while fetching payment', () => {
       paymentsApi.getPayment.mockImplementation(() => new Promise(() => {}));
       render(<PaymentDetail id={1} />);
-      expect(screen.getByText('Загрузка...')).toBeInTheDocument();
+      expect(document.querySelector('.ant-skeleton')).toBeTruthy();
     });
 
     it('should display payment data after loading', async () => {
       paymentsApi.getPayment.mockResolvedValue(mockPayment);
       render(<PaymentDetail id={1} />);
-      
+
       await waitFor(() => {
         expect(screen.getByText('Платеж')).toBeInTheDocument();
       });
 
-      // formatCurrency(1500.50, 'RUB') -> "1 500,50 ₽" (or similar)
-      // We use broad regex to be safe with spaces/symbols
-      expect(screen.getByText(/1.*500.*₽|1.*500.*RUB/)).toBeInTheDocument();
+      expect(screen.getByText(/1.*500.*₽/)).toBeInTheDocument();
+    });
+
+    it('shows retry state instead of 404 when loading fails', async () => {
+      paymentsApi.getPayment.mockRejectedValue({
+        details: { message: 'API temporarily unavailable' },
+      });
+
+      render(<PaymentDetail id={1} />);
+
+      await waitFor(() => {
+        expect(screen.getByText('Не удалось загрузить платеж')).toBeInTheDocument();
+      });
+
+      expect(screen.getByText('API temporarily unavailable')).toBeInTheDocument();
+      expect(screen.queryByText('Платеж не найден')).not.toBeInTheDocument();
     });
   });
 
@@ -57,15 +75,14 @@ describe('PaymentDetail', () => {
     it('should display payment amount with currency', async () => {
       render(<PaymentDetail id={1} />);
       await waitFor(() => {
-        expect(screen.getByText(/1.*500.*₽|1.*500.*RUB/)).toBeInTheDocument();
+        expect(screen.getByText(/1.*500.*₽/)).toBeInTheDocument();
       });
     });
 
     it('should display payment date formatted', async () => {
       render(<PaymentDetail id={1} />);
       await waitFor(() => {
-        // Component uses format('DD MMM YYYY')
-        expect(screen.getByText(/15.*[Яя]нв.*2024|15.*Jan.*2024/)).toBeInTheDocument();
+        expect(screen.getByText('15.01.2024')).toBeInTheDocument();
       });
     });
 
@@ -95,6 +112,24 @@ describe('PaymentDetail', () => {
       fireEvent.click(screen.getByText('Удалить'));
       expect(screen.getByText('Удалить платеж?')).toBeInTheDocument();
     });
+
+    it('retries loading after an error', async () => {
+      paymentsApi.getPayment
+        .mockRejectedValueOnce({ details: { message: 'API temporarily unavailable' } })
+        .mockResolvedValueOnce(mockPayment);
+
+      render(<PaymentDetail id={1} />);
+
+      await waitFor(() => {
+        expect(screen.getByText('Не удалось загрузить платеж')).toBeInTheDocument();
+      });
+
+      fireEvent.click(screen.getByRole('button', { name: 'Повторить' }));
+
+      await waitFor(() => {
+        expect(screen.getByText(/1.*500.*₽/)).toBeInTheDocument();
+      });
+    });
   });
 
   describe('Data Formatting', () => {
@@ -102,16 +137,18 @@ describe('PaymentDetail', () => {
       paymentsApi.getPayment.mockResolvedValue({ ...mockPayment, amount: 0 });
       render(<PaymentDetail id={1} />);
       await waitFor(() => {
-        expect(screen.getByText(/0.*₽|0.*RUB/)).toBeInTheDocument();
+        expect(screen.getByText(/0.*₽/)).toBeInTheDocument();
       });
     });
 
     it('should show default currency symbol when currency_name is missing', async () => {
-      paymentsApi.getPayment.mockResolvedValue({ ...mockPayment, currency_name: null });
+      paymentsApi.getPayment.mockResolvedValue({ ...mockPayment, currency_code: null });
       render(<PaymentDetail id={1} />);
       await waitFor(() => {
-        expect(screen.getByText(/₽/)).toBeInTheDocument();
+        expect(screen.queryByText(/₽/)).not.toBeInTheDocument();
       });
+      expect(screen.getByText('Валюта')).toBeInTheDocument();
+      expect(screen.getAllByText('-').length).toBeGreaterThan(0);
     });
   });
 });

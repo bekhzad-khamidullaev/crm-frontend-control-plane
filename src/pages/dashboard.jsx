@@ -6,6 +6,7 @@ import {
 } from '@ant-design/icons';
 import {
   Alert,
+  Button,
   Card,
   Col,
   List,
@@ -19,6 +20,7 @@ import {
 } from 'antd';
 import { useEffect, useMemo, useState } from 'react';
 import { getActivityFeed, getOverview, normalizeOverview } from '../lib/api/analytics.js';
+import { formatCurrency, formatNumber } from '../lib/utils/format.js';
 import { t } from '../lib/i18n/index.js';
 
 const { Title, Text } = Typography;
@@ -59,8 +61,24 @@ function replaceHashQuery(updates) {
   const nextHash = `#${path}${query ? `?${query}` : ''}`;
 
   if (window.location.hash !== nextHash) {
-    window.history.replaceState(null, '', `${window.location.pathname}${window.location.search}${nextHash}`);
+    window.history.replaceState(
+      null,
+      '',
+      `${window.location.pathname}${window.location.search}${nextHash}`
+    );
   }
+}
+
+function resolveOverviewCurrencyCode(payload) {
+  const candidate = [
+    payload?.currency_code,
+    payload?.revenue_currency_code,
+    payload?.revenue_currency,
+    payload?.state_currency,
+    payload?.currency,
+  ].find((value) => typeof value === 'string' && value.trim());
+
+  return candidate ? candidate.trim().toUpperCase() : null;
 }
 
 function Dashboard() {
@@ -90,36 +108,65 @@ function Dashboard() {
     return () => window.removeEventListener('hashchange', onHashChange);
   }, []);
 
+  const overviewCurrencyCode = useMemo(() => resolveOverviewCurrencyCode(overview), [overview]);
+  const revenueMetricsUseSingleCurrency = Boolean(overviewCurrencyCode);
+  const revenueHelper = revenueMetricsUseSingleCurrency
+    ? t('dashboardPage.cards.revenueCurrencyHint', { currency: overviewCurrencyCode }) ===
+      'dashboardPage.cards.revenueCurrencyHint'
+      ? `Revenue shown in ${overviewCurrencyCode}.`
+      : t('dashboardPage.cards.revenueCurrencyHint', { currency: overviewCurrencyCode })
+    : t('dashboardPage.cards.revenueMixedCurrencies') ===
+        'dashboardPage.cards.revenueMixedCurrencies'
+      ? 'Revenue aggregates raw deal amounts and can mix currencies.'
+      : t('dashboardPage.cards.revenueMixedCurrencies');
+  const formatRevenueValue = (value) =>
+    revenueMetricsUseSingleCurrency
+      ? formatCurrency(value, overviewCurrencyCode)
+      : formatNumber(value);
+  const statsUnavailable = Boolean(error && !loadingOverview && !overview);
+
   const cards = useMemo(() => {
     const data = overview || {};
     return [
       {
         key: 'leads',
         title: t('dashboardPage.cards.leads'),
-        value: Number(data.total_leads || data.leads || 0),
+        value: statsUnavailable ? '—' : Number(data.total_leads || data.leads || 0),
         icon: <UserOutlined />,
       },
       {
         key: 'contacts',
         title: t('dashboardPage.cards.contacts'),
-        value: Number(data.total_contacts || data.contacts || 0),
+        value: statsUnavailable ? '—' : Number(data.total_contacts || data.contacts || 0),
         icon: <TeamOutlined />,
       },
       {
         key: 'deals',
         title: t('dashboardPage.cards.deals'),
-        value: Number(data.total_deals || data.deals || 0),
+        value: statsUnavailable ? '—' : Number(data.total_deals || data.deals || 0),
         icon: <BarChartOutlined />,
       },
       {
         key: 'revenue',
-        title: t('dashboardPage.cards.revenue'),
-        value: Number(data.total_revenue || data.revenue || 0),
+        title:
+          revenueMetricsUseSingleCurrency && overviewCurrencyCode
+            ? `${t('dashboardPage.cards.revenue')} (${overviewCurrencyCode})`
+            : t('dashboardPage.cards.revenue'),
+        value: statsUnavailable ? '—' : Number(data.total_revenue || data.revenue || 0),
         icon: <DollarCircleOutlined />,
         precision: 2,
+        formatter: formatRevenueValue,
+        helper: revenueHelper,
       },
     ];
-  }, [overview]);
+  }, [
+    formatRevenueValue,
+    overview,
+    overviewCurrencyCode,
+    revenueHelper,
+    revenueMetricsUseSingleCurrency,
+    statsUnavailable,
+  ]);
 
   async function loadData() {
     setError(null);
@@ -167,7 +214,9 @@ function Dashboard() {
         <Space direction="vertical" size={12} style={{ width: '100%' }}>
           <Space style={{ width: '100%', justifyContent: 'space-between' }} wrap>
             <Space direction="vertical" size={0}>
-              <Title level={3} style={{ margin: 0 }}>{t('dashboardPage.title')}</Title>
+              <Title level={3} style={{ margin: 0 }}>
+                {t('dashboardPage.title')}
+              </Title>
               <Text type="secondary">{t('dashboardPage.subtitle')}</Text>
             </Space>
             <Segmented
@@ -187,6 +236,11 @@ function Dashboard() {
               showIcon
               message={error.message}
               description={error.description || undefined}
+              action={
+                <Button size="small" onClick={() => void loadData()}>
+                  {t('actions.retry') === 'actions.retry' ? 'Повторить' : t('actions.retry')}
+                </Button>
+              }
             />
           ) : null}
         </Space>
@@ -209,7 +263,9 @@ function Dashboard() {
                   value={card.value}
                   precision={card.precision}
                   prefix={card.icon}
+                  formatter={card.formatter}
                 />
+                {card.helper ? <Text type="secondary">{card.helper}</Text> : null}
               </Card>
             </Col>
           ))}
@@ -232,8 +288,14 @@ function Dashboard() {
             renderItem={(item, index) => (
               <List.Item key={`${item?.id || 'row'}-${index}`}>
                 <Space direction="vertical" size={0} style={{ width: '100%' }}>
-                  <Text strong>{item?.title || item?.event || t('dashboardPage.lastActivity.fallbackEvent')}</Text>
-                  <Text type="secondary">{item?.description || item?.message || t('dashboardPage.lastActivity.fallbackDescription')}</Text>
+                  <Text strong>
+                    {item?.title || item?.event || t('dashboardPage.lastActivity.fallbackEvent')}
+                  </Text>
+                  <Text type="secondary">
+                    {item?.description ||
+                      item?.message ||
+                      t('dashboardPage.lastActivity.fallbackDescription')}
+                  </Text>
                 </Space>
               </List.Item>
             )}

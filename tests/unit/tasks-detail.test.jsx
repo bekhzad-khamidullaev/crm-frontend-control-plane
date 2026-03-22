@@ -2,6 +2,7 @@ import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import * as client from '../../src/lib/api/client';
 import * as reference from '../../src/lib/api/reference';
+import * as rbac from '../../src/lib/rbac';
 import TaskDetail from '../../src/modules/tasks/TaskDetail';
 import * as router from '../../src/router';
 
@@ -15,6 +16,9 @@ vi.mock('../../src/lib/api/client', () => ({
 vi.mock('../../src/lib/api/reference', () => ({
   getTaskStages: vi.fn(),
   getTaskTags: vi.fn(),
+}));
+vi.mock('../../src/lib/rbac', () => ({
+  canWrite: vi.fn(),
 }));
 vi.mock('../../src/router');
 vi.mock('../../src/components/ActivityLog', () => ({
@@ -70,6 +74,7 @@ const mockUsers = [
 describe('TaskDetail', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    rbac.canWrite.mockReturnValue(true);
     client.getTask.mockResolvedValue(mockTask);
     reference.getTaskStages.mockResolvedValue({ results: mockStages });
     reference.getTaskTags.mockResolvedValue({ results: mockTags });
@@ -93,10 +98,13 @@ describe('TaskDetail', () => {
 
   it('shows loading state initially', () => {
     client.getTask.mockImplementation(() => new Promise(() => {}));
+    reference.getTaskStages.mockImplementation(() => new Promise(() => {}));
+    reference.getTaskTags.mockImplementation(() => new Promise(() => {}));
+    client.getUsers.mockImplementation(() => new Promise(() => {}));
 
     render(<TaskDetail id={1} />);
 
-    expect(screen.getByText('Загрузка...')).toBeInTheDocument();
+    expect(document.querySelector('.ant-skeleton')).toBeTruthy();
   });
 
   it('loads reference data on mount', async () => {
