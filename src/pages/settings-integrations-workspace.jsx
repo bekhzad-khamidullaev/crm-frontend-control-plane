@@ -353,6 +353,7 @@ export default function SettingsIntegrationsWorkspace({ defaultTab = 'system' } 
   const [activeTab, setActiveTab] = useState(defaultTab);
   const [sectionLoading, setSectionLoading] = useState({});
   const [sectionSaving, setSectionSaving] = useState({});
+  const [sectionErrors, setSectionErrors] = useState({});
   const [generalSettings, setGeneralSettings] = useState({});
   const [notificationSettings, setNotificationSettings] = useState({});
   const [userNotificationSettings, setUserNotificationSettings] = useState({});
@@ -370,6 +371,17 @@ export default function SettingsIntegrationsWorkspace({ defaultTab = 'system' } 
     detail: null,
     error: null,
   });
+  const [activeIntegrationLogId, setActiveIntegrationLogId] = useState(null);
+  const [webhookDeliveriesModal, setWebhookDeliveriesModal] = useState({
+    open: false,
+    loading: false,
+    webhook: null,
+    deliveries: [],
+    selectedDeliveryId: null,
+    error: null,
+    retryingId: null,
+  });
+  const [webhookTestContext, setWebhookTestContext] = useState(null);
   const [securitySessions, setSecuritySessions] = useState([]);
   const [securityAuditItems, setSecurityAuditItems] = useState([]);
   const [complianceReport, setComplianceReport] = useState(null);
@@ -504,6 +516,7 @@ export default function SettingsIntegrationsWorkspace({ defaultTab = 'system' } 
 
   const setLoadingState = (key, value) => setSectionLoading((prev) => ({ ...prev, [key]: value }));
   const setSavingState = (key, value) => setSectionSaving((prev) => ({ ...prev, [key]: value }));
+  const setErrorState = (key, value) => setSectionErrors((prev) => ({ ...prev, [key]: value }));
 
   const loadWorkspace = async () => {
     await Promise.all([
@@ -522,11 +535,14 @@ export default function SettingsIntegrationsWorkspace({ defaultTab = 'system' } 
 
   const wrapLoad = async (key, loader) => {
     setLoadingState(key, true);
+    setErrorState(key, null);
     try {
       await loader();
     } catch (error) {
       console.error(`Error loading ${key}:`, error);
-      message.error(tr('settingsWorkspace.messages.loadError', 'Не удалось загрузить секцию {section}', { section: key }));
+      const errorText = error?.message || tr('settingsWorkspace.messages.loadError', 'Не удалось загрузить секцию {section}', { section: key });
+      setErrorState(key, errorText);
+      message.error(errorText);
     } finally {
       setLoadingState(key, false);
     }
@@ -639,8 +655,17 @@ export default function SettingsIntegrationsWorkspace({ defaultTab = 'system' } 
 
   const handleTestWebhook = async (record) => {
     try {
-      await settingsApi.webhooks.test(record.id, {});
+      const result = await settingsApi.webhooks.test(record.id, {});
+      setWebhookTestContext({
+        webhookId: record.id,
+        deliveryId: result?.delivery_id || null,
+        statusCode: result?.status_code || null,
+        durationMs: result?.duration_ms || null,
+        event: result?.event || 'test.event',
+        testedAt: new Date().toISOString(),
+      });
       message.success(tr('settingsWorkspace.messages.webhookTested', 'Webhook проверен'));
+      await handleOpenWebhookDeliveries(record, result?.delivery_id || null);
       await loadWebhooks();
     } catch (error) {
       console.error('Error testing webhook:', error);
@@ -648,7 +673,63 @@ export default function SettingsIntegrationsWorkspace({ defaultTab = 'system' } 
     }
   };
 
+  const handleOpenWebhookDeliveries = async (record, selectedDeliveryId = null) => {
+    const preservedSelectedId =
+      selectedDeliveryId || (webhookDeliveriesModal.webhook?.id === record.id ? webhookDeliveriesModal.selectedDeliveryId : null);
+    setWebhookDeliveriesModal({
+      open: true,
+      loading: true,
+      webhook: record,
+      deliveries: [],
+      selectedDeliveryId: null,
+      error: null,
+      retryingId: null,
+    });
+    try {
+      const response = await settingsApi.webhooks.deliveries(record.id, { limit: 20 });
+      const deliveries = normalizeList(response);
+      setWebhookDeliveriesModal({
+        open: true,
+        loading: false,
+        webhook: record,
+        deliveries,
+        selectedDeliveryId:
+          deliveries.find((item) => item.id === preservedSelectedId)?.id || deliveries[0]?.id || null,
+        error: null,
+        retryingId: null,
+      });
+    } catch (error) {
+      console.error('Error loading webhook deliveries:', error);
+      setWebhookDeliveriesModal({
+        open: true,
+        loading: false,
+        webhook: record,
+        deliveries: [],
+        selectedDeliveryId: null,
+        error,
+        retryingId: null,
+      });
+    }
+  };
+
+  const handleRetryWebhookDelivery = async (delivery) => {
+    const webhookId = webhookDeliveriesModal.webhook?.id;
+    if (!webhookId || !delivery?.id) return;
+    try {
+      setWebhookDeliveriesModal((prev) => ({ ...prev, retryingId: delivery.id }));
+      await settingsApi.webhooks.retryDelivery(webhookId, delivery.id, {});
+      message.success(tr('settingsWorkspace.messages.deliveryRetried', 'Повторная доставка запущена'));
+      await handleOpenWebhookDeliveries(webhookDeliveriesModal.webhook);
+      await loadWebhooks();
+    } catch (error) {
+      console.error('Error retrying webhook delivery:', error);
+      message.error(tr('settingsWorkspace.messages.deliveryRetryError', 'Не удалось запустить повторную доставку'));
+      setWebhookDeliveriesModal((prev) => ({ ...prev, retryingId: null }));
+    }
+  };
+
   const handleOpenIntegrationLog = async (record) => {
+    setActiveIntegrationLogId(record?.id || null);
     setIntegrationLogModal({
       open: true,
       loading: true,
@@ -745,6 +826,25 @@ export default function SettingsIntegrationsWorkspace({ defaultTab = 'system' } 
   const integrationLogRequestPreview = integrationLogDetail ? getPreviewEntries(integrationLogDetail.request_data) : [];
   const integrationLogResponsePreview = integrationLogDetail ? getPreviewEntries(integrationLogDetail.response_data) : [];
   const integrationLogMetadataPreview = integrationLogDetail ? getPreviewEntries(integrationLogDetail.metadata) : [];
+  const selectedWebhookDelivery = webhookDeliveriesModal.deliveries.find(
+    (item) => item.id === webhookDeliveriesModal.selectedDeliveryId,
+  ) || null;
+  const activeWebhookTestContext =
+    webhookTestContext && webhookTestContext.webhookId === webhookDeliveriesModal.webhook?.id
+      ? webhookTestContext
+      : null;
+  const webhookRequestPreview = selectedWebhookDelivery ? getPreviewEntries(selectedWebhookDelivery.request_body) : [];
+  const webhookResponsePreview = selectedWebhookDelivery ? getPreviewEntries(selectedWebhookDelivery.response_body) : [];
+  const webhookDeliverySummary = webhookDeliveriesModal.deliveries.reduce(
+    (acc, item) => {
+      const normalized = String(item.status || '').toLowerCase();
+      if (['success', 'completed', 'ok'].includes(normalized)) acc.success += 1;
+      else if (['pending', 'queued', 'processing'].includes(normalized)) acc.pending += 1;
+      else acc.failed += 1;
+      return acc;
+    },
+    { success: 0, pending: 0, failed: 0 }
+  );
 
   const tabItems = [
     {
@@ -818,7 +918,7 @@ export default function SettingsIntegrationsWorkspace({ defaultTab = 'system' } 
             )}
             description={tr(
               'settingsWorkspace.operations.healthDescription',
-              'Если есть ошибки webhook или integration logs, оператору обычно стоит сначала открыть logs summary, затем recent logs и только потом уходить в channel settings.'
+              'Если проблема в интеграциях: logs summary -> recent logs -> details. Если проблема в endpoint: webhooks -> deliveries -> details/retry.'
             )}
           />
           <Row gutter={[16, 16]}>
@@ -921,6 +1021,20 @@ export default function SettingsIntegrationsWorkspace({ defaultTab = 'system' } 
                 title={tr('settingsWorkspace.webhooks.title', 'Webhooks')}
                 extra={<Button icon={<ReloadOutlined />} onClick={loadWebhooks} loading={sectionLoading.webhooks}>{tr('actions.refresh', 'Обновить')}</Button>}
               >
+                {sectionErrors.webhooks && (
+                  <Alert
+                    type="error"
+                    showIcon
+                    style={{ marginBottom: 12 }}
+                    message={tr('settingsWorkspace.webhooks.loadError', 'Не удалось загрузить webhooks')}
+                    description={sectionErrors.webhooks}
+                    action={
+                      <Button size="small" onClick={loadWebhooks}>
+                        {tr('actions.retry', 'Повторить')}
+                      </Button>
+                    }
+                  />
+                )}
                 <Table
                   size="small"
                   rowKey={(record) => record.id}
@@ -943,9 +1057,14 @@ export default function SettingsIntegrationsWorkspace({ defaultTab = 'system' } 
                       title: tr('settingsWorkspace.table.actions', 'Действия'),
                       key: 'actions',
                       render: (_, record) => (
-                        <Button type="link" onClick={() => handleTestWebhook(record)}>
-                          {tr('settingsWorkspace.actions.testWebhook', 'Тест')}
-                        </Button>
+                        <Space size="small">
+                          <Button type="link" onClick={() => handleOpenWebhookDeliveries(record)}>
+                            {tr('settingsWorkspace.actions.deliveries', 'Deliveries')}
+                          </Button>
+                          <Button type="link" onClick={() => handleTestWebhook(record)}>
+                            {tr('settingsWorkspace.actions.testWebhook', 'Тест')}
+                          </Button>
+                        </Space>
                       ),
                     },
                   ]}
@@ -958,6 +1077,35 @@ export default function SettingsIntegrationsWorkspace({ defaultTab = 'system' } 
                 extra={<Button icon={<ReloadOutlined />} onClick={loadIntegrationLogs} loading={sectionLoading.integrationLogs}>{tr('actions.refresh', 'Обновить')}</Button>}
               >
                 <Space direction="vertical" size="middle" style={{ width: '100%' }}>
+                  {sectionErrors.integrationLogs && (
+                    <Alert
+                      type="error"
+                      showIcon
+                      message={tr('settingsWorkspace.logs.loadError', 'Не удалось загрузить integration logs')}
+                      description={sectionErrors.integrationLogs}
+                      action={
+                        <Button size="small" onClick={loadIntegrationLogs}>
+                          {tr('actions.retry', 'Повторить')}
+                        </Button>
+                      }
+                    />
+                  )}
+                  {!sectionLoading.integrationLogs && !sectionErrors.integrationLogs && !integrationLogStatusEntries.length && integrationLogs.length > 0 && (
+                    <Alert
+                      type="warning"
+                      showIcon
+                      message={tr('settingsWorkspace.logs.statsMissing', 'Статистика статусов временно недоступна')}
+                      description={tr(
+                        'settingsWorkspace.logs.statsMissingDescription',
+                        'Recent logs уже получены, но stats payload пустой. Обновите секцию и проверьте источник stats.',
+                      )}
+                      action={(
+                        <Button size="small" onClick={loadIntegrationLogs}>
+                          {tr('actions.retry', 'Повторить')}
+                        </Button>
+                      )}
+                    />
+                  )}
                   <Alert
                     type={
                       integrationLogSummaryCards.some((item) => item.key === 'errors' && item.value > 0)
@@ -1027,19 +1175,60 @@ export default function SettingsIntegrationsWorkspace({ defaultTab = 'system' } 
             title={tr('settingsWorkspace.logs.recentTitle', 'Recent integration logs')}
             extra={<Button icon={<ReloadOutlined />} onClick={loadIntegrationLogs} loading={sectionLoading.integrationLogs}>{tr('actions.refresh', 'Обновить')}</Button>}
           >
+            {sectionErrors.integrationLogs && (
+              <Alert
+                type="error"
+                showIcon
+                style={{ marginBottom: 12 }}
+                message={tr('settingsWorkspace.logs.recentLoadError', 'Recent logs сейчас недоступны')}
+                description={tr(
+                  'settingsWorkspace.logs.recentLoadErrorDescription',
+                  'Проверьте source API и попробуйте обновить список. Если ошибка повторяется, откройте diagnostics и сравните статус интеграций.',
+                )}
+                action={
+                  <Button size="small" onClick={loadIntegrationLogs}>
+                    {tr('actions.retry', 'Повторить')}
+                  </Button>
+                }
+              />
+            )}
             <Table
               size="small"
               rowKey={(record) => record.id}
               dataSource={integrationLogs}
               loading={sectionLoading.integrationLogs}
+              rowClassName={(record) => (activeIntegrationLogId === record.id ? 'settings-workspace-log-source-row' : '')}
               pagination={{ pageSize: 10, hideOnSinglePage: true }}
+              locale={{
+                emptyText: (
+                  <Empty
+                    description={tr('settingsWorkspace.empty.recentLogs', 'Recent integration logs пока не найдены')}
+                    image={Empty.PRESENTED_IMAGE_SIMPLE}
+                  >
+                    <Button type="primary" onClick={loadIntegrationLogs}>
+                      {tr('actions.refresh', 'Обновить')}
+                    </Button>
+                  </Empty>
+                ),
+              }}
               columns={[
-                { title: tr('settingsWorkspace.table.integration', 'Интеграция'), dataIndex: 'integration', key: 'integration' },
-                { title: tr('settingsWorkspace.table.action', 'Действие'), dataIndex: 'action', key: 'action' },
+                {
+                  title: tr('settingsWorkspace.table.integration', 'Интеграция'),
+                  dataIndex: 'integration',
+                  key: 'integration',
+                  render: (value) => <Text ellipsis={{ tooltip: value }}>{value || '-'}</Text>,
+                },
+                {
+                  title: tr('settingsWorkspace.table.action', 'Действие'),
+                  dataIndex: 'action',
+                  key: 'action',
+                  render: (value) => <Text ellipsis={{ tooltip: value }}>{value || '-'}</Text>,
+                },
                 {
                   title: tr('settingsWorkspace.table.status', 'Статус'),
                   dataIndex: 'status',
                   key: 'status',
+                  width: 130,
                   render: (value) => {
                     const normalized = String(value || '').toLowerCase();
                     const color =
@@ -1054,6 +1243,7 @@ export default function SettingsIntegrationsWorkspace({ defaultTab = 'system' } 
                 {
                   title: tr('settingsWorkspace.table.meta', 'Операционный контекст'),
                   key: 'meta',
+                  responsive: ['md'],
                   render: (_, record) => {
                     const context = getIntegrationLogContext(record);
                     return (
@@ -1067,8 +1257,21 @@ export default function SettingsIntegrationsWorkspace({ defaultTab = 'system' } 
                     );
                   },
                 },
-                { title: tr('settingsWorkspace.table.user', 'Пользователь'), dataIndex: 'user_email', key: 'user_email', render: (value) => value || '-' },
-                { title: tr('settingsWorkspace.table.timestamp', 'Время'), dataIndex: 'timestamp', key: 'timestamp', render: formatDateTime },
+                {
+                  title: tr('settingsWorkspace.table.user', 'Пользователь'),
+                  dataIndex: 'user_email',
+                  key: 'user_email',
+                  responsive: ['lg'],
+                  render: (value) => value || '-',
+                },
+                {
+                  title: tr('settingsWorkspace.table.timestamp', 'Время'),
+                  dataIndex: 'timestamp',
+                  key: 'timestamp',
+                  width: 150,
+                  responsive: ['sm'],
+                  render: formatDateTime,
+                },
                 {
                   title: tr('settingsWorkspace.table.actions', 'Действия'),
                   key: 'actions',
@@ -1382,15 +1585,16 @@ export default function SettingsIntegrationsWorkspace({ defaultTab = 'system' } 
       <Modal
         title={tr('settingsWorkspace.logs.detailsTitle', 'Детали integration log')}
         open={integrationLogModal.open}
-        onCancel={() =>
+        onCancel={() => {
+          setActiveIntegrationLogId(null);
           setIntegrationLogModal({
             open: false,
             loading: false,
             record: null,
             detail: null,
             error: null,
-          })
-        }
+          });
+        }}
         footer={null}
         width={920}
       >
@@ -1401,11 +1605,91 @@ export default function SettingsIntegrationsWorkspace({ defaultTab = 'system' } 
               showIcon
               message={tr('settingsWorkspace.logs.detailsLoadError', 'Не удалось загрузить детали лога')}
               description={integrationLogModal.error?.message || tr('settingsWorkspace.messages.loadError', 'Не удалось загрузить секцию {section}', { section: 'integrationLogs' })}
+              action={(
+                <Space>
+                  <Button size="small" onClick={() => integrationLogModal.record && handleOpenIntegrationLog(integrationLogModal.record)}>
+                    {tr('actions.retry', 'Повторить')}
+                  </Button>
+                  <Button
+                    size="small"
+                    onClick={() =>
+                      setIntegrationLogModal({
+                        open: false,
+                        loading: false,
+                        record: null,
+                        detail: null,
+                        error: null,
+                      })
+                    }
+                  >
+                    {tr('actions.close', 'Закрыть')}
+                  </Button>
+                </Space>
+              )}
             />
           )}
           <Card loading={integrationLogModal.loading} size="small" title={tr('settingsWorkspace.logs.detailsSummary', 'Summary')}>
             {integrationLogDetail ? (
-              <Descriptions column={2} size="small">
+              <Space direction="vertical" size="middle" style={{ width: '100%' }}>
+                <div
+                  style={{
+                    display: 'grid',
+                    gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))',
+                    gap: 12,
+                  }}
+                >
+                  {[
+                    {
+                      key: 'status',
+                      label: tr('settingsWorkspace.table.status', 'Статус'),
+                      value: integrationLogDetail.status || '-',
+                    },
+                    {
+                      key: 'duration',
+                      label: tr('settingsWorkspace.table.duration', 'Длительность'),
+                      value: integrationLogDetail.duration_ms ? `${integrationLogDetail.duration_ms} ms` : '-',
+                    },
+                    {
+                      key: 'time',
+                      label: tr('settingsWorkspace.table.timestamp', 'Время'),
+                      value: formatDateTime(integrationLogDetail.timestamp),
+                    },
+                    {
+                      key: 'user',
+                      label: tr('settingsWorkspace.table.user', 'Пользователь'),
+                      value: integrationLogDetail.user_email || '-',
+                    },
+                  ].map((item) => {
+                    const isStatus = item.key === 'status';
+                    const statusTone =
+                      String(integrationLogDetail.status || '').toLowerCase() === 'success'
+                        ? toneStyles.success
+                        : ['queued', 'pending', 'warning', 'processing'].includes(String(integrationLogDetail.status || '').toLowerCase())
+                          ? toneStyles.warning
+                          : toneStyles.danger;
+                    const tone = isStatus ? statusTone : toneStyles.default;
+                    return (
+                      <div
+                        key={item.key}
+                        style={{
+                          borderRadius: token.borderRadiusLG,
+                          border: `1px solid ${tone.border}`,
+                          background: tone.background,
+                          padding: 14,
+                          minHeight: 82,
+                        }}
+                      >
+                        <div style={{ fontSize: 12, fontWeight: 700, color: tone.label, marginBottom: 8 }}>
+                          {item.label}
+                        </div>
+                        <div style={{ fontSize: 22, lineHeight: 1.1, fontWeight: 800, color: tone.value }}>
+                          {item.value}
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+                <Descriptions column={2} size="small">
                 <Descriptions.Item label={tr('settingsWorkspace.table.integration', 'Интеграция')}>
                   {integrationLogDetail.integration || '-'}
                 </Descriptions.Item>
@@ -1433,7 +1717,8 @@ export default function SettingsIntegrationsWorkspace({ defaultTab = 'system' } 
                 <Descriptions.Item label={tr('settingsWorkspace.logs.archivedAt', 'Архивирован')}>
                   {integrationLogContext.archivedAt ? formatDateTime(integrationLogContext.archivedAt) : '-'}
                 </Descriptions.Item>
-              </Descriptions>
+                </Descriptions>
+              </Space>
             ) : (
               <Empty description={tr('settingsWorkspace.empty.logDetails', 'Детали лога пока недоступны')} />
             )}
@@ -1556,6 +1841,432 @@ export default function SettingsIntegrationsWorkspace({ defaultTab = 'system' } 
           )}
         </Space>
       </Modal>
+      <Modal
+        title={tr('settingsWorkspace.webhooks.deliveriesTitle', 'Webhook deliveries')}
+        open={webhookDeliveriesModal.open}
+        onCancel={() =>
+          setWebhookDeliveriesModal({
+            open: false,
+            loading: false,
+            webhook: null,
+            deliveries: [],
+            selectedDeliveryId: null,
+            error: null,
+            retryingId: null,
+          })
+        }
+        footer={null}
+        width={1080}
+      >
+        <Space direction="vertical" size="large" style={{ width: '100%' }}>
+          {webhookDeliveriesModal.error && (
+            <Alert
+              type="error"
+              showIcon
+              message={tr('settingsWorkspace.webhooks.deliveriesLoadError', 'Не удалось загрузить deliveries')}
+              description={webhookDeliveriesModal.error?.message || tr('settingsWorkspace.messages.loadError', 'Не удалось загрузить секцию {section}', { section: 'webhooks' })}
+              action={(
+                <Space>
+                  <Button size="small" onClick={() => webhookDeliveriesModal.webhook && handleOpenWebhookDeliveries(webhookDeliveriesModal.webhook)}>
+                    {tr('actions.retry', 'Повторить')}
+                  </Button>
+                  <Button
+                    size="small"
+                    onClick={() =>
+                      setWebhookDeliveriesModal({
+                        open: false,
+                        loading: false,
+                        webhook: null,
+                        deliveries: [],
+                        selectedDeliveryId: null,
+                        error: null,
+                        retryingId: null,
+                      })
+                    }
+                  >
+                    {tr('actions.close', 'Закрыть')}
+                  </Button>
+                </Space>
+              )}
+            />
+          )}
+          <Card loading={webhookDeliveriesModal.loading} size="small" title={tr('settingsWorkspace.webhooks.summary', 'Summary')}>
+            <Space direction="vertical" size="middle" style={{ width: '100%' }}>
+              {activeWebhookTestContext && (
+                <Alert
+                  type="success"
+                  showIcon
+                  message={tr(
+                    'settingsWorkspace.webhooks.lastTestMessage',
+                    'Последний тест: HTTP {status}, {duration} ms, {time}',
+                    {
+                      status: activeWebhookTestContext.statusCode || 200,
+                      duration: activeWebhookTestContext.durationMs || 0,
+                      time: formatDateTime(activeWebhookTestContext.testedAt),
+                    },
+                  )}
+                  description={tr(
+                    'settingsWorkspace.webhooks.lastTestDescription',
+                    'Свежая test-delivery уже выделена в таблице ниже, поэтому можно сразу проверить payload, response и результат доставки.',
+                  )}
+                />
+              )}
+              <Alert
+                type={webhookDeliverySummary.failed > 0 ? 'warning' : 'info'}
+                showIcon
+                message={tr(
+                  'settingsWorkspace.webhooks.summaryMessage',
+                  'Endpoint {url}: success {success}, pending {pending}, failed {failed}',
+                  {
+                    url: webhookDeliveriesModal.webhook?.url || '-',
+                    success: webhookDeliverySummary.success,
+                    pending: webhookDeliverySummary.pending,
+                    failed: webhookDeliverySummary.failed,
+                  },
+                )}
+              />
+              <Row gutter={[12, 12]}>
+                <Col xs={24} md={8}>
+                  <Card size="small">
+                    <Statistic title={tr('settingsWorkspace.table.success', 'Успешно')} value={webhookDeliverySummary.success} />
+                  </Card>
+                </Col>
+                <Col xs={24} md={8}>
+                  <Card size="small">
+                    <Statistic title={tr('settingsWorkspace.webhooks.pending', 'В очереди')} value={webhookDeliverySummary.pending} />
+                  </Card>
+                </Col>
+                <Col xs={24} md={8}>
+                  <Card size="small">
+                    <Statistic title={tr('settingsWorkspace.table.failed', 'Ошибки')} value={webhookDeliverySummary.failed} />
+                  </Card>
+                </Col>
+              </Row>
+            </Space>
+          </Card>
+          <Card
+            loading={webhookDeliveriesModal.loading}
+            size="small"
+            title={tr('settingsWorkspace.webhooks.recentDeliveries', 'Recent deliveries')}
+            extra={webhookDeliveriesModal.webhook ? (
+              <Button icon={<ReloadOutlined />} onClick={() => handleOpenWebhookDeliveries(webhookDeliveriesModal.webhook)}>
+                {tr('actions.refresh', 'Обновить')}
+              </Button>
+            ) : null}
+          >
+            <Table
+              size="small"
+              rowKey={(record) => record.id}
+              dataSource={webhookDeliveriesModal.deliveries}
+              pagination={{ pageSize: 6, hideOnSinglePage: true }}
+              locale={{
+                emptyText: (
+                  <Empty
+                    description={tr('settingsWorkspace.empty.deliveries', 'История deliveries пока недоступна')}
+                    image={Empty.PRESENTED_IMAGE_SIMPLE}
+                  >
+                    <Button type="primary" disabled={!webhookDeliveriesModal.webhook} onClick={() => webhookDeliveriesModal.webhook && handleTestWebhook(webhookDeliveriesModal.webhook)}>
+                      {tr('settingsWorkspace.actions.testWebhook', 'Тест')}
+                    </Button>
+                  </Empty>
+                ),
+              }}
+              rowClassName={(record) => {
+                if (activeWebhookTestContext?.deliveryId === record.id) return 'settings-workspace-delivery-latest-test';
+                if (record.id === webhookDeliveriesModal.selectedDeliveryId) return 'settings-workspace-delivery-selected';
+                return '';
+              }}
+              onRow={(record) => ({
+                onClick: () => setWebhookDeliveriesModal((prev) => ({ ...prev, selectedDeliveryId: record.id })),
+              })}
+              columns={[
+                {
+                  title: tr('settingsWorkspace.table.event', 'Событие'),
+                  dataIndex: 'event',
+                  key: 'event',
+                  render: (value) => <Text ellipsis={{ tooltip: value }}>{value || '-'}</Text>,
+                },
+                {
+                  title: tr('settingsWorkspace.table.status', 'Статус'),
+                  dataIndex: 'status',
+                  key: 'status',
+                  width: 130,
+                  render: (value) => {
+                    const normalized = String(value || '').toLowerCase();
+                    const color =
+                      ['success', 'completed', 'ok'].includes(normalized)
+                        ? 'success'
+                        : ['pending', 'queued', 'processing'].includes(normalized)
+                          ? 'processing'
+                          : 'error';
+                    return (
+                      <Space size={[4, 4]} wrap>
+                        <Tag color={color}>{value || '-'}</Tag>
+                        {activeWebhookTestContext?.deliveryId === record.id && (
+                          <Tag color="gold">{tr('settingsWorkspace.webhooks.latestTest', 'Latest test')}</Tag>
+                        )}
+                      </Space>
+                    );
+                  },
+                },
+                {
+                  title: tr('settingsWorkspace.webhooks.statusCode', 'HTTP'),
+                  dataIndex: 'status_code',
+                  key: 'status_code',
+                  width: 90,
+                  responsive: ['sm'],
+                  render: (value) => value || '-',
+                },
+                {
+                  title: tr('settingsWorkspace.table.duration', 'Длительность'),
+                  dataIndex: 'duration_ms',
+                  key: 'duration_ms',
+                  width: 120,
+                  responsive: ['lg'],
+                  render: (value) => (value ? `${value} ms` : '-'),
+                },
+                {
+                  title: tr('settingsWorkspace.webhooks.retries', 'Retry'),
+                  dataIndex: 'retry_count',
+                  key: 'retry_count',
+                  width: 90,
+                  responsive: ['lg'],
+                  render: (value) => value || 0,
+                },
+                {
+                  title: tr('settingsWorkspace.table.timestamp', 'Время'),
+                  dataIndex: 'created_at',
+                  key: 'created_at',
+                  width: 150,
+                  responsive: ['md'],
+                  render: formatDateTime,
+                },
+                {
+                  title: tr('settingsWorkspace.table.actions', 'Действия'),
+                  key: 'actions',
+                  width: 150,
+                  render: (_, record) => (
+                    <Space size="small">
+                      <Button
+                        type="link"
+                        onClick={(event) => {
+                          event.stopPropagation();
+                          setWebhookDeliveriesModal((prev) => ({ ...prev, selectedDeliveryId: record.id }));
+                        }}
+                      >
+                        {tr('settingsWorkspace.actions.details', 'Details')}
+                      </Button>
+                      <Button
+                        type="link"
+                        disabled={['success', 'completed', 'ok'].includes(String(record.status || '').toLowerCase())}
+                        loading={webhookDeliveriesModal.retryingId === record.id}
+                        onClick={(event) => {
+                          event.stopPropagation();
+                          handleRetryWebhookDelivery(record);
+                        }}
+                      >
+                        {tr('settingsWorkspace.actions.retry', 'Retry')}
+                      </Button>
+                    </Space>
+                  ),
+                },
+              ]}
+            />
+          </Card>
+
+          <Card size="small" title={tr('settingsWorkspace.webhooks.deliveryDetails', 'Delivery details')}>
+            {selectedWebhookDelivery ? (
+              <Space direction="vertical" size="large" style={{ width: '100%' }}>
+                {activeWebhookTestContext?.deliveryId === selectedWebhookDelivery.id && (
+                  <Alert
+                    type="success"
+                    showIcon
+                    message={tr('settingsWorkspace.webhooks.selectedLatestTest', 'Сейчас открыта свежая test-delivery')}
+                    description={tr(
+                      'settingsWorkspace.webhooks.selectedLatestTestDescription',
+                      'Это самый последний тестовый прогон для выбранного webhook. Если нужно, можно сразу сверить request, response и повторить доставку.',
+                    )}
+                  />
+                )}
+                <div
+                  style={{
+                    display: 'grid',
+                    gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))',
+                    gap: 12,
+                  }}
+                >
+                  {[
+                    {
+                      key: 'status',
+                      label: tr('settingsWorkspace.table.status', 'Статус'),
+                      value: selectedWebhookDelivery.status || '-',
+                    },
+                    {
+                      key: 'http',
+                      label: tr('settingsWorkspace.webhooks.statusCode', 'HTTP'),
+                      value: selectedWebhookDelivery.status_code || '-',
+                    },
+                    {
+                      key: 'duration',
+                      label: tr('settingsWorkspace.table.duration', 'Длительность'),
+                      value: selectedWebhookDelivery.duration_ms ? `${selectedWebhookDelivery.duration_ms} ms` : '-',
+                    },
+                    {
+                      key: 'retry',
+                      label: tr('settingsWorkspace.webhooks.retries', 'Retry'),
+                      value: selectedWebhookDelivery.retry_count || 0,
+                    },
+                  ].map((item) => {
+                    const isStatus = item.key === 'status';
+                    const statusTone =
+                      ['success', 'completed', 'ok'].includes(String(selectedWebhookDelivery.status || '').toLowerCase())
+                        ? toneStyles.success
+                        : ['pending', 'queued', 'processing'].includes(String(selectedWebhookDelivery.status || '').toLowerCase())
+                          ? toneStyles.warning
+                          : toneStyles.danger;
+                    const tone = isStatus ? statusTone : toneStyles.default;
+                    return (
+                      <div
+                        key={item.key}
+                        style={{
+                          borderRadius: token.borderRadiusLG,
+                          border: `1px solid ${tone.border}`,
+                          background: tone.background,
+                          padding: 14,
+                          minHeight: 82,
+                        }}
+                      >
+                        <div style={{ fontSize: 12, fontWeight: 700, color: tone.label, marginBottom: 8 }}>
+                          {item.label}
+                        </div>
+                        <div style={{ fontSize: 24, lineHeight: 1.1, fontWeight: 800, color: tone.value }}>
+                          {item.value}
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+                <Descriptions column={2} size="small">
+                  <Descriptions.Item label={tr('settingsWorkspace.table.event', 'Событие')}>
+                    {selectedWebhookDelivery.event || '-'}
+                  </Descriptions.Item>
+                  <Descriptions.Item label={tr('settingsWorkspace.table.status', 'Статус')}>
+                    <Space size={[4, 4]} wrap>
+                      <Tag
+                        color={
+                          ['success', 'completed', 'ok'].includes(String(selectedWebhookDelivery.status || '').toLowerCase())
+                            ? 'success'
+                            : ['pending', 'queued', 'processing'].includes(String(selectedWebhookDelivery.status || '').toLowerCase())
+                              ? 'processing'
+                              : 'error'
+                        }
+                      >
+                        {selectedWebhookDelivery.status || '-'}
+                      </Tag>
+                      {selectedWebhookDelivery.status_code ? <Tag>{selectedWebhookDelivery.status_code}</Tag> : null}
+                    </Space>
+                  </Descriptions.Item>
+                  <Descriptions.Item label={tr('settingsWorkspace.table.timestamp', 'Время')}>
+                    {formatDateTime(selectedWebhookDelivery.created_at)}
+                  </Descriptions.Item>
+                  <Descriptions.Item label={tr('settingsWorkspace.table.duration', 'Длительность')}>
+                    {selectedWebhookDelivery.duration_ms ? `${selectedWebhookDelivery.duration_ms} ms` : '-'}
+                  </Descriptions.Item>
+                  <Descriptions.Item label={tr('settingsWorkspace.webhooks.retries', 'Retry')}>
+                    {selectedWebhookDelivery.retry_count || 0}
+                  </Descriptions.Item>
+                  <Descriptions.Item label={tr('settingsWorkspace.table.webhook', 'Webhook')}>
+                    <Text ellipsis={{ tooltip: webhookDeliveriesModal.webhook?.url }}>
+                      {webhookDeliveriesModal.webhook?.url || '-'}
+                    </Text>
+                  </Descriptions.Item>
+                </Descriptions>
+
+                {selectedWebhookDelivery.error_message ? (
+                  <Alert
+                    type="error"
+                    showIcon
+                    message={tr('settingsWorkspace.webhooks.deliveryError', 'Ошибка доставки')}
+                    description={selectedWebhookDelivery.error_message}
+                  />
+                ) : null}
+
+                <Row gutter={[16, 16]}>
+                  <Col xs={24} xl={12}>
+                    <Card size="small" title={tr('settingsWorkspace.webhooks.requestPreview', 'Request preview')}>
+                      {webhookRequestPreview.length ? (
+                        <Descriptions column={1} size="small">
+                          {webhookRequestPreview.map(([key, value]) => (
+                            <Descriptions.Item key={key} label={prettifyKey(key)}>
+                              {formatValueForUi(value)}
+                            </Descriptions.Item>
+                          ))}
+                        </Descriptions>
+                      ) : (
+                        <Empty image={Empty.PRESENTED_IMAGE_SIMPLE} description={tr('settingsWorkspace.empty.webhookRequestPreview', 'Request preview отсутствует')} />
+                      )}
+                    </Card>
+                  </Col>
+                  <Col xs={24} xl={12}>
+                    <Card size="small" title={tr('settingsWorkspace.webhooks.responsePreview', 'Response preview')}>
+                      {webhookResponsePreview.length ? (
+                        <Descriptions column={1} size="small">
+                          {webhookResponsePreview.map(([key, value]) => (
+                            <Descriptions.Item key={key} label={prettifyKey(key)}>
+                              {formatValueForUi(value)}
+                            </Descriptions.Item>
+                          ))}
+                        </Descriptions>
+                      ) : (
+                        <Empty image={Empty.PRESENTED_IMAGE_SIMPLE} description={tr('settingsWorkspace.empty.webhookResponsePreview', 'Response preview отсутствует')} />
+                      )}
+                    </Card>
+                  </Col>
+                </Row>
+
+                <Card size="small" title={tr('settingsWorkspace.webhooks.rawBodies', 'Raw request / response')}>
+                  <Space direction="vertical" size="middle" style={{ width: '100%' }}>
+                    <div>
+                      <Text strong>{tr('settingsWorkspace.logs.requestData', 'Request data')}</Text>
+                      <Input.TextArea
+                        value={formatJsonBlock(selectedWebhookDelivery.request_body)}
+                        readOnly
+                        autoSize={{ minRows: 6, maxRows: 14 }}
+                        style={{ marginTop: 8 }}
+                      />
+                    </div>
+                    <div>
+                      <Text strong>{tr('settingsWorkspace.logs.responseData', 'Response data')}</Text>
+                      <Input.TextArea
+                        value={formatJsonBlock(selectedWebhookDelivery.response_body)}
+                        readOnly
+                        autoSize={{ minRows: 6, maxRows: 14 }}
+                        style={{ marginTop: 8 }}
+                      />
+                    </div>
+                  </Space>
+                </Card>
+              </Space>
+            ) : (
+              <Empty
+                description={tr('settingsWorkspace.empty.deliveryDetails', 'Выберите delivery, чтобы увидеть детали')}
+                image={Empty.PRESENTED_IMAGE_SIMPLE}
+              />
+            )}
+          </Card>
+        </Space>
+      </Modal>
+      <style>{`
+        .settings-workspace-log-source-row > td {
+          background: ${isDark ? 'rgba(16, 185, 129, 0.14)' : 'rgba(209, 250, 229, 0.58)'} !important;
+        }
+        .settings-workspace-delivery-latest-test > td {
+          background: ${isDark ? 'rgba(250, 204, 21, 0.14)' : 'rgba(254, 240, 138, 0.42)'} !important;
+        }
+        .settings-workspace-delivery-selected > td {
+          background: ${isDark ? 'rgba(59, 130, 246, 0.12)' : 'rgba(219, 234, 254, 0.58)'} !important;
+        }
+      `}</style>
     </div>
   );
 }

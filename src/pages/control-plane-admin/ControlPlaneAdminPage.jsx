@@ -141,6 +141,11 @@ export default function ControlPlaneAdminPage() {
           showIcon
           message="Control-plane API unavailable"
           description="This environment does not expose cp/* endpoints or your user has no access."
+          action={
+            <Button size="small" onClick={refreshAll}>
+              Retry
+            </Button>
+          }
         />
       ) : null}
       <Card>
@@ -166,6 +171,11 @@ export default function ControlPlaneAdminPage() {
             showIcon
             message="License summary unavailable"
             description="The control-plane license endpoint could not be loaded."
+            action={
+              <Button size="small" onClick={refreshAll}>
+                Retry
+              </Button>
+            }
           />
         ) : licenseMe ? (
           <Alert
@@ -206,6 +216,11 @@ export default function ControlPlaneAdminPage() {
             showIcon
             message="License summary not available"
             description="The endpoint returned an empty payload."
+            action={
+              <Button size="small" onClick={refreshAll}>
+                Retry
+              </Button>
+            }
           />
         )}
       </Card>

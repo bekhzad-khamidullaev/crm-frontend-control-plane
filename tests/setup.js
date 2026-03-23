@@ -114,6 +114,13 @@ console.log = (...args) => {
 
 // Mock fetch for API calls
 global.fetch = vi.fn();
+Object.defineProperty(navigator, 'clipboard', {
+  value: {
+    writeText: vi.fn(),
+  },
+  configurable: true,
+});
+document.execCommand = vi.fn();
 
 function createStorageMock() {
   const store = new Map();

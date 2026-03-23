@@ -88,7 +88,8 @@ function Dashboard() {
   const [activity, setActivity] = useState([]);
   const [loadingOverview, setLoadingOverview] = useState(false);
   const [loadingActivity, setLoadingActivity] = useState(false);
-  const [error, setError] = useState(null);
+  const [overviewError, setOverviewError] = useState(null);
+  const [activityError, setActivityError] = useState(null);
 
   useEffect(() => {
     void loadData();
@@ -123,7 +124,7 @@ function Dashboard() {
     revenueMetricsUseSingleCurrency
       ? formatCurrency(value, overviewCurrencyCode)
       : formatNumber(value);
-  const statsUnavailable = Boolean(error && !loadingOverview && !overview);
+  const statsUnavailable = Boolean(overviewError && !loadingOverview && !overview);
 
   const cards = useMemo(() => {
     const data = overview || {};
@@ -168,37 +169,63 @@ function Dashboard() {
     statsUnavailable,
   ]);
 
-  async function loadData() {
-    setError(null);
+  async function loadOverviewData() {
+    setOverviewError(null);
     setLoadingOverview(true);
+
+    try {
+      const overviewRes = await getOverview();
+      setOverview(normalizeOverview(overviewRes));
+    } catch (e) {
+      const statusCode = Number(e?.status || e?.response?.status || e?.details?.status || 0);
+      const accessRestricted = statusCode === 403;
+      setOverview(null);
+      setOverviewError({
+        message:
+          accessRestricted &&
+          t('dashboardPage.errors.metricsUnavailable') !== 'dashboardPage.errors.metricsUnavailable'
+            ? t('dashboardPage.errors.metricsUnavailable')
+            : accessRestricted
+              ? 'Сводные метрики недоступны'
+              : t('dashboardPage.errors.loadData'),
+        description:
+          accessRestricted &&
+          t('dashboardPage.errors.metricsUnavailableDescription') !==
+            'dashboardPage.errors.metricsUnavailableDescription'
+            ? t('dashboardPage.errors.metricsUnavailableDescription')
+            : accessRestricted
+              ? 'Текущая лицензия или права доступа ограничивают сводную аналитику дашборда.'
+              : null,
+        type: accessRestricted ? 'info' : 'error',
+        silent: accessRestricted,
+      });
+    } finally {
+      setLoadingOverview(false);
+    }
+  }
+
+  async function loadActivityData() {
+    setActivityError(null);
     setLoadingActivity(true);
 
     try {
-      const [overviewRes, activityRes] = await Promise.all([
-        getOverview(),
-        getActivityFeed({ period }),
-      ]);
-
-      setOverview(normalizeOverview(overviewRes));
-      setActivity(Array.isArray(activityRes) ? activityRes : []);
+      const activityRes = await getActivityFeed({ period });
+      setActivity(Array.isArray(activityRes) ? activityRes : activityRes?.results || []);
     } catch (e) {
-      console.error('Dashboard load error:', e);
-      const statusCode = Number(e?.status || e?.response?.status || e?.details?.status || 0);
-      if (statusCode === 403) {
-        setError(null);
-      } else {
-        setError({
-          message: t('dashboardPage.errors.loadData'),
-          description: null,
-          type: 'error',
-        });
-      }
-      setOverview(null);
       setActivity([]);
+      setActivityError({
+        message:
+          t('dashboardPage.lastActivity.loadError') === 'dashboardPage.lastActivity.loadError'
+            ? 'Не удалось загрузить активность'
+            : t('dashboardPage.lastActivity.loadError'),
+      });
     } finally {
-      setLoadingOverview(false);
       setLoadingActivity(false);
     }
+  }
+
+  async function loadData() {
+    await Promise.allSettled([loadOverviewData(), loadActivityData()]);
   }
 
   return (
@@ -230,14 +257,14 @@ function Dashboard() {
             />
           </Space>
 
-          {error ? (
+          {overviewError && !loadingOverview && !overview ? (
             <Alert
-              type={error.type || 'error'}
+              type={overviewError.type || 'error'}
               showIcon
-              message={error.message}
-              description={error.description || undefined}
+              message={overviewError.message}
+              description={overviewError.description || undefined}
               action={
-                <Button size="small" onClick={() => void loadData()}>
+                <Button size="small" onClick={() => void loadOverviewData()}>
                   {t('actions.retry') === 'actions.retry' ? 'Повторить' : t('actions.retry')}
                 </Button>
               }
@@ -282,24 +309,37 @@ function Dashboard() {
         }}
       >
         <Spin spinning={loadingActivity}>
-          <List
-            dataSource={activity}
-            locale={{ emptyText: t('dashboardPage.lastActivity.empty') }}
-            renderItem={(item, index) => (
-              <List.Item key={`${item?.id || 'row'}-${index}`}>
-                <Space direction="vertical" size={0} style={{ width: '100%' }}>
-                  <Text strong>
-                    {item?.title || item?.event || t('dashboardPage.lastActivity.fallbackEvent')}
-                  </Text>
-                  <Text type="secondary">
-                    {item?.description ||
-                      item?.message ||
-                      t('dashboardPage.lastActivity.fallbackDescription')}
-                  </Text>
-                </Space>
-              </List.Item>
-            )}
-          />
+          {activityError ? (
+            <Alert
+              type="warning"
+              showIcon
+              message={activityError.message}
+              action={
+                <Button size="small" onClick={() => void loadActivityData()}>
+                  {t('actions.retry') === 'actions.retry' ? 'Повторить' : t('actions.retry')}
+                </Button>
+              }
+            />
+          ) : (
+            <List
+              dataSource={activity}
+              locale={{ emptyText: t('dashboardPage.lastActivity.empty') }}
+              renderItem={(item, index) => (
+                <List.Item key={`${item?.id || 'row'}-${index}`}>
+                  <Space direction="vertical" size={0} style={{ width: '100%' }}>
+                    <Text strong>
+                      {item?.title || item?.event || t('dashboardPage.lastActivity.fallbackEvent')}
+                    </Text>
+                    <Text type="secondary">
+                      {item?.description ||
+                        item?.message ||
+                        t('dashboardPage.lastActivity.fallbackDescription')}
+                    </Text>
+                  </Space>
+                </List.Item>
+              )}
+            />
+          )}
         </Spin>
       </Card>
     </Space>

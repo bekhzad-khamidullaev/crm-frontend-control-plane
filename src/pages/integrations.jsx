@@ -169,6 +169,78 @@ const AI_PROVIDER_MODELS = {
   claude: ['claude-sonnet-4-20250514', 'claude-3-7-sonnet-20250219', 'claude-3-5-haiku-20241022'],
 };
 
+const DIAGNOSTICS_SCOPE_VALUES = ['all', 'failures', 'replayable', 'archived'];
+const DEFAULT_DIAGNOSTICS_FILTERS = {
+  scope: 'all',
+  channel: 'all',
+  query: '',
+  onlyNeedsAction: false,
+};
+
+function readHashState() {
+  if (typeof window === 'undefined') {
+    return { path: '/integrations', params: new URLSearchParams() };
+  }
+
+  const raw = (window.location.hash || '').replace(/^#/, '');
+  const [rawPath = '/integrations', rawQuery = ''] = raw.split('?');
+  return {
+    path: rawPath || '/integrations',
+    params: new URLSearchParams(rawQuery),
+  };
+}
+
+function normalizeDiagnosticsFilters(value) {
+  const scope = DIAGNOSTICS_SCOPE_VALUES.includes(String(value?.scope || ''))
+    ? String(value.scope)
+    : DEFAULT_DIAGNOSTICS_FILTERS.scope;
+  const channelRaw = String(value?.channel || '').trim().toLowerCase();
+  const channel = channelRaw || DEFAULT_DIAGNOSTICS_FILTERS.channel;
+  const query = String(value?.query || '').trim();
+  const onlyNeedsAction = Boolean(value?.onlyNeedsAction);
+
+  return {
+    scope,
+    channel,
+    query,
+    onlyNeedsAction,
+  };
+}
+
+function getDiagnosticsFiltersFromHash() {
+  const params = readHashState().params;
+  return normalizeDiagnosticsFilters({
+    scope: params.get('diag_scope') || DEFAULT_DIAGNOSTICS_FILTERS.scope,
+    channel: params.get('diag_channel') || DEFAULT_DIAGNOSTICS_FILTERS.channel,
+    query: params.get('diag_q') || '',
+    onlyNeedsAction: ['1', 'true', 'yes', 'on'].includes(String(params.get('diag_needs_action') || '').toLowerCase()),
+  });
+}
+
+function replaceHashQuery(updates) {
+  if (typeof window === 'undefined') return;
+  const { path, params } = readHashState();
+
+  Object.entries(updates).forEach(([key, value]) => {
+    if (value === null || value === undefined || value === '') {
+      params.delete(key);
+      return;
+    }
+    params.set(key, String(value));
+  });
+
+  const query = params.toString();
+  const nextHash = `#${path}${query ? `?${query}` : ''}`;
+
+  if (window.location.hash !== nextHash) {
+    window.history.replaceState(
+      null,
+      '',
+      `${window.location.pathname}${window.location.search}${nextHash}`
+    );
+  }
+}
+
 const getProviderModelOptions = (provider, currentValue) => {
   const modelValues = AI_PROVIDER_MODELS[provider] || [];
   const options = modelValues.map((value) => ({ value, label: value }));
@@ -230,6 +302,10 @@ export default function IntegrationsPage({ embedded = false } = {}) {
     channels: [],
     recent_failures: [],
     replay_candidates: [],
+    recent_archived: [],
+    filtered_events: [],
+    filtered_count: 0,
+    filtered_scope: 'all',
   });
   const [omnichannelDiagnosticsLoading, setOmnichannelDiagnosticsLoading] = useState(false);
   const [omnichannelReplayId, setOmnichannelReplayId] = useState(null);
@@ -240,6 +316,7 @@ export default function IntegrationsPage({ embedded = false } = {}) {
     payload: null,
     error: '',
   });
+  const [diagnosticsFilters, setDiagnosticsFilters] = useState(getDiagnosticsFiltersFromHash);
   const [licenseRestriction, setLicenseRestriction] = useState(null);
 
   const getErrorText = (error, fallback) => {
@@ -254,6 +331,53 @@ export default function IntegrationsPage({ embedded = false } = {}) {
 
   useEffect(() => {
     loadAllStatuses();
+  }, []);
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      loadOmnichannelDiagnostics(diagnosticsFilters);
+    }, 220);
+    return () => clearTimeout(timer);
+  }, [
+    diagnosticsFilters.scope,
+    diagnosticsFilters.channel,
+    diagnosticsFilters.query,
+    diagnosticsFilters.onlyNeedsAction,
+  ]);
+
+  useEffect(() => {
+    replaceHashQuery({
+      diag_scope: diagnosticsFilters.scope !== DEFAULT_DIAGNOSTICS_FILTERS.scope ? diagnosticsFilters.scope : null,
+      diag_channel: diagnosticsFilters.channel !== DEFAULT_DIAGNOSTICS_FILTERS.channel ? diagnosticsFilters.channel : null,
+      diag_q: diagnosticsFilters.query || null,
+      diag_needs_action: diagnosticsFilters.onlyNeedsAction ? '1' : null,
+    });
+  }, [
+    diagnosticsFilters.scope,
+    diagnosticsFilters.channel,
+    diagnosticsFilters.query,
+    diagnosticsFilters.onlyNeedsAction,
+  ]);
+
+  useEffect(() => {
+    const onHashChange = () => {
+      const nextFilters = getDiagnosticsFiltersFromHash();
+      setDiagnosticsFilters((current) => {
+        const normalizedCurrent = normalizeDiagnosticsFilters(current);
+        if (
+          normalizedCurrent.scope === nextFilters.scope &&
+          normalizedCurrent.channel === nextFilters.channel &&
+          normalizedCurrent.query === nextFilters.query &&
+          normalizedCurrent.onlyNeedsAction === nextFilters.onlyNeedsAction
+        ) {
+          return current;
+        }
+        return nextFilters;
+      });
+    };
+
+    window.addEventListener('hashchange', onHashChange);
+    return () => window.removeEventListener('hashchange', onHashChange);
   }, []);
 
   useEffect(() => {
@@ -283,7 +407,7 @@ export default function IntegrationsPage({ embedded = false } = {}) {
       loadTelegramStatus(),
       loadAIStatus(),
       loadOmnichannelSummary(),
-      loadOmnichannelDiagnostics(),
+      loadOmnichannelDiagnostics(diagnosticsFilters),
     ]);
   };
 
@@ -302,15 +426,28 @@ export default function IntegrationsPage({ embedded = false } = {}) {
     }
   };
 
-  const loadOmnichannelDiagnostics = async () => {
+  const loadOmnichannelDiagnostics = async (filters = diagnosticsFilters) => {
     setOmnichannelDiagnosticsLoading(true);
     try {
-      const response = await getOmnichannelDiagnostics({ limit: 10 });
+      const params = {
+        limit: 10,
+        event_limit: 120,
+      };
+      if (filters?.scope && filters.scope !== 'all') params.scope = filters.scope;
+      if (filters?.channel && filters.channel !== 'all') params.channel = filters.channel;
+      if (String(filters?.query || '').trim()) params.q = String(filters.query).trim();
+      if (filters?.onlyNeedsAction) params.needs_action = 1;
+
+      const response = await getOmnichannelDiagnostics(params);
       setOmnichannelDiagnostics({
         summary: response?.summary || {},
         channels: Array.isArray(response?.channels) ? response.channels : [],
         recent_failures: Array.isArray(response?.recent_failures) ? response.recent_failures : [],
         replay_candidates: Array.isArray(response?.replay_candidates) ? response.replay_candidates : [],
+        recent_archived: Array.isArray(response?.recent_archived) ? response.recent_archived : [],
+        filtered_events: Array.isArray(response?.filtered_events) ? response.filtered_events : [],
+        filtered_count: Number(response?.filtered_count || 0),
+        filtered_scope: String(response?.filtered_scope || 'all'),
       });
     } catch (error) {
       setOmnichannelDiagnostics({
@@ -318,6 +455,10 @@ export default function IntegrationsPage({ embedded = false } = {}) {
         channels: [],
         recent_failures: [],
         replay_candidates: [],
+        recent_archived: [],
+        filtered_events: [],
+        filtered_count: 0,
+        filtered_scope: 'all',
       });
     } finally {
       setOmnichannelDiagnosticsLoading(false);
@@ -330,18 +471,38 @@ export default function IntegrationsPage({ embedded = false } = {}) {
     setOmnichannelReplayId(record.id);
     try {
       const result = await replayOmnichannelEvent(record.id);
+      if (result?.event) {
+        setOmnichannelEventModal((prev) => {
+          if (!prev.open || String(prev.record?.id || '') !== String(record.id)) return prev;
+          return {
+            ...prev,
+            payload: result.event,
+            record: { ...(prev.record || {}), ...(result.event || {}) },
+            error: '',
+          };
+        });
+      }
       if (result?.success) {
         message.success(tr('integrationsPage.messages.replayOk', 'Событие повторно обработано'));
       } else {
         message.warning(getErrorText(result, tr('integrationsPage.messages.replayPartial', 'Replay завершился с предупреждением')));
       }
-      await Promise.all([loadOmnichannelSummary(), loadOmnichannelDiagnostics()]);
+      await Promise.all([loadOmnichannelSummary(), loadOmnichannelDiagnostics(diagnosticsFilters)]);
     } catch (error) {
       message.error(getErrorText(error, tr('integrationsPage.messages.replayError', 'Не удалось выполнить replay события')));
     } finally {
       setOmnichannelReplayId(null);
     }
   };
+
+  const closeOmnichannelEventModal = () =>
+    setOmnichannelEventModal({
+      open: false,
+      loading: false,
+      record: null,
+      payload: null,
+      error: '',
+    });
 
   const handleOpenOmnichannelEvent = async (record) => {
     if (!record?.id) return;
@@ -996,6 +1157,35 @@ export default function IntegrationsPage({ embedded = false } = {}) {
     }
   };
 
+  const copyTextToClipboard = async (value, successMessage, errorMessage) => {
+    const text = String(value || '').trim();
+    if (!text) {
+      message.warning(tr('integrationsPage.messages.copyEmpty', 'Нет данных для копирования'));
+      return false;
+    }
+
+    try {
+      if (navigator?.clipboard?.writeText) {
+        await navigator.clipboard.writeText(text);
+      } else {
+        const textarea = document.createElement('textarea');
+        textarea.value = text;
+        textarea.setAttribute('readonly', '');
+        textarea.style.position = 'absolute';
+        textarea.style.left = '-9999px';
+        document.body.appendChild(textarea);
+        textarea.select();
+        document.execCommand('copy');
+        document.body.removeChild(textarea);
+      }
+      message.success(successMessage || tr('integrationsPage.messages.copyOk', 'Скопировано в буфер обмена'));
+      return true;
+    } catch (error) {
+      message.error(errorMessage || tr('integrationsPage.messages.copyError', 'Не удалось скопировать данные'));
+      return false;
+    }
+  };
+
   const handleCopyWebhookUrl = async () => {
     const value = webhookForm.getFieldValue('webhook_url');
     await copyUrlToClipboard(value);
@@ -1007,11 +1197,30 @@ export default function IntegrationsPage({ embedded = false } = {}) {
   };
 
   const diagnosticsSummary = omnichannelDiagnostics.summary || {};
-  const diagnosticsRows = (
-    omnichannelDiagnostics.recent_failures?.length
-      ? omnichannelDiagnostics.recent_failures
-      : omnichannelDiagnostics.replay_candidates
-  ) || [];
+  const diagnosticsMergedRows = Array.from(
+    new Map(
+      [
+        ...(Array.isArray(omnichannelDiagnostics.recent_failures) ? omnichannelDiagnostics.recent_failures : []),
+        ...(Array.isArray(omnichannelDiagnostics.replay_candidates) ? omnichannelDiagnostics.replay_candidates : []),
+        ...(Array.isArray(omnichannelDiagnostics.recent_archived) ? omnichannelDiagnostics.recent_archived : []),
+      ].map((record) => [String(record?.id || `${record?.external_id || ''}:${record?.message_id || ''}`), record])
+    ).values()
+  );
+  const diagnosticsRows = Array.isArray(omnichannelDiagnostics.filtered_events)
+    ? omnichannelDiagnostics.filtered_events
+    : diagnosticsMergedRows;
+  const diagnosticsChannelValues = new Set(
+    diagnosticsMergedRows
+      .map((record) => String(record?.channel_type || '').trim().toLowerCase())
+      .filter(Boolean)
+  );
+  if (diagnosticsFilters.channel && diagnosticsFilters.channel !== 'all') {
+    diagnosticsChannelValues.add(diagnosticsFilters.channel);
+  }
+  const diagnosticsChannelOptions = [
+    { value: 'all', label: tr('integrationsPage.filters.allChannels', 'Все каналы') },
+    ...Array.from(diagnosticsChannelValues).map((value) => ({ value, label: value })),
+  ];
   const diagnosticsAlertType =
     diagnosticsSummary.transport_health === 'degraded' ||
     Number(diagnosticsSummary.failed_events || 0) > 0
@@ -1107,7 +1316,7 @@ export default function IntegrationsPage({ embedded = false } = {}) {
             extra={(
               <Button
                 icon={<ReloadOutlined />}
-                onClick={loadOmnichannelDiagnostics}
+                onClick={() => loadOmnichannelDiagnostics(diagnosticsFilters)}
                 loading={omnichannelDiagnosticsLoading}
                 disabled={integrationsRestricted}
               >
@@ -1178,6 +1387,48 @@ export default function IntegrationsPage({ embedded = false } = {}) {
                 <Tag>{tr('integrationsPage.diagnostics.signatureRejected', 'Signature rejected')}: {diagnosticsSummary.signature_rejected_events || 0}</Tag>
                 <Tag>{tr('integrationsPage.diagnostics.unassigned', 'Без привязки')}: {diagnosticsSummary.unassigned_events || 0}</Tag>
                 <Tag>{tr('integrationsPage.diagnostics.breached', 'SLA breach')}: {diagnosticsSummary.breached_sla || 0}</Tag>
+              </Space>
+              <Space wrap size={[8, 8]} style={{ width: '100%', justifyContent: 'space-between' }}>
+                <Space wrap size={[8, 8]}>
+                  <Input.Search
+                    allowClear
+                    size="small"
+                    placeholder={tr('integrationsPage.filters.searchDiagnostics', 'Поиск по external ID, message ID или тексту')}
+                    value={diagnosticsFilters.query}
+                    onChange={(event) => setDiagnosticsFilters((prev) => ({ ...prev, query: event.target.value }))}
+                    style={{ width: 280, maxWidth: '100%' }}
+                  />
+                  <Select
+                    size="small"
+                    value={diagnosticsFilters.scope}
+                    style={{ width: 190 }}
+                    onChange={(value) => setDiagnosticsFilters((prev) => ({ ...prev, scope: value }))}
+                    options={[
+                      { value: 'all', label: tr('integrationsPage.filters.scopeAll', 'Все события') },
+                      { value: 'failures', label: tr('integrationsPage.filters.scopeFailures', 'Только ошибки') },
+                      { value: 'replayable', label: tr('integrationsPage.filters.scopeReplayable', 'Replay-ready') },
+                      { value: 'archived', label: tr('integrationsPage.filters.scopeArchived', 'Archived sample') },
+                    ]}
+                  />
+                  <Select
+                    size="small"
+                    value={diagnosticsFilters.channel}
+                    style={{ width: 170 }}
+                    onChange={(value) => setDiagnosticsFilters((prev) => ({ ...prev, channel: value }))}
+                    options={diagnosticsChannelOptions}
+                  />
+                  <Switch
+                    size="small"
+                    checked={diagnosticsFilters.onlyNeedsAction}
+                    onChange={(checked) => setDiagnosticsFilters((prev) => ({ ...prev, onlyNeedsAction: checked }))}
+                  />
+                  <Text type="secondary" style={{ fontSize: 12 }}>
+                    {tr('integrationsPage.filters.onlyNeedsAction', 'Только требует действия')}
+                  </Text>
+                </Space>
+                <Text type="secondary" style={{ fontSize: 12 }}>
+                  {tr('integrationsPage.diagnostics.filteredCount', 'Показано {count} событий', { count: omnichannelDiagnostics.filtered_count || diagnosticsRows.length })}
+                </Text>
               </Space>
               {omnichannelDiagnostics.channels?.length > 0 && (
                 <div
@@ -1308,6 +1559,16 @@ export default function IntegrationsPage({ embedded = false } = {}) {
                         >
                           {tr('integrationsPage.actions.details', 'Детали')}
                         </Button>
+                        <Button
+                          size="small"
+                          icon={<CopyOutlined />}
+                          title={tr('integrationsPage.actions.copyEventId', 'Скопировать ID')}
+                          onClick={() => copyTextToClipboard(
+                            record.external_id || record.message_id || record.text,
+                            tr('integrationsPage.messages.eventIdCopied', 'Идентификатор события скопирован'),
+                            tr('integrationsPage.messages.eventIdCopyError', 'Не удалось скопировать идентификатор события')
+                          )}
+                        />
                         <LicenseRestrictedAction
                           restricted={integrationsRestricted}
                           reason={integrationsRestrictionMessage}
@@ -1822,17 +2083,31 @@ export default function IntegrationsPage({ embedded = false } = {}) {
       <Modal
         title={tr('integrationsPage.modals.eventDetails', 'Детали omnichannel события')}
         open={omnichannelEventModal.open}
-        footer={null}
+        footer={[
+          <Button key="close" onClick={closeOmnichannelEventModal}>
+            {tr('actions.close', 'Закрыть')}
+          </Button>,
+          <LicenseRestrictedAction
+            key="replay-license"
+            restricted={integrationsRestricted}
+            reason={integrationsRestrictionMessage}
+            feature="integrations.core"
+          >
+            <Button
+              type="primary"
+              loading={omnichannelReplayId === omnichannelEventModal.record?.id}
+              disabled={
+                integrationsRestricted
+                || !(omnichannelEventModal.payload?.replayable || omnichannelEventModal.record?.replayable)
+              }
+              onClick={() => handleOmnichannelReplay(omnichannelEventModal.record)}
+            >
+              {tr('integrationsPage.actions.replay', 'Replay')}
+            </Button>
+          </LicenseRestrictedAction>,
+        ]}
         width={860}
-        onCancel={() =>
-          setOmnichannelEventModal({
-            open: false,
-            loading: false,
-            record: null,
-            payload: null,
-            error: '',
-          })
-        }
+        onCancel={closeOmnichannelEventModal}
       >
         <Space direction="vertical" size="large" style={{ width: '100%' }}>
           {omnichannelEventModal.error ? (
@@ -1869,10 +2144,40 @@ export default function IntegrationsPage({ embedded = false } = {}) {
                 </Space>
               </Descriptions.Item>
               <Descriptions.Item label="External ID">
-                {omnichannelEventModal.payload?.external_id || omnichannelEventModal.record?.external_id || '-'}
+                <Space size={8} wrap>
+                  <span>{omnichannelEventModal.payload?.external_id || omnichannelEventModal.record?.external_id || '-'}</span>
+                  {(omnichannelEventModal.payload?.external_id || omnichannelEventModal.record?.external_id) && (
+                    <Button
+                      type="text"
+                      size="small"
+                      icon={<CopyOutlined />}
+                      title={tr('integrationsPage.actions.copyExternalId', 'Скопировать External ID')}
+                      onClick={() => copyTextToClipboard(
+                        omnichannelEventModal.payload?.external_id || omnichannelEventModal.record?.external_id,
+                        tr('integrationsPage.messages.externalIdCopied', 'External ID скопирован'),
+                        tr('integrationsPage.messages.externalIdCopyError', 'Не удалось скопировать External ID')
+                      )}
+                    />
+                  )}
+                </Space>
               </Descriptions.Item>
               <Descriptions.Item label="Message ID">
-                {omnichannelEventModal.payload?.message_id || omnichannelEventModal.record?.message_id || '-'}
+                <Space size={8} wrap>
+                  <span>{omnichannelEventModal.payload?.message_id || omnichannelEventModal.record?.message_id || '-'}</span>
+                  {(omnichannelEventModal.payload?.message_id || omnichannelEventModal.record?.message_id) && (
+                    <Button
+                      type="text"
+                      size="small"
+                      icon={<CopyOutlined />}
+                      title={tr('integrationsPage.actions.copyMessageId', 'Скопировать Message ID')}
+                      onClick={() => copyTextToClipboard(
+                        omnichannelEventModal.payload?.message_id || omnichannelEventModal.record?.message_id,
+                        tr('integrationsPage.messages.messageIdCopied', 'Message ID скопирован'),
+                        tr('integrationsPage.messages.messageIdCopyError', 'Не удалось скопировать Message ID')
+                      )}
+                    />
+                  )}
+                </Space>
               </Descriptions.Item>
               <Descriptions.Item label={tr('integrationsPage.table.message', 'Сообщение')} span={2}>
                 {omnichannelEventModal.payload?.text ||
@@ -1988,6 +2293,22 @@ export default function IntegrationsPage({ embedded = false } = {}) {
           <Card
             size="small"
             title={tr('integrationsPage.diagnostics.rawArchive', 'Raw archive')}
+            extra={(
+              <Button
+                type="text"
+                size="small"
+                icon={<CopyOutlined />}
+                title={tr('integrationsPage.actions.copyRawArchive', 'Скопировать Raw archive')}
+                disabled={!Object.keys(omnichannelEventModal.payload?.raw || {}).length}
+                onClick={() => copyTextToClipboard(
+                  JSON.stringify(omnichannelEventModal.payload?.raw || {}, null, 2),
+                  tr('integrationsPage.messages.rawCopied', 'Raw archive скопирован'),
+                  tr('integrationsPage.messages.rawCopyError', 'Не удалось скопировать Raw archive')
+                )}
+              >
+                {tr('integrationsPage.actions.copy', 'Скопировать')}
+              </Button>
+            )}
             loading={omnichannelEventModal.loading}
           >
             <Input.TextArea
