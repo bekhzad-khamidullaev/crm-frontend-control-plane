@@ -9,6 +9,7 @@ import {
   Descriptions,
   Empty,
   Form,
+  Grid,
   Input,
   InputNumber,
   Modal,
@@ -35,6 +36,7 @@ import {
   GlobalOutlined,
   MailOutlined,
   ReloadOutlined,
+  SearchOutlined,
   SafetyCertificateOutlined,
   SettingOutlined,
   ShareAltOutlined,
@@ -135,9 +137,71 @@ function inferFieldType(key, value) {
   return 'text';
 }
 
+function getFieldSelectOptions(fieldKey, value) {
+  const key = String(fieldKey || '').toLowerCase();
+  if (key.includes('timezone')) {
+    return ['UTC', 'Asia/Tashkent', 'Europe/Moscow', 'Europe/Berlin', 'America/New_York'].map((item) => ({
+      label: item,
+      value: item,
+    }));
+  }
+  if (key.includes('language') || key.includes('locale')) {
+    return ['en', 'ru', 'uz'].map((item) => ({ label: item.toUpperCase(), value: item }));
+  }
+  if (key.includes('frequency') || key.includes('digest')) {
+    return ['instant', 'hourly', 'daily', 'weekly'].map((item) => ({
+      label: prettifyKey(item),
+      value: item,
+    }));
+  }
+  if (key.includes('mode')) {
+    return ['auto', 'manual', 'disabled'].map((item) => ({
+      label: prettifyKey(item),
+      value: item,
+    }));
+  }
+  if (key.includes('status')) {
+    return ['active', 'inactive', 'paused'].map((item) => ({
+      label: prettifyKey(item),
+      value: item,
+    }));
+  }
+  if (key.includes('policy')) {
+    return ['strict', 'balanced', 'relaxed'].map((item) => ({
+      label: prettifyKey(item),
+      value: item,
+    }));
+  }
+  if (key.includes('provider')) {
+    return ['smtp', 'ses', 'sendgrid', 'mailgun'].map((item) => ({
+      label: item.toUpperCase(),
+      value: item,
+    }));
+  }
+  if (Array.isArray(value) && value.length > 0 && value.every((item) => ['string', 'number'].includes(typeof item))) {
+    return value.map((item) => ({ label: String(item), value: item }));
+  }
+  return null;
+}
+
+function isReadOnlyField(fieldKey) {
+  const key = String(fieldKey || '').toLowerCase();
+  return (
+    key === 'id'
+    || key.endsWith('_id')
+    || key.endsWith('_at')
+    || key.includes('created')
+    || key.includes('updated')
+    || key.includes('timestamp')
+    || key.includes('last_run')
+  );
+}
+
 function SettingField({ fieldKey, path, value, isDark = false }) {
   const type = inferFieldType(fieldKey, value);
   const label = prettifyKey(fieldKey);
+  const selectOptions = getFieldSelectOptions(fieldKey, value);
+  const isReadOnly = isReadOnlyField(fieldKey);
   const tr = (key, fallback, vars = {}) => {
     const localized = t(key, vars);
     return localized === key ? interpolateFallback(fallback, vars) : localized;
@@ -177,7 +241,12 @@ function SettingField({ fieldKey, path, value, isDark = false }) {
   if (type === 'list') {
     return (
       <Form.Item label={label} name={path}>
-        <Select mode="tags" open={false} placeholder={tr('settingsWorkspace.field.addValues', 'Добавьте значения')} tokenSeparators={[',']} />
+        <Select
+          mode="multiple"
+          options={selectOptions || []}
+          placeholder={tr('settingsWorkspace.field.selectValues', 'Выберите значения')}
+          allowClear
+        />
       </Form.Item>
     );
   }
@@ -185,7 +254,7 @@ function SettingField({ fieldKey, path, value, isDark = false }) {
   if (type === 'boolean') {
     return (
       <Form.Item label={label} name={path} valuePropName="checked">
-        <Switch />
+        <Switch disabled={isReadOnly} />
       </Form.Item>
     );
   }
@@ -193,7 +262,7 @@ function SettingField({ fieldKey, path, value, isDark = false }) {
   if (type === 'number') {
     return (
       <Form.Item label={label} name={path}>
-        <InputNumber style={{ width: '100%' }} min={0} />
+        <InputNumber style={{ width: '100%' }} min={0} disabled={isReadOnly} />
       </Form.Item>
     );
   }
@@ -201,7 +270,7 @@ function SettingField({ fieldKey, path, value, isDark = false }) {
   if (type === 'time') {
     return (
       <Form.Item label={label} name={path}>
-        <TimePicker format="HH:mm" style={{ width: '100%' }} />
+        <TimePicker format="HH:mm" style={{ width: '100%' }} disabled={isReadOnly} />
       </Form.Item>
     );
   }
@@ -209,14 +278,31 @@ function SettingField({ fieldKey, path, value, isDark = false }) {
   if (type === 'textarea') {
     return (
       <Form.Item label={label} name={path}>
-        <Input.TextArea rows={4} placeholder={`${tr('settingsWorkspace.field.enter', 'Введите')} ${label.toLowerCase()}`} />
+        <Input.TextArea
+          rows={4}
+          readOnly={isReadOnly}
+          placeholder={`${tr('settingsWorkspace.field.enter', 'Введите')} ${label.toLowerCase()}`}
+        />
       </Form.Item>
     );
   }
 
   return (
     <Form.Item label={label} name={path}>
-      <Input type={type === 'url' ? 'url' : 'text'} placeholder={`${tr('settingsWorkspace.field.enter', 'Введите')} ${label.toLowerCase()}`} />
+      {selectOptions ? (
+        <Select
+          options={selectOptions}
+          placeholder={`${tr('settingsWorkspace.field.select', 'Выберите')} ${label.toLowerCase()}`}
+          allowClear
+          disabled={isReadOnly}
+        />
+      ) : (
+        <Input
+          type={type === 'url' ? 'url' : 'text'}
+          readOnly={isReadOnly}
+          placeholder={`${tr('settingsWorkspace.field.enter', 'Введите')} ${label.toLowerCase()}`}
+        />
+      )}
     </Form.Item>
   );
 }
@@ -306,7 +392,9 @@ function ComplianceSummary({ report }) {
               const childFormatted = formatValueForUi(childValue, { key: childKey });
               return (
                 <Descriptions.Item key={childKey} label={prettifyKey(childKey)}>
-                  {childFormatted.kind === 'complex' ? JSON.stringify(childFormatted.value) : childFormatted.text}
+                  {childFormatted.kind === 'complex'
+                    ? t('settingsWorkspace.value.structured', 'Структурированные данные')
+                    : childFormatted.text}
                 </Descriptions.Item>
               );
             })}
@@ -322,22 +410,30 @@ function normalizeList(response) {
   return Array.isArray(response?.results) ? response.results : [];
 }
 
+function normalizeMarketplaceStatus(value) {
+  return String(value || 'unknown').toLowerCase();
+}
+
+function getMarketplaceStatusMeta(status, tr) {
+  const normalized = normalizeMarketplaceStatus(status);
+  if (normalized === 'installed') {
+    return { color: 'success', label: tr('settingsWorkspace.marketplace.status.installed', 'Installed') };
+  }
+  if (normalized === 'failed' || normalized === 'error') {
+    return { color: 'error', label: tr('settingsWorkspace.marketplace.status.failed', 'Failed') };
+  }
+  if (normalized === 'uninstalled') {
+    return { color: 'default', label: tr('settingsWorkspace.marketplace.status.uninstalled', 'Uninstalled') };
+  }
+  if (normalized === 'upgrading' || normalized === 'installing' || normalized === 'pending') {
+    return { color: 'processing', label: tr('settingsWorkspace.marketplace.status.pending', 'In progress') };
+  }
+  return { color: 'blue', label: prettifyKey(normalized) };
+}
+
 function getPreviewEntries(payload, limit = 8) {
   if (!isPlainObject(payload)) return [];
   return Object.entries(payload).slice(0, limit);
-}
-
-function formatJsonBlock(value) {
-  if (value == null) return '';
-  if (typeof value === 'string') return value;
-  if (Array.isArray(value) || isPlainObject(value)) {
-    try {
-      return JSON.stringify(value, null, 2);
-    } catch (error) {
-      console.error('Error stringifying log payload:', error);
-    }
-  }
-  return String(value);
 }
 
 function getIntegrationLogContext(record = {}) {
@@ -352,6 +448,7 @@ function getIntegrationLogContext(record = {}) {
 }
 
 export default function SettingsIntegrationsWorkspace({ defaultTab = 'system' } = {}) {
+  const screens = Grid.useBreakpoint();
   const { token } = antdTheme.useToken();
   const { message } = App.useApp();
   const { theme } = useTheme();
@@ -400,12 +497,18 @@ export default function SettingsIntegrationsWorkspace({ defaultTab = 'system' } 
   const [retentionItems, setRetentionItems] = useState([]);
   const [marketplaceExtensions, setMarketplaceExtensions] = useState([]);
   const [marketplaceCompatibility, setMarketplaceCompatibility] = useState([]);
+  const [marketplaceSearch, setMarketplaceSearch] = useState('');
+  const [marketplaceStatusFilter, setMarketplaceStatusFilter] = useState('all');
   const [marketplaceModal, setMarketplaceModal] = useState({
     open: false,
     mode: 'install',
     extensionId: null,
     extensionName: '',
-    manifestText: '{\n  "manifest_version": "v1",\n  "code": "",\n  "name": "",\n  "version": "1.0.0",\n  "compatibility": {\n    "crm_version": "2026.03"\n  }\n}',
+    manifestVersion: 'v1',
+    code: '',
+    name: '',
+    version: '1.0.0',
+    crmVersion: '2026.03',
     diagnostics: null,
     loading: false,
   });
@@ -494,6 +597,61 @@ export default function SettingsIntegrationsWorkspace({ defaultTab = 'system' } 
       },
     ],
     [dsrItems, retentionItems, tr]
+  );
+  const systemSectionReadiness = useMemo(
+    () => [
+      { key: 'general', label: tr('settingsWorkspace.general.title', 'General settings'), ready: Object.keys(generalSettings || {}).length > 0 },
+      { key: 'notifications', label: tr('settingsWorkspace.notifications.title', 'Global notifications'), ready: Object.keys(notificationSettings || {}).length > 0 },
+      { key: 'security', label: tr('settingsWorkspace.security.title', 'Security settings'), ready: Object.keys(securitySettings || {}).length > 0 },
+      { key: 'massmail', label: tr('settingsWorkspace.massmail.title', 'Massmail settings'), ready: Object.keys(massmailSettings || {}).length > 0 },
+      { key: 'reminders', label: tr('settingsWorkspace.reminders.title', 'Reminder settings'), ready: Object.keys(remindersSettings || {}).length > 0 },
+    ],
+    [generalSettings, notificationSettings, securitySettings, massmailSettings, remindersSettings, tr]
+  );
+  const systemReadyCount = systemSectionReadiness.filter((item) => item.ready).length;
+  const systemSectionCompletion = systemSectionReadiness.length
+    ? Math.round((systemReadyCount / systemSectionReadiness.length) * 100)
+    : 0;
+
+  const filteredMarketplaceExtensions = useMemo(() => {
+    const search = marketplaceSearch.trim().toLowerCase();
+    return marketplaceExtensions.filter((item) => {
+      const statusMatches =
+        marketplaceStatusFilter === 'all'
+          ? true
+          : normalizeMarketplaceStatus(item?.status) === marketplaceStatusFilter;
+      if (!statusMatches) return false;
+      if (!search) return true;
+      return [item?.name, item?.code, item?.installed_version]
+        .filter(Boolean)
+        .some((value) => String(value).toLowerCase().includes(search));
+    });
+  }, [marketplaceExtensions, marketplaceSearch, marketplaceStatusFilter]);
+
+  const marketplaceStats = useMemo(() => {
+    const installed = marketplaceExtensions.filter(
+      (item) => normalizeMarketplaceStatus(item?.status) === 'installed'
+    ).length;
+    const failed = marketplaceExtensions.filter((item) => {
+      const status = normalizeMarketplaceStatus(item?.status);
+      return status === 'failed' || status === 'error';
+    }).length;
+    const blocked = marketplaceCompatibility.filter((item) => item.compatible === false).length;
+
+    return { installed, failed, blocked };
+  }, [marketplaceExtensions, marketplaceCompatibility]);
+  const marketplaceAlertType =
+    marketplaceStats.failed > 0 || marketplaceStats.blocked > 0 ? 'warning' : 'info';
+
+  const marketplaceStatusOptions = useMemo(
+    () => [
+      { value: 'all', label: tr('settingsWorkspace.filters.allStatuses', 'Все статусы') },
+      { value: 'installed', label: tr('settingsWorkspace.marketplace.status.installed', 'Installed') },
+      { value: 'pending', label: tr('settingsWorkspace.marketplace.status.pending', 'In progress') },
+      { value: 'failed', label: tr('settingsWorkspace.marketplace.status.failed', 'Failed') },
+      { value: 'uninstalled', label: tr('settingsWorkspace.marketplace.status.uninstalled', 'Uninstalled') },
+    ],
+    [tr]
   );
   const toneStyles = {
     info: {
@@ -686,35 +844,44 @@ export default function SettingsIntegrationsWorkspace({ defaultTab = 'system' } 
   };
 
   const openMarketplaceModal = (mode, extension = null) => {
+    const manifest = extension?.manifest || {};
+    const compatibility = manifest.compatibility || {};
     setMarketplaceModal({
       open: true,
       mode,
       extensionId: extension?.id || null,
       extensionName: extension?.name || '',
-      manifestText: JSON.stringify(
-        extension?.manifest || {
-          manifest_version: 'v1',
-          code: extension?.code || '',
-          name: extension?.name || '',
-          version: extension?.installed_version || '1.0.0',
-          compatibility: { crm_version: '2026.03' },
-        },
-        null,
-        2,
-      ),
+      manifestVersion: manifest.manifest_version || 'v1',
+      code: manifest.code || extension?.code || '',
+      name: manifest.name || extension?.name || '',
+      version: manifest.version || extension?.installed_version || '1.0.0',
+      crmVersion: compatibility.crm_version || '2026.03',
       diagnostics: null,
       loading: false,
     });
   };
 
   const handleMarketplaceSubmit = async () => {
-    let parsedManifest;
-    try {
-      parsedManifest = JSON.parse(marketplaceModal.manifestText || '{}');
-    } catch (error) {
-      message.error(tr('settingsWorkspace.marketplace.invalidJson', 'Manifest должен быть валидным JSON'));
+    if (!marketplaceModal.code || !marketplaceModal.name || !marketplaceModal.version) {
+      message.error(
+        tr(
+          'settingsWorkspace.marketplace.formRequired',
+          'Заполните обязательные поля: code, name, version.',
+        ),
+      );
       return;
     }
+
+    const parsedManifest = {
+      manifest_version: marketplaceModal.manifestVersion || 'v1',
+      code: marketplaceModal.code.trim(),
+      name: marketplaceModal.name.trim(),
+      version: marketplaceModal.version.trim(),
+      compatibility: {
+        crm_version: marketplaceModal.crmVersion || '2026.03',
+      },
+    };
+
     try {
       setMarketplaceModal((prev) => ({ ...prev, loading: true }));
       if (marketplaceModal.mode === 'upgrade' && marketplaceModal.extensionId) {
@@ -753,15 +920,23 @@ export default function SettingsIntegrationsWorkspace({ defaultTab = 'system' } 
   const handleLoadDiagnostics = async (extension) => {
     try {
       const diagnosticsResp = await marketplaceApi.extensionDiagnostics(extension.id);
+      const diagnosticsData = diagnosticsResp?.diagnostics || diagnosticsResp || {};
+      const diagnosticsEntries = getPreviewEntries(diagnosticsData, 16);
       Modal.info({
         title: tr('settingsWorkspace.marketplace.diagnosticsTitle', 'Diagnostics extension'),
         width: 760,
         content: (
-          <Input.TextArea
-            readOnly
-            rows={16}
-            value={JSON.stringify(diagnosticsResp?.diagnostics || diagnosticsResp || {}, null, 2)}
-          />
+          diagnosticsEntries.length ? (
+            <Descriptions column={1} size="small" bordered style={{ marginTop: 12 }}>
+              {diagnosticsEntries.map(([key, value]) => (
+                <Descriptions.Item key={key} label={prettifyKey(key)}>
+                  {formatValueForUi(value)}
+                </Descriptions.Item>
+              ))}
+            </Descriptions>
+          ) : (
+            <Empty image={Empty.PRESENTED_IMAGE_SIMPLE} description={tr('settingsWorkspace.empty.diagnostics', 'Diagnostics пока недоступны')} />
+          )
         ),
       });
     } catch (error) {
@@ -1047,92 +1222,149 @@ export default function SettingsIntegrationsWorkspace({ defaultTab = 'system' } 
               'Если проблема в интеграциях: logs summary -> recent logs -> details. Если проблема в endpoint: webhooks -> deliveries -> details/retry.'
             )}
           />
+          <Card>
+            <Space direction="vertical" size="middle" style={{ width: '100%' }}>
+              <Row gutter={[12, 12]}>
+                <Col xs={24} sm={8}>
+                  <Card size="small">
+                    <Statistic
+                      title={tr('settingsWorkspace.system.cards.configReady', 'Конфигурационные секции')}
+                      value={systemReadyCount}
+                      suffix={`/ ${systemSectionReadiness.length}`}
+                    />
+                  </Card>
+                </Col>
+                <Col xs={24} sm={8}>
+                  <Card size="small">
+                    <Statistic
+                      title={tr('settingsWorkspace.system.cards.completion', 'Готовность workspace')}
+                      value={systemSectionCompletion}
+                      suffix="%"
+                    />
+                  </Card>
+                </Col>
+                <Col xs={24} sm={8}>
+                  <Card size="small">
+                    <Statistic
+                      title={tr('settingsWorkspace.system.cards.publicDomains', 'Публичные домены')}
+                      value={domains.length}
+                    />
+                  </Card>
+                </Col>
+              </Row>
+              <Space wrap>
+                {systemSectionReadiness.map((item) => (
+                  <Tag key={item.key} color={item.ready ? 'success' : 'default'}>
+                    {item.key}: {item.ready ? tr('status.ready', 'готово') : tr('status.pending', 'ожидает данные')}
+                  </Tag>
+                ))}
+              </Space>
+              <Space wrap>
+                <Button onClick={() => setActiveTab('operations')}>
+                  {tr('settingsWorkspace.actions.openOps', 'Открыть ops')}
+                </Button>
+                <Button type="primary" onClick={() => setActiveTab('integrations')}>
+                  {tr('settingsWorkspace.actions.openIntegrations', 'Открыть интеграции')}
+                </Button>
+              </Space>
+            </Space>
+          </Card>
+          <Card title={tr('settingsWorkspace.system.coreBlock', 'Базовая конфигурация workspace')}>
+            <Row gutter={[16, 16]}>
+              <Col xs={24} xl={12}>
+                <SettingsConfigurator
+                  title={tr('settingsWorkspace.general.title', 'General settings')}
+                  description={tr('settingsWorkspace.general.description', 'Компания, язык, timezone и базовые параметры runtime-конфигурации.')}
+                  icon={<SettingOutlined />}
+                  data={generalSettings}
+                  loading={sectionLoading.general}
+                  saving={sectionSaving.general}
+                  onReload={loadGeneralSettings}
+                  onSave={(payload) => saveSection('general', payload, settingsApi.updateGeneral, loadGeneralSettings)}
+                  isDark={isDark}
+                />
+              </Col>
+              <Col xs={24} xl={12}>
+                <SettingsConfigurator
+                  title={tr('settingsWorkspace.security.title', 'Security settings')}
+                  description={tr('settingsWorkspace.security.description', 'Пароли, сессии, MFA-политики и ограничения безопасности.')}
+                  icon={<SafetyCertificateOutlined />}
+                  data={securitySettings}
+                  loading={sectionLoading.security}
+                  saving={sectionSaving.security}
+                  onReload={loadSecurity}
+                  onSave={(payload) => saveSection('security', payload, settingsApi.updateSecurity, loadSecurity)}
+                  isDark={isDark}
+                />
+              </Col>
+            </Row>
+          </Card>
+          <Card title={tr('settingsWorkspace.system.notificationsBlock', 'Уведомления и коммуникации')}>
+            <Row gutter={[16, 16]}>
+              <Col xs={24} xl={12}>
+                <SettingsConfigurator
+                  title={tr('settingsWorkspace.notifications.title', 'Global notifications')}
+                  description={tr('settingsWorkspace.notifications.description', 'Глобальная политика уведомлений, quiet hours и delivery channels.')}
+                  icon={<BellOutlined />}
+                  data={notificationSettings}
+                  loading={sectionLoading.notifications}
+                  saving={sectionSaving.notifications}
+                  onReload={loadNotifications}
+                  onSave={(payload) => saveSection('notifications', payload, settingsApi.updateNotifications, loadNotifications)}
+                  isDark={isDark}
+                />
+              </Col>
+              <Col xs={24} xl={12}>
+                <SettingsConfigurator
+                  title={tr('settingsWorkspace.userNotifications.title', 'My notifications')}
+                  description={tr('settingsWorkspace.userNotifications.description', 'Персональные настройки уведомлений текущего пользователя.')}
+                  icon={<BellOutlined />}
+                  data={userNotificationSettings}
+                  loading={sectionLoading.notifications}
+                  saving={sectionSaving.userNotifications}
+                  onReload={loadNotifications}
+                  onSave={(payload) => saveSection('userNotifications', payload, settingsApi.updateUserNotifications, loadNotifications)}
+                  isDark={isDark}
+                />
+              </Col>
+              <Col xs={24} xl={12}>
+                <SettingsConfigurator
+                  title={tr('settingsWorkspace.massmail.title', 'Massmail settings')}
+                  description={tr('settingsWorkspace.massmail.description', 'Лимиты, business hours и unsubscribe policy для массовых email-рассылок.')}
+                  icon={<MailOutlined />}
+                  data={massmailSettings}
+                  loading={sectionLoading.massmail}
+                  saving={sectionSaving.massmail}
+                  onReload={loadMassmailSettings}
+                  onSave={(payload) => saveSection('massmail', payload, settingsApi.updateMassmail, loadMassmailSettings)}
+                  isDark={isDark}
+                />
+              </Col>
+              <Col xs={24} xl={12}>
+                <SettingsConfigurator
+                  title={tr('settingsWorkspace.reminders.title', 'Reminder settings')}
+                  description={tr('settingsWorkspace.reminders.description', 'Интервалы проверки и системные параметры reminders.')}
+                  icon={<BellOutlined />}
+                  data={remindersSettings}
+                  loading={sectionLoading.reminders}
+                  saving={sectionSaving.reminders}
+                  onReload={loadReminderSettings}
+                  onSave={(payload) => saveSection('reminders', payload, settingsApi.updateReminders, loadReminderSettings)}
+                  isDark={isDark}
+                />
+              </Col>
+            </Row>
+          </Card>
           <Row gutter={[16, 16]}>
-            <Col xs={24} xl={12}>
-              <SettingsConfigurator
-                title={tr('settingsWorkspace.general.title', 'General settings')}
-                description={tr('settingsWorkspace.general.description', 'Компания, язык, timezone и базовые параметры runtime-конфигурации.')}
-                icon={<SettingOutlined />}
-                data={generalSettings}
-                loading={sectionLoading.general}
-                saving={sectionSaving.general}
-                onReload={loadGeneralSettings}
-                onSave={(payload) => saveSection('general', payload, settingsApi.updateGeneral, loadGeneralSettings)}
-                isDark={isDark}
-              />
-            </Col>
-            <Col xs={24} xl={12}>
-              <SettingsConfigurator
-                title={tr('settingsWorkspace.notifications.title', 'Global notifications')}
-                description={tr('settingsWorkspace.notifications.description', 'Глобальная политика уведомлений, quiet hours и delivery channels.')}
-                icon={<BellOutlined />}
-                data={notificationSettings}
-                loading={sectionLoading.notifications}
-                saving={sectionSaving.notifications}
-                onReload={loadNotifications}
-                onSave={(payload) => saveSection('notifications', payload, settingsApi.updateNotifications, loadNotifications)}
-                isDark={isDark}
-              />
-            </Col>
-            <Col xs={24} xl={12}>
-              <SettingsConfigurator
-                title={tr('settingsWorkspace.userNotifications.title', 'My notifications')}
-                description={tr('settingsWorkspace.userNotifications.description', 'Персональные настройки уведомлений текущего пользователя.')}
-                icon={<BellOutlined />}
-                data={userNotificationSettings}
-                loading={sectionLoading.notifications}
-                saving={sectionSaving.userNotifications}
-                onReload={loadNotifications}
-                onSave={(payload) => saveSection('userNotifications', payload, settingsApi.updateUserNotifications, loadNotifications)}
-                isDark={isDark}
-              />
-            </Col>
-            <Col xs={24} xl={12}>
-              <SettingsConfigurator
-                title={tr('settingsWorkspace.security.title', 'Security settings')}
-                description={tr('settingsWorkspace.security.description', 'Пароли, сессии, MFA-политики и ограничения безопасности.')}
-                icon={<SafetyCertificateOutlined />}
-                data={securitySettings}
-                loading={sectionLoading.security}
-                saving={sectionSaving.security}
-                onReload={loadSecurity}
-                onSave={(payload) => saveSection('security', payload, settingsApi.updateSecurity, loadSecurity)}
-                isDark={isDark}
-              />
-            </Col>
-            <Col xs={24} xl={12}>
-              <SettingsConfigurator
-                title={tr('settingsWorkspace.massmail.title', 'Massmail settings')}
-                description={tr('settingsWorkspace.massmail.description', 'Лимиты, business hours и unsubscribe policy для массовых email-рассылок.')}
-                icon={<MailOutlined />}
-                data={massmailSettings}
-                loading={sectionLoading.massmail}
-                saving={sectionSaving.massmail}
-                onReload={loadMassmailSettings}
-                onSave={(payload) => saveSection('massmail', payload, settingsApi.updateMassmail, loadMassmailSettings)}
-                isDark={isDark}
-              />
-            </Col>
-            <Col xs={24} xl={12}>
-              <SettingsConfigurator
-                title={tr('settingsWorkspace.reminders.title', 'Reminder settings')}
-                description={tr('settingsWorkspace.reminders.description', 'Интервалы проверки и системные параметры reminders.')}
-                icon={<BellOutlined />}
-                data={remindersSettings}
-                loading={sectionLoading.reminders}
-                saving={sectionSaving.reminders}
-                onReload={loadReminderSettings}
-                onSave={(payload) => saveSection('reminders', payload, settingsApi.updateReminders, loadReminderSettings)}
-                isDark={isDark}
-              />
+            <Col xs={24}>
+              <Card
+                title={tr('settingsWorkspace.domains.title', 'Публичные домены email')}
+                extra={<Button icon={<ReloadOutlined />} onClick={loadPublicDomains} loading={sectionLoading.domains}>{tr('actions.refresh', 'Обновить')}</Button>}
+              >
+                <Table columns={domainColumns} dataSource={domains} rowKey={(record) => record.domain || record} loading={sectionLoading.domains} pagination={{ pageSize: 10, hideOnSinglePage: true }} />
+              </Card>
             </Col>
           </Row>
-          <Card
-            title={tr('settingsWorkspace.domains.title', 'Публичные домены email')}
-            extra={<Button icon={<ReloadOutlined />} onClick={loadPublicDomains} loading={sectionLoading.domains}>{tr('actions.refresh', 'Обновить')}</Button>}
-          >
-            <Table columns={domainColumns} dataSource={domains} rowKey={(record) => record.domain || record} loading={sectionLoading.domains} pagination={{ pageSize: 10, hideOnSinglePage: true }} />
-          </Card>
         </Space>
       ),
     },
@@ -1467,7 +1699,7 @@ export default function SettingsIntegrationsWorkspace({ defaultTab = 'system' } 
               type="info"
               showIcon
               message={tr('settingsWorkspace.compliance.summaryTitle', 'Сводка по согласию, DSR и retention')}
-              description={tr('settingsWorkspace.compliance.summaryDescription', 'Показатели представлены в виде карточек и таблиц без сырого JSON.')}
+              description={tr('settingsWorkspace.compliance.summaryDescription', 'Показатели представлены в виде карточек и таблиц в структурированном виде.')}
               style={{ marginBottom: 16 }}
             />
             <div
@@ -1684,7 +1916,7 @@ export default function SettingsIntegrationsWorkspace({ defaultTab = 'system' } 
       children: (
         <Space direction="vertical" size="large" style={{ width: '100%' }}>
           <Alert
-            type="info"
+            type={marketplaceAlertType}
             showIcon
             message={tr('settingsWorkspace.marketplace.title', 'Marketplace Registry')}
             description={tr(
@@ -1692,24 +1924,112 @@ export default function SettingsIntegrationsWorkspace({ defaultTab = 'system' } 
               'Устанавливайте и обновляйте extension через versioned manifest v1. Для каждого extension доступен diagnostics и compatibility matrix.',
             )}
             action={(
-              <Button type="primary" icon={<AppstoreAddOutlined />} onClick={() => openMarketplaceModal('install')}>
-                {tr('settingsWorkspace.marketplace.installAction', 'Установить extension')}
-              </Button>
+              <Space wrap>
+                <Button type="primary" icon={<AppstoreAddOutlined />} onClick={() => openMarketplaceModal('install')}>
+                  {tr('settingsWorkspace.marketplace.installAction', 'Установить extension')}
+                </Button>
+                <Button onClick={() => setActiveTab('integrations')}>
+                  {tr('settingsWorkspace.actions.openIntegrations', 'Открыть интеграции')}
+                </Button>
+              </Space>
             )}
           />
+          <Row gutter={[12, 12]}>
+            <Col xs={24} md={8}>
+              <Card size="small">
+                <Statistic
+                  title={tr('settingsWorkspace.marketplace.cards.installed', 'Installed extensions')}
+                  value={marketplaceStats.installed}
+                />
+              </Card>
+            </Col>
+            <Col xs={24} md={8}>
+              <Card size="small">
+                <Statistic
+                  title={tr('settingsWorkspace.marketplace.cards.failed', 'Проблемные extensions')}
+                  value={marketplaceStats.failed}
+                />
+              </Card>
+            </Col>
+            <Col xs={24} md={8}>
+              <Card size="small">
+                <Statistic
+                  title={tr('settingsWorkspace.marketplace.cards.compatibilityIssues', 'Compatibility blocked')}
+                  value={marketplaceStats.blocked}
+                />
+              </Card>
+            </Col>
+          </Row>
           <Card
             title={tr('settingsWorkspace.marketplace.installed', 'Установленные extensions')}
             extra={(
-              <Button icon={<ReloadOutlined />} onClick={loadMarketplace} loading={sectionLoading.marketplace}>
-                {tr('actions.refresh', 'Обновить')}
-              </Button>
+              <Space wrap>
+                <Button icon={<ReloadOutlined />} onClick={loadMarketplace} loading={sectionLoading.marketplace}>
+                  {tr('actions.refresh', 'Обновить')}
+                </Button>
+                <Button type="primary" icon={<AppstoreAddOutlined />} onClick={() => openMarketplaceModal('install')}>
+                  {tr('settingsWorkspace.marketplace.installAction', 'Установить extension')}
+                </Button>
+              </Space>
             )}
           >
+            <Space direction="vertical" size="middle" style={{ width: '100%', marginBottom: 12 }}>
+              <Space wrap style={{ width: '100%', justifyContent: 'space-between' }}>
+                <Input
+                  allowClear
+                  prefix={<SearchOutlined />}
+                  placeholder={tr('settingsWorkspace.marketplace.searchPlaceholder', 'Поиск по code, названию или версии')}
+                  value={marketplaceSearch}
+                  onChange={(event) => setMarketplaceSearch(event.target.value)}
+                  style={{ width: screens.md ? 360 : '100%' }}
+                />
+                <Space wrap>
+                  <Select
+                    value={marketplaceStatusFilter}
+                    options={marketplaceStatusOptions}
+                    onChange={setMarketplaceStatusFilter}
+                    style={{ width: screens.md ? 210 : 180 }}
+                  />
+                  <Button
+                    onClick={() => {
+                      setMarketplaceSearch('');
+                      setMarketplaceStatusFilter('all');
+                    }}
+                  >
+                    {tr('actions.reset', 'Сбросить')}
+                  </Button>
+                </Space>
+              </Space>
+              <Text type="secondary">
+                {tr(
+                  'settingsWorkspace.marketplace.filteredHint',
+                  'Показано {visible} из {total} extensions',
+                  { visible: filteredMarketplaceExtensions.length, total: marketplaceExtensions.length },
+                )}
+              </Text>
+            </Space>
             <Table
               rowKey={(record) => record.id}
               loading={sectionLoading.marketplace}
-              dataSource={marketplaceExtensions}
+              dataSource={filteredMarketplaceExtensions}
               pagination={false}
+              locale={{
+                emptyText: (
+                  <Empty
+                    description={tr('settingsWorkspace.empty.extensions', 'Extensions не найдены по выбранному фильтру')}
+                    image={Empty.PRESENTED_IMAGE_SIMPLE}
+                  >
+                    <Button
+                      type="primary"
+                      block={!screens.md}
+                      icon={<AppstoreAddOutlined />}
+                      onClick={() => openMarketplaceModal('install')}
+                    >
+                      {tr('settingsWorkspace.marketplace.installAction', 'Установить extension')}
+                    </Button>
+                  </Empty>
+                ),
+              }}
               columns={[
                 { title: tr('settingsWorkspace.table.code', 'Code'), dataIndex: 'code', key: 'code', width: 200 },
                 { title: tr('settingsWorkspace.table.name', 'Название'), dataIndex: 'name', key: 'name' },
@@ -1720,8 +2040,8 @@ export default function SettingsIntegrationsWorkspace({ defaultTab = 'system' } 
                   key: 'status',
                   width: 160,
                   render: (value) => {
-                    const color = value === 'installed' ? 'green' : value === 'failed' ? 'red' : value === 'uninstalled' ? 'default' : 'blue';
-                    return <Tag color={color}>{prettifyKey(value)}</Tag>;
+                    const meta = getMarketplaceStatusMeta(value, tr);
+                    return <Tag color={meta.color}>{meta.label}</Tag>;
                   },
                 },
                 {
@@ -1746,10 +2066,27 @@ export default function SettingsIntegrationsWorkspace({ defaultTab = 'system' } 
             />
           </Card>
           <Card title={tr('settingsWorkspace.marketplace.compatibility', 'Compatibility matrix')}>
+            {marketplaceStats.blocked > 0 && (
+              <Alert
+                type="warning"
+                showIcon
+                style={{ marginBottom: 12 }}
+                message={tr(
+                  'settingsWorkspace.marketplace.compatibilityWarning',
+                  'Найдено {count} несовместимых extensions',
+                  { count: marketplaceStats.blocked },
+                )}
+                description={tr(
+                  'settingsWorkspace.marketplace.compatibilityWarningDescription',
+                  'Проверьте причину блокировки и обновите manifest или версию CRM перед rollout.',
+                )}
+              />
+            )}
             <Table
               rowKey={(record) => record.id}
               dataSource={marketplaceCompatibility}
               pagination={false}
+              locale={{ emptyText: tr('settingsWorkspace.empty.compatibility', 'Матрица совместимости пока пуста') }}
               columns={[
                 { title: tr('settingsWorkspace.table.extension', 'Extension'), dataIndex: 'extension_name', key: 'extension_name' },
                 { title: tr('settingsWorkspace.table.crmVersion', 'CRM version'), dataIndex: 'crm_version', key: 'crm_version', width: 180 },
@@ -1815,19 +2152,62 @@ export default function SettingsIntegrationsWorkspace({ defaultTab = 'system' } 
           <Alert
             type="info"
             showIcon
-            message={tr('settingsWorkspace.marketplace.manifestHint', 'Manifest v1 (JSON)')}
-            description={tr('settingsWorkspace.marketplace.manifestHintDescription', 'Проверьте code/name/version/compatibility перед применением.')}
+            message={tr('settingsWorkspace.marketplace.manifestHint', 'Параметры extension')}
+            description={tr('settingsWorkspace.marketplace.manifestHintDescription', 'Заполните поля extension в структурированной форме.')}
           />
-          <Input.TextArea
-            rows={16}
-            value={marketplaceModal.manifestText}
-            onChange={(event) =>
-              setMarketplaceModal((prev) => ({
-                ...prev,
-                manifestText: event.target.value,
-              }))
-            }
-          />
+          <Form layout="vertical">
+            <Row gutter={[12, 0]}>
+              <Col xs={24} md={12}>
+                <Form.Item label={tr('settingsWorkspace.marketplace.formManifestVersion', 'Manifest version')}>
+                  <Select
+                    value={marketplaceModal.manifestVersion}
+                    options={[{ label: 'v1', value: 'v1' }]}
+                    onChange={(value) => setMarketplaceModal((prev) => ({ ...prev, manifestVersion: value }))}
+                  />
+                </Form.Item>
+              </Col>
+              <Col xs={24} md={12}>
+                <Form.Item label={tr('settingsWorkspace.table.crmVersion', 'CRM version')}>
+                  <Select
+                    value={marketplaceModal.crmVersion}
+                    options={[
+                      { label: '2026.03', value: '2026.03' },
+                      { label: '2026.04', value: '2026.04' },
+                      { label: '2026.05', value: '2026.05' },
+                    ]}
+                    onChange={(value) => setMarketplaceModal((prev) => ({ ...prev, crmVersion: value }))}
+                  />
+                </Form.Item>
+              </Col>
+              <Col xs={24} md={12}>
+                <Form.Item label={tr('settingsWorkspace.table.code', 'Code')} required>
+                  <Input
+                    value={marketplaceModal.code}
+                    onChange={(event) => setMarketplaceModal((prev) => ({ ...prev, code: event.target.value }))}
+                    placeholder="com.crm.extension.demo"
+                  />
+                </Form.Item>
+              </Col>
+              <Col xs={24} md={12}>
+                <Form.Item label={tr('settingsWorkspace.table.name', 'Название')} required>
+                  <Input
+                    value={marketplaceModal.name}
+                    onChange={(event) => setMarketplaceModal((prev) => ({ ...prev, name: event.target.value }))}
+                    placeholder={tr('settingsWorkspace.marketplace.formNamePlaceholder', 'Например: Demo Extension')}
+                  />
+                </Form.Item>
+              </Col>
+              <Col xs={24} md={12}>
+                <Form.Item label={tr('settingsWorkspace.table.version', 'Версия')} required>
+                  <Input
+                    value={marketplaceModal.version}
+                    onChange={(event) => setMarketplaceModal((prev) => ({ ...prev, version: event.target.value }))}
+                    placeholder="1.0.0"
+                  />
+                </Form.Item>
+              </Col>
+            </Row>
+          </Form>
         </Space>
       </Modal>
       <Modal
@@ -2022,7 +2402,15 @@ export default function SettingsIntegrationsWorkspace({ defaultTab = 'system' } 
                         />
                       )}
                       {integrationLogDetail.stack_trace && (
-                        <Input.TextArea value={formatJsonBlock(integrationLogDetail.stack_trace)} readOnly autoSize={{ minRows: 6, maxRows: 14 }} />
+                        <Alert
+                          type="warning"
+                          showIcon
+                          message={tr('settingsWorkspace.logs.stackTraceHidden', 'Технический stack trace скрыт')}
+                          description={tr(
+                            'settingsWorkspace.logs.stackTraceHiddenDescription',
+                            'Сырые диагностические данные не показываются в UI. Используйте diagnostics/monitoring для технического разбора.',
+                          )}
+                        />
                       )}
                     </Space>
                   ) : (
@@ -2063,30 +2451,6 @@ export default function SettingsIntegrationsWorkspace({ defaultTab = 'system' } 
             </Row>
           )}
 
-          {integrationLogDetail && (
-            <Card size="small" title={tr('settingsWorkspace.logs.rawArchive', 'Raw request / response')}>
-              <Space direction="vertical" size="middle" style={{ width: '100%' }}>
-                <div>
-                  <Text strong>{tr('settingsWorkspace.logs.requestData', 'Request data')}</Text>
-                  <Input.TextArea
-                    value={formatJsonBlock(integrationLogDetail.request_data)}
-                    readOnly
-                    autoSize={{ minRows: 6, maxRows: 14 }}
-                    style={{ marginTop: 8 }}
-                  />
-                </div>
-                <div>
-                  <Text strong>{tr('settingsWorkspace.logs.responseData', 'Response data')}</Text>
-                  <Input.TextArea
-                    value={formatJsonBlock(integrationLogDetail.response_data)}
-                    readOnly
-                    autoSize={{ minRows: 6, maxRows: 14 }}
-                    style={{ marginTop: 8 }}
-                  />
-                </div>
-              </Space>
-            </Card>
-          )}
         </Space>
       </Modal>
       <Modal
@@ -2472,28 +2836,15 @@ export default function SettingsIntegrationsWorkspace({ defaultTab = 'system' } 
                   </Col>
                 </Row>
 
-                <Card size="small" title={tr('settingsWorkspace.webhooks.rawBodies', 'Raw request / response')}>
-                  <Space direction="vertical" size="middle" style={{ width: '100%' }}>
-                    <div>
-                      <Text strong>{tr('settingsWorkspace.logs.requestData', 'Request data')}</Text>
-                      <Input.TextArea
-                        value={formatJsonBlock(selectedWebhookDelivery.request_body)}
-                        readOnly
-                        autoSize={{ minRows: 6, maxRows: 14 }}
-                        style={{ marginTop: 8 }}
-                      />
-                    </div>
-                    <div>
-                      <Text strong>{tr('settingsWorkspace.logs.responseData', 'Response data')}</Text>
-                      <Input.TextArea
-                        value={formatJsonBlock(selectedWebhookDelivery.response_body)}
-                        readOnly
-                        autoSize={{ minRows: 6, maxRows: 14 }}
-                        style={{ marginTop: 8 }}
-                      />
-                    </div>
-                  </Space>
-                </Card>
+                <Alert
+                  type="info"
+                  showIcon
+                  message={tr('settingsWorkspace.webhooks.payloadHidden', 'Детали payload недоступны в UI')}
+                  description={tr(
+                    'settingsWorkspace.webhooks.payloadHiddenDescription',
+                    'В интерфейсе показывается только структурированный preview доставки.',
+                  )}
+                />
               </Space>
             ) : (
               <Empty
