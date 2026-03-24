@@ -21,11 +21,12 @@ const EDITION_OPTIONS = [
 ];
 
 const INSTALL_PROFILE_OPTIONS = [
-  { value: "smb-sales", label: "SMB Sales" },
-  { value: "sales-faststart", label: "Sales Faststart" },
-  { value: "omnichannel-workspace", label: "Omnichannel Workspace" },
-  { value: "enterprise-standard", label: "Enterprise Standard" },
-  { value: "onprem-secure", label: "On-prem Secure" },
+  { value: "sales-team", label: "Sales Team" },
+  { value: "contact-center", label: "Contact Center" },
+  { value: "developer", label: "Developer" },
+  { value: "real-estate", label: "Real Estate" },
+  { value: "education", label: "Education" },
+  { value: "clinic", label: "Clinic" },
 ];
 
 export default function PlansFeaturesSection({ onMutated }) {

@@ -55,6 +55,7 @@ import {
 const { Title, Text } = Typography;
 
 const ONBOARDING_STORAGE_KEY = 'enterprise_crm_onboarding_wizard';
+const DEFAULT_TEMPLATE_CODE = 'sales_team';
 const DEFAULT_PROGRESS = {
   activeStep: 0,
   companyDraft: {},
@@ -252,7 +253,7 @@ export default function OnboardingWizardPage() {
   const [onboardingTemplates, setOnboardingTemplates] = useState([]);
   const [serverChecklist, setServerChecklist] = useState([]);
   const [serverSummary, setServerSummary] = useState(null);
-  const [selectedTemplate, setSelectedTemplate] = useState('smb_sales');
+  const [selectedTemplate, setSelectedTemplate] = useState(DEFAULT_TEMPLATE_CODE);
   const [bootstrappingTemplate, setBootstrappingTemplate] = useState(false);
 
   const bg = theme === 'dark' ? '#0f172a' : '#ffffff';
@@ -326,7 +327,7 @@ export default function OnboardingWizardPage() {
       });
       const templates = Array.isArray(onboardingPayload.templates) ? onboardingPayload.templates : [];
       setOnboardingTemplates(templates);
-      setSelectedTemplate(progress.selected_template || templates[0]?.code || 'smb_sales');
+      setSelectedTemplate(progress.selected_template || templates[0]?.code || DEFAULT_TEMPLATE_CODE);
       persistProgress(mergedProgress);
     }
 
@@ -473,7 +474,7 @@ export default function OnboardingWizardPage() {
   const activeStep = checklist[activeStepIndex];
   const templateOptions = onboardingTemplates.length
     ? onboardingTemplates.map((item) => ({ value: item.code, label: item.name }))
-    : [{ value: 'smb_sales', label: 'SMB Sales Launch' }];
+    : [{ value: DEFAULT_TEMPLATE_CODE, label: 'Sales Team' }];
 
   const goToStep = (index) => {
     patchProgress({ activeStep: index });

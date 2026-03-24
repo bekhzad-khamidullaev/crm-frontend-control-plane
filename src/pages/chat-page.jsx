@@ -251,6 +251,15 @@ function buildConversationContextPayload(conversation) {
   };
 }
 
+const QUICK_ACTIONS = [
+  { action: 'create_lead', label: 'Create lead' },
+  { action: 'create_contact', label: 'Create contact' },
+  { action: 'create_deal', label: 'Create deal' },
+  { action: 'create_task', label: 'Create task' },
+  { action: 'snooze', label: 'Snooze 30m', extra: { minutes: 30 } },
+  { action: 'start_call', label: 'Start call' },
+];
+
 function ChatPage() {
   const { message } = App.useApp();
   const { theme } = useTheme();
@@ -455,43 +464,84 @@ function ChatPage() {
   if (loading) {
     return (
       <Card variant="borderless" style={{ background: bg }}>
-        <div style={{ padding: 64, textAlign: 'center' }}>
+        <Space direction="vertical" size={16} style={{ width: '100%', padding: 64, textAlign: 'center' }}>
           <Spin size="large" />
-        </div>
+          <div>
+            <Title level={4} style={{ marginBottom: 4 }}>
+              Unified Inbox is loading
+            </Title>
+            <Text type="secondary">
+              Conversations, queue summary, and conversation context are being fetched.
+            </Text>
+          </div>
+        </Space>
       </Card>
     );
   }
 
   if (!hasInboxLicense || licenseState) {
     return (
-      <Result
-        status="403"
-        title="Unified Inbox недоступен"
-        subTitle={
-          licenseState?.message ||
-          'Для messenger-first workspace нужен entitlement `integrations.core` или `inbox.unified`.'
-        }
-        extra={
-          <Button icon={<ReloadOutlined />} onClick={() => loadInbox()}>
-            Обновить
-          </Button>
-        }
-      />
+      <Card variant="borderless" style={{ background: bg }}>
+        <Result
+          status="403"
+          title="Unified Inbox недоступен"
+          subTitle={
+            <Space direction="vertical" size={4}>
+              <Text>
+                {licenseState?.message ||
+                  'Для messenger-first workspace нужен entitlement `integrations.core` или `inbox.unified`.'}
+              </Text>
+              <Text type="secondary">
+                Current page is blocked until the license exposes the unified inbox feature set.
+              </Text>
+            </Space>
+          }
+          extra={
+            <Button icon={<ReloadOutlined />} onClick={() => loadInbox()}>
+              Обновить
+            </Button>
+          }
+        />
+      </Card>
     );
   }
 
   if (errorState) {
     return (
-      <Result
-        status="error"
-        title="Не удалось загрузить inbox"
-        subTitle={errorState}
-        extra={
-          <Button type="primary" icon={<ReloadOutlined />} onClick={() => loadInbox()}>
-            Повторить
-          </Button>
-        }
-      />
+      <Card variant="borderless" style={{ background: bg }}>
+        <Result
+          status="error"
+          title="Не удалось загрузить inbox"
+          subTitle={
+            <Space direction="vertical" size={4}>
+              <Text>{errorState}</Text>
+              <Text type="secondary">Retry reloads the omnichannel timeline and rebuilds the conversation list.</Text>
+            </Space>
+          }
+          extra={
+            <Button type="primary" icon={<ReloadOutlined />} onClick={() => loadInbox()}>
+              Повторить
+            </Button>
+          }
+        />
+      </Card>
+    );
+  }
+
+  if (items.length === 0) {
+    return (
+      <Card variant="borderless" style={{ background: bg }}>
+        <Result
+          status="info"
+          title="Unified Inbox is empty"
+          subTitle="No omnichannel timeline rows were returned yet. Once conversations arrive, they will appear here."
+          extra={
+            <Button icon={<ReloadOutlined />} onClick={() => loadInbox()}>
+              Обновить
+            </Button>
+          }
+        />
+      </Card>
     );
   }
 
@@ -807,18 +857,15 @@ function ChatPage() {
                       </div>
 
                       <Space wrap size={8}>
-                        <Button loading={contextSaving} onClick={() => runQuickAction('create_lead')}>
-                          Create lead
-                        </Button>
-                        <Button loading={contextSaving} onClick={() => runQuickAction('create_task')}>
-                          Create task
-                        </Button>
-                        <Button loading={contextSaving} onClick={() => runQuickAction('snooze', { minutes: 30 })}>
-                          Snooze 30m
-                        </Button>
-                        <Button loading={contextSaving} onClick={() => runQuickAction('start_call')}>
-                          Start call
-                        </Button>
+                        {QUICK_ACTIONS.map((item) => (
+                          <Button
+                            key={item.action}
+                            loading={contextSaving}
+                            onClick={() => runQuickAction(item.action, item.extra || {})}
+                          >
+                            {item.label}
+                          </Button>
+                        ))}
                       </Space>
 
                       <Space.Compact style={{ width: '100%' }}>

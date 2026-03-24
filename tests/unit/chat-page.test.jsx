@@ -69,8 +69,37 @@ describe('ChatPage unified inbox', () => {
 
     render(<ChatPage />);
 
-    expect(await screen.findByText(/Unified Inbox/i)).toBeInTheDocument();
+    expect(await screen.findByText(/Unified Inbox is empty/i)).toBeInTheDocument();
     expect(screen.queryByText(/Unified Inbox недоступен/i)).not.toBeInTheDocument();
+  });
+
+  it('shows loading state before inbox data resolves', () => {
+    readStoredLicenseFeatures.mockReturnValue(['integrations.core']);
+    getOmnichannelTimeline.mockImplementation(() => new Promise(() => {}));
+
+    render(<ChatPage />);
+
+    expect(screen.getByText(/Unified Inbox is loading/i)).toBeInTheDocument();
+  });
+
+  it('shows empty state when the inbox returns no conversations', async () => {
+    readStoredLicenseFeatures.mockReturnValue(['integrations.core']);
+    getOmnichannelTimeline.mockResolvedValue({ count: 0, results: [], summary: {} });
+
+    render(<ChatPage />);
+
+    expect(await screen.findByText(/Unified Inbox is empty/i)).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /Обновить/i })).toBeInTheDocument();
+  });
+
+  it('shows error state when timeline loading fails', async () => {
+    readStoredLicenseFeatures.mockReturnValue(['integrations.core']);
+    getOmnichannelTimeline.mockRejectedValue(new Error('boom'));
+
+    render(<ChatPage />);
+
+    expect(await screen.findByText(/Не удалось загрузить inbox/i)).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /Повторить/i })).toBeInTheDocument();
   });
 
   it('renders conversations and sends outbound message for supported channel', async () => {
@@ -119,7 +148,7 @@ describe('ChatPage unified inbox', () => {
 
     render(<ChatPage />);
 
-    expect(await screen.findByText(/Unified Inbox/i)).toBeInTheDocument();
+    expect(await screen.findByText(/Messenger-first workspace/i)).toBeInTheDocument();
     expect(screen.getAllByText(/998901234567/i).length).toBeGreaterThan(0);
 
     fireEvent.change(screen.getByPlaceholderText(/Ответить в диалоге/i), {
@@ -137,7 +166,7 @@ describe('ChatPage unified inbox', () => {
     });
   });
 
-  it('loads context and runs quick action in sidebar', async () => {
+  it('loads context and runs create_contact and create_deal quick actions', async () => {
     readStoredLicenseFeatures.mockReturnValue(['integrations.core']);
     getOmnichannelTimeline.mockResolvedValue({
       count: 1,
@@ -177,14 +206,30 @@ describe('ChatPage unified inbox', () => {
     });
 
     fireEvent.click(screen.getByRole('button', { name: /Create lead/i }));
+    await waitFor(() => expect(runOmnichannelConversationAction).toHaveBeenCalledTimes(1));
+    expect(runOmnichannelConversationAction).toHaveBeenNthCalledWith(1, {
+      channel_id: 9,
+      participant_id: 'crm_user',
+      conversation_key: '9:crm_user',
+      action: 'create_lead',
+    });
 
-    await waitFor(() => {
-      expect(runOmnichannelConversationAction).toHaveBeenCalledWith({
-        channel_id: 9,
-        participant_id: 'crm_user',
-        conversation_key: '9:crm_user',
-        action: 'create_lead',
-      });
+    fireEvent.click(screen.getByRole('button', { name: /Create contact/i }));
+    await waitFor(() => expect(runOmnichannelConversationAction).toHaveBeenCalledTimes(2));
+    expect(runOmnichannelConversationAction).toHaveBeenNthCalledWith(2, {
+      channel_id: 9,
+      participant_id: 'crm_user',
+      conversation_key: '9:crm_user',
+      action: 'create_contact',
+    });
+
+    fireEvent.click(screen.getByRole('button', { name: /Create deal/i }));
+    await waitFor(() => expect(runOmnichannelConversationAction).toHaveBeenCalledTimes(3));
+    expect(runOmnichannelConversationAction).toHaveBeenNthCalledWith(3, {
+      channel_id: 9,
+      participant_id: 'crm_user',
+      conversation_key: '9:crm_user',
+      action: 'create_deal',
     });
   });
 });
