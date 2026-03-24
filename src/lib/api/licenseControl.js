@@ -102,6 +102,16 @@ export async function getCpLicenseAudit(params = {}) {
   return api.get('/api/cp/license-audit/', { params });
 }
 
+export async function getCpLicenses(params = {}) {
+  return api.get('/api/cp/licenses/', { params });
+}
+
+export async function revokeCpLicense(issueId, reason = "") {
+  return api.post(`/api/cp/licenses/${issueId}/revoke/`, {
+    body: { reason },
+  });
+}
+
 export async function getCpOverview() {
   return api.get('/api/cp/overview/');
 }

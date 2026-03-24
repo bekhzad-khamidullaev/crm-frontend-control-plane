@@ -1,15 +1,99 @@
 import { useEffect, useMemo, useState } from "react";
-import { Alert, Button, Card, Empty, Input, Select, Space, Table, Tag, message } from "antd";
+import { Alert, Button, Card, Descriptions, Empty, Form, Input, Modal, Select, Space, Steps, Table, Tag, Typography, message } from "antd";
 import {
   approveCpRuntimeRequest,
   assignCpDeploymentLicense,
   getCpDeployments,
+  getCpLicenses,
   getCpRuntimeUnlicensedRequests,
   getCpSubscriptions,
   getCpUnlicensedDeployments,
   rejectCpRuntimeRequest,
+  revokeCpLicense,
 } from "../../../lib/api/licenseControl.js";
 import { formatBackendError, formatDateTime, normalizeCollection, normalizeCount } from "./utils.js";
+
+const { Text } = Typography;
+const RUNTIME_FLOW_ORDER = ["pending_review", "approved", "issued", "installed"];
+const APPROVED_TTL_HOURS = 72;
+const APPROVED_TTL_WARNING_HOURS = 12;
+
+export function getRuntimeLifecycleStep(status) {
+  const normalized = String(status || "").trim().toLowerCase();
+  const index = RUNTIME_FLOW_ORDER.indexOf(normalized);
+  if (index >= 0) return index;
+  if (normalized === "rejected") return 0;
+  return 0;
+}
+
+export function buildRuntimeLifecycleItems(row) {
+  const normalized = String(row?.status || "").trim().toLowerCase();
+  const rejected = normalized === "rejected";
+  return [
+    {
+      title: "Pending review",
+      description: row?.created_at ? `Created: ${formatDateTime(row.created_at)}` : "Waiting for operator review",
+      status: "finish",
+    },
+    {
+      title: "Approved",
+      description: row?.reviewed_at ? `Reviewed: ${formatDateTime(row.reviewed_at)}` : "Not approved yet",
+      status: rejected ? "error" : undefined,
+    },
+    {
+      title: "Issued",
+      description: row?.issued_at ? `Issued: ${formatDateTime(row.issued_at)}` : "Signed artifact not issued yet",
+    },
+    {
+      title: "Installed",
+      description: row?.installed_at ? `Installed: ${formatDateTime(row.installed_at)}` : "Install acknowledgement not received",
+    },
+  ];
+}
+
+export function getApprovalTtlMeta(row, now = new Date()) {
+  const normalized = String(row?.status || "").trim().toLowerCase();
+  if (normalized !== "approved") return null;
+  const reviewedAtRaw = row?.reviewed_at;
+  if (!reviewedAtRaw) return null;
+  const reviewedAt = new Date(reviewedAtRaw);
+  if (Number.isNaN(reviewedAt.getTime())) return null;
+  const expiresAt = new Date(reviewedAt.getTime() + APPROVED_TTL_HOURS * 60 * 60 * 1000);
+  const remainingMs = expiresAt.getTime() - now.getTime();
+  const remainingHours = Math.floor(remainingMs / (60 * 60 * 1000));
+  if (remainingMs <= 0) {
+    return {
+      level: "expired",
+      remainingHours,
+      expiresAt,
+      message: "Approval TTL expired. Runtime issue will require re-approval.",
+    };
+  }
+  if (remainingMs <= APPROVED_TTL_WARNING_HOURS * 60 * 60 * 1000) {
+    return {
+      level: "warning",
+      remainingHours,
+      expiresAt,
+      message: `Approval expires in ${Math.max(0, remainingHours)}h.`,
+    };
+  }
+  return {
+    level: "ok",
+    remainingHours,
+    expiresAt,
+    message: `Approval valid for ${remainingHours}h.`,
+  };
+}
+
+export function resolveApproveBindings(row, requestDeploymentMap = {}, requestSubscriptionMap = {}) {
+  const requestId = row?.id;
+  const deploymentId = requestDeploymentMap?.[requestId] ?? row?.deployment ?? null;
+  const subscriptionId = requestSubscriptionMap?.[requestId] ?? row?.subscription ?? null;
+  return {
+    deploymentId: deploymentId == null ? null : Number(deploymentId),
+    subscriptionId: subscriptionId == null ? null : Number(subscriptionId),
+  };
+}
 
 const normalizeMatchValue = (value) => String(value || "").trim().toLowerCase();
 
@@ -78,13 +162,28 @@ export default function QueueSection({ onMutated }) {
   const [runtimePage, setRuntimePage] = useState(1);
   const [runtimePageSize, setRuntimePageSize] = useState(10);
   const [runtimeSearch, setRuntimeSearch] = useState("");
+  const [runtimeStatusFilter, setRuntimeStatusFilter] = useState(["pending_review", "approved", "issued"]);
   const [runtimeLoading, setRuntimeLoading] = useState(false);
   const [runtimeError, setRuntimeError] = useState("");
+
+  const [issuedRows, setIssuedRows] = useState([]);
+  const [issuedTotal, setIssuedTotal] = useState(0);
+  const [issuedPage, setIssuedPage] = useState(1);
+  const [issuedPageSize, setIssuedPageSize] = useState(10);
+  const [issuedSearch, setIssuedSearch] = useState("");
+  const [issuedLoading, setIssuedLoading] = useState(false);
+  const [issuedError, setIssuedError] = useState("");
 
   const [assignLoading, setAssignLoading] = useState({});
   const [rowSubscriptionMap, setRowSubscriptionMap] = useState({});
   const [requestDeploymentMap, setRequestDeploymentMap] = useState({});
   const [requestSubscriptionMap, setRequestSubscriptionMap] = useState({});
+  const [rejectNoteMap, setRejectNoteMap] = useState({});
+
+  const [revokeOpen, setRevokeOpen] = useState(false);
+  const [revokeTarget, setRevokeTarget] = useState(null);
+  const [revokeSaving, setRevokeSaving] = useState(false);
+  const [revokeForm] = Form.useForm();
 
   const [allDeployments, setAllDeployments] = useState([]);
   const [allSubscriptions, setAllSubscriptions] = useState([]);
@@ -146,6 +245,7 @@ export default function QueueSection({ onMutated }) {
     const nextPage = override.page ?? runtimePage;
     const nextPageSize = override.pageSize ?? runtimePageSize;
     const nextSearch = override.search ?? runtimeSearch;
+    const nextStatuses = override.statuses ?? runtimeStatusFilter;
     setRuntimeLoading(true);
     setRuntimeError("");
     try {
@@ -153,12 +253,14 @@ export default function QueueSection({ onMutated }) {
         page: nextPage,
         page_size: nextPageSize,
         search: nextSearch || undefined,
+        status: Array.isArray(nextStatuses) && nextStatuses.length ? nextStatuses.join(",") : undefined,
       });
       setRuntimeRows(normalizeCollection(response));
       setRuntimeTotal(normalizeCount(response));
       setRuntimePage(nextPage);
       setRuntimePageSize(nextPageSize);
       setRuntimeSearch(nextSearch);
+      setRuntimeStatusFilter(nextStatuses);
     } catch (error) {
       const nextError = formatBackendError(error, "Failed to load runtime requests");
       setRuntimeError(nextError);
@@ -168,10 +270,37 @@ export default function QueueSection({ onMutated }) {
     }
   };
 
+  const loadIssued = async (override = {}) => {
+    const nextPage = override.page ?? issuedPage;
+    const nextPageSize = override.pageSize ?? issuedPageSize;
+    const nextSearch = override.search ?? issuedSearch;
+    setIssuedLoading(true);
+    setIssuedError("");
+    try {
+      const response = await getCpLicenses({
+        page: nextPage,
+        page_size: nextPageSize,
+        search: nextSearch || undefined,
+      });
+      setIssuedRows(normalizeCollection(response));
+      setIssuedTotal(normalizeCount(response));
+      setIssuedPage(nextPage);
+      setIssuedPageSize(nextPageSize);
+      setIssuedSearch(nextSearch);
+    } catch (error) {
+      const nextError = formatBackendError(error, "Failed to load issued licenses");
+      setIssuedError(nextError);
+      message.error(nextError);
+    } finally {
+      setIssuedLoading(false);
+    }
+  };
+
   useEffect(() => {
     loadOptions();
     loadUnlicensed();
     loadRuntime();
+    loadIssued();
   }, []);
 
   const deploymentOptionsByInstance = useMemo(
@@ -192,6 +321,11 @@ export default function QueueSection({ onMutated }) {
 
       runtimeRows.forEach((row) => {
         if (next[row.id] != null) return;
+        if (row?.deployment != null) {
+          next[row.id] = row.deployment;
+          changed = true;
+          return;
+        }
         const options = getDeploymentOptionsForRequest(row, allDeployments);
         if (options.length === 1) {
           next[row.id] = options[0].value;
@@ -203,6 +337,33 @@ export default function QueueSection({ onMutated }) {
     });
   }, [allDeployments, runtimeRows]);
 
+  useEffect(() => {
+    setRequestSubscriptionMap((prev) => {
+      let changed = false;
+      const next = { ...prev };
+      runtimeRows.forEach((row) => {
+        if (next[row.id] != null) return;
+        if (row?.subscription != null) {
+          next[row.id] = row.subscription;
+          changed = true;
+        }
+      });
+      return changed ? next : prev;
+    });
+  }, [runtimeRows]);
+
+  const runtimeTtlSummary = useMemo(() => {
+    let expiring = 0;
+    let expired = 0;
+    runtimeRows.forEach((row) => {
+      const meta = getApprovalTtlMeta(row);
+      if (!meta) return;
+      if (meta.level === "expired") expired += 1;
+      if (meta.level === "warning") expiring += 1;
+    });
+    return { expiring, expired };
+  }, [runtimeRows]);
+
   const onAssign = async (deploymentId) => {
     const subscriptionId = rowSubscriptionMap[deploymentId];
     if (!subscriptionId) {
@@ -211,11 +372,17 @@ export default function QueueSection({ onMutated }) {
     }
     setAssignLoading((prev) => ({ ...prev, [deploymentId]: true }));
     try {
-      await assignCpDeploymentLicense(deploymentId, subscriptionId);
+      const response = await assignCpDeploymentLicense(deploymentId, subscriptionId);
       await loadUnlicensed();
       await loadRuntime();
+      await loadIssued();
       onMutated?.();
-      message.success("License assigned");
+      const revokedCount = Array.isArray(response?.revoked_license_ids) ? response.revoked_license_ids.length : 0;
+      if (revokedCount > 0) {
+        message.success(`License assigned and ${revokedCount} previous issue(s) revoked`);
+      } else {
+        message.success("License assigned");
+      }
     } catch (error) {
       message.error(formatBackendError(error, "Failed to assign license"));
     } finally {
@@ -224,15 +391,23 @@ export default function QueueSection({ onMutated }) {
   };
 
   const onApproveRequest = async (requestId) => {
-    const deploymentId = requestDeploymentMap[requestId];
-    const subscriptionId = requestSubscriptionMap[requestId];
+    const row = runtimeRows.find((item) => item.id === requestId) || null;
+    const { deploymentId, subscriptionId } = resolveApproveBindings(
+      row,
+      requestDeploymentMap,
+      requestSubscriptionMap
+    );
     if (!deploymentId || !subscriptionId) {
       message.warning("Select deployment and subscription");
       return;
     }
     setAssignLoading((prev) => ({ ...prev, [`req-${requestId}`]: true }));
     try {
-      await approveCpRuntimeRequest(requestId, { deployment_id: deploymentId, subscription_id: subscriptionId, review_note: "Approved" });
+      await approveCpRuntimeRequest(requestId, {
+        deployment_id: deploymentId,
+        subscription_id: subscriptionId,
+        review_note: "Approved from control-plane queue",
+      });
       await loadRuntime();
       await loadUnlicensed();
       onMutated?.();
@@ -244,10 +419,39 @@ export default function QueueSection({ onMutated }) {
     }
   };
 
+  const onReapproveRequest = async (requestId) => {
+    const row = runtimeRows.find((item) => item.id === requestId) || null;
+    const { deploymentId, subscriptionId } = resolveApproveBindings(
+      row,
+      requestDeploymentMap,
+      requestSubscriptionMap
+    );
+    if (!deploymentId || !subscriptionId) {
+      message.warning("Re-approve requires linked deployment and subscription");
+      return;
+    }
+    setAssignLoading((prev) => ({ ...prev, [`req-reapprove-${requestId}`]: true }));
+    try {
+      await approveCpRuntimeRequest(requestId, {
+        deployment_id: deploymentId,
+        subscription_id: subscriptionId,
+        review_note: "Re-approved after TTL check",
+      });
+      await loadRuntime();
+      onMutated?.();
+      message.success("Request re-approved");
+    } catch (error) {
+      message.error(formatBackendError(error, "Failed to re-approve request"));
+    } finally {
+      setAssignLoading((prev) => ({ ...prev, [`req-reapprove-${requestId}`]: false }));
+    }
+  };
+
   const onRejectRequest = async (requestId) => {
+    const reviewNote = String(rejectNoteMap[requestId] || "").trim();
     setAssignLoading((prev) => ({ ...prev, [`req-${requestId}`]: true }));
     try {
-      await rejectCpRuntimeRequest(requestId, "Rejected from queue");
+      await rejectCpRuntimeRequest(requestId, reviewNote || "Rejected from queue");
       await loadRuntime();
       onMutated?.();
       message.success("Request rejected");
@@ -258,8 +462,49 @@ export default function QueueSection({ onMutated }) {
     }
   };
 
+  const openRevoke = (row) => {
+    setRevokeTarget(row);
+    revokeForm.setFieldsValue({ reason: "manual_revoke" });
+    setRevokeOpen(true);
+  };
+
+  const onConfirmRevoke = async () => {
+    if (!revokeTarget?.id) return;
+    try {
+      const values = await revokeForm.validateFields();
+      setRevokeSaving(true);
+      await revokeCpLicense(revokeTarget.id, String(values.reason || "").trim() || "manual_revoke");
+      setRevokeOpen(false);
+      setRevokeTarget(null);
+      await loadIssued();
+      await loadRuntime();
+      await loadUnlicensed();
+      onMutated?.();
+      message.success("License revoked");
+    } catch (error) {
+      if (!error?.errorFields) {
+        message.error(formatBackendError(error, "Failed to revoke license"));
+      }
+    } finally {
+      setRevokeSaving(false);
+    }
+  };
+
   return (
     <Space direction="vertical" size="middle" style={{ width: "100%" }}>
+      <Alert
+        showIcon
+        type="info"
+        message="Runtime licensing flow"
+        description={
+          <Space direction="vertical" size={0}>
+            <Text>1) Runtime sends request -> status PENDING_REVIEW</Text>
+            <Text>2) Operator approves/rejects request in queue</Text>
+            <Text>3) Runtime pulls signed artifact and installs it</Text>
+            <Text>4) Reissue/revoke is performed from issued licenses list</Text>
+          </Space>
+        }
+      />
       {optionsError ? (
         <Alert
           showIcon
@@ -355,15 +600,45 @@ export default function QueueSection({ onMutated }) {
       <Card
         title="Runtime requests without issued license"
         extra={
-          <Input.Search
-            allowClear
-            placeholder="Search instance or customer"
-            defaultValue={runtimeSearch}
-            onSearch={(value) => loadRuntime({ page: 1, search: String(value || "").trim() })}
-            style={{ width: 300 }}
-          />
+          <Space wrap>
+            <Select
+              mode="multiple"
+              allowClear
+              placeholder="Statuses"
+              style={{ width: 280 }}
+              value={runtimeStatusFilter}
+              options={[
+                { label: "PENDING_REVIEW", value: "pending_review" },
+                { label: "APPROVED", value: "approved" },
+                { label: "ISSUED", value: "issued" },
+                { label: "REJECTED", value: "rejected" },
+                { label: "INSTALLED", value: "installed" },
+              ]}
+              onChange={(value) => loadRuntime({ page: 1, statuses: value })}
+            />
+            <Input.Search
+              allowClear
+              placeholder="Search instance or customer"
+              defaultValue={runtimeSearch}
+              onSearch={(value) => loadRuntime({ page: 1, search: String(value || "").trim() })}
+              style={{ width: 300 }}
+            />
+          </Space>
         }
       >
+        {runtimeTtlSummary.expired > 0 || runtimeTtlSummary.expiring > 0 ? (
+          <Alert
+            showIcon
+            type={runtimeTtlSummary.expired > 0 ? "error" : "warning"}
+            style={{ marginBottom: 12 }}
+            message={
+              runtimeTtlSummary.expired > 0
+                ? `${runtimeTtlSummary.expired} approved request(s) already expired by TTL`
+                : `${runtimeTtlSummary.expiring} approved request(s) are close to TTL expiry`
+            }
+            description="Re-approve stale requests to avoid runtime issue failures."
+          />
+        ) : null}
         {runtimeError ? (
           <Alert
             showIcon
@@ -382,6 +657,31 @@ export default function QueueSection({ onMutated }) {
           rowKey="id"
           loading={runtimeLoading}
           dataSource={runtimeRows}
+          expandable={{
+            expandedRowRender: (row) => (
+              <Space direction="vertical" style={{ width: "100%" }}>
+                <Steps
+                  size="small"
+                  current={getRuntimeLifecycleStep(row?.status)}
+                  items={buildRuntimeLifecycleItems(row)}
+                />
+                <Descriptions size="small" column={{ xs: 1, sm: 2, md: 4 }} colon={false}>
+                  <Descriptions.Item label="Request ID">{row?.id ?? "-"}</Descriptions.Item>
+                  <Descriptions.Item label="Deployment ID">{row?.deployment ?? "-"}</Descriptions.Item>
+                  <Descriptions.Item label="Subscription ID">{row?.subscription ?? "-"}</Descriptions.Item>
+                  <Descriptions.Item label="Issued license">{row?.issued_license ?? "-"}</Descriptions.Item>
+                </Descriptions>
+                {row?.review_note ? (
+                  <Alert
+                    type={String(row?.status || "").toLowerCase() === "rejected" ? "error" : "info"}
+                    showIcon
+                    message="Review note"
+                    description={row.review_note}
+                  />
+                ) : null}
+              </Space>
+            ),
+          }}
           locale={{
             emptyText: (
               <Empty
@@ -398,7 +698,21 @@ export default function QueueSection({ onMutated }) {
           onChange={(pagination) => loadRuntime({ page: pagination.current, pageSize: pagination.pageSize })}
           columns={[
             { title: "Instance", dataIndex: "instance_id", key: "instance_id" },
-            { title: "Status", dataIndex: "status", key: "status", render: (v) => <Tag color="processing">{v}</Tag> },
+            {
+              title: "Status",
+              dataIndex: "status",
+              key: "status",
+              render: (v, row) => {
+                const ttlMeta = getApprovalTtlMeta(row);
+                return (
+                  <Space size={6} wrap>
+                    <Tag color="processing">{v}</Tag>
+                    {ttlMeta?.level === "warning" ? <Tag color="warning">{ttlMeta.message}</Tag> : null}
+                    {ttlMeta?.level === "expired" ? <Tag color="error">TTL expired</Tag> : null}
+                  </Space>
+                );
+              },
+            },
             { title: "Created", dataIndex: "created_at", key: "created_at", render: formatDateTime },
             {
               title: "Actions",
@@ -414,6 +728,8 @@ export default function QueueSection({ onMutated }) {
                     label: `${sub.plan_code || sub.plan} • ${sub.status}`,
                     value: sub.id,
                   }));
+                const ttlMeta = getApprovalTtlMeta(row);
+                const showReapprove = ttlMeta?.level === "warning" || ttlMeta?.level === "expired";
                 return (
                   <Space wrap>
                     <Select
@@ -449,6 +765,23 @@ export default function QueueSection({ onMutated }) {
                     >
                       Reject
                     </Button>
+                    {showReapprove ? (
+                      <Button
+                        type="dashed"
+                        loading={Boolean(assignLoading[`req-reapprove-${row.id}`])}
+                        onClick={() => onReapproveRequest(row.id)}
+                      >
+                        Re-approve
+                      </Button>
+                    ) : null}
+                    <Input
+                      style={{ width: 220 }}
+                      placeholder="Reject note (optional)"
+                      value={rejectNoteMap[row.id]}
+                      onChange={(event) =>
+                        setRejectNoteMap((prev) => ({ ...prev, [row.id]: event.target.value }))
+                      }
+                    />
                   </Space>
                 );
               },
@@ -456,6 +789,95 @@ export default function QueueSection({ onMutated }) {
           ]}
         />
       </Card>
+      <Card
+        title="Issued licenses"
+        extra={
+          <Input.Search
+            allowClear
+            placeholder="Search by instance/license"
+            defaultValue={issuedSearch}
+            onSearch={(value) => loadIssued({ page: 1, search: String(value || "").trim() })}
+            style={{ width: 300 }}
+          />
+        }
+      >
+        {issuedError ? (
+          <Alert
+            showIcon
+            type="warning"
+            style={{ marginBottom: 12 }}
+            message="Issued licenses could not be loaded"
+            description={issuedError}
+            action={
+              <Button size="small" onClick={() => loadIssued()}>
+                Retry
+              </Button>
+            }
+          />
+        ) : null}
+        <Table
+          rowKey="id"
+          loading={issuedLoading}
+          dataSource={issuedRows}
+          locale={{
+            emptyText: (
+              <Empty
+                image={Empty.PRESENTED_IMAGE_SIMPLE}
+                description={issuedSearch ? "No issued licenses match search" : "No issued licenses"}
+              />
+            ),
+          }}
+          pagination={{ current: issuedPage, pageSize: issuedPageSize, total: issuedTotal, showSizeChanger: true }}
+          onChange={(pagination) => loadIssued({ page: pagination.current, pageSize: pagination.pageSize })}
+          columns={[
+            { title: "License ID", dataIndex: "license_id", key: "license_id", render: (v) => <Text code>{v || "-"}</Text> },
+            { title: "Deployment", dataIndex: "deployment", key: "deployment", render: (v) => (v == null ? "-" : `#${v}`) },
+            { title: "Subscription", dataIndex: "subscription", key: "subscription", render: (v) => (v == null ? "-" : `#${v}`) },
+            {
+              title: "Plan",
+              dataIndex: "payload_json",
+              key: "plan_code",
+              render: (payload) => payload?.plan_code || "—",
+            },
+            {
+              title: "Status",
+              key: "status",
+              render: (_, row) =>
+                row?.is_revoked ? <Tag color="error">REVOKED</Tag> : <Tag color="success">ACTIVE</Tag>,
+            },
+            { title: "Issued at", dataIndex: "issued_at", key: "issued_at", render: formatDateTime },
+            {
+              title: "Actions",
+              key: "actions",
+              render: (_, row) => (
+                <Button danger disabled={Boolean(row?.is_revoked)} onClick={() => openRevoke(row)}>
+                  Revoke
+                </Button>
+              ),
+            },
+          ]}
+        />
+      </Card>
+      <Modal
+        title="Revoke issued license"
+        open={revokeOpen}
+        onCancel={() => {
+          setRevokeOpen(false);
+          setRevokeTarget(null);
+        }}
+        onOk={onConfirmRevoke}
+        confirmLoading={revokeSaving}
+      >
+        <Form form={revokeForm} layout="vertical">
+          <Form.Item
+            name="reason"
+            label="Reason"
+            rules={[{ required: true, message: "Reason is required" }]}
+          >
+            <Input placeholder="manual_revoke" />
+          </Form.Item>
+        </Form>
+      </Modal>
     </Space>
   );
 }

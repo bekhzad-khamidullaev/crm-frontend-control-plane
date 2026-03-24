@@ -1372,6 +1372,2199 @@ paths:
               schema:
                 $ref: '#/components/schemas/Country'
           description: ''
+  /api/cp/bundles/:
+    get:
+      operationId: cp_bundles_list
+      parameters:
+      - name: ordering
+        required: false
+        in: query
+        description: Which field to use when ordering the results.
+        schema:
+          type: string
+      - name: page
+        required: false
+        in: query
+        description: A page number within the paginated result set.
+        schema:
+          type: integer
+      - name: page_size
+        required: false
+        in: query
+        description: Number of results to return per page.
+        schema:
+          type: integer
+      - name: search
+        required: false
+        in: query
+        description: A search term.
+        schema:
+          type: string
+      tags:
+      - cp
+      security:
+      - jwtAuth: []
+      - tokenAuth: []
+      - jwtAuth: []
+      - tokenAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedLicenseBundleList'
+          description: ''
+    post:
+      operationId: cp_bundles_create
+      tags:
+      - cp
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LicenseBundle'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/LicenseBundle'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/LicenseBundle'
+        required: true
+      security:
+      - jwtAuth: []
+      - tokenAuth: []
+      - jwtAuth: []
+      - tokenAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LicenseBundle'
+          description: ''
+  /api/cp/bundles/{id}/:
+    get:
+      operationId: cp_bundles_retrieve
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this License Bundle.
+        required: true
+      tags:
+      - cp
+      security:
+      - jwtAuth: []
+      - tokenAuth: []
+      - jwtAuth: []
+      - tokenAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LicenseBundle'
+          description: ''
+    put:
+      operationId: cp_bundles_update
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this License Bundle.
+        required: true
+      tags:
+      - cp
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LicenseBundle'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/LicenseBundle'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/LicenseBundle'
+        required: true
+      security:
+      - jwtAuth: []
+      - tokenAuth: []
+      - jwtAuth: []
+      - tokenAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LicenseBundle'
+          description: ''
+    patch:
+      operationId: cp_bundles_partial_update
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this License Bundle.
+        required: true
+      tags:
+      - cp
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedLicenseBundle'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PatchedLicenseBundle'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PatchedLicenseBundle'
+      security:
+      - jwtAuth: []
+      - tokenAuth: []
+      - jwtAuth: []
+      - tokenAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LicenseBundle'
+          description: ''
+    delete:
+      operationId: cp_bundles_destroy
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this License Bundle.
+        required: true
+      tags:
+      - cp
+      security:
+      - jwtAuth: []
+      - tokenAuth: []
+      - jwtAuth: []
+      - tokenAuth: []
+      responses:
+        '204':
+          description: No response body
+  /api/cp/bundles/{id}/renew/:
+    post:
+      operationId: cp_bundles_renew_create
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this License Bundle.
+        required: true
+      tags:
+      - cp
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LicenseBundle'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/LicenseBundle'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/LicenseBundle'
+        required: true
+      security:
+      - jwtAuth: []
+      - tokenAuth: []
+      - jwtAuth: []
+      - tokenAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LicenseBundle'
+          description: ''
+  /api/cp/bundles/{id}/support/:
+    post:
+      operationId: cp_bundles_support_create
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this License Bundle.
+        required: true
+      tags:
+      - cp
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LicenseBundle'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/LicenseBundle'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/LicenseBundle'
+        required: true
+      security:
+      - jwtAuth: []
+      - tokenAuth: []
+      - jwtAuth: []
+      - tokenAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LicenseBundle'
+          description: ''
+  /api/cp/customers/:
+    get:
+      operationId: cp_customers_list
+      parameters:
+      - name: ordering
+        required: false
+        in: query
+        description: Which field to use when ordering the results.
+        schema:
+          type: string
+      - name: page
+        required: false
+        in: query
+        description: A page number within the paginated result set.
+        schema:
+          type: integer
+      - name: page_size
+        required: false
+        in: query
+        description: Number of results to return per page.
+        schema:
+          type: integer
+      - name: search
+        required: false
+        in: query
+        description: A search term.
+        schema:
+          type: string
+      tags:
+      - cp
+      security:
+      - jwtAuth: []
+      - tokenAuth: []
+      - jwtAuth: []
+      - tokenAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedCustomerList'
+          description: ''
+    post:
+      operationId: cp_customers_create
+      tags:
+      - cp
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Customer'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/Customer'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/Customer'
+        required: true
+      security:
+      - jwtAuth: []
+      - tokenAuth: []
+      - jwtAuth: []
+      - tokenAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Customer'
+          description: ''
+  /api/cp/customers/{id}/:
+    get:
+      operationId: cp_customers_retrieve
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this Customer.
+        required: true
+      tags:
+      - cp
+      security:
+      - jwtAuth: []
+      - tokenAuth: []
+      - jwtAuth: []
+      - tokenAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Customer'
+          description: ''
+    put:
+      operationId: cp_customers_update
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this Customer.
+        required: true
+      tags:
+      - cp
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Customer'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/Customer'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/Customer'
+        required: true
+      security:
+      - jwtAuth: []
+      - tokenAuth: []
+      - jwtAuth: []
+      - tokenAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Customer'
+          description: ''
+    patch:
+      operationId: cp_customers_partial_update
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this Customer.
+        required: true
+      tags:
+      - cp
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedCustomer'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PatchedCustomer'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PatchedCustomer'
+      security:
+      - jwtAuth: []
+      - tokenAuth: []
+      - jwtAuth: []
+      - tokenAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Customer'
+          description: ''
+    delete:
+      operationId: cp_customers_destroy
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this Customer.
+        required: true
+      tags:
+      - cp
+      security:
+      - jwtAuth: []
+      - tokenAuth: []
+      - jwtAuth: []
+      - tokenAuth: []
+      responses:
+        '204':
+          description: No response body
+  /api/cp/customers/{id}/detail/:
+    get:
+      operationId: cp_customers_detail_retrieve
+      description: |-
+        Returns True when the argument is true, False otherwise.
+        The builtins True and False are the only two instances of the class bool.
+        The class bool is a subclass of the class int, and cannot be subclassed.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this Customer.
+        required: true
+      tags:
+      - cp
+      security:
+      - jwtAuth: []
+      - tokenAuth: []
+      - jwtAuth: []
+      - tokenAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Customer'
+          description: ''
+  /api/cp/deployments/:
+    get:
+      operationId: cp_deployments_list
+      parameters:
+      - name: ordering
+        required: false
+        in: query
+        description: Which field to use when ordering the results.
+        schema:
+          type: string
+      - name: page
+        required: false
+        in: query
+        description: A page number within the paginated result set.
+        schema:
+          type: integer
+      - name: page_size
+        required: false
+        in: query
+        description: Number of results to return per page.
+        schema:
+          type: integer
+      - name: search
+        required: false
+        in: query
+        description: A search term.
+        schema:
+          type: string
+      tags:
+      - cp
+      security:
+      - jwtAuth: []
+      - tokenAuth: []
+      - jwtAuth: []
+      - tokenAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedDeploymentList'
+          description: ''
+    post:
+      operationId: cp_deployments_create
+      tags:
+      - cp
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Deployment'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/Deployment'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/Deployment'
+        required: true
+      security:
+      - jwtAuth: []
+      - tokenAuth: []
+      - jwtAuth: []
+      - tokenAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Deployment'
+          description: ''
+  /api/cp/deployments/{id}/:
+    get:
+      operationId: cp_deployments_retrieve
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this Deployment.
+        required: true
+      tags:
+      - cp
+      security:
+      - jwtAuth: []
+      - tokenAuth: []
+      - jwtAuth: []
+      - tokenAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Deployment'
+          description: ''
+    put:
+      operationId: cp_deployments_update
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this Deployment.
+        required: true
+      tags:
+      - cp
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Deployment'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/Deployment'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/Deployment'
+        required: true
+      security:
+      - jwtAuth: []
+      - tokenAuth: []
+      - jwtAuth: []
+      - tokenAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Deployment'
+          description: ''
+    patch:
+      operationId: cp_deployments_partial_update
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this Deployment.
+        required: true
+      tags:
+      - cp
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedDeployment'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PatchedDeployment'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PatchedDeployment'
+      security:
+      - jwtAuth: []
+      - tokenAuth: []
+      - jwtAuth: []
+      - tokenAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Deployment'
+          description: ''
+    delete:
+      operationId: cp_deployments_destroy
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this Deployment.
+        required: true
+      tags:
+      - cp
+      security:
+      - jwtAuth: []
+      - tokenAuth: []
+      - jwtAuth: []
+      - tokenAuth: []
+      responses:
+        '204':
+          description: No response body
+  /api/cp/deployments/{id}/assign-license/:
+    post:
+      operationId: cp_deployments_assign_license_create
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this Deployment.
+        required: true
+      tags:
+      - cp
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Deployment'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/Deployment'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/Deployment'
+        required: true
+      security:
+      - jwtAuth: []
+      - tokenAuth: []
+      - jwtAuth: []
+      - tokenAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Deployment'
+          description: ''
+  /api/cp/deployments/unlicensed/:
+    get:
+      operationId: cp_deployments_unlicensed_retrieve
+      tags:
+      - cp
+      security:
+      - jwtAuth: []
+      - tokenAuth: []
+      - jwtAuth: []
+      - tokenAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Deployment'
+          description: ''
+  /api/cp/features/:
+    get:
+      operationId: cp_features_list
+      parameters:
+      - name: ordering
+        required: false
+        in: query
+        description: Which field to use when ordering the results.
+        schema:
+          type: string
+      - name: page
+        required: false
+        in: query
+        description: A page number within the paginated result set.
+        schema:
+          type: integer
+      - name: page_size
+        required: false
+        in: query
+        description: Number of results to return per page.
+        schema:
+          type: integer
+      - name: search
+        required: false
+        in: query
+        description: A search term.
+        schema:
+          type: string
+      tags:
+      - cp
+      security:
+      - jwtAuth: []
+      - tokenAuth: []
+      - jwtAuth: []
+      - tokenAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedFeatureCatalogList'
+          description: ''
+    post:
+      operationId: cp_features_create
+      tags:
+      - cp
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/FeatureCatalog'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/FeatureCatalog'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/FeatureCatalog'
+        required: true
+      security:
+      - jwtAuth: []
+      - tokenAuth: []
+      - jwtAuth: []
+      - tokenAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FeatureCatalog'
+          description: ''
+  /api/cp/features/{id}/:
+    get:
+      operationId: cp_features_retrieve
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this Feature.
+        required: true
+      tags:
+      - cp
+      security:
+      - jwtAuth: []
+      - tokenAuth: []
+      - jwtAuth: []
+      - tokenAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FeatureCatalog'
+          description: ''
+    put:
+      operationId: cp_features_update
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this Feature.
+        required: true
+      tags:
+      - cp
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/FeatureCatalog'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/FeatureCatalog'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/FeatureCatalog'
+        required: true
+      security:
+      - jwtAuth: []
+      - tokenAuth: []
+      - jwtAuth: []
+      - tokenAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FeatureCatalog'
+          description: ''
+    patch:
+      operationId: cp_features_partial_update
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this Feature.
+        required: true
+      tags:
+      - cp
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedFeatureCatalog'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PatchedFeatureCatalog'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PatchedFeatureCatalog'
+      security:
+      - jwtAuth: []
+      - tokenAuth: []
+      - jwtAuth: []
+      - tokenAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FeatureCatalog'
+          description: ''
+    delete:
+      operationId: cp_features_destroy
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this Feature.
+        required: true
+      tags:
+      - cp
+      security:
+      - jwtAuth: []
+      - tokenAuth: []
+      - jwtAuth: []
+      - tokenAuth: []
+      responses:
+        '204':
+          description: No response body
+  /api/cp/license-audit/:
+    get:
+      operationId: cp_license_audit_list
+      parameters:
+      - name: ordering
+        required: false
+        in: query
+        description: Which field to use when ordering the results.
+        schema:
+          type: string
+      - name: page
+        required: false
+        in: query
+        description: A page number within the paginated result set.
+        schema:
+          type: integer
+      - name: page_size
+        required: false
+        in: query
+        description: Number of results to return per page.
+        schema:
+          type: integer
+      - name: search
+        required: false
+        in: query
+        description: A search term.
+        schema:
+          type: string
+      tags:
+      - cp
+      security:
+      - jwtAuth: []
+      - tokenAuth: []
+      - jwtAuth: []
+      - tokenAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedLicenseActionAuditList'
+          description: ''
+    post:
+      operationId: cp_license_audit_create
+      tags:
+      - cp
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LicenseActionAudit'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/LicenseActionAudit'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/LicenseActionAudit'
+        required: true
+      security:
+      - jwtAuth: []
+      - tokenAuth: []
+      - jwtAuth: []
+      - tokenAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LicenseActionAudit'
+          description: ''
+  /api/cp/license-audit/{id}/:
+    get:
+      operationId: cp_license_audit_retrieve
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this License Audit Event.
+        required: true
+      tags:
+      - cp
+      security:
+      - jwtAuth: []
+      - tokenAuth: []
+      - jwtAuth: []
+      - tokenAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LicenseActionAudit'
+          description: ''
+    put:
+      operationId: cp_license_audit_update
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this License Audit Event.
+        required: true
+      tags:
+      - cp
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LicenseActionAudit'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/LicenseActionAudit'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/LicenseActionAudit'
+        required: true
+      security:
+      - jwtAuth: []
+      - tokenAuth: []
+      - jwtAuth: []
+      - tokenAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LicenseActionAudit'
+          description: ''
+    patch:
+      operationId: cp_license_audit_partial_update
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this License Audit Event.
+        required: true
+      tags:
+      - cp
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedLicenseActionAudit'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PatchedLicenseActionAudit'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PatchedLicenseActionAudit'
+      security:
+      - jwtAuth: []
+      - tokenAuth: []
+      - jwtAuth: []
+      - tokenAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LicenseActionAudit'
+          description: ''
+    delete:
+      operationId: cp_license_audit_destroy
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this License Audit Event.
+        required: true
+      tags:
+      - cp
+      security:
+      - jwtAuth: []
+      - tokenAuth: []
+      - jwtAuth: []
+      - tokenAuth: []
+      responses:
+        '204':
+          description: No response body
+  /api/cp/licenses/:
+    get:
+      operationId: cp_licenses_list
+      parameters:
+      - name: ordering
+        required: false
+        in: query
+        description: Which field to use when ordering the results.
+        schema:
+          type: string
+      - name: page
+        required: false
+        in: query
+        description: A page number within the paginated result set.
+        schema:
+          type: integer
+      - name: page_size
+        required: false
+        in: query
+        description: Number of results to return per page.
+        schema:
+          type: integer
+      - name: search
+        required: false
+        in: query
+        description: A search term.
+        schema:
+          type: string
+      tags:
+      - cp
+      security:
+      - jwtAuth: []
+      - tokenAuth: []
+      - jwtAuth: []
+      - tokenAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedLicenseIssueList'
+          description: ''
+    post:
+      operationId: cp_licenses_create
+      tags:
+      - cp
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LicenseIssue'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/LicenseIssue'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/LicenseIssue'
+        required: true
+      security:
+      - jwtAuth: []
+      - tokenAuth: []
+      - jwtAuth: []
+      - tokenAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LicenseIssue'
+          description: ''
+  /api/cp/licenses/{id}/:
+    get:
+      operationId: cp_licenses_retrieve
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this Issued License.
+        required: true
+      tags:
+      - cp
+      security:
+      - jwtAuth: []
+      - tokenAuth: []
+      - jwtAuth: []
+      - tokenAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LicenseIssue'
+          description: ''
+    put:
+      operationId: cp_licenses_update
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this Issued License.
+        required: true
+      tags:
+      - cp
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LicenseIssue'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/LicenseIssue'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/LicenseIssue'
+        required: true
+      security:
+      - jwtAuth: []
+      - tokenAuth: []
+      - jwtAuth: []
+      - tokenAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LicenseIssue'
+          description: ''
+    patch:
+      operationId: cp_licenses_partial_update
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this Issued License.
+        required: true
+      tags:
+      - cp
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedLicenseIssue'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PatchedLicenseIssue'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PatchedLicenseIssue'
+      security:
+      - jwtAuth: []
+      - tokenAuth: []
+      - jwtAuth: []
+      - tokenAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LicenseIssue'
+          description: ''
+    delete:
+      operationId: cp_licenses_destroy
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this Issued License.
+        required: true
+      tags:
+      - cp
+      security:
+      - jwtAuth: []
+      - tokenAuth: []
+      - jwtAuth: []
+      - tokenAuth: []
+      responses:
+        '204':
+          description: No response body
+  /api/cp/licenses/{id}/revoke/:
+    post:
+      operationId: cp_licenses_revoke_create
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this Issued License.
+        required: true
+      tags:
+      - cp
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LicenseIssue'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/LicenseIssue'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/LicenseIssue'
+        required: true
+      security:
+      - jwtAuth: []
+      - tokenAuth: []
+      - jwtAuth: []
+      - tokenAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LicenseIssue'
+          description: ''
+  /api/cp/licenses/issue/:
+    post:
+      operationId: cp_licenses_issue_create
+      tags:
+      - cp
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LicenseIssue'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/LicenseIssue'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/LicenseIssue'
+        required: true
+      security:
+      - jwtAuth: []
+      - tokenAuth: []
+      - jwtAuth: []
+      - tokenAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LicenseIssue'
+          description: ''
+  /api/cp/licenses/runtime_heartbeat/:
+    post:
+      operationId: cp_licenses_runtime_heartbeat_create
+      tags:
+      - cp
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LicenseIssue'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/LicenseIssue'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/LicenseIssue'
+        required: true
+      security:
+      - jwtAuth: []
+      - tokenAuth: []
+      - jwtAuth: []
+      - tokenAuth: []
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LicenseIssue'
+          description: ''
+  /api/cp/licenses/runtime_install_ack/:
+    post:
+      operationId: cp_licenses_runtime_install_ack_create
+      tags:
+      - cp
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LicenseIssue'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/LicenseIssue'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/LicenseIssue'
+        required: true
+      security:
+      - jwtAuth: []
+      - tokenAuth: []
+      - jwtAuth: []
+      - tokenAuth: []
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LicenseIssue'
+          description: ''
+  /api/cp/licenses/runtime_issue/:
+    post:
+      operationId: cp_licenses_runtime_issue_create
+      tags:
+      - cp
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LicenseIssue'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/LicenseIssue'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/LicenseIssue'
+        required: true
+      security:
+      - jwtAuth: []
+      - tokenAuth: []
+      - jwtAuth: []
+      - tokenAuth: []
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LicenseIssue'
+          description: ''
+  /api/cp/licenses/runtime_nonce/:
+    post:
+      operationId: cp_licenses_runtime_nonce_create
+      tags:
+      - cp
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LicenseIssue'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/LicenseIssue'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/LicenseIssue'
+        required: true
+      security:
+      - jwtAuth: []
+      - tokenAuth: []
+      - jwtAuth: []
+      - tokenAuth: []
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LicenseIssue'
+          description: ''
+  /api/cp/licenses/runtime_request/:
+    post:
+      operationId: cp_licenses_runtime_request_create
+      tags:
+      - cp
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LicenseIssue'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/LicenseIssue'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/LicenseIssue'
+        required: true
+      security:
+      - jwtAuth: []
+      - tokenAuth: []
+      - jwtAuth: []
+      - tokenAuth: []
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LicenseIssue'
+          description: ''
+  /api/cp/overview/:
+    get:
+      operationId: cp_overview_retrieve
+      tags:
+      - cp
+      security:
+      - jwtAuth: []
+      - tokenAuth: []
+      - jwtAuth: []
+      - tokenAuth: []
+      responses:
+        '200':
+          description: No response body
+    post:
+      operationId: cp_overview_create
+      tags:
+      - cp
+      security:
+      - jwtAuth: []
+      - tokenAuth: []
+      - jwtAuth: []
+      - tokenAuth: []
+      responses:
+        '201':
+          description: No response body
+  /api/cp/overview/{id}/:
+    get:
+      operationId: cp_overview_retrieve_2
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+        required: true
+      tags:
+      - cp
+      security:
+      - jwtAuth: []
+      - tokenAuth: []
+      - jwtAuth: []
+      - tokenAuth: []
+      responses:
+        '200':
+          description: No response body
+    put:
+      operationId: cp_overview_update
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+        required: true
+      tags:
+      - cp
+      security:
+      - jwtAuth: []
+      - tokenAuth: []
+      - jwtAuth: []
+      - tokenAuth: []
+      responses:
+        '200':
+          description: No response body
+    patch:
+      operationId: cp_overview_partial_update
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+        required: true
+      tags:
+      - cp
+      security:
+      - jwtAuth: []
+      - tokenAuth: []
+      - jwtAuth: []
+      - tokenAuth: []
+      responses:
+        '200':
+          description: No response body
+    delete:
+      operationId: cp_overview_destroy
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+        required: true
+      tags:
+      - cp
+      security:
+      - jwtAuth: []
+      - tokenAuth: []
+      - jwtAuth: []
+      - tokenAuth: []
+      responses:
+        '204':
+          description: No response body
+  /api/cp/plans/:
+    get:
+      operationId: cp_plans_list
+      parameters:
+      - name: ordering
+        required: false
+        in: query
+        description: Which field to use when ordering the results.
+        schema:
+          type: string
+      - name: page
+        required: false
+        in: query
+        description: A page number within the paginated result set.
+        schema:
+          type: integer
+      - name: page_size
+        required: false
+        in: query
+        description: Number of results to return per page.
+        schema:
+          type: integer
+      - name: search
+        required: false
+        in: query
+        description: A search term.
+        schema:
+          type: string
+      tags:
+      - cp
+      security:
+      - jwtAuth: []
+      - tokenAuth: []
+      - jwtAuth: []
+      - tokenAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedPlanList'
+          description: ''
+    post:
+      operationId: cp_plans_create
+      tags:
+      - cp
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Plan'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/Plan'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/Plan'
+        required: true
+      security:
+      - jwtAuth: []
+      - tokenAuth: []
+      - jwtAuth: []
+      - tokenAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Plan'
+          description: ''
+  /api/cp/plans/{id}/:
+    get:
+      operationId: cp_plans_retrieve
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this Plan.
+        required: true
+      tags:
+      - cp
+      security:
+      - jwtAuth: []
+      - tokenAuth: []
+      - jwtAuth: []
+      - tokenAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Plan'
+          description: ''
+    put:
+      operationId: cp_plans_update
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this Plan.
+        required: true
+      tags:
+      - cp
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Plan'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/Plan'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/Plan'
+        required: true
+      security:
+      - jwtAuth: []
+      - tokenAuth: []
+      - jwtAuth: []
+      - tokenAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Plan'
+          description: ''
+    patch:
+      operationId: cp_plans_partial_update
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this Plan.
+        required: true
+      tags:
+      - cp
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedPlan'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PatchedPlan'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PatchedPlan'
+      security:
+      - jwtAuth: []
+      - tokenAuth: []
+      - jwtAuth: []
+      - tokenAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Plan'
+          description: ''
+    delete:
+      operationId: cp_plans_destroy
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this Plan.
+        required: true
+      tags:
+      - cp
+      security:
+      - jwtAuth: []
+      - tokenAuth: []
+      - jwtAuth: []
+      - tokenAuth: []
+      responses:
+        '204':
+          description: No response body
+  /api/cp/runtime-license-requests/:
+    get:
+      operationId: cp_runtime_license_requests_list
+      parameters:
+      - name: ordering
+        required: false
+        in: query
+        description: Which field to use when ordering the results.
+        schema:
+          type: string
+      - name: page
+        required: false
+        in: query
+        description: A page number within the paginated result set.
+        schema:
+          type: integer
+      - name: page_size
+        required: false
+        in: query
+        description: Number of results to return per page.
+        schema:
+          type: integer
+      - name: search
+        required: false
+        in: query
+        description: A search term.
+        schema:
+          type: string
+      tags:
+      - cp
+      security:
+      - jwtAuth: []
+      - tokenAuth: []
+      - jwtAuth: []
+      - tokenAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedRuntimeLicenseRequestList'
+          description: ''
+    post:
+      operationId: cp_runtime_license_requests_create
+      tags:
+      - cp
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RuntimeLicenseRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/RuntimeLicenseRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/RuntimeLicenseRequest'
+        required: true
+      security:
+      - jwtAuth: []
+      - tokenAuth: []
+      - jwtAuth: []
+      - tokenAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RuntimeLicenseRequest'
+          description: ''
+  /api/cp/runtime-license-requests/{id}/:
+    get:
+      operationId: cp_runtime_license_requests_retrieve
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this Runtime License Request.
+        required: true
+      tags:
+      - cp
+      security:
+      - jwtAuth: []
+      - tokenAuth: []
+      - jwtAuth: []
+      - tokenAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RuntimeLicenseRequest'
+          description: ''
+    put:
+      operationId: cp_runtime_license_requests_update
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this Runtime License Request.
+        required: true
+      tags:
+      - cp
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RuntimeLicenseRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/RuntimeLicenseRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/RuntimeLicenseRequest'
+        required: true
+      security:
+      - jwtAuth: []
+      - tokenAuth: []
+      - jwtAuth: []
+      - tokenAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RuntimeLicenseRequest'
+          description: ''
+    patch:
+      operationId: cp_runtime_license_requests_partial_update
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this Runtime License Request.
+        required: true
+      tags:
+      - cp
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedRuntimeLicenseRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PatchedRuntimeLicenseRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PatchedRuntimeLicenseRequest'
+      security:
+      - jwtAuth: []
+      - tokenAuth: []
+      - jwtAuth: []
+      - tokenAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RuntimeLicenseRequest'
+          description: ''
+    delete:
+      operationId: cp_runtime_license_requests_destroy
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this Runtime License Request.
+        required: true
+      tags:
+      - cp
+      security:
+      - jwtAuth: []
+      - tokenAuth: []
+      - jwtAuth: []
+      - tokenAuth: []
+      responses:
+        '204':
+          description: No response body
+  /api/cp/runtime-license-requests/{id}/approve/:
+    post:
+      operationId: cp_runtime_license_requests_approve_create
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this Runtime License Request.
+        required: true
+      tags:
+      - cp
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RuntimeLicenseRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/RuntimeLicenseRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/RuntimeLicenseRequest'
+        required: true
+      security:
+      - jwtAuth: []
+      - tokenAuth: []
+      - jwtAuth: []
+      - tokenAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RuntimeLicenseRequest'
+          description: ''
+  /api/cp/runtime-license-requests/{id}/reject/:
+    post:
+      operationId: cp_runtime_license_requests_reject_create
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this Runtime License Request.
+        required: true
+      tags:
+      - cp
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RuntimeLicenseRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/RuntimeLicenseRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/RuntimeLicenseRequest'
+        required: true
+      security:
+      - jwtAuth: []
+      - tokenAuth: []
+      - jwtAuth: []
+      - tokenAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RuntimeLicenseRequest'
+          description: ''
+  /api/cp/runtime-license-requests/unlicensed/:
+    get:
+      operationId: cp_runtime_license_requests_unlicensed_retrieve
+      tags:
+      - cp
+      security:
+      - jwtAuth: []
+      - tokenAuth: []
+      - jwtAuth: []
+      - tokenAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RuntimeLicenseRequest'
+          description: ''
+  /api/cp/subscriptions/:
+    get:
+      operationId: cp_subscriptions_list
+      parameters:
+      - name: ordering
+        required: false
+        in: query
+        description: Which field to use when ordering the results.
+        schema:
+          type: string
+      - name: page
+        required: false
+        in: query
+        description: A page number within the paginated result set.
+        schema:
+          type: integer
+      - name: page_size
+        required: false
+        in: query
+        description: Number of results to return per page.
+        schema:
+          type: integer
+      - name: search
+        required: false
+        in: query
+        description: A search term.
+        schema:
+          type: string
+      tags:
+      - cp
+      security:
+      - jwtAuth: []
+      - tokenAuth: []
+      - jwtAuth: []
+      - tokenAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedSubscriptionList'
+          description: ''
+    post:
+      operationId: cp_subscriptions_create
+      tags:
+      - cp
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Subscription'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/Subscription'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/Subscription'
+        required: true
+      security:
+      - jwtAuth: []
+      - tokenAuth: []
+      - jwtAuth: []
+      - tokenAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Subscription'
+          description: ''
+  /api/cp/subscriptions/{id}/:
+    get:
+      operationId: cp_subscriptions_retrieve
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this Subscription.
+        required: true
+      tags:
+      - cp
+      security:
+      - jwtAuth: []
+      - tokenAuth: []
+      - jwtAuth: []
+      - tokenAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Subscription'
+          description: ''
+    put:
+      operationId: cp_subscriptions_update
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this Subscription.
+        required: true
+      tags:
+      - cp
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Subscription'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/Subscription'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/Subscription'
+        required: true
+      security:
+      - jwtAuth: []
+      - tokenAuth: []
+      - jwtAuth: []
+      - tokenAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Subscription'
+          description: ''
+    patch:
+      operationId: cp_subscriptions_partial_update
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this Subscription.
+        required: true
+      tags:
+      - cp
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedSubscription'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PatchedSubscription'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PatchedSubscription'
+      security:
+      - jwtAuth: []
+      - tokenAuth: []
+      - jwtAuth: []
+      - tokenAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Subscription'
+          description: ''
+    delete:
+      operationId: cp_subscriptions_destroy
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this Subscription.
+        required: true
+      tags:
+      - cp
+      security:
+      - jwtAuth: []
+      - tokenAuth: []
+      - jwtAuth: []
+      - tokenAuth: []
+      responses:
+        '204':
+          description: No response body
   /api/crm-data/export/:
     get:
       operationId: crm_data_export_xlsx
@@ -2251,6 +4444,43 @@ paths:
       responses:
         '204':
           description: No response body
+  /api/deals/{id}/ops-chain/create-service-ticket/:
+    post:
+      operationId: deals_ops_chain_create_service_ticket_create
+      description: CRUD for CRM deals with ownership rules.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this Deal.
+        required: true
+      tags:
+      - Deals
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Deal'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/Deal'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/Deal'
+        required: true
+      security:
+      - jwtAuth: []
+      - tokenAuth: []
+      - jwtAuth: []
+      - tokenAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Deal'
+          description: ''
   /api/deals/bulk_tag/:
     post:
       operationId: deals_bulk_tag_create
@@ -2269,6 +4499,24 @@ paths:
             schema:
               $ref: '#/components/schemas/Deal'
         required: true
+      security:
+      - jwtAuth: []
+      - tokenAuth: []
+      - jwtAuth: []
+      - tokenAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Deal'
+          description: ''
+  /api/deals/ops-chain/:
+    get:
+      operationId: deals_ops_chain_retrieve
+      description: CRUD for CRM deals with ownership rules.
+      tags:
+      - Deals
       security:
       - jwtAuth: []
       - tokenAuth: []
@@ -2836,6 +5084,39 @@ paths:
       responses:
         '204':
           description: No response body
+  /api/landings/{id}/assets/upload/:
+    post:
+      operationId: landings_assets_upload_create
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this landing page.
+        required: true
+      tags:
+      - Landing Builder
+      requestBody:
+        content:
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/LandingPage'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/LandingPage'
+        required: true
+      security:
+      - jwtAuth: []
+      - tokenAuth: []
+      - jwtAuth: []
+      - tokenAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LandingPage'
+          description: ''
   /api/landings/{id}/bindings/:
     get:
       operationId: landings_bindings_retrieve
@@ -3534,6 +5815,32 @@ paths:
               schema:
                 $ref: '#/components/schemas/Lead'
           description: ''
+  /api/license/:
+    get:
+      operationId: license_retrieve
+      tags:
+      - license
+      security:
+      - jwtAuth: []
+      - tokenAuth: []
+      - jwtAuth: []
+      - tokenAuth: []
+      responses:
+        '200':
+          description: No response body
+  /api/license/me/:
+    get:
+      operationId: license_me_retrieve
+      tags:
+      - license
+      security:
+      - jwtAuth: []
+      - tokenAuth: []
+      - jwtAuth: []
+      - tokenAuth: []
+      responses:
+        '200':
+          description: No response body
   /api/marketing/campaigns/:
     get:
       operationId: marketing_campaigns_list
@@ -6943,6 +9250,70 @@ paths:
       responses:
         '204':
           description: No response body
+  /api/reminders/content-types/:
+    get:
+      operationId: reminders_content_types_retrieve
+      description: Get available content types for reminder binding.
+      tags:
+      - Reminders
+      security:
+      - jwtAuth: []
+      - tokenAuth: []
+      - jwtAuth: []
+      - tokenAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Reminder'
+          description: ''
+  /api/reminders/objects/:
+    get:
+      operationId: reminders_objects_retrieve
+      description: Get bindable objects for selected reminder content type.
+      tags:
+      - Reminders
+      security:
+      - jwtAuth: []
+      - tokenAuth: []
+      - jwtAuth: []
+      - tokenAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Reminder'
+          description: ''
+  /api/reminders/objects/{object_id}/:
+    get:
+      operationId: reminders_objects_retrieve_2
+      description: Get single bindable object by id for selected reminder content
+        type.
+      parameters:
+      - in: path
+        name: object_id
+        schema:
+          type: integer
+          maximum: 9223372036854775807
+          minimum: 0
+          format: int64
+        required: true
+      tags:
+      - Reminders
+      security:
+      - jwtAuth: []
+      - tokenAuth: []
+      - jwtAuth: []
+      - tokenAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Reminder'
+          description: ''
   /api/reminders/upcoming/:
     get:
       operationId: reminders_upcoming_retrieve
@@ -7173,6 +9544,74 @@ paths:
       responses:
         '204':
           description: No response body
+  /api/resolutions/:
+    get:
+      operationId: resolutions_list
+      description: Reference list of memo resolutions.
+      parameters:
+      - name: ordering
+        required: false
+        in: query
+        description: Which field to use when ordering the results.
+        schema:
+          type: string
+      - name: page
+        required: false
+        in: query
+        description: A page number within the paginated result set.
+        schema:
+          type: integer
+      - name: page_size
+        required: false
+        in: query
+        description: Number of results to return per page.
+        schema:
+          type: integer
+      - name: search
+        required: false
+        in: query
+        description: A search term.
+        schema:
+          type: string
+      tags:
+      - Resolutions
+      security:
+      - jwtAuth: []
+      - tokenAuth: []
+      - jwtAuth: []
+      - tokenAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedResolutionList'
+          description: ''
+  /api/resolutions/{id}/:
+    get:
+      operationId: resolutions_retrieve
+      description: Reference list of memo resolutions.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this Resolution.
+        required: true
+      tags:
+      - Resolutions
+      security:
+      - jwtAuth: []
+      - tokenAuth: []
+      - jwtAuth: []
+      - tokenAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Resolution'
+          description: ''
   /api/settings/ai/providers/:
     get:
       operationId: settings_ai_providers_list
@@ -8768,6 +11207,36 @@ paths:
               schema:
                 $ref: '#/components/schemas/FacebookPage'
           description: ''
+  /api/settings/facebook/pages/discover/:
+    post:
+      operationId: settings_facebook_pages_discover_create
+      description: Discover Facebook pages available for provided token.
+      tags:
+      - settings
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/FacebookPage'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/FacebookPage'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/FacebookPage'
+        required: true
+      security:
+      - jwtAuth: []
+      - tokenAuth: []
+      - jwtAuth: []
+      - tokenAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FacebookPage'
+          description: ''
   /api/settings/general/:
     get:
       operationId: settings_general_list
@@ -9137,6 +11606,36 @@ paths:
               schema:
                 $ref: '#/components/schemas/InstagramAccount'
           description: ''
+  /api/settings/instagram/accounts/discover/:
+    post:
+      operationId: settings_instagram_accounts_discover_create
+      description: Discover Instagram Business accounts available for provided token.
+      tags:
+      - settings
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/InstagramAccount'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/InstagramAccount'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/InstagramAccount'
+        required: true
+      security:
+      - jwtAuth: []
+      - tokenAuth: []
+      - jwtAuth: []
+      - tokenAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InstagramAccount'
+          description: ''
   /api/settings/integration-logs/:
     get:
       operationId: settings_integration_logs_list
@@ -9273,6 +11772,215 @@ paths:
               schema:
                 $ref: '#/components/schemas/IntegrationLog'
           description: ''
+  /api/settings/marketplace/extensions/:
+    get:
+      operationId: settings_marketplace_extensions_list
+      parameters:
+      - name: ordering
+        required: false
+        in: query
+        description: Which field to use when ordering the results.
+        schema:
+          type: string
+      - name: page
+        required: false
+        in: query
+        description: A page number within the paginated result set.
+        schema:
+          type: integer
+      - name: page_size
+        required: false
+        in: query
+        description: Number of results to return per page.
+        schema:
+          type: integer
+      - name: search
+        required: false
+        in: query
+        description: A search term.
+        schema:
+          type: string
+      tags:
+      - settings
+      security:
+      - jwtAuth: []
+      - tokenAuth: []
+      - jwtAuth: []
+      - tokenAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedMarketplaceExtensionList'
+          description: ''
+  /api/settings/marketplace/extensions/{id}/:
+    get:
+      operationId: settings_marketplace_extensions_retrieve
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        description: A UUID string identifying this Marketplace Extension.
+        required: true
+      tags:
+      - settings
+      security:
+      - jwtAuth: []
+      - tokenAuth: []
+      - jwtAuth: []
+      - tokenAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MarketplaceExtension'
+          description: ''
+  /api/settings/marketplace/extensions/{id}/diagnostics/:
+    get:
+      operationId: settings_marketplace_extensions_diagnostics_retrieve
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        description: A UUID string identifying this Marketplace Extension.
+        required: true
+      tags:
+      - settings
+      security:
+      - jwtAuth: []
+      - tokenAuth: []
+      - jwtAuth: []
+      - tokenAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MarketplaceExtension'
+          description: ''
+  /api/settings/marketplace/extensions/{id}/uninstall/:
+    post:
+      operationId: settings_marketplace_extensions_uninstall_create
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        description: A UUID string identifying this Marketplace Extension.
+        required: true
+      tags:
+      - settings
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/MarketplaceExtension'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/MarketplaceExtension'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/MarketplaceExtension'
+      security:
+      - jwtAuth: []
+      - tokenAuth: []
+      - jwtAuth: []
+      - tokenAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MarketplaceExtension'
+          description: ''
+  /api/settings/marketplace/extensions/{id}/upgrade/:
+    post:
+      operationId: settings_marketplace_extensions_upgrade_create
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        description: A UUID string identifying this Marketplace Extension.
+        required: true
+      tags:
+      - settings
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/MarketplaceExtension'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/MarketplaceExtension'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/MarketplaceExtension'
+      security:
+      - jwtAuth: []
+      - tokenAuth: []
+      - jwtAuth: []
+      - tokenAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MarketplaceExtension'
+          description: ''
+  /api/settings/marketplace/extensions/compatibility-matrix/:
+    get:
+      operationId: settings_marketplace_extensions_compatibility_matrix_retrieve
+      tags:
+      - settings
+      security:
+      - jwtAuth: []
+      - tokenAuth: []
+      - jwtAuth: []
+      - tokenAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MarketplaceExtension'
+          description: ''
+  /api/settings/marketplace/extensions/install/:
+    post:
+      operationId: settings_marketplace_extensions_install_create
+      tags:
+      - settings
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/MarketplaceExtension'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/MarketplaceExtension'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/MarketplaceExtension'
+      security:
+      - jwtAuth: []
+      - tokenAuth: []
+      - jwtAuth: []
+      - tokenAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MarketplaceExtension'
+          description: ''
   /api/settings/massmail/:
     get:
       operationId: settings_massmail_retrieve
@@ -9376,6 +12084,205 @@ paths:
       responses:
         '200':
           description: No response body
+  /api/settings/omnichannel/{id}/payload/:
+    get:
+      operationId: settings_omnichannel_payload_retrieve
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this External message.
+        required: true
+      tags:
+      - settings
+      security:
+      - jwtAuth: []
+      - tokenAuth: []
+      - jwtAuth: []
+      - tokenAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OmnichannelMessage'
+          description: ''
+  /api/settings/omnichannel/{id}/replay/:
+    post:
+      operationId: settings_omnichannel_replay_create
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this External message.
+        required: true
+      tags:
+      - settings
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/OmnichannelMessage'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/OmnichannelMessage'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/OmnichannelMessage'
+      security:
+      - jwtAuth: []
+      - tokenAuth: []
+      - jwtAuth: []
+      - tokenAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OmnichannelMessage'
+          description: ''
+  /api/settings/omnichannel/conversations/action/:
+    post:
+      operationId: settings_omnichannel_conversations_action_create
+      tags:
+      - settings
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/OmnichannelMessage'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/OmnichannelMessage'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/OmnichannelMessage'
+      security:
+      - jwtAuth: []
+      - tokenAuth: []
+      - jwtAuth: []
+      - tokenAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OmnichannelMessage'
+          description: ''
+  /api/settings/omnichannel/conversations/context/:
+    get:
+      operationId: settings_omnichannel_conversations_context_retrieve
+      tags:
+      - settings
+      security:
+      - jwtAuth: []
+      - tokenAuth: []
+      - jwtAuth: []
+      - tokenAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OmnichannelMessage'
+          description: ''
+    post:
+      operationId: settings_omnichannel_conversations_context_create
+      tags:
+      - settings
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/OmnichannelMessage'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/OmnichannelMessage'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/OmnichannelMessage'
+      security:
+      - jwtAuth: []
+      - tokenAuth: []
+      - jwtAuth: []
+      - tokenAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OmnichannelMessage'
+          description: ''
+  /api/settings/omnichannel/diagnostics/:
+    get:
+      operationId: settings_omnichannel_diagnostics_retrieve
+      tags:
+      - settings
+      security:
+      - jwtAuth: []
+      - tokenAuth: []
+      - jwtAuth: []
+      - tokenAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OmnichannelMessage'
+          description: ''
+  /api/settings/omnichannel/outbound/:
+    get:
+      operationId: settings_omnichannel_outbound_retrieve
+      tags:
+      - settings
+      security:
+      - jwtAuth: []
+      - tokenAuth: []
+      - jwtAuth: []
+      - tokenAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OmnichannelMessage'
+          description: ''
+  /api/settings/omnichannel/outbound/{event_id}/retry/:
+    post:
+      operationId: settings_omnichannel_outbound_retry_create
+      parameters:
+      - in: path
+        name: event_id
+        schema:
+          type: string
+        required: true
+      tags:
+      - settings
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/OmnichannelMessage'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/OmnichannelMessage'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/OmnichannelMessage'
+      security:
+      - jwtAuth: []
+      - tokenAuth: []
+      - jwtAuth: []
+      - tokenAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OmnichannelMessage'
+          description: ''
   /api/settings/omnichannel/send/:
     post:
       operationId: settings_omnichannel_send_create
@@ -9421,6 +12328,58 @@ paths:
               schema:
                 $ref: '#/components/schemas/OmnichannelMessage'
           description: ''
+  /api/settings/onboarding/:
+    get:
+      operationId: settings_onboarding_list
+      tags:
+      - settings
+      security:
+      - jwtAuth: []
+      - tokenAuth: []
+      - jwtAuth: []
+      - tokenAuth: []
+      responses:
+        '200':
+          description: No response body
+  /api/settings/onboarding/bootstrap/:
+    post:
+      operationId: settings_onboarding_bootstrap_create
+      tags:
+      - settings
+      security:
+      - jwtAuth: []
+      - tokenAuth: []
+      - jwtAuth: []
+      - tokenAuth: []
+      responses:
+        '200':
+          description: No response body
+  /api/settings/onboarding/progress/:
+    post:
+      operationId: settings_onboarding_progress_create
+      tags:
+      - settings
+      security:
+      - jwtAuth: []
+      - tokenAuth: []
+      - jwtAuth: []
+      - tokenAuth: []
+      responses:
+        '200':
+          description: No response body
+  /api/settings/onboarding/restart/:
+    post:
+      operationId: settings_onboarding_restart_create
+      tags:
+      - settings
+      security:
+      - jwtAuth: []
+      - tokenAuth: []
+      - jwtAuth: []
+      - tokenAuth: []
+      responses:
+        '200':
+          description: No response body
   /api/settings/public_email_domains/:
     get:
       operationId: settings_public_email_domains_retrieve
@@ -10556,6 +13515,36 @@ paths:
               schema:
                 $ref: '#/components/schemas/WhatsAppBusinessAccount'
           description: ''
+  /api/settings/whatsapp/accounts/discover/:
+    post:
+      operationId: settings_whatsapp_accounts_discover_create
+      description: Discover WhatsApp Business assets by access token.
+      tags:
+      - settings
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/WhatsAppBusinessAccount'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/WhatsAppBusinessAccount'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/WhatsAppBusinessAccount'
+        required: true
+      security:
+      - jwtAuth: []
+      - tokenAuth: []
+      - jwtAuth: []
+      - tokenAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/WhatsAppBusinessAccount'
+          description: ''
   /api/shipments/:
     get:
       operationId: shipments_list
@@ -10788,6 +13777,104 @@ paths:
       - tokenAuth: []
       responses:
         '200':
+          description: No response body
+    post:
+      operationId: sms_providers_create
+      description: List available SMS providers
+      tags:
+      - SMS
+      security:
+      - jwtAuth: []
+      - tokenAuth: []
+      - jwtAuth: []
+      - tokenAuth: []
+      responses:
+        '200':
+          description: No response body
+  /api/sms/providers/{provider_id}/:
+    get:
+      operationId: sms_providers_retrieve_2
+      description: |-
+        API endpoints for SMS operations
+        Wraps existing SMS functionality from integrations app
+      parameters:
+      - in: path
+        name: provider_id
+        schema:
+          type: string
+        required: true
+      tags:
+      - SMS
+      security:
+      - jwtAuth: []
+      - tokenAuth: []
+      - jwtAuth: []
+      - tokenAuth: []
+      responses:
+        '200':
+          description: No response body
+    put:
+      operationId: sms_providers_update
+      description: |-
+        API endpoints for SMS operations
+        Wraps existing SMS functionality from integrations app
+      parameters:
+      - in: path
+        name: provider_id
+        schema:
+          type: string
+        required: true
+      tags:
+      - SMS
+      security:
+      - jwtAuth: []
+      - tokenAuth: []
+      - jwtAuth: []
+      - tokenAuth: []
+      responses:
+        '200':
+          description: No response body
+    patch:
+      operationId: sms_providers_partial_update
+      description: |-
+        API endpoints for SMS operations
+        Wraps existing SMS functionality from integrations app
+      parameters:
+      - in: path
+        name: provider_id
+        schema:
+          type: string
+        required: true
+      tags:
+      - SMS
+      security:
+      - jwtAuth: []
+      - tokenAuth: []
+      - jwtAuth: []
+      - tokenAuth: []
+      responses:
+        '200':
+          description: No response body
+    delete:
+      operationId: sms_providers_destroy
+      description: |-
+        API endpoints for SMS operations
+        Wraps existing SMS functionality from integrations app
+      parameters:
+      - in: path
+        name: provider_id
+        schema:
+          type: string
+        required: true
+      tags:
+      - SMS
+      security:
+      - jwtAuth: []
+      - tokenAuth: []
+      - jwtAuth: []
+      - tokenAuth: []
+      responses:
+        '204':
           description: No response body
   /api/sms/send/:
     post:
@@ -11593,6 +14680,34 @@ paths:
               schema:
                 $ref: '#/components/schemas/User'
           description: ''
+  /api/voip/call-control/hangup/:
+    post:
+      operationId: voip_call_control_hangup_create
+      description: Request call hangup by session_id from CRM side.
+      tags:
+      - VoIP & Cold Calls
+      security:
+      - jwtAuth: []
+      - tokenAuth: []
+      - jwtAuth: []
+      - tokenAuth: []
+      responses:
+        '200':
+          description: No response body
+  /api/voip/call-control/reject/:
+    post:
+      operationId: voip_call_control_reject_create
+      description: Reject inbound ringing call by session_id.
+      tags:
+      - VoIP & Cold Calls
+      security:
+      - jwtAuth: []
+      - tokenAuth: []
+      - jwtAuth: []
+      - tokenAuth: []
+      responses:
+        '200':
+          description: No response body
   /api/voip/call-logs/:
     get:
       operationId: voip_call_logs_list
@@ -11783,13 +14898,9 @@ paths:
           type: string
           enum:
           - Asterisk
-          - OnlinePBX
-          - Zadarma
         description: |-
           Specify VoIP service provider
 
-          * `Zadarma` - Zadarma
-          * `OnlinePBX` - OnlinePBX
           * `Asterisk` - Asterisk
       tags:
       - VoIP
@@ -11945,6 +15056,52 @@ paths:
       responses:
         '204':
           description: No response body
+  /api/voip/connections/switch-active/:
+    post:
+      operationId: voip_connections_switch_active_create
+      tags:
+      - VoIP
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Connection'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/Connection'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/Connection'
+        required: true
+      security:
+      - jwtAuth: []
+      - tokenAuth: []
+      - jwtAuth: []
+      - tokenAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Connection'
+          description: ''
+  /api/voip/connections/trunk-health/:
+    get:
+      operationId: voip_connections_trunk_health_retrieve
+      tags:
+      - VoIP
+      security:
+      - jwtAuth: []
+      - tokenAuth: []
+      - jwtAuth: []
+      - tokenAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Connection'
+          description: ''
   /api/voip/contact-center-drilldown/:
     get:
       operationId: voip_contact_center_drilldown_retrieve
@@ -12083,6 +15240,91 @@ paths:
                 type: object
                 additionalProperties: {}
           description: ''
+  /api/voip/internal-numbers/:
+    get:
+      operationId: voip_internal_numbers_list
+      parameters:
+      - in: query
+        name: active
+        schema:
+          type: boolean
+      - name: page
+        required: false
+        in: query
+        description: A page number within the paginated result set.
+        schema:
+          type: integer
+      - name: page_size
+        required: false
+        in: query
+        description: Number of results to return per page.
+        schema:
+          type: integer
+      - name: search
+        required: false
+        in: query
+        description: A search term.
+        schema:
+          type: string
+      - in: query
+        name: server
+        schema:
+          type: integer
+      tags:
+      - VoIP
+      security:
+      - jwtAuth: []
+      - tokenAuth: []
+      - jwtAuth: []
+      - tokenAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedInternalNumberOptionList'
+          description: ''
+  /api/voip/internal-numbers/{id}/:
+    get:
+      operationId: voip_internal_numbers_retrieve
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this Internal Number.
+        required: true
+      tags:
+      - VoIP
+      security:
+      - jwtAuth: []
+      - tokenAuth: []
+      - jwtAuth: []
+      - tokenAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InternalNumberOption'
+          description: ''
+  /api/voip/internal-numbers/lifecycle/:
+    get:
+      operationId: voip_internal_numbers_lifecycle_retrieve
+      tags:
+      - VoIP
+      security:
+      - jwtAuth: []
+      - tokenAuth: []
+      - jwtAuth: []
+      - tokenAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InternalNumberOption'
+          description: ''
   /api/voip/my-connections/:
     get:
       operationId: voip_my_connections_retrieve
@@ -12097,6 +15339,92 @@ paths:
       responses:
         '200':
           description: No response body
+  /api/voip/number-groups/:
+    get:
+      operationId: voip_number_groups_list
+      parameters:
+      - in: query
+        name: active
+        schema:
+          type: boolean
+      - in: query
+        name: distribution_strategy
+        schema:
+          type: string
+          enum:
+          - all_ring
+          - least_recent
+          - priority
+          - random
+          - round_robin
+        description: |-
+          How calls are distributed among group members
+
+          * `round_robin` - Round Robin
+          * `random` - Random
+          * `priority` - Priority Order
+          * `all_ring` - Ring All
+          * `least_recent` - Least Recently Called
+      - name: page
+        required: false
+        in: query
+        description: A page number within the paginated result set.
+        schema:
+          type: integer
+      - name: page_size
+        required: false
+        in: query
+        description: Number of results to return per page.
+        schema:
+          type: integer
+      - name: search
+        required: false
+        in: query
+        description: A search term.
+        schema:
+          type: string
+      - in: query
+        name: server
+        schema:
+          type: integer
+      tags:
+      - VoIP
+      security:
+      - jwtAuth: []
+      - tokenAuth: []
+      - jwtAuth: []
+      - tokenAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedNumberGroupOptionList'
+          description: ''
+  /api/voip/number-groups/{id}/:
+    get:
+      operationId: voip_number_groups_retrieve
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this Number Group.
+        required: true
+      tags:
+      - VoIP
+      security:
+      - jwtAuth: []
+      - tokenAuth: []
+      - jwtAuth: []
+      - tokenAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/NumberGroupOption'
+          description: ''
   /api/voip/pilot-weekly-reports/:
     get:
       operationId: voip_pilot_weekly_reports_list
@@ -12244,6 +15572,384 @@ paths:
       responses:
         '200':
           description: No response body
+  /api/voip/routing-rules/:
+    get:
+      operationId: voip_routing_rules_list
+      parameters:
+      - in: query
+        name: action
+        schema:
+          type: string
+          enum:
+          - forward_external
+          - hangup
+          - play_announcement
+          - route_to_group
+          - route_to_number
+          - route_to_queue
+          - route_to_voicemail
+        description: |-
+          * `route_to_number` - Route to Number
+          * `route_to_group` - Route to Group
+          * `route_to_queue` - Route to Queue
+          * `route_to_voicemail` - Route to Voicemail
+          * `play_announcement` - Play Announcement
+          * `hangup` - Hangup
+          * `forward_external` - Forward to External Number
+      - in: query
+        name: active
+        schema:
+          type: boolean
+      - name: ordering
+        required: false
+        in: query
+        description: Which field to use when ordering the results.
+        schema:
+          type: string
+      - name: page
+        required: false
+        in: query
+        description: A page number within the paginated result set.
+        schema:
+          type: integer
+      - name: page_size
+        required: false
+        in: query
+        description: Number of results to return per page.
+        schema:
+          type: integer
+      - name: search
+        required: false
+        in: query
+        description: A search term.
+        schema:
+          type: string
+      - in: query
+        name: target_group
+        schema:
+          type: integer
+      - in: query
+        name: target_number
+        schema:
+          type: integer
+      tags:
+      - VoIP
+      security:
+      - jwtAuth: []
+      - tokenAuth: []
+      - jwtAuth: []
+      - tokenAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedCallRoutingRuleList'
+          description: ''
+    post:
+      operationId: voip_routing_rules_create
+      tags:
+      - VoIP
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CallRoutingRule'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/CallRoutingRule'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/CallRoutingRule'
+        required: true
+      security:
+      - jwtAuth: []
+      - tokenAuth: []
+      - jwtAuth: []
+      - tokenAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CallRoutingRule'
+          description: ''
+  /api/voip/routing-rules/{id}/:
+    get:
+      operationId: voip_routing_rules_retrieve
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this Call Routing Rule.
+        required: true
+      tags:
+      - VoIP
+      security:
+      - jwtAuth: []
+      - tokenAuth: []
+      - jwtAuth: []
+      - tokenAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CallRoutingRule'
+          description: ''
+    put:
+      operationId: voip_routing_rules_update
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this Call Routing Rule.
+        required: true
+      tags:
+      - VoIP
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CallRoutingRule'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/CallRoutingRule'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/CallRoutingRule'
+        required: true
+      security:
+      - jwtAuth: []
+      - tokenAuth: []
+      - jwtAuth: []
+      - tokenAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CallRoutingRule'
+          description: ''
+    patch:
+      operationId: voip_routing_rules_partial_update
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this Call Routing Rule.
+        required: true
+      tags:
+      - VoIP
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedCallRoutingRule'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PatchedCallRoutingRule'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PatchedCallRoutingRule'
+      security:
+      - jwtAuth: []
+      - tokenAuth: []
+      - jwtAuth: []
+      - tokenAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CallRoutingRule'
+          description: ''
+    delete:
+      operationId: voip_routing_rules_destroy
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this Call Routing Rule.
+        required: true
+      tags:
+      - VoIP
+      security:
+      - jwtAuth: []
+      - tokenAuth: []
+      - jwtAuth: []
+      - tokenAuth: []
+      responses:
+        '204':
+          description: No response body
+  /api/voip/system-settings/:
+    get:
+      operationId: voip_system_settings_list
+      tags:
+      - VoIP
+      security:
+      - jwtAuth: []
+      - tokenAuth: []
+      - jwtAuth: []
+      - tokenAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/VoipSystemSettings'
+          description: ''
+  /api/voip/system-settings/{id}/:
+    get:
+      operationId: voip_system_settings_retrieve
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+        required: true
+      tags:
+      - VoIP
+      security:
+      - jwtAuth: []
+      - tokenAuth: []
+      - jwtAuth: []
+      - tokenAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/VoipSystemSettings'
+          description: ''
+    patch:
+      operationId: voip_system_settings_partial_update
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+        required: true
+      tags:
+      - VoIP
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedVoipSystemSettings'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PatchedVoipSystemSettings'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PatchedVoipSystemSettings'
+      security:
+      - jwtAuth: []
+      - tokenAuth: []
+      - jwtAuth: []
+      - tokenAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/VoipSystemSettings'
+          description: ''
+  /api/voip/system-settings/current/:
+    get:
+      operationId: voip_system_settings_current_retrieve
+      tags:
+      - VoIP
+      security:
+      - jwtAuth: []
+      - tokenAuth: []
+      - jwtAuth: []
+      - tokenAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/VoipSystemSettings'
+          description: ''
+    patch:
+      operationId: voip_system_settings_current_partial_update
+      tags:
+      - VoIP
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedVoipSystemSettings'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PatchedVoipSystemSettings'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PatchedVoipSystemSettings'
+      security:
+      - jwtAuth: []
+      - tokenAuth: []
+      - jwtAuth: []
+      - tokenAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/VoipSystemSettings'
+          description: ''
+  /api/voip/system-settings/health/:
+    get:
+      operationId: voip_system_settings_health_retrieve
+      tags:
+      - VoIP
+      security:
+      - jwtAuth: []
+      - tokenAuth: []
+      - jwtAuth: []
+      - tokenAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/VoipSystemSettings'
+          description: ''
+  /api/voip/system-settings/reconcile/:
+    post:
+      operationId: voip_system_settings_reconcile_create
+      tags:
+      - VoIP
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/VoipSystemSettings'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/VoipSystemSettings'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/VoipSystemSettings'
+      security:
+      - jwtAuth: []
+      - tokenAuth: []
+      - jwtAuth: []
+      - tokenAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/VoipSystemSettings'
+          description: ''
 components:
   schemas:
     AIAssistProvidersResponse:
@@ -12280,7 +15986,15 @@ components:
         input_text:
           type: string
           maxLength: 20000
-        crm_context: {}
+        crm_context:
+          type: object
+          additionalProperties: {}
+        chat_history:
+          type: array
+          items:
+            type: object
+            additionalProperties: {}
+          maxItems: 20
         system_prompt:
           type: string
           default: ''
@@ -12309,6 +16023,9 @@ components:
           type: string
         use_case:
           type: string
+        response_data:
+          type: object
+          additionalProperties: {}
       required:
       - model
       - output_text
@@ -12463,16 +16180,6 @@ components:
       - key
       - key_preview
       - name
-    ActionEnum:
-      enum:
-      - archive
-      - anonymize
-      - delete
-      type: string
-      description: |-
-        * `archive` - Archive
-        * `anonymize` - Anonymize
-        * `delete` - Delete
     AuthStatusResponse:
       type: object
       properties:
@@ -12555,6 +16262,96 @@ components:
       description: |-
         * `inbound` - Inbound
         * `outbound` - Outbound
+    CallRoutingRule:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        name:
+          type: string
+          title: Rule Name
+          maxLength: 100
+        description:
+          type: string
+        priority:
+          type: integer
+          maximum: 9223372036854775807
+          minimum: 0
+          format: int64
+          description: Lower number = higher priority
+        caller_id_pattern:
+          type: string
+          description: Regex pattern for caller ID (e.g., ^\+7, ^8800)
+          maxLength: 100
+        called_number_pattern:
+          type: string
+          description: Regex pattern for called number
+          maxLength: 100
+        time_condition:
+          type: string
+          description: Time condition (e.g., weekdays 09:00-18:00)
+          maxLength: 200
+        action:
+          $ref: '#/components/schemas/CallRoutingRuleActionEnum'
+        target_number:
+          type: integer
+          nullable: true
+          description: Target internal number for routing
+        target_number_display:
+          type: string
+          readOnly: true
+        target_group:
+          type: integer
+          nullable: true
+          description: Target group for routing
+        target_group_name:
+          type: string
+          readOnly: true
+        target_external:
+          type: string
+          title: External Number
+          description: External number for forwarding
+          maxLength: 50
+        announcement_text:
+          type: string
+          description: Text to play as announcement
+        active:
+          type: boolean
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+        updated_at:
+          type: string
+          format: date-time
+          readOnly: true
+      required:
+      - action
+      - created_at
+      - id
+      - name
+      - target_group_name
+      - target_number_display
+      - updated_at
+    CallRoutingRuleActionEnum:
+      enum:
+      - route_to_number
+      - route_to_group
+      - route_to_queue
+      - route_to_voicemail
+      - play_announcement
+      - hangup
+      - forward_external
+      type: string
+      description: |-
+        * `route_to_number` - Route to Number
+        * `route_to_group` - Route to Group
+        * `route_to_queue` - Route to Queue
+        * `route_to_voicemail` - Route to Voicemail
+        * `play_announcement` - Play Announcement
+        * `hangup` - Hangup
+        * `forward_external` - Forward to External Number
     Campaign:
       type: object
       properties:
@@ -12682,12 +16479,30 @@ components:
         name:
           type: string
           maxLength: 40
+        name_ru:
+          type: string
+          maxLength: 40
+        name_en:
+          type: string
+          maxLength: 40
+        name_uz:
+          type: string
+          maxLength: 40
         country:
           type: integer
         country_name:
           type: string
           readOnly: true
           nullable: true
+        country_name_ru:
+          type: string
+          readOnly: true
+        country_name_en:
+          type: string
+          readOnly: true
+        country_name_uz:
+          type: string
+          readOnly: true
         alternative_names:
           type: string
           description: Separate them with commas.
@@ -12695,6 +16510,9 @@ components:
       required:
       - country
       - country_name
+      - country_name_en
+      - country_name_ru
+      - country_name_uz
       - id
       - name
     ClientType:
@@ -12705,6 +16523,15 @@ components:
           type: integer
           readOnly: true
         name:
+          type: string
+          maxLength: 70
+        name_ru:
+          type: string
+          maxLength: 70
+        name_en:
+          type: string
+          maxLength: 70
+        name_uz:
           type: string
           maxLength: 70
       required:
@@ -12718,6 +16545,15 @@ components:
           type: integer
           readOnly: true
         name:
+          type: string
+          maxLength: 70
+        name_ru:
+          type: string
+          maxLength: 70
+        name_en:
+          type: string
+          maxLength: 70
+        name_uz:
           type: string
           maxLength: 70
         index_number:
@@ -12876,18 +16712,20 @@ components:
           readOnly: true
         provider:
           allOf:
-          - $ref: '#/components/schemas/ConnectionProviderEnum'
+          - $ref: '#/components/schemas/Provider8a3Enum'
           description: |-
             Specify VoIP service provider
 
-            * `Zadarma` - Zadarma
-            * `OnlinePBX` - OnlinePBX
             * `Asterisk` - Asterisk
         type:
           $ref: '#/components/schemas/ConnectionTypeEnum'
         number:
           type: string
           maxLength: 30
+        sip_server:
+          type: string
+          description: SIP domain or host for SIP trunk/account connections
+          maxLength: 255
         owner:
           type: integer
           nullable: true
@@ -12908,12 +16746,6 @@ components:
       - number
       - owner_name
       - provider
-    ConnectionProviderEnum:
-      enum:
-      - Asterisk
-      type: string
-      description: |-
-        * `Asterisk` - Asterisk
     ConnectionTypeEnum:
       enum:
       - pbx
@@ -13129,6 +16961,15 @@ components:
         name:
           type: string
           maxLength: 40
+        name_ru:
+          type: string
+          maxLength: 40
+        name_en:
+          type: string
+          maxLength: 40
+        name_uz:
+          type: string
+          maxLength: 40
         url_name:
           type: string
           maxLength: 50
@@ -13221,6 +17062,9 @@ components:
       - subject
     CrmTag:
       type: object
+      description: |-
+        Ensures name_ru/name_en/name_uz are always present in API output.
+        If a localized field is empty, falls back to base `name`.
       properties:
         id:
           type: integer
@@ -13229,6 +17073,15 @@ components:
           type: string
           title: Tag name
           maxLength: 70
+        name_ru:
+          type: string
+          readOnly: true
+        name_en:
+          type: string
+          readOnly: true
+        name_uz:
+          type: string
+          readOnly: true
         department:
           type: integer
           nullable: true
@@ -13246,6 +17099,9 @@ components:
       required:
       - creation_date
       - id
+      - name_en
+      - name_ru
+      - name_uz
       - update_date
     Currency:
       type: object
@@ -13254,10 +17110,22 @@ components:
         id:
           type: integer
           readOnly: true
+        code:
+          type: string
+          readOnly: true
         name:
           type: string
           description: Alphabetic Code for the Representation of Currencies.
           maxLength: 3
+        name_ru:
+          type: string
+          maxLength: 16
+        name_en:
+          type: string
+          maxLength: 16
+        name_uz:
+          type: string
+          maxLength: 16
         auto_update:
           type: boolean
           title: This currency is subject to automatic updating.
@@ -13272,6 +17140,7 @@ components:
           pattern: ^-?\d{0,5}(?:\.\d{0,8})?$
           description: Exchange rate against the state currency.
       required:
+      - code
       - id
       - name
     CustomTokenObtainPair:
@@ -13287,6 +17156,59 @@ components:
       required:
       - password
       - username
+    Customer:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        code:
+          type: string
+          maxLength: 64
+        legal_name:
+          type: string
+          maxLength: 255
+        contact_email:
+          type: string
+          format: email
+          maxLength: 254
+        is_active:
+          type: boolean
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+        updated_at:
+          type: string
+          format: date-time
+          readOnly: true
+        deployments_total:
+          type: integer
+          readOnly: true
+          default: 0
+        deployments_unlicensed:
+          type: integer
+          readOnly: true
+          default: 0
+        subscriptions_active:
+          type: integer
+          readOnly: true
+          default: 0
+        last_runtime_request_at:
+          type: string
+          format: date-time
+          readOnly: true
+          nullable: true
+      required:
+      - code
+      - created_at
+      - deployments_total
+      - deployments_unlicensed
+      - id
+      - last_runtime_request_at
+      - legal_name
+      - subscriptions_active
+      - updated_at
     DashboardActivityItem:
       type: object
       properties:
@@ -13345,7 +17267,7 @@ components:
           minimum: 0
           format: int64
         action:
-          $ref: '#/components/schemas/ActionEnum'
+          $ref: '#/components/schemas/DataRetentionPolicyActionEnum'
         is_active:
           type: boolean
         last_run_at:
@@ -13374,6 +17296,16 @@ components:
       - name
       - retention_days
       - updated_at
+    DataRetentionPolicyActionEnum:
+      enum:
+      - archive
+      - anonymize
+      - delete
+      type: string
+      description: |-
+        * `archive` - Archive
+        * `anonymize` - Anonymize
+        * `delete` - Delete
     DataSubjectRequest:
       type: object
       properties:
@@ -13513,6 +17445,10 @@ components:
         currency_name:
           type: string
           readOnly: true
+        currency_code:
+          type: string
+          readOnly: true
+          nullable: true
         closing_reason:
           type: integer
           nullable: true
@@ -13599,6 +17535,7 @@ components:
       - contact_name
       - contact_phone
       - creation_date
+      - currency_code
       - currency_name
       - id
       - name
@@ -13619,6 +17556,15 @@ components:
         name:
           type: string
           maxLength: 150
+        name_ru:
+          type: string
+          maxLength: 150
+        name_en:
+          type: string
+          maxLength: 150
+        name_uz:
+          type: string
+          maxLength: 150
         member_count:
           type: integer
           readOnly: true
@@ -13626,6 +17572,62 @@ components:
       - id
       - member_count
       - name
+    Deployment:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        customer:
+          type: integer
+        instance_id:
+          type: string
+          maxLength: 128
+        domain:
+          type: string
+          nullable: true
+          maxLength: 255
+        environment:
+          $ref: '#/components/schemas/EnvironmentEnum'
+        notes:
+          type: string
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+      required:
+      - created_at
+      - customer
+      - id
+      - instance_id
+    DistributionStrategyEnum:
+      enum:
+      - round_robin
+      - random
+      - priority
+      - all_ring
+      - least_recent
+      type: string
+      description: |-
+        * `round_robin` - Round Robin
+        * `random` - Random
+        * `priority` - Priority Order
+        * `all_ring` - Ring All
+        * `least_recent` - Least Recently Called
+    EditionCodeEnum:
+      enum:
+      - starter
+      - sales
+      - omnichannel
+      - enterprise
+      - onprem-enterprise
+      type: string
+      description: |-
+        * `starter` - Starter
+        * `sales` - Sales
+        * `omnichannel` - Omnichannel
+        * `enterprise` - Enterprise
+        * `onprem-enterprise` - On-prem Enterprise
     EmailAccount:
       type: object
       properties:
@@ -13736,6 +17738,16 @@ components:
         * `crm.request` - crm.request
         * `integrations.externalmessage` - integrations.externalmessage
         * `crm.calllog` - crm.calllog
+    EnvironmentEnum:
+      enum:
+      - prod
+      - staging
+      - test
+      type: string
+      description: |-
+        * `prod` - Production
+        * `staging` - Staging
+        * `test` - Test
     EventTypeEnum:
       enum:
       - landing_view
@@ -13873,6 +17885,9 @@ components:
         access_token:
           type: string
           writeOnly: true
+        app_secret:
+          type: string
+          writeOnly: true
         token_expires_at:
           type: string
           format: date-time
@@ -13893,6 +17908,26 @@ components:
       - facebook_page_id
       - id
       - page_name
+    FeatureCatalog:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        code:
+          type: string
+          maxLength: 128
+        name:
+          type: string
+          maxLength: 255
+        description:
+          type: string
+        is_active:
+          type: boolean
+      required:
+      - code
+      - id
+      - name
     FunnelEvent:
       type: object
       properties:
@@ -13976,6 +18011,15 @@ components:
         name:
           type: string
           maxLength: 70
+        name_ru:
+          type: string
+          maxLength: 70
+        name_en:
+          type: string
+          maxLength: 70
+        name_uz:
+          type: string
+          maxLength: 70
       required:
       - id
       - name
@@ -13996,6 +18040,9 @@ components:
         account_type:
           type: string
           maxLength: 50
+        app_secret:
+          type: string
+          writeOnly: true
         facebook_page_id:
           type: string
           maxLength: 100
@@ -14080,6 +18127,9 @@ components:
         access_token:
           type: string
           writeOnly: true
+        app_secret:
+          type: string
+          writeOnly: true
         token_expires_at:
           type: string
           format: date-time
@@ -14101,6 +18151,22 @@ components:
       - id
       - instagram_user_id
       - username
+    InstallProfileCodeEnum:
+      enum:
+      - sales-team
+      - contact-center
+      - developer
+      - real-estate
+      - education
+      - clinic
+      type: string
+      description: |-
+        * `sales-team` - Sales Team
+        * `contact-center` - Contact Center
+        * `developer` - Developer
+        * `real-estate` - Real Estate
+        * `education` - Education
+        * `clinic` - Clinic
     IntegrationLog:
       type: object
       description: Serializer for integration logs.
@@ -14161,6 +18227,34 @@ components:
       description: |-
         * `success` - Success
         * `error` - Error
+    InternalNumberOption:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        number:
+          type: string
+          title: Internal Number
+          description: Internal extension number (e.g., 1001, 2005)
+          maxLength: 20
+        display_name:
+          type: string
+          description: Name to display in calls
+          maxLength: 100
+        user_name:
+          type: string
+          readOnly: true
+        sip_uri:
+          type: string
+          readOnly: true
+        active:
+          type: boolean
+      required:
+      - id
+      - number
+      - sip_uri
+      - user_name
     LandingCrmDictionaries:
       type: object
       properties:
@@ -14201,6 +18295,13 @@ components:
           pattern: ^[-a-zA-Z0-9_]+$
         is_active:
           type: boolean
+        status:
+          $ref: '#/components/schemas/Status77bEnum'
+        draft_version:
+          type: integer
+          maximum: 9223372036854775807
+          minimum: 0
+          format: int64
         department:
           type: integer
           nullable: true
@@ -14218,6 +18319,14 @@ components:
           nullable: true
         published_revision:
           type: integer
+          nullable: true
+        published_at:
+          type: string
+          format: date-time
+          nullable: true
+        archived_at:
+          type: string
+          format: date-time
           nullable: true
         created_at:
           type: string
@@ -14251,6 +18360,13 @@ components:
           pattern: ^[-a-zA-Z0-9_]+$
         is_active:
           type: boolean
+        status:
+          $ref: '#/components/schemas/Status77bEnum'
+        draft_version:
+          type: integer
+          maximum: 9223372036854775807
+          minimum: 0
+          format: int64
         department:
           type: integer
           nullable: true
@@ -14268,6 +18384,14 @@ components:
           nullable: true
         published_revision:
           type: integer
+          nullable: true
+        published_at:
+          type: string
+          format: date-time
+          nullable: true
+        archived_at:
+          type: string
+          format: date-time
           nullable: true
         created_at:
           type: string
@@ -14500,6 +18624,15 @@ components:
         name:
           type: string
           maxLength: 70
+        name_ru:
+          type: string
+          maxLength: 70
+        name_en:
+          type: string
+          maxLength: 70
+        name_uz:
+          type: string
+          maxLength: 70
         sla_hours:
           type: integer
           maximum: 9223372036854775807
@@ -14536,6 +18669,210 @@ components:
         * `contract` - Contract
         * `legal_obligation` - Legal obligation
         * `legitimate_interest` - Legitimate interest
+    LicenseActionAudit:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        action:
+          $ref: '#/components/schemas/LicenseActionAuditActionEnum'
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+        details: {}
+        actor:
+          type: integer
+          nullable: true
+        actor_username:
+          type: string
+          readOnly: true
+        license_issue:
+          type: integer
+          nullable: true
+        license_id:
+          type: string
+          format: uuid
+          readOnly: true
+        deployment_instance_id:
+          type: string
+          readOnly: true
+      required:
+      - action
+      - actor_username
+      - created_at
+      - deployment_instance_id
+      - id
+      - license_id
+    LicenseActionAuditActionEnum:
+      enum:
+      - bundle_create
+      - bundle_update
+      - bundle_owner_change
+      - request
+      - approve
+      - reject
+      - issue
+      - renew
+      - support
+      - reissue
+      - revoke
+      - download
+      - heartbeat
+      - install_ack
+      type: string
+      description: |-
+        * `bundle_create` - Bundle Create
+        * `bundle_update` - Bundle Update
+        * `bundle_owner_change` - Bundle Owner Change
+        * `request` - Request
+        * `approve` - Approve
+        * `reject` - Reject
+        * `issue` - Issue
+        * `renew` - Renew
+        * `support` - Support
+        * `reissue` - Reissue
+        * `revoke` - Revoke
+        * `download` - Download
+        * `heartbeat` - Heartbeat
+        * `install_ack` - Install Ack
+    LicenseBundle:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        code:
+          type: string
+          maxLength: 64
+        name:
+          type: string
+          maxLength: 255
+        customer:
+          type: integer
+        customer_code:
+          type: string
+          readOnly: true
+        customer_name:
+          type: string
+          readOnly: true
+        deployment:
+          type: integer
+          nullable: true
+        deployment_instance_id:
+          type: string
+          readOnly: true
+        subscription:
+          type: integer
+          nullable: true
+        subscription_plan_code:
+          type: string
+          readOnly: true
+        subscription_status:
+          type: string
+          readOnly: true
+        owner:
+          type: integer
+          nullable: true
+        owner_username:
+          type: string
+          readOnly: true
+        support_owner:
+          type: integer
+          nullable: true
+        support_owner_username:
+          type: string
+          readOnly: true
+        status:
+          $ref: '#/components/schemas/LicenseBundleStatusEnum'
+        renewed_until:
+          type: string
+          format: date-time
+          nullable: true
+        support_until:
+          type: string
+          format: date-time
+          nullable: true
+        notes:
+          type: string
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+        updated_at:
+          type: string
+          format: date-time
+          readOnly: true
+      required:
+      - code
+      - created_at
+      - customer
+      - customer_code
+      - customer_name
+      - deployment_instance_id
+      - id
+      - name
+      - owner_username
+      - subscription_plan_code
+      - subscription_status
+      - support_owner_username
+      - updated_at
+    LicenseBundleStatusEnum:
+      enum:
+      - draft
+      - active
+      - renewed
+      - support
+      - closed
+      type: string
+      description: |-
+        * `draft` - Draft
+        * `active` - Active
+        * `renewed` - Renewed
+        * `support` - Support
+        * `closed` - Closed
+    LicenseIssue:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        license_id:
+          type: string
+          format: uuid
+        subscription:
+          type: integer
+        deployment:
+          type: integer
+        payload_json: {}
+        signature:
+          type: string
+        key_id:
+          type: string
+          maxLength: 64
+        issued_at:
+          type: string
+          format: date-time
+          readOnly: true
+        is_revoked:
+          type: boolean
+        revoked_at:
+          type: string
+          format: date-time
+          nullable: true
+        revoked_by:
+          type: integer
+          nullable: true
+        revoke_reason:
+          type: string
+          maxLength: 255
+      required:
+      - deployment
+      - id
+      - issued_at
+      - signature
+      - subscription
     MailingOut:
       type: object
       properties:
@@ -14596,6 +18933,82 @@ components:
         * `P` - Paused
         * `I` - Interrupted
         * `D` - Done
+    MarketplaceExtension:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        code:
+          type: string
+          readOnly: true
+        name:
+          type: string
+          readOnly: true
+        manifest_version:
+          type: string
+          readOnly: true
+        installed_version:
+          type: string
+          readOnly: true
+        status:
+          allOf:
+          - $ref: '#/components/schemas/MarketplaceExtensionStatusEnum'
+          readOnly: true
+        is_enabled:
+          type: boolean
+          readOnly: true
+        manifest:
+          readOnly: true
+        compatibility:
+          readOnly: true
+        diagnostics:
+          readOnly: true
+        last_error:
+          type: string
+          readOnly: true
+        installed_at:
+          type: string
+          format: date-time
+          readOnly: true
+        updated_at:
+          type: string
+          format: date-time
+          readOnly: true
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+      required:
+      - code
+      - compatibility
+      - created_at
+      - diagnostics
+      - id
+      - installed_at
+      - installed_version
+      - is_enabled
+      - last_error
+      - manifest
+      - manifest_version
+      - name
+      - status
+      - updated_at
+    MarketplaceExtensionStatusEnum:
+      enum:
+      - installed
+      - installing
+      - upgrading
+      - uninstalled
+      - failed
+      type: string
+      description: |-
+        * `installed` - Installed
+        * `installing` - Installing
+        * `upgrading` - Upgrading
+        * `uninstalled` - Uninstalled
+        * `failed` - Failed
     Memo:
       type: object
       description: Mixin to add validation helpers to serializers
@@ -14726,6 +19139,40 @@ components:
     NullEnum:
       enum:
       - null
+    NumberGroupOption:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        name:
+          type: string
+          title: Group Name
+          description: Display name for this group (e.g., Sales, Support, Management)
+          maxLength: 100
+        description:
+          type: string
+          description: Description of this group's purpose
+        distribution_strategy:
+          allOf:
+          - $ref: '#/components/schemas/DistributionStrategyEnum'
+          description: |-
+            How calls are distributed among group members
+
+            * `round_robin` - Round Robin
+            * `random` - Random
+            * `priority` - Priority Order
+            * `all_ring` - Ring All
+            * `least_recent` - Least Recently Called
+        member_count:
+          type: string
+          readOnly: true
+        active:
+          type: boolean
+      required:
+      - id
+      - member_count
+      - name
     OmnichannelMessage:
       type: object
       properties:
@@ -14846,6 +19293,10 @@ components:
           type: string
           readOnly: true
           nullable: true
+        currency_code:
+          type: string
+          readOnly: true
+          nullable: true
         shipping_date:
           type: string
           format: date
@@ -14868,6 +19319,7 @@ components:
           type: string
           maxLength: 50
       required:
+      - currency_code
       - currency_name
       - deal
       - deal_name
@@ -14966,6 +19418,29 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/CallLog'
+    PaginatedCallRoutingRuleList:
+      type: object
+      required:
+      - count
+      - results
+      properties:
+        count:
+          type: integer
+          example: 123
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=4
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=2
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/CallRoutingRule'
     PaginatedCampaignList:
       type: object
       required:
@@ -15288,6 +19763,29 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/Currency'
+    PaginatedCustomerList:
+      type: object
+      required:
+      - count
+      - results
+      properties:
+        count:
+          type: integer
+          example: 123
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=4
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=2
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/Customer'
     PaginatedDataRetentionPolicyList:
       type: object
       required:
@@ -15380,6 +19878,29 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/Department'
+    PaginatedDeploymentList:
+      type: object
+      required:
+      - count
+      - results
+      properties:
+        count:
+          type: integer
+          example: 123
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=4
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=2
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/Deployment'
     PaginatedEmailAccountList:
       type: object
       required:
@@ -15449,6 +19970,29 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/FacebookPage'
+    PaginatedFeatureCatalogList:
+      type: object
+      required:
+      - count
+      - results
+      properties:
+        count:
+          type: integer
+          example: 123
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=4
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=2
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/FeatureCatalog'
     PaginatedIncomingCallList:
       type: object
       required:
@@ -15541,6 +20085,29 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/IntegrationLog'
+    PaginatedInternalNumberOptionList:
+      type: object
+      required:
+      - count
+      - results
+      properties:
+        count:
+          type: integer
+          example: 123
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=4
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=2
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/InternalNumberOption'
     PaginatedLandingPageListList:
       type: object
       required:
@@ -15610,6 +20177,75 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/LeadSource'
+    PaginatedLicenseActionAuditList:
+      type: object
+      required:
+      - count
+      - results
+      properties:
+        count:
+          type: integer
+          example: 123
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=4
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=2
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/LicenseActionAudit'
+    PaginatedLicenseBundleList:
+      type: object
+      required:
+      - count
+      - results
+      properties:
+        count:
+          type: integer
+          example: 123
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=4
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=2
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/LicenseBundle'
+    PaginatedLicenseIssueList:
+      type: object
+      required:
+      - count
+      - results
+      properties:
+        count:
+          type: integer
+          example: 123
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=4
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=2
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/LicenseIssue'
     PaginatedMailingOutList:
       type: object
       required:
@@ -15633,6 +20269,29 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/MailingOut'
+    PaginatedMarketplaceExtensionList:
+      type: object
+      required:
+      - count
+      - results
+      properties:
+        count:
+          type: integer
+          example: 123
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=4
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=2
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/MarketplaceExtension'
     PaginatedMemoList:
       type: object
       required:
@@ -15679,6 +20338,29 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/MessageTemplate'
+    PaginatedNumberGroupOptionList:
+      type: object
+      required:
+      - count
+      - results
+      properties:
+        count:
+          type: integer
+          example: 123
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=4
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=2
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/NumberGroupOption'
     PaginatedOutputList:
       type: object
       required:
@@ -15771,6 +20453,29 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/Payment'
+    PaginatedPlanList:
+      type: object
+      required:
+      - count
+      - results
+      properties:
+        count:
+          type: integer
+          example: 123
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=4
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=2
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/Plan'
     PaginatedProductCategoryList:
       type: object
       required:
@@ -15932,6 +20637,52 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/Request'
+    PaginatedResolutionList:
+      type: object
+      required:
+      - count
+      - results
+      properties:
+        count:
+          type: integer
+          example: 123
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=4
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=2
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/Resolution'
+    PaginatedRuntimeLicenseRequestList:
+      type: object
+      required:
+      - count
+      - results
+      properties:
+        count:
+          type: integer
+          example: 123
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=4
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=2
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/RuntimeLicenseRequest'
     PaginatedSegmentList:
       type: object
       required:
@@ -16024,6 +20775,29 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/Stage'
+    PaginatedSubscriptionList:
+      type: object
+      required:
+      - count
+      - results
+      properties:
+        count:
+          type: integer
+          example: 123
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=4
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=2
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/Subscription'
     PaginatedTaskList:
       type: object
       required:
@@ -16214,6 +20988,11 @@ components:
         id:
           type: integer
           readOnly: true
+        document:
+          type: integer
+        document_title:
+          type: string
+          readOnly: true
         title:
           type: string
           nullable: true
@@ -16232,6 +21011,8 @@ components:
           - $ref: '#/components/schemas/LanguageCodeEnum'
           title: Language
       required:
+      - document
+      - document_title
       - id
       - language_code
     PatchedAIProviderSettings:
@@ -16354,6 +21135,70 @@ components:
         contact:
           type: integer
           nullable: true
+    PatchedCallRoutingRule:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        name:
+          type: string
+          title: Rule Name
+          maxLength: 100
+        description:
+          type: string
+        priority:
+          type: integer
+          maximum: 9223372036854775807
+          minimum: 0
+          format: int64
+          description: Lower number = higher priority
+        caller_id_pattern:
+          type: string
+          description: Regex pattern for caller ID (e.g., ^\+7, ^8800)
+          maxLength: 100
+        called_number_pattern:
+          type: string
+          description: Regex pattern for called number
+          maxLength: 100
+        time_condition:
+          type: string
+          description: Time condition (e.g., weekdays 09:00-18:00)
+          maxLength: 200
+        action:
+          $ref: '#/components/schemas/CallRoutingRuleActionEnum'
+        target_number:
+          type: integer
+          nullable: true
+          description: Target internal number for routing
+        target_number_display:
+          type: string
+          readOnly: true
+        target_group:
+          type: integer
+          nullable: true
+          description: Target group for routing
+        target_group_name:
+          type: string
+          readOnly: true
+        target_external:
+          type: string
+          title: External Number
+          description: External number for forwarding
+          maxLength: 50
+        announcement_text:
+          type: string
+          description: Text to play as announcement
+        active:
+          type: boolean
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+        updated_at:
+          type: string
+          format: date-time
+          readOnly: true
     PatchedCampaign:
       type: object
       properties:
@@ -16539,18 +21384,20 @@ components:
           readOnly: true
         provider:
           allOf:
-          - $ref: '#/components/schemas/ConnectionProviderEnum'
+          - $ref: '#/components/schemas/Provider8a3Enum'
           description: |-
             Specify VoIP service provider
 
-            * `Zadarma` - Zadarma
-            * `OnlinePBX` - OnlinePBX
             * `Asterisk` - Asterisk
         type:
           $ref: '#/components/schemas/ConnectionTypeEnum'
         number:
           type: string
           maxLength: 30
+        sip_server:
+          type: string
+          description: SIP domain or host for SIP trunk/account connections
+          maxLength: 255
         owner:
           type: integer
           nullable: true
@@ -16805,6 +21652,49 @@ components:
           type: string
           format: date-time
           readOnly: true
+    PatchedCustomer:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        code:
+          type: string
+          maxLength: 64
+        legal_name:
+          type: string
+          maxLength: 255
+        contact_email:
+          type: string
+          format: email
+          maxLength: 254
+        is_active:
+          type: boolean
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+        updated_at:
+          type: string
+          format: date-time
+          readOnly: true
+        deployments_total:
+          type: integer
+          readOnly: true
+          default: 0
+        deployments_unlicensed:
+          type: integer
+          readOnly: true
+          default: 0
+        subscriptions_active:
+          type: integer
+          readOnly: true
+          default: 0
+        last_runtime_request_at:
+          type: string
+          format: date-time
+          readOnly: true
+          nullable: true
     PatchedDataRetentionPolicy:
       type: object
       properties:
@@ -16822,7 +21712,7 @@ components:
           minimum: 0
           format: int64
         action:
-          $ref: '#/components/schemas/ActionEnum'
+          $ref: '#/components/schemas/DataRetentionPolicyActionEnum'
         is_active:
           type: boolean
         last_run_at:
@@ -16954,6 +21844,10 @@ components:
         currency_name:
           type: string
           readOnly: true
+        currency_code:
+          type: string
+          readOnly: true
+          nullable: true
         closing_reason:
           type: integer
           nullable: true
@@ -17032,6 +21926,29 @@ components:
           format: date-time
           readOnly: true
         update_date:
+          type: string
+          format: date-time
+          readOnly: true
+    PatchedDeployment:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        customer:
+          type: integer
+        instance_id:
+          type: string
+          maxLength: 128
+        domain:
+          type: string
+          nullable: true
+          maxLength: 255
+        environment:
+          $ref: '#/components/schemas/EnvironmentEnum'
+        notes:
+          type: string
+        created_at:
           type: string
           format: date-time
           readOnly: true
@@ -17187,6 +22104,22 @@ components:
           type: string
           format: date-time
           readOnly: true
+    PatchedFeatureCatalog:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        code:
+          type: string
+          maxLength: 128
+        name:
+          type: string
+          maxLength: 255
+        description:
+          type: string
+        is_active:
+          type: boolean
     PatchedInstagramAccount:
       type: object
       description: Serializer for Instagram Account.
@@ -17204,6 +22137,9 @@ components:
         account_type:
           type: string
           maxLength: 50
+        app_secret:
+          type: string
+          writeOnly: true
         facebook_page_id:
           type: string
           maxLength: 100
@@ -17273,6 +22209,13 @@ components:
           pattern: ^[-a-zA-Z0-9_]+$
         is_active:
           type: boolean
+        status:
+          $ref: '#/components/schemas/Status77bEnum'
+        draft_version:
+          type: integer
+          maximum: 9223372036854775807
+          minimum: 0
+          format: int64
         department:
           type: integer
           nullable: true
@@ -17290,6 +22233,14 @@ components:
           nullable: true
         published_revision:
           type: integer
+          nullable: true
+        published_at:
+          type: string
+          format: date-time
+          nullable: true
+        archived_at:
+          type: string
+          format: date-time
           nullable: true
         created_at:
           type: string
@@ -17450,6 +22401,137 @@ components:
           type: string
           format: date-time
           readOnly: true
+    PatchedLicenseActionAudit:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        action:
+          $ref: '#/components/schemas/LicenseActionAuditActionEnum'
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+        details: {}
+        actor:
+          type: integer
+          nullable: true
+        actor_username:
+          type: string
+          readOnly: true
+        license_issue:
+          type: integer
+          nullable: true
+        license_id:
+          type: string
+          format: uuid
+          readOnly: true
+        deployment_instance_id:
+          type: string
+          readOnly: true
+    PatchedLicenseBundle:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        code:
+          type: string
+          maxLength: 64
+        name:
+          type: string
+          maxLength: 255
+        customer:
+          type: integer
+        customer_code:
+          type: string
+          readOnly: true
+        customer_name:
+          type: string
+          readOnly: true
+        deployment:
+          type: integer
+          nullable: true
+        deployment_instance_id:
+          type: string
+          readOnly: true
+        subscription:
+          type: integer
+          nullable: true
+        subscription_plan_code:
+          type: string
+          readOnly: true
+        subscription_status:
+          type: string
+          readOnly: true
+        owner:
+          type: integer
+          nullable: true
+        owner_username:
+          type: string
+          readOnly: true
+        support_owner:
+          type: integer
+          nullable: true
+        support_owner_username:
+          type: string
+          readOnly: true
+        status:
+          $ref: '#/components/schemas/LicenseBundleStatusEnum'
+        renewed_until:
+          type: string
+          format: date-time
+          nullable: true
+        support_until:
+          type: string
+          format: date-time
+          nullable: true
+        notes:
+          type: string
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+        updated_at:
+          type: string
+          format: date-time
+          readOnly: true
+    PatchedLicenseIssue:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        license_id:
+          type: string
+          format: uuid
+        subscription:
+          type: integer
+        deployment:
+          type: integer
+        payload_json: {}
+        signature:
+          type: string
+        key_id:
+          type: string
+          maxLength: 64
+        issued_at:
+          type: string
+          format: date-time
+          readOnly: true
+        is_revoked:
+          type: boolean
+        revoked_at:
+          type: string
+          format: date-time
+          nullable: true
+        revoked_by:
+          type: integer
+          nullable: true
+        revoke_reason:
+          type: string
+          maxLength: 255
     PatchedMemo:
       type: object
       description: Mixin to add validation helpers to serializers
@@ -17594,6 +22676,10 @@ components:
           type: string
           readOnly: true
           nullable: true
+        currency_code:
+          type: string
+          readOnly: true
+          nullable: true
         shipping_date:
           type: string
           format: date
@@ -17640,6 +22726,10 @@ components:
           type: string
           readOnly: true
           nullable: true
+        currency_code:
+          type: string
+          readOnly: true
+          nullable: true
         payment_date:
           type: string
           format: date
@@ -17656,6 +22746,87 @@ components:
         order_number:
           type: string
           maxLength: 40
+    PatchedPlan:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        code:
+          type: string
+          maxLength: 64
+        name:
+          type: string
+          maxLength: 255
+        edition_code:
+          oneOf:
+          - $ref: '#/components/schemas/EditionCodeEnum'
+          - $ref: '#/components/schemas/BlankEnum'
+        install_profile_code:
+          oneOf:
+          - $ref: '#/components/schemas/InstallProfileCodeEnum'
+          - $ref: '#/components/schemas/BlankEnum'
+        base_user_limit:
+          type: integer
+          maximum: 9223372036854775807
+          minimum: 0
+          format: int64
+        platform_fee_uzs:
+          type: integer
+          maximum: 9223372036854775807
+          minimum: 0
+          format: int64
+        extra_user_fee_uzs:
+          type: integer
+          maximum: 9223372036854775807
+          minimum: 0
+          format: int64
+        typical_account_mrr_uzs:
+          type: integer
+          maximum: 9223372036854775807
+          minimum: 0
+          format: int64
+        setup_fee_min_uzs:
+          type: integer
+          maximum: 9223372036854775807
+          minimum: 0
+          format: int64
+          nullable: true
+        setup_fee_max_uzs:
+          type: integer
+          maximum: 9223372036854775807
+          minimum: 0
+          format: int64
+          nullable: true
+        implementation_days_min:
+          type: integer
+          maximum: 9223372036854775807
+          minimum: 0
+          format: int64
+          nullable: true
+        implementation_days_max:
+          type: integer
+          maximum: 9223372036854775807
+          minimum: 0
+          format: int64
+          nullable: true
+        target_segment:
+          type: string
+          maxLength: 64
+        value_summary:
+          type: string
+          maxLength: 255
+        is_active:
+          type: boolean
+        included_features:
+          type: array
+          items:
+            type: integer
+        included_feature_codes:
+          type: array
+          items:
+            type: string
+          readOnly: true
     PatchedProduct:
       type: object
       description: Serializer for Product model
@@ -17684,6 +22855,10 @@ components:
           type: integer
           nullable: true
         currency_name:
+          type: string
+          readOnly: true
+          nullable: true
+        currency_code:
           type: string
           readOnly: true
           nullable: true
@@ -17808,11 +22983,17 @@ components:
           readOnly: true
         content_type:
           type: integer
+        content_type_name:
+          type: string
+          readOnly: true
         object_id:
           type: integer
           maximum: 9223372036854775807
           minimum: 0
           format: int64
+        object_repr:
+          type: string
+          readOnly: true
     PatchedRequest:
       type: object
       description: Serializer for Request (tickets/inquiries) model
@@ -17887,6 +23068,67 @@ components:
           type: string
           format: date-time
           readOnly: true
+    PatchedRuntimeLicenseRequest:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        instance_id:
+          type: string
+          maxLength: 128
+        deployment:
+          type: integer
+          nullable: true
+        subscription:
+          type: integer
+          nullable: true
+        status:
+          $ref: '#/components/schemas/RuntimeLicenseRequestStatusEnum'
+        request_payload: {}
+        review_note:
+          type: string
+        reviewed_by:
+          type: integer
+          nullable: true
+        reviewed_at:
+          type: string
+          format: date-time
+          nullable: true
+        issued_license:
+          type: integer
+          nullable: true
+        issued_at:
+          type: string
+          format: date-time
+          nullable: true
+        installed_at:
+          type: string
+          format: date-time
+          nullable: true
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+        updated_at:
+          type: string
+          format: date-time
+          readOnly: true
+        deployment_instance_id:
+          type: string
+          readOnly: true
+        customer_id:
+          type: integer
+          readOnly: true
+        customer_name:
+          type: string
+          readOnly: true
+        customer_code:
+          type: string
+          readOnly: true
+        subscription_plan_code:
+          type: string
+          readOnly: true
     PatchedSegment:
       type: object
       properties:
@@ -17942,6 +23184,10 @@ components:
           type: string
           readOnly: true
           nullable: true
+        currency_code:
+          type: string
+          readOnly: true
+          nullable: true
         shipping_date:
           type: string
           format: date
@@ -17990,6 +23236,71 @@ components:
             You can embed files uploaded to the CRM server in the ‘media/pics/’ folder.
 
             '
+    PatchedSubscription:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        customer:
+          type: integer
+        customer_code:
+          type: string
+          readOnly: true
+        customer_name:
+          type: string
+          readOnly: true
+        plan:
+          type: integer
+        plan_code:
+          type: string
+          readOnly: true
+        plan_name:
+          type: string
+          readOnly: true
+        plan_edition_code:
+          type: string
+          readOnly: true
+        plan_install_profile_code:
+          type: string
+          readOnly: true
+        bundle:
+          type: integer
+          nullable: true
+        bundle_code:
+          type: string
+          readOnly: true
+        bundle_name:
+          type: string
+          readOnly: true
+        bundle_owner_username:
+          type: string
+          readOnly: true
+        bundle_support_owner_username:
+          type: string
+          readOnly: true
+        status:
+          $ref: '#/components/schemas/SubscriptionStatusEnum'
+        valid_from:
+          type: string
+          format: date-time
+        valid_to:
+          type: string
+          format: date-time
+        max_active_users:
+          type: integer
+          maximum: 9223372036854775807
+          minimum: 0
+          format: int64
+        extra_features:
+          type: array
+          items:
+            type: integer
+        extra_feature_codes:
+          type: array
+          items:
+            type: string
+          readOnly: true
     PatchedTask:
       type: object
       description: Mixin to add validation helpers to serializers
@@ -18159,6 +23470,15 @@ components:
         full_name:
           type: string
           readOnly: true
+        avatar:
+          type: string
+          format: uri
+          readOnly: true
+          nullable: true
+          description: User profile picture (max 5MB)
+        avatar_url:
+          type: string
+          readOnly: true
         pbx_number:
           type: string
           title: Phone
@@ -18176,44 +23496,123 @@ components:
           maxLength: 7
         jssip_ws_uri:
           type: string
+          readOnly: true
           title: JsSIP WebSocket URI
           description: 'Example: wss://sip.example.com:7443'
-          maxLength: 255
         jssip_sip_uri:
           type: string
+          readOnly: true
           description: 'Example: sip:1001@sip.example.com'
-          maxLength: 255
         jssip_sip_password:
           type: string
-          writeOnly: true
+          readOnly: true
           title: JsSIP password
           description: Will be used by the web client
-          maxLength: 255
         jssip_display_name:
           type: string
           description: Name shown to the callee
           maxLength: 255
         telephony_route_mode:
+          allOf:
+          - $ref: '#/components/schemas/TelephonyRouteModeEnum'
+          readOnly: true
           description: |-
             How outbound calls should be routed from the CRM UI
 
-            * `auto` - Auto
-            * `internal` - Internal extension
-            * `external` - External number
-            * `provider` - Provider API
-            * `asterisk` - Asterisk server
+            * `embedded` - Embedded Asterisk (CRM-managed)
+            * `bridge` - External Asterisk via PBX Bridge
+        telephony_provider:
+          allOf:
+          - $ref: '#/components/schemas/TelephonyProviderEnum'
+          readOnly: true
+          title: Preferred provider
+          description: |-
+            Used by server originate mode
+
+            * `Asterisk` - Asterisk
+        webrtc_stun_servers:
+          type: string
+          readOnly: true
+          description: Comma or newline separated STUN URLs
+        webrtc_turn_enabled:
+          type: boolean
+          readOnly: true
+        webrtc_turn_server:
+          type: string
+          readOnly: true
+          description: 'Example: turn:turn.example.com:3478?transport=udp'
+        webrtc_turn_username:
+          type: string
+          readOnly: true
+        webrtc_turn_password:
+          type: string
+          readOnly: true
+    PatchedVoipSystemSettings:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        ami_host:
+          type: string
+          maxLength: 128
+        ami_port:
+          type: integer
+          maximum: 9223372036854775807
+          minimum: 0
+          format: int64
+        ami_username:
+          type: string
+          maxLength: 128
+        ami_secret:
+          type: string
+          description: Stored in plain text in DB; restrict admin access.
+          maxLength: 255
+        ami_use_ssl:
+          type: boolean
+          title: AMI over SSL
+        ami_connect_timeout:
+          type: integer
+          maximum: 9223372036854775807
+          minimum: 0
+          format: int64
+          title: AMI connect timeout, seconds
+        ami_reconnect_delay:
+          type: integer
+          maximum: 9223372036854775807
+          minimum: 0
+          format: int64
+          title: AMI reconnect delay, seconds
+        incoming_enabled:
+          type: boolean
+          title: Show incoming pop-ups
+        incoming_poll_interval_ms:
+          type: integer
+          maximum: 9223372036854775807
+          minimum: 0
+          format: int64
+          title: Polling interval, ms
+        incoming_popup_ttl_ms:
+          type: integer
+          maximum: 9223372036854775807
+          minimum: 0
+          format: int64
+          title: Popup duration, ms
+        telephony_route_mode:
+          description: |-
+            Global outbound call routing mode for CRM
+
+            * `embedded` - Embedded Asterisk (CRM-managed)
+            * `bridge` - External Asterisk via PBX Bridge
           oneOf:
           - $ref: '#/components/schemas/TelephonyRouteModeEnum'
           - $ref: '#/components/schemas/BlankEnum'
         telephony_provider:
           title: Preferred provider
           description: |-
-            Used by server originate mode
+            Global preferred provider for outbound calls
 
             * `Asterisk` - Asterisk
-            * `OnlinePBX` - OnlinePBX
-            * `Zadarma` - Zadarma
-            * `FreeSWITCH` - FreeSWITCH
           oneOf:
           - $ref: '#/components/schemas/TelephonyProviderEnum'
           - $ref: '#/components/schemas/BlankEnum'
@@ -18231,8 +23630,26 @@ components:
           maxLength: 128
         webrtc_turn_password:
           type: string
-          writeOnly: true
           maxLength: 255
+        forward_unknown_calls:
+          type: boolean
+          title: Forward unknown callers
+          description: Forward webhook payload to external URL when no CRM objects
+            are matched
+        forward_url:
+          type: string
+          format: uri
+          maxLength: 500
+        forwarding_allowed_ip:
+          type: string
+          title: Allowed IP for forwarding source
+          description: 'Optional: restrict forwarding source IP check (for relayed
+            requests)'
+          maxLength: 64
+        updated_at:
+          type: string
+          format: date-time
+          readOnly: true
     PatchedWebhook:
       type: object
       description: Serializer for webhooks (list/retrieve - secret is masked).
@@ -18346,6 +23763,10 @@ components:
           type: string
           readOnly: true
           nullable: true
+        currency_code:
+          type: string
+          readOnly: true
+          nullable: true
         payment_date:
           type: string
           format: date
@@ -18363,6 +23784,7 @@ components:
           type: string
           maxLength: 40
       required:
+      - currency_code
       - currency_name
       - deal
       - deal_name
@@ -18379,6 +23801,92 @@ components:
         * `g` - guaranteed
         * `h` - high probability
         * `l` - low probability
+    Plan:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        code:
+          type: string
+          maxLength: 64
+        name:
+          type: string
+          maxLength: 255
+        edition_code:
+          oneOf:
+          - $ref: '#/components/schemas/EditionCodeEnum'
+          - $ref: '#/components/schemas/BlankEnum'
+        install_profile_code:
+          oneOf:
+          - $ref: '#/components/schemas/InstallProfileCodeEnum'
+          - $ref: '#/components/schemas/BlankEnum'
+        base_user_limit:
+          type: integer
+          maximum: 9223372036854775807
+          minimum: 0
+          format: int64
+        platform_fee_uzs:
+          type: integer
+          maximum: 9223372036854775807
+          minimum: 0
+          format: int64
+        extra_user_fee_uzs:
+          type: integer
+          maximum: 9223372036854775807
+          minimum: 0
+          format: int64
+        typical_account_mrr_uzs:
+          type: integer
+          maximum: 9223372036854775807
+          minimum: 0
+          format: int64
+        setup_fee_min_uzs:
+          type: integer
+          maximum: 9223372036854775807
+          minimum: 0
+          format: int64
+          nullable: true
+        setup_fee_max_uzs:
+          type: integer
+          maximum: 9223372036854775807
+          minimum: 0
+          format: int64
+          nullable: true
+        implementation_days_min:
+          type: integer
+          maximum: 9223372036854775807
+          minimum: 0
+          format: int64
+          nullable: true
+        implementation_days_max:
+          type: integer
+          maximum: 9223372036854775807
+          minimum: 0
+          format: int64
+          nullable: true
+        target_segment:
+          type: string
+          maxLength: 64
+        value_summary:
+          type: string
+          maxLength: 255
+        is_active:
+          type: boolean
+        included_features:
+          type: array
+          items:
+            type: integer
+        included_feature_codes:
+          type: array
+          items:
+            type: string
+          readOnly: true
+      required:
+      - code
+      - id
+      - included_feature_codes
+      - name
     PriorityEnum:
       enum:
       - 1
@@ -18420,6 +23928,10 @@ components:
           type: string
           readOnly: true
           nullable: true
+        currency_code:
+          type: string
+          readOnly: true
+          nullable: true
         type:
           nullable: true
           oneOf:
@@ -18429,6 +23941,7 @@ components:
           type: boolean
       required:
       - category_name
+      - currency_code
       - currency_name
       - id
     ProductCategory:
@@ -18441,8 +23954,20 @@ components:
         name:
           type: string
           maxLength: 70
+        name_ru:
+          type: string
+          readOnly: true
+        name_en:
+          type: string
+          readOnly: true
+        name_uz:
+          type: string
+          readOnly: true
       required:
       - id
+      - name_en
+      - name_ru
+      - name_uz
     ProductTypeEnum:
       enum:
       - G
@@ -18543,11 +24068,23 @@ components:
       - workflow
     ProjectStage:
       type: object
+      description: |-
+        Ensures name_ru/name_en/name_uz are always present in API output.
+        If a localized field is empty, falls back to base `name`.
       properties:
         id:
           type: integer
           readOnly: true
         name:
+          type: string
+          maxLength: 70
+        name_ru:
+          type: string
+          maxLength: 70
+        name_en:
+          type: string
+          maxLength: 70
+        name_uz:
           type: string
           maxLength: 70
         default:
@@ -18572,6 +24109,11 @@ components:
       required:
       - id
       - name
+    Provider8a3Enum:
+      enum:
+      - Asterisk
+      type: string
+      description: '* `Asterisk` - Asterisk'
     PublicFunnelEventCreate:
       type: object
       properties:
@@ -18629,6 +24171,10 @@ components:
           type: string
           readOnly: true
           nullable: true
+        currency_code:
+          type: string
+          readOnly: true
+          nullable: true
         payment_date:
           type: string
           format: date
@@ -18649,6 +24195,7 @@ components:
           title: Exchange rate type
       required:
       - currency
+      - currency_code
       - currency_name
       - id
       - rate_to_marketing_currency
@@ -18693,16 +24240,24 @@ components:
           readOnly: true
         content_type:
           type: integer
+        content_type_name:
+          type: string
+          readOnly: true
         object_id:
           type: integer
           maximum: 9223372036854775807
           minimum: 0
           format: int64
+        object_repr:
+          type: string
+          readOnly: true
       required:
       - content_type
+      - content_type_name
       - creation_date
       - id
       - object_id
+      - object_repr
       - owner_name
       - reminder_date
       - subject
@@ -18800,6 +24355,120 @@ components:
         * `export` - Export
         * `delete` - Delete
         * `anonymize` - Anonymize
+    Resolution:
+      type: object
+      description: |-
+        Ensures name_ru/name_en/name_uz are always present in API output.
+        If a localized field is empty, falls back to base `name`.
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        name:
+          type: string
+          maxLength: 70
+        name_ru:
+          type: string
+          maxLength: 70
+        name_en:
+          type: string
+          maxLength: 70
+        name_uz:
+          type: string
+          maxLength: 70
+        index_number:
+          type: integer
+          maximum: 9223372036854775807
+          minimum: -9223372036854775808
+          format: int64
+      required:
+      - id
+      - name
+    RuntimeLicenseRequest:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        instance_id:
+          type: string
+          maxLength: 128
+        deployment:
+          type: integer
+          nullable: true
+        subscription:
+          type: integer
+          nullable: true
+        status:
+          $ref: '#/components/schemas/RuntimeLicenseRequestStatusEnum'
+        request_payload: {}
+        review_note:
+          type: string
+        reviewed_by:
+          type: integer
+          nullable: true
+        reviewed_at:
+          type: string
+          format: date-time
+          nullable: true
+        issued_license:
+          type: integer
+          nullable: true
+        issued_at:
+          type: string
+          format: date-time
+          nullable: true
+        installed_at:
+          type: string
+          format: date-time
+          nullable: true
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+        updated_at:
+          type: string
+          format: date-time
+          readOnly: true
+        deployment_instance_id:
+          type: string
+          readOnly: true
+        customer_id:
+          type: integer
+          readOnly: true
+        customer_name:
+          type: string
+          readOnly: true
+        customer_code:
+          type: string
+          readOnly: true
+        subscription_plan_code:
+          type: string
+          readOnly: true
+      required:
+      - created_at
+      - customer_code
+      - customer_id
+      - customer_name
+      - deployment_instance_id
+      - id
+      - instance_id
+      - subscription_plan_code
+      - updated_at
+    RuntimeLicenseRequestStatusEnum:
+      enum:
+      - pending_review
+      - approved
+      - rejected
+      - issued
+      - installed
+      type: string
+      description: |-
+        * `pending_review` - Pending review
+        * `approved` - Approved
+        * `rejected` - Rejected
+        * `issued` - Issued
+        * `installed` - Installed
     Segment:
       type: object
       properties:
@@ -18870,6 +24539,10 @@ components:
           type: string
           readOnly: true
           nullable: true
+        currency_code:
+          type: string
+          readOnly: true
+          nullable: true
         shipping_date:
           type: string
           format: date
@@ -18892,6 +24565,7 @@ components:
           type: string
           maxLength: 50
       required:
+      - currency_code
       - currency_name
       - deal
       - deal_name
@@ -18933,11 +24607,23 @@ components:
       - owner_name
     Stage:
       type: object
+      description: |-
+        Ensures name_ru/name_en/name_uz are always present in API output.
+        If a localized field is empty, falls back to base `name`.
       properties:
         id:
           type: integer
           readOnly: true
         name:
+          type: string
+          maxLength: 70
+        name_ru:
+          type: string
+          maxLength: 70
+        name_en:
+          type: string
+          maxLength: 70
+        name_uz:
           type: string
           maxLength: 70
         default:
@@ -18977,6 +24663,110 @@ components:
         * `pen` - pending
         * `pos` - postponed
         * `rev` - reviewed
+    Status77bEnum:
+      enum:
+      - draft
+      - published
+      - archived
+      type: string
+      description: |-
+        * `draft` - draft
+        * `published` - published
+        * `archived` - archived
+    Subscription:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        customer:
+          type: integer
+        customer_code:
+          type: string
+          readOnly: true
+        customer_name:
+          type: string
+          readOnly: true
+        plan:
+          type: integer
+        plan_code:
+          type: string
+          readOnly: true
+        plan_name:
+          type: string
+          readOnly: true
+        plan_edition_code:
+          type: string
+          readOnly: true
+        plan_install_profile_code:
+          type: string
+          readOnly: true
+        bundle:
+          type: integer
+          nullable: true
+        bundle_code:
+          type: string
+          readOnly: true
+        bundle_name:
+          type: string
+          readOnly: true
+        bundle_owner_username:
+          type: string
+          readOnly: true
+        bundle_support_owner_username:
+          type: string
+          readOnly: true
+        status:
+          $ref: '#/components/schemas/SubscriptionStatusEnum'
+        valid_from:
+          type: string
+          format: date-time
+        valid_to:
+          type: string
+          format: date-time
+        max_active_users:
+          type: integer
+          maximum: 9223372036854775807
+          minimum: 0
+          format: int64
+        extra_features:
+          type: array
+          items:
+            type: integer
+        extra_feature_codes:
+          type: array
+          items:
+            type: string
+          readOnly: true
+      required:
+      - bundle_code
+      - bundle_name
+      - bundle_owner_username
+      - bundle_support_owner_username
+      - customer
+      - customer_code
+      - customer_name
+      - extra_feature_codes
+      - id
+      - plan
+      - plan_code
+      - plan_edition_code
+      - plan_install_profile_code
+      - plan_name
+      - valid_from
+      - valid_to
+    SubscriptionStatusEnum:
+      enum:
+      - active
+      - trial
+      - suspended
+      - expired
+      type: string
+      description: |-
+        * `active` - Active
+        * `trial` - Trial
+        * `suspended` - Suspended
+        * `expired` - Expired
     Task:
       type: object
       description: Mixin to add validation helpers to serializers
@@ -19077,11 +24867,23 @@ components:
       - workflow
     TaskStage:
       type: object
+      description: |-
+        Ensures name_ru/name_en/name_uz are always present in API output.
+        If a localized field is empty, falls back to base `name`.
       properties:
         id:
           type: integer
           readOnly: true
         name:
+          type: string
+          maxLength: 70
+        name_ru:
+          type: string
+          maxLength: 70
+        name_en:
+          type: string
+          maxLength: 70
+        name_uz:
           type: string
           maxLength: 70
         default:
@@ -19108,6 +24910,9 @@ components:
       - name
     TaskTag:
       type: object
+      description: |-
+        Ensures name_ru/name_en/name_uz are always present in API output.
+        If a localized field is empty, falls back to base `name`.
       properties:
         id:
           type: integer
@@ -19116,6 +24921,15 @@ components:
           type: string
           readOnly: true
           title: Tag name
+        name_ru:
+          type: string
+          readOnly: true
+        name_en:
+          type: string
+          readOnly: true
+        name_uz:
+          type: string
+          readOnly: true
         for_content:
           type: integer
           readOnly: true
@@ -19124,6 +24938,9 @@ components:
       - for_content
       - id
       - name
+      - name_en
+      - name_ru
+      - name_uz
     TelegramBot:
       type: object
       description: Serializer for Telegram Bot.
@@ -19243,8 +25060,7 @@ components:
       enum:
       - Asterisk
       type: string
-      description: |-
-        * `Asterisk` - Asterisk
+      description: '* `Asterisk` - Asterisk'
     TelephonyRouteModeEnum:
       enum:
       - embedded
@@ -19278,6 +25094,7 @@ components:
       - next_action
       - email_reply
       - deal_analysis
+      - crm_chat
       - custom
       type: string
       description: |-
@@ -19285,6 +25102,7 @@ components:
         * `next_action` - next_action
         * `email_reply` - email_reply
         * `deal_analysis` - deal_analysis
+        * `crm_chat` - crm_chat
         * `custom` - custom
     User:
       type: object
@@ -19328,9 +25146,15 @@ components:
           items:
             type: string
           readOnly: true
+        permissions:
+          type: array
+          items:
+            type: string
+          readOnly: true
       required:
       - groups
       - id
+      - permissions
       - roles
       - username
     UserProfile:
@@ -19347,6 +25171,15 @@ components:
           type: string
           readOnly: true
         full_name:
+          type: string
+          readOnly: true
+        avatar:
+          type: string
+          format: uri
+          readOnly: true
+          nullable: true
+          description: User profile picture (max 5MB)
+        avatar_url:
           type: string
           readOnly: true
         pbx_number:
@@ -19366,68 +25199,74 @@ components:
           maxLength: 7
         jssip_ws_uri:
           type: string
+          readOnly: true
           title: JsSIP WebSocket URI
           description: 'Example: wss://sip.example.com:7443'
-          maxLength: 255
         jssip_sip_uri:
           type: string
+          readOnly: true
           description: 'Example: sip:1001@sip.example.com'
-          maxLength: 255
         jssip_sip_password:
           type: string
-          writeOnly: true
+          readOnly: true
           title: JsSIP password
           description: Will be used by the web client
-          maxLength: 255
         jssip_display_name:
           type: string
           description: Name shown to the callee
           maxLength: 255
         telephony_route_mode:
+          allOf:
+          - $ref: '#/components/schemas/TelephonyRouteModeEnum'
+          readOnly: true
           description: |-
             How outbound calls should be routed from the CRM UI
 
-            * `auto` - Auto
-            * `internal` - Internal extension
-            * `external` - External number
-            * `provider` - Provider API
-            * `asterisk` - Asterisk server
-          oneOf:
-          - $ref: '#/components/schemas/TelephonyRouteModeEnum'
-          - $ref: '#/components/schemas/BlankEnum'
+            * `embedded` - Embedded Asterisk (CRM-managed)
+            * `bridge` - External Asterisk via PBX Bridge
         telephony_provider:
+          allOf:
+          - $ref: '#/components/schemas/TelephonyProviderEnum'
+          readOnly: true
           title: Preferred provider
           description: |-
             Used by server originate mode
 
             * `Asterisk` - Asterisk
-            * `OnlinePBX` - OnlinePBX
-            * `Zadarma` - Zadarma
-            * `FreeSWITCH` - FreeSWITCH
-          oneOf:
-          - $ref: '#/components/schemas/TelephonyProviderEnum'
-          - $ref: '#/components/schemas/BlankEnum'
         webrtc_stun_servers:
           type: string
+          readOnly: true
           description: Comma or newline separated STUN URLs
         webrtc_turn_enabled:
           type: boolean
+          readOnly: true
         webrtc_turn_server:
           type: string
+          readOnly: true
           description: 'Example: turn:turn.example.com:3478?transport=udp'
-          maxLength: 255
         webrtc_turn_username:
           type: string
-          maxLength: 128
+          readOnly: true
         webrtc_turn_password:
           type: string
-          writeOnly: true
-          maxLength: 255
+          readOnly: true
       required:
+      - avatar
+      - avatar_url
       - email
       - full_name
+      - jssip_sip_password
+      - jssip_sip_uri
+      - jssip_ws_uri
+      - telephony_provider
+      - telephony_route_mode
       - user
       - username
+      - webrtc_stun_servers
+      - webrtc_turn_enabled
+      - webrtc_turn_password
+      - webrtc_turn_server
+      - webrtc_turn_username
     UtcTimezoneEnum:
       enum:
       - Etc/GMT+12
@@ -19508,6 +25347,112 @@ components:
         * `Pacific/Chatham` - UTC+12:45
         * `Etc/GMT-13` - UTC+13:00
         * `Etc/GMT-14` - UTC+14:00
+    VoipSystemSettings:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        ami_host:
+          type: string
+          maxLength: 128
+        ami_port:
+          type: integer
+          maximum: 9223372036854775807
+          minimum: 0
+          format: int64
+        ami_username:
+          type: string
+          maxLength: 128
+        ami_secret:
+          type: string
+          description: Stored in plain text in DB; restrict admin access.
+          maxLength: 255
+        ami_use_ssl:
+          type: boolean
+          title: AMI over SSL
+        ami_connect_timeout:
+          type: integer
+          maximum: 9223372036854775807
+          minimum: 0
+          format: int64
+          title: AMI connect timeout, seconds
+        ami_reconnect_delay:
+          type: integer
+          maximum: 9223372036854775807
+          minimum: 0
+          format: int64
+          title: AMI reconnect delay, seconds
+        incoming_enabled:
+          type: boolean
+          title: Show incoming pop-ups
+        incoming_poll_interval_ms:
+          type: integer
+          maximum: 9223372036854775807
+          minimum: 0
+          format: int64
+          title: Polling interval, ms
+        incoming_popup_ttl_ms:
+          type: integer
+          maximum: 9223372036854775807
+          minimum: 0
+          format: int64
+          title: Popup duration, ms
+        telephony_route_mode:
+          description: |-
+            Global outbound call routing mode for CRM
+
+            * `embedded` - Embedded Asterisk (CRM-managed)
+            * `bridge` - External Asterisk via PBX Bridge
+          oneOf:
+          - $ref: '#/components/schemas/TelephonyRouteModeEnum'
+          - $ref: '#/components/schemas/BlankEnum'
+        telephony_provider:
+          title: Preferred provider
+          description: |-
+            Global preferred provider for outbound calls
+
+            * `Asterisk` - Asterisk
+          oneOf:
+          - $ref: '#/components/schemas/TelephonyProviderEnum'
+          - $ref: '#/components/schemas/BlankEnum'
+        webrtc_stun_servers:
+          type: string
+          description: Comma or newline separated STUN URLs
+        webrtc_turn_enabled:
+          type: boolean
+        webrtc_turn_server:
+          type: string
+          description: 'Example: turn:turn.example.com:3478?transport=udp'
+          maxLength: 255
+        webrtc_turn_username:
+          type: string
+          maxLength: 128
+        webrtc_turn_password:
+          type: string
+          maxLength: 255
+        forward_unknown_calls:
+          type: boolean
+          title: Forward unknown callers
+          description: Forward webhook payload to external URL when no CRM objects
+            are matched
+        forward_url:
+          type: string
+          format: uri
+          maxLength: 500
+        forwarding_allowed_ip:
+          type: string
+          title: Allowed IP for forwarding source
+          description: 'Optional: restrict forwarding source IP check (for relayed
+            requests)'
+          maxLength: 64
+        updated_at:
+          type: string
+          format: date-time
+          readOnly: true
+      required:
+      - id
+      - updated_at
     Webhook:
       type: object
       description: Serializer for webhooks (list/retrieve - secret is masked).
