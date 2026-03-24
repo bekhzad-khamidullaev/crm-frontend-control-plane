@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { ArrowLeft, CheckCircle, Edit, RotateCcw, Trash2, User } from 'lucide-react';
+import { ArrowLeftOutlined, CheckCircleOutlined, EditOutlined, RollbackOutlined, DeleteOutlined, UserOutlined } from '@ant-design/icons';
 import dayjs from 'dayjs';
 
 import { App, Button, Card, Descriptions, Modal, Result, Skeleton, Space, Tabs, Tag, Typography } from 'antd';
@@ -181,27 +181,27 @@ function ProjectDetail({ id }) {
   return (
     <Space direction="vertical" size={16} style={{ width: '100%' }}>
       <Space wrap>
-        <Button icon={<ArrowLeft size={14} />} onClick={() => navigate('/projects')}>
+        <Button icon={<ArrowLeftOutlined size={14} />} onClick={() => navigate('/projects')}>
           {t('projectDetailPage.actions.back')}
         </Button>
         {canManage ? (
           <>
-            <Button type="primary" icon={<Edit size={14} />} onClick={() => navigate(`/projects/${id}/edit`)}>
+            <Button type="primary" icon={<EditOutlined size={14} />} onClick={() => navigate(`/projects/${id}/edit`)}>
               {t('projectDetailPage.actions.edit')}
             </Button>
-            <Button icon={<User size={14} />} onClick={openAssignModal}>
+            <Button icon={<UserOutlined size={14} />} onClick={openAssignModal}>
               {t('projectDetailPage.actions.assign')}
             </Button>
             {isCompleted ? (
-              <Button icon={<RotateCcw size={14} />} onClick={handleReopen}>
+              <Button icon={<RollbackOutlined size={14} />} onClick={handleReopen}>
                 {t('projectDetailPage.actions.reopen')}
               </Button>
             ) : (
-              <Button icon={<CheckCircle size={14} />} onClick={handleComplete}>
+              <Button icon={<CheckCircleOutlined size={14} />} onClick={handleComplete}>
                 {t('projectDetailPage.actions.complete')}
               </Button>
             )}
-            <Button danger icon={<Trash2 size={14} />} onClick={handleDelete}>
+            <Button danger icon={<DeleteOutlined size={14} />} onClick={handleDelete}>
               {t('projectDetailPage.actions.delete')}
             </Button>
           </>

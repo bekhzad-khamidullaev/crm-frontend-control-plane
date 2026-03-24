@@ -1,5 +1,5 @@
 import dayjs from 'dayjs';
-import { ArrowLeft, DollarSign, Edit, Trash2 } from 'lucide-react';
+import { ArrowLeftOutlined, DollarOutlined, EditOutlined, DeleteOutlined } from '@ant-design/icons';
 import { useEffect, useState } from 'react';
 
 import {
@@ -109,22 +109,22 @@ export default function PaymentDetail({ id }) {
       <Space direction="vertical" size={16} style={{ width: '100%' }}>
         <Space wrap style={{ width: '100%', justifyContent: 'space-between' }}>
           <Title level={3} style={{ margin: 0 }}>
-            <DollarSign size={18} /> Платеж
+            <DollarOutlined size={18} /> Платеж
           </Title>
           <Space>
-            <Button icon={<ArrowLeft size={14} />} onClick={() => navigate('/payments')}>
+            <Button icon={<ArrowLeftOutlined size={14} />} onClick={() => navigate('/payments')}>
               Назад
             </Button>
             {canManage ? (
               <>
                 <Button
                   type="primary"
-                  icon={<Edit size={14} />}
+                  icon={<EditOutlined size={14} />}
                   onClick={() => navigate(`/payments/${id}/edit`)}
                 >
                   Редактировать
                 </Button>
-                <Button danger icon={<Trash2 size={14} />} onClick={() => setConfirmOpen(true)}>
+                <Button danger icon={<DeleteOutlined size={14} />} onClick={() => setConfirmOpen(true)}>
                   Удалить
                 </Button>
               </>

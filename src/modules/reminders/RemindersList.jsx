@@ -1,5 +1,5 @@
 import dayjs from 'dayjs';
-import { Check, Edit, Eye, Trash2, X } from 'lucide-react';
+import { CheckOutlined, EditOutlined, EyeOutlined, DeleteOutlined, CloseOutlined } from '@ant-design/icons';
 import { useEffect, useMemo, useState } from 'react';
 
 import { PlusOutlined } from '@ant-design/icons';
@@ -183,18 +183,18 @@ export default function RemindersList() {
         width: 320,
         render: (_, record) => (
           <Space>
-            <Button size="small" icon={<Eye size={14} />} onClick={() => navigate(`/reminders/${record.id}`)}>
+            <Button size="small" icon={<EyeOutlined size={14} />} onClick={() => navigate(`/reminders/${record.id}`)}>
               Открыть
             </Button>
             {canManage ? (
               <>
-                <Button size="small" icon={<Edit size={14} />} onClick={() => navigate(`/reminders/${record.id}/edit`)}>
+                <Button size="small" icon={<EditOutlined size={14} />} onClick={() => navigate(`/reminders/${record.id}/edit`)}>
                   Ред.
                 </Button>
-                <Button size="small" icon={record.active ? <X size={14} /> : <Check size={14} />} onClick={() => handleToggleActive(record.id, record.active)}>
+                <Button size="small" icon={record.active ? <CloseOutlined size={14} /> : <CheckOutlined size={14} />} onClick={() => handleToggleActive(record.id, record.active)}>
                   {record.active ? 'Откл.' : 'Вкл.'}
                 </Button>
-                <Button size="small" danger icon={<Trash2 size={14} />} onClick={() => setConfirmDelete(record)}>
+                <Button size="small" danger icon={<DeleteOutlined size={14} />} onClick={() => setConfirmDelete(record)}>
                   Удалить
                 </Button>
               </>

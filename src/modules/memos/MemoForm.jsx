@@ -1,6 +1,6 @@
 import { zodResolver } from '@hookform/resolvers/zod';
 import dayjs from 'dayjs';
-import { ArrowLeft, FileText, Save } from 'lucide-react';
+import { ArrowLeftOutlined, FileTextOutlined, SaveOutlined } from '@ant-design/icons';
 import { useEffect, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
@@ -181,14 +181,14 @@ export default function MemoForm({ id }) {
       description="У вас нет прав для создания или редактирования мемо."
     >
       <Space direction="vertical" size={16} style={{ width: '100%' }}>
-        <Button onClick={() => navigate('/memos')} icon={<ArrowLeft size={16} />}>
+        <Button onClick={() => navigate('/memos')} icon={<ArrowLeftOutlined size={16} />}>
           Назад
         </Button>
 
         <Card
           title={(
             <Space>
-              <FileText size={18} />
+              <FileTextOutlined size={18} />
               <Title level={4} style={{ margin: 0 }}>
                 {isEdit ? 'Редактирование мемо' : 'Новое мемо'}
               </Title>
@@ -326,7 +326,7 @@ export default function MemoForm({ id }) {
 
               <Space size={12}>
                 {canManage && (
-                  <Button type="primary" htmlType="submit" loading={saving} icon={<Save size={16} />}>
+                  <Button type="primary" htmlType="submit" loading={saving} icon={<SaveOutlined size={16} />}>
                     {isEdit ? 'Сохранить' : 'Создать'}
                   </Button>
                 )}

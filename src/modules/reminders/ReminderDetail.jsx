@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { ArrowLeft, Bell, Check, Edit, Trash2, X } from 'lucide-react';
+import { ArrowLeftOutlined, BellOutlined, CheckOutlined, EditOutlined, DeleteOutlined, CloseOutlined } from '@ant-design/icons';
 import dayjs from 'dayjs';
 
 import { App, Button, Card, Descriptions, Modal, Result, Skeleton, Space, Tag, Typography } from 'antd';
@@ -90,17 +90,17 @@ export default function ReminderDetail({ id }) {
       <Space direction="vertical" size={16} style={{ width: '100%' }}>
         <Space wrap style={{ width: '100%', justifyContent: 'space-between' }}>
           <Title level={3} style={{ margin: 0 }}>
-            <Bell size={18} /> Детали напоминания
+            <BellOutlined size={18} /> Детали напоминания
           </Title>
           <Space>
-            <Button icon={<ArrowLeft size={14} />} onClick={() => navigate('/reminders')}>Назад</Button>
+            <Button icon={<ArrowLeftOutlined size={14} />} onClick={() => navigate('/reminders')}>Назад</Button>
             {canManage ? (
               <>
-                <Button icon={data.active ? <X size={14} /> : <Check size={14} />} onClick={handleToggleActive}>
+                <Button icon={data.active ? <CloseOutlined size={14} /> : <CheckOutlined size={14} />} onClick={handleToggleActive}>
                   {data.active ? 'Отключить' : 'Включить'}
                 </Button>
-                <Button type="primary" icon={<Edit size={14} />} onClick={() => navigate(`/reminders/${id}/edit`)}>Редактировать</Button>
-                <Button danger icon={<Trash2 size={14} />} onClick={() => setConfirmOpen(true)}>Удалить</Button>
+                <Button type="primary" icon={<EditOutlined size={14} />} onClick={() => navigate(`/reminders/${id}/edit`)}>Редактировать</Button>
+                <Button danger icon={<DeleteOutlined size={14} />} onClick={() => setConfirmOpen(true)}>Удалить</Button>
               </>
             ) : null}
           </Space>

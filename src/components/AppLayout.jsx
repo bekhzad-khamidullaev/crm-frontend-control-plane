@@ -72,6 +72,8 @@ export function AppLayout({
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [licenseRestriction, setLicenseRestriction] = useState(() => readStoredLicenseRestriction());
   const siderWidth = 256;
+  const desktopTopBarHeight = 64;
+  const mobileTopBarHeight = 56;
   const drawerWidth = screens.sm ? 300 : '86vw';
   const shell = theme === 'dark'
     ? {
@@ -260,6 +262,23 @@ export function AppLayout({
   };
   const hasActiveTelephony = Array.isArray(activeIntegrations)
     && activeIntegrations.some((integration) => integration?.key === 'telephony');
+  const displayName = (() => {
+    const firstAndLastName = `${user?.first_name || ''} ${user?.last_name || ''}`.trim();
+    const fullName = String(user?.full_name || '').trim();
+    const username = String(user?.username || '').trim();
+    const normalizedName = String(user?.name || '').trim();
+    const genericNames = new Set(['user', 'пользователь', 'foydalanuvchi']);
+    const normalizedNameIsGeneric = genericNames.has(normalizedName.toLowerCase());
+
+    return (
+      firstAndLastName
+      || fullName
+      || username
+      || (!normalizedNameIsGeneric ? normalizedName : '')
+      || 'User'
+    );
+  })();
+  const avatarLetter = displayName.charAt(0).toUpperCase() || 'U';
   const userRoles = Array.isArray(user?.roles) ? user.roles : [];
   const userIsAdmin = Boolean(
     user?.is_superuser
@@ -481,7 +500,7 @@ export function AppLayout({
   ];
 
   return (
-    <Layout style={{ minHeight: '100dvh', background: shell.pageBg }}>
+    <Layout style={{ minHeight: '100dvh', background: 'transparent' }}>
       {!isMobile && (
         <Sider
           collapsible
@@ -493,6 +512,7 @@ export function AppLayout({
           style={{
             overflow: 'auto',
             height: '100vh',
+            boxSizing: 'border-box',
             position: 'fixed',
             left: 0,
             top: 0,
@@ -506,7 +526,8 @@ export function AppLayout({
         >
         <div
           style={{
-            height: 64,
+            height: desktopTopBarHeight,
+            boxSizing: 'border-box',
             display: 'flex',
             alignItems: 'center',
             justifyContent: collapsed ? 'center' : 'space-between',
@@ -555,7 +576,7 @@ export function AppLayout({
             items={menuItems}
             style={{
               borderRight: 0,
-              height: 'calc(100vh - 64px)',
+              height: `calc(100vh - ${desktopTopBarHeight}px)`,
               overflowY: 'auto',
               padding: '12px 10px 18px',
               background: 'transparent',
@@ -612,6 +633,9 @@ export function AppLayout({
             padding: isMobile
               ? '0 calc(12px + env(safe-area-inset-right)) 0 calc(12px + env(safe-area-inset-left))'
               : '0 24px',
+            height: isMobile ? mobileTopBarHeight : desktopTopBarHeight,
+            boxSizing: 'border-box',
+            lineHeight: 'normal',
             background: theme === 'dark' ? shell.surfaceSolid : shell.surface,
             borderBottom: `1px solid ${shell.border}`,
             display: 'flex',
@@ -721,9 +745,9 @@ export function AppLayout({
                     border: `1px solid ${shell.border}`,
                   }}
                 >
-                  {(user?.name || user?.username || 'U').charAt(0).toUpperCase()}
+                  {avatarLetter}
                 </Avatar>
-                {!isMobile && <Text style={{ color: shell.text, fontWeight: 500 }}>{user?.name || user?.username || 'User'}</Text>}
+                {!isMobile && <Text style={{ color: shell.text, fontWeight: 500 }}>{displayName}</Text>}
               </Space>
               </Dropdown>
             </ConfigProvider>

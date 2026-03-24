@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { ArrowLeft, Calendar, Edit, Trash2, User } from 'lucide-react';
+import { ArrowLeftOutlined, CalendarOutlined, EditOutlined, DeleteOutlined, UserOutlined } from '@ant-design/icons';
 import dayjs from 'dayjs';
 
 import { App, Button, Card, Descriptions, Empty, Result, Skeleton, Space, Tabs, Tag, Typography } from 'antd';
@@ -122,15 +122,15 @@ function TaskDetail({ id }) {
   return (
     <Space direction="vertical" size={16} style={{ width: '100%' }}>
       <Space wrap>
-        <Button icon={<ArrowLeft size={14} />} onClick={() => navigate('/tasks')}>
+        <Button icon={<ArrowLeftOutlined size={14} />} onClick={() => navigate('/tasks')}>
           {t('taskDetailPage.actions.back')}
         </Button>
         {canManage ? (
           <>
-            <Button type="primary" icon={<Edit size={14} />} onClick={() => navigate(`/tasks/${id}/edit`)}>
+            <Button type="primary" icon={<EditOutlined size={14} />} onClick={() => navigate(`/tasks/${id}/edit`)}>
               {t('taskDetailPage.actions.edit')}
             </Button>
-            <Button danger icon={<Trash2 size={14} />} onClick={handleDelete}>
+            <Button danger icon={<DeleteOutlined size={14} />} onClick={handleDelete}>
               {t('taskDetailPage.actions.delete')}
             </Button>
           </>

@@ -1,6 +1,6 @@
 import { zodResolver } from '@hookform/resolvers/zod';
 import dayjs from 'dayjs';
-import { ArrowLeft, Save } from 'lucide-react';
+import { ArrowLeftOutlined, SaveOutlined } from '@ant-design/icons';
 import { useEffect, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
@@ -202,7 +202,7 @@ function PaymentForm({ id }) {
       description="У вас нет прав для создания или редактирования платежей."
     >
       <Space direction="vertical" size={16} style={{ width: '100%' }}>
-        <Button onClick={() => navigate('/payments')} icon={<ArrowLeft size={16} />}>
+        <Button onClick={() => navigate('/payments')} icon={<ArrowLeftOutlined size={16} />}>
           Назад
         </Button>
 
@@ -286,7 +286,7 @@ function PaymentForm({ id }) {
 
               <Space size={12}>
                 {canManage && (
-                  <Button type="primary" htmlType="submit" loading={saving} icon={<Save size={16} />}>
+                  <Button type="primary" htmlType="submit" loading={saving} icon={<SaveOutlined size={16} />}>
                     {isEdit ? 'Сохранить' : 'Создать'}
                   </Button>
                 )}

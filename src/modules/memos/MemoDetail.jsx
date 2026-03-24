@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { ArrowLeft, Check, Clock, Edit, FileText, Trash2 } from 'lucide-react';
+import { ArrowLeftOutlined, CheckOutlined, ClockCircleOutlined, EditOutlined, FileTextOutlined, DeleteOutlined } from '@ant-design/icons';
 import dayjs from 'dayjs';
 
 import { App, Button, Card, Descriptions, Modal, Result, Skeleton, Space, Tag, Typography } from 'antd';
@@ -106,16 +106,16 @@ export default function MemoDetail({ id }) {
         <Space direction="vertical" size={16} style={{ width: '100%' }}>
           <Space wrap style={{ width: '100%', justifyContent: 'space-between' }}>
             <Title level={3} style={{ margin: 0 }}>
-              <FileText size={18} /> Детали мемо
+              <FileTextOutlined size={18} /> Детали мемо
             </Title>
             <Space>
-              <Button icon={<ArrowLeft size={14} />} onClick={() => navigate('/memos')}>Назад</Button>
+              <Button icon={<ArrowLeftOutlined size={14} />} onClick={() => navigate('/memos')}>Назад</Button>
               {canManage ? (
                 <>
-                  <Button icon={<Clock size={14} />} onClick={handlePostponed}>Отложить</Button>
-                  <Button icon={<Check size={14} />} onClick={handleReviewed}>Рассмотрено</Button>
-                  <Button type="primary" icon={<Edit size={14} />} onClick={() => navigate(`/memos/${id}/edit`)}>Редактировать</Button>
-                  <Button danger icon={<Trash2 size={14} />} onClick={() => setConfirmOpen(true)}>Удалить</Button>
+                  <Button icon={<ClockCircleOutlined size={14} />} onClick={handlePostponed}>Отложить</Button>
+                  <Button icon={<CheckOutlined size={14} />} onClick={handleReviewed}>Рассмотрено</Button>
+                  <Button type="primary" icon={<EditOutlined size={14} />} onClick={() => navigate(`/memos/${id}/edit`)}>Редактировать</Button>
+                  <Button danger icon={<DeleteOutlined size={14} />} onClick={() => setConfirmOpen(true)}>Удалить</Button>
                 </>
               ) : null}
             </Space>

@@ -6,11 +6,14 @@ import {
   Card,
   Col,
   Descriptions,
+  Divider,
   Empty,
   Form,
+  Grid,
   Input,
   InputNumber,
   Row,
+  Skeleton,
   Select,
   Space,
   Statistic,
@@ -231,12 +234,34 @@ function SettingsConfigurator({
     return localized === key ? fallback : localized;
   };
   const [form] = Form.useForm();
+  const screens = Grid.useBreakpoint();
+  const normalizedData = useMemo(() => normalizeForForm(data || {}), [data]);
+  const formValues = Form.useWatch([], form);
 
   useEffect(() => {
-    form.setFieldsValue(normalizeForForm(data || {}));
-  }, [data, form]);
+    form.setFieldsValue(normalizedData);
+  }, [normalizedData, form]);
 
   const fieldEntries = useMemo(() => Object.entries(data || {}), [data]);
+  const hasUnsavedChanges = useMemo(() => {
+    if (!formValues) return false;
+
+    try {
+      const initialPayload = serializeForSubmit(normalizedData);
+      const currentPayload = serializeForSubmit(formValues);
+      return JSON.stringify(initialPayload) !== JSON.stringify(currentPayload);
+    } catch (error) {
+      return false;
+    }
+  }, [formValues, normalizedData]);
+
+  if (loading) {
+    return (
+      <Card>
+        <Skeleton active paragraph={{ rows: 6 }} />
+      </Card>
+    );
+  }
 
   return (
     <Card>
@@ -269,13 +294,29 @@ function SettingsConfigurator({
             ))}
           </Row>
 
-          <Space>
-            <Button type="primary" htmlType="submit" loading={saving}>
-              {tr('actions.save', 'Сохранить')}
-            </Button>
-            <Button icon={<ReloadOutlined />} onClick={onReload} loading={loading}>
-              {tr('actions.refresh', 'Обновить')}
-            </Button>
+          <Divider style={{ margin: '12px 0 16px' }} />
+
+          <Space direction={screens.xs ? 'vertical' : 'horizontal'} size={12} style={{ width: '100%', justifyContent: 'space-between' }}>
+            <Text type={hasUnsavedChanges ? 'warning' : 'secondary'}>
+              {hasUnsavedChanges
+                ? tr('settingsPage.field.unsavedChanges', 'Есть несохраненные изменения')
+                : tr('settingsPage.field.allChangesSaved', 'Изменения сохранены')}
+            </Text>
+            <Space direction={screens.xs ? 'vertical' : 'horizontal'} style={{ width: screens.xs ? '100%' : 'auto' }}>
+              <Button
+                onClick={() => form.setFieldsValue(normalizedData)}
+                disabled={!hasUnsavedChanges || saving}
+                block={!!screens.xs}
+              >
+                {tr('actions.reset', 'Сбросить')}
+              </Button>
+              <Button icon={<ReloadOutlined />} onClick={onReload} loading={loading} block={!!screens.xs}>
+                {tr('actions.refresh', 'Обновить')}
+              </Button>
+              <Button type="primary" htmlType="submit" loading={saving} disabled={!hasUnsavedChanges} block={!!screens.xs}>
+                {tr('actions.save', 'Сохранить')}
+              </Button>
+            </Space>
           </Space>
         </Form>
       )}
@@ -346,6 +387,7 @@ function SettingsPage() {
   const [importFile, setImportFile] = useState(null);
   const [importResult, setImportResult] = useState(null);
   const [complianceLoading, setComplianceLoading] = useState(false);
+  const [globalRefreshing, setGlobalRefreshing] = useState(false);
   const [complianceReport, setComplianceReport] = useState(null);
   const [dsrItems, setDsrItems] = useState([]);
   const [retentionItems, setRetentionItems] = useState([]);
@@ -468,6 +510,26 @@ function SettingsPage() {
       setSettingsSavingState(key, false);
     }
   };
+
+  const handleRefreshAll = async () => {
+    setGlobalRefreshing(true);
+    try {
+      await Promise.all([
+        loadMassmailSettings(),
+        loadReminderSettings(),
+        loadPublicDomains(),
+        loadComplianceData(),
+      ]);
+      message.success(tr('settingsPage.messages.refreshed', 'Данные обновлены'));
+    } catch (error) {
+      message.error(tr('settingsPage.messages.refreshError', 'Не удалось обновить часть данных'));
+    } finally {
+      setGlobalRefreshing(false);
+    }
+  };
+
+  const pendingDsrCount = dsrItems.filter((item) => item?.status && !['completed', 'failed'].includes(item.status)).length;
+  const activeRetentionCount = retentionItems.filter((item) => Boolean(item?.is_active)).length;
 
   const domainColumns = [
     {
@@ -822,9 +884,50 @@ function SettingsPage() {
 
   return (
     <div style={{ padding: 24 }}>
-      <Card title={<><SettingOutlined /> {tr('settingsPage.title', 'Настройки системы')}</>}>
-        <Tabs defaultActiveKey="massmail" items={tabItems} />
-      </Card>
+      <Space direction="vertical" size={16} style={{ width: '100%' }}>
+        <Card>
+          <Space direction="vertical" size={12} style={{ width: '100%' }}>
+            <Space wrap style={{ justifyContent: 'space-between', width: '100%' }}>
+              <Space>
+                <SettingOutlined />
+                <Typography.Title level={4} style={{ margin: 0 }}>
+                  {tr('settingsPage.title', 'Настройки системы')}
+                </Typography.Title>
+              </Space>
+              <Button icon={<ReloadOutlined />} onClick={handleRefreshAll} loading={globalRefreshing}>
+                {tr('actions.refreshAll', 'Обновить все')}
+              </Button>
+            </Space>
+            <Typography.Text type="secondary">
+              {tr(
+                'settingsPage.subtitle',
+                'Управляйте параметрами массовых рассылок, напоминаний, доменов и compliance в одном месте.'
+              )}
+            </Typography.Text>
+            <Row gutter={[12, 12]}>
+              <Col xs={24} md={8}>
+                <Card size="small">
+                  <Statistic title={tr('settingsPage.kpi.publicDomains', 'Публичные домены')} value={domains.length} />
+                </Card>
+              </Col>
+              <Col xs={24} md={8}>
+                <Card size="small">
+                  <Statistic title={tr('settingsPage.kpi.pendingDsr', 'DSR в работе')} value={pendingDsrCount} />
+                </Card>
+              </Col>
+              <Col xs={24} md={8}>
+                <Card size="small">
+                  <Statistic title={tr('settingsPage.kpi.activeRetention', 'Активные retention')} value={activeRetentionCount} />
+                </Card>
+              </Col>
+            </Row>
+          </Space>
+        </Card>
+
+        <Card>
+          <Tabs defaultActiveKey="massmail" items={tabItems} />
+        </Card>
+      </Space>
     </div>
   );
 }

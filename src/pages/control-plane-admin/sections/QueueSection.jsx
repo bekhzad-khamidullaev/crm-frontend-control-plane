@@ -498,7 +498,7 @@ export default function QueueSection({ onMutated }) {
         message="Runtime licensing flow"
         description={
           <Space direction="vertical" size={0}>
-            <Text>1) Runtime sends request -> status PENDING_REVIEW</Text>
+            <Text>1) Runtime sends request -&gt; status PENDING_REVIEW</Text>
             <Text>2) Operator approves/rejects request in queue</Text>
             <Text>3) Runtime pulls signed artifact and installs it</Text>
             <Text>4) Reissue/revoke is performed from issued licenses list</Text>

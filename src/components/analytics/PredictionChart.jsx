@@ -1,6 +1,7 @@
 import React, { useEffect, useRef } from 'react';
 import PropTypes from 'prop-types';
 import Chart from 'chart.js/auto';
+import { Card, Empty, theme, Typography } from 'antd';
 import { formatCurrency, formatNumber } from '../../lib/utils/format';
 
 /**
@@ -17,13 +18,15 @@ function PredictionChart({
   title = 'Прогноз выручки',
   height = 300,
 }) {
+  const { token } = theme.useToken();
   const chartRef = useRef(null);
   const chartInstance = useRef(null);
+  const hasData = Array.isArray(predictedData) && predictedData.length > 0;
   const formatValue = (value) =>
     formatAsCurrency && currencyCode ? formatCurrency(value, currencyCode) : formatNumber(value);
 
   useEffect(() => {
-    if (!chartRef.current) return;
+    if (!chartRef.current || !hasData) return;
 
     const ctx = chartRef.current.getContext('2d');
 
@@ -41,8 +44,8 @@ function PredictionChart({
           {
             label: 'Прогноз',
             data: predictedData,
-            borderColor: 'rgb(24, 144, 255)',
-            backgroundColor: 'rgba(24, 144, 255, 0.1)',
+            borderColor: token.colorPrimary,
+            backgroundColor: token.colorPrimaryBg,
             borderWidth: 3,
             fill: false,
             tension: 0.4,
@@ -52,8 +55,8 @@ function PredictionChart({
           {
             label: 'Верхняя граница',
             data: confidenceUpper,
-            borderColor: 'rgba(24, 144, 255, 0.3)',
-            backgroundColor: 'rgba(24, 144, 255, 0.05)',
+            borderColor: token.colorPrimaryBorder,
+            backgroundColor: token.colorPrimaryBgHover,
             borderWidth: 1,
             borderDash: [5, 5],
             fill: '+1',
@@ -63,8 +66,8 @@ function PredictionChart({
           {
             label: 'Нижняя граница',
             data: confidenceLower,
-            borderColor: 'rgba(24, 144, 255, 0.3)',
-            backgroundColor: 'rgba(24, 144, 255, 0.05)',
+            borderColor: token.colorPrimaryBorder,
+            backgroundColor: token.colorPrimaryBgHover,
             borderWidth: 1,
             borderDash: [5, 5],
             fill: false,
@@ -134,12 +137,26 @@ function PredictionChart({
     confidenceLower,
     confidenceUpper,
     title,
+    hasData,
+    token.colorPrimary,
+    token.colorPrimaryBg,
+    token.colorPrimaryBgHover,
+    token.colorPrimaryBorder,
   ]);
 
   return (
-    <div style={{ position: 'relative', height: `${height}px` }}>
-      <canvas ref={chartRef}></canvas>
-    </div>
+    <Card size="small" styles={{ body: { padding: 12 } }}>
+      <Typography.Title level={5} style={{ marginTop: 0, marginBottom: 12 }}>
+        {title}
+      </Typography.Title>
+      {!hasData ? (
+        <Empty image={Empty.PRESENTED_IMAGE_SIMPLE} description="Нет данных для построения прогноза" />
+      ) : (
+        <div style={{ position: 'relative', height: `${height}px` }}>
+          <canvas ref={chartRef}></canvas>
+        </div>
+      )}
+    </Card>
   );
 }
 

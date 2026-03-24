@@ -1,4 +1,4 @@
-import { Calendar, Clock, Edit, Eye, Trash2 } from 'lucide-react';
+import { CalendarOutlined, ClockCircleOutlined, EditOutlined, EyeOutlined, DeleteOutlined } from '@ant-design/icons';
 import { useEffect, useMemo, useState } from 'react';
 
 import { PlusOutlined } from '@ant-design/icons';
@@ -233,16 +233,16 @@ function TasksList() {
         return (
           <Space direction="vertical" size={0}>
             <Text>
-              <Calendar size={14} /> {dueDate.toLocaleDateString(dateLocale)}
+              <CalendarOutlined size={14} /> {dueDate.toLocaleDateString(dateLocale)}
             </Text>
             {daysLeft > 0 && daysLeft <= 3 ? (
               <Text type="warning">
-                <Clock size={14} /> {t('tasksListPage.deadline.daysLeft', { count: daysLeft })}
+                <ClockCircleOutlined size={14} /> {t('tasksListPage.deadline.daysLeft', { count: daysLeft })}
               </Text>
             ) : null}
             {daysLeft < 0 ? (
               <Text type="danger">
-                <Clock size={14} /> {t('tasksListPage.deadline.overdue')}
+                <ClockCircleOutlined size={14} /> {t('tasksListPage.deadline.overdue')}
               </Text>
             ) : null}
           </Space>
@@ -256,15 +256,15 @@ function TasksList() {
       width: 260,
       render: (_, record) => (
         <Space>
-          <Button size="small" icon={<Eye size={14} />} onClick={() => navigate(`/tasks/${record.id}`)}>
+          <Button size="small" icon={<EyeOutlined size={14} />} onClick={() => navigate(`/tasks/${record.id}`)}>
             {t('tasksListPage.actions.view')}
           </Button>
           {canManage ? (
             <>
-              <Button size="small" icon={<Edit size={14} />} onClick={() => navigate(`/tasks/${record.id}/edit`)}>
+              <Button size="small" icon={<EditOutlined size={14} />} onClick={() => navigate(`/tasks/${record.id}/edit`)}>
                 {t('tasksListPage.actions.edit')}
               </Button>
-              <Button size="small" danger icon={<Trash2 size={14} />} onClick={() => setDeleteTarget(record)}>
+              <Button size="small" danger icon={<DeleteOutlined size={14} />} onClick={() => setDeleteTarget(record)}>
                 {t('tasksListPage.actions.delete')}
               </Button>
             </>

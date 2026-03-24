@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { Edit, Eye, Folder, Trash2 } from 'lucide-react';
+import { EditOutlined, EyeOutlined, FolderOutlined, DeleteOutlined } from '@ant-design/icons';
 
 import { PlusOutlined } from '@ant-design/icons';
 import { App, Button, Card, Checkbox, Popconfirm, Space, Table, Tag, Typography } from 'antd';
@@ -201,7 +201,7 @@ function ProjectsList() {
       render: (_, record) => (
         <Space direction="vertical" size={0}>
           <Text strong>
-            <Folder size={14} /> {record.name}
+            <FolderOutlined size={14} /> {record.name}
           </Text>
           {record.description ? <Text type="secondary">{record.description}</Text> : null}
         </Space>
@@ -238,12 +238,12 @@ function ProjectsList() {
       width: 280,
       render: (_, record) => (
         <Space>
-          <Button size="small" icon={<Eye size={14} />} onClick={() => navigate(`/projects/${record.id}`)}>
+          <Button size="small" icon={<EyeOutlined size={14} />} onClick={() => navigate(`/projects/${record.id}`)}>
             {t('projectsListPage.actions.view')}
           </Button>
           {canManage ? (
             <>
-              <Button size="small" icon={<Edit size={14} />} onClick={() => navigate(`/projects/${record.id}/edit`)}>
+              <Button size="small" icon={<EditOutlined size={14} />} onClick={() => navigate(`/projects/${record.id}/edit`)}>
                 {t('projectsListPage.actions.edit')}
               </Button>
               <Popconfirm
@@ -254,7 +254,7 @@ function ProjectsList() {
                 cancelText={t('tasksListPage.deleteModal.cancel')}
                 okButtonProps={{ danger: true }}
               >
-                <Button size="small" danger icon={<Trash2 size={14} />}>
+                <Button size="small" danger icon={<DeleteOutlined size={14} />}>
                   {t('projectsListPage.actions.delete')}
                 </Button>
               </Popconfirm>

@@ -1,4 +1,4 @@
-import { DollarSign, Edit, Eye, Trash2 } from 'lucide-react';
+import { DollarOutlined, EditOutlined, EyeOutlined, DeleteOutlined } from '@ant-design/icons';
 import { useEffect, useState } from 'react';
 
 import { DownloadOutlined, PlusOutlined } from '@ant-design/icons';
@@ -128,7 +128,7 @@ function PaymentsList() {
       render: (_, record) => (
         <Space direction="vertical" size={0}>
           <Text strong>
-            <DollarSign size={14} /> {record.currency_code ? formatCurrency(record.amount, record.currency_code) : '-'}
+            <DollarOutlined size={14} /> {record.currency_code ? formatCurrency(record.amount, record.currency_code) : '-'}
           </Text>
           <Text type="secondary">{record.payment_date ? new Date(record.payment_date).toLocaleDateString('ru-RU') : ''}</Text>
         </Space>
@@ -158,12 +158,12 @@ function PaymentsList() {
       width: 280,
       render: (_, record) => (
         <Space>
-          <Button size="small" icon={<Eye size={14} />} onClick={() => navigate(`/payments/${record.id}`)}>
+          <Button size="small" icon={<EyeOutlined size={14} />} onClick={() => navigate(`/payments/${record.id}`)}>
             Просмотр
           </Button>
           {canManage ? (
             <>
-              <Button size="small" icon={<Edit size={14} />} onClick={() => navigate(`/payments/${record.id}/edit`)}>
+              <Button size="small" icon={<EditOutlined size={14} />} onClick={() => navigate(`/payments/${record.id}/edit`)}>
                 Редактировать
               </Button>
               <Popconfirm
@@ -174,7 +174,7 @@ function PaymentsList() {
                 cancelText="Отмена"
                 okButtonProps={{ danger: true }}
               >
-                <Button size="small" danger icon={<Trash2 size={14} />}>
+                <Button size="small" danger icon={<DeleteOutlined size={14} />}>
                   Удалить
                 </Button>
               </Popconfirm>

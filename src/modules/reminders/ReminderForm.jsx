@@ -1,6 +1,6 @@
 import { zodResolver } from '@hookform/resolvers/zod';
 import dayjs from 'dayjs';
-import { ArrowLeft, Bell, Save } from 'lucide-react';
+import { ArrowLeftOutlined, BellOutlined, SaveOutlined } from '@ant-design/icons';
 import { useEffect, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
@@ -190,14 +190,14 @@ function ReminderForm({ id }) {
       description="У вас нет прав для создания или редактирования напоминаний."
     >
       <Space direction="vertical" size={16} style={{ width: '100%' }}>
-        <Button onClick={() => navigate('/reminders')} icon={<ArrowLeft size={16} />}>
+        <Button onClick={() => navigate('/reminders')} icon={<ArrowLeftOutlined size={16} />}>
           Назад
         </Button>
 
         <Card
           title={(
             <Space>
-              <Bell size={18} />
+              <BellOutlined size={18} />
               <Title level={4} style={{ margin: 0 }}>
                 {isEdit ? 'Редактирование напоминания' : 'Новое напоминание'}
               </Title>
@@ -295,7 +295,7 @@ function ReminderForm({ id }) {
 
               <Space size={12}>
                 {canManage && (
-                  <Button type="primary" htmlType="submit" loading={saving} icon={<Save size={16} />}>
+                  <Button type="primary" htmlType="submit" loading={saving} icon={<SaveOutlined size={16} />}>
                     {isEdit ? 'Сохранить' : 'Создать'}
                   </Button>
                 )}

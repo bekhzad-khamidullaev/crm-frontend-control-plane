@@ -1,4 +1,4 @@
-import { ArrowLeft } from 'lucide-react';
+import { ArrowLeftOutlined } from '@ant-design/icons';
 import React, { useEffect, useState } from 'react';
 import { App, Button, Card, Col, Form, Input, InputNumber, Result, Row, Select, Skeleton, Space, Switch, Typography } from 'antd';
 import { navigate } from '../../router';
@@ -103,7 +103,7 @@ function ProductForm({ id }) {
     >
       <Space direction="vertical" size={16} style={{ width: '100%' }}>
         <Space wrap style={{ width: '100%', justifyContent: 'space-between' }}>
-          <Button onClick={() => navigate('/products')} icon={<ArrowLeft size={16} />}>Назад</Button>
+          <Button onClick={() => navigate('/products')} icon={<ArrowLeftOutlined size={16} />}>Назад</Button>
           <Space>
             <Button onClick={() => navigate('/products')}>Отмена</Button>
             {canManage && (

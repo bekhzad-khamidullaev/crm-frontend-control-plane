@@ -1,6 +1,6 @@
 import { zodResolver } from '@hookform/resolvers/zod';
 import dayjs from 'dayjs';
-import { ArrowLeft, Save } from 'lucide-react';
+import { ArrowLeftOutlined, SaveOutlined } from '@ant-design/icons';
 import { useEffect, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
@@ -202,7 +202,7 @@ function ProjectForm({ id }) {
       description={t('projectFormPage.permission.description')}
     >
       <Space direction="vertical" size={16} style={{ width: '100%' }}>
-        <Button onClick={() => navigate('/projects')} icon={<ArrowLeft size={16} />}>
+        <Button onClick={() => navigate('/projects')} icon={<ArrowLeftOutlined size={16} />}>
           {t('projectFormPage.actions.back')}
         </Button>
 
@@ -368,7 +368,7 @@ function ProjectForm({ id }) {
 
               <Space size={12}>
                 {canManage && (
-                  <Button type="primary" htmlType="submit" loading={saving} icon={<Save size={16} />}>
+                  <Button type="primary" htmlType="submit" loading={saving} icon={<SaveOutlined size={16} />}>
                     {isEdit ? t('projectFormPage.actions.update') : t('projectFormPage.actions.create')}
                   </Button>
                 )}

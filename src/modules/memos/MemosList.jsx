@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
-import { Check, Clock, Edit, Eye, Trash2 } from 'lucide-react';
+import { CheckOutlined, ClockCircleOutlined, EditOutlined, EyeOutlined, DeleteOutlined } from '@ant-design/icons';
 import dayjs from 'dayjs';
 
 import { PlusOutlined } from '@ant-design/icons';
@@ -176,13 +176,13 @@ export default function MemosList() {
         width: 360,
         render: (_, record) => (
           <Space>
-            <Button size="small" icon={<Eye size={14} />} onClick={() => navigate(`/memos/${record.id}`)}>Открыть</Button>
+            <Button size="small" icon={<EyeOutlined size={14} />} onClick={() => navigate(`/memos/${record.id}`)}>Открыть</Button>
             {canManage ? (
               <>
-                <Button size="small" icon={<Edit size={14} />} onClick={() => navigate(`/memos/${record.id}/edit`)}>Ред.</Button>
-                <Button size="small" icon={<Clock size={14} />} onClick={() => handleMarkPostponed(record.id)}>Отложить</Button>
-                <Button size="small" icon={<Check size={14} />} onClick={() => handleMarkReviewed(record.id)}>Рассмотрено</Button>
-                <Button size="small" danger icon={<Trash2 size={14} />} onClick={() => setConfirmDelete(record)}>Удалить</Button>
+                <Button size="small" icon={<EditOutlined size={14} />} onClick={() => navigate(`/memos/${record.id}/edit`)}>Ред.</Button>
+                <Button size="small" icon={<ClockCircleOutlined size={14} />} onClick={() => handleMarkPostponed(record.id)}>Отложить</Button>
+                <Button size="small" icon={<CheckOutlined size={14} />} onClick={() => handleMarkReviewed(record.id)}>Рассмотрено</Button>
+                <Button size="small" danger icon={<DeleteOutlined size={14} />} onClick={() => setConfirmDelete(record)}>Удалить</Button>
               </>
             ) : null}
           </Space>
