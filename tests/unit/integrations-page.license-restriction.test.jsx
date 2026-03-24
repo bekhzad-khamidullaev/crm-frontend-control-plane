@@ -23,19 +23,34 @@ const ARCHIVED_EVENT = {
   created_at: '2026-03-21T08:00:00Z',
 };
 
+const OUTBOUND_EVENT = {
+  id: 77,
+  channel_type: 'whatsapp',
+  status: 'retry_scheduled',
+  source: 'omnichannel.send',
+  attempt_count: 1,
+  max_attempts: 3,
+  text: 'Outbound follow-up',
+  external_id: 'wa-out-77',
+  created_at: '2026-03-23T08:00:00Z',
+};
+
 const buildDiagnosticsResponse = (params = {}) => {
   const scope = String(params?.scope || 'all');
   const channel = String(params?.channel || 'all').toLowerCase();
   const query = String(params?.q || '').toLowerCase();
   const needsAction = String(params?.needs_action || '') === '1';
-  const allRows = [REPLAY_EVENT, ARCHIVED_EVENT];
+  const allRows = [REPLAY_EVENT, ARCHIVED_EVENT, OUTBOUND_EVENT];
 
   let filtered = allRows;
   if (scope === 'replayable') filtered = filtered.filter((row) => row.replayable);
   if (scope === 'failures') filtered = [];
   if (scope === 'archived') filtered = [ARCHIVED_EVENT];
+  if (scope === 'outbound') filtered = [OUTBOUND_EVENT];
   if (channel !== 'all') filtered = filtered.filter((row) => String(row.channel_type || '').toLowerCase() === channel);
-  if (needsAction) filtered = filtered.filter((row) => row.replayable);
+  if (needsAction) {
+    filtered = filtered.filter((row) => row.replayable || ['retry_scheduled', 'failed', 'dead_letter', 'in_progress'].includes(String(row.status || '').toLowerCase()));
+  }
   if (query) {
     filtered = filtered.filter((row) =>
       [row.external_id, row.text, row.channel_type].filter(Boolean).join(' ').toLowerCase().includes(query)
@@ -50,11 +65,15 @@ const buildDiagnosticsResponse = (params = {}) => {
       breached_sla: 0,
       transport_health: 'degraded',
       business_health: 'healthy',
+      outbound_retry_scheduled: 1,
+      outbound_dead_letters: 0,
     },
     channels: [{ channel: 'telegram', total: 1, failed: 0, replayable: 1, health: 'healthy' }],
     recent_failures: [],
     replay_candidates: [REPLAY_EVENT],
     recent_archived: [ARCHIVED_EVENT],
+    outbound_retry_queue: [OUTBOUND_EVENT],
+    outbound_dead_letters: [],
     filtered_scope: scope,
     filtered_count: filtered.length,
     filtered_events: filtered,
@@ -66,6 +85,7 @@ const {
   getOmnichannelDiagnostics,
   getOmnichannelEventPayload,
   replayOmnichannelEvent,
+  retryOmnichannelOutboundEvent,
 } = vi.hoisted(() => ({
   getOmnichannelTimeline: vi.fn().mockResolvedValue({ count: 0, results: [] }),
   getOmnichannelDiagnostics: vi.fn(),
@@ -83,6 +103,19 @@ const {
     raw: { message: { text: 'Replay me' } },
   }),
   replayOmnichannelEvent: vi.fn().mockResolvedValue({ success: true }),
+  retryOmnichannelOutboundEvent: vi.fn().mockResolvedValue({
+    success: true,
+    outbound_event: {
+      id: 77,
+      channel_type: 'whatsapp',
+      source: 'omnichannel.send',
+      status: 'sent',
+      attempt_count: 2,
+      max_attempts: 3,
+      text: 'Outbound follow-up',
+      external_id: 'wa-out-77',
+    },
+  }),
 }));
 
 vi.mock('../../src/lib/api/compliance.js', () => ({
@@ -90,6 +123,7 @@ vi.mock('../../src/lib/api/compliance.js', () => ({
   getOmnichannelDiagnostics,
   getOmnichannelEventPayload,
   replayOmnichannelEvent,
+  retryOmnichannelOutboundEvent,
 }));
 vi.mock('../../src/lib/api/sms.js', () => ({
   default: {
@@ -154,6 +188,14 @@ describe('IntegrationsPage license restriction', () => {
       raw: { message: { text: 'Replay me' } },
     });
     replayOmnichannelEvent.mockResolvedValue({ success: true });
+    retryOmnichannelOutboundEvent.mockResolvedValue({
+      success: true,
+      outbound_event: {
+        ...OUTBOUND_EVENT,
+        status: 'sent',
+        attempt_count: 2,
+      },
+    });
   });
 
   it('shows warning and disables refresh on restriction event', async () => {
@@ -291,6 +333,34 @@ describe('IntegrationsPage license restriction', () => {
     });
 
     expect(getOmnichannelDiagnostics).toHaveBeenCalledWith(expect.objectContaining({ scope: 'archived' }));
+  });
+
+  it('shows outbound queue scope and triggers retry outbound action', async () => {
+    render(<IntegrationsPage />);
+
+    await waitFor(() => {
+      expect(screen.getByText(/Meta and Inbox Diagnostics/i)).toBeInTheDocument();
+    });
+
+    await act(async () => {
+      fireEvent.mouseDown(screen.getAllByRole('combobox')[0]);
+    });
+
+    await act(async () => {
+      fireEvent.click(screen.getByText(/Outbound queue/i));
+    });
+
+    await waitFor(() => {
+      expect(screen.getByText(/Outbound follow-up/i)).toBeInTheDocument();
+    });
+
+    await act(async () => {
+      fireEvent.click(screen.getByRole('button', { name: /Retry outbound/i }));
+    });
+
+    await waitFor(() => {
+      expect(retryOmnichannelOutboundEvent).toHaveBeenCalledWith(77);
+    });
   });
 
   it('hydrates diagnostics filters from URL hash and queries backend with them', async () => {

@@ -47,6 +47,30 @@ vi.mock('../../src/lib/api/compliance.js', () => ({
   runRetentionPolicies: vi.fn(),
 }));
 
+vi.mock('../../src/lib/api/plugins.js', () => ({
+  default: {
+    listExtensions: vi.fn().mockResolvedValue({
+      results: [
+        {
+          id: 'ext-1',
+          code: 'com.crm.extension.demo',
+          name: 'Demo Extension',
+          installed_version: '1.0.0',
+          status: 'installed',
+          manifest: { manifest_version: 'v1', code: 'com.crm.extension.demo', name: 'Demo Extension', version: '1.0.0' },
+        },
+      ],
+    }),
+    compatibilityMatrix: vi.fn().mockResolvedValue([
+      { id: 'cmp-1', extension_name: 'Demo Extension', crm_version: '2026.03', compatible: true, reason: 'OK', checked_at: '2026-03-23T00:00:00Z' },
+    ]),
+    installExtension: vi.fn(),
+    upgradeExtension: vi.fn(),
+    uninstallExtension: vi.fn(),
+    extensionDiagnostics: vi.fn().mockResolvedValue({ diagnostics: { status: 'installed' } }),
+  },
+}));
+
 describe('SettingsIntegrationsWorkspace', () => {
   beforeEach(() => {
     vi.clearAllMocks();
@@ -69,6 +93,16 @@ describe('SettingsIntegrationsWorkspace', () => {
 
     await waitFor(() => {
       expect(screen.getByText(/Embedded integrations surface/i)).toBeInTheDocument();
+    });
+  });
+
+  it('renders marketplace tab with extension registry row', async () => {
+    render(<SettingsIntegrationsWorkspace defaultTab="marketplace" />);
+
+    await waitFor(() => {
+      expect(screen.getByText(/Marketplace Registry/i)).toBeInTheDocument();
+      expect(screen.getAllByText(/Demo Extension/i).length).toBeGreaterThan(0);
+      expect(screen.getByText(/com\.crm\.extension\.demo/i)).toBeInTheDocument();
     });
   });
 });

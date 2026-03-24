@@ -4,13 +4,16 @@ import {
   Badge,
   Button,
   Card,
+  DatePicker,
   Empty,
   Grid,
   Input,
+  InputNumber,
   Layout,
   List,
   Result,
   Segmented,
+  Select,
   Space,
   Spin,
   Statistic,
@@ -31,7 +34,13 @@ import dayjs from 'dayjs';
 import 'dayjs/locale/ru';
 import relativeTime from 'dayjs/plugin/relativeTime';
 import { useEffect, useMemo, useState } from 'react';
-import { getOmnichannelTimeline, sendOmnichannelMessage } from '../lib/api/compliance.js';
+import {
+  getOmnichannelConversationContext,
+  getOmnichannelTimeline,
+  runOmnichannelConversationAction,
+  sendOmnichannelMessage,
+  updateOmnichannelConversationContext,
+} from '../lib/api/compliance.js';
 import { readStoredLicenseFeatures } from '../lib/api/licenseFeatures.js';
 import { readStoredLicenseState, shouldEnforceLicenseFeatures } from '../lib/api/licenseState.js';
 import { useTheme } from '../lib/hooks/useTheme.js';
@@ -233,6 +242,15 @@ function buildSendPayload(conversation, text) {
   return null;
 }
 
+function buildConversationContextPayload(conversation) {
+  if (!conversation?.channelId || !conversation?.participantId) return null;
+  return {
+    channel_id: conversation.channelId,
+    participant_id: conversation.participantId,
+    conversation_key: conversation.key,
+  };
+}
+
 function ChatPage() {
   const { message } = App.useApp();
   const { theme } = useTheme();
@@ -256,6 +274,14 @@ function ChatPage() {
   const [activeConversationKey, setActiveConversationKey] = useState(null);
   const [draft, setDraft] = useState('');
   const [sending, setSending] = useState(false);
+  const [contextState, setContextState] = useState(null);
+  const [contextMetrics, setContextMetrics] = useState(null);
+  const [contextLoading, setContextLoading] = useState(false);
+  const [contextSaving, setContextSaving] = useState(false);
+  const [internalNoteDraft, setInternalNoteDraft] = useState('');
+  const [ownerUserId, setOwnerUserId] = useState(null);
+  const [linkSubjectContentType, setLinkSubjectContentType] = useState(null);
+  const [linkSubjectObjectId, setLinkSubjectObjectId] = useState(null);
   const licenseFeatures = readStoredLicenseFeatures();
   const storedLicenseState = readStoredLicenseState();
   const enforceLicenseFeatures = shouldEnforceLicenseFeatures(storedLicenseState);
@@ -333,6 +359,80 @@ function ChatPage() {
     }));
     return [{ label: 'Все каналы', value: 'all' }, ...dynamic];
   }, [conversations]);
+
+  const loadConversationContext = async (conversation) => {
+    const payload = buildConversationContextPayload(conversation);
+    if (!payload) {
+      setContextState(null);
+      setContextMetrics(null);
+      return;
+    }
+    setContextLoading(true);
+    try {
+      const response = await getOmnichannelConversationContext(payload);
+      setContextState(response?.state || null);
+      setContextMetrics(response?.metrics || null);
+      if (response?.state?.assigned_user) {
+        setOwnerUserId(response.state.assigned_user);
+      }
+    } catch (error) {
+      setContextState(null);
+      setContextMetrics(null);
+      message.error(error?.details?.message || error?.details?.detail || error?.message || 'Не удалось загрузить контекст диалога');
+    } finally {
+      setContextLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    if (!activeConversation) {
+      setContextState(null);
+      setContextMetrics(null);
+      setInternalNoteDraft('');
+      setOwnerUserId(null);
+      setLinkSubjectContentType(null);
+      setLinkSubjectObjectId(null);
+      return;
+    }
+    loadConversationContext(activeConversation);
+  }, [activeConversationKey]);
+
+  const patchConversationContext = async (patchPayload) => {
+    const payload = buildConversationContextPayload(activeConversation);
+    if (!payload) return;
+    setContextSaving(true);
+    try {
+      const response = await updateOmnichannelConversationContext({ ...payload, ...patchPayload });
+      setContextState(response?.state || null);
+      setContextMetrics(response?.metrics || null);
+      message.success('Контекст обновлён');
+    } catch (error) {
+      message.error(error?.details?.message || error?.details?.detail || error?.message || 'Не удалось обновить контекст');
+    } finally {
+      setContextSaving(false);
+    }
+  };
+
+  const runQuickAction = async (action, extra = {}) => {
+    const payload = buildConversationContextPayload(activeConversation);
+    if (!payload) return;
+    setContextSaving(true);
+    try {
+      const response = await runOmnichannelConversationAction({ ...payload, action, ...extra });
+      setContextState(response?.state || null);
+      if (action === 'add_internal_note') {
+        setInternalNoteDraft('');
+      }
+      if (action === 'assign_owner' && extra?.owner_user_id) {
+        setOwnerUserId(extra.owner_user_id);
+      }
+      message.success('Действие выполнено');
+    } catch (error) {
+      message.error(error?.details?.message || error?.details?.detail || error?.message || 'Не удалось выполнить действие');
+    } finally {
+      setContextSaving(false);
+    }
+  };
 
   const handleSend = async () => {
     const text = draft.trim();
@@ -654,11 +754,159 @@ function ChatPage() {
                 >
                   <Card variant="borderless" style={{ background: bg }}>
                     <Space direction="vertical" size={12} style={{ width: '100%' }}>
-                      <Title level={5} style={{ margin: 0 }}>
-                        Context Sidebar
-                      </Title>
-                      <Statistic title="Входящих" value={activeConversation.inboundCount} />
-                      <Statistic title="Исходящих" value={activeConversation.outboundCount} />
+                      <Space style={{ justifyContent: 'space-between', width: '100%' }}>
+                        <Title level={5} style={{ margin: 0 }}>
+                          Context Sidebar
+                        </Title>
+                        <Button
+                          size="small"
+                          icon={<ReloadOutlined />}
+                          loading={contextLoading}
+                          onClick={() => loadConversationContext(activeConversation)}
+                        />
+                      </Space>
+
+                      <Statistic title="Входящих" value={contextMetrics?.inbound ?? activeConversation.inboundCount} />
+                      <Statistic title="Исходящих" value={contextMetrics?.outbound ?? activeConversation.outboundCount} />
+                      <Statistic title="Всего сообщений" value={contextMetrics?.messages_total ?? activeConversation.messages.length} />
+
+                      <div>
+                        <Text type="secondary">Статус диалога</Text>
+                        <Select
+                          style={{ width: '100%', marginTop: 6 }}
+                          value={contextState?.status || 'open'}
+                          options={[
+                            { label: 'Открыт', value: 'open' },
+                            { label: 'В работе', value: 'in_progress' },
+                            { label: 'Snoozed', value: 'snoozed' },
+                            { label: 'Закрыт', value: 'resolved' },
+                          ]}
+                          onChange={(value) => patchConversationContext({ status: value })}
+                        />
+                      </div>
+
+                      <div>
+                        <Text type="secondary">Следующее действие</Text>
+                        <Input
+                          style={{ marginTop: 6 }}
+                          value={contextState?.next_action || ''}
+                          placeholder="Например: перезвонить клиенту"
+                          onChange={(event) => setContextState((prev) => ({ ...(prev || {}), next_action: event.target.value }))}
+                          onBlur={(event) => patchConversationContext({ next_action: event.target.value.trim() })}
+                        />
+                      </div>
+
+                      <div>
+                        <Text type="secondary">Дата следующего действия</Text>
+                        <DatePicker
+                          showTime
+                          style={{ width: '100%', marginTop: 6 }}
+                          value={contextState?.next_action_at ? dayjs(contextState.next_action_at) : null}
+                          onChange={(value) => patchConversationContext({ next_action_at: value ? value.toISOString() : null })}
+                        />
+                      </div>
+
+                      <Space wrap size={8}>
+                        <Button loading={contextSaving} onClick={() => runQuickAction('create_lead')}>
+                          Create lead
+                        </Button>
+                        <Button loading={contextSaving} onClick={() => runQuickAction('create_task')}>
+                          Create task
+                        </Button>
+                        <Button loading={contextSaving} onClick={() => runQuickAction('snooze', { minutes: 30 })}>
+                          Snooze 30m
+                        </Button>
+                        <Button loading={contextSaving} onClick={() => runQuickAction('start_call')}>
+                          Start call
+                        </Button>
+                      </Space>
+
+                      <Space.Compact style={{ width: '100%' }}>
+                        <InputNumber
+                          style={{ width: '50%' }}
+                          value={linkSubjectContentType}
+                          min={1}
+                          placeholder="content_type id"
+                          onChange={(value) => setLinkSubjectContentType(value ?? null)}
+                        />
+                        <InputNumber
+                          style={{ width: '50%' }}
+                          value={linkSubjectObjectId}
+                          min={1}
+                          placeholder="object id"
+                          onChange={(value) => setLinkSubjectObjectId(value ?? null)}
+                        />
+                        <Button
+                          loading={contextSaving}
+                          onClick={() =>
+                            linkSubjectContentType
+                            && linkSubjectObjectId
+                            && runQuickAction('link_entity', {
+                              subject_content_type: linkSubjectContentType,
+                              subject_object_id: linkSubjectObjectId,
+                            })
+                          }
+                        >
+                          Link entity
+                        </Button>
+                      </Space.Compact>
+
+                      <Space.Compact style={{ width: '100%' }}>
+                        <InputNumber
+                          style={{ width: '100%' }}
+                          value={ownerUserId}
+                          min={1}
+                          placeholder="Owner user id"
+                          onChange={(value) => setOwnerUserId(value ?? null)}
+                        />
+                        <Button
+                          loading={contextSaving}
+                          onClick={() => ownerUserId && runQuickAction('assign_owner', { owner_user_id: ownerUserId })}
+                        >
+                          Assign owner
+                        </Button>
+                      </Space.Compact>
+
+                      <div>
+                        <Text type="secondary">Внутренняя заметка</Text>
+                        <TextArea
+                          rows={3}
+                          style={{ marginTop: 6 }}
+                          value={internalNoteDraft}
+                          placeholder="Комментарий для команды"
+                          onChange={(event) => setInternalNoteDraft(event.target.value)}
+                        />
+                        <Button
+                          style={{ marginTop: 8 }}
+                          loading={contextSaving}
+                          onClick={() => runQuickAction('add_internal_note', { note: internalNoteDraft })}
+                        >
+                          Добавить заметку
+                        </Button>
+                      </div>
+
+                      <div>
+                        <Text type="secondary">Последние заметки</Text>
+                        {(contextState?.internal_notes || []).length > 0 ? (
+                          <List
+                            size="small"
+                            dataSource={[...(contextState.internal_notes || [])].slice(-3).reverse()}
+                            renderItem={(note) => (
+                              <List.Item style={{ paddingInline: 0 }}>
+                                <Space direction="vertical" size={0}>
+                                  <Text>{note?.text || ''}</Text>
+                                  <Text type="secondary" style={{ fontSize: 12 }}>
+                                    {note?.author_username || 'system'} • {note?.created_at ? dayjs(note.created_at).format('DD.MM.YYYY HH:mm') : ''}
+                                  </Text>
+                                </Space>
+                              </List.Item>
+                            )}
+                          />
+                        ) : (
+                          <Text type="secondary">Пока нет заметок</Text>
+                        )}
+                      </div>
+
                       <div>
                         <Text type="secondary">Канал</Text>
                         <div>
@@ -676,19 +924,13 @@ function ChatPage() {
                       <div>
                         <Text type="secondary">Связанная сущность</Text>
                         <div>
-                          {activeConversation.subjectObjectId ? (
+                          {(contextState?.subject_object_id || activeConversation.subjectObjectId) ? (
                             <Tag>
-                              {activeConversation.subjectContentType || 'subject'} #{activeConversation.subjectObjectId}
+                              {contextState?.subject_content_type || activeConversation.subjectContentType || 'subject'} #{contextState?.subject_object_id || activeConversation.subjectObjectId}
                             </Tag>
                           ) : (
                             <Text type="secondary">Не привязано</Text>
                           )}
-                        </div>
-                      </div>
-                      <div>
-                        <Text type="secondary">Последняя активность</Text>
-                        <div>
-                          <Text>{activeConversation.lastActivityAt ? dayjs(activeConversation.lastActivityAt).format('DD.MM.YYYY HH:mm') : '-'}</Text>
                         </div>
                       </div>
                     </Space>

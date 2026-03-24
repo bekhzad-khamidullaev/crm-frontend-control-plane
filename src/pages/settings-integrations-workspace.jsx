@@ -26,6 +26,7 @@ import {
   theme as antdTheme,
 } from 'antd';
 import {
+  AppstoreAddOutlined,
   ApiOutlined,
   BellOutlined,
   CloudSyncOutlined,
@@ -41,6 +42,7 @@ import {
 } from '@ant-design/icons';
 import LegacyIntegrationsPage from './integrations.jsx';
 import settingsApi from '../lib/api/settings.js';
+import marketplaceApi from '../lib/api/plugins.js';
 import { exportCrmDataExcel, importCrmDataExcel } from '../lib/api/crmData.js';
 import {
   executeDsrRequest,
@@ -52,6 +54,7 @@ import {
 import { useTheme } from '../lib/hooks/useTheme.js';
 import { formatValueForUi, isPlainObject as isPlainObjectValue } from '../lib/utils/value-display.js';
 import { t } from '../lib/i18n/index.js';
+import { navigate } from '../router.js';
 
 const { Text } = Typography;
 
@@ -387,6 +390,17 @@ export default function SettingsIntegrationsWorkspace({ defaultTab = 'system' } 
   const [complianceReport, setComplianceReport] = useState(null);
   const [dsrItems, setDsrItems] = useState([]);
   const [retentionItems, setRetentionItems] = useState([]);
+  const [marketplaceExtensions, setMarketplaceExtensions] = useState([]);
+  const [marketplaceCompatibility, setMarketplaceCompatibility] = useState([]);
+  const [marketplaceModal, setMarketplaceModal] = useState({
+    open: false,
+    mode: 'install',
+    extensionId: null,
+    extensionName: '',
+    manifestText: '{\n  "manifest_version": "v1",\n  "code": "",\n  "name": "",\n  "version": "1.0.0",\n  "compatibility": {\n    "crm_version": "2026.03"\n  }\n}',
+    diagnostics: null,
+    loading: false,
+  });
   const [dataExchangeLoading, setDataExchangeLoading] = useState(false);
   const [importFile, setImportFile] = useState(null);
   const [importResult, setImportResult] = useState(null);
@@ -530,6 +544,7 @@ export default function SettingsIntegrationsWorkspace({ defaultTab = 'system' } 
       loadIntegrationLogs(),
       loadSecurityActivity(),
       loadComplianceData(),
+      loadMarketplace(),
     ]);
   };
 
@@ -614,6 +629,15 @@ export default function SettingsIntegrationsWorkspace({ defaultTab = 'system' } 
     setRetentionItems(normalizeList(retentionResp));
   });
 
+  const loadMarketplace = () => wrapLoad('marketplace', async () => {
+    const [extensionsResp, compatibilityResp] = await Promise.all([
+      marketplaceApi.listExtensions({ limit: 100 }),
+      marketplaceApi.compatibilityMatrix(),
+    ]);
+    setMarketplaceExtensions(normalizeList(extensionsResp));
+    setMarketplaceCompatibility(Array.isArray(compatibilityResp) ? compatibilityResp : []);
+  });
+
   const saveSection = async (key, payload, request, reload) => {
     setSavingState(key, true);
     try {
@@ -650,6 +674,91 @@ export default function SettingsIntegrationsWorkspace({ defaultTab = 'system' } 
       message.error(tr('settingsWorkspace.messages.retentionExecuteError', 'Не удалось выполнить retention политики'));
     } finally {
       setLoadingState('compliance', false);
+    }
+  };
+
+  const openMarketplaceModal = (mode, extension = null) => {
+    setMarketplaceModal({
+      open: true,
+      mode,
+      extensionId: extension?.id || null,
+      extensionName: extension?.name || '',
+      manifestText: JSON.stringify(
+        extension?.manifest || {
+          manifest_version: 'v1',
+          code: extension?.code || '',
+          name: extension?.name || '',
+          version: extension?.installed_version || '1.0.0',
+          compatibility: { crm_version: '2026.03' },
+        },
+        null,
+        2,
+      ),
+      diagnostics: null,
+      loading: false,
+    });
+  };
+
+  const handleMarketplaceSubmit = async () => {
+    let parsedManifest;
+    try {
+      parsedManifest = JSON.parse(marketplaceModal.manifestText || '{}');
+    } catch (error) {
+      message.error(tr('settingsWorkspace.marketplace.invalidJson', 'Manifest должен быть валидным JSON'));
+      return;
+    }
+    try {
+      setMarketplaceModal((prev) => ({ ...prev, loading: true }));
+      if (marketplaceModal.mode === 'upgrade' && marketplaceModal.extensionId) {
+        await marketplaceApi.upgradeExtension(marketplaceModal.extensionId, parsedManifest);
+      } else {
+        await marketplaceApi.installExtension(parsedManifest);
+      }
+      message.success(
+        marketplaceModal.mode === 'upgrade'
+          ? tr('settingsWorkspace.marketplace.upgradeSuccess', 'Extension обновлён')
+          : tr('settingsWorkspace.marketplace.installSuccess', 'Extension установлен'),
+      );
+      setMarketplaceModal((prev) => ({ ...prev, open: false, loading: false }));
+      await loadMarketplace();
+    } catch (error) {
+      console.error('Error upserting extension:', error);
+      setMarketplaceModal((prev) => ({ ...prev, loading: false }));
+      message.error(
+        error?.message ||
+          tr('settingsWorkspace.marketplace.installError', 'Не удалось применить manifest extension'),
+      );
+    }
+  };
+
+  const handleUninstallExtension = async (extension) => {
+    try {
+      await marketplaceApi.uninstallExtension(extension.id);
+      message.success(tr('settingsWorkspace.marketplace.uninstallSuccess', 'Extension удалён'));
+      await loadMarketplace();
+    } catch (error) {
+      console.error('Error uninstalling extension:', error);
+      message.error(tr('settingsWorkspace.marketplace.uninstallError', 'Не удалось удалить extension'));
+    }
+  };
+
+  const handleLoadDiagnostics = async (extension) => {
+    try {
+      const diagnosticsResp = await marketplaceApi.extensionDiagnostics(extension.id);
+      Modal.info({
+        title: tr('settingsWorkspace.marketplace.diagnosticsTitle', 'Diagnostics extension'),
+        width: 760,
+        content: (
+          <Input.TextArea
+            readOnly
+            rows={16}
+            value={JSON.stringify(diagnosticsResp?.diagnostics || diagnosticsResp || {}, null, 2)}
+          />
+        ),
+      });
+    } catch (error) {
+      console.error('Error loading extension diagnostics:', error);
+      message.error(tr('settingsWorkspace.marketplace.diagnosticsError', 'Не удалось загрузить diagnostics'));
     }
   };
 
@@ -803,6 +912,12 @@ export default function SettingsIntegrationsWorkspace({ defaultTab = 'system' } 
       icon: <ShareAltOutlined style={{ color: '#13c2c2' }} />,
     },
     {
+      key: 'marketplace',
+      title: tr('settingsWorkspace.overview.marketplace', 'Marketplace extensions'),
+      value: marketplaceExtensions.filter((item) => item.status !== 'uninstalled').length,
+      icon: <AppstoreAddOutlined style={{ color: '#9254de' }} />,
+    },
+    {
       key: 'logs',
       title: tr('settingsWorkspace.overview.logs', 'Integration log errors'),
       value: integrationErrorCount,
@@ -882,15 +997,18 @@ export default function SettingsIntegrationsWorkspace({ defaultTab = 'system' } 
                   <Descriptions.Item label="Security">{Object.keys(securitySettings || {}).length ? 'synced' : 'empty'}</Descriptions.Item>
                   <Descriptions.Item label="Webhooks">{webhooks.length}</Descriptions.Item>
                   <Descriptions.Item label="Integration Logs">{integrationLogs.length}</Descriptions.Item>
+                  <Descriptions.Item label="Marketplace">{marketplaceExtensions.length}</Descriptions.Item>
                 </Descriptions>
               </Card>
             </Col>
             <Col xs={24} xl={12}>
               <Card title={tr('settingsWorkspace.overview.quickActions', 'Быстрые действия')}>
                 <Space wrap>
+                  <Button onClick={() => navigate('/onboarding')}>{tr('settingsWorkspace.actions.openOnboarding', 'Открыть onboarding')}</Button>
                   <Button onClick={() => setActiveTab('system')}>{tr('settingsWorkspace.actions.openSystem', 'Открыть систему')}</Button>
                   <Button onClick={() => setActiveTab('operations')}>{tr('settingsWorkspace.actions.openOps', 'Открыть ops')}</Button>
                   <Button onClick={() => setActiveTab('compliance')}>{tr('settingsWorkspace.actions.openCompliance', 'Открыть compliance')}</Button>
+                  <Button onClick={() => setActiveTab('marketplace')}>{tr('settingsWorkspace.actions.openMarketplace', 'Открыть marketplace')}</Button>
                   <Button type="primary" onClick={() => setActiveTab('integrations')}>{tr('settingsWorkspace.actions.openIntegrations', 'Открыть интеграции')}</Button>
                 </Space>
               </Card>
@@ -1553,6 +1671,96 @@ export default function SettingsIntegrationsWorkspace({ defaultTab = 'system' } 
       ),
     },
     {
+      key: 'marketplace',
+      label: tr('settingsWorkspace.tabs.marketplace', 'Marketplace'),
+      children: (
+        <Space direction="vertical" size="large" style={{ width: '100%' }}>
+          <Alert
+            type="info"
+            showIcon
+            message={tr('settingsWorkspace.marketplace.title', 'Marketplace Registry')}
+            description={tr(
+              'settingsWorkspace.marketplace.description',
+              'Устанавливайте и обновляйте extension через versioned manifest v1. Для каждого extension доступен diagnostics и compatibility matrix.',
+            )}
+            action={(
+              <Button type="primary" icon={<AppstoreAddOutlined />} onClick={() => openMarketplaceModal('install')}>
+                {tr('settingsWorkspace.marketplace.installAction', 'Установить extension')}
+              </Button>
+            )}
+          />
+          <Card
+            title={tr('settingsWorkspace.marketplace.installed', 'Установленные extensions')}
+            extra={(
+              <Button icon={<ReloadOutlined />} onClick={loadMarketplace} loading={sectionLoading.marketplace}>
+                {tr('actions.refresh', 'Обновить')}
+              </Button>
+            )}
+          >
+            <Table
+              rowKey={(record) => record.id}
+              loading={sectionLoading.marketplace}
+              dataSource={marketplaceExtensions}
+              pagination={false}
+              columns={[
+                { title: tr('settingsWorkspace.table.code', 'Code'), dataIndex: 'code', key: 'code', width: 200 },
+                { title: tr('settingsWorkspace.table.name', 'Название'), dataIndex: 'name', key: 'name' },
+                { title: tr('settingsWorkspace.table.version', 'Версия'), dataIndex: 'installed_version', key: 'installed_version', width: 140 },
+                {
+                  title: tr('settingsWorkspace.table.status', 'Статус'),
+                  dataIndex: 'status',
+                  key: 'status',
+                  width: 160,
+                  render: (value) => {
+                    const color = value === 'installed' ? 'green' : value === 'failed' ? 'red' : value === 'uninstalled' ? 'default' : 'blue';
+                    return <Tag color={color}>{prettifyKey(value)}</Tag>;
+                  },
+                },
+                {
+                  title: tr('settingsWorkspace.table.actions', 'Действия'),
+                  key: 'actions',
+                  width: 280,
+                  render: (_, record) => (
+                    <Space size="small" wrap>
+                      <Button size="small" onClick={() => openMarketplaceModal('upgrade', record)}>
+                        {tr('actions.update', 'Обновить')}
+                      </Button>
+                      <Button size="small" onClick={() => handleLoadDiagnostics(record)}>
+                        {tr('settingsWorkspace.marketplace.diagnostics', 'Diagnostics')}
+                      </Button>
+                      <Button size="small" danger disabled={record.status === 'uninstalled'} onClick={() => handleUninstallExtension(record)}>
+                        {tr('actions.delete', 'Удалить')}
+                      </Button>
+                    </Space>
+                  ),
+                },
+              ]}
+            />
+          </Card>
+          <Card title={tr('settingsWorkspace.marketplace.compatibility', 'Compatibility matrix')}>
+            <Table
+              rowKey={(record) => record.id}
+              dataSource={marketplaceCompatibility}
+              pagination={false}
+              columns={[
+                { title: tr('settingsWorkspace.table.extension', 'Extension'), dataIndex: 'extension_name', key: 'extension_name' },
+                { title: tr('settingsWorkspace.table.crmVersion', 'CRM version'), dataIndex: 'crm_version', key: 'crm_version', width: 180 },
+                {
+                  title: tr('settingsWorkspace.table.compatible', 'Совместимость'),
+                  dataIndex: 'compatible',
+                  key: 'compatible',
+                  width: 160,
+                  render: (value) => (value ? <Tag color="green">Compatible</Tag> : <Tag color="red">Blocked</Tag>),
+                },
+                { title: tr('settingsWorkspace.table.reason', 'Причина'), dataIndex: 'reason', key: 'reason' },
+                { title: tr('settingsWorkspace.table.checkedAt', 'Проверено'), dataIndex: 'checked_at', key: 'checked_at', width: 200, render: formatDateTime },
+              ]}
+            />
+          </Card>
+        </Space>
+      ),
+    },
+    {
       key: 'integrations',
       label: tr('settingsWorkspace.tabs.integrations', 'Интеграции'),
       children: <LegacyIntegrationsPage embedded />,
@@ -1582,6 +1790,38 @@ export default function SettingsIntegrationsWorkspace({ defaultTab = 'system' } 
       >
         <Tabs activeKey={activeTab} onChange={setActiveTab} items={tabItems} />
       </Card>
+      <Modal
+        title={
+          marketplaceModal.mode === 'upgrade'
+            ? tr('settingsWorkspace.marketplace.upgradeTitle', 'Обновить extension')
+            : tr('settingsWorkspace.marketplace.installTitle', 'Установить extension')
+        }
+        open={marketplaceModal.open}
+        onCancel={() => setMarketplaceModal((prev) => ({ ...prev, open: false, loading: false }))}
+        onOk={handleMarketplaceSubmit}
+        confirmLoading={marketplaceModal.loading}
+        width={760}
+        okText={marketplaceModal.mode === 'upgrade' ? tr('actions.update', 'Обновить') : tr('actions.install', 'Установить')}
+      >
+        <Space direction="vertical" size="middle" style={{ width: '100%' }}>
+          <Alert
+            type="info"
+            showIcon
+            message={tr('settingsWorkspace.marketplace.manifestHint', 'Manifest v1 (JSON)')}
+            description={tr('settingsWorkspace.marketplace.manifestHintDescription', 'Проверьте code/name/version/compatibility перед применением.')}
+          />
+          <Input.TextArea
+            rows={16}
+            value={marketplaceModal.manifestText}
+            onChange={(event) =>
+              setMarketplaceModal((prev) => ({
+                ...prev,
+                manifestText: event.target.value,
+              }))
+            }
+          />
+        </Space>
+      </Modal>
       <Modal
         title={tr('settingsWorkspace.logs.detailsTitle', 'Детали integration log')}
         open={integrationLogModal.open}

@@ -1,5 +1,18 @@
 import React from 'react';
-import { Tabs } from 'antd';
+import {
+  Alert,
+  App,
+  Button,
+  Card,
+  Empty,
+  Input,
+  Progress,
+  Space,
+  Table,
+  Tabs,
+  Tag,
+  Typography,
+} from 'antd';
 import CrudPage from '../components/CrudPage.jsx';
 import { t } from '../lib/i18n/index.js';
 import {
@@ -25,6 +38,185 @@ import {
 } from '../lib/api/shipments.js';
 import { getCompanies, getCompany, getContacts, getContact, getLeads, getLead, getDeals, getDeal, getUsers, getUser } from '../lib/api/client.js';
 import { getProducts, getProduct } from '../lib/api/products.js';
+import { createDealServiceTicket, getDealOpsChain } from '../lib/api/deals.js';
+
+const { Search } = Input;
+const { Text } = Typography;
+
+function paymentStatusTag(statusCode) {
+  if (statusCode === 'received') return <Tag color="success">Received</Tag>;
+  if (statusCode === 'guaranteed') return <Tag color="processing">Guaranteed</Tag>;
+  if (statusCode === 'high_probability') return <Tag color="warning">High probability</Tag>;
+  if (statusCode === 'low_probability') return <Tag color="default">Low probability</Tag>;
+  if (statusCode === 'none') return <Tag>No payments</Tag>;
+  return <Tag>{statusCode || 'unknown'}</Tag>;
+}
+
+export function OpsChainPanel() {
+  const { message } = App.useApp();
+  const [loading, setLoading] = React.useState(true);
+  const [submittingDealId, setSubmittingDealId] = React.useState(null);
+  const [errorState, setErrorState] = React.useState('');
+  const [rows, setRows] = React.useState([]);
+  const [summary, setSummary] = React.useState(null);
+  const [search, setSearch] = React.useState('');
+
+  const loadChain = React.useCallback(async (query = '') => {
+    setLoading(true);
+    setErrorState('');
+    try {
+      const response = await getDealOpsChain({ limit: 50, search: query || undefined });
+      setRows(Array.isArray(response?.results) ? response.results : []);
+      setSummary(response?.summary || null);
+    } catch (error) {
+      setRows([]);
+      setSummary(null);
+      setErrorState(error?.details?.message || error?.details?.detail || error?.message || 'Failed to load ops chain.');
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  React.useEffect(() => {
+    loadChain();
+  }, [loadChain]);
+
+  const handleCreateTicket = async (dealId) => {
+    setSubmittingDealId(dealId);
+    try {
+      const response = await createDealServiceTicket(dealId, {});
+      if (response?.created) {
+        message.success('Service ticket created');
+      } else {
+        message.info('Existing open service ticket is already linked');
+      }
+      await loadChain(search);
+    } catch (error) {
+      message.error(error?.details?.message || error?.details?.detail || error?.message || 'Failed to create service ticket.');
+    } finally {
+      setSubmittingDealId(null);
+    }
+  };
+
+  return (
+    <Space direction="vertical" size={12} style={{ width: '100%' }}>
+      <Card size="small">
+        <Space direction="vertical" size={8} style={{ width: '100%' }}>
+          <Space style={{ justifyContent: 'space-between', width: '100%' }} wrap>
+            <Search
+              allowClear
+              placeholder="Search deal or ticket"
+              onSearch={(value) => {
+                const next = String(value || '').trim();
+                setSearch(next);
+                loadChain(next);
+              }}
+              style={{ maxWidth: 360 }}
+            />
+            <Button onClick={() => loadChain(search)} loading={loading}>
+              Refresh
+            </Button>
+          </Space>
+          {summary && (
+            <Space wrap size={16}>
+              <Text>Deals: <b>{summary.deals || 0}</b></Text>
+              <Text>With invoice: <b>{summary.with_invoice || 0}</b></Text>
+              <Text>With payment: <b>{summary.with_received_payment || 0}</b></Text>
+              <Text>With service ticket: <b>{summary.with_service_ticket || 0}</b></Text>
+            </Space>
+          )}
+          <Alert
+            type="info"
+            showIcon
+            message="ERP-adjacent chain"
+            description="lead/deal -> invoice -> payment status -> service ticket in one operations surface."
+          />
+        </Space>
+      </Card>
+
+      {errorState ? (
+        <Alert type="error" showIcon message="Ops chain unavailable" description={errorState} />
+      ) : rows.length === 0 && !loading ? (
+        <Card size="small">
+          <Empty description="No deals in ops chain." />
+        </Card>
+      ) : (
+        <Table
+          size="small"
+          rowKey="deal_id"
+          loading={loading}
+          dataSource={rows}
+          scroll={{ x: 980 }}
+          pagination={false}
+          columns={[
+            {
+              title: 'Deal',
+              dataIndex: 'deal_name',
+              key: 'deal_name',
+              render: (_value, row) => (
+                <Space direction="vertical" size={0}>
+                  <Text strong>{row.deal_name}</Text>
+                  <Text type="secondary">#{row.deal_id} • {row.deal_ticket || 'no ticket'}</Text>
+                </Space>
+              ),
+            },
+            {
+              title: 'Invoice',
+              key: 'invoice',
+              render: (_value, row) => (
+                row.invoice_numbers?.length
+                  ? <Space wrap>{row.invoice_numbers.map((invoice) => <Tag key={invoice}>{invoice}</Tag>)}</Space>
+                  : <Text type="secondary">Not issued</Text>
+              ),
+            },
+            {
+              title: 'Payment',
+              key: 'payment',
+              render: (_value, row) => (
+                <Space direction="vertical" size={4}>
+                  {paymentStatusTag(row.latest_payment_status?.code)}
+                  <Progress percent={Number(row.payment_progress_percent || 0)} size="small" />
+                </Space>
+              ),
+            },
+            {
+              title: 'Service ticket',
+              key: 'service_ticket',
+              render: (_value, row) => (
+                row.service_ticket
+                  ? (
+                    <Space direction="vertical" size={0}>
+                      <Tag color={row.service_ticket.pending ? 'processing' : 'default'}>
+                        {row.service_ticket.pending ? 'Open' : 'Closed'}
+                      </Tag>
+                      <Text>{row.service_ticket.ticket}</Text>
+                    </Space>
+                  )
+                  : <Text type="secondary">Missing</Text>
+              ),
+            },
+            {
+              title: 'Action',
+              key: 'actions',
+              width: 180,
+              render: (_value, row) => (
+                <Button
+                  type="primary"
+                  size="small"
+                  loading={submittingDealId === row.deal_id}
+                  disabled={Boolean(row.service_ticket)}
+                  onClick={() => handleCreateTicket(row.deal_id)}
+                >
+                  Create ticket
+                </Button>
+              ),
+            },
+          ]}
+        />
+      )}
+    </Space>
+  );
+}
 
 export default function OperationsPage() {
   const requestFields = [
@@ -165,6 +357,11 @@ export default function OperationsPage() {
           fields={outputFields}
         />
       ),
+    },
+    {
+      key: 'ops-chain',
+      label: 'Ops chain',
+      children: <OpsChainPanel />,
     },
   ];
 

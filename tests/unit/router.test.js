@@ -43,6 +43,11 @@ describe('Router', () => {
       expect(parseHash()).toEqual({ name: 'dashboard', params: {} });
     });
 
+    it('parses #/onboarding', () => {
+      location.hash = '#/onboarding';
+      expect(parseHash()).toEqual({ name: 'onboarding', params: {} });
+    });
+
     it('parses #/licensing', () => {
       location.hash = '#/licensing';
       expect(parseHash()).toEqual({ name: 'control-plane', params: {} });

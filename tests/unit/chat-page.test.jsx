@@ -4,6 +4,9 @@ import ChatPage from '../../src/pages/chat-page.jsx';
 
 const getOmnichannelTimeline = vi.fn();
 const sendOmnichannelMessage = vi.fn();
+const getOmnichannelConversationContext = vi.fn();
+const updateOmnichannelConversationContext = vi.fn();
+const runOmnichannelConversationAction = vi.fn();
 const readStoredLicenseFeatures = vi.fn();
 const readStoredLicenseState = vi.fn();
 const shouldEnforceLicenseFeatures = vi.fn();
@@ -11,6 +14,9 @@ const shouldEnforceLicenseFeatures = vi.fn();
 vi.mock('../../src/lib/api/compliance.js', () => ({
   getOmnichannelTimeline: (...args) => getOmnichannelTimeline(...args),
   sendOmnichannelMessage: (...args) => sendOmnichannelMessage(...args),
+  getOmnichannelConversationContext: (...args) => getOmnichannelConversationContext(...args),
+  updateOmnichannelConversationContext: (...args) => updateOmnichannelConversationContext(...args),
+  runOmnichannelConversationAction: (...args) => runOmnichannelConversationAction(...args),
 }));
 
 vi.mock('../../src/lib/api/licenseFeatures.js', () => ({
@@ -31,6 +37,19 @@ describe('ChatPage unified inbox', () => {
     vi.clearAllMocks();
     readStoredLicenseState.mockReturnValue({ installed: true, status: 'active', enforcement_mode: 'strict' });
     shouldEnforceLicenseFeatures.mockImplementation((state) => state?.enforcement_mode === 'strict');
+    getOmnichannelConversationContext.mockResolvedValue({
+      state: { status: 'open', next_action: '', internal_notes: [] },
+      metrics: { messages_total: 0, inbound: 0, outbound: 0 },
+    });
+    updateOmnichannelConversationContext.mockResolvedValue({
+      state: { status: 'open', next_action: '', internal_notes: [] },
+      metrics: { messages_total: 0, inbound: 0, outbound: 0 },
+    });
+    runOmnichannelConversationAction.mockResolvedValue({
+      success: true,
+      state: { status: 'open', next_action: '', internal_notes: [] },
+      result: {},
+    });
   });
 
   it('shows license state when unified inbox entitlement is missing', async () => {
@@ -114,6 +133,57 @@ describe('ChatPage unified inbox', () => {
         channel_id: 7,
         to: '998901234567',
         text: 'Готово, подключаю менеджера',
+      });
+    });
+  });
+
+  it('loads context and runs quick action in sidebar', async () => {
+    readStoredLicenseFeatures.mockReturnValue(['integrations.core']);
+    getOmnichannelTimeline.mockResolvedValue({
+      count: 1,
+      summary: { total: 1, queue: 1, active: 0, resolved: 0, breached: 0 },
+      results: [
+        {
+          id: 21,
+          channel: 9,
+          channel_type: 'telegram',
+          channel_name: 'TG Main',
+          conversation_key: '9:crm_user',
+          participant_id: 'crm_user',
+          direction: 'in',
+          sender_id: 'crm_user',
+          recipient_id: 'crm-bot',
+          text: 'Нужна помощь',
+          status: 'received',
+          queue_state: 'waiting',
+          sla_status: 'ok',
+          created_at: '2026-03-22T11:00:00Z',
+        },
+      ],
+    });
+    getOmnichannelConversationContext.mockResolvedValue({
+      state: { status: 'open', next_action: '', internal_notes: [] },
+      metrics: { messages_total: 1, inbound: 1, outbound: 0 },
+    });
+
+    render(<ChatPage />);
+
+    await waitFor(() => {
+      expect(getOmnichannelConversationContext).toHaveBeenCalledWith({
+        channel_id: 9,
+        participant_id: 'crm_user',
+        conversation_key: '9:crm_user',
+      });
+    });
+
+    fireEvent.click(screen.getByRole('button', { name: /Create lead/i }));
+
+    await waitFor(() => {
+      expect(runOmnichannelConversationAction).toHaveBeenCalledWith({
+        channel_id: 9,
+        participant_id: 'crm_user',
+        conversation_key: '9:crm_user',
+        action: 'create_lead',
       });
     });
   });

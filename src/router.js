@@ -67,6 +67,7 @@ export const routeMeta = {
  'profile': { auth: true, title: 'Profile' },
  'settings': { auth: true, title: 'Settings' },
  'integrations': { auth: true, title: 'Integrations' },
+ 'onboarding': { auth: true, title: 'Onboarding Wizard' },
  'landing-builder': { auth: true, title: 'Landing Builder' },
  'landing-public': { auth: false, title: 'Public Landing' },
  'landing-preview': { auth: false, title: 'Landing Preview' },
@@ -154,6 +155,7 @@ const ADMIN_PERMISSIONS = ['auth.view_user', 'settings.view_systemsettings'];
   'users',
   'settings',
   'integrations',
+  'onboarding',
   'control-plane',
 ].forEach((route) => {
   if (routeMeta[route]) routeMeta[route].roles = ADMIN_ROLES;
@@ -224,6 +226,7 @@ const ADMIN_PERMISSIONS = ['auth.view_user', 'settings.view_systemsettings'];
   'users',
   'settings',
   'integrations',
+  'onboarding',
   'control-plane',
   'reference-data',
   'operations',
@@ -253,6 +256,7 @@ const ADMIN_PERMISSIONS = ['auth.view_user', 'settings.view_systemsettings'];
   ['operations', 'settings.core'],
   ['settings', 'settings.core'],
   ['integrations', 'integrations.core'],
+  ['onboarding', ['onboarding.wizard', 'settings.core', 'integrations.core']],
   ['control-plane', 'settings.core'],
   ['reference-data', 'reference.core'],
   ['landing-builder', 'landing.builder'],
@@ -431,6 +435,7 @@ export function parseHash() {
   if (segments[0] === 'profile') return { name: 'profile', params: {} };
   if (segments[0] === 'settings') return { name: 'settings', params: {} };
   if (segments[0] === 'integrations') return { name: 'integrations', params: {} };
+  if (segments[0] === 'onboarding' || segments[0] === 'setup') return { name: 'onboarding', params: {} };
   if (segments[0] === 'landing-builder') return { name: 'landing-builder', params: {} };
   if (segments[0] === 'crm-landing') return { name: 'crm-landing', params: {} };
   if (segments[0] === 'public-landing') {

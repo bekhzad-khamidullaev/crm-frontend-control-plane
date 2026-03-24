@@ -149,3 +149,22 @@ export async function closeDealAsWon(id, closedDate) {
 export async function closeDealAsLost(id, reason, closedDate) {
   return patchDeal(id, { status: 'lost', lost_reason: reason, closed_date: closedDate });
 }
+
+/**
+ * Get ERP-adjacent ops chain snapshot for deals.
+ * @param {Object} params - Query params
+ * @returns {Promise<Object>}
+ */
+export async function getDealOpsChain(params = {}) {
+  return api.get('/api/deals/ops-chain/', { params });
+}
+
+/**
+ * Create service ticket from deal in ops chain flow.
+ * @param {number} id - Deal ID
+ * @param {Object} payload - request_for/description
+ * @returns {Promise<Object>}
+ */
+export async function createDealServiceTicket(id, payload = {}) {
+  return api.post(`/api/deals/${id}/ops-chain/create-service-ticket/`, { body: payload });
+}

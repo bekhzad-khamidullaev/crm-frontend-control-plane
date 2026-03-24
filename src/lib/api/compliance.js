@@ -20,6 +20,21 @@ export const replayOmnichannelEvent = (id, payload = {}) =>
 export const sendOmnichannelMessage = (payload) =>
   api.post('/api/settings/omnichannel/send/', { body: payload });
 
+export const getOmnichannelOutboundEvents = (params = {}) =>
+  api.get('/api/settings/omnichannel/outbound/', { params });
+
+export const retryOmnichannelOutboundEvent = (id, payload = {}) =>
+  api.post(`/api/settings/omnichannel/outbound/${id}/retry/`, { body: payload });
+
+export const getOmnichannelConversationContext = (params = {}) =>
+  api.get('/api/settings/omnichannel/conversations/context/', { params });
+
+export const updateOmnichannelConversationContext = (payload) =>
+  api.post('/api/settings/omnichannel/conversations/context/', { body: payload });
+
+export const runOmnichannelConversationAction = (payload) =>
+  api.post('/api/settings/omnichannel/conversations/action/', { body: payload });
+
 export const getConsents = (params = {}) =>
   api.get('/api/settings/compliance/consents/', { params });
 

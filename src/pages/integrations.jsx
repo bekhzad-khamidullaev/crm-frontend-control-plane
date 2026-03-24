@@ -68,6 +68,7 @@ import {
   getOmnichannelEventPayload,
   getOmnichannelTimeline,
   replayOmnichannelEvent,
+  retryOmnichannelOutboundEvent,
 } from '../lib/api/compliance.js';
 import { LICENSE_RESTRICTION_EVENT } from '../lib/api/licenseRestrictionBus.js';
 import { getFeatureRestrictionReason } from '../lib/api/licenseRestrictionState.js';
@@ -93,6 +94,7 @@ const buildDiagnosticsExplanation = (record, tr) => {
     record.processing_error ||
     record.replay_error ||
     record.verification_error ||
+    record.last_error ||
     '';
 
   if (record.signature_valid === false) {
@@ -169,13 +171,31 @@ const AI_PROVIDER_MODELS = {
   claude: ['claude-sonnet-4-20250514', 'claude-3-7-sonnet-20250219', 'claude-3-5-haiku-20241022'],
 };
 
-const DIAGNOSTICS_SCOPE_VALUES = ['all', 'failures', 'replayable', 'archived'];
+const DIAGNOSTICS_SCOPE_VALUES = ['all', 'failures', 'replayable', 'archived', 'outbound'];
+const OUTBOUND_RETRYABLE_STATUSES = new Set(['retry_scheduled', 'failed', 'dead_letter', 'in_progress']);
 const DEFAULT_DIAGNOSTICS_FILTERS = {
   scope: 'all',
   channel: 'all',
   query: '',
   onlyNeedsAction: false,
 };
+
+const getDiagnosticsRecordStatus = (record) =>
+  String(record?.queue_state || record?.status || '').trim().toLowerCase();
+
+const isOutboundDiagnosticsRecord = (record) =>
+  Boolean(
+    record
+      && (
+        record.attempt_count != null
+        || record.max_attempts != null
+        || String(record.source || '').includes('omnichannel.send')
+        || OUTBOUND_RETRYABLE_STATUSES.has(getDiagnosticsRecordStatus(record))
+      )
+  );
+
+const canRetryOutboundRecord = (record) =>
+  isOutboundDiagnosticsRecord(record) && OUTBOUND_RETRYABLE_STATUSES.has(getDiagnosticsRecordStatus(record));
 
 function readHashState() {
   if (typeof window === 'undefined') {
@@ -303,12 +323,15 @@ export default function IntegrationsPage({ embedded = false } = {}) {
     recent_failures: [],
     replay_candidates: [],
     recent_archived: [],
+    outbound_dead_letters: [],
+    outbound_retry_queue: [],
     filtered_events: [],
     filtered_count: 0,
     filtered_scope: 'all',
   });
   const [omnichannelDiagnosticsLoading, setOmnichannelDiagnosticsLoading] = useState(false);
   const [omnichannelReplayId, setOmnichannelReplayId] = useState(null);
+  const [omnichannelOutboundRetryId, setOmnichannelOutboundRetryId] = useState(null);
   const [omnichannelEventModal, setOmnichannelEventModal] = useState({
     open: false,
     loading: false,
@@ -445,6 +468,8 @@ export default function IntegrationsPage({ embedded = false } = {}) {
         recent_failures: Array.isArray(response?.recent_failures) ? response.recent_failures : [],
         replay_candidates: Array.isArray(response?.replay_candidates) ? response.replay_candidates : [],
         recent_archived: Array.isArray(response?.recent_archived) ? response.recent_archived : [],
+        outbound_dead_letters: Array.isArray(response?.outbound_dead_letters) ? response.outbound_dead_letters : [],
+        outbound_retry_queue: Array.isArray(response?.outbound_retry_queue) ? response.outbound_retry_queue : [],
         filtered_events: Array.isArray(response?.filtered_events) ? response.filtered_events : [],
         filtered_count: Number(response?.filtered_count || 0),
         filtered_scope: String(response?.filtered_scope || 'all'),
@@ -456,6 +481,8 @@ export default function IntegrationsPage({ embedded = false } = {}) {
         recent_failures: [],
         replay_candidates: [],
         recent_archived: [],
+        outbound_dead_letters: [],
+        outbound_retry_queue: [],
         filtered_events: [],
         filtered_count: 0,
         filtered_scope: 'all',
@@ -495,6 +522,36 @@ export default function IntegrationsPage({ embedded = false } = {}) {
     }
   };
 
+  const handleOmnichannelOutboundRetry = async (record) => {
+    if (!ensureIntegrationsAccess()) return;
+    if (!record?.id) return;
+    setOmnichannelOutboundRetryId(record.id);
+    try {
+      const result = await retryOmnichannelOutboundEvent(record.id);
+      if (result?.outbound_event) {
+        setOmnichannelEventModal((prev) => {
+          if (!prev.open || String(prev.record?.id || '') !== String(record.id)) return prev;
+          return {
+            ...prev,
+            payload: result.outbound_event,
+            record: { ...(prev.record || {}), ...(result.outbound_event || {}) },
+            error: '',
+          };
+        });
+      }
+      if (result?.success) {
+        message.success(tr('integrationsPage.messages.outboundRetryOk', 'Outbound retry выполнен'));
+      } else {
+        message.warning(getErrorText(result, tr('integrationsPage.messages.outboundRetryPartial', 'Outbound retry завершен с предупреждением')));
+      }
+      await Promise.all([loadOmnichannelSummary(), loadOmnichannelDiagnostics(diagnosticsFilters)]);
+    } catch (error) {
+      message.error(getErrorText(error, tr('integrationsPage.messages.outboundRetryError', 'Не удалось выполнить outbound retry')));
+    } finally {
+      setOmnichannelOutboundRetryId(null);
+    }
+  };
+
   const closeOmnichannelEventModal = () =>
     setOmnichannelEventModal({
       open: false,
@@ -506,6 +563,16 @@ export default function IntegrationsPage({ embedded = false } = {}) {
 
   const handleOpenOmnichannelEvent = async (record) => {
     if (!record?.id) return;
+    if (isOutboundDiagnosticsRecord(record)) {
+      setOmnichannelEventModal({
+        open: true,
+        loading: false,
+        record,
+        payload: record,
+        error: '',
+      });
+      return;
+    }
     setOmnichannelEventModal({
       open: true,
       loading: true,
@@ -1203,6 +1270,8 @@ export default function IntegrationsPage({ embedded = false } = {}) {
         ...(Array.isArray(omnichannelDiagnostics.recent_failures) ? omnichannelDiagnostics.recent_failures : []),
         ...(Array.isArray(omnichannelDiagnostics.replay_candidates) ? omnichannelDiagnostics.replay_candidates : []),
         ...(Array.isArray(omnichannelDiagnostics.recent_archived) ? omnichannelDiagnostics.recent_archived : []),
+        ...(Array.isArray(omnichannelDiagnostics.outbound_dead_letters) ? omnichannelDiagnostics.outbound_dead_letters : []),
+        ...(Array.isArray(omnichannelDiagnostics.outbound_retry_queue) ? omnichannelDiagnostics.outbound_retry_queue : []),
       ].map((record) => [String(record?.id || `${record?.external_id || ''}:${record?.message_id || ''}`), record])
     ).values()
   );
@@ -1254,6 +1323,18 @@ export default function IntegrationsPage({ embedded = false } = {}) {
       label: tr('integrationsPage.diagnostics.replayable', 'Replay-ready'),
       value: diagnosticsSummary.replayable_events || 0,
       tone: Number(diagnosticsSummary.replayable_events || 0) > 0 ? 'warning' : 'default',
+    },
+    {
+      key: 'outboundRetry',
+      label: tr('integrationsPage.diagnostics.outboundRetry', 'Outbound retry'),
+      value: diagnosticsSummary.outbound_retry_scheduled || 0,
+      tone: Number(diagnosticsSummary.outbound_retry_scheduled || 0) > 0 ? 'warning' : 'default',
+    },
+    {
+      key: 'outboundDeadLetters',
+      label: tr('integrationsPage.diagnostics.outboundDeadLetters', 'Outbound dead-letter'),
+      value: diagnosticsSummary.outbound_dead_letters || 0,
+      tone: Number(diagnosticsSummary.outbound_dead_letters || 0) > 0 ? 'danger' : 'default',
     },
   ];
   const diagnosticsToneStyles = {
@@ -1387,6 +1468,12 @@ export default function IntegrationsPage({ embedded = false } = {}) {
                 <Tag>{tr('integrationsPage.diagnostics.signatureRejected', 'Signature rejected')}: {diagnosticsSummary.signature_rejected_events || 0}</Tag>
                 <Tag>{tr('integrationsPage.diagnostics.unassigned', 'Без привязки')}: {diagnosticsSummary.unassigned_events || 0}</Tag>
                 <Tag>{tr('integrationsPage.diagnostics.breached', 'SLA breach')}: {diagnosticsSummary.breached_sla || 0}</Tag>
+                <Tag color={Number(diagnosticsSummary.outbound_retry_scheduled || 0) > 0 ? 'warning' : 'default'}>
+                  {tr('integrationsPage.diagnostics.outboundRetry', 'Outbound retry')}: {diagnosticsSummary.outbound_retry_scheduled || 0}
+                </Tag>
+                <Tag color={Number(diagnosticsSummary.outbound_dead_letters || 0) > 0 ? 'error' : 'default'}>
+                  {tr('integrationsPage.diagnostics.outboundDeadLetters', 'Outbound dead-letter')}: {diagnosticsSummary.outbound_dead_letters || 0}
+                </Tag>
               </Space>
               <Space wrap size={[8, 8]} style={{ width: '100%', justifyContent: 'space-between' }}>
                 <Space wrap size={[8, 8]}>
@@ -1408,6 +1495,7 @@ export default function IntegrationsPage({ embedded = false } = {}) {
                       { value: 'failures', label: tr('integrationsPage.filters.scopeFailures', 'Только ошибки') },
                       { value: 'replayable', label: tr('integrationsPage.filters.scopeReplayable', 'Replay-ready') },
                       { value: 'archived', label: tr('integrationsPage.filters.scopeArchived', 'Archived sample') },
+                      { value: 'outbound', label: tr('integrationsPage.filters.scopeOutbound', 'Outbound queue') },
                     ]}
                   />
                   <Select
@@ -1500,12 +1588,13 @@ export default function IntegrationsPage({ embedded = false } = {}) {
                     key: 'status',
                     render: (_, record) => (
                       <Space size={4} wrap>
-                        <Tag color={['failed', 'error', 'dead_letter'].includes(String(record.queue_state || '').toLowerCase()) ? 'error' : 'default'}>
+                        <Tag color={['failed', 'error', 'dead_letter'].includes(getDiagnosticsRecordStatus(record)) ? 'error' : 'default'}>
                           {record.queue_state || record.status || '-'}
                         </Tag>
                         {record.sla_status === 'breached' && <Tag color="warning">SLA risk</Tag>}
                         {record.signature_valid === false && <Tag color="volcano">Signature</Tag>}
                         {record.replayable && <Tag color="processing">Replay</Tag>}
+                        {isOutboundDiagnosticsRecord(record) && <Tag color="cyan">Outbound</Tag>}
                       </Space>
                     ),
                   },
@@ -1551,8 +1640,11 @@ export default function IntegrationsPage({ embedded = false } = {}) {
                   {
                     title: tr('integrationsPage.table.actions', 'Действия'),
                     key: 'actions',
-                    render: (_, record) => (
-                      <Space size={8} wrap>
+                    render: (_, record) => {
+                      const outboundRecord = isOutboundDiagnosticsRecord(record);
+                      const outboundRetryEnabled = canRetryOutboundRecord(record);
+                      return (
+                        <Space size={8} wrap>
                         <Button
                           size="small"
                           onClick={() => handleOpenOmnichannelEvent(record)}
@@ -1574,17 +1666,29 @@ export default function IntegrationsPage({ embedded = false } = {}) {
                           reason={integrationsRestrictionMessage}
                           feature="integrations.core"
                         >
-                          <Button
-                            size="small"
-                            onClick={() => handleOmnichannelReplay(record)}
-                            loading={omnichannelReplayId === record.id}
-                            disabled={!record.replayable || integrationsRestricted}
-                          >
-                            {tr('integrationsPage.actions.replay', 'Replay')}
-                          </Button>
+                          {outboundRecord ? (
+                            <Button
+                              size="small"
+                              onClick={() => handleOmnichannelOutboundRetry(record)}
+                              loading={omnichannelOutboundRetryId === record.id}
+                              disabled={!outboundRetryEnabled || integrationsRestricted}
+                            >
+                              {tr('integrationsPage.actions.retryOutbound', 'Retry outbound')}
+                            </Button>
+                          ) : (
+                            <Button
+                              size="small"
+                              onClick={() => handleOmnichannelReplay(record)}
+                              loading={omnichannelReplayId === record.id}
+                              disabled={!record.replayable || integrationsRestricted}
+                            >
+                              {tr('integrationsPage.actions.replay', 'Replay')}
+                            </Button>
+                          )}
                         </LicenseRestrictedAction>
                       </Space>
-                    ),
+                      );
+                    },
                   },
                 ]}
               />
@@ -2095,14 +2199,28 @@ export default function IntegrationsPage({ embedded = false } = {}) {
           >
             <Button
               type="primary"
-              loading={omnichannelReplayId === omnichannelEventModal.record?.id}
+              loading={
+                isOutboundDiagnosticsRecord(omnichannelEventModal.payload || omnichannelEventModal.record)
+                  ? omnichannelOutboundRetryId === omnichannelEventModal.record?.id
+                  : omnichannelReplayId === omnichannelEventModal.record?.id
+              }
               disabled={
                 integrationsRestricted
-                || !(omnichannelEventModal.payload?.replayable || omnichannelEventModal.record?.replayable)
+                || (
+                  isOutboundDiagnosticsRecord(omnichannelEventModal.payload || omnichannelEventModal.record)
+                    ? !canRetryOutboundRecord(omnichannelEventModal.payload || omnichannelEventModal.record)
+                    : !(omnichannelEventModal.payload?.replayable || omnichannelEventModal.record?.replayable)
+                )
               }
-              onClick={() => handleOmnichannelReplay(omnichannelEventModal.record)}
+              onClick={() => (
+                isOutboundDiagnosticsRecord(omnichannelEventModal.payload || omnichannelEventModal.record)
+                  ? handleOmnichannelOutboundRetry(omnichannelEventModal.record)
+                  : handleOmnichannelReplay(omnichannelEventModal.record)
+              )}
             >
-              {tr('integrationsPage.actions.replay', 'Replay')}
+              {isOutboundDiagnosticsRecord(omnichannelEventModal.payload || omnichannelEventModal.record)
+                ? tr('integrationsPage.actions.retryOutbound', 'Retry outbound')
+                : tr('integrationsPage.actions.replay', 'Replay')}
             </Button>
           </LicenseRestrictedAction>,
         ]}
@@ -2129,13 +2247,22 @@ export default function IntegrationsPage({ embedded = false } = {}) {
               </Descriptions.Item>
               <Descriptions.Item label={tr('integrationsPage.table.status', 'Статус')}>
                 <Space size={[4, 4]} wrap>
-                  <Tag>{omnichannelEventModal.payload?.queue_state || omnichannelEventModal.record?.queue_state || '-'}</Tag>
+                  <Tag>
+                    {omnichannelEventModal.payload?.queue_state
+                      || omnichannelEventModal.record?.queue_state
+                      || omnichannelEventModal.payload?.status
+                      || omnichannelEventModal.record?.status
+                      || '-'}
+                  </Tag>
                   {(
                     omnichannelEventModal.payload?.sla_status ||
                     omnichannelEventModal.record?.sla_status
                   ) === 'breached' && <Tag color="warning">SLA risk</Tag>}
                   {(omnichannelEventModal.payload?.replayable || omnichannelEventModal.record?.replayable) && (
                     <Tag color="processing">Replay-ready</Tag>
+                  )}
+                  {isOutboundDiagnosticsRecord(omnichannelEventModal.payload || omnichannelEventModal.record) && (
+                    <Tag color="cyan">Outbound</Tag>
                   )}
                   {(
                     omnichannelEventModal.payload?.signature_valid ??

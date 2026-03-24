@@ -13,7 +13,7 @@ export function getSettingsWorkspacePath(canAccessRoute) {
 }
 
 export function normalizeSettingsWorkspaceSelectedKey(routeName) {
-  if (routeName === 'settings' || routeName === 'integrations') {
+  if (routeName === 'settings' || routeName === 'integrations' || routeName === 'onboarding') {
     return SETTINGS_WORKSPACE_NAV_KEY;
   }
   return routeName;

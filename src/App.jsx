@@ -98,6 +98,7 @@ const ChatPage = lazy(() => import('./pages/chat-page.jsx'));
 // Other pages
 const ProfilePage = lazy(() => import('./pages/profile.jsx'));
 const SettingsIntegrationsWorkspacePage = lazy(() => import('./pages/settings-integrations-workspace.jsx'));
+const OnboardingWizardPage = lazy(() => import('./pages/onboarding-wizard.jsx'));
 const LandingBuilderPage = lazy(() => import('./pages/landing-builder.jsx'));
 const PublicLandingPage = lazy(() => import('./pages/public-landing.jsx'));
 const CrmSalesLandingPage = lazy(() => import('./pages/crm-sales-landing.jsx'));
@@ -1017,6 +1018,8 @@ function App() {
         return <SettingsIntegrationsWorkspacePage defaultTab="system" />;
       case 'integrations':
         return <SettingsIntegrationsWorkspacePage defaultTab="integrations" />;
+      case 'onboarding':
+        return <OnboardingWizardPage />;
       case 'landing-builder':
         return <LandingBuilderPage />;
       case 'landing-public':
