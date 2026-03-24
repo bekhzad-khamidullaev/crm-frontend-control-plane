@@ -69,6 +69,14 @@ function prettifyKey(key) {
     .replace(/\b\w/g, (char) => char.toUpperCase());
 }
 
+function interpolateFallback(template, vars = {}) {
+  let result = String(template || '');
+  for (const [name, value] of Object.entries(vars || {})) {
+    result = result.replaceAll(`{${name}}`, String(value));
+  }
+  return result;
+}
+
 function isPlainObject(value) {
   return isPlainObjectValue(value);
 }
@@ -132,7 +140,7 @@ function SettingField({ fieldKey, path, value, isDark = false }) {
   const label = prettifyKey(fieldKey);
   const tr = (key, fallback, vars = {}) => {
     const localized = t(key, vars);
-    return localized === key ? fallback : localized;
+    return localized === key ? interpolateFallback(fallback, vars) : localized;
   };
 
   if (type === 'group') {
@@ -226,7 +234,7 @@ function SettingsConfigurator({
 }) {
   const tr = (key, fallback, vars = {}) => {
     const localized = t(key, vars);
-    return localized === key ? fallback : localized;
+    return localized === key ? interpolateFallback(fallback, vars) : localized;
   };
   const [form] = Form.useForm();
   const fieldEntries = useMemo(() => Object.entries(data || {}), [data]);
@@ -266,7 +274,7 @@ function SettingsConfigurator({
 function ComplianceSummary({ report }) {
   const tr = (key, fallback, vars = {}) => {
     const localized = t(key, vars);
-    return localized === key ? fallback : localized;
+    return localized === key ? interpolateFallback(fallback, vars) : localized;
   };
   if (!report || !Object.keys(report).length) {
     return <Empty description={tr('settingsWorkspace.empty.complianceReport', 'Нет данных по compliance-отчёту')} />;
@@ -350,7 +358,7 @@ export default function SettingsIntegrationsWorkspace({ defaultTab = 'system' } 
   const isDark = theme === 'dark';
   const tr = (key, fallback, vars = {}) => {
     const localized = t(key, vars);
-    return localized === key ? fallback : localized;
+    return localized === key ? interpolateFallback(fallback, vars) : localized;
   };
 
   const [activeTab, setActiveTab] = useState(defaultTab);

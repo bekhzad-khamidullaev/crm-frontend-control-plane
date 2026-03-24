@@ -6,7 +6,6 @@ import {
     CheckSquareOutlined,
     ClockCircleOutlined,
     CustomerServiceOutlined,
-    DisconnectOutlined,
     DollarOutlined,
     FacebookOutlined,
     FileTextOutlined,
@@ -677,10 +676,13 @@ export function AppLayout({
                 }}
               >
                 <Space size={6} align="center">
-                  {wsIndicatorStatus === 'error'
-                    ? <DisconnectOutlined style={{ color: shell.textMuted }} />
-                    : <ApiOutlined style={{ color: shell.textMuted }} />}
-                  <Badge status={wsIndicatorStatus} />
+                  <Tooltip
+                    title={wsIndicatorStatus === 'error'
+                      ? tr('appLayout.status.controlPlaneOffline', 'Control Plane недоступен')
+                      : tr('appLayout.status.controlPlaneOnline', 'Control Plane синхронизирован')}
+                  >
+                    <Badge status={wsIndicatorStatus} />
+                  </Tooltip>
                 </Space>
                 {Array.isArray(activeIntegrations) && activeIntegrations.length > 0 && (
                   <Space size={8} align="center">
@@ -767,7 +769,7 @@ export function AppLayout({
                     <Text style={{ color: licenseShell.meta, fontSize: 12, lineHeight: 1.45 }}>
                       {t(
                         'license.banner.helper',
-                        'License-gated sections stay disabled until the restriction is cleared.',
+                        'Разделы, ограниченные лицензией, будут недоступны до снятия ограничения.',
                       )}
                     </Text>
                   </Space>
