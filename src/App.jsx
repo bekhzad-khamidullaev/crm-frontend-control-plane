@@ -338,6 +338,7 @@ function App() {
     callsWebSocket: null,
     chatWebSocket: null,
   });
+  const telephonyBootstrappedRef = useRef(false);
 
   const ensureTelephonyModules = async () => {
     if (telephonyModulesRef.current.loaded) {
@@ -369,6 +370,22 @@ function App() {
     runtime.callsWebSocket?.disconnect?.();
     runtime.chatWebSocket?.disconnect?.();
     runtime.sipClient?.stop?.();
+    telephonyBootstrappedRef.current = false;
+  };
+
+  const bootstrapTelephonyRuntime = async (token) => {
+    try {
+      const runtime = await ensureTelephonyModules();
+      initializeWebSocket(runtime.callsWebSocket, token);
+      initializeChatWebSocket(runtime.chatWebSocket, token);
+      initializeSipClient(runtime.sipClient, runtime.loadTelephonyRuntimeConfig);
+      loadActiveIntegrations().catch((error) => {
+        console.warn('Failed to load active integrations:', error);
+      });
+    } catch (error) {
+      telephonyBootstrappedRef.current = false;
+      console.error('[App] Failed to initialize telephony runtime:', error);
+    }
   };
 
   const loadActiveIntegrations = async () => {
@@ -502,20 +519,9 @@ function App() {
       });
 
       // Initialize WebSocket connections if we have a token
-      if (token) {
-        (async () => {
-          try {
-            const runtime = await ensureTelephonyModules();
-            initializeWebSocket(runtime.callsWebSocket, token);
-            initializeChatWebSocket(runtime.chatWebSocket, token);
-            initializeSipClient(runtime.sipClient, runtime.loadTelephonyRuntimeConfig);
-          } catch (error) {
-            console.error('[App] Failed to initialize telephony runtime:', error);
-          }
-        })();
-        loadActiveIntegrations().catch((error) => {
-          console.warn('Failed to load active integrations:', error);
-        });
+      if (token && !telephonyBootstrappedRef.current) {
+        telephonyBootstrappedRef.current = true;
+        bootstrapTelephonyRuntime(token);
       }
     } else {
       setLicenseReady(true);
@@ -566,6 +572,17 @@ function App() {
       disconnectTelephony();
     };
   }, []);
+
+  useEffect(() => {
+    const token = getToken();
+    if (!isAuthenticated() || !token) {
+      telephonyBootstrappedRef.current = false;
+      return;
+    }
+    if (telephonyBootstrappedRef.current) return;
+    telephonyBootstrappedRef.current = true;
+    bootstrapTelephonyRuntime(token);
+  }, [route.name, user?.id]);
 
   useEffect(() => {
     if (!isAuthenticated()) return undefined;
