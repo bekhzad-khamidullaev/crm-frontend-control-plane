@@ -844,6 +844,9 @@ export default function AnalyticsPage() {
                   loading={loadingAnalytics || loadingOverview}
                   error={analyticsError || overviewError}
                   onRetry={loadCore}
+                  widgetActions
+                  widgetPeriod={period}
+                  widgetKey="overview-risks"
                 >
                   <Space direction="vertical" size="middle" style={{ width: '100%' }}>
                     {riskCards.map((risk) => (
@@ -867,6 +870,9 @@ export default function AnalyticsPage() {
               loading={loadingOverview}
               error={overviewError}
               onRetry={loadCore}
+              widgetActions
+              widgetPeriod={period}
+              widgetKey="overview-key-metrics"
             >
               <Row gutter={[16, 16]}>
                 <Col xs={24} sm={12} lg={6}>
@@ -923,6 +929,9 @@ export default function AnalyticsPage() {
                   loading={loadingAnalytics}
                   error={analyticsError}
                   onRetry={loadCore}
+                  widgetActions
+                  widgetPeriod={period}
+                  widgetKey="trends-revenue-dynamics"
                 >
                   <Space direction="vertical" size="middle" style={{ width: '100%' }}>
                     <Text type="secondary">{revenueMetricHint}</Text>
@@ -947,6 +956,9 @@ export default function AnalyticsPage() {
                   loading={loadingAnalytics}
                   error={analyticsError}
                   onRetry={loadCore}
+                  widgetActions
+                  widgetPeriod={period}
+                  widgetKey="trends-leads-deals"
                 >
                   {leadsDealsChartData ? (
                     <AnimatedChart type="bar" data={leadsDealsChartData} height={280} />
@@ -977,6 +989,9 @@ export default function AnalyticsPage() {
                   loading={loadingFunnel}
                   error={funnelError}
                   onRetry={loadCore}
+                  widgetActions
+                  widgetPeriod={period}
+                  widgetKey="operations-sales-funnel"
                 >
                   {funnelChartData ? (
                     <AnimatedChart type="bar" data={funnelChartData} height={280} />
@@ -991,6 +1006,9 @@ export default function AnalyticsPage() {
                   loading={loadingAnalytics}
                   error={analyticsError}
                   onRetry={loadCore}
+                  widgetActions
+                  widgetPeriod={period}
+                  widgetKey="operations-task-statuses"
                 >
                   <Row gutter={[16, 16]}>
                     <Col span={12}>
@@ -1044,6 +1062,9 @@ export default function AnalyticsPage() {
                   loading={loadingActivity}
                   error={activityError}
                   onRetry={loadCore}
+                  widgetActions
+                  widgetPeriod={period}
+                  widgetKey="activity-feed"
                 >
                   {activityItems.length ? (
                     <List
@@ -1096,6 +1117,9 @@ export default function AnalyticsPage() {
                   loading={loadingAuthStats}
                   error={authError}
                   onRetry={loadAuthStats}
+                  widgetActions
+                  widgetPeriod={period}
+                  widgetKey="activity-auth-snapshot"
                 >
                   {authStats ? (
                     <AuthStatsSnapshot sections={authStatsSections} />
@@ -1145,6 +1169,9 @@ export default function AnalyticsPage() {
                   loading={loadingPredictions}
                   error={predictionError}
                   onRetry={loadPredictions}
+                  widgetActions
+                  widgetPeriod={period}
+                  widgetKey="predictions-revenue-forecast"
                 >
                   <Space direction="vertical" size="middle" style={{ width: '100%' }}>
                     <Text type="secondary">{revenueMetricHint}</Text>
@@ -1198,6 +1225,9 @@ export default function AnalyticsPage() {
                   loading={loadingPredictions}
                   error={predictionError}
                   onRetry={loadPredictions}
+                  widgetActions
+                  widgetPeriod={period}
+                  widgetKey="predictions-leads-forecast"
                 >
                   {leadsPrediction ? (
                     leadsPrediction.type === 'interval' ? (
@@ -1253,6 +1283,9 @@ export default function AnalyticsPage() {
                   loading={loadingPredictions}
                   error={predictionError}
                   onRetry={loadPredictions}
+                  widgetActions
+                  widgetPeriod={period}
+                  widgetKey="predictions-clients-forecast"
                 >
                   {clientsPrediction ? (
                     clientsPrediction.type === 'interval' ? (
@@ -1300,6 +1333,9 @@ export default function AnalyticsPage() {
                   loading={loadingPredictions}
                   error={predictionError}
                   onRetry={loadPredictions}
+                  widgetActions
+                  widgetPeriod={period}
+                  widgetKey="predictions-status"
                 >
                   {predictionStatusRows.length ? (
                     <Space direction="vertical" size="middle" style={{ width: '100%' }}>
@@ -1378,6 +1414,9 @@ export default function AnalyticsPage() {
                   loading={loadingPredictions}
                   error={predictionError}
                   onRetry={loadPredictions}
+                  widgetActions
+                  widgetPeriod={period}
+                  widgetKey="predictions-actions-clients"
                 >
                   {nextActionsClients.length ? (
                     <Table
@@ -1405,6 +1444,9 @@ export default function AnalyticsPage() {
                   loading={loadingPredictions}
                   error={predictionError}
                   onRetry={loadPredictions}
+                  widgetActions
+                  widgetPeriod={period}
+                  widgetKey="predictions-actions-deals"
                 >
                   {nextActionsDeals.length ? (
                     <Table
@@ -1444,6 +1486,9 @@ export default function AnalyticsPage() {
             loading={loadingAuthStats}
             error={authError}
             onRetry={loadAuthStats}
+            widgetActions
+            widgetPeriod={period}
+            widgetKey="system-auth-stats"
           >
             {authStats ? (
               <AuthStatsDetails sections={authStatsSections} />

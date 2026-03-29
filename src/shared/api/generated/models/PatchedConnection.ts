@@ -2,8 +2,8 @@
 /* istanbul ignore file */
 /* tslint:disable */
 /* eslint-disable */
-import type { ConnectionProviderEnum } from './ConnectionProviderEnum';
 import type { ConnectionTypeEnum } from './ConnectionTypeEnum';
+import type { Provider8a3Enum } from './Provider8a3Enum';
 export type PatchedConnection = {
     readonly id?: number;
     /**
@@ -11,9 +11,13 @@ export type PatchedConnection = {
      *
      * * `Asterisk` - Asterisk
      */
-    provider?: ConnectionProviderEnum;
+    provider?: Provider8a3Enum;
     type?: ConnectionTypeEnum;
     number?: string;
+    /**
+     * SIP domain or host for SIP trunk/account connections
+     */
+    sip_server?: string;
     owner?: number | null;
     readonly owner_name?: string;
     /**
@@ -22,3 +26,4 @@ export type PatchedConnection = {
     callerid?: string;
     active?: boolean;
 };
+

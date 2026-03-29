@@ -167,6 +167,46 @@ export class RemindersService {
         });
     }
     /**
+     * Get available content types for reminder binding.
+     * @returns Reminder
+     * @throws ApiError
+     */
+    public static remindersContentTypesRetrieve(): CancelablePromise<Reminder> {
+        return __request(OpenAPI, {
+            method: 'GET',
+            url: '/api/reminders/content-types/',
+        });
+    }
+    /**
+     * Get bindable objects for selected reminder content type.
+     * @returns Reminder
+     * @throws ApiError
+     */
+    public static remindersObjectsRetrieve(): CancelablePromise<Reminder> {
+        return __request(OpenAPI, {
+            method: 'GET',
+            url: '/api/reminders/objects/',
+        });
+    }
+    /**
+     * Get single bindable object by id for selected reminder content type.
+     * @returns Reminder
+     * @throws ApiError
+     */
+    public static remindersObjectsRetrieve2({
+        objectId,
+    }: {
+        objectId: number,
+    }): CancelablePromise<Reminder> {
+        return __request(OpenAPI, {
+            method: 'GET',
+            url: '/api/reminders/objects/{object_id}/',
+            path: {
+                'object_id': objectId,
+            },
+        });
+    }
+    /**
      * Get upcoming active reminders (next 7 days)
      * @returns Reminder
      * @throws ApiError

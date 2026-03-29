@@ -1363,6 +1363,116 @@ export default function IntegrationsPage({ embedded = false } = {}) {
       label: token.colorTextSecondary,
     },
   };
+  const openDiagnosticsCenter = () => {
+    const node = document.getElementById('integrations-diagnostics');
+    if (node?.scrollIntoView) {
+      node.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+  };
+  const catalogRows = [
+    {
+      key: 'sms',
+      channel: 'SMS',
+      status: statuses.sms.status,
+      reason: statuses.sms.error || tr('integrationsPage.catalog.smsReason', 'Провайдеры и SMS delivery health'),
+      onConnect: () => openModal('sms'),
+      onCheck: loadSMSStatus,
+      onDisconnect: null,
+      onRetry: loadSMSStatus,
+    },
+    {
+      key: 'telephony',
+      channel: tr('integrationsPage.cards.telephony.title', 'Телефония'),
+      status: statuses.telephony.status,
+      reason: statuses.telephony.error || tr('integrationsPage.catalog.telephonyReason', 'VoIP/SIP health и active connection'),
+      onConnect: () => openModal('telephony'),
+      onCheck: loadTelephonyStatus,
+      onDisconnect: null,
+      onRetry: loadTelephonyStatus,
+    },
+    {
+      key: 'whatsapp',
+      channel: 'WhatsApp Business',
+      status: statuses.whatsapp.status,
+      reason: statuses.whatsapp.error || tr('integrationsPage.catalog.whatsappReason', 'Cloud API аккаунты и webhook доставки'),
+      onConnect: () => openModal('whatsapp'),
+      onCheck: () => {
+        const active = whatsAppAccounts.find((item) => item.is_active) || whatsAppAccounts[0];
+        if (active) return handleWhatsAppTest(active);
+        return loadWhatsAppStatus();
+      },
+      onDisconnect: () => {
+        const active = whatsAppAccounts.find((item) => item.is_active) || whatsAppAccounts[0];
+        if (active) return handleWhatsAppDisconnect(active);
+        return Promise.resolve();
+      },
+      onRetry: loadWhatsAppStatus,
+    },
+    {
+      key: 'facebook',
+      channel: 'Facebook Messenger',
+      status: statuses.facebook.status,
+      reason: statuses.facebook.error || tr('integrationsPage.catalog.facebookReason', 'Meta webhook и token состояние страниц'),
+      onConnect: () => openModal('facebook'),
+      onCheck: () => {
+        const active = facebookPages.find((item) => item.is_active) || facebookPages[0];
+        if (active) return handleFacebookTest(active);
+        return loadFacebookStatus();
+      },
+      onDisconnect: () => {
+        const active = facebookPages.find((item) => item.is_active) || facebookPages[0];
+        if (active) return handleFacebookDisconnect(active);
+        return Promise.resolve();
+      },
+      onRetry: loadFacebookStatus,
+    },
+    {
+      key: 'instagram',
+      channel: tr('integrationsPage.cards.instagram.title', 'Instagram'),
+      status: statuses.instagram.status,
+      reason: statuses.instagram.error || tr('integrationsPage.catalog.instagramReason', 'Meta IG token, webhook и comments sync'),
+      onConnect: () => openModal('instagram'),
+      onCheck: () => {
+        const active = instagramAccounts.find((item) => item.is_active) || instagramAccounts[0];
+        if (active) return handleInstagramTest(active);
+        return loadInstagramStatus();
+      },
+      onDisconnect: () => {
+        const active = instagramAccounts.find((item) => item.is_active) || instagramAccounts[0];
+        if (active) return handleInstagramDisconnect(active);
+        return Promise.resolve();
+      },
+      onRetry: loadInstagramStatus,
+    },
+    {
+      key: 'telegram',
+      channel: tr('integrationsPage.cards.telegram.title', 'Telegram'),
+      status: statuses.telegram.status,
+      reason: statuses.telegram.error || tr('integrationsPage.catalog.telegramReason', 'Bot token, webhook URL и activity sync'),
+      onConnect: () => openModal('telegram'),
+      onCheck: () => {
+        const active = telegramBots.find((item) => item.is_active) || telegramBots[0];
+        if (active) return handleTelegramTest(active);
+        return loadTelegramStatus();
+      },
+      onDisconnect: () => {
+        const active = telegramBots.find((item) => item.is_active) || telegramBots[0];
+        if (active) return handleTelegramDisconnect(active);
+        return Promise.resolve();
+      },
+      onRetry: loadTelegramStatus,
+    },
+    {
+      key: 'ai',
+      channel: tr('integrationsPage.cards.ai.title', 'AI'),
+      status: statuses.ai.status,
+      reason: statuses.ai.error || tr('integrationsPage.catalog.aiReason', 'Провайдеры моделей и connection test'),
+      onConnect: () => openAIModal(),
+      onCheck: loadAIStatus,
+      onDisconnect: null,
+      onRetry: loadAIStatus,
+    },
+  ];
 
   return (
     <div style={{ padding: embedded ? 0 : 24 }}>
@@ -1392,6 +1502,82 @@ export default function IntegrationsPage({ embedded = false } = {}) {
             message={tr('integrationsPage.messages.omnichannelSummary', 'Omnichannel: всего {count}, в очереди {queue}, в работе {active}, закрыто {resolved}', omnichannelSummary)}
           />
           <Card
+            size="small"
+            title={tr('integrationsPage.catalog.title', 'Каталог интеграций: канал -> состояние -> действие')}
+          >
+            <Table
+              size="small"
+              pagination={false}
+              rowKey={(record) => record.key}
+              dataSource={catalogRows}
+              locale={{
+                emptyText: tr('integrationsPage.catalog.empty', 'Интеграции пока не инициализированы'),
+              }}
+              columns={[
+                {
+                  title: tr('integrationsPage.table.channel', 'Канал'),
+                  dataIndex: 'channel',
+                  key: 'channel',
+                },
+                {
+                  title: tr('integrationsPage.table.status', 'Состояние'),
+                  dataIndex: 'status',
+                  key: 'status',
+                  width: 160,
+                  render: (value) => {
+                    if (value === 'connected') return <Tag color="success">{tr('integrationsPage.status.connected', 'Подключено')}</Tag>;
+                    if (value === 'error') return <Tag color="error">{tr('integrationsPage.status.error', 'Ошибка')}</Tag>;
+                    return <Tag>{tr('integrationsPage.status.disconnected', 'Не подключено')}</Tag>;
+                  },
+                },
+                {
+                  title: tr('integrationsPage.catalog.reason', 'Причина/контекст'),
+                  dataIndex: 'reason',
+                  key: 'reason',
+                  render: (value) => <Text type="secondary">{value || '-'}</Text>,
+                },
+                {
+                  title: tr('integrationsPage.table.actions', 'Действия'),
+                  key: 'actions',
+                  width: 360,
+                  render: (_, record) => (
+                    <Space size={[6, 6]} wrap>
+                      {record.status === 'disconnected' ? (
+                        <Button size="small" type="primary" onClick={record.onConnect} disabled={integrationsRestricted}>
+                          {tr('integrationsPage.actions.connect', 'Подключить')}
+                        </Button>
+                      ) : record.status === 'error' ? (
+                        <Button size="small" onClick={record.onRetry} disabled={integrationsRestricted}>
+                          {tr('integrationsPage.actions.retry', 'Повторить')}
+                        </Button>
+                      ) : (
+                        <Button size="small" onClick={record.onCheck} disabled={integrationsRestricted}>
+                          {tr('integrationsPage.actions.test', 'Проверить')}
+                        </Button>
+                      )}
+                      <Button size="small" onClick={record.onCheck} disabled={integrationsRestricted}>
+                        {tr('integrationsPage.actions.checkHealth', 'Проверить')}
+                      </Button>
+                      {record.onDisconnect ? (
+                        <Button size="small" danger onClick={record.onDisconnect} disabled={integrationsRestricted}>
+                          {tr('integrationsPage.actions.disconnect', 'Отключить')}
+                        </Button>
+                      ) : (
+                        <Button size="small" danger disabled>
+                          {tr('integrationsPage.actions.disconnect', 'Отключить')}
+                        </Button>
+                      )}
+                      <Button size="small" type="link" onClick={openDiagnosticsCenter}>
+                        {tr('integrationsPage.actions.openDiagnostics', 'Diagnostics')}
+                      </Button>
+                    </Space>
+                  ),
+                },
+              ]}
+            />
+          </Card>
+          <Card
+            id="integrations-diagnostics"
             size="small"
             title={tr('integrationsPage.cards.omnichannelDiagnostics.title', 'Meta and Inbox Diagnostics')}
             extra={(

@@ -93,6 +93,8 @@ function TaskForm({ id }) {
     formState: { errors },
   } = useForm({
     resolver: zodResolver(schema),
+    mode: 'onChange',
+    reValidateMode: 'onChange',
     defaultValues: {
       name: '',
       description: '',
@@ -121,6 +123,8 @@ function TaskForm({ id }) {
   const dueDate = watch('due_date');
   const closingDate = watch('closing_date');
   const nextStepDate = watch('next_step_date');
+  const nameValue = watch('name');
+  const nextStepValue = watch('next_step');
   const stageValue = watch('stage');
   const projectValue = watch('project');
   const taskValue = watch('task');
@@ -232,7 +236,17 @@ function TaskForm({ id }) {
                   <Row gutter={[16, 16]}>
                     <Col xs={24} md={16}>
                       <FieldLabel htmlFor="name">{t('taskFormPage.fields.name')} *</FieldLabel>
-                      <Input id="name" placeholder={t('taskFormPage.placeholders.name')} {...register('name')} />
+                      <Input
+                        id="name"
+                        placeholder={t('taskFormPage.placeholders.name')}
+                        value={nameValue || ''}
+                        onChange={(event) =>
+                          setValue('name', event?.target?.value ?? '', {
+                            shouldDirty: true,
+                            shouldValidate: true,
+                          })
+                        }
+                      />
                       <FieldError message={errors.name?.message} />
                     </Col>
                     <Col xs={24} md={8}>
@@ -268,7 +282,12 @@ function TaskForm({ id }) {
                         placeholder={t('taskFormPage.placeholders.stage')}
                         allowClear
                         value={stageValue || ''}
-                        onChange={(val) => setValue('stage', val)}
+                        onChange={(val) =>
+                          setValue('stage', val ?? '', {
+                            shouldDirty: true,
+                            shouldValidate: true,
+                          })
+                        }
                       />
                       <FieldError message={errors.stage?.message} />
                     </Col>
@@ -296,12 +315,33 @@ function TaskForm({ id }) {
                   <Row gutter={[16, 16]}>
                     <Col xs={24} md={12}>
                       <FieldLabel htmlFor="next_step">{t('taskFormPage.fields.nextStep')} *</FieldLabel>
-                      <Input id="next_step" placeholder={t('taskFormPage.placeholders.nextStep')} {...register('next_step')} />
+                      <Input
+                        id="next_step"
+                        placeholder={t('taskFormPage.placeholders.nextStep')}
+                        value={nextStepValue || ''}
+                        onChange={(event) =>
+                          setValue('next_step', event?.target?.value ?? '', {
+                            shouldDirty: true,
+                            shouldValidate: true,
+                          })
+                        }
+                      />
                       <FieldError message={errors.next_step?.message} />
                     </Col>
                     <Col xs={24} md={12}>
                       <FieldLabel htmlFor="next_step_date">{t('taskFormPage.fields.nextStepDate')} *</FieldLabel>
-                      <DatePicker id="next_step_date" value={nextStepDate || null} onChange={(val) => setValue('next_step_date', val)} format="DD.MM.YYYY" style={{ width: '100%' }} />
+                      <DatePicker
+                        id="next_step_date"
+                        value={nextStepDate || null}
+                        onChange={(val) =>
+                          setValue('next_step_date', val, {
+                            shouldDirty: true,
+                            shouldValidate: true,
+                          })
+                        }
+                        format="DD.MM.YYYY"
+                        style={{ width: '100%' }}
+                      />
                       <FieldError message={errors.next_step_date?.message} />
                     </Col>
                   </Row>

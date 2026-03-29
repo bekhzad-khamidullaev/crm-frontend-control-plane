@@ -1,5 +1,5 @@
 import { RobotOutlined, SendOutlined, UserOutlined } from '@ant-design/icons';
-import { App, Avatar, Button, Card, Empty, Input, Select, Space, Spin, Typography } from 'antd';
+import { App, Avatar, Button, Card, Empty, Grid, Input, Select, Space, Spin, Typography } from 'antd';
 import { useEffect, useMemo, useState } from 'react';
 import { getAIAssistProviders, runAIAssist } from '../lib/api/integrations/ai.js';
 import { getLocale, t } from '../lib/i18n/index.js';
@@ -247,6 +247,8 @@ const parseAiContextFromHash = () => {
 export default function AIChatPage() {
   const { message } = App.useApp();
   const { theme } = useTheme();
+  const screens = Grid.useBreakpoint();
+  const isMobile = !screens.md;
   const locale = getLocale();
   const copy = getChatCopy(locale);
   const canUseAiAssist = hasAnyFeature('ai.assist');
@@ -443,7 +445,7 @@ export default function AIChatPage() {
           AI Chat CRM
         </Space>
       }
-      bodyStyle={{ display: 'flex', flexDirection: 'column', gap: 12 }}
+      bodyStyle={{ display: 'flex', flexDirection: 'column', gap: 12, padding: isMobile ? 12 : 24 }}
       style={{ background: bg, borderColor: border }}
     >
       <Space direction="vertical" size={6} style={{ width: '100%' }}>
@@ -469,8 +471,8 @@ export default function AIChatPage() {
           border: `1px solid ${border}`,
           borderRadius: 8,
           padding: 12,
-          minHeight: 320,
-          maxHeight: 520,
+          minHeight: isMobile ? 240 : 320,
+          maxHeight: isMobile ? 'calc(100vh - 360px)' : 520,
           overflowY: 'auto',
           background: theme === 'dark' ? '#0f141c' : '#fafafa',
         }}
@@ -487,13 +489,13 @@ export default function AIChatPage() {
                   style={{
                     display: 'flex',
                     justifyContent: isUser ? 'flex-end' : 'flex-start',
-                    gap: 8,
+                    gap: isMobile ? 6 : 8,
                   }}
                 >
-                  {!isUser && <Avatar icon={<RobotOutlined />} />}
+                  {!isUser && !isMobile ? <Avatar icon={<RobotOutlined />} /> : null}
                   <div
                     style={{
-                      maxWidth: '82%',
+                      maxWidth: isMobile ? '90%' : '82%',
                       padding: '10px 12px',
                       borderRadius: 10,
                       background: isUser ? userBg : botBg,
@@ -508,7 +510,7 @@ export default function AIChatPage() {
                       </Text>
                     ) : null}
                   </div>
-                  {isUser && <Avatar icon={<UserOutlined />} />}
+                  {isUser && !isMobile ? <Avatar icon={<UserOutlined />} /> : null}
                 </div>
               );
             })}
@@ -522,35 +524,67 @@ export default function AIChatPage() {
         )}
       </div>
 
-      <Space.Compact style={{ width: '100%' }}>
-        <LicenseRestrictedAction restricted={licenseBlocked} reason={aiAssistRestrictionReason} feature="ai.assist" block>
-          <TextArea
-            value={inputText}
-            onChange={(event) => setInputText(event.target.value)}
-            placeholder={copy.placeholder}
-            disabled={licenseBlocked}
-            autoSize={{ minRows: 2, maxRows: 5 }}
-            onPressEnter={(event) => {
-              if (!event.shiftKey) {
-                event.preventDefault();
-                sendMessage();
-              }
-            }}
-          />
-        </LicenseRestrictedAction>
-        <LicenseRestrictedAction restricted={licenseBlocked} reason={aiAssistRestrictionReason} feature="ai.assist">
-          <Button
-            type="primary"
-            icon={<SendOutlined />}
-            loading={loading}
-            disabled={licenseBlocked}
-            onClick={sendMessage}
-            style={{ height: 'auto' }}
-          >
-            {copy.sendLabel}
-          </Button>
-        </LicenseRestrictedAction>
-      </Space.Compact>
+      {isMobile ? (
+        <Space direction="vertical" size={8} style={{ width: '100%' }}>
+          <LicenseRestrictedAction restricted={licenseBlocked} reason={aiAssistRestrictionReason} feature="ai.assist" block>
+            <TextArea
+              value={inputText}
+              onChange={(event) => setInputText(event.target.value)}
+              placeholder={copy.placeholder}
+              disabled={licenseBlocked}
+              autoSize={{ minRows: 2, maxRows: 5 }}
+              onPressEnter={(event) => {
+                if (!event.shiftKey) {
+                  event.preventDefault();
+                  sendMessage();
+                }
+              }}
+            />
+          </LicenseRestrictedAction>
+          <LicenseRestrictedAction restricted={licenseBlocked} reason={aiAssistRestrictionReason} feature="ai.assist" block>
+            <Button
+              type="primary"
+              icon={<SendOutlined />}
+              loading={loading}
+              disabled={licenseBlocked}
+              onClick={sendMessage}
+              style={{ width: '100%' }}
+            >
+              {copy.sendLabel}
+            </Button>
+          </LicenseRestrictedAction>
+        </Space>
+      ) : (
+        <Space.Compact style={{ width: '100%' }}>
+          <LicenseRestrictedAction restricted={licenseBlocked} reason={aiAssistRestrictionReason} feature="ai.assist" block>
+            <TextArea
+              value={inputText}
+              onChange={(event) => setInputText(event.target.value)}
+              placeholder={copy.placeholder}
+              disabled={licenseBlocked}
+              autoSize={{ minRows: 2, maxRows: 5 }}
+              onPressEnter={(event) => {
+                if (!event.shiftKey) {
+                  event.preventDefault();
+                  sendMessage();
+                }
+              }}
+            />
+          </LicenseRestrictedAction>
+          <LicenseRestrictedAction restricted={licenseBlocked} reason={aiAssistRestrictionReason} feature="ai.assist">
+            <Button
+              type="primary"
+              icon={<SendOutlined />}
+              loading={loading}
+              disabled={licenseBlocked}
+              onClick={sendMessage}
+              style={{ height: 'auto' }}
+            >
+              {copy.sendLabel}
+            </Button>
+          </LicenseRestrictedAction>
+        </Space.Compact>
+      )}
       {licenseBlocked ? (
         <Text type="secondary">
           {aiAssistRestrictionReason}

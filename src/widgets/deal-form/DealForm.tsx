@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useMemo } from 'react';
 import {
   Form,
   Input,
@@ -20,6 +20,7 @@ import { SaveOutlined, ArrowLeftOutlined } from '@ant-design/icons';
 import dayjs from 'dayjs';
 import { useCreateDeal, useUpdateDeal } from '@/entities/deal/api/mutations';
 import { useDeal as useDealQuery } from '@/entities/deal/api/queries';
+import { trackCrmEvent } from '@/lib/analytics/events.js';
 // @ts-ignore
 import { navigate } from '@/router.js';
 
@@ -44,10 +45,22 @@ interface DealFormProps {
   id?: number;
 }
 
+function getCreateStagePrefill(): number | undefined {
+  if (typeof window === 'undefined') return undefined;
+  const rawHash = (window.location.hash || '').replace(/^#/, '');
+  const [, rawQuery = ''] = rawHash.split('?');
+  const stageRaw = new URLSearchParams(rawQuery).get('stage');
+  if (!stageRaw) return undefined;
+
+  const parsed = Number(stageRaw);
+  return Number.isFinite(parsed) ? parsed : undefined;
+}
+
 export const DealForm: React.FC<DealFormProps> = ({ id }) => {
   const [form] = Form.useForm();
   const { message } = App.useApp();
   const isEdit = !!id;
+  const createStagePrefill = useMemo(() => (isEdit ? undefined : getCreateStagePrefill()), [isEdit]);
   const screens = Grid.useBreakpoint();
   const isMobile = !screens.md;
 
@@ -82,6 +95,17 @@ export const DealForm: React.FC<DealFormProps> = ({ id }) => {
   };
 
   const onFinish = async (values: any) => {
+    if (values.active === false && !values.closing_reason) {
+      form.setFields([
+        {
+          name: 'closing_reason',
+          errors: ['Для закрытой сделки причина закрытия обязательна'],
+        },
+      ]);
+      message.error('Укажите причину закрытия');
+      return;
+    }
+
     try {
       const payload: any = {
         ...values,
@@ -98,9 +122,20 @@ export const DealForm: React.FC<DealFormProps> = ({ id }) => {
       };
 
       if (isEdit) {
-        await updateMutation.mutateAsync({ id: id!, data: payload });
+        const updated = await updateMutation.mutateAsync({ id: id!, data: payload });
+        if (deal?.stage !== payload.stage) {
+          void trackCrmEvent('deal_stage_changed', {
+            deal_id: updated?.id || id,
+            from_stage: deal?.stage || null,
+            to_stage: payload.stage || null,
+          });
+        }
       } else {
-        await createMutation.mutateAsync(payload);
+        const created = await createMutation.mutateAsync(payload);
+        void trackCrmEvent('deal_created', {
+          deal_id: created?.id,
+          stage: payload.stage || null,
+        });
       }
       navigate('/deals');
       message.success(isEdit ? 'Сделка обновлена' : 'Сделка создана');
@@ -140,6 +175,7 @@ export const DealForm: React.FC<DealFormProps> = ({ id }) => {
             active: true,
             relevant: true,
             is_new: true,
+            stage: createStagePrefill,
           }}
         >
           <Title level={4}>Основная информация</Title>
@@ -185,7 +221,19 @@ export const DealForm: React.FC<DealFormProps> = ({ id }) => {
 
           <Row gutter={16}>
             <Col xs={24} md={8}>
-              <Form.Item label="Причина закрытия" name="closing_reason">
+              <Form.Item
+                label="Причина закрытия"
+                name="closing_reason"
+                rules={[
+                  ({ getFieldValue }) => ({
+                    validator: async (_, value) => {
+                      if (getFieldValue('active') === false && !value) {
+                        throw new Error('Для закрытой сделки причина закрытия обязательна');
+                      }
+                    },
+                  }),
+                ]}
+              >
                 <ClosingReasonSelect />
               </Form.Item>
             </Col>

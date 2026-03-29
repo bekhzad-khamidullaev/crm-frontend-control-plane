@@ -48,6 +48,7 @@ import { navigate } from '../router.js';
 import {
   bootstrapOnboardingTemplate,
   getOnboardingState,
+  getOmnichannelDiagnostics,
   restartOnboarding,
   saveOnboardingProgress,
 } from '../lib/api/onboarding.js';
@@ -255,6 +256,8 @@ export default function OnboardingWizardPage() {
   const [serverSummary, setServerSummary] = useState(null);
   const [selectedTemplate, setSelectedTemplate] = useState(DEFAULT_TEMPLATE_CODE);
   const [bootstrappingTemplate, setBootstrappingTemplate] = useState(false);
+  const [diagnosticsSummary, setDiagnosticsSummary] = useState(null);
+  const [diagnosticsLoading, setDiagnosticsLoading] = useState(false);
 
   const bg = theme === 'dark' ? '#0f172a' : '#ffffff';
   const bgMuted = theme === 'dark' ? '#111827' : '#f8fafc';
@@ -293,6 +296,7 @@ export default function OnboardingWizardPage() {
       facebookResult,
       telegramResult,
       telephonyResult,
+      diagnosticsResult,
     ] = await Promise.allSettled([
       getOnboardingState(),
       settingsApi.general(),
@@ -304,6 +308,7 @@ export default function OnboardingWizardPage() {
       getFacebookPages({ page_size: 20 }),
       getTelegramBots({ page_size: 20 }),
       getVoIPConnections({ page_size: 25 }),
+      getOmnichannelDiagnostics(),
     ]);
 
     if (onboardingStateResult.status === 'fulfilled') {
@@ -358,6 +363,11 @@ export default function OnboardingWizardPage() {
       },
     });
     setTelephonyRows(telephonyResult.status === 'fulfilled' ? normalizeList(telephonyResult.value) : []);
+    setDiagnosticsSummary(
+      diagnosticsResult.status === 'fulfilled'
+        ? diagnosticsResult.value?.summary || null
+        : null
+    );
 
     setLoading(false);
     setRefreshing(false);
@@ -586,6 +596,19 @@ export default function OnboardingWizardPage() {
       await loadAll({ silent: true });
     } catch (error) {
       message.error(error?.details?.message || error?.message || 'Не удалось сбросить onboarding прогресс');
+    }
+  };
+
+  const handleRunDiagnostics = async () => {
+    setDiagnosticsLoading(true);
+    try {
+      const response = await getOmnichannelDiagnostics();
+      setDiagnosticsSummary(response?.summary || null);
+      message.success('Integration diagnostics обновлены');
+    } catch (error) {
+      message.error(error?.details?.message || error?.message || 'Не удалось запустить integration diagnostics');
+    } finally {
+      setDiagnosticsLoading(false);
     }
   };
 
@@ -973,6 +996,46 @@ export default function OnboardingWizardPage() {
               <Statistic title="Каналов подключено" value={connectedChannelsCount} />
             </Col>
           </Row>
+          <Card size="small" title="One-click Integration Diagnostics">
+            {diagnosticsSummary ? (
+              <Space direction="vertical" size={10} style={{ width: '100%' }}>
+                <Row gutter={[12, 12]}>
+                  <Col xs={24} md={8}>
+                    <Statistic title="Transport health" value={diagnosticsSummary.transport_health || 'unknown'} />
+                  </Col>
+                  <Col xs={24} md={8}>
+                    <Statistic title="Failed events" value={Number(diagnosticsSummary.failed_events || 0)} />
+                  </Col>
+                  <Col xs={24} md={8}>
+                    <Statistic title="Replayable" value={Number(diagnosticsSummary.replayable_events || 0)} />
+                  </Col>
+                </Row>
+                <Alert
+                  type={Number(diagnosticsSummary.failed_events || 0) > 0 ? 'warning' : 'success'}
+                  showIcon
+                  message={
+                    Number(diagnosticsSummary.failed_events || 0) > 0
+                      ? 'Есть failed события: проверьте integration diagnostics'
+                      : 'Интеграции выглядят стабильно'
+                  }
+                />
+              </Space>
+            ) : (
+              <Alert
+                type="info"
+                showIcon
+                message="Диагностика пока не запускалась или недоступна по лицензии"
+              />
+            )}
+            <Button
+              style={{ marginTop: 12 }}
+              icon={<ReloadOutlined />}
+              loading={diagnosticsLoading}
+              onClick={handleRunDiagnostics}
+            >
+              Запустить one-click diagnostics
+            </Button>
+          </Card>
           <Button type="primary" icon={<DashboardOutlined />} onClick={handleOpenDashboard}>
             Открыть dashboard
           </Button>

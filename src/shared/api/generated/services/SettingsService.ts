@@ -14,6 +14,7 @@ import type { FacebookPageCreate } from '../models/FacebookPageCreate';
 import type { InstagramAccount } from '../models/InstagramAccount';
 import type { InstagramAccountCreate } from '../models/InstagramAccountCreate';
 import type { IntegrationLog } from '../models/IntegrationLog';
+import type { MarketplaceExtension } from '../models/MarketplaceExtension';
 import type { OmnichannelMessage } from '../models/OmnichannelMessage';
 import type { PaginatedAIProviderSettingsList } from '../models/PaginatedAIProviderSettingsList';
 import type { PaginatedAPIKeyList } from '../models/PaginatedAPIKeyList';
@@ -24,6 +25,7 @@ import type { PaginatedDataSubjectRequestList } from '../models/PaginatedDataSub
 import type { PaginatedFacebookPageList } from '../models/PaginatedFacebookPageList';
 import type { PaginatedInstagramAccountList } from '../models/PaginatedInstagramAccountList';
 import type { PaginatedIntegrationLogList } from '../models/PaginatedIntegrationLogList';
+import type { PaginatedMarketplaceExtensionList } from '../models/PaginatedMarketplaceExtensionList';
 import type { PaginatedTelegramBotList } from '../models/PaginatedTelegramBotList';
 import type { PaginatedWebhookList } from '../models/PaginatedWebhookList';
 import type { PaginatedWhatsAppBusinessAccountList } from '../models/PaginatedWhatsAppBusinessAccountList';
@@ -1269,6 +1271,23 @@ export class SettingsService {
         });
     }
     /**
+     * Discover Facebook pages available for provided token.
+     * @returns FacebookPage
+     * @throws ApiError
+     */
+    public static settingsFacebookPagesDiscoverCreate({
+        requestBody,
+    }: {
+        requestBody: FacebookPage,
+    }): CancelablePromise<FacebookPage> {
+        return __request(OpenAPI, {
+            method: 'POST',
+            url: '/api/settings/facebook/pages/discover/',
+            body: requestBody,
+            mediaType: 'application/json',
+        });
+    }
+    /**
      * GET /api/settings/general/ - Retrieve general settings.
      * @returns any No response body
      * @throws ApiError
@@ -1554,6 +1573,23 @@ export class SettingsService {
         });
     }
     /**
+     * Discover Instagram Business accounts available for provided token.
+     * @returns InstagramAccount
+     * @throws ApiError
+     */
+    public static settingsInstagramAccountsDiscoverCreate({
+        requestBody,
+    }: {
+        requestBody: InstagramAccount,
+    }): CancelablePromise<InstagramAccount> {
+        return __request(OpenAPI, {
+            method: 'POST',
+            url: '/api/settings/instagram/accounts/discover/',
+            body: requestBody,
+            mediaType: 'application/json',
+        });
+    }
+    /**
      * ViewSet for integration logs (read-only).
      *
      * Endpoints:
@@ -1661,6 +1697,158 @@ export class SettingsService {
         });
     }
     /**
+     * @returns PaginatedMarketplaceExtensionList
+     * @throws ApiError
+     */
+    public static settingsMarketplaceExtensionsList({
+        ordering,
+        page,
+        pageSize,
+        search,
+    }: {
+        /**
+         * Which field to use when ordering the results.
+         */
+        ordering?: string,
+        /**
+         * A page number within the paginated result set.
+         */
+        page?: number,
+        /**
+         * Number of results to return per page.
+         */
+        pageSize?: number,
+        /**
+         * A search term.
+         */
+        search?: string,
+    }): CancelablePromise<PaginatedMarketplaceExtensionList> {
+        return __request(OpenAPI, {
+            method: 'GET',
+            url: '/api/settings/marketplace/extensions/',
+            query: {
+                'ordering': ordering,
+                'page': page,
+                'page_size': pageSize,
+                'search': search,
+            },
+        });
+    }
+    /**
+     * @returns MarketplaceExtension
+     * @throws ApiError
+     */
+    public static settingsMarketplaceExtensionsRetrieve({
+        id,
+    }: {
+        /**
+         * A UUID string identifying this Marketplace Extension.
+         */
+        id: string,
+    }): CancelablePromise<MarketplaceExtension> {
+        return __request(OpenAPI, {
+            method: 'GET',
+            url: '/api/settings/marketplace/extensions/{id}/',
+            path: {
+                'id': id,
+            },
+        });
+    }
+    /**
+     * @returns MarketplaceExtension
+     * @throws ApiError
+     */
+    public static settingsMarketplaceExtensionsDiagnosticsRetrieve({
+        id,
+    }: {
+        /**
+         * A UUID string identifying this Marketplace Extension.
+         */
+        id: string,
+    }): CancelablePromise<MarketplaceExtension> {
+        return __request(OpenAPI, {
+            method: 'GET',
+            url: '/api/settings/marketplace/extensions/{id}/diagnostics/',
+            path: {
+                'id': id,
+            },
+        });
+    }
+    /**
+     * @returns MarketplaceExtension
+     * @throws ApiError
+     */
+    public static settingsMarketplaceExtensionsUninstallCreate({
+        id,
+        requestBody,
+    }: {
+        /**
+         * A UUID string identifying this Marketplace Extension.
+         */
+        id: string,
+        requestBody?: MarketplaceExtension,
+    }): CancelablePromise<MarketplaceExtension> {
+        return __request(OpenAPI, {
+            method: 'POST',
+            url: '/api/settings/marketplace/extensions/{id}/uninstall/',
+            path: {
+                'id': id,
+            },
+            body: requestBody,
+            mediaType: 'application/json',
+        });
+    }
+    /**
+     * @returns MarketplaceExtension
+     * @throws ApiError
+     */
+    public static settingsMarketplaceExtensionsUpgradeCreate({
+        id,
+        requestBody,
+    }: {
+        /**
+         * A UUID string identifying this Marketplace Extension.
+         */
+        id: string,
+        requestBody?: MarketplaceExtension,
+    }): CancelablePromise<MarketplaceExtension> {
+        return __request(OpenAPI, {
+            method: 'POST',
+            url: '/api/settings/marketplace/extensions/{id}/upgrade/',
+            path: {
+                'id': id,
+            },
+            body: requestBody,
+            mediaType: 'application/json',
+        });
+    }
+    /**
+     * @returns MarketplaceExtension
+     * @throws ApiError
+     */
+    public static settingsMarketplaceExtensionsCompatibilityMatrixRetrieve(): CancelablePromise<MarketplaceExtension> {
+        return __request(OpenAPI, {
+            method: 'GET',
+            url: '/api/settings/marketplace/extensions/compatibility-matrix/',
+        });
+    }
+    /**
+     * @returns MarketplaceExtension
+     * @throws ApiError
+     */
+    public static settingsMarketplaceExtensionsInstallCreate({
+        requestBody,
+    }: {
+        requestBody?: MarketplaceExtension,
+    }): CancelablePromise<MarketplaceExtension> {
+        return __request(OpenAPI, {
+            method: 'POST',
+            url: '/api/settings/marketplace/extensions/install/',
+            body: requestBody,
+            mediaType: 'application/json',
+        });
+    }
+    /**
      * GET /api/settings/notifications/ - Get global notification settings.
      * @returns any No response body
      * @throws ApiError
@@ -1726,6 +1914,133 @@ export class SettingsService {
      * @returns OmnichannelMessage
      * @throws ApiError
      */
+    public static settingsOmnichannelPayloadRetrieve({
+        id,
+    }: {
+        /**
+         * A unique integer value identifying this External message.
+         */
+        id: number,
+    }): CancelablePromise<OmnichannelMessage> {
+        return __request(OpenAPI, {
+            method: 'GET',
+            url: '/api/settings/omnichannel/{id}/payload/',
+            path: {
+                'id': id,
+            },
+        });
+    }
+    /**
+     * @returns OmnichannelMessage
+     * @throws ApiError
+     */
+    public static settingsOmnichannelReplayCreate({
+        id,
+        requestBody,
+    }: {
+        /**
+         * A unique integer value identifying this External message.
+         */
+        id: number,
+        requestBody?: OmnichannelMessage,
+    }): CancelablePromise<OmnichannelMessage> {
+        return __request(OpenAPI, {
+            method: 'POST',
+            url: '/api/settings/omnichannel/{id}/replay/',
+            path: {
+                'id': id,
+            },
+            body: requestBody,
+            mediaType: 'application/json',
+        });
+    }
+    /**
+     * @returns OmnichannelMessage
+     * @throws ApiError
+     */
+    public static settingsOmnichannelConversationsActionCreate({
+        requestBody,
+    }: {
+        requestBody?: OmnichannelMessage,
+    }): CancelablePromise<OmnichannelMessage> {
+        return __request(OpenAPI, {
+            method: 'POST',
+            url: '/api/settings/omnichannel/conversations/action/',
+            body: requestBody,
+            mediaType: 'application/json',
+        });
+    }
+    /**
+     * @returns OmnichannelMessage
+     * @throws ApiError
+     */
+    public static settingsOmnichannelConversationsContextRetrieve(): CancelablePromise<OmnichannelMessage> {
+        return __request(OpenAPI, {
+            method: 'GET',
+            url: '/api/settings/omnichannel/conversations/context/',
+        });
+    }
+    /**
+     * @returns OmnichannelMessage
+     * @throws ApiError
+     */
+    public static settingsOmnichannelConversationsContextCreate({
+        requestBody,
+    }: {
+        requestBody?: OmnichannelMessage,
+    }): CancelablePromise<OmnichannelMessage> {
+        return __request(OpenAPI, {
+            method: 'POST',
+            url: '/api/settings/omnichannel/conversations/context/',
+            body: requestBody,
+            mediaType: 'application/json',
+        });
+    }
+    /**
+     * @returns OmnichannelMessage
+     * @throws ApiError
+     */
+    public static settingsOmnichannelDiagnosticsRetrieve(): CancelablePromise<OmnichannelMessage> {
+        return __request(OpenAPI, {
+            method: 'GET',
+            url: '/api/settings/omnichannel/diagnostics/',
+        });
+    }
+    /**
+     * @returns OmnichannelMessage
+     * @throws ApiError
+     */
+    public static settingsOmnichannelOutboundRetrieve(): CancelablePromise<OmnichannelMessage> {
+        return __request(OpenAPI, {
+            method: 'GET',
+            url: '/api/settings/omnichannel/outbound/',
+        });
+    }
+    /**
+     * @returns OmnichannelMessage
+     * @throws ApiError
+     */
+    public static settingsOmnichannelOutboundRetryCreate({
+        eventId,
+        requestBody,
+    }: {
+        eventId: string,
+        requestBody?: OmnichannelMessage,
+    }): CancelablePromise<OmnichannelMessage> {
+        return __request(OpenAPI, {
+            method: 'POST',
+            url: '/api/settings/omnichannel/outbound/{event_id}/retry/',
+            path: {
+                'event_id': eventId,
+            },
+            body: requestBody,
+            mediaType: 'application/json',
+        });
+    }
+    /**
+     * @returns OmnichannelMessage
+     * @throws ApiError
+     */
     public static settingsOmnichannelSendCreate({
         requestBody,
     }: {
@@ -1746,6 +2061,46 @@ export class SettingsService {
         return __request(OpenAPI, {
             method: 'GET',
             url: '/api/settings/omnichannel/timeline/',
+        });
+    }
+    /**
+     * @returns any No response body
+     * @throws ApiError
+     */
+    public static settingsOnboardingList(): CancelablePromise<any> {
+        return __request(OpenAPI, {
+            method: 'GET',
+            url: '/api/settings/onboarding/',
+        });
+    }
+    /**
+     * @returns any No response body
+     * @throws ApiError
+     */
+    public static settingsOnboardingBootstrapCreate(): CancelablePromise<any> {
+        return __request(OpenAPI, {
+            method: 'POST',
+            url: '/api/settings/onboarding/bootstrap/',
+        });
+    }
+    /**
+     * @returns any No response body
+     * @throws ApiError
+     */
+    public static settingsOnboardingProgressCreate(): CancelablePromise<any> {
+        return __request(OpenAPI, {
+            method: 'POST',
+            url: '/api/settings/onboarding/progress/',
+        });
+    }
+    /**
+     * @returns any No response body
+     * @throws ApiError
+     */
+    public static settingsOnboardingRestartCreate(): CancelablePromise<any> {
+        return __request(OpenAPI, {
+            method: 'POST',
+            url: '/api/settings/onboarding/restart/',
         });
     }
     /**
@@ -2577,6 +2932,23 @@ export class SettingsService {
             path: {
                 'id': id,
             },
+            body: requestBody,
+            mediaType: 'application/json',
+        });
+    }
+    /**
+     * Discover WhatsApp Business assets by access token.
+     * @returns WhatsAppBusinessAccount
+     * @throws ApiError
+     */
+    public static settingsWhatsappAccountsDiscoverCreate({
+        requestBody,
+    }: {
+        requestBody: WhatsAppBusinessAccount,
+    }): CancelablePromise<WhatsAppBusinessAccount> {
+        return __request(OpenAPI, {
+            method: 'POST',
+            url: '/api/settings/whatsapp/accounts/discover/',
             body: requestBody,
             mediaType: 'application/json',
         });

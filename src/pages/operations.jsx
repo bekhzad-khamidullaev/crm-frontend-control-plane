@@ -123,13 +123,15 @@ export function OpsChainPanel() {
               <Text>With invoice: <b>{summary.with_invoice || 0}</b></Text>
               <Text>With payment: <b>{summary.with_received_payment || 0}</b></Text>
               <Text>With service ticket: <b>{summary.with_service_ticket || 0}</b></Text>
+              <Text>With fulfillment: <b>{summary.with_fulfillment || 0}</b></Text>
+              <Text>With docs template: <b>{summary.with_document_template || 0}</b></Text>
             </Space>
           )}
           <Alert
             type="info"
             showIcon
             message="ERP-adjacent chain"
-            description="lead/deal -> invoice -> payment status -> service ticket in one operations surface."
+            description="lead/deal -> invoice -> payment status -> fulfillment -> service ticket -> document template readiness."
           />
         </Space>
       </Card>
@@ -193,6 +195,31 @@ export function OpsChainPanel() {
                     </Space>
                   )
                   : <Text type="secondary">Missing</Text>
+              ),
+            },
+            {
+              title: 'Fulfillment',
+              key: 'fulfillment',
+              render: (_value, row) => {
+                const status = row?.fulfillment?.status || 'not_started';
+                const color = status === 'shipped' ? 'success' : status === 'planned' ? 'processing' : 'default';
+                return (
+                  <Space direction="vertical" size={0}>
+                    <Tag color={color}>{status}</Tag>
+                    <Text type="secondary">
+                      {row?.fulfillment?.outputs_shipped || 0}/{row?.fulfillment?.outputs_total || 0} shipped
+                    </Text>
+                  </Space>
+                );
+              },
+            },
+            {
+              title: 'Document',
+              key: 'document',
+              render: (_value, row) => (
+                (row?.document?.template_ready)
+                  ? <Tag color="success">{row?.document?.template_code || 'ready'}</Tag>
+                  : <Tag>not ready</Tag>
               ),
             },
             {

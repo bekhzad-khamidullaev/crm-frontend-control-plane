@@ -56,11 +56,11 @@ export const CompaniesTableFilters: React.FC<CompaniesTableFiltersProps> = ({
   };
 
   const surfaceStyle: React.CSSProperties = {
-    marginBottom: 16,
+    marginBottom: 12,
     borderRadius: token.borderRadiusLG,
     border: `1px solid ${token.colorBorderSecondary}`,
     background: token.colorBgElevated,
-    boxShadow: token.boxShadowTertiary,
+    boxShadow: token.boxShadowSecondary,
   };
   const chipStyle: React.CSSProperties = {
     marginInlineEnd: 0,
@@ -76,13 +76,13 @@ export const CompaniesTableFilters: React.FC<CompaniesTableFiltersProps> = ({
       style={surfaceStyle}
       styles={{
         body: {
-          padding: 16,
+          padding: 12,
         },
       }}
     >
-      <Flex vertical gap={12}>
+      <Flex vertical gap={8}>
         <Form form={form} layout="vertical" onValuesChange={handleValuesChange}>
-          <Row gutter={[12, 12]} align="middle">
+          <Row gutter={[8, 8]} align="middle">
             <Col xs={24} md={10} lg={8}>
               <Input
                 value={searchValue}
@@ -104,11 +104,12 @@ export const CompaniesTableFilters: React.FC<CompaniesTableFiltersProps> = ({
             </Col>
             <Col xs={24} lg={4}>
               <Space wrap>
-                <Button onClick={handleReset}>Сбросить</Button>
+                <Button size="small" onClick={handleReset}>Сбросить</Button>
                 <Button
                   icon={<ReloadOutlined />}
                   onClick={onRefresh}
                   loading={loading}
+                  size="small"
                   aria-label="Обновить список"
                 />
               </Space>

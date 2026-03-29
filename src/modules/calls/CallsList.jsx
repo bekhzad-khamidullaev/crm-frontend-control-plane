@@ -289,8 +289,8 @@ function CallsList() {
   }, [statistics, calls.length]);
 
   return (
-    <Card>
-      <Space direction="vertical" size={16} style={{ width: '100%' }}>
+    <Card bodyStyle={{ padding: 16 }}>
+      <Space direction="vertical" size={12} style={{ width: '100%', maxWidth: 1320 }}>
         <Space wrap style={{ width: '100%', justifyContent: 'space-between' }}>
           <div>
             <Title level={3} style={{ margin: 0 }}>{tr('callsList.title', 'Call history')}</Title>
@@ -300,27 +300,37 @@ function CallsList() {
         </Space>
 
         {stats ? (
-          <Space wrap>
-            <Card size="small"><Statistic title={tr('callsList.stats.total', 'Total')} value={stats.total} /></Card>
-            <Card size="small"><Statistic title={tr('callsList.stats.answered', 'Answered')} value={stats.answered} /></Card>
-            <Card size="small"><Statistic title={tr('callsList.stats.missed', 'Missed')} value={stats.missed} /></Card>
-            <Card size="small"><Statistic title={tr('callsList.stats.durationSec', 'Duration, sec')} value={stats.duration} /></Card>
+          <Space wrap size={10}>
+            <Card size="small" bodyStyle={{ padding: '10px 14px' }} style={{ width: 112, borderRadius: 14 }}>
+              <Statistic title={tr('callsList.stats.total', 'Total')} value={stats.total} />
+            </Card>
+            <Card size="small" bodyStyle={{ padding: '10px 14px' }} style={{ width: 126, borderRadius: 14 }}>
+              <Statistic title={tr('callsList.stats.answered', 'Answered')} value={stats.answered} />
+            </Card>
+            <Card size="small" bodyStyle={{ padding: '10px 14px' }} style={{ width: 128, borderRadius: 14 }}>
+              <Statistic title={tr('callsList.stats.missed', 'Missed')} value={stats.missed} />
+            </Card>
+            <Card size="small" bodyStyle={{ padding: '10px 14px' }} style={{ width: 186, borderRadius: 14 }}>
+              <Statistic title={tr('callsList.stats.durationSec', 'Duration, sec')} value={stats.duration} />
+            </Card>
           </Space>
         ) : null}
 
-        <Space wrap>
+        <Space wrap size={10}>
           <Search
             placeholder={tr('callsList.filters.searchByNumber', 'Search by number')}
             allowClear
             value={searchText}
             onChange={(e) => setSearchText(e.target.value)}
             onSearch={setSearchText}
-            style={{ minWidth: 260 }}
+            size="middle"
+            style={{ width: 250, minWidth: 220 }}
           />
           <Select
             allowClear
             placeholder={tr('callsList.filters.direction', 'Direction')}
-            style={{ minWidth: 150 }}
+            size="middle"
+            style={{ width: 170 }}
             value={filters.direction}
             options={[
               { value: 'inbound', label: tr('callsList.direction.inbound', 'Inbound') },
@@ -331,17 +341,22 @@ function CallsList() {
           <Select
             allowClear
             placeholder={tr('callsList.filters.status', 'Status')}
-            style={{ minWidth: 150 }}
+            size="middle"
+            style={{ width: 170 }}
             value={filters.status}
             options={Object.entries(statusConfig).map(([value, meta]) => ({ value, label: meta.text }))}
             onChange={(v) => setFilters((prev) => ({ ...prev, status: v ?? null }))}
           />
           <RangePicker
+            size="middle"
             format="DD.MM.YYYY"
+            style={{ width: 320 }}
             value={filters.dateRange}
             onChange={(vals) => setFilters((prev) => ({ ...prev, dateRange: vals || null }))}
           />
-          <Button onClick={() => setFilters({ direction: null, status: null, dateRange: null })}>{tr('actions.reset', 'Reset')}</Button>
+          <Button size="middle" onClick={() => setFilters({ direction: null, status: null, dateRange: null })}>
+            {tr('actions.reset', 'Reset')}
+          </Button>
         </Space>
 
         <Table

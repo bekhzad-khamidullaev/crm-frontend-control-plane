@@ -18,6 +18,7 @@ const {
   saveOnboardingProgressMock,
   bootstrapOnboardingTemplateMock,
   restartOnboardingMock,
+  getOmnichannelDiagnosticsMock,
 } = vi.hoisted(() => ({
   getOnboardingStateMock: vi.fn().mockResolvedValue({
     progress: {
@@ -38,6 +39,13 @@ const {
   saveOnboardingProgressMock: vi.fn().mockResolvedValue({}),
   bootstrapOnboardingTemplateMock: vi.fn().mockResolvedValue({ demo_bootstrap: { created_leads: 0, skipped: true } }),
   restartOnboardingMock: vi.fn().mockResolvedValue({}),
+  getOmnichannelDiagnosticsMock: vi.fn().mockResolvedValue({
+    summary: {
+      transport_health: 'healthy',
+      failed_events: 0,
+      replayable_events: 0,
+    },
+  }),
 }));
 
 vi.mock('../../src/lib/api/settings.js', () => ({
@@ -52,6 +60,7 @@ vi.mock('../../src/lib/api/onboarding.js', () => ({
   saveOnboardingProgress: saveOnboardingProgressMock,
   bootstrapOnboardingTemplate: bootstrapOnboardingTemplateMock,
   restartOnboarding: restartOnboardingMock,
+  getOmnichannelDiagnostics: getOmnichannelDiagnosticsMock,
 }));
 
 vi.mock('../../src/lib/api/user.js', () => ({

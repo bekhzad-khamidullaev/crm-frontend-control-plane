@@ -26,4 +26,27 @@ describe('AnalyticsCard', () => {
     render(<AnalyticsCard title="Empty card" />);
     expect(screen.getByText('Нет данных')).toBeInTheDocument();
   });
+
+  it('shows structured error contract fields and widget actions when enabled', () => {
+    render(
+      <AnalyticsCard
+        title="Funnel"
+        error={{
+          status: 503,
+          details: { code: 'UPSTREAM_TIMEOUT', correlation_id: 'corr-123' },
+        }}
+        widgetActions
+        widgetKey="funnel"
+        widgetPeriod="30d"
+      />
+    );
+
+    expect(screen.getByText('code: UPSTREAM_TIMEOUT')).toBeInTheDocument();
+    expect(screen.getByText('correlation_id: corr-123')).toBeInTheDocument();
+    expect(screen.getByText('retryable: true')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Обновить' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Drill-down' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Настройки' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Fullscreen' })).toBeInTheDocument();
+  });
 });

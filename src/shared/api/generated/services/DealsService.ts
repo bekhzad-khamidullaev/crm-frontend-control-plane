@@ -189,6 +189,31 @@ export class DealsService {
      * @returns Deal
      * @throws ApiError
      */
+    public static dealsOpsChainCreateServiceTicketCreate({
+        id,
+        requestBody,
+    }: {
+        /**
+         * A unique integer value identifying this Deal.
+         */
+        id: number,
+        requestBody: Deal,
+    }): CancelablePromise<Deal> {
+        return __request(OpenAPI, {
+            method: 'POST',
+            url: '/api/deals/{id}/ops-chain/create-service-ticket/',
+            path: {
+                'id': id,
+            },
+            body: requestBody,
+            mediaType: 'application/json',
+        });
+    }
+    /**
+     * CRUD for CRM deals with ownership rules.
+     * @returns Deal
+     * @throws ApiError
+     */
     public static dealsBulkTagCreate({
         requestBody,
     }: {
@@ -199,6 +224,17 @@ export class DealsService {
             url: '/api/deals/bulk_tag/',
             body: requestBody,
             mediaType: 'application/json',
+        });
+    }
+    /**
+     * CRUD for CRM deals with ownership rules.
+     * @returns Deal
+     * @throws ApiError
+     */
+    public static dealsOpsChainRetrieve(): CancelablePromise<Deal> {
+        return __request(OpenAPI, {
+            method: 'GET',
+            url: '/api/deals/ops-chain/',
         });
     }
 }

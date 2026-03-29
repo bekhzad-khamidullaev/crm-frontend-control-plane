@@ -7,6 +7,28 @@ import { OpenAPI } from '../core/OpenAPI';
 import { request as __request } from '../core/request';
 export class VoIpColdCallsService {
     /**
+     * Request call hangup by session_id from CRM side.
+     * @returns any No response body
+     * @throws ApiError
+     */
+    public static voipCallControlHangupCreate(): CancelablePromise<any> {
+        return __request(OpenAPI, {
+            method: 'POST',
+            url: '/api/voip/call-control/hangup/',
+        });
+    }
+    /**
+     * Reject inbound ringing call by session_id.
+     * @returns any No response body
+     * @throws ApiError
+     */
+    public static voipCallControlRejectCreate(): CancelablePromise<any> {
+        return __request(OpenAPI, {
+            method: 'POST',
+            url: '/api/voip/call-control/reject/',
+        });
+    }
+    /**
      * Get call logs with filtering
      *
      * Query params:

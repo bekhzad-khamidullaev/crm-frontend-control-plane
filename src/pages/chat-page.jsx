@@ -69,6 +69,21 @@ const BUCKET_OPTIONS = [
   { label: 'SLA риск', value: 'breached' },
 ];
 
+const SEGMENT_OPTIONS = [
+  { label: 'Все', value: 'all' },
+  { label: 'Клиенты', value: 'clients' },
+  { label: 'Задачи', value: 'tasks' },
+  { label: 'Команда', value: 'team' },
+];
+
+const SEGMENT_LABELS = {
+  clients: 'Клиенты',
+  tasks: 'Задачи',
+  team: 'Команда',
+};
+
+const META_24H_CHANNELS = new Set(['whatsapp', 'instagram', 'facebook']);
+
 function channelMeta(channelType) {
   return CHANNEL_META[channelType] || { label: channelType || 'Канал', color: 'default', icon: <MessageOutlined /> };
 }
@@ -147,6 +162,104 @@ function buildConversationTitle(item) {
   return participantId || `Диалог #${item?.id}`;
 }
 
+function toLowerString(value) {
+  return String(value || '').trim().toLowerCase();
+}
+
+function classifyConversationSegment(conversation) {
+  const subjectToken = toLowerString(conversation?.subjectContentType);
+  const haystack = [
+    conversation?.title,
+    conversation?.preview,
+    conversation?.channelName,
+    conversation?.participantId,
+    conversation?.subjectContentType,
+    conversation?.latest?.text,
+  ]
+    .filter(Boolean)
+    .join(' ')
+    .toLowerCase();
+
+  if (
+    ['task', 'tasks', 'project', 'projects', 'reminder', 'memo'].some((token) => subjectToken.includes(token))
+    || /(задач|task|проект|project|reminder|напомин|memo|ticket)/i.test(haystack)
+  ) {
+    return 'tasks';
+  }
+
+  if (
+    conversation?.channelType === 'telegram'
+    && !conversation?.subjectObjectId
+    && !subjectToken
+    && /(команд|team|internal|сотрудник|оператор|agent)/i.test(haystack)
+  ) {
+    return 'team';
+  }
+
+  if (/(команд|team|internal|сотрудник|оператор|agent)/i.test(haystack)) {
+    return 'team';
+  }
+
+  return 'clients';
+}
+
+function findLastInboundAt(messages = []) {
+  for (let index = messages.length - 1; index >= 0; index -= 1) {
+    const item = messages[index];
+    if (item?.direction === 'in' && item?.created_at) return item.created_at;
+  }
+  return null;
+}
+
+export function resolveConversationCompliance(conversation, now = new Date()) {
+  if (!conversation) {
+    return { restricted: false, withinWindow: true, channelRequiresWindow: false };
+  }
+
+  const channelType = toLowerString(conversation.channelType);
+  const channelRequiresWindow = META_24H_CHANNELS.has(channelType);
+  if (!channelRequiresWindow) {
+    return { restricted: false, withinWindow: true, channelRequiresWindow };
+  }
+
+  const lastInboundAt = findLastInboundAt(conversation.messages);
+  if (!lastInboundAt) {
+    return {
+      restricted: true,
+      withinWindow: false,
+      channelRequiresWindow,
+      lastInboundAt: null,
+      hoursSinceInbound: null,
+      reason: 'missing_inbound',
+    };
+  }
+
+  const createdAtMs = new Date(lastInboundAt).getTime();
+  if (!Number.isFinite(createdAtMs)) {
+    return {
+      restricted: true,
+      withinWindow: false,
+      channelRequiresWindow,
+      lastInboundAt,
+      hoursSinceInbound: null,
+      reason: 'invalid_inbound_timestamp',
+    };
+  }
+
+  const nowMs = now instanceof Date ? now.getTime() : new Date(now).getTime();
+  const hoursSinceInbound = Math.max(0, (nowMs - createdAtMs) / (1000 * 60 * 60));
+  const withinWindow = hoursSinceInbound <= 24;
+
+  return {
+    restricted: !withinWindow,
+    withinWindow,
+    channelRequiresWindow,
+    lastInboundAt,
+    hoursSinceInbound,
+    reason: withinWindow ? 'within_window' : 'window_expired',
+  };
+}
+
 function groupConversations(items) {
   const byKey = new Map();
   items.forEach((item) => {
@@ -174,7 +287,7 @@ function groupConversations(items) {
       const queueBucket = hasBreached
         ? 'breached'
         : latest?.queue_bucket || 'other';
-      return {
+      const draft = {
         ...conversation,
         messages,
         latest,
@@ -188,13 +301,20 @@ function groupConversations(items) {
         queueBucket,
         latestSlaStatus: latest?.sla_status || 'ok',
       };
+      return {
+        ...draft,
+        segment: classifyConversationSegment(draft),
+      };
     })
     .sort((a, b) => messageTimestamp(b.latest) - messageTimestamp(a.latest));
 }
 
-function filterConversations(conversations, { searchQuery, bucket, channel }) {
+function filterConversations(conversations, { searchQuery, bucket, channel, segment }) {
   const needle = searchQuery.trim().toLowerCase();
   return conversations.filter((conversation) => {
+    if (segment !== 'all' && conversation.segment !== segment) {
+      return false;
+    }
     if (bucket !== 'all') {
       if (bucket === 'breached') {
         if (conversation.latestSlaStatus !== 'breached') return false;
@@ -213,6 +333,7 @@ function filterConversations(conversations, { searchQuery, bucket, channel }) {
       conversation.channelType,
       conversation.participantId,
       conversation.subjectObjectId,
+      SEGMENT_LABELS[conversation.segment],
     ]
       .filter(Boolean)
       .join(' ')
@@ -278,6 +399,7 @@ function ChatPage() {
   const [errorState, setErrorState] = useState(null);
   const [licenseState, setLicenseState] = useState(null);
   const [searchQuery, setSearchQuery] = useState('');
+  const [segment, setSegment] = useState('all');
   const [bucket, setBucket] = useState('all');
   const [channel, setChannel] = useState('all');
   const [activeConversationKey, setActiveConversationKey] = useState(null);
@@ -345,8 +467,8 @@ function ChatPage() {
 
   const conversations = useMemo(() => groupConversations(items), [items]);
   const filteredConversations = useMemo(
-    () => filterConversations(conversations, { searchQuery, bucket, channel }),
-    [bucket, channel, conversations, searchQuery]
+    () => filterConversations(conversations, { searchQuery, bucket, channel, segment }),
+    [bucket, channel, conversations, searchQuery, segment]
   );
 
   useEffect(() => {
@@ -361,6 +483,14 @@ function ChatPage() {
   }, [activeConversationKey, filteredConversations]);
 
   const activeConversation = filteredConversations.find((item) => item.key === activeConversationKey) || null;
+  const activeConversationCompliance = useMemo(
+    () => resolveConversationCompliance(activeConversation),
+    [activeConversation]
+  );
+  const hasOutboundAdapter = useMemo(
+    () => Boolean(buildSendPayload(activeConversation, '__probe__')),
+    [activeConversation]
+  );
   const channelOptions = useMemo(() => {
     const dynamic = Array.from(new Set(conversations.map((item) => item.channelType).filter(Boolean))).map((value) => ({
       label: channelMeta(value).label,
@@ -444,6 +574,10 @@ function ChatPage() {
   };
 
   const handleSend = async () => {
+    if (activeConversationCompliance.restricted) {
+      message.warning('24h окно ответа истекло. Для продолжения используйте шаблонное сообщение в Meta канале.');
+      return;
+    }
     const text = draft.trim();
     const payload = buildSendPayload(activeConversation, text);
     if (!text || !payload) return;
@@ -546,20 +680,20 @@ function ChatPage() {
   }
 
   return (
-    <Space direction="vertical" size={16} style={{ width: '100%' }}>
+    <Space direction="vertical" size={12} style={{ width: '100%' }}>
       <Card
         variant="borderless"
         style={{ background: bg }}
-        styles={{ body: { paddingBottom: 12 } }}
+        styles={{ body: { padding: '12px 16px 10px' } }}
         extra={
           <Button icon={<ReloadOutlined />} loading={refreshing} onClick={() => loadInbox({ silent: true })}>
             Обновить
           </Button>
         }
       >
-        <Space direction="vertical" size={12} style={{ width: '100%' }}>
+        <Space direction="vertical" size={8} style={{ width: '100%' }}>
           <div>
-            <Title level={3} style={{ margin: 0 }}>
+            <Title level={4} style={{ margin: 0, lineHeight: 1.1 }}>
               Unified Inbox
             </Title>
             <Text type="secondary">
@@ -567,7 +701,7 @@ function ChatPage() {
             </Text>
           </div>
 
-          <Space wrap size={16}>
+          <Space wrap size={10}>
             <Statistic title="Всего" value={summary.total} />
             <Statistic title="В очереди" value={summary.queue} />
             <Statistic title="В работе" value={summary.active} />
@@ -590,13 +724,20 @@ function ChatPage() {
             marginBottom: isMobile ? 16 : 0,
           }}
         >
-          <Card variant="borderless" style={{ background: bgSecondary }}>
-            <Space direction="vertical" size={12} style={{ width: '100%' }}>
+          <Card variant="borderless" style={{ background: bgSecondary }} styles={{ body: { padding: 12 } }}>
+            <Space direction="vertical" size={8} style={{ width: '100%' }}>
               <Search
                 placeholder="Поиск по диалогу, каналу или участнику"
                 allowClear
                 value={searchQuery}
                 onChange={(event) => setSearchQuery(event.target.value)}
+                size="small"
+              />
+              <Segmented
+                block
+                options={SEGMENT_OPTIONS}
+                value={segment}
+                onChange={setSegment}
               />
               <Segmented
                 block
@@ -660,6 +801,7 @@ function ChatPage() {
                             </Text>
                             <Space wrap size={6}>
                               <Tag color={meta.color}>{meta.label}</Tag>
+                              <Tag>{SEGMENT_LABELS[conversation.segment] || 'Клиенты'}</Tag>
                               {queueMeta && <Tag color={queueMeta.color}>{queueMeta.label}</Tag>}
                               <Tag>{conversation.messages.length} msg</Tag>
                               {responseLabel && <Text type="secondary">{responseLabel}</Text>}
@@ -718,6 +860,27 @@ function ChatPage() {
                     message="Conversation pane"
                     description="Диалог собран по omnichannel timeline. Composer работает для Meta/Telegram-каналов с существующим outbound API."
                   />
+                  {activeConversationCompliance.channelRequiresWindow ? (
+                    activeConversationCompliance.restricted ? (
+                      <Alert
+                        type="warning"
+                        showIcon
+                        message="24h compliance window истекло"
+                        description={
+                          activeConversationCompliance.lastInboundAt
+                            ? `С последнего входящего прошло ${Math.round(activeConversationCompliance.hoursSinceInbound || 0)} ч. Обычная отправка заблокирована, используйте approved template.`
+                            : 'В треде нет входящего сообщения от клиента. Обычная отправка заблокирована, используйте approved template.'
+                        }
+                      />
+                    ) : (
+                      <Alert
+                        type="success"
+                        showIcon
+                        message="24h window активно"
+                        description="Обычная отправка в Meta-канал доступна до истечения 24h окна."
+                      />
+                    )
+                  ) : null}
                 </Space>
                   );
                 })()}
@@ -767,7 +930,7 @@ function ChatPage() {
                         );
                       })}
 
-                      {buildSendPayload(activeConversation, draft) ? (
+                      {hasOutboundAdapter ? (
                         <Space direction="vertical" size={8} style={{ width: '100%', marginTop: 8 }}>
                           <TextArea
                             rows={4}
@@ -775,12 +938,20 @@ function ChatPage() {
                             onChange={(event) => setDraft(event.target.value)}
                             placeholder="Ответить в диалоге..."
                             maxLength={2000}
+                            disabled={activeConversationCompliance.restricted}
                           />
                           <Space style={{ justifyContent: 'space-between', width: '100%' }}>
                             <Text type="secondary">
                               Отправка в {channelMeta(activeConversation.channelType).label}
+                              {activeConversationCompliance.restricted ? ' (ограничено policy 24h)' : ''}
                             </Text>
-                            <Button type="primary" icon={<SendOutlined />} loading={sending} onClick={handleSend}>
+                            <Button
+                              type="primary"
+                              icon={<SendOutlined />}
+                              loading={sending}
+                              disabled={activeConversationCompliance.restricted || !draft.trim()}
+                              onClick={handleSend}
+                            >
                               Отправить
                             </Button>
                           </Space>

@@ -8,6 +8,9 @@
 export type ClosingReason = {
     readonly id: number;
     name: string;
+    name_ru?: string;
+    name_en?: string;
+    name_uz?: string;
     /**
      * Reason rating.         The indices of other instances will be sorted automatically.
      */

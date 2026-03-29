@@ -3,16 +3,20 @@ import React, { useEffect, useState } from 'react';
 import { Button, Card, Col, Flex, Input, Row, Space, Tag, theme } from 'antd';
 import { StageSelect, UserSelect, CompanySelect } from '@/features/reference';
 import { DealListParams } from '@/entities/deal';
-import { SearchOutlined } from '@ant-design/icons';
+import { ReloadOutlined, SearchOutlined } from '@ant-design/icons';
 
 interface DealsTableFiltersProps {
   filters: DealListParams;
-  onFilterChange: (key: string, value: any) => void;
+  onChange: (filters: DealListParams) => void;
+  onRefresh?: () => void;
+  loading?: boolean;
 }
 
 export const DealsTableFilters: React.FC<DealsTableFiltersProps> = ({
   filters,
-  onFilterChange,
+  onChange,
+  onRefresh,
+  loading,
 }) => {
   const [search, setSearch] = useState(filters.search || '');
   const debouncedSearch = useDebounce(search, 400);
@@ -21,11 +25,11 @@ export const DealsTableFilters: React.FC<DealsTableFiltersProps> = ({
     String(filters.search || '').trim() || filters.stage || filters.owner || filters.company,
   );
   const surfaceStyle: React.CSSProperties = {
-    marginBottom: 16,
+    marginBottom: 12,
     borderRadius: token.borderRadiusLG,
     border: `1px solid ${token.colorBorderSecondary}`,
     background: token.colorBgElevated,
-    boxShadow: token.boxShadowTertiary,
+    boxShadow: token.boxShadowSecondary,
   };
   const chipStyle: React.CSSProperties = {
     marginInlineEnd: 0,
@@ -43,11 +47,19 @@ export const DealsTableFilters: React.FC<DealsTableFiltersProps> = ({
     const nextValue = debouncedSearch.trim();
     const currentValue = String(filters.search || '').trim();
     if (nextValue === currentValue) return;
-    onFilterChange('search', nextValue || undefined);
-  }, [debouncedSearch, filters.search, onFilterChange]);
+    onChange({
+      ...filters,
+      search: nextValue || undefined,
+      page: 1,
+    });
+  }, [debouncedSearch, filters, onChange]);
 
   const handleChange = (key: keyof DealListParams, value: any) => {
-    onFilterChange(String(key), value || undefined);
+    onChange({
+      ...filters,
+      [key]: value || undefined,
+      page: 1,
+    });
   };
 
   return (
@@ -56,12 +68,12 @@ export const DealsTableFilters: React.FC<DealsTableFiltersProps> = ({
       style={surfaceStyle}
       styles={{
         body: {
-          padding: 16,
+          padding: 12,
         },
       }}
     >
-      <Flex vertical gap={12}>
-        <Row gutter={[16, 16]} align="middle">
+      <Flex vertical gap={8}>
+        <Row gutter={[8, 8]} align="middle">
           <Col xs={24} sm={12} lg={6}>
             <Input
               placeholder="Поиск по названию..."
@@ -71,7 +83,7 @@ export const DealsTableFilters: React.FC<DealsTableFiltersProps> = ({
               prefix={<SearchOutlined style={{ color: token.colorTextQuaternary }} />}
             />
           </Col>
-          <Col xs={24} sm={12} lg={6}>
+          <Col xs={24} sm={12} lg={5}>
             <StageSelect
               placeholder="Стадия"
               value={filters.stage}
@@ -80,7 +92,7 @@ export const DealsTableFilters: React.FC<DealsTableFiltersProps> = ({
               allowClear
             />
           </Col>
-          <Col xs={24} sm={12} lg={6}>
+          <Col xs={24} sm={12} lg={5}>
             <UserSelect
               placeholder="Ответственный"
               value={filters.owner}
@@ -98,6 +110,16 @@ export const DealsTableFilters: React.FC<DealsTableFiltersProps> = ({
               allowClear
             />
           </Col>
+          <Col xs={24} sm={12} lg={2}>
+            <Button
+              block
+              icon={<ReloadOutlined />}
+              onClick={onRefresh}
+              loading={loading}
+              size="small"
+              aria-label="Обновить список"
+            />
+          </Col>
         </Row>
 
         <Space size={[8, 8]} wrap>
@@ -107,7 +129,7 @@ export const DealsTableFilters: React.FC<DealsTableFiltersProps> = ({
               style={chipStyle}
               onClose={() => {
                 setSearch('');
-                onFilterChange('search', undefined);
+                onChange({ ...filters, search: undefined, page: 1 });
               }}
             >
               Поиск: {String(filters.search)}
@@ -133,10 +155,13 @@ export const DealsTableFilters: React.FC<DealsTableFiltersProps> = ({
               type="text"
               onClick={() => {
                 setSearch('');
-                onFilterChange('search', undefined);
-                onFilterChange('stage', undefined);
-                onFilterChange('owner', undefined);
-                onFilterChange('company', undefined);
+                onChange({
+                  page: 1,
+                  search: undefined,
+                  stage: undefined,
+                  owner: undefined,
+                  company: undefined,
+                });
               }}
             >
               Сбросить

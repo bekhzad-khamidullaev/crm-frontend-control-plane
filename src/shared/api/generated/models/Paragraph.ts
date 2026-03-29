@@ -5,6 +5,8 @@
 import type { LanguageCodeEnum } from './LanguageCodeEnum';
 export type Paragraph = {
     readonly id: number;
+    document: number;
+    readonly document_title: string;
     /**
      * Title of paragraph.
      */

@@ -1,6 +1,8 @@
 import { Deal } from '@/entities/deal';
 import { dealKeys } from '@/entities/deal/api/keys';
-import { useDeleteDeal } from '@/entities/deal/api/mutations';
+import { useDeleteDeal, usePatchDeal } from '@/entities/deal/api/mutations';
+// @ts-ignore
+import EditableCell from '@/components/ui-EditableCell';
 import { DealsService } from '@/shared/api/generated/services/DealsService';
 import { useServerTable } from '@/shared/hooks';
 import {
@@ -26,17 +28,41 @@ export const DealsTable: React.FC = () => {
   const isMobile = !screens.md;
   const canManage = canWrite();
 
-  const { data, isLoading, isFetching, error, refetch, pagination, handleTableChange, params, handleFilterChange } =
+  const { data, isLoading, isFetching, error, refetch, pagination, handleTableChange, params, applyFilters } =
     useServerTable<Deal>({
       queryKey: dealKeys.list({}) as unknown as unknown[],
       queryFn: DealsService.dealsList,
     });
 
   const deleteMutation = useDeleteDeal();
+  const patchMutation = usePatchDeal();
 
   const handleDelete = async (id: number) => {
     await deleteMutation.mutateAsync(id);
     // Invalidation is handled in mutation hook
+  };
+
+  const handleInlineSave = async (record: Deal, dataIndex: string, value: any) => {
+    if (!canManage) return;
+    let normalizedValue = value;
+    if (dataIndex === 'closing_date' && value?.format) {
+      normalizedValue = value.format('YYYY-MM-DD');
+    }
+    if (dataIndex === 'amount' && value !== null && value !== undefined && value !== '') {
+      normalizedValue = String(value);
+    }
+    await patchMutation.mutateAsync({
+      id: record.id,
+      data: { [dataIndex]: normalizedValue } as any,
+    });
+  };
+
+  const singleLineEllipsis: React.CSSProperties = {
+    display: 'block',
+    minWidth: 0,
+    overflow: 'hidden',
+    textOverflow: 'ellipsis',
+    whiteSpace: 'nowrap',
   };
 
   const columns: ColumnsType<Deal> = [
@@ -46,7 +72,14 @@ export const DealsTable: React.FC = () => {
       key: 'name',
       width: isMobile ? 220 : 260,
       render: (text: string, record: Deal) => (
-        <a onClick={() => navigate(`/deals/${record.id}`)}>{text}</a>
+        <EditableCell
+          value={text}
+          record={record}
+          dataIndex="name"
+          editable={canManage}
+          onSave={handleInlineSave}
+          style={{ ...singleLineEllipsis, maxWidth: isMobile ? 170 : 220 }}
+        />
       ),
     },
     {
@@ -56,7 +89,17 @@ export const DealsTable: React.FC = () => {
       responsive: ['sm'],
       width: 160,
       render: (amount: string, record: Deal) => (
-        <span>{(record as any).currency_code ? formatCurrency(amount, (record as any).currency_code) : '-'}</span>
+        <EditableCell
+          value={amount}
+          record={record}
+          dataIndex="amount"
+          editable={canManage}
+          type="number"
+          onSave={handleInlineSave}
+          renderView={(val: string | number | null | undefined) =>
+            (record as any).currency_code && val ? formatCurrency(val, (record as any).currency_code) : '-'
+          }
+        />
       ),
     },
     {
@@ -77,7 +120,17 @@ export const DealsTable: React.FC = () => {
       key: 'probability',
       responsive: ['md'],
       width: 130,
-      render: (val: number) => (val ? `${val}%` : '-'),
+      render: (val: number, record: Deal) => (
+        <EditableCell
+          value={val}
+          record={record}
+          dataIndex="probability"
+          editable={canManage}
+          type="number"
+          onSave={handleInlineSave}
+          renderView={(viewVal: number | string | null | undefined) => (viewVal || viewVal === 0 ? `${viewVal}%` : '-')}
+        />
+      ),
     },
     {
       title: 'Компания',
@@ -88,9 +141,11 @@ export const DealsTable: React.FC = () => {
       render: (_name: string, record: any) => (
         <>
           {record.company_name ? (
-            <Space>
+            <Space style={{ minWidth: 0 }}>
               <BankOutlined style={{ color: '#888' }} />
-              {record.company_name}
+              <span style={{ ...singleLineEllipsis, maxWidth: 150 }} title={record.company_name}>
+                {record.company_name}
+              </span>
             </Space>
           ) : (
             '-'
@@ -105,9 +160,15 @@ export const DealsTable: React.FC = () => {
       responsive: ['lg'],
       width: 190,
       render: (name: string, record: any) => (
-        <Space direction="vertical" size={0}>
-          <span>{name || '-'}</span>
-          {record.contact_phone && <small style={{ color: '#888' }}>{record.contact_phone}</small>}
+        <Space direction="vertical" size={0} style={{ minWidth: 0 }}>
+          <span style={{ ...singleLineEllipsis, maxWidth: 170 }} title={name || '-'}>
+            {name || '-'}
+          </span>
+          {record.contact_phone && (
+            <small style={{ color: '#888', ...singleLineEllipsis, maxWidth: 170 }} title={record.contact_phone}>
+              {record.contact_phone}
+            </small>
+          )}
         </Space>
       ),
     },
@@ -118,9 +179,11 @@ export const DealsTable: React.FC = () => {
       responsive: ['xl'],
       width: 170,
       render: (name: string) => (
-        <Space>
+        <Space style={{ minWidth: 0 }}>
           <UserOutlined />
-          {name || '-'}
+          <span style={{ ...singleLineEllipsis, maxWidth: 130 }} title={name || '-'}>
+            {name || '-'}
+          </span>
         </Space>
       ),
     },
@@ -130,29 +193,39 @@ export const DealsTable: React.FC = () => {
       key: 'closing_date',
       responsive: ['xl'],
       width: 130,
-      render: (date: string) => {
-        if (!date) return '-';
-        const d = new Date(date);
-        return d.toLocaleDateString('ru-RU');
-      },
+      render: (date: string, record: Deal) => (
+        <EditableCell
+          value={date}
+          record={record}
+          dataIndex="closing_date"
+          editable={canManage}
+          type="date"
+          onSave={handleInlineSave}
+          renderView={(viewDate: string | null | undefined) => {
+            if (!viewDate) return '-';
+            const d = new Date(viewDate);
+            return Number.isNaN(d.getTime()) ? '-' : d.toLocaleDateString('ru-RU');
+          }}
+        />
+      ),
     },
     {
       title: 'Действия',
       key: 'actions',
       fixed: 'right' as const,
-      width: isMobile ? 152 : 180,
+      width: isMobile ? 148 : 170,
       render: (_: any, record: Deal) => (
         <Space>
           <Tooltip title="Просмотр">
-            <Button icon={<EyeOutlined />} onClick={() => navigate(`/deals/${record.id}`)} />
+            <Button size="small" icon={<EyeOutlined />} onClick={() => navigate(`/deals/${record.id}`)} />
           </Tooltip>
           {canManage ? (
             <Tooltip title="Редактировать">
-              <Button icon={<EditOutlined />} onClick={() => navigate(`/deals/${record.id}/edit`)} />
+              <Button size="small" icon={<EditOutlined />} onClick={() => navigate(`/deals/${record.id}/edit`)} />
             </Tooltip>
           ) : (
             <Tooltip title="Недостаточно прав">
-              <Button icon={<EditOutlined />} disabled />
+              <Button size="small" icon={<EditOutlined />} disabled />
             </Tooltip>
           )}
           {canManage ? (
@@ -162,11 +235,11 @@ export const DealsTable: React.FC = () => {
               okText="Да"
               cancelText="Нет"
             >
-              <Button icon={<DeleteOutlined />} danger loading={deleteMutation.isPending} />
+              <Button size="small" icon={<DeleteOutlined />} danger loading={deleteMutation.isPending} />
             </Popconfirm>
           ) : (
             <Tooltip title="Недостаточно прав">
-              <Button icon={<DeleteOutlined />} danger disabled />
+              <Button size="small" icon={<DeleteOutlined />} danger disabled />
             </Tooltip>
           )}
         </Space>
@@ -176,7 +249,12 @@ export const DealsTable: React.FC = () => {
 
   return (
     <div>
-      <DealsTableFilters filters={params} onFilterChange={handleFilterChange} />
+      <DealsTableFilters
+        filters={params}
+        onChange={(nextFilters) => applyFilters(nextFilters as Record<string, unknown>)}
+        onRefresh={() => refetch()}
+        loading={isLoading || isFetching}
+      />
       {error && (
         <Alert
           type="error"
@@ -189,12 +267,12 @@ export const DealsTable: React.FC = () => {
       <Table
         dataSource={data}
         loading={isLoading || isFetching}
-        size={isMobile ? 'small' : 'middle'}
+        size="small"
         pagination={pagination}
         onChange={handleTableChange}
         rowKey="id"
         columns={columns}
-        scroll={{ x: isMobile ? 760 : 1200 }}
+        scroll={{ x: 'max-content' }}
       />
     </div>
   );

@@ -24,6 +24,7 @@ import {
     SendOutlined,
     SettingOutlined,
     SunOutlined,
+    ThunderboltOutlined,
     TeamOutlined,
     UserOutlined,
     WhatsAppOutlined,
@@ -53,6 +54,7 @@ export function AppLayout({
   locale,
   onLocaleChange,
   selectedKey,
+  routeName,
   user,
   frontendVersion,
   wsConnected,
@@ -153,6 +155,13 @@ export function AppLayout({
   const activeLocale = i18nLocale === 'ru' || i18nLocale === 'en' || i18nLocale === 'uz'
     ? i18nLocale
     : locale;
+  const allowedNavSet = new Set(Array.isArray(allowedNavKeys) ? allowedNavKeys : []);
+  const canOpenControlPlane = allowedNavSet.has('control-plane');
+  const canOpenSettingsWorkspace = (
+    allowedNavSet.has(SETTINGS_WORKSPACE_NAV_KEY)
+    || allowedNavSet.has('settings')
+    || allowedNavSet.has('integrations')
+  );
   // Build nav labels at render time so they react to locale changes.
   const baseNav = [
     {
@@ -174,6 +183,7 @@ export function AppLayout({
       label: tr('nav.communicationsGroup', 'Коммуникации'),
       children: [
         { key: 'chat', label: tr('nav.chat', 'Чаты'), icon: <MessageOutlined />, path: '/chat' },
+        { key: 'ai-chat', label: tr('nav.aiChat', 'AI чат CRM'), icon: <RobotOutlined />, path: '/ai-chat' },
         { key: 'calls', label: tr('nav.calls', 'Звонки'), icon: <PhoneOutlined />, path: '/calls' },
         { key: 'reminders', label: tr('nav.reminders', 'Напоминания'), icon: <ClockCircleOutlined />, path: '/reminders' },
         { key: 'crm-emails', label: tr('nav.crmEmails', 'CRM Email'), icon: <MailOutlined />, path: '/crm-emails' },
@@ -187,6 +197,7 @@ export function AppLayout({
       label: tr('nav.marketingGroup', 'Маркетинг'),
       children: [
         { key: 'campaigns', label: tr('nav.campaigns', 'Кампании'), icon: <CustomerServiceOutlined />, path: '/campaigns' },
+        { key: 'content-plans', label: tr('nav.contentPlans', 'Контент планы'), icon: <FileTextOutlined />, path: '/content-plans' },
         { key: 'segments', label: tr('nav.segments', 'Сегменты'), icon: <TeamOutlined />, path: '/marketing/segments' },
         { key: 'templates', label: tr('nav.templates', 'Шаблоны'), icon: <FileTextOutlined />, path: '/marketing/templates' },
         { key: 'analytics', label: tr('nav.analytics', 'Аналитика'), icon: <BarChartOutlined />, path: '/analytics' },
@@ -199,6 +210,54 @@ export function AppLayout({
         { key: 'payments', label: tr('nav.payments', 'Платежи'), icon: <DollarOutlined />, path: '/payments' },
         { key: 'telephony', label: tr('nav.telephony', 'Телефония'), icon: <PhoneOutlined />, path: '/telephony' },
         { key: 'operations', label: tr('nav.operations', 'Операции'), icon: <SettingOutlined />, path: '/operations' },
+        {
+          key: 'clients-workspace',
+          label: tr('nav.clientsWorkspace', 'Клиенты и договоры'),
+          icon: <BankOutlined />,
+          path: '/clients-workspace',
+        },
+        {
+          key: 'warehouse',
+          label: tr('nav.warehouseWorkspace', 'Склад'),
+          icon: <AppstoreOutlined />,
+          path: '/warehouse',
+        },
+        {
+          key: 'finance-planning',
+          label: tr('nav.financePlanning', 'Финплан'),
+          icon: <DollarOutlined />,
+          path: '/finance-planning',
+        },
+        {
+          key: 'business-processes',
+          label: tr('nav.businessProcesses', 'Бизнес-процессы'),
+          icon: <SettingOutlined />,
+          path: '/business-processes',
+        },
+        {
+          key: 'meetings',
+          label: tr('nav.meetings', 'Встречи'),
+          icon: <ClockCircleOutlined />,
+          path: '/meetings',
+        },
+        {
+          key: 'documents-workspace',
+          label: tr('nav.documentsWorkspace', 'Документы'),
+          icon: <FileTextOutlined />,
+          path: '/documents',
+        },
+        {
+          key: 'backlog',
+          label: tr('nav.backlog', 'Беклог'),
+          icon: <AppstoreOutlined />,
+          path: '/backlog',
+        },
+        {
+          key: 'functional',
+          label: tr('nav.functional', 'Функционал'),
+          icon: <SettingOutlined />,
+          path: '/functional',
+        },
       ],
     },
     {
@@ -214,6 +273,7 @@ export function AppLayout({
         { key: 'control-plane', label: tr('nav.controlPlane', 'Control Plane'), icon: <ApiOutlined />, path: '/control-plane' },
         { key: 'reference-data', label: tr('nav.referenceData', 'Справочники'), icon: <AppstoreOutlined />, path: '/reference-data' },
         { key: 'landing-builder', label: tr('nav.landingBuilder', 'Конструктор лендингов'), icon: <AppstoreOutlined />, path: '/landing-builder' },
+        { key: 'sites-workspace', label: tr('nav.sitesWorkspace', 'Сайты'), icon: <GlobalOutlined />, path: '/sites' },
         { key: 'users', label: tr('nav.users', 'Пользователи'), icon: <UserOutlined />, path: '/users' },
         { key: 'help-center', label: tr('nav.helpCenter', 'Справка'), icon: <QuestionCircleOutlined />, path: '/help' },
       ],
@@ -241,7 +301,112 @@ export function AppLayout({
     return null;
   };
 
-  const selectedNavLabel = findNavLabel(baseNav, selectedKey) || tr('nav.dashboard', 'Дашборд');
+  const resolveNavKeyFromRouteName = (name) => {
+    const normalized = String(name || '').trim();
+    if (!normalized) return null;
+    if (normalized.startsWith('leads')) return 'leads';
+    if (normalized.startsWith('contacts')) return 'contacts';
+    if (normalized.startsWith('companies')) return 'companies';
+    if (normalized.startsWith('deals')) return 'deals';
+    if (normalized.startsWith('tasks')) return 'tasks';
+    if (normalized.startsWith('projects')) return 'projects';
+    if (normalized.startsWith('products')) return 'products';
+    if (normalized.startsWith('chat')) return 'chat';
+    if (normalized === 'ai-chat') return 'ai-chat';
+    if (normalized.startsWith('calls')) return 'calls';
+    if (normalized.startsWith('payments')) return 'payments';
+    if (normalized.startsWith('reminders')) return 'reminders';
+    if (normalized.startsWith('campaigns')) return 'campaigns';
+    if (normalized === 'marketing-segments') return 'segments';
+    if (normalized === 'marketing-templates') return 'templates';
+    if (normalized === 'content-plans') return 'content-plans';
+    if (normalized.startsWith('memos')) return 'memos';
+    if (normalized === 'warehouse-workspace') return 'warehouse';
+    if (normalized === 'documents-workspace') return 'documents-workspace';
+    if (normalized === 'backlog') return 'backlog';
+    if (normalized === 'sites-workspace') return 'sites-workspace';
+    if (normalized === 'functional') return 'functional';
+    if (normalized === 'settings' || normalized === 'integrations' || normalized === 'onboarding') {
+      return SETTINGS_WORKSPACE_NAV_KEY;
+    }
+    return normalized;
+  };
+
+  const resolveNavKeyFromHash = () => {
+    if (typeof window === 'undefined') return null;
+    const rawHash = String(window.location.hash || '').replace(/^#/, '');
+    const [rawPath = ''] = rawHash.split('?');
+    const segments = rawPath.split('/').filter(Boolean);
+    const section = segments[0] || '';
+    if (!section) return null;
+
+    if (section === 'marketing') {
+      if (segments[1] === 'segments') return 'segments';
+      if (segments[1] === 'templates') return 'templates';
+      return null;
+    }
+    if (section === 'chat') return 'chat';
+    if (section === 'calls') return 'calls';
+    if (section === 'warehouse') return 'warehouse';
+    if (section === 'documents') return 'documents-workspace';
+    if (section === 'content-plans') return 'content-plans';
+    if (section === 'backlog') return 'backlog';
+    if (section === 'sites') return 'sites-workspace';
+    if (section === 'functional') return 'functional';
+    if (section === 'sms') return 'sms-center';
+    if (section === 'help') return 'help-center';
+    if (section === 'settings' || section === 'integrations' || section === 'onboarding' || section === 'setup') {
+      return SETTINGS_WORKSPACE_NAV_KEY;
+    }
+    if (section === 'licensing' || section === 'license' || section === 'control-plane') {
+      return 'control-plane';
+    }
+
+    const directSections = new Set([
+      'dashboard',
+      'leads',
+      'contacts',
+      'companies',
+      'deals',
+      'tasks',
+      'projects',
+      'products',
+      'ai-chat',
+      'payments',
+      'reminders',
+      'campaigns',
+      'memos',
+      'crm-emails',
+      'massmail',
+      'operations',
+      'clients-workspace',
+      'finance-planning',
+      'business-processes',
+      'meetings',
+      'documents',
+      'content-plans',
+      'backlog',
+      'sites',
+      'functional',
+      'reference-data',
+      'analytics',
+      'telephony',
+      'users',
+      'landing-builder',
+      'profile',
+    ]);
+
+    return directSections.has(section) ? section : null;
+  };
+
+  const [hashDerivedKey, setHashDerivedKey] = useState(() => resolveNavKeyFromHash());
+
+  const routeDerivedKey = resolveNavKeyFromRouteName(routeName);
+  const effectiveSelectedKey = hashDerivedKey || routeDerivedKey || selectedKey;
+  const selectedNavLabel =
+    findNavLabel(baseNav, effectiveSelectedKey) ||
+    findNavLabel(baseNav, selectedKey) ||
+    tr('nav.dashboard', 'Дашборд');
   const integrationLabelMap = {
     sms: activeLocale === 'ru' ? 'SMS' : 'SMS',
     telephony: activeLocale === 'ru' ? 'Телефония' : activeLocale === 'uz' ? 'Telefoniya' : 'Telephony',
@@ -289,6 +454,11 @@ export function AppLayout({
   const [wsIndicatorStatus, setWsIndicatorStatus] = useState(
     wsConnected ? 'success' : (wsReconnecting ? 'processing' : 'error')
   );
+  const wsIndicatorColor = wsIndicatorStatus === 'success'
+    ? '#52c41a'
+    : wsIndicatorStatus === 'processing'
+      ? '#faad14'
+      : '#ff4d4f';
   const licenseRestrictionCopy = getLicenseRestrictionMessage(licenseRestriction, t);
 
   useEffect(() => {
@@ -330,7 +500,16 @@ export function AppLayout({
 
   useEffect(() => {
     setMobileMenuOpen(false);
-  }, [selectedKey, isMobile]);
+  }, [effectiveSelectedKey, isMobile]);
+
+  useEffect(() => {
+    const syncFromHash = () => {
+      setHashDerivedKey(resolveNavKeyFromHash());
+    };
+    syncFromHash();
+    window.addEventListener('hashchange', syncFromHash);
+    return () => window.removeEventListener('hashchange', syncFromHash);
+  }, []);
 
   useEffect(() => {
     if (!isMobile) {
@@ -572,7 +751,7 @@ export function AppLayout({
           <Menu
             theme={theme === 'dark' ? 'dark' : 'light'}
             mode="inline"
-            selectedKeys={[selectedKey]}
+            selectedKeys={[effectiveSelectedKey]}
             items={menuItems}
             style={{
               borderRight: 0,
@@ -591,6 +770,10 @@ export function AppLayout({
         width={drawerWidth}
         open={isMobile && mobileMenuOpen}
         onClose={() => setMobileMenuOpen(false)}
+        maskClosable
+        keyboard
+        destroyOnClose
+        zIndex={1400}
         styles={{
           header: {
             background: shell.surfaceSolid,
@@ -608,7 +791,7 @@ export function AppLayout({
           <Menu
             theme={theme === 'dark' ? 'dark' : 'light'}
             mode="inline"
-            selectedKeys={[selectedKey]}
+            selectedKeys={[effectiveSelectedKey]}
             items={menuItems}
             style={{
               borderRight: 0,
@@ -705,7 +888,10 @@ export function AppLayout({
                       ? tr('appLayout.status.controlPlaneOffline', 'Control Plane недоступен')
                       : tr('appLayout.status.controlPlaneOnline', 'Control Plane синхронизирован')}
                   >
-                    <Badge status={wsIndicatorStatus} />
+                    <Space size={4} align="center">
+                      <ThunderboltOutlined style={{ color: wsIndicatorColor }} />
+                      <Badge status={wsIndicatorStatus} />
+                    </Space>
                   </Tooltip>
                 </Space>
                 {Array.isArray(activeIntegrations) && activeIntegrations.length > 0 && (
@@ -796,6 +982,20 @@ export function AppLayout({
                         'Разделы, ограниченные лицензией, будут недоступны до снятия ограничения.',
                       )}
                     </Text>
+                  </Space>
+                )}
+                action={(
+                  <Space wrap>
+                    {canOpenControlPlane ? (
+                      <Button size="small" type="primary" onClick={() => navigate('/control-plane')}>
+                        {t('license.banner.openControlPlane', 'Open Control Plane')}
+                      </Button>
+                    ) : null}
+                    {canOpenSettingsWorkspace ? (
+                      <Button size="small" onClick={() => navigate(settingsWorkspacePath)}>
+                        {t('license.banner.openSettings', 'Open Settings Workspace')}
+                      </Button>
+                    ) : null}
                   </Space>
                 )}
                 style={{ background: 'transparent', border: 'none' }}

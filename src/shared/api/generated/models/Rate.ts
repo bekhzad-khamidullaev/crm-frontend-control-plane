@@ -10,6 +10,7 @@ export type Rate = {
     readonly id: number;
     currency: number;
     readonly currency_name: string | null;
+    readonly currency_code: string | null;
     payment_date?: string;
     /**
      * Exchange rate against the state currency.

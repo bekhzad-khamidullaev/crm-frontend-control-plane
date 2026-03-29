@@ -38,11 +38,11 @@ export const ContactsTableFilters: React.FC<FiltersProps> = ({ filters, onFilter
     String(filters?.search || '').trim() || filters?.company || filters?.owner || filters?.country,
   );
   const surfaceStyle: React.CSSProperties = {
-    marginBottom: 16,
+    marginBottom: 12,
     borderRadius: token.borderRadiusLG,
     border: `1px solid ${token.colorBorderSecondary}`,
     background: token.colorBgElevated,
-    boxShadow: token.boxShadowTertiary,
+    boxShadow: token.boxShadowSecondary,
   };
   const chipStyle: React.CSSProperties = {
     marginInlineEnd: 0,
@@ -75,12 +75,12 @@ export const ContactsTableFilters: React.FC<FiltersProps> = ({ filters, onFilter
       style={surfaceStyle}
       styles={{
         body: {
-          padding: 16,
+          padding: 12,
         },
       }}
     >
-      <Flex vertical gap={12}>
-        <Row gutter={[16, 16]} align="middle">
+      <Flex vertical gap={8}>
+        <Row gutter={[8, 8]} align="middle">
           <Col xs={24} sm={12} lg={6}>
             <Input
               placeholder="Поиск..."

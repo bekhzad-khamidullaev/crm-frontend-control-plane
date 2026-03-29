@@ -43,6 +43,7 @@ import {
   UploadOutlined,
 } from '@ant-design/icons';
 import LegacyIntegrationsPage from './integrations.jsx';
+import LeadRulesPanel from './settings-lead-rules-panel.jsx';
 import settingsApi from '../lib/api/settings.js';
 import marketplaceApi from '../lib/api/plugins.js';
 import { exportCrmDataExcel, importCrmDataExcel } from '../lib/api/crmData.js';
@@ -569,6 +570,30 @@ export default function SettingsIntegrationsWorkspace({ defaultTab = 'system' } 
     integrationErrorCount > 0 || webhooks.some((item) => Number(item?.failure_count || 0) > 0)
       ? 'warning'
       : 'info';
+  const integrationHealthCenter = useMemo(() => {
+    const timeline = Array.isArray(integrationLogStats?.timeline) ? integrationLogStats.timeline.slice(-7) : [];
+    const slaBreached = integrationLogs.filter((item) => getIntegrationLogContext(item).slaStatus === 'breached').length;
+    const replayable = integrationLogs.filter((item) => Boolean(getIntegrationLogContext(item).replayable)).length;
+    const queueRisk = integrationLogs.filter((item) => {
+      const queueState = String(getIntegrationLogContext(item).queueState || '').toLowerCase();
+      return ['retry', 'dead_letter', 'blocked', 'stalled', 'replay'].includes(queueState);
+    }).length;
+    const activeWebhooks = webhooks.filter((item) => item.is_active).length;
+    const failedWebhooks = webhooks.filter((item) => Number(item?.failure_count || 0) > 0).length;
+    const maxTimeline = timeline.reduce((max, point) => Math.max(max, Number(point?.count || 0)), 0);
+    const healthy = failedWebhooks === 0 && slaBreached === 0 && queueRisk === 0;
+
+    return {
+      timeline,
+      maxTimeline,
+      slaBreached,
+      replayable,
+      queueRisk,
+      activeWebhooks,
+      failedWebhooks,
+      healthy,
+    };
+  }, [integrationLogStats, integrationLogs, webhooks]);
   const complianceCards = useMemo(
     () => [
       {
@@ -1373,6 +1398,138 @@ export default function SettingsIntegrationsWorkspace({ defaultTab = 'system' } 
       label: tr('settingsWorkspace.tabs.operations', 'Webhooks и логи'),
       children: (
         <Space direction="vertical" size="large" style={{ width: '100%' }}>
+          <Card
+            title={tr('settingsWorkspace.healthCenter.title', 'Integration Health Center')}
+            extra={(
+              <Space wrap>
+                <Button icon={<ReloadOutlined />} onClick={loadIntegrationLogs} loading={sectionLoading.integrationLogs}>
+                  {tr('actions.refresh', 'Обновить')}
+                </Button>
+                <Button onClick={() => setActiveTab('integrations')}>
+                  {tr('settingsWorkspace.actions.openIntegrations', 'Открыть интеграции')}
+                </Button>
+              </Space>
+            )}
+          >
+            <Space direction="vertical" size="middle" style={{ width: '100%' }}>
+              <Alert
+                type={integrationHealthCenter.healthy ? 'success' : 'warning'}
+                showIcon
+                message={integrationHealthCenter.healthy
+                  ? tr('settingsWorkspace.healthCenter.healthy', 'Критичных рисков не обнаружено')
+                  : tr('settingsWorkspace.healthCenter.degraded', 'Обнаружены риски в интеграционном контуре')}
+                description={tr(
+                  'settingsWorkspace.healthCenter.description',
+                  'Health center объединяет SLA, retry, timeline и runbook для быстрой диагностики проблем.',
+                )}
+              />
+
+              <div
+                style={{
+                  display: 'grid',
+                  gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))',
+                  gap: 12,
+                }}
+              >
+                <Card size="small">
+                  <Statistic
+                    title={tr('settingsWorkspace.healthCenter.cards.activeWebhooks', 'Активные webhooks')}
+                    value={integrationHealthCenter.activeWebhooks}
+                  />
+                </Card>
+                <Card size="small">
+                  <Statistic
+                    title={tr('settingsWorkspace.healthCenter.cards.failedWebhooks', 'Проблемные webhooks')}
+                    value={integrationHealthCenter.failedWebhooks}
+                    valueStyle={{ color: integrationHealthCenter.failedWebhooks ? token.colorWarning : undefined }}
+                  />
+                </Card>
+                <Card size="small">
+                  <Statistic
+                    title={tr('settingsWorkspace.healthCenter.cards.slaBreached', 'SLA breached')}
+                    value={integrationHealthCenter.slaBreached}
+                    valueStyle={{ color: integrationHealthCenter.slaBreached ? token.colorError : undefined }}
+                  />
+                </Card>
+                <Card size="small">
+                  <Statistic
+                    title={tr('settingsWorkspace.healthCenter.cards.replayable', 'Replay candidates')}
+                    value={integrationHealthCenter.replayable}
+                  />
+                </Card>
+                <Card size="small">
+                  <Statistic
+                    title={tr('settingsWorkspace.healthCenter.cards.queueRisk', 'Queue risk')}
+                    value={integrationHealthCenter.queueRisk}
+                    valueStyle={{ color: integrationHealthCenter.queueRisk ? token.colorWarning : undefined }}
+                  />
+                </Card>
+              </div>
+
+              <Card size="small" title={tr('settingsWorkspace.healthCenter.timeline', 'Timeline (7 дней)')}>
+                {integrationHealthCenter.timeline.length ? (
+                  <div
+                    style={{
+                      display: 'grid',
+                      gridTemplateColumns: 'repeat(auto-fit, minmax(72px, 1fr))',
+                      gap: 8,
+                    }}
+                  >
+                    {integrationHealthCenter.timeline.map((point) => {
+                      const count = Number(point?.count || 0);
+                      const ratio = integrationHealthCenter.maxTimeline > 0
+                        ? Math.max((count / integrationHealthCenter.maxTimeline) * 100, 8)
+                        : 8;
+                      return (
+                        <div key={point?.date} style={{ textAlign: 'center' }}>
+                          <div
+                            style={{
+                              height: 42,
+                              borderRadius: 6,
+                              background: token.colorFillSecondary,
+                              position: 'relative',
+                              overflow: 'hidden',
+                              marginBottom: 6,
+                            }}
+                          >
+                            <div
+                              style={{
+                                position: 'absolute',
+                                inset: 0,
+                                width: `${ratio}%`,
+                                background: token.colorPrimary,
+                                opacity: 0.74,
+                              }}
+                            />
+                          </div>
+                          <Text strong>{count}</Text>
+                          <div>
+                            <Text type="secondary" style={{ fontSize: 11 }}>
+                              {String(point?.date || '').slice(5)}
+                            </Text>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                ) : (
+                  <Empty
+                    image={Empty.PRESENTED_IMAGE_SIMPLE}
+                    description={tr('settingsWorkspace.healthCenter.timelineEmpty', 'Таймлайн пока пуст')}
+                  />
+                )}
+              </Card>
+
+              <Card size="small" title={tr('settingsWorkspace.healthCenter.runbook', 'Runbook')}>
+                <Space direction="vertical" size={4}>
+                  <Text>1. {tr('settingsWorkspace.healthCenter.runbookStep1', 'Проверьте summary и recent logs, определите тип ошибки.')}</Text>
+                  <Text>2. {tr('settingsWorkspace.healthCenter.runbookStep2', 'Откройте webhook deliveries и выполните retry для failed событий.')}</Text>
+                  <Text>3. {tr('settingsWorkspace.healthCenter.runbookStep3', 'Если SLA нарушен — эскалируйте интеграцию и проверьте signature/context.')}</Text>
+                </Space>
+              </Card>
+            </Space>
+          </Card>
+
           <Row gutter={[16, 16]}>
             <Col xs={24} xl={12}>
               <Card
@@ -2104,6 +2261,11 @@ export default function SettingsIntegrationsWorkspace({ defaultTab = 'system' } 
           </Card>
         </Space>
       ),
+    },
+    {
+      key: 'lead-rules',
+      label: tr('settingsWorkspace.tabs.leadRules', 'Lead Rules'),
+      children: <LeadRulesPanel />,
     },
     {
       key: 'integrations',

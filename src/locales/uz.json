@@ -42,7 +42,17 @@
     "themeLight": "Yorug' mavzu",
     "themeDark": "Qorong'u mavzu",
     "language": "Til",
-    "theme": "Mavzu"
+    "theme": "Mavzu",
+    "aiChat": "AI CRM chat",
+    "clientsWorkspace": "Mijozlar va shartnomalar",
+    "warehouseWorkspace": "Ombor",
+    "financePlanning": "Moliya rejasi",
+    "businessProcesses": "Biznes jarayonlari",
+    "meetings": "Uchrashuvlar",
+    "settingsWorkspace": "Sozlamalar va integratsiyalar",
+    "controlPlane": "Control Plane",
+    "licenseWorkspace": "License Workspace",
+    "version": "CRM versiyasi"
   },
   "actions": {
     "edit": "Tahrirlash",

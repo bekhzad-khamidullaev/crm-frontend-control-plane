@@ -4,6 +4,7 @@ import {
   approveCpRuntimeRequest,
   assignCpDeploymentLicense,
   getCpDeployments,
+  getCpLicenseArtifact,
   getCpLicenses,
   getCpRuntimeUnlicensedRequests,
   getCpSubscriptions,
@@ -184,6 +185,10 @@ export default function QueueSection({ onMutated }) {
   const [revokeTarget, setRevokeTarget] = useState(null);
   const [revokeSaving, setRevokeSaving] = useState(false);
   const [revokeForm] = Form.useForm();
+  const [artifactOpen, setArtifactOpen] = useState(false);
+  const [artifactTarget, setArtifactTarget] = useState(null);
+  const [artifactData, setArtifactData] = useState(null);
+  const [artifactLoading, setArtifactLoading] = useState(false);
 
   const [allDeployments, setAllDeployments] = useState([]);
   const [allSubscriptions, setAllSubscriptions] = useState([]);
@@ -489,6 +494,72 @@ export default function QueueSection({ onMutated }) {
       setRevokeSaving(false);
     }
   };
+
+  const copyToClipboard = async (value, successText) => {
+    try {
+      if (!navigator?.clipboard?.writeText) {
+        throw new Error("clipboard_unavailable");
+      }
+      await navigator.clipboard.writeText(String(value || ""));
+      message.success(successText);
+    } catch {
+      message.error("Copy failed. Please copy manually.");
+    }
+  };
+
+  const onDownloadArtifact = () => {
+    if (!artifactData) return;
+    try {
+      const blob = new Blob([artifactObjectText], { type: "application/json;charset=utf-8" });
+      const href = URL.createObjectURL(blob);
+      const anchor = document.createElement("a");
+      anchor.href = href;
+      anchor.download = artifactData?.download_filename || `license-artifact-${artifactData?.license_id || "unknown"}.json`;
+      document.body.appendChild(anchor);
+      anchor.click();
+      document.body.removeChild(anchor);
+      URL.revokeObjectURL(href);
+      message.success("Artifact file downloaded");
+    } catch {
+      message.error("Download failed");
+    }
+  };
+
+  const onOpenArtifact = async (row) => {
+    if (!row?.id) return;
+    setArtifactOpen(true);
+    setArtifactTarget(row);
+    setArtifactData(null);
+    setArtifactLoading(true);
+    try {
+      const response = await getCpLicenseArtifact(row.id);
+      setArtifactData(response);
+    } catch (error) {
+      const nextError = formatBackendError(error, "Failed to load license artifact");
+      message.error(nextError);
+      setArtifactOpen(false);
+      setArtifactTarget(null);
+    } finally {
+      setArtifactLoading(false);
+    }
+  };
+
+  const closeArtifactModal = () => {
+    setArtifactOpen(false);
+    setArtifactTarget(null);
+    setArtifactData(null);
+    setArtifactLoading(false);
+  };
+
+  const artifactPayloadText = JSON.stringify(artifactData?.payload || {}, null, 2);
+  const artifactObjectText = JSON.stringify(
+    artifactData?.artifact || {
+      payload: artifactData?.payload || {},
+      signature: artifactData?.signature || "",
+    },
+    null,
+    2
+  );
 
   return (
     <Space direction="vertical" size="middle" style={{ width: "100%" }}>
@@ -801,6 +872,13 @@ export default function QueueSection({ onMutated }) {
           />
         }
       >
+        <Alert
+          showIcon
+          type="info"
+          style={{ marginBottom: 12 }}
+          message="How to provide signature to runtime team"
+          description="Open any issued license row and click Show artifact. Copy Signature (or full artifact JSON) and pass it to the runtime install form."
+        />
         {issuedError ? (
           <Alert
             showIcon
@@ -850,9 +928,29 @@ export default function QueueSection({ onMutated }) {
               title: "Actions",
               key: "actions",
               render: (_, row) => (
-                <Button danger disabled={Boolean(row?.is_revoked)} onClick={() => openRevoke(row)}>
-                  Revoke
-                </Button>
+                <Space wrap>
+                  <Button onClick={() => onOpenArtifact(row)}>Show artifact</Button>
+                  <Button
+                    onClick={() =>
+                      copyToClipboard(
+                        JSON.stringify(
+                          {
+                            payload: row?.payload_json || {},
+                            signature: row?.signature || "",
+                          },
+                          null,
+                          2
+                        ),
+                        "Artifact JSON copied"
+                      )
+                    }
+                  >
+                    Copy artifact
+                  </Button>
+                  <Button danger disabled={Boolean(row?.is_revoked)} onClick={() => openRevoke(row)}>
+                    Revoke
+                  </Button>
+                </Space>
               ),
             },
           ]}
@@ -877,6 +975,85 @@ export default function QueueSection({ onMutated }) {
             <Input placeholder="manual_revoke" />
           </Form.Item>
         </Form>
+      </Modal>
+      <Modal
+        title="License artifact"
+        open={artifactOpen}
+        onCancel={closeArtifactModal}
+        footer={[
+          <Button key="close" onClick={closeArtifactModal}>
+            Close
+          </Button>,
+          <Button
+            key="copy-signature"
+            disabled={artifactLoading || !artifactData?.signature}
+            onClick={() => copyToClipboard(artifactData?.signature, "Signature copied")}
+          >
+            Copy signature
+          </Button>,
+          <Button
+            key="copy-artifact"
+            type="primary"
+            disabled={artifactLoading || !artifactData}
+            onClick={() => copyToClipboard(artifactObjectText, "Artifact copied")}
+          >
+            Copy artifact JSON
+          </Button>,
+          <Button
+            key="download-artifact"
+            disabled={artifactLoading || !artifactData}
+            onClick={onDownloadArtifact}
+          >
+            Download artifact.json
+          </Button>,
+        ]}
+        width={860}
+      >
+        <Space direction="vertical" style={{ width: "100%" }} size="middle">
+          {artifactTarget?.license_id ? (
+            <Descriptions size="small" column={{ xs: 1, sm: 2 }} colon={false}>
+              <Descriptions.Item label="License ID">
+                <Text code>{artifactTarget.license_id}</Text>
+              </Descriptions.Item>
+              <Descriptions.Item label="Status">
+                {artifactData?.status === "revoked" ? <Tag color="error">REVOKED</Tag> : <Tag color="success">ACTIVE</Tag>}
+              </Descriptions.Item>
+            </Descriptions>
+          ) : null}
+          <Alert
+            showIcon
+            type="info"
+            message="Where to use this"
+            description={
+              artifactData?.runtime_install_help ||
+              "In runtime CRM -> License page -> Install signed artifact. Paste full artifact JSON or paste payload and signature separately."
+            }
+          />
+          <div>
+            <Text strong>Signature</Text>
+            <Input.TextArea
+              readOnly
+              autoSize={{ minRows: 3, maxRows: 6 }}
+              value={artifactLoading ? "Loading..." : artifactData?.signature || ""}
+            />
+          </div>
+          <div>
+            <Text strong>Payload JSON</Text>
+            <Input.TextArea
+              readOnly
+              autoSize={{ minRows: 6, maxRows: 16 }}
+              value={artifactLoading ? "Loading..." : artifactPayloadText}
+            />
+          </div>
+          <div>
+            <Text strong>Full artifact JSON</Text>
+            <Input.TextArea
+              readOnly
+              autoSize={{ minRows: 6, maxRows: 16 }}
+              value={artifactLoading ? "Loading..." : artifactObjectText}
+            />
+          </div>
+        </Space>
       </Modal>
     </Space>
   );

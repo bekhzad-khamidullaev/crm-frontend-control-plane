@@ -16,6 +16,7 @@ export type Payment = {
     amount?: string;
     currency?: number | null;
     readonly currency_name: string | null;
+    readonly currency_code: string | null;
     payment_date?: string;
     status?: PaymentStatusEnum;
     contract_number?: string;

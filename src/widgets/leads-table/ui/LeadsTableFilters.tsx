@@ -31,11 +31,11 @@ export const LeadsTableFilters: React.FC<LeadsTableFiltersProps> = ({
     isActiveSearch || filters.leadSource || filters.owner || filters.country || filters.company,
   );
   const surfaceStyle: React.CSSProperties = {
-    marginBottom: 16,
+    marginBottom: 12,
     borderRadius: token.borderRadiusLG,
     border: `1px solid ${token.colorBorderSecondary}`,
     background: token.colorBgElevated,
-    boxShadow: token.boxShadowTertiary,
+    boxShadow: token.boxShadowSecondary,
   };
   const chipStyle: React.CSSProperties = {
     marginInlineEnd: 0,
@@ -70,13 +70,13 @@ export const LeadsTableFilters: React.FC<LeadsTableFiltersProps> = ({
       style={surfaceStyle}
       styles={{
         body: {
-          padding: 16,
+          padding: 12,
         },
       }}
     >
-      <Flex vertical gap={12}>
-        <Row gutter={[12, 12]} align="middle">
-          <Col xs={24} md={10} lg={7}>
+      <Flex vertical gap={8}>
+        <Row gutter={[8, 8]} align="middle">
+          <Col xs={24} md={10} lg={6}>
             <Input
               placeholder="По имени, телефону, email..."
               value={search}
@@ -127,6 +127,7 @@ export const LeadsTableFilters: React.FC<LeadsTableFiltersProps> = ({
               icon={<ReloadOutlined />}
               onClick={onRefresh}
               loading={loading}
+              size="small"
               aria-label="Обновить список"
             />
           </Col>

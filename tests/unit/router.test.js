@@ -72,6 +72,11 @@ describe('Router', () => {
       location.hash = '#/leads/123/edit';
       expect(parseHash()).toEqual({ name: 'leads-edit', params: { id: '123' } });
     });
+
+    it('parses #/ai-chat', () => {
+      location.hash = '#/ai-chat';
+      expect(parseHash()).toEqual({ name: 'ai-chat', params: {} });
+    });
   });
 
   it('exposes unified inbox route features for chat workspace', () => {
@@ -83,6 +88,10 @@ describe('Router', () => {
   it('uses memo and reminder-specific license features for their routes', () => {
     expect(getRouteMeta('memos-list').feature).toBe('tasks.memos');
     expect(getRouteMeta('reminders-list').feature).toBe('tasks.reminders');
+  });
+
+  it('exposes ai assist feature for ai-chat route', () => {
+    expect(getRouteMeta('ai-chat').feature).toBe('ai.assist');
   });
 
   describe('navigation', () => {

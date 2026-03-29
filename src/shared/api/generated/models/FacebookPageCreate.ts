@@ -11,6 +11,7 @@ export type FacebookPageCreate = {
     page_name: string;
     page_category?: string;
     access_token: string;
+    app_secret?: string;
     token_expires_at?: string | null;
     /**
      * Automatically sync Messenger messages

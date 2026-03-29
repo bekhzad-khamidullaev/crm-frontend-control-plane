@@ -10,6 +10,7 @@ export type InstagramAccount = {
     instagram_user_id: string;
     username: string;
     account_type?: string;
+    app_secret?: string;
     facebook_page_id?: string;
     facebook_page_name?: string;
     is_active?: boolean;

@@ -94,6 +94,7 @@ const CallsDashboard = lazy(() => import('./pages/calls-dashboard.jsx'));
 
 // Chat module
 const ChatPage = lazy(() => import('./pages/chat-page.jsx'));
+const AIChatPage = lazy(() => import('./pages/ai-chat-page.jsx'));
 
 // Other pages
 const ProfilePage = lazy(() => import('./pages/profile.jsx'));
@@ -159,6 +160,15 @@ const MarketingTemplatesPage = lazy(() => import('./pages/marketing-templates.js
 const EnterpriseCRMEmailsPage = lazy(() => import('./pages/crm-emails.jsx'));
 const MassmailPage = lazy(() => import('./pages/massmail.jsx'));
 const OperationsPage = lazy(() => import('./pages/operations.jsx'));
+const ClientsWorkspacePage = lazy(() => import('./pages/clients-workspace.jsx'));
+const WarehouseWorkspacePage = lazy(() => import('./pages/warehouse-workspace.jsx'));
+const FinancePlanningWorkspacePage = lazy(() => import('./pages/finance-planning-workspace.jsx'));
+const BusinessProcessesWorkspacePage = lazy(() => import('./pages/business-processes-workspace.jsx'));
+const MeetingsWorkspacePage = lazy(() => import('./pages/meetings-workspace.jsx'));
+const DocumentsWorkspacePage = lazy(() => import('./pages/documents-workspace.jsx'));
+const ContentPlansWorkspacePage = lazy(() => import('./pages/content-plans-workspace.jsx'));
+const BacklogWorkspacePage = lazy(() => import('./pages/backlog-workspace.jsx'));
+const SitesWorkspacePage = lazy(() => import('./pages/sites-workspace.jsx'));
 const ReferenceDataPage = lazy(() => import('./pages/reference-data.jsx'));
 const HelpCenterPage = lazy(() => import('./pages/help-center.jsx'));
 const AnalyticsPage = lazy(() => import('./pages/analytics.jsx'));
@@ -800,6 +810,7 @@ function App() {
     projects: 'projects-list',
     products: 'products-list',
     chat: 'chat-list',
+    'ai-chat': 'ai-chat',
     calls: 'calls-list',
     payments: 'payments-list',
     reminders: 'reminders-list',
@@ -811,6 +822,16 @@ function App() {
     massmail: 'massmail',
     'sms-center': 'sms-center',
     operations: 'operations',
+    'clients-workspace': 'clients-workspace',
+    warehouse: 'warehouse-workspace',
+    'finance-planning': 'finance-planning',
+    'business-processes': 'business-processes',
+    meetings: 'meetings',
+    'documents-workspace': 'documents-workspace',
+    'content-plans': 'content-plans',
+    backlog: 'backlog',
+    'sites-workspace': 'sites-workspace',
+    functional: 'functional',
     'reference-data': 'reference-data',
     analytics: 'analytics',
     'help-center': 'help-center',
@@ -841,6 +862,7 @@ function App() {
     if (name.startsWith('projects')) return 'projects';
     if (name.startsWith('products')) return 'products';
     if (name.startsWith('chat')) return 'chat';
+    if (name === 'ai-chat') return 'ai-chat';
     if (name.startsWith('calls')) return 'calls';
     if (name.startsWith('payments')) return 'payments';
     if (name.startsWith('reminders')) return 'reminders';
@@ -850,6 +872,16 @@ function App() {
     if (name.startsWith('memos')) return 'memos';
     if (name === 'crm-emails' || name === 'massmail' || name === 'sms-center') return name;
     if (name === 'operations') return 'operations';
+    if (name === 'clients-workspace') return 'clients-workspace';
+    if (name === 'warehouse-workspace') return 'warehouse';
+    if (name === 'finance-planning') return 'finance-planning';
+    if (name === 'business-processes') return 'business-processes';
+    if (name === 'meetings') return 'meetings';
+    if (name === 'documents-workspace') return 'documents-workspace';
+    if (name === 'content-plans') return 'content-plans';
+    if (name === 'backlog') return 'backlog';
+    if (name === 'sites-workspace') return 'sites-workspace';
+    if (name === 'functional') return 'functional';
     if (name === 'reference-data') return 'reference-data';
     if (name === 'analytics') return 'analytics';
     if (name === 'help-center') return 'help-center';
@@ -1010,6 +1042,26 @@ function App() {
         return <MassmailPage />;
       case 'operations':
         return <OperationsPage />;
+      case 'clients-workspace':
+        return <ClientsWorkspacePage />;
+      case 'warehouse-workspace':
+        return <WarehouseWorkspacePage />;
+      case 'finance-planning':
+        return <FinancePlanningWorkspacePage />;
+      case 'business-processes':
+        return <BusinessProcessesWorkspacePage />;
+      case 'meetings':
+        return <MeetingsWorkspacePage />;
+      case 'documents-workspace':
+        return <DocumentsWorkspacePage />;
+      case 'content-plans':
+        return <ContentPlansWorkspacePage />;
+      case 'backlog':
+        return <BacklogWorkspacePage />;
+      case 'sites-workspace':
+        return <SitesWorkspacePage />;
+      case 'functional':
+        return <OperationsPage />;
       case 'reference-data':
         return <ReferenceDataPage />;
       case 'help-center':
@@ -1029,6 +1081,8 @@ function App() {
       case 'chat':
       case 'chat-list':
         return <ChatPage />;
+      case 'ai-chat':
+        return <AIChatPage />;
       case 'profile':
         return <ProfilePage />;
       case 'settings':
@@ -1098,6 +1152,7 @@ function App() {
       localeInitialized={localeInitialized}
       onLocaleChange={handleLocaleChange}
       selectedKey={getSelectedKey()}
+      routeName={route.name}
       allowedNavKeys={allowedNavKeys}
       settingsWorkspacePath={settingsWorkspacePath}
       user={user}

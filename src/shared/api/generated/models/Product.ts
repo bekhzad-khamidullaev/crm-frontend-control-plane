@@ -16,6 +16,7 @@ export type Product = {
     price?: string | null;
     currency?: number | null;
     readonly currency_name: string | null;
+    readonly currency_code: string | null;
     type?: (ProductTypeEnum | NullEnum) | null;
     on_sale?: boolean;
 };

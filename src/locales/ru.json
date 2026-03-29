@@ -42,7 +42,17 @@
     "themeLight": "Светлая тема",
     "themeDark": "Темная тема",
     "language": "Язык",
-    "theme": "Тема"
+    "theme": "Тема",
+    "aiChat": "AI чат CRM",
+    "clientsWorkspace": "Клиенты и договоры",
+    "warehouseWorkspace": "Склад",
+    "financePlanning": "Финплан",
+    "businessProcesses": "Бизнес-процессы",
+    "meetings": "Встречи",
+    "settingsWorkspace": "Настройки и интеграции",
+    "controlPlane": "Control Plane",
+    "licenseWorkspace": "License Workspace",
+    "version": "Версия CRM"
   },
   "actions": {
     "edit": "Редактировать",

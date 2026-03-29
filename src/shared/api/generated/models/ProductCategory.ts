@@ -8,5 +8,8 @@
 export type ProductCategory = {
     readonly id: number;
     name?: string;
+    readonly name_ru: string;
+    readonly name_en: string;
+    readonly name_uz: string;
 };
 

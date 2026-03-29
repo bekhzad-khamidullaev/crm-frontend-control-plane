@@ -83,6 +83,19 @@ export const settingsApi = {
     cleanup: () => api.delete('/api/settings/integration-logs/cleanup/'),
     stats: () => api.get('/api/settings/integration-logs/stats/'),
   },
+
+  // Lead assignment rules
+  leadRules: {
+    list: (params = {}) => api.get('/api/settings/lead-assignment-rules/', { params }),
+    retrieve: (id) => api.get(`/api/settings/lead-assignment-rules/${id}/`),
+    create: (payload = {}) => api.post('/api/settings/lead-assignment-rules/', { body: payload }),
+    update: (id, payload = {}) => api.put(`/api/settings/lead-assignment-rules/${id}/`, { body: payload }),
+    patch: (id, payload = {}) => api.patch(`/api/settings/lead-assignment-rules/${id}/`, { body: payload }),
+    remove: (id) => api.delete(`/api/settings/lead-assignment-rules/${id}/`),
+    toggle: (id, payload = {}) => api.post(`/api/settings/lead-assignment-rules/${id}/toggle/`, { body: payload }),
+    templates: () => api.get('/api/settings/lead-assignment-rules/templates/'),
+    simulate: (payload = {}) => api.post('/api/settings/lead-assignment-rules/simulate/', { body: payload }),
+  },
 };
 
 export default settingsApi;

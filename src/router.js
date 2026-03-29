@@ -30,6 +30,7 @@ export const routeMeta = {
  'projects-edit': { auth: true, title: 'Edit Project' },
  'chat': { auth: true, title: 'Chat' },
  'chat-list': { auth: true, title: 'Chat' },
+ 'ai-chat': { auth: true, title: 'AI Chat' },
  'calls-list': { auth: true, title: 'Call Logs' },
  'calls-dashboard': { auth: true, title: 'Calls Dashboard' },
  'payments-list': { auth: true, title: 'Payments' },
@@ -57,6 +58,16 @@ export const routeMeta = {
  'crm-emails': { auth: true, title: 'CRM Emails' },
  'massmail': { auth: true, title: 'Massmail' },
  'operations': { auth: true, title: 'Operations' },
+ 'clients-workspace': { auth: true, title: 'Clients & Contracts' },
+ 'warehouse-workspace': { auth: true, title: 'Warehouse' },
+ 'finance-planning': { auth: true, title: 'Finance Planning' },
+ 'business-processes': { auth: true, title: 'Business Processes' },
+ 'meetings': { auth: true, title: 'Meetings' },
+ 'documents-workspace': { auth: true, title: 'Documents' },
+ 'content-plans': { auth: true, title: 'Content Plans' },
+ 'backlog': { auth: true, title: 'Backlog' },
+ 'sites-workspace': { auth: true, title: 'Sites' },
+ 'functional': { auth: true, title: 'Functional' },
  'reference-data': { auth: true, title: 'Reference Data' },
  'help-center': { auth: true, title: 'Help Center' },
  'analytics': { auth: true, title: 'Analytics' },
@@ -98,6 +109,7 @@ const ADMIN_PERMISSIONS = ['auth.view_user', 'settings.view_systemsettings'];
   'projects-detail',
   'chat',
   'chat-list',
+  'ai-chat',
   'chat-thread',
   'calls-list',
   'calls-dashboard',
@@ -117,6 +129,16 @@ const ADMIN_PERMISSIONS = ['auth.view_user', 'settings.view_systemsettings'];
   'analytics',
   'sms-center',
   'telephony',
+  'clients-workspace',
+  'warehouse-workspace',
+  'finance-planning',
+  'business-processes',
+  'meetings',
+  'documents-workspace',
+  'content-plans',
+  'backlog',
+  'sites-workspace',
+  'functional',
   'profile',
 ].forEach((route) => {
   if (routeMeta[route]) routeMeta[route].roles = READ_ROLES;
@@ -190,6 +212,16 @@ const ADMIN_PERMISSIONS = ['auth.view_user', 'settings.view_systemsettings'];
   ['payments-detail', 'crm.view_payment'],
   ['payments-new', 'crm.add_payment'],
   ['payments-edit', 'crm.change_payment'],
+  ['clients-workspace', 'crm.view_company'],
+  ['warehouse-workspace', 'crm.view_product'],
+  ['finance-planning', 'crm.view_payment'],
+  ['business-processes', 'tasks.view_project'],
+  ['meetings', 'common.view_reminder'],
+  ['documents-workspace', 'tasks.view_memo'],
+  ['content-plans', 'marketing.view_campaign'],
+  ['backlog', 'tasks.view_task'],
+  ['sites-workspace', 'landings.view_landingpage'],
+  ['functional', 'settings.view_systemsettings'],
   ['reminders-list', 'common.view_reminder'],
   ['reminders-detail', 'common.view_reminder'],
   ['reminders-new', 'common.add_reminder'],
@@ -210,6 +242,7 @@ const ADMIN_PERMISSIONS = ['auth.view_user', 'settings.view_systemsettings'];
   ['products-edit', 'crm.change_product'],
   ['chat', 'chat.view_chatmessage'],
   ['chat-list', 'chat.view_chatmessage'],
+  ['ai-chat', 'chat.view_chatmessage'],
   ['chat-thread', 'chat.view_chatmessage'],
   ['calls-list', 'voip.view_calllog'],
   ['calls-dashboard', 'voip.view_calllog'],
@@ -252,6 +285,16 @@ const ADMIN_PERMISSIONS = ['auth.view_user', 'settings.view_systemsettings'];
   ['payments-new', 'crm.payments'],
   ['payments-detail', 'crm.payments'],
   ['payments-edit', 'crm.payments'],
+  ['clients-workspace', ['crm.companies', 'crm.deals', 'crm.payments']],
+  ['warehouse-workspace', ['crm.products', 'settings.core']],
+  ['finance-planning', ['crm.payments', 'crm.deals']],
+  ['business-processes', ['tasks.projects', 'tasks.core']],
+  ['meetings', ['tasks.reminders', 'communications.voip']],
+  ['documents-workspace', ['tasks.memos', 'crm.payments']],
+  ['content-plans', ['marketing.campaigns', 'marketing.templates', 'marketing.segments']],
+  ['backlog', ['tasks.core', 'crm.deals', 'crm.leads']],
+  ['sites-workspace', 'landing.builder'],
+  ['functional', 'settings.core'],
   ['crm-emails', 'communications.email'],
   ['operations', 'settings.core'],
   ['settings', 'settings.core'],
@@ -282,10 +325,10 @@ const ADMIN_PERMISSIONS = ['auth.view_user', 'settings.view_systemsettings'];
   ['tasks-new', 'tasks.core'],
   ['tasks-detail', 'tasks.core'],
   ['tasks-edit', 'tasks.core'],
-  ['projects-list', 'tasks.core'],
-  ['projects-new', 'tasks.core'],
-  ['projects-detail', 'tasks.core'],
-  ['projects-edit', 'tasks.core'],
+  ['projects-list', 'tasks.projects'],
+  ['projects-new', 'tasks.projects'],
+  ['projects-detail', 'tasks.projects'],
+  ['projects-edit', 'tasks.projects'],
   ['memos-list', 'tasks.memos'],
   ['memos-new', 'tasks.memos'],
   ['memos-detail', 'tasks.memos'],
@@ -376,6 +419,7 @@ export function parseHash() {
     const entityId = segments[2];
     return { name: 'chat-thread', params: { entityType, entityId } };
   }
+  if (segments[0] === 'ai-chat') return { name: 'ai-chat', params: {} };
   if (segments[0] === 'calls') {
     if (!segments[1]) return { name: 'calls-list', params: {} };
     if (segments[1] === 'dashboard') return { name: 'calls-dashboard', params: {} };
@@ -424,6 +468,16 @@ export function parseHash() {
   if (segments[0] === 'crm-emails') return { name: 'crm-emails', params: {} };
   if (segments[0] === 'massmail') return { name: 'massmail', params: {} };
   if (segments[0] === 'operations') return { name: 'operations', params: {} };
+  if (segments[0] === 'clients-workspace') return { name: 'clients-workspace', params: {} };
+  if (segments[0] === 'warehouse') return { name: 'warehouse-workspace', params: {} };
+  if (segments[0] === 'finance-planning') return { name: 'finance-planning', params: {} };
+  if (segments[0] === 'business-processes') return { name: 'business-processes', params: {} };
+  if (segments[0] === 'meetings') return { name: 'meetings', params: {} };
+  if (segments[0] === 'documents') return { name: 'documents-workspace', params: {} };
+  if (segments[0] === 'content-plans') return { name: 'content-plans', params: {} };
+  if (segments[0] === 'backlog') return { name: 'backlog', params: {} };
+  if (segments[0] === 'sites') return { name: 'sites-workspace', params: {} };
+  if (segments[0] === 'functional') return { name: 'functional', params: {} };
   if (segments[0] === 'reference-data') return { name: 'reference-data', params: {} };
   if (segments[0] === 'help') return { name: 'help-center', params: {} };
   if (segments[0] === 'analytics') return { name: 'analytics', params: {} };

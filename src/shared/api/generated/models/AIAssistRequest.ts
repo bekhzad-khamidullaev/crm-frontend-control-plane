@@ -10,7 +10,8 @@ export type AIAssistRequest = {
     provider_id?: string;
     use_case?: UseCaseEnum;
     input_text: string;
-    crm_context?: any;
+    crm_context?: Record<string, any>;
+    chat_history?: Array<Record<string, any>>;
     system_prompt?: string;
     temperature?: number;
     max_tokens?: number;

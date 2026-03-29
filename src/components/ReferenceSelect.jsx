@@ -158,6 +158,7 @@ const ReferenceSelect = ({
   const selectValue = Array.isArray(value)
     ? value.map((itemValue) => normalizeSingleValue(itemValue))
     : normalizeSingleValue(value);
+  const mergedStyle = { width: '100%', ...(style || {}) };
 
   return (
     <Select
@@ -170,7 +171,7 @@ const ReferenceSelect = ({
       loading={loading}
       status={loadError ? 'error' : undefined}
       notFoundContent={loadError || undefined}
-      style={style}
+      style={mergedStyle}
       mode={mode}
       filterOption={(input, option) =>
         String(option?.children ?? '').toLowerCase().includes(input.toLowerCase())

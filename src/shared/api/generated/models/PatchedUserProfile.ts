@@ -14,6 +14,11 @@ export type PatchedUserProfile = {
     readonly username?: string;
     readonly email?: string;
     readonly full_name?: string;
+    /**
+     * User profile picture (max 5MB)
+     */
+    readonly avatar?: string | null;
+    readonly avatar_url?: string;
     pbx_number?: string;
     utc_timezone?: (UtcTimezoneEnum | BlankEnum);
     activate_timezone?: boolean;
@@ -21,15 +26,15 @@ export type PatchedUserProfile = {
     /**
      * Example: wss://sip.example.com:7443
      */
-    jssip_ws_uri?: string;
+    readonly jssip_ws_uri?: string;
     /**
      * Example: sip:1001@sip.example.com
      */
-    jssip_sip_uri?: string;
+    readonly jssip_sip_uri?: string;
     /**
      * Will be used by the web client
      */
-    jssip_sip_password?: string;
+    readonly jssip_sip_password?: string;
     /**
      * Name shown to the callee
      */
@@ -40,22 +45,23 @@ export type PatchedUserProfile = {
      * * `embedded` - Embedded Asterisk (CRM-managed)
      * * `bridge` - External Asterisk via PBX Bridge
      */
-    telephony_route_mode?: (TelephonyRouteModeEnum | BlankEnum);
+    readonly telephony_route_mode?: TelephonyRouteModeEnum;
     /**
      * Used by server originate mode
      *
      * * `Asterisk` - Asterisk
      */
-    telephony_provider?: (TelephonyProviderEnum | BlankEnum);
+    readonly telephony_provider?: TelephonyProviderEnum;
     /**
      * Comma or newline separated STUN URLs
      */
-    webrtc_stun_servers?: string;
-    webrtc_turn_enabled?: boolean;
+    readonly webrtc_stun_servers?: string;
+    readonly webrtc_turn_enabled?: boolean;
     /**
      * Example: turn:turn.example.com:3478?transport=udp
      */
-    webrtc_turn_server?: string;
-    webrtc_turn_username?: string;
-    webrtc_turn_password?: string;
+    readonly webrtc_turn_server?: string;
+    readonly webrtc_turn_username?: string;
+    readonly webrtc_turn_password?: string;
 };
+

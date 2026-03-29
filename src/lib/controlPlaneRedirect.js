@@ -73,29 +73,35 @@ export function getLegacyFreezeCopy(freezeType = 'chat') {
 
   if (normalized === 'ai-chat') {
     return {
-      title: 'AI Chat moved to control-plane',
+      title: 'AI Chat is available',
       description:
-        'The legacy AI chat entry point is frozen. Open crm-frontend-control-plane to continue in the shared inbox experience.',
+        'AI Chat is active in this frontend. Open the current AI Chat route to continue.',
       targetPath: '/ai-chat',
-      ctaLabel: 'Open AI chat in control-plane',
+      ctaLabel: 'Open AI chat',
+      localTargetPath: '/ai-chat',
+      bannerMessage: 'Legacy redirect alias',
     };
   }
 
   if (normalized === 'chat-thread') {
     return {
-      title: 'Chat threads moved to control-plane',
+      title: 'Chat threads are available',
       description:
-        'Direct legacy chat threads are frozen. Open crm-frontend-control-plane for the unified inbox and entity conversations.',
+        'Chat thread access is available from the unified inbox in this frontend.',
       targetPath: '/chat',
       ctaLabel: 'Open unified inbox',
+      localTargetPath: '/chat',
+      bannerMessage: 'Legacy redirect alias',
     };
   }
 
   return {
-    title: 'Chat moved to control-plane',
+    title: 'Chat is available',
     description:
-      'The legacy chat entry point is frozen. Open crm-frontend-control-plane for the unified inbox experience.',
+      'Chat is active in this frontend. Open the unified inbox route to continue.',
     targetPath: '/chat',
     ctaLabel: 'Open unified inbox',
+    localTargetPath: '/chat',
+    bannerMessage: 'Legacy redirect alias',
   };
 }

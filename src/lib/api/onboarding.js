@@ -11,3 +11,6 @@ export const restartOnboarding = () =>
 
 export const bootstrapOnboardingTemplate = (payload = {}) =>
   api.post('/api/settings/onboarding/bootstrap/', { body: payload });
+
+export const getOmnichannelDiagnostics = () =>
+  api.get('/api/settings/omnichannel/diagnostics/');

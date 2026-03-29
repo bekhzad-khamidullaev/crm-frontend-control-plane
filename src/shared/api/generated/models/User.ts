@@ -21,5 +21,6 @@ export type User = {
     is_superuser?: boolean;
     readonly groups: Array<string>;
     readonly roles: Array<string>;
+    readonly permissions: Array<string>;
 };
 

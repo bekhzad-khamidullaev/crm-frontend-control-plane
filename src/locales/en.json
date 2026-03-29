@@ -42,7 +42,17 @@
     "themeLight": "Light theme",
     "themeDark": "Dark theme",
     "language": "Language",
-    "theme": "Theme"
+    "theme": "Theme",
+    "aiChat": "AI CRM Chat",
+    "clientsWorkspace": "Clients & Contracts",
+    "warehouseWorkspace": "Warehouse",
+    "financePlanning": "Finance Planning",
+    "businessProcesses": "Business Processes",
+    "meetings": "Meetings",
+    "settingsWorkspace": "Settings & Integrations",
+    "controlPlane": "Control Plane",
+    "licenseWorkspace": "License Workspace",
+    "version": "CRM Version"
   },
   "actions": {
     "edit": "Edit",

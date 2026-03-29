@@ -33,4 +33,29 @@ describe('Dashboard', () => {
     expect(screen.getAllByText('—').length).toBeGreaterThan(0);
     expect(normalizeOverview).not.toHaveBeenCalled();
   });
+
+  it('renders fallback values when overview returns invalid numbers', async () => {
+    getOverview.mockResolvedValue({
+      total_leads: 'NaN',
+      total_contacts: 'broken',
+      total_deals: Number.POSITIVE_INFINITY,
+      total_revenue: 'oops',
+      currency_code: 'usd',
+    });
+
+    render(<Dashboard />);
+
+    await waitFor(() => {
+      expect(getOverview).toHaveBeenCalled();
+    });
+
+    await waitFor(() => {
+      expect(screen.queryByText('NaN')).not.toBeInTheDocument();
+    });
+
+    expect(screen.getAllByText('—').length).toBeGreaterThan(0);
+    expect(
+      screen.getAllByText('Значение недоступно из-за некорректных данных источника.').length
+    ).toBeGreaterThan(0);
+  });
 });

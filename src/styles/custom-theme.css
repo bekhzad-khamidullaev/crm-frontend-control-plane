@@ -52,24 +52,23 @@ code {
   font-family: source-code-pro, Menlo, Monaco, Consolas, 'Courier New', monospace;
 }
 
+/* Custom scrollbar */
 ::-webkit-scrollbar {
   width: 8px;
   height: 8px;
 }
-
 ::-webkit-scrollbar-track {
   background: transparent;
 }
-
 ::-webkit-scrollbar-thumb {
   background: rgba(113, 118, 128, 0.32);
   border-radius: 4px;
 }
-
 ::-webkit-scrollbar-thumb:hover {
   background: rgba(113, 118, 128, 0.48);
 }
 
+/* Headings */
 h1,
 h2,
 h3,
@@ -80,22 +79,50 @@ h6,
   letter-spacing: -0.025em;
 }
 
+/* Page header */
 .page-header {
   margin-bottom: 24px;
 }
-
 .page-header-title {
   font-size: 1.5rem;
   font-weight: 600;
   letter-spacing: -0.025em;
 }
 
+/* Action buttons */
 .action-buttons {
   display: flex;
   gap: 8px;
   flex-wrap: wrap;
 }
 
+/* Compact tables: reduce row height and action density across CRM */
+.ant-table-wrapper .ant-table-thead > tr > th {
+  padding: 9px 10px;
+}
+
+.ant-table-wrapper .ant-table-tbody > tr > td {
+  padding: 10px 10px;
+}
+
+.ant-table-wrapper .ant-table-cell .ant-space {
+  row-gap: 4px !important;
+  column-gap: 6px !important;
+}
+
+.ant-table-wrapper .ant-table-cell .ant-btn {
+  border-radius: 10px;
+}
+
+.ant-table-wrapper .ant-table-cell .ant-btn.ant-btn-link {
+  padding-inline: 6px;
+}
+
+.ant-table-wrapper .ant-table-cell .ant-tag {
+  margin-inline-end: 0;
+}
+
+/* Status badges */
 .status-badge {
   display: inline-flex;
   align-items: center;
@@ -104,50 +131,45 @@ h6,
   font-size: 12px;
   font-weight: 500;
 }
-
 .status-badge.new {
   background: #e0f2fe;
   color: #0284c7;
 }
-
 .status-badge.contacted {
   background: #fef3c7;
   color: #d97706;
 }
-
 .status-badge.qualified {
   background: #dcfce7;
   color: #16a34a;
 }
-
 .status-badge.lost {
   background: #fee2e2;
   color: #dc2626;
 }
 
+/* Empty state */
 .empty-state {
   text-align: center;
   padding: 48px 0;
 }
-
 .empty-state-icon {
   font-size: 64px;
   color: #d4d4d8;
   margin-bottom: 16px;
 }
-
 .empty-state-title {
   font-size: 18px;
   margin-bottom: 8px;
   font-weight: 600;
 }
-
 .empty-state-description {
   font-size: 14px;
   color: #71717a;
   margin-bottom: 16px;
 }
 
+/* ===== DARK THEME STYLES ===== */
 .dark body {
   background-color: var(--crm-app-body-bg, #08111f);
   background-image:
@@ -156,13 +178,12 @@ h6,
     radial-gradient(circle at 50% 100%, rgba(14, 165, 233, 0.05) 0%, transparent 22%),
     linear-gradient(180deg, #08111f 0%, #0b1220 48%, #10192b 100%);
   background-attachment: fixed;
-  color: var(--crm-app-text, #f8fbff);
+  color: var(--crm-app-text, #e5eef8);
 }
 
 .dark ::-webkit-scrollbar-thumb {
   background: rgba(203, 213, 225, 0.34);
 }
-
 .dark ::-webkit-scrollbar-thumb:hover {
   background: rgba(203, 213, 225, 0.5);
 }
@@ -274,7 +295,7 @@ h6,
 .dark .ant-list-item-meta-description,
 .dark .ant-form-item-explain,
 .dark .ant-typography-secondary {
-  color: #d6e1ec !important;
+  color: #d6e1ec;
 }
 
 .dark .ant-form-item-label > label,
@@ -318,32 +339,32 @@ h6,
   background: rgba(148, 163, 184, 0.14) !important;
 }
 
+/* Dark Status badges */
 .dark .status-badge.new {
   background: rgba(2, 132, 199, 0.2);
   color: #38bdf8;
 }
-
 .dark .status-badge.contacted {
   background: rgba(217, 119, 6, 0.2);
   color: #fbbf24;
 }
-
 .dark .status-badge.qualified {
   background: rgba(22, 163, 74, 0.2);
   color: #4ade80;
 }
-
 .dark .status-badge.lost {
   background: rgba(220, 38, 38, 0.2);
   color: #f87171;
 }
 
+/* Preserve section-level custom backgrounds in public landing cards */
 .dark .landing-public-page .landing-public-card {
   background: var(--landing-card-bg, #161b22) !important;
   color: var(--landing-card-text, #e2e8f0) !important;
   border-color: var(--landing-card-border, #2d3343) !important;
 }
 
+/* Modal backdrops: subtle dim + blur to improve modal focus */
 .ant-modal-mask,
 .ant-image-preview-mask,
 .ant-tour-mask,
@@ -368,12 +389,6 @@ h6,
   position: relative;
 }
 
-.dark .ant-card:hover {
-  border-color: var(--crm-app-border-strong, rgba(226, 232, 240, 0.34)) !important;
-  box-shadow: var(--crm-app-shadow, 0 18px 40px rgba(2, 6, 23, 0.42)) !important;
-  transform: translateY(-1px);
-}
-
 .dark .ant-modal-content::before,
 .dark .ant-drawer-content::before {
   content: '';
@@ -384,6 +399,7 @@ h6,
   pointer-events: none;
 }
 
+/* Mobile-friendly defaults */
 @media (max-width: 992px) {
   .ant-layout {
     min-height: 100dvh;

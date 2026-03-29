@@ -1,8 +1,10 @@
 import { leadKeys } from '@/entities/lead/api/keys';
-import { useDeleteLead } from '@/entities/lead/api/mutations';
+import { useDeleteLead, usePatchLead } from '@/entities/lead/api/mutations';
 import type { LeadListParams } from '@/entities/lead/api/queries';
 import type { Lead } from '@/entities/lead/model/types';
 import { deriveLeadStatus } from '@/entities/lead/model/utils';
+// @ts-ignore
+import EditableCell from '@/components/ui-EditableCell';
 import { useTags } from '@/features/reference';
 // @ts-ignore
 import { LeadsService } from '@/shared/api/generated/services/LeadsService';
@@ -16,7 +18,7 @@ import {
     PhoneOutlined,
     UserOutlined,
 } from '@ant-design/icons';
-import { Alert, Avatar, Badge, Button, Grid, Popconfirm, Space, Table, Tooltip } from 'antd';
+import { Alert, Avatar, Badge, Button, Grid, Popconfirm, Space, Table, Tag, Tooltip } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
 import React from 'react';
 import { LeadsTableFilters } from './ui/LeadsTableFilters';
@@ -52,6 +54,7 @@ export const LeadsTable: React.FC = () => {
   const listFilters = (filters || {}) as LeadListParams;
 
   const deleteMutation = useDeleteLead();
+  const patchMutation = usePatchLead();
 
   const handleDelete = async (id: number) => {
     try {
@@ -59,6 +62,14 @@ export const LeadsTable: React.FC = () => {
     } catch (error) {
       console.error(error);
     }
+  };
+
+  const handleInlineSave = async (record: Lead, dataIndex: string, value: any) => {
+    if (!canManage) return;
+    await patchMutation.mutateAsync({
+      id: record.id,
+      data: { [dataIndex]: value } as any,
+    });
   };
 
   const statusMap: Record<string, { color: string; text: string }> = {
@@ -77,6 +88,14 @@ export const LeadsTable: React.FC = () => {
     return map;
   }, [tagsData]);
 
+  const singleLineEllipsis: React.CSSProperties = {
+    display: 'block',
+    minWidth: 0,
+    overflow: 'hidden',
+    textOverflow: 'ellipsis',
+    whiteSpace: 'nowrap',
+  };
+
   const columns: ColumnsType<Lead> = [
     {
       title: 'Лид',
@@ -90,8 +109,13 @@ export const LeadsTable: React.FC = () => {
             icon={<UserOutlined />}
             style={{ backgroundColor: '#fde3cf', color: '#f56a00' }}
           />
-          <div>
-            <div style={{ fontWeight: 500 }}>{record.full_name}</div>
+          <div style={{ minWidth: 0, flex: 1 }}>
+            <div
+              style={{ ...singleLineEllipsis, fontWeight: 500, maxWidth: isMobile ? 130 : 170 }}
+              title={record.full_name}
+            >
+              {record.full_name}
+            </div>
             {record.company_name && (
               <div
                 style={{
@@ -100,9 +124,18 @@ export const LeadsTable: React.FC = () => {
                   display: 'flex',
                   alignItems: 'center',
                   gap: 4,
+                  minWidth: 0,
                 }}
               >
-                <BankOutlined /> {record.company_name}
+                <BankOutlined />
+                <EditableCell
+                  value={record.company_name}
+                  record={record}
+                  dataIndex="company_name"
+                  editable={canManage}
+                  onSave={handleInlineSave}
+                  style={{ ...singleLineEllipsis, maxWidth: isMobile ? 120 : 160 }}
+                />
               </div>
             )}
           </div>
@@ -115,19 +148,31 @@ export const LeadsTable: React.FC = () => {
       responsive: ['md'],
       width: 220,
       render: (_, record) => (
-        <Space direction="vertical" size={0}>
-          {record.email && (
-            <Space size={4}>
-              <MailOutlined style={{ color: '#999' }} />
-              <a href={`mailto:${record.email}`}>{record.email}</a>
-            </Space>
-          )}
-          {record.phone && (
-            <Space size={4}>
-              <PhoneOutlined style={{ color: '#999' }} />
-              <a href={`tel:${record.phone}`}>{record.phone}</a>
-            </Space>
-          )}
+        <Space direction="vertical" size={0} style={{ width: '100%' }}>
+          <Space size={4} style={{ width: '100%' }}>
+            <MailOutlined style={{ color: '#999' }} />
+            <EditableCell
+              value={record.email}
+              record={record}
+              dataIndex="email"
+              editable={canManage}
+              onSave={handleInlineSave}
+              placeholder="email@example.com"
+              style={{ ...singleLineEllipsis, flex: 1, maxWidth: 170 }}
+            />
+          </Space>
+          <Space size={4} style={{ width: '100%' }}>
+            <PhoneOutlined style={{ color: '#999' }} />
+            <EditableCell
+              value={record.phone}
+              record={record}
+              dataIndex="phone"
+              editable={canManage}
+              onSave={handleInlineSave}
+              placeholder="+998 ..."
+              style={{ ...singleLineEllipsis, flex: 1, maxWidth: 170 }}
+            />
+          </Space>
         </Space>
       ),
     },
@@ -138,6 +183,35 @@ export const LeadsTable: React.FC = () => {
       render: (_, record) => {
         const s = deriveLeadStatus(record);
         return <Badge color={statusMap[s].color} text={statusMap[s].text} />;
+      },
+    },
+    {
+      title: 'SLA контакта',
+      key: 'first_contact_sla',
+      width: 150,
+      responsive: ['md'],
+      render: (_, record) => {
+        const entity = record as any;
+        const createdAtRaw = entity?.creation_date || entity?.create_date || entity?.created_at;
+        const firstTouchRaw = entity?.was_in_touch || entity?.first_contact_at;
+        const createdAt = createdAtRaw ? new Date(createdAtRaw) : null;
+        const firstTouch = firstTouchRaw ? new Date(firstTouchRaw) : null;
+
+        if (firstTouch && !Number.isNaN(firstTouch.getTime())) {
+          return <Tag color="success">Контакт выполнен</Tag>;
+        }
+        if (!createdAt || Number.isNaN(createdAt.getTime())) {
+          return <Tag>Нет данных</Tag>;
+        }
+
+        const hoursFromCreate = (Date.now() - createdAt.getTime()) / (1000 * 60 * 60);
+        if (hoursFromCreate >= 24) {
+          return <Tag color="error">Просрочен</Tag>;
+        }
+        if (hoursFromCreate >= 18) {
+          return <Tag color="warning">SLA риск</Tag>;
+        }
+        return <Tag color="processing">В срок</Tag>;
       },
     },
     {
@@ -166,7 +240,7 @@ export const LeadsTable: React.FC = () => {
       title: 'Действия',
       key: 'actions',
       fixed: 'right',
-      width: isMobile ? 152 : 180,
+      width: isMobile ? 148 : 170,
       render: (_, record) => (
         <Space size="small">
           <CallButton
@@ -180,6 +254,7 @@ export const LeadsTable: React.FC = () => {
           <Tooltip title="Просмотр">
             <Button
               type="link"
+              size="small"
               icon={<EyeOutlined />}
               onClick={() => navigate(`/leads/${record.id}`)}
             />
@@ -188,13 +263,14 @@ export const LeadsTable: React.FC = () => {
             <Tooltip title="Редактировать">
               <Button
                 type="link"
+                size="small"
                 icon={<EditOutlined />}
                 onClick={() => navigate(`/leads/${record.id}/edit`)}
               />
             </Tooltip>
           ) : (
             <Tooltip title="Недостаточно прав">
-              <Button type="link" icon={<EditOutlined />} disabled />
+              <Button type="link" size="small" icon={<EditOutlined />} disabled />
             </Tooltip>
           )}
           {canManage ? (
@@ -206,6 +282,7 @@ export const LeadsTable: React.FC = () => {
             >
               <Button
                 type="link"
+                size="small"
                 danger
                 icon={<DeleteOutlined />}
                 loading={deleteMutation.isPending}
@@ -213,7 +290,7 @@ export const LeadsTable: React.FC = () => {
             </Popconfirm>
           ) : (
             <Tooltip title="Недостаточно прав">
-              <Button type="link" danger icon={<DeleteOutlined />} disabled />
+              <Button type="link" size="small" danger icon={<DeleteOutlined />} disabled />
             </Tooltip>
           )}
         </Space>
@@ -243,10 +320,10 @@ export const LeadsTable: React.FC = () => {
         dataSource={data}
         rowKey="id"
         loading={isLoading || isFetching}
-        size={isMobile ? 'small' : 'middle'}
+        size="small"
         pagination={pagination}
         onChange={handleTableChange}
-        scroll={{ x: isMobile ? 760 : 1200 }}
+        scroll={{ x: 'max-content' }}
       />
     </div>
   );

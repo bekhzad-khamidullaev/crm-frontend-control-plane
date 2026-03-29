@@ -11,8 +11,10 @@ import {
 import { Alert, Avatar, Button, Grid, Popconfirm, Space, Table, Tooltip } from 'antd';
 import React, { useMemo } from 'react';
 // @ts-ignore
+import EditableCell from '@/components/ui-EditableCell';
+// @ts-ignore
 import { contactKeys } from '@/entities/contact/api/keys';
-import { useDeleteContact } from '@/entities/contact/api/mutations';
+import { useDeleteContact, usePatchContact } from '@/entities/contact/api/mutations';
 import type { Contact } from '@/entities/contact/model/types';
 import { useCompanies } from '@/entities/company/api/queries';
 import { ContactsService } from '@/shared/api/generated/services/ContactsService';
@@ -54,6 +56,7 @@ export const ContactsTable: React.FC = () => {
   });
 
   const deleteMutation = useDeleteContact();
+  const patchMutation = usePatchContact();
 
   const handleDelete = async (id: number) => {
     try {
@@ -69,6 +72,22 @@ export const ContactsTable: React.FC = () => {
     });
   };
 
+  const handleInlineSave = async (record: Contact, dataIndex: string, value: any) => {
+    if (!canManage) return;
+    await patchMutation.mutateAsync({
+      id: record.id,
+      data: { [dataIndex]: value } as any,
+    });
+  };
+
+  const singleLineEllipsis: React.CSSProperties = {
+    display: 'block',
+    minWidth: 0,
+    overflow: 'hidden',
+    textOverflow: 'ellipsis',
+    whiteSpace: 'nowrap',
+  };
+
   const columns: ColumnsType<Contact> = [
     {
       title: 'Контакт',
@@ -76,15 +95,26 @@ export const ContactsTable: React.FC = () => {
       sorter: true,
       width: isMobile ? 220 : 280,
       render: (_, record) => (
-        <Space>
+        <Space style={{ minWidth: 0 }}>
           <Avatar icon={<UserOutlined />} style={{ backgroundColor: '#1890ff' }} />
-          <div>
-            <div style={{ fontWeight: 500 }}>{record.full_name}</div>
-            {record.title && (
-              <div style={{ fontSize: 12, color: '#999' }}>
-                {record.title}
-              </div>
-            )}
+          <div style={{ minWidth: 0, flex: 1 }}>
+            <div
+              style={{ ...singleLineEllipsis, fontWeight: 500, maxWidth: isMobile ? 140 : 220 }}
+              title={record.full_name}
+            >
+              {record.full_name}
+            </div>
+            <div style={{ fontSize: 12, color: '#999' }}>
+              <EditableCell
+                value={record.title}
+                record={record}
+                dataIndex="title"
+                editable={canManage}
+                onSave={handleInlineSave}
+                placeholder="Должность"
+                style={{ ...singleLineEllipsis, maxWidth: isMobile ? 130 : 200 }}
+              />
+            </div>
           </div>
         </Space>
       ),
@@ -95,19 +125,31 @@ export const ContactsTable: React.FC = () => {
       responsive: ['md'],
       width: 240,
       render: (_, record) => (
-        <Space direction="vertical" size="small">
-          {record.email && (
-            <Space size="small">
-              <MailOutlined style={{ color: '#999' }} />
-              <a href={`mailto:${record.email}`}>{record.email}</a>
-            </Space>
-          )}
-          {record.phone && (
-            <Space size="small">
-              <PhoneOutlined style={{ color: '#999' }} />
-              <a href={`tel:${record.phone}`}>{record.phone}</a>
-            </Space>
-          )}
+        <Space direction="vertical" size="small" style={{ width: '100%' }}>
+          <Space size="small" style={{ width: '100%' }}>
+            <MailOutlined style={{ color: '#999' }} />
+            <EditableCell
+              value={record.email}
+              record={record}
+              dataIndex="email"
+              editable={canManage}
+              onSave={handleInlineSave}
+              placeholder="email@example.com"
+              style={{ ...singleLineEllipsis, flex: 1, maxWidth: 190 }}
+            />
+          </Space>
+          <Space size="small" style={{ width: '100%' }}>
+            <PhoneOutlined style={{ color: '#999' }} />
+            <EditableCell
+              value={record.phone}
+              record={record}
+              dataIndex="phone"
+              editable={canManage}
+              onSave={handleInlineSave}
+              placeholder="+998 ..."
+              style={{ ...singleLineEllipsis, flex: 1, maxWidth: 190 }}
+            />
+          </Space>
         </Space>
       ),
     },
@@ -118,8 +160,17 @@ export const ContactsTable: React.FC = () => {
       responsive: ['sm'],
       width: 160,
       render: (companyId: number) => companyId ? (
-        <Button type="link" size="small" icon={<BankOutlined />} onClick={() => navigate(`/companies/${companyId}`)}>
-          {companyNameById[companyId] || `Компания #${companyId}`}
+        <Button
+          type="link"
+          size="small"
+          icon={<BankOutlined />}
+          onClick={() => navigate(`/companies/${companyId}`)}
+          style={{ maxWidth: 150 }}
+          title={companyNameById[companyId] || `Компания #${companyId}`}
+        >
+          <span style={{ ...singleLineEllipsis, maxWidth: 120 }}>
+            {companyNameById[companyId] || `Компания #${companyId}`}
+          </span>
         </Button>
       ) : '-',
     },
@@ -135,9 +186,9 @@ export const ContactsTable: React.FC = () => {
     {
       title: 'Действия',
       key: 'actions',
-      width: isMobile ? 152 : 200,
+      width: isMobile ? 148 : 170,
       render: (_, record) => (
-        <Space size="small" wrap>
+        <Space size="small">
           <CallButton
             phone={record.phone}
             name={record.full_name}
@@ -148,18 +199,20 @@ export const ContactsTable: React.FC = () => {
           />
           <Button
             type="link"
+            size="small"
             icon={<EyeOutlined />}
             onClick={() => navigate(`/contacts/${record.id}`)}
           />
           {canManage ? (
             <Button
               type="link"
+              size="small"
               icon={<EditOutlined />}
               onClick={() => navigate(`/contacts/${record.id}/edit`)}
             />
           ) : (
             <Tooltip title="Недостаточно прав">
-              <Button type="link" icon={<EditOutlined />} disabled />
+              <Button type="link" size="small" icon={<EditOutlined />} disabled />
             </Tooltip>
           )}
           {canManage ? (
@@ -169,11 +222,11 @@ export const ContactsTable: React.FC = () => {
               okText="Да"
               cancelText="Нет"
             >
-              <Button type="link" danger icon={<DeleteOutlined />} loading={deleteMutation.isPending} />
+              <Button type="link" size="small" danger icon={<DeleteOutlined />} loading={deleteMutation.isPending} />
             </Popconfirm>
           ) : (
             <Tooltip title="Недостаточно прав">
-              <Button type="link" danger icon={<DeleteOutlined />} disabled />
+              <Button type="link" size="small" danger icon={<DeleteOutlined />} disabled />
             </Tooltip>
           )}
         </Space>
@@ -202,10 +255,10 @@ export const ContactsTable: React.FC = () => {
         dataSource={data}
         rowKey="id"
         loading={isLoading || isFetching}
-        size={isMobile ? 'small' : 'middle'}
+        size="small"
         pagination={pagination}
         onChange={handleTableChange}
-        scroll={{ x: isMobile ? 720 : 1000 }}
+        scroll={{ x: 'max-content' }}
       />
     </div>
   );

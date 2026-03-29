@@ -106,6 +106,10 @@ export async function getCpLicenses(params = {}) {
   return api.get('/api/cp/licenses/', { params });
 }
 
+export async function getCpLicenseArtifact(issueId) {
+  return api.get(`/api/cp/licenses/${issueId}/artifact/`);
+}
+
 export async function revokeCpLicense(issueId, reason = "") {
   return api.post(`/api/cp/licenses/${issueId}/revoke/`, {
     body: { reason },

@@ -199,6 +199,30 @@ export class LandingBuilderService {
      * @returns LandingPage
      * @throws ApiError
      */
+    public static landingsAssetsUploadCreate({
+        id,
+        formData,
+    }: {
+        /**
+         * A unique integer value identifying this landing page.
+         */
+        id: number,
+        formData: LandingPage,
+    }): CancelablePromise<LandingPage> {
+        return __request(OpenAPI, {
+            method: 'POST',
+            url: '/api/landings/{id}/assets/upload/',
+            path: {
+                'id': id,
+            },
+            formData: formData,
+            mediaType: 'multipart/form-data',
+        });
+    }
+    /**
+     * @returns LandingPage
+     * @throws ApiError
+     */
     public static landingsBindingsRetrieve({
         id,
     }: {

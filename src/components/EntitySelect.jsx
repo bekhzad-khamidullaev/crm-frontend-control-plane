@@ -155,6 +155,7 @@ function EntitySelect({
 
   const isDisabled = disabled || (showSearch && !resolvedFetchOptions);
   const selectValue = normalizeSelectedValue(value, options);
+  const mergedStyle = { width: '100%', ...(style || {}) };
 
   return (
     <Select
@@ -166,7 +167,7 @@ function EntitySelect({
       showSearch={showSearch}
       disabled={isDisabled}
       loading={loading}
-      style={style}
+      style={mergedStyle}
       onSearch={showSearch ? setSearch : undefined}
       filterOption={false}
       {...restProps}

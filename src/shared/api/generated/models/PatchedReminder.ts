@@ -19,6 +19,8 @@ export type PatchedReminder = {
     active?: boolean;
     readonly creation_date?: string;
     content_type?: number;
+    readonly content_type_name?: string;
     object_id?: number;
+    readonly object_repr?: string;
 };
 

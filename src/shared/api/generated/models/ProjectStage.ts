@@ -2,9 +2,16 @@
 /* istanbul ignore file */
 /* tslint:disable */
 /* eslint-disable */
+/**
+ * Ensures name_ru/name_en/name_uz are always present in API output.
+ * If a localized field is empty, falls back to base `name`.
+ */
 export type ProjectStage = {
     readonly id: number;
     name: string;
+    name_ru?: string;
+    name_en?: string;
+    name_uz?: string;
     /**
      * Will be selected by default when creating a new task
      */

@@ -35,6 +35,7 @@ export type Deal = {
     amount?: string | null;
     currency?: number | null;
     readonly currency_name: string;
+    readonly currency_code: string | null;
     closing_reason?: number | null;
     probability?: number | null;
     readonly ticket: string;

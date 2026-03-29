@@ -31,7 +31,7 @@
     "test:e2e:contacts": "playwright test contacts.spec.js",
     "test:e2e:integration": "playwright test integration.spec.js",
     "codegen": "npx openapi-typescript-codegen --input './openapi-schema.yml' --output src/shared/api/generated --client axios --useOptions --useUnionTypes",
-    "sync:backend-api": "cd ../crm-backend && ./.venv/bin/python generate_schema.py ./openapi-schema-new.yml && cd - && cp ../crm-backend/openapi-schema-new.yml ./openapi-schema.yml && npm run codegen",
+    "sync:backend-api": "cd ../crm-backend-control-plane && ./.venv/bin/python generate_schema.py ./openapi-schema-new.yml && cd - && cp ../crm-backend-control-plane/openapi-schema-new.yml ./openapi-schema.yml && npm run codegen",
     "sync:full": "npm run sync:backend-api && npm run typecheck",
     "typecheck": "tsc --noEmit"
   },

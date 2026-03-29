@@ -10,6 +10,7 @@ export type InstagramAccountCreate = {
     instagram_user_id: string;
     username: string;
     access_token: string;
+    app_secret?: string;
     token_expires_at?: string | null;
     facebook_page_id?: string;
     facebook_page_name?: string;

@@ -18,6 +18,7 @@ export type Output = {
     amount?: string;
     currency?: number | null;
     readonly currency_name: string | null;
+    readonly currency_code: string | null;
     /**
      * Shipment date as per contract
      */

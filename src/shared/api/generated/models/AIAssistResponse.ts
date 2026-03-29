@@ -11,5 +11,6 @@ export type AIAssistResponse = {
     model: string;
     output_text: string;
     use_case: string;
+    response_data?: Record<string, any>;
 };
 

@@ -50,12 +50,12 @@ export const EntityListToolbar: React.FC<EntityListToolbarProps> = ({
   const isMobile = !screens.lg;
   const hasActiveFilters = activeFilters.length > 0;
   const surfaceStyle: React.CSSProperties = {
-    marginBottom: 16,
-    padding: isMobile ? 16 : 20,
+    marginBottom: 12,
+    padding: isMobile ? 12 : 14,
     borderRadius: token.borderRadiusLG,
     border: `1px solid ${token.colorBorderSecondary}`,
     background: token.colorBgElevated,
-    boxShadow: token.boxShadowTertiary,
+    boxShadow: token.boxShadowSecondary,
   };
   const chipStyle: React.CSSProperties = {
     marginInlineEnd: 0,
@@ -71,16 +71,16 @@ export const EntityListToolbar: React.FC<EntityListToolbarProps> = ({
 
   return (
     <div style={surfaceStyle}>
-      <Space direction="vertical" size={16} style={{ width: '100%' }}>
+      <Space direction="vertical" size={10} style={{ width: '100%' }}>
         <Flex
           justify="space-between"
           align={isMobile ? 'stretch' : 'flex-start'}
-          gap={16}
+          gap={10}
           vertical={isMobile}
         >
           <div style={{ flex: 1, minWidth: 0 }}>
-            <Space direction="vertical" size={12} style={{ width: '100%' }}>
-              <Space wrap size={12} style={{ width: '100%' }}>
+            <Space direction="vertical" size={8} style={{ width: '100%' }}>
+              <Space wrap size={8} style={{ width: '100%' }}>
                 <Input
                   allowClear
                   prefix={<SearchOutlined />}
@@ -91,7 +91,7 @@ export const EntityListToolbar: React.FC<EntityListToolbarProps> = ({
                   }
                   onChange={(event) => onSearchChange?.(event.target.value)}
                   style={{
-                    width: isMobile ? '100%' : 360,
+                    width: isMobile ? '100%' : 300,
                     maxWidth: '100%',
                     borderRadius: token.borderRadiusLG,
                     borderColor: token.colorBorderSecondary,
@@ -123,7 +123,7 @@ export const EntityListToolbar: React.FC<EntityListToolbarProps> = ({
 
           <Space
             wrap
-            size={10}
+            size={8}
             style={{
               justifyContent: isMobile ? 'space-between' : 'flex-end',
               width: isMobile ? '100%' : 'auto',
@@ -151,7 +151,7 @@ export const EntityListToolbar: React.FC<EntityListToolbarProps> = ({
                 <Button
                   aria-label="Обновить список"
                   icon={<ReloadOutlined />}
-                  size={isMobile ? 'small' : 'middle'}
+                  size="small"
                   loading={loading}
                   onClick={onRefresh}
                   style={actionButtonStyle}
@@ -161,7 +161,7 @@ export const EntityListToolbar: React.FC<EntityListToolbarProps> = ({
             {hasActiveFilters && onReset ? (
               <Button
                 icon={<ClearOutlined />}
-                size={isMobile ? 'small' : 'middle'}
+                size="small"
                 onClick={onReset}
                 style={actionButtonStyle}
               >
