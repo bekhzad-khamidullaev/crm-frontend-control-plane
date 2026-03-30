@@ -1,5 +1,5 @@
-import { CalendarOutlined, DeleteOutlined, EditOutlined, PlusOutlined, ReloadOutlined } from '@ant-design/icons';
-import { App, Button, Card, DatePicker, Form, Input, InputNumber, Modal, Select, Space, Statistic, Table, Tabs, Tag, Typography } from 'antd';
+import { DeleteOutlined, EditOutlined, PlusOutlined, ReloadOutlined } from '@ant-design/icons';
+import { App, Button, Card, DatePicker, Form, Input, InputNumber, Modal, Select, Space, Table, Tabs, Tag, Typography } from 'antd';
 import dayjs from 'dayjs';
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import {
@@ -192,16 +192,6 @@ export default function ContentPlansWorkspacePage() {
         loading={loading}
         resultSummary={`Планов: ${filteredCampaigns.length} | Сегментов: ${segments.length} | Шаблонов: ${templates.length}`}
       />
-
-      <Space size={12} wrap>
-        <Card size="small">
-          <Statistic title="Всего планов" value={filteredCampaigns.length} prefix={<CalendarOutlined />} />
-        </Card>
-        <Card size="small">
-          <Statistic title="Активные" value={filteredCampaigns.filter((item) => String(item.status).toLowerCase() === 'active').length} />
-        </Card>
-      </Space>
-
       <Card>
         <Tabs
           items={[

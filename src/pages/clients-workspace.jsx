@@ -1,5 +1,4 @@
-import { BankOutlined, DollarOutlined, FileDoneOutlined } from '@ant-design/icons';
-import { Alert, Card, Space, Statistic, Table, Tabs, Tag } from 'antd';
+import { Alert, Card, Space, Table, Tabs, Tag } from 'antd';
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { getCompanies } from '../lib/api/companies.js';
 import { getDeals } from '../lib/api/deals.js';
@@ -161,28 +160,6 @@ export default function ClientsWorkspacePage() {
         loading={loading}
         resultSummary={`Клиенты: ${filteredCompanies.length} | Сделки: ${filteredDeals.length} | Оплаты: ${filteredPayments.length}`}
       />
-
-      <Space size={16} wrap>
-        <Card size="small">
-          <Statistic title="Клиенты" value={filteredCompanies.length} prefix={<BankOutlined />} />
-        </Card>
-        <Card size="small">
-          <Statistic title="Договоры/сделки" value={filteredDeals.length} prefix={<FileDoneOutlined />} />
-        </Card>
-        <Card size="small">
-          <Statistic title="Оплаты (получено)" value={receivedTotal} precision={2} prefix={<DollarOutlined />} />
-        </Card>
-        <Card size="small">
-          <Statistic title="Задолженности" value={debtRows.length} />
-        </Card>
-        <Card size="small">
-          <Statistic title="Продление ≤ 30 дней" value={lifecycleSummary.renewalsSoon} />
-        </Card>
-        <Card size="small">
-          <Statistic title="Просроченные договоры" value={lifecycleSummary.expired} />
-        </Card>
-      </Space>
-
       {error ? <Alert type="warning" showIcon message={error} /> : null}
 
       <Card>

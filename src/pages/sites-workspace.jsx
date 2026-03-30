@@ -1,5 +1,4 @@
-import { GlobalOutlined } from '@ant-design/icons';
-import { Alert, Button, Card, Space, Statistic, Table, Tag } from 'antd';
+import { Alert, Button, Card, Space, Table, Tag } from 'antd';
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { landingsApi } from '../lib/api/client.js';
 import { EntityListToolbar } from '../shared/ui/EntityListToolbar';
@@ -69,17 +68,7 @@ export default function SitesWorkspacePage() {
         loading={loading}
         resultSummary={`Сайты: ${filteredSites.length}`}
       />
-
-      <Space size={16} wrap>
-        <Card size="small">
-          <Statistic title="Всего сайтов" value={filteredSites.length} prefix={<GlobalOutlined />} />
-        </Card>
-        <Card size="small">
-          <Statistic title="Опубликовано" value={filteredSites.filter((item) => String(item.status || '').toLowerCase() === 'published').length} />
-        </Card>
-        <Button type="primary" onClick={() => navigate('/landing-builder')}>Открыть конструктор</Button>
-      </Space>
-
+      <Button type="primary" onClick={() => navigate('/landing-builder')}>Открыть конструктор</Button>
       {error ? <Alert type="warning" showIcon message={error} /> : null}
 
       <Card>

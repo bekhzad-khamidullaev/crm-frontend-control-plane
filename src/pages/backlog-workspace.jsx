@@ -1,5 +1,4 @@
-import { OrderedListOutlined } from '@ant-design/icons';
-import { Alert, Card, Space, Statistic, Table, Tabs, Tag } from 'antd';
+import { Alert, Card, Space, Table, Tabs, Tag } from 'antd';
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { getDeals } from '../lib/api/deals.js';
 import { getLeads } from '../lib/api/leads.js';
@@ -91,13 +90,6 @@ export default function BacklogWorkspacePage() {
         loading={loading}
         resultSummary={`Задачи: ${backlogTasks.length} | Сделки: ${backlogDeals.length} | Лиды: ${backlogLeads.length}`}
       />
-
-      <Space size={16} wrap>
-        <Card size="small">
-          <Statistic title="Всего в backlog" value={backlogTasks.length + backlogDeals.length + backlogLeads.length} prefix={<OrderedListOutlined />} />
-        </Card>
-      </Space>
-
       {error ? <Alert type="warning" showIcon message={error} /> : null}
 
       <Card>

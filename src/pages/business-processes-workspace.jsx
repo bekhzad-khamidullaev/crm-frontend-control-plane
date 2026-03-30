@@ -1,5 +1,4 @@
-import { BranchesOutlined } from '@ant-design/icons';
-import { Alert, Card, Space, Statistic, Table, Tabs, Tag } from 'antd';
+import { Alert, Card, Space, Table, Tabs, Tag } from 'antd';
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { getProjects } from '../lib/api/projects.js';
 import { getRequests } from '../lib/api/requests.js';
@@ -152,25 +151,6 @@ export default function BusinessProcessesWorkspacePage() {
         loading={loading}
         resultSummary={`Проекты: ${filteredProjects.length} | Инстансы: ${filteredRequests.length} | Задачи: ${filteredTasks.length}`}
       />
-
-      <Space size={16} wrap>
-        <Card size="small">
-          <Statistic title="Процессы" value={filteredProjects.length} prefix={<BranchesOutlined />} />
-        </Card>
-        <Card size="small">
-          <Statistic title="Активные процессы" value={runningProcesses} />
-        </Card>
-        <Card size="small">
-          <Statistic title="Активные инстансы" value={activeInstances} />
-        </Card>
-        <Card size="small">
-          <Statistic title="Просроченные задачи" value={overdueTasks} />
-        </Card>
-        <Card size="small">
-          <Statistic title="WIP нарушения" value={wipBreaches.length} />
-        </Card>
-      </Space>
-
       {error ? <Alert type="warning" showIcon message={error} /> : null}
       {wipBreaches.length ? (
         <Alert

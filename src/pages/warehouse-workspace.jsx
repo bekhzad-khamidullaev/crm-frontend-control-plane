@@ -1,5 +1,4 @@
-import { ApartmentOutlined, ShopOutlined } from '@ant-design/icons';
-import { Alert, Card, Space, Statistic, Table, Tabs, Tag } from 'antd';
+import { Alert, Card, Space, Table, Tabs, Tag } from 'antd';
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { getProducts } from '../lib/api/products.js';
 import { getShipments } from '../lib/api/shipments.js';
@@ -97,22 +96,6 @@ export default function WarehouseWorkspacePage() {
         loading={loading}
         resultSummary={`Товары: ${filteredProducts.length} | Отгрузки: ${filteredShipments.length} | Документы: ${filteredDocuments.length}`}
       />
-
-      <Space size={16} wrap>
-        <Card size="small">
-          <Statistic title="Номенклатура" value={filteredProducts.length} prefix={<ShopOutlined />} />
-        </Card>
-        <Card size="small">
-          <Statistic title="В пути" value={inTransitCount} />
-        </Card>
-        <Card size="small">
-          <Statistic title="Документы" value={filteredDocuments.length} prefix={<ApartmentOutlined />} />
-        </Card>
-        <Card size="small">
-          <Statistic title="Оценка остатков" value={stockValue} precision={2} />
-        </Card>
-      </Space>
-
       {error ? <Alert type="warning" showIcon message={error} /> : null}
 
       <Card>

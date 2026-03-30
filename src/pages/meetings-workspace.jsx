@@ -1,5 +1,4 @@
-import { CalendarOutlined, PhoneOutlined } from '@ant-design/icons';
-import { Alert, Card, Space, Statistic, Table, Tabs, Tag } from 'antd';
+import { Alert, Card, Space, Table, Tabs, Tag } from 'antd';
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { getCallLogs } from '../lib/api/calls.js';
 import { getUpcomingReminders } from '../lib/api/reminders.js';
@@ -101,22 +100,6 @@ export default function MeetingsWorkspacePage() {
         loading={loading}
         resultSummary={`Напоминания: ${filteredReminders.length} | Звонки: ${filteredCalls.length} | Follow-up: ${taskMeetings.length}`}
       />
-
-      <Space size={16} wrap>
-        <Card size="small">
-          <Statistic title="Встречи сегодня" value={todayMeetings} prefix={<CalendarOutlined />} />
-        </Card>
-        <Card size="small">
-          <Statistic title="Напоминания" value={filteredReminders.length} />
-        </Card>
-        <Card size="small">
-          <Statistic title="Звонки" value={filteredCalls.length} prefix={<PhoneOutlined />} />
-        </Card>
-        <Card size="small">
-          <Statistic title="Follow-up задачи" value={taskMeetings.length} />
-        </Card>
-      </Space>
-
       {error ? <Alert type="warning" showIcon message={error} /> : null}
 
       <Card>

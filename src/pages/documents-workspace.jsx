@@ -1,5 +1,4 @@
-import { FileTextOutlined } from '@ant-design/icons';
-import { Alert, Card, Space, Statistic, Table, Tabs, Tag } from 'antd';
+import { Alert, Card, Space, Table, Tabs, Tag } from 'antd';
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { getMemos } from '../lib/api/memos.js';
 import { getOutputs } from '../lib/api/outputs.js';
@@ -74,13 +73,6 @@ export default function DocumentsWorkspacePage() {
         loading={loading}
         resultSummary={`Внутренние: ${filteredMemos.length} | Финансовые: ${filteredOutputs.length} | Логистические: ${filteredShipments.length}`}
       />
-
-      <Space size={16} wrap>
-        <Card size="small">
-          <Statistic title="Всего документов" value={filteredMemos.length + filteredOutputs.length + filteredShipments.length} prefix={<FileTextOutlined />} />
-        </Card>
-      </Space>
-
       {error ? <Alert type="warning" showIcon message={error} /> : null}
 
       <Card>

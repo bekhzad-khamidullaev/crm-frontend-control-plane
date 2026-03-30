@@ -1,5 +1,4 @@
-import { FundProjectionScreenOutlined } from '@ant-design/icons';
-import { Alert, Card, Space, Statistic, Table, Tabs, Tag } from 'antd';
+import { Alert, Card, Space, Table, Tabs, Tag } from 'antd';
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { getDeals } from '../lib/api/deals.js';
 import { getOutputs } from '../lib/api/outputs.js';
@@ -220,28 +219,6 @@ export default function FinancePlanningWorkspacePage() {
         loading={loading}
         resultSummary={`Сделки: ${filteredDeals.length} | Платежи: ${filteredPayments.length} | Заявки: ${filteredRequests.length}`}
       />
-
-      <Space size={16} wrap>
-        <Card size="small">
-          <Statistic title="Pipeline" value={pipelineAmount} precision={2} prefix={<FundProjectionScreenOutlined />} />
-        </Card>
-        <Card size="small">
-          <Statistic title="Получено" value={receivedAmount} precision={2} />
-        </Card>
-        <Card size="small">
-          <Statistic title="Ожидается" value={expectedAmount} precision={2} />
-        </Card>
-        <Card size="small">
-          <Statistic title="Открытые заявки" value={openRequests.length} />
-        </Card>
-        <Card size="small">
-          <Statistic title="Расходы" value={expenseAmount} precision={2} />
-        </Card>
-        <Card size="small">
-          <Statistic title="Риск кассового разрыва (14д)" value={cashGapRiskDays} />
-        </Card>
-      </Space>
-
       {error ? <Alert type="warning" showIcon message={error} /> : null}
       {cashGapRiskDays > 0 ? (
         <Alert
