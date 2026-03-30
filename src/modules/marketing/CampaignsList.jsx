@@ -1,8 +1,8 @@
 import React, { useEffect, useState } from 'react';
-import { App, Button, Card, Space, Table, Tag, Typography } from 'antd';
+import { App, Button, Card, DatePicker, Select, Space, Table, Tag, Typography } from 'antd';
 import { PlusOutlined } from '@ant-design/icons';
 import { navigate } from '../../router';
-import { getCampaigns, deleteCampaign, patchCampaign } from '../../lib/api/marketing';
+import { activateCampaign, cloneCampaign, completeCampaign, deleteCampaign, getCampaigns, patchCampaign, pauseCampaign } from '../../lib/api/marketing';
 import { canWrite } from '../../lib/rbac.js';
 import QuickActions from '../../components/QuickActions.jsx';
 import { EntityListToolbar } from '../../shared/ui/EntityListToolbar';
@@ -18,6 +18,8 @@ function CampaignsList() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const [searchText, setSearchText] = useState('');
+  const [statusFilter, setStatusFilter] = useState('all');
+  const [startRange, setStartRange] = useState(null);
   const [pagination, setPagination] = useState({ current: 1, pageSize: 10, total: 0 });
 
   useEffect(() => {
@@ -25,11 +27,22 @@ function CampaignsList() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  useEffect(() => {
+    fetchCampaigns(1, searchText);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [statusFilter, startRange]);
+
   const fetchCampaigns = async (page = 1, search = '', pageSize = pagination.pageSize) => {
     setLoading(true);
     setError(null);
     try {
-      const response = await getCampaigns({ page, page_size: pageSize, search });
+      const params = { page, page_size: pageSize, search };
+      if (statusFilter !== 'all') params.status = statusFilter;
+      if (startRange && startRange.length === 2) {
+        params.start_date_after = startRange[0].format('YYYY-MM-DD');
+        params.start_date_before = startRange[1].format('YYYY-MM-DD');
+      }
+      const response = await getCampaigns(params);
       const results = response.results || [];
       const totalCount = response.count || 0;
 
@@ -60,6 +73,8 @@ function CampaignsList() {
 
   const handleResetFilters = () => {
     setSearchText('');
+    setStatusFilter('all');
+    setStartRange(null);
     fetchCampaigns(1, '');
   };
 
@@ -80,6 +95,28 @@ function CampaignsList() {
       fetchCampaigns(pagination.current, searchText);
     } catch {
       message.error('Ошибка обновления статуса');
+    }
+  };
+
+  const handleStatusTransition = async (record, nextStatus) => {
+    try {
+      if (nextStatus === 'active') await activateCampaign(record.id);
+      if (nextStatus === 'paused') await pauseCampaign(record.id);
+      if (nextStatus === 'completed') await completeCampaign(record.id);
+      message.success('Статус кампании обновлен');
+      fetchCampaigns(pagination.current, searchText);
+    } catch {
+      message.error('Не удалось обновить статус кампании');
+    }
+  };
+
+  const handleClone = async (record) => {
+    try {
+      await cloneCampaign(record.id, `${record.name || 'Кампания'} (копия)`);
+      message.success('Кампания клонирована');
+      fetchCampaigns(1, searchText);
+    } catch {
+      message.error('Не удалось клонировать кампанию');
     }
   };
 
@@ -115,9 +152,15 @@ function CampaignsList() {
     { title: 'Дата старта', dataIndex: 'start_at', key: 'start_at', render: (value) => (value ? new Date(value).toLocaleString('ru-RU') : '-') },
     {
       title: 'Статус',
-      dataIndex: 'is_active',
-      key: 'is_active',
-      render: (isActive) => <Tag color={isActive ? 'green' : 'default'}>{isActive ? 'Активна' : 'Неактивна'}</Tag>,
+      dataIndex: 'status',
+      key: 'status',
+      render: (status, record) => {
+        const normalized = String(status || '').toLowerCase();
+        if (normalized === 'active' || record.is_active) return <Tag color="success">Активна</Tag>;
+        if (normalized === 'paused') return <Tag color="warning">Пауза</Tag>;
+        if (normalized === 'completed') return <Tag color="processing">Завершена</Tag>;
+        return <Tag>Черновик</Tag>;
+      },
     },
     {
       title: 'Действия',
@@ -155,11 +198,39 @@ function CampaignsList() {
           searchValue={searchText}
           searchPlaceholder="Поиск по названию..."
           onSearchChange={handleSearch}
+          filters={(
+            <Space wrap>
+              <Select
+                value={statusFilter}
+                onChange={(value) => {
+                  setStatusFilter(value);
+                }}
+                style={{ width: 170 }}
+                options={[
+                  { value: 'all', label: 'Все статусы' },
+                  { value: 'draft', label: 'Черновик' },
+                  { value: 'active', label: 'Активна' },
+                  { value: 'paused', label: 'Пауза' },
+                  { value: 'completed', label: 'Завершена' },
+                ]}
+              />
+              <DatePicker.RangePicker
+                value={startRange}
+                onChange={(range) => {
+                  setStartRange(range || null);
+                }}
+                format="DD.MM.YYYY"
+              />
+            </Space>
+          )}
           onRefresh={() => fetchCampaigns(pagination.current, searchText)}
           onReset={handleResetFilters}
           loading={loading}
           resultSummary={`Всего: ${pagination.total}`}
-          activeFilters={searchText ? [{ key: 'search', label: 'Поиск', value: searchText, onClear: handleResetFilters }] : []}
+          activeFilters={[
+            ...(searchText ? [{ key: 'search', label: 'Поиск', value: searchText, onClear: () => setSearchText('') }] : []),
+            ...(statusFilter !== 'all' ? [{ key: 'status', label: 'Статус', value: statusFilter, onClear: () => setStatusFilter('all') }] : []),
+          ]}
         />
 
         {error ? <Text type="danger">{error}</Text> : null}
@@ -173,6 +244,20 @@ function CampaignsList() {
           onChange={handleTableChange}
           scroll={{ x: 1000 }}
           locale={{ emptyText: 'Нет кампаний' }}
+          expandable={{
+            expandedRowRender: (record) => (
+              <Space size={8} wrap>
+                <Button size="small" onClick={() => handleClone(record)}>Клонировать</Button>
+                <Button size="small" onClick={() => handleStatusTransition(record, 'active')}>Запустить</Button>
+                <Button size="small" onClick={() => handleStatusTransition(record, 'paused')}>Пауза</Button>
+                <Button size="small" onClick={() => handleStatusTransition(record, 'completed')}>Завершить</Button>
+                <Button size="small" onClick={() => handleToggleActive(record)}>
+                  {record.is_active ? 'Отключить флаг active' : 'Включить флаг active'}
+                </Button>
+              </Space>
+            ),
+            rowExpandable: () => true,
+          }}
         />
       </Space>
     </Card>

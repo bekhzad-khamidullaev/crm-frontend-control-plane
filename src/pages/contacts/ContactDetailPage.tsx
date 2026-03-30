@@ -1,12 +1,14 @@
 import { useCompany } from '@/entities/company/api/queries';
 import { useContact } from '@/entities/contact/api/queries';
+import { UsersService } from '@/shared/api/generated/services/UsersService';
 import { navigate } from '@/router.js';
-import { BankOutlined, EditOutlined, MailOutlined, PhoneOutlined, UserOutlined } from '@ant-design/icons';
+import { BankOutlined, BellOutlined, EditOutlined, MailOutlined, PhoneOutlined, RobotOutlined, UserOutlined } from '@ant-design/icons';
 import { Avatar, Button, Card, Descriptions, Result, Space, Spin, Tabs, Tag, Typography } from 'antd';
 import dayjs from 'dayjs';
 import React from 'react';
 // @ts-ignore
-import { canWrite } from '@/lib/rbac.js';
+import { canWrite, hasAnyFeature } from '@/lib/rbac.js';
+import QuickReminderModal from '@/components/reminders/QuickReminderModal.jsx';
 
 const { Text, Title } = Typography;
 
@@ -17,13 +19,43 @@ export interface ContactDetailPageProps {
 export const ContactDetailPage: React.FC<ContactDetailPageProps> = ({ id }) => {
   const { data: contact, isLoading } = useContact(id!);
   const canManage = canWrite();
+  const canUseAiAssist = hasAnyFeature('ai.assist');
   const { data: company } = useCompany(contact?.company || 0, !!contact?.company);
+  const [resolvedOwnerName, setResolvedOwnerName] = React.useState<string | null>(null);
+  const [quickReminderOpen, setQuickReminderOpen] = React.useState(false);
+  const openAiChat = () => navigate(`/ai-chat?entity_type=contact&entity_id=${id}`);
+
+  React.useEffect(() => {
+    const ownerId = Number(contact?.owner);
+    if (!ownerId || Number.isNaN(ownerId)) {
+      setResolvedOwnerName(null);
+      return;
+    }
+
+    let cancelled = false;
+    UsersService.usersRetrieve({ id: ownerId })
+      .then((user) => {
+        if (cancelled) return;
+        const name = `${user.first_name || ''} ${user.last_name || ''}`.trim() || user.username || user.email || String(ownerId);
+        setResolvedOwnerName(name);
+      })
+      .catch(() => {
+        if (cancelled) return;
+        setResolvedOwnerName(String(ownerId));
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [contact?.owner]);
 
   if (isLoading) return <Spin size="large" style={{ display: 'block', margin: '50px auto' }} />;
 
   if (!contact) {
     return <Result status="404" title="Контакт не найден" extra={<Button onClick={() => navigate('/contacts')}>К контактам</Button>} />;
   }
+
+  const ownerName = resolvedOwnerName || (contact.owner ? String(contact.owner) : 'Не назначен');
 
   return (
     <Space direction="vertical" size={16} style={{ width: '100%' }}>
@@ -32,11 +64,21 @@ export const ContactDetailPage: React.FC<ContactDetailPageProps> = ({ id }) => {
           <Button onClick={() => navigate('/contacts')}>Назад</Button>
           {contact.massmail ? <Tag color="blue">В рассылке</Tag> : null}
         </Space>
-        {canManage ? (
-          <Button type="primary" icon={<EditOutlined />} onClick={() => navigate(`/contacts/${id}/edit`)}>
-            Редактировать
+        <Space wrap>
+          <Button icon={<BellOutlined />} onClick={() => setQuickReminderOpen(true)}>
+            Напомнить
           </Button>
-        ) : null}
+          {canUseAiAssist ? (
+            <Button icon={<RobotOutlined />} onClick={openAiChat}>
+              Спросить AI
+            </Button>
+          ) : null}
+          {canManage ? (
+            <Button type="primary" icon={<EditOutlined />} onClick={() => navigate(`/contacts/${id}/edit`)}>
+              Редактировать
+            </Button>
+          ) : null}
+        </Space>
       </Space>
 
       <Card>
@@ -46,7 +88,7 @@ export const ContactDetailPage: React.FC<ContactDetailPageProps> = ({ id }) => {
 
       <Space wrap>
         <Card size="small" title="Компания">{company?.full_name || 'Не указана'}</Card>
-        <Card size="small" title="Ответственный">{String(contact.owner || 'Не назначен')}</Card>
+        <Card size="small" title="Ответственный">{ownerName}</Card>
         <Card size="small" title="Создан">{contact.creation_date ? dayjs(contact.creation_date).format('DD.MM.YYYY') : '-'}</Card>
       </Space>
 
@@ -67,7 +109,7 @@ export const ContactDetailPage: React.FC<ContactDetailPageProps> = ({ id }) => {
                   <Descriptions.Item label="Email">{contact.email ? <a href={`mailto:${contact.email}`}><MailOutlined /> {contact.email}</a> : '-'}</Descriptions.Item>
                   <Descriptions.Item label="Телефон">{contact.phone ? <a href={`tel:${contact.phone}`}><PhoneOutlined /> {contact.phone}</a> : '-'}</Descriptions.Item>
                   <Descriptions.Item label="Адрес" span={2}>{contact.address || '-'}</Descriptions.Item>
-                  <Descriptions.Item label="Ответственный">{contact.owner || '-'}</Descriptions.Item>
+                  <Descriptions.Item label="Ответственный">{ownerName}</Descriptions.Item>
                   <Descriptions.Item label="Дата создания">{contact.creation_date ? dayjs(contact.creation_date).format('DD.MM.YYYY HH:mm') : '-'}</Descriptions.Item>
                   <Descriptions.Item label="Описание" span={2}>{contact.description || '-'}</Descriptions.Item>
                 </Descriptions>
@@ -77,6 +119,14 @@ export const ContactDetailPage: React.FC<ContactDetailPageProps> = ({ id }) => {
           ]}
         />
       </Card>
+
+      <QuickReminderModal
+        open={quickReminderOpen}
+        onClose={() => setQuickReminderOpen(false)}
+        entityType="contact"
+        entityId={contact.id}
+        entityLabel={contact.full_name}
+      />
     </Space>
   );
 };

@@ -1,12 +1,13 @@
 import { useDeal } from '@/entities/deal/api/queries';
 import { navigate } from '@/router.js';
-import { EditOutlined } from '@ant-design/icons';
+import { BellOutlined, EditOutlined, RobotOutlined } from '@ant-design/icons';
 import { Badge, Button, Card, Descriptions, Result, Space, Spin, Tag, Tabs, Typography } from 'antd';
 import React from 'react';
 // @ts-ignore
-import { formatCurrency } from '@/lib/utils/format.js';
+import { formatCurrencyForRecord } from '@/lib/utils/format.js';
 // @ts-ignore
-import { canWrite } from '@/lib/rbac.js';
+import { canWrite, hasAnyFeature } from '@/lib/rbac.js';
+import QuickReminderModal from '@/components/reminders/QuickReminderModal.jsx';
 
 const { Text, Title } = Typography;
 
@@ -18,6 +19,9 @@ export const DealDetailPage: React.FC<DealDetailPageProps> = ({ id }) => {
   const dealId = Number(id);
   const { data: deal, isLoading } = useDeal(dealId);
   const canManage = canWrite();
+  const canUseAiAssist = hasAnyFeature('ai.assist');
+  const [quickReminderOpen, setQuickReminderOpen] = React.useState(false);
+  const openAiChat = () => navigate(`/ai-chat?entity_type=deal&entity_id=${dealId}`);
 
   if (isLoading) {
     return <Spin size="large" style={{ display: 'block', margin: '50px auto' }} />;
@@ -34,7 +38,6 @@ export const DealDetailPage: React.FC<DealDetailPageProps> = ({ id }) => {
   }
 
   const d = deal as any;
-  const currencyCode = d.currency_code;
 
   return (
     <Space direction="vertical" size={16} style={{ width: '100%' }}>
@@ -43,11 +46,21 @@ export const DealDetailPage: React.FC<DealDetailPageProps> = ({ id }) => {
           <Button onClick={() => navigate('/deals')}>Сделки</Button>
           <Tag color={deal.active ? 'green' : 'red'}>{deal.active ? 'Активна' : 'Неактивна'}</Tag>
         </Space>
-        {canManage ? (
-          <Button icon={<EditOutlined />} type="primary" onClick={() => navigate(`/deals/${dealId}/edit`)}>
-            Редактировать
+        <Space wrap>
+          <Button icon={<BellOutlined />} onClick={() => setQuickReminderOpen(true)}>
+            Напомнить
           </Button>
-        ) : null}
+          {canUseAiAssist ? (
+            <Button icon={<RobotOutlined />} onClick={openAiChat}>
+              Спросить AI
+            </Button>
+          ) : null}
+          {canManage ? (
+            <Button icon={<EditOutlined />} type="primary" onClick={() => navigate(`/deals/${dealId}/edit`)}>
+              Редактировать
+            </Button>
+          ) : null}
+        </Space>
       </Space>
 
       <Card>
@@ -56,7 +69,7 @@ export const DealDetailPage: React.FC<DealDetailPageProps> = ({ id }) => {
       </Card>
 
       <Space wrap>
-        <Card size="small" title="Сумма">{currencyCode ? formatCurrency(d.amount, currencyCode) : '-'}</Card>
+        <Card size="small" title="Сумма">{formatCurrencyForRecord(d.amount, d)}</Card>
         <Card size="small" title="Вероятность">{`${d.probability || 0}%`}</Card>
         <Card size="small" title="Следующий шаг">
           {deal.next_step_date ? new Date(deal.next_step_date).toLocaleDateString('ru-RU') : 'Не назначен'}
@@ -73,7 +86,7 @@ export const DealDetailPage: React.FC<DealDetailPageProps> = ({ id }) => {
               children: (
                 <Descriptions bordered column={{ xs: 1, sm: 1, md: 2 }}>
                   <Descriptions.Item label="Название">{d.name}</Descriptions.Item>
-                  <Descriptions.Item label="Сумма">{currencyCode ? formatCurrency(d.amount, currencyCode) : '-'}</Descriptions.Item>
+                  <Descriptions.Item label="Сумма">{formatCurrencyForRecord(d.amount, d)}</Descriptions.Item>
                   <Descriptions.Item label="Стадия"><Badge color="blue" text={d.stage_name} /></Descriptions.Item>
                   <Descriptions.Item label="Вероятность">{d.probability}%</Descriptions.Item>
                   <Descriptions.Item label="Компания">
@@ -104,6 +117,14 @@ export const DealDetailPage: React.FC<DealDetailPageProps> = ({ id }) => {
           ]}
         />
       </Card>
+
+      <QuickReminderModal
+        open={quickReminderOpen}
+        onClose={() => setQuickReminderOpen(false)}
+        entityType="deal"
+        entityId={dealId}
+        entityLabel={deal.name}
+      />
     </Space>
   );
 };

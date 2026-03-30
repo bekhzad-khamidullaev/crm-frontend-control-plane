@@ -18,6 +18,7 @@ import {
   Spin,
   Statistic,
   Tag,
+  Tabs,
   Typography,
 } from 'antd';
 import {
@@ -44,6 +45,7 @@ import {
 import { readStoredLicenseFeatures } from '../lib/api/licenseFeatures.js';
 import { readStoredLicenseState, shouldEnforceLicenseFeatures } from '../lib/api/licenseState.js';
 import { useTheme } from '../lib/hooks/useTheme.js';
+import CommunicationsHub from '../modules/communications/CommunicationsHub.jsx';
 
 dayjs.extend(relativeTime);
 dayjs.locale('ru');
@@ -679,7 +681,7 @@ function ChatPage() {
     );
   }
 
-  return (
+  const inboxLayout = (
     <Space direction="vertical" size={12} style={{ width: '100%' }}>
       <Card
         variant="borderless"
@@ -1160,6 +1162,16 @@ function ChatPage() {
         </Content>
       </Layout>
     </Space>
+  );
+
+  return (
+    <Tabs
+      defaultActiveKey="inbox"
+      items={[
+        { key: 'inbox', label: 'Omnichannel Inbox', children: inboxLayout },
+        { key: 'dispatch', label: 'Outbound / Broadcast', children: <CommunicationsHub defaultTab="omnichannel" /> },
+      ]}
+    />
   );
 }
 
