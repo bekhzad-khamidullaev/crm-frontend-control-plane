@@ -460,6 +460,10 @@ export function AppLayout({
       ? '#faad14'
       : '#ff4d4f';
   const licenseRestrictionCopy = getLicenseRestrictionMessage(licenseRestriction, t);
+  const showGlobalLicenseBanner = (
+    !!licenseRestriction
+    && !String(licenseRestriction?.feature || '').trim().toLowerCase().startsWith('marketplace.')
+  );
 
   useEffect(() => {
     if (wsConnected) {
@@ -950,7 +954,7 @@ export function AppLayout({
             borderRadius: theme === 'dark' ? 24 : 0,
           }}
         >
-          {licenseRestriction ? (
+          {showGlobalLicenseBanner ? (
             <div
               style={{
                 marginBottom: 12,
