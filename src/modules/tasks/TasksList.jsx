@@ -72,6 +72,8 @@ const formatDateSafe = (value, dateLocale) => {
   return date.toLocaleDateString(dateLocale);
 };
 
+const isPastDate = (value) => Boolean(value) && dayjs(value).isBefore(dayjs().startOf('day'), 'day');
+
 function TaskKanbanCard({
   task,
   readOnly,
@@ -589,6 +591,12 @@ function TasksList() {
   const handleQuickCreate = async () => {
     try {
       const values = await quickCreateForm.validateFields();
+      if (isPastDate(values.next_step_date)) {
+        quickCreateForm.setFields([
+          { name: 'next_step_date', errors: [tr('tasksListPage.quickCreate.validation.nextStepDateFuture', 'Дата не может быть в прошлом')] },
+        ]);
+        return;
+      }
       const payload = {
         name: String(values.name || '').trim(),
         stage: values.stage ?? null,
@@ -1046,10 +1054,19 @@ function TasksList() {
             <Form.Item
               label={tr('tasksListPage.quickCreate.nextStepDate', 'Дата следующего шага')}
               name="next_step_date"
-              rules={[{ required: true, message: tr('tasksListPage.quickCreate.validation.nextStepDate', 'Укажите дату') }]}
+              rules={[
+                { required: true, message: tr('tasksListPage.quickCreate.validation.nextStepDate', 'Укажите дату') },
+                {
+                  validator: async (_, value) => {
+                    if (value && isPastDate(value)) {
+                      throw new Error(tr('tasksListPage.quickCreate.validation.nextStepDateFuture', 'Дата не может быть в прошлом'));
+                    }
+                  },
+                },
+              ]}
               style={{ minWidth: 220 }}
             >
-              <DatePicker format="DD.MM.YYYY" style={{ width: '100%' }} />
+              <DatePicker format="DD.MM.YYYY" style={{ width: '100%' }} disabledDate={(current) => isPastDate(current)} />
             </Form.Item>
 
             <Form.Item

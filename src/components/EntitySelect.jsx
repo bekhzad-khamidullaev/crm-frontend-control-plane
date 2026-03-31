@@ -29,7 +29,9 @@ const normalizeSelectedValue = (value, options = []) => {
 };
 
 const defaultLabel = (item) =>
+  [item?.first_name, item?.last_name].filter(Boolean).join(' ').trim() ||
   item?.full_name ||
+  item?.username ||
   item?.name ||
   item?.title ||
   item?.email ||

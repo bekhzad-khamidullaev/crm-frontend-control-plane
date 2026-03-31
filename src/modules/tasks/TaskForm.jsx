@@ -47,6 +47,8 @@ const priorityOptions = [
   { value: 3, label: t('taskFormPage.priority.high') },
 ];
 
+const isPastDate = (value) => Boolean(value) && dayjs(value).isBefore(dayjs().startOf('day'), 'day');
+
 const schema = z.object({
   name: z.string().min(1, t('taskFormPage.validation.nameRequired')),
   description: z.string().optional(),
@@ -57,7 +59,10 @@ const schema = z.object({
   closing_date: z.any().optional(),
   lead_time: z.string().optional(),
   next_step: z.string().min(1, t('taskFormPage.validation.nextStepRequired')),
-  next_step_date: z.any().refine((val) => val, { message: t('taskFormPage.validation.nextStepDateRequired') }),
+  next_step_date: z
+    .any()
+    .refine((val) => val, { message: t('taskFormPage.validation.nextStepDateRequired') })
+    .refine((val) => !isPastDate(val), { message: 'Дата следующего шага не может быть в прошлом' }),
   project: z.any().optional(),
   task: z.any().optional(),
   owner: z.any().optional(),
@@ -339,6 +344,7 @@ function TaskForm({ id }) {
                             shouldValidate: true,
                           })
                         }
+                        disabledDate={(current) => isPastDate(current)}
                         format="DD.MM.YYYY"
                         style={{ width: '100%' }}
                       />

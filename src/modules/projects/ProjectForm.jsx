@@ -38,6 +38,8 @@ const priorityOptions = [
   { value: 3, label: t('projectFormPage.priority.high') },
 ];
 
+const isPastDate = (value) => Boolean(value) && dayjs(value).isBefore(dayjs().startOf('day'), 'day');
+
 const schema = z.object({
   name: z.string().min(1, t('projectFormPage.validation.nameRequired')),
   description: z.string().optional(),
@@ -47,7 +49,10 @@ const schema = z.object({
   due_date: z.any().optional(),
   closing_date: z.any().optional(),
   next_step: z.string().min(1, t('projectFormPage.validation.nextStepRequired')),
-  next_step_date: z.any().refine((val) => val, { message: t('projectFormPage.validation.nextStepDateRequired') }),
+  next_step_date: z
+    .any()
+    .refine((val) => val, { message: t('projectFormPage.validation.nextStepDateRequired') })
+    .refine((val) => !isPastDate(val), { message: 'Дата следующего шага не может быть в прошлом' }),
   priority: z.any().optional(),
   owner: z.any().optional(),
   co_owner: z.any().optional(),
@@ -277,7 +282,13 @@ function ProjectForm({ id }) {
 
                   <div>
                     <FieldLabel>{t('projectFormPage.fields.nextStepDate')} *</FieldLabel>
-                    <DatePicker value={nextStepDate || null} onChange={(val) => setValue('next_step_date', val)} format="DD.MM.YYYY" style={{ width: '100%' }} />
+                    <DatePicker
+                      value={nextStepDate || null}
+                      onChange={(val) => setValue('next_step_date', val)}
+                      disabledDate={(current) => isPastDate(current)}
+                      format="DD.MM.YYYY"
+                      style={{ width: '100%' }}
+                    />
                     <FieldError message={errors.next_step_date?.message} />
                   </div>
                 </Space>

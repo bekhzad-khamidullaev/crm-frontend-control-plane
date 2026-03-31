@@ -94,6 +94,9 @@ export const DealForm: React.FC<DealFormProps> = ({ id }) => {
     });
   };
 
+  const isPastDate = (value: dayjs.Dayjs | null) =>
+    Boolean(value && value.isBefore(dayjs().startOf('day'), 'day'));
+
   const onFinish = async (values: any) => {
     if (values.active === false && !values.closing_reason) {
       form.setFields([
@@ -253,8 +256,24 @@ export const DealForm: React.FC<DealFormProps> = ({ id }) => {
               </Form.Item>
             </Col>
             <Col xs={24} md={12}>
-              <Form.Item label="Дата" name="next_step_date">
-                <DatePicker style={{ width: '100%' }} format="DD.MM.YYYY" />
+              <Form.Item
+                label="Дата"
+                name="next_step_date"
+                rules={[
+                  {
+                    validator: async (_, value) => {
+                      if (value && isPastDate(value)) {
+                        throw new Error('Дата следующего шага не может быть в прошлом');
+                      }
+                    },
+                  },
+                ]}
+              >
+                <DatePicker
+                  style={{ width: '100%' }}
+                  format="DD.MM.YYYY"
+                  disabledDate={(current) => isPastDate(current)}
+                />
               </Form.Item>
             </Col>
           </Row>
