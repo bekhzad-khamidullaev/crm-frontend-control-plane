@@ -25,7 +25,6 @@ import { getVoIPConnections } from './lib/api/telephony.js';
 import { getProfile } from './lib/api/user.js';
 import { mergeRoles, rolesFromProfile, rolesFromTokenPayload } from './lib/roles.js';
 import { getFrontendVersionInfo } from './shared/version.js';
-import { useTheme } from './lib/hooks/useTheme.js';
 import { applyLegacyContentLocalization } from './lib/i18n/legacy-content-dom.js';
 import { setLocale } from './lib/i18n/index.js';
 import {
@@ -1197,7 +1196,6 @@ function App() {
 
 // Wrapper component that provides theme to App
 function AppWithTheme() {
-  const { theme } = useTheme();
   const [activeLocale, setActiveLocale] = useState(() => normalizeLocale(localStorage.getItem('enterprise_crm_locale') || 'ru'));
   useEffect(() => {
     const onLocaleChanged = (event) => {
@@ -1230,158 +1228,10 @@ function AppWithTheme() {
   const antdLocale = activeLocale === 'en' ? enUS : activeLocale === 'uz' ? uzUZ : ruRU;
   const emptyDescription =
     activeLocale === 'en' ? 'No data' : activeLocale === 'uz' ? "Ma'lumot yo'q" : 'Нет данных';
-  const isDark = theme === 'dark';
-
-  // Ant Design theme configuration
-  const themeConfig = {
-    algorithm: isDark ? antdTheme.darkAlgorithm : antdTheme.defaultAlgorithm,
-    token: {
-      colorPrimary: isDark ? '#f8fafc' : '#18181b',
-      colorInfo: isDark ? '#7dd3fc' : '#2563eb',
-      colorSuccess: isDark ? '#4ade80' : '#16a34a',
-      colorWarning: isDark ? '#fbbf24' : '#d97706',
-      colorError: isDark ? '#f87171' : '#dc2626',
-      zIndexPopupBase: 1200, // Keep dropdowns/selects above sticky header (z-index: 1100)
-      borderRadius: 8,
-      borderRadiusLG: 18,
-      borderRadiusSM: 10,
-      wireframe: false,
-      colorBgBase: isDark ? '#09111f' : '#f8fafc',
-      colorBgContainer: isDark ? '#132033' : '#ffffff',
-      colorBgElevated: isDark ? '#18263b' : '#ffffff',
-      colorBgLayout: isDark ? 'transparent' : '#f0f2f5',
-      colorFillAlter: isDark ? 'rgba(148, 163, 184, 0.16)' : '#eef2f7',
-      colorFillSecondary: isDark ? 'rgba(148, 163, 184, 0.24)' : '#dde5ef',
-      colorBorderSecondary: isDark ? 'rgba(148, 163, 184, 0.26)' : '#d8e1eb',
-      colorBorder: isDark ? 'rgba(148, 163, 184, 0.32)' : '#d3dde8',
-      colorTextBase: isDark ? '#f8fbff' : '#09090b',
-      colorText: isDark ? '#eef4fb' : '#18181b',
-      colorTextSecondary: isDark ? '#cad6e2' : '#5b6878',
-      colorTextTertiary: isDark ? '#aab8c8' : '#6f7b8a',
-      colorTextLightSolid: isDark ? '#020617' : '#fafafa',
-      fontFamily:
-        'ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif',
-      boxShadow: isDark ? '0 14px 30px rgba(2, 6, 23, 0.34)' : '0 10px 25px rgba(15, 23, 42, 0.08)',
-      boxShadowSecondary: isDark
-        ? '0 22px 50px rgba(2, 6, 23, 0.42)'
-        : '0 18px 40px rgba(15, 23, 42, 0.12)',
-      controlHeight: 38,
-      controlHeightLG: 42,
-      padding: 16,
-      paddingLG: 20,
-    },
-    components: {
-      Card: {
-        colorBgContainer: isDark ? '#132033' : '#ffffff',
-        colorBorderSecondary: isDark ? 'rgba(148, 163, 184, 0.24)' : '#dde5ef',
-        borderRadiusLG: 18,
-        headerFontSize: 18,
-        headerFontSizeSM: 16,
-        paddingLG: 20,
-        boxShadowTertiary: isDark
-          ? '0 18px 42px rgba(2, 6, 23, 0.28)'
-          : '0 10px 28px rgba(15, 23, 42, 0.08)',
-      },
-      Button: {
-        colorPrimaryHover: isDark ? '#e2e8f0' : '#27272a',
-        colorPrimaryActive: isDark ? '#cbd5e1' : '#3f3f46',
-        primaryShadow: isDark
-          ? '0 10px 24px rgba(148, 163, 184, 0.18)'
-          : '0 10px 20px rgba(24, 24, 27, 0.12)',
-        colorBgTextHover: isDark ? 'rgba(148, 163, 184, 0.14)' : '#f4f4f5',
-        colorBgTextActive: isDark ? 'rgba(148, 163, 184, 0.2)' : '#e4e4e7',
-        borderRadius: 12,
-        controlHeight: 38,
-        fontWeight: 500,
-        paddingInline: 16,
-      },
-      Table: {
-        colorBgContainer: isDark ? '#132033' : '#ffffff',
-        headerBg: isDark ? '#162338' : '#f3f6fa',
-        headerColor: isDark ? '#d4deea' : '#5b6878',
-        rowHoverBg: isDark ? 'rgba(51, 65, 85, 0.74)' : '#eef4fb',
-        borderColor: isDark ? 'rgba(148, 163, 184, 0.3)' : '#dde5ef',
-        headerSplitColor: isDark ? 'rgba(148, 163, 184, 0.3)' : '#dde5ef',
-        cellPaddingBlock: 14,
-        cellPaddingInline: 16,
-        cellPaddingBlockSM: 12,
-        cellPaddingInlineSM: 14,
-      },
-      Descriptions: {
-        colorTextSecondary: isDark ? '#d7e1ec' : '#52525b',
-        labelBg: isDark ? '#162338' : '#f3f6fa',
-        itemPaddingBottom: 14,
-      },
-      Tag: {
-        borderRadiusSM: 999,
-        defaultBg: isDark ? 'rgba(51, 65, 85, 0.7)' : '#f4f4f5',
-        defaultColor: isDark ? '#e5e7eb' : '#3f3f46',
-        fontSizeSM: 12,
-      },
-      Tabs: {
-        itemColor: isDark ? '#c7d3df' : '#52525b',
-        itemSelectedColor: isDark ? '#f8fafc' : '#18181b',
-        itemHoverColor: isDark ? '#f8fafc' : '#09090b',
-        inkBarColor: isDark ? '#7dd3fc' : '#18181b',
-        cardBg: isDark ? '#132033' : '#ffffff',
-        horizontalItemGutter: 24,
-      },
-      Layout: {
-        siderBg: isDark ? '#0c1523' : '#ffffff',
-        headerBg: isDark ? '#0f1828' : '#ffffff',
-        bodyBg: isDark ? 'transparent' : '#f8fafc',
-      },
-      Menu: {
-        itemBg: isDark ? 'transparent' : '#ffffff',
-        activeBarBorderWidth: 0,
-        itemSelectedBg: isDark ? 'rgba(125, 211, 252, 0.28)' : '#eaf3ff',
-        itemSelectedColor: isDark ? '#f8fafc' : '#18181b',
-        itemColor: isDark ? '#cad6e2' : '#617082',
-        itemHoverColor: isDark ? '#f8fafc' : '#18181b',
-        itemHoverBg: isDark ? 'rgba(148, 163, 184, 0.18)' : '#f4f8fc',
-        groupTitleColor: isDark ? '#9cafc1' : '#617082',
-      },
-      Input: {
-        colorBgContainer: isDark ? '#162338' : '#ffffff',
-        colorBorder: isDark ? 'rgba(148, 163, 184, 0.3)' : '#d3dde8',
-        activeBorderColor: isDark ? '#7dd3fc' : '#18181b',
-        hoverBorderColor: isDark ? 'rgba(125, 211, 252, 0.6)' : '#aebbc9',
-        controlHeight: 38,
-        activeShadow: isDark ? '0 0 0 3px rgba(125, 211, 252, 0.14)' : '0 0 0 2px rgba(24, 24, 27, 0.08)',
-      },
-      Select: {
-        colorBgContainer: isDark ? '#162338' : '#ffffff',
-        colorBorder: isDark ? 'rgba(148, 163, 184, 0.3)' : '#d3dde8',
-        colorPrimaryHover: isDark ? 'rgba(125, 211, 252, 0.4)' : '#d4d4d8',
-        colorPrimary: isDark ? '#7dd3fc' : '#18181b',
-        optionSelectedBg: isDark ? 'rgba(125, 211, 252, 0.22)' : '#eaf3ff',
-        controlHeight: 38,
-      },
-      Dropdown: {
-        colorBgElevated: isDark ? '#132033' : '#ffffff',
-        colorText: isDark ? '#f1f5f9' : '#09090b',
-        controlItemBgHover: isDark ? 'rgba(125, 211, 252, 0.18)' : '#f1f5f9',
-      },
-      Modal: {
-        contentBg: isDark ? '#132033' : '#ffffff',
-        headerBg: isDark ? '#132033' : '#ffffff',
-        titleColor: isDark ? '#f8fafc' : '#09090b',
-      },
-      Drawer: {
-        colorBgElevated: isDark ? '#0f1828' : '#ffffff',
-      },
-      Tooltip: {
-        colorBgSpotlight: isDark ? '#0f172a' : '#09090b',
-      },
-    },
-  };
+  const configProps = { theme: { algorithm: antdTheme.defaultAlgorithm } };
 
   return (
-    <ConfigProvider
-      theme={themeConfig}
-      locale={antdLocale}
-      renderEmpty={() => <Empty description={emptyDescription} />}
-    >
+    <ConfigProvider {...configProps} locale={antdLocale} renderEmpty={() => <Empty description={emptyDescription} />}>
       <AntApp>
         <App />
       </AntApp>

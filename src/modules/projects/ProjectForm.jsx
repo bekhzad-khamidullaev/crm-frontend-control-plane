@@ -2,7 +2,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import dayjs from 'dayjs';
 import { ArrowLeftOutlined, SaveOutlined } from '@ant-design/icons';
 import { useEffect, useState } from 'react';
-import { useForm } from 'react-hook-form';
+import { Controller, useForm } from 'react-hook-form';
 import { z } from 'zod';
 
 import { App, Button, Card, Col, DatePicker, Input, Result, Row, Select, Skeleton, Space, Switch, Typography } from 'antd';
@@ -41,14 +41,14 @@ const priorityOptions = [
 const isPastDate = (value) => Boolean(value) && dayjs(value).isBefore(dayjs().startOf('day'), 'day');
 
 const schema = z.object({
-  name: z.string().min(1, t('projectFormPage.validation.nameRequired')),
+  name: z.string().trim().min(1, t('projectFormPage.validation.nameRequired')),
   description: z.string().optional(),
   note: z.string().optional(),
   stage: z.any().optional(),
   start_date: z.any().optional(),
   due_date: z.any().optional(),
   closing_date: z.any().optional(),
-  next_step: z.string().min(1, t('projectFormPage.validation.nextStepRequired')),
+  next_step: z.string().trim().min(1, t('projectFormPage.validation.nextStepRequired')),
   next_step_date: z
     .any()
     .refine((val) => val, { message: t('projectFormPage.validation.nextStepDateRequired') })
@@ -83,6 +83,7 @@ function ProjectForm({ id }) {
     setValue,
     reset,
     watch,
+    control,
     formState: { errors },
   } = useForm({
     resolver: zodResolver(schema),
@@ -220,7 +221,18 @@ function ProjectForm({ id }) {
                   <Row gutter={[16, 16]}>
                     <Col xs={24} md={16}>
                       <FieldLabel htmlFor="name">{t('projectFormPage.fields.name')} *</FieldLabel>
-                      <Input id="name" placeholder={t('projectFormPage.placeholders.name')} {...register('name')} />
+                      <Controller
+                        name="name"
+                        control={control}
+                        render={({ field }) => (
+                          <Input
+                            id="name"
+                            placeholder={t('projectFormPage.placeholders.name')}
+                            {...field}
+                            value={field.value ?? ''}
+                          />
+                        )}
+                      />
                       <FieldError message={errors.name?.message} />
                     </Col>
                     <Col xs={24} md={8}>
@@ -275,7 +287,21 @@ function ProjectForm({ id }) {
                     </Col>
                     <Col xs={24} md={12}>
                       <FieldLabel htmlFor="next_step">{t('projectFormPage.fields.nextStep')} *</FieldLabel>
-                      <Input id="next_step" placeholder={t('projectFormPage.placeholders.nextStep')} {...register('next_step')} />
+                      <Controller
+                        name="next_step"
+                        control={control}
+                        render={({ field }) => (
+                          <Input
+                            id="next_step"
+                            placeholder={t('projectFormPage.placeholders.nextStep')}
+                            {...field}
+                            value={field.value ?? ''}
+                          />
+                        )}
+                      />
+                      <Text type="secondary" style={{ display: 'block', marginTop: 6 }}>
+                        Что нужно сделать после текущего этапа (например: «Согласовать бюджет с клиентом»).
+                      </Text>
                       <FieldError message={errors.next_step?.message} />
                     </Col>
                   </Row>
