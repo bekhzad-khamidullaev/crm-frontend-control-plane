@@ -166,10 +166,10 @@ export const ContactsTable: React.FC = () => {
           icon={<BankOutlined />}
           onClick={() => navigate(`/companies/${companyId}`)}
           style={{ maxWidth: 150 }}
-          title={companyNameById[companyId] || `Компания #${companyId}`}
+          title={companyNameById[companyId] || 'Компания'}
         >
           <span style={{ ...singleLineEllipsis, maxWidth: 120 }}>
-            {companyNameById[companyId] || `Компания #${companyId}`}
+            {companyNameById[companyId] || 'Компания'}
           </span>
         </Button>
       ) : '-',

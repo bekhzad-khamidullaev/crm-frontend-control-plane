@@ -2185,9 +2185,9 @@ function NodePropertiesPanel({ lookups, activeLocale, selectedLandingId }) {
                 allowClear
                 value={normalizeOptionValue(
                   props.fixed_owner ?? null,
-                  lookups.users.map((u) => ({ value: u.id, label: u.full_name || u.username || `User #${u.id}` })),
+                  lookups.users.map((u) => ({ value: u.id, label: u.full_name || u.username || 'Пользователь' })),
                 )}
-                options={lookups.users.map((u) => ({ value: u.id, label: u.full_name || u.username || `User #${u.id}` }))}
+                options={lookups.users.map((u) => ({ value: u.id, label: u.full_name || u.username || 'Пользователь' }))}
                 onChange={(value) => setProp('fixed_owner', value || null)}
               />
             </Form.Item>

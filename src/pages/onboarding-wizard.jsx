@@ -747,7 +747,7 @@ export default function OnboardingWizardPage() {
                 {
                   title: 'Пользователь',
                   key: 'name',
-                  render: (_, record) => record.name || record.username || record.email || `User #${record.id}`,
+                  render: (_, record) => record.name || record.username || record.email || 'Пользователь',
                 },
                 {
                   title: 'Email',

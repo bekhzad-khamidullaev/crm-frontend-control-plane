@@ -2,6 +2,7 @@ import { RobotOutlined, SendOutlined, UserOutlined } from '@ant-design/icons';
 import { App, Avatar, Button, Card, Empty, Grid, Input, Select, Space, Spin, Typography } from 'antd';
 import { useEffect, useMemo, useState } from 'react';
 import { getAIAssistProviders, runAIAssist } from '../lib/api/integrations/ai.js';
+import { getCompany, getContact, getDeal, getLead, getProject, getTask } from '../lib/api/client.js';
 import { getLocale, t } from '../lib/i18n/index.js';
 import { useTheme } from '../lib/hooks/useTheme.js';
 import { hasAnyFeature } from '../lib/rbac.js';
@@ -22,7 +23,7 @@ const AI_CHAT_COPY = {
     defaultProviderLabel: 'По умолчанию',
     defaultProviderHint: 'Используется AI провайдер по умолчанию',
     suggestedPrompt:
-      'Дай краткий обзор по {entityType} #{entityId}: ключевые риски и следующие шаги.',
+      'Дай краткий обзор по {entityRef}: ключевые риски и следующие шаги.',
     emptyDescription:
       'Спросите AI про отчеты, статистику, лиды, сделки и задачи в рамках ваших прав',
     placeholder: 'Например: Покажи краткий срез по моим активным сделкам и рискам на эту неделю',
@@ -42,7 +43,7 @@ const AI_CHAT_COPY = {
     defaultProviderLabel: 'Sukut bo‘yicha',
     defaultProviderHint: 'Sukut bo‘yicha AI provayder ishlatiladi',
     suggestedPrompt:
-      '{entityType} #{entityId} bo‘yicha qisqa sharh bering: asosiy risklar va keyingi qadamlar.',
+      '{entityRef} bo‘yicha qisqa sharh bering: asosiy risklar va keyingi qadamlar.',
     emptyDescription:
       'Ruxsatlaringiz doirasida AI’dan hisobotlar, statistika, lidlar, bitimlar va vazifalar haqida so‘rang',
     placeholder:
@@ -62,7 +63,7 @@ const AI_CHAT_COPY = {
   en: {
     defaultProviderLabel: 'Default',
     defaultProviderHint: 'The default AI provider will be used',
-    suggestedPrompt: 'Give a short overview of {entityType} #{entityId}: key risks and next steps.',
+    suggestedPrompt: 'Give a short overview of {entityRef}: key risks and next steps.',
     emptyDescription:
       'Ask AI about reports, statistics, leads, deals, and tasks within your permissions',
     placeholder: 'For example: Show a short summary of my active deals and risks for this week',
@@ -231,6 +232,98 @@ Rules:
 5) Keep the response language aligned with the user message language.
 6) Never claim access to data that is not present in CRM context.`;
 
+const normalizeEntityType = (value) => {
+  const normalized = String(value || '').trim().toLowerCase();
+  const aliases = {
+    contact: 'contact',
+    contacts: 'contact',
+    lead: 'lead',
+    leads: 'lead',
+    deal: 'deal',
+    deals: 'deal',
+    company: 'company',
+    companies: 'company',
+    task: 'task',
+    tasks: 'task',
+    project: 'project',
+    projects: 'project',
+  };
+  return aliases[normalized] || normalized;
+};
+
+const getEntityTypeLabel = (entityType, localeValue) => {
+  const lang = String(localeValue || 'ru').toLowerCase();
+  const type = normalizeEntityType(entityType);
+  const labels = {
+    ru: {
+      contact: 'контакт',
+      lead: 'лид',
+      deal: 'сделка',
+      company: 'компания',
+      task: 'задача',
+      project: 'проект',
+    },
+    uz: {
+      contact: 'kontakt',
+      lead: 'lid',
+      deal: 'bitim',
+      company: 'kompaniya',
+      task: 'vazifa',
+      project: 'loyiha',
+    },
+    en: {
+      contact: 'contact',
+      lead: 'lead',
+      deal: 'deal',
+      company: 'company',
+      task: 'task',
+      project: 'project',
+    },
+  };
+  const dict = lang.startsWith('uz') ? labels.uz : lang.startsWith('en') ? labels.en : labels.ru;
+  return dict[type] || type;
+};
+
+const buildEntityName = (entityType, entity) => {
+  if (!entity || typeof entity !== 'object') return '';
+  const type = normalizeEntityType(entityType);
+  const personName =
+    String(entity.full_name || '').trim() ||
+    [entity.first_name, entity.last_name].filter(Boolean).join(' ').trim();
+
+  if (type === 'contact' || type === 'lead') {
+    return (
+      personName ||
+      String(entity.title || '').trim() ||
+      String(entity.email || '').trim() ||
+      String(entity.phone || '').trim()
+    );
+  }
+  if (type === 'deal' || type === 'task' || type === 'project') {
+    return String(entity.name || '').trim() || String(entity.title || '').trim();
+  }
+  if (type === 'company') {
+    return (
+      String(entity.full_name || '').trim() ||
+      String(entity.name || '').trim() ||
+      String(entity.short_name || '').trim()
+    );
+  }
+  return String(entity.name || entity.title || entity.full_name || '').trim();
+};
+
+const fetchEntityByType = async (entityType, entityId) => {
+  const type = normalizeEntityType(entityType);
+  if (!entityId) return null;
+  if (type === 'contact') return getContact(entityId);
+  if (type === 'lead') return getLead(entityId);
+  if (type === 'deal') return getDeal(entityId);
+  if (type === 'company') return getCompany(entityId);
+  if (type === 'task') return getTask(entityId);
+  if (type === 'project') return getProject(entityId);
+  return null;
+};
+
 const parseAiContextFromHash = () => {
   const hash = typeof window !== 'undefined' ? String(window.location.hash || '') : '';
   const [, query = ''] = hash.split('?');
@@ -259,6 +352,7 @@ export default function AIChatPage() {
   const [loading, setLoading] = useState(false);
   const [chat, setChat] = useState([]);
   const [chatContext, setChatContext] = useState(() => parseAiContextFromHash());
+  const [contextEntityName, setContextEntityName] = useState('');
   const [licenseBlocked, setLicenseBlocked] = useState(() => !hasAnyFeature('ai.assist'));
 
   const bg = theme === 'dark' ? '#141a22' : '#ffffff';
@@ -315,14 +409,43 @@ export default function AIChatPage() {
   }, []);
 
   useEffect(() => {
+    const { entityType, entityId } = chatContext;
+    if (!entityType || !entityId) {
+      setContextEntityName('');
+      return;
+    }
+    let cancelled = false;
+    (async () => {
+      try {
+        const entity = await fetchEntityByType(entityType, entityId);
+        if (cancelled) return;
+        setContextEntityName(buildEntityName(entityType, entity));
+      } catch {
+        if (cancelled) return;
+        setContextEntityName('');
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [chatContext.entityType, chatContext.entityId]);
+
+  const contextLabel = useMemo(() => {
+    if (!chatContext.entityType || !chatContext.entityId) return '';
+    const typeLabel = getEntityTypeLabel(chatContext.entityType, locale);
+    return contextEntityName
+      ? `${typeLabel}: ${contextEntityName}`
+      : `${typeLabel} #${chatContext.entityId}`;
+  }, [chatContext.entityType, chatContext.entityId, contextEntityName, locale]);
+
+  useEffect(() => {
     if (!chat.length && !inputText && chatContext.entityType && chatContext.entityId) {
       setInputText(
         copy.suggestedPrompt
-          .replace('{entityType}', chatContext.entityType)
-          .replace('{entityId}', chatContext.entityId)
+          .replace('{entityRef}', contextLabel || `${chatContext.entityType} #${chatContext.entityId}`)
       );
     }
-  }, [chatContext, chat.length, inputText, copy.suggestedPrompt]);
+  }, [chatContext, chat.length, inputText, copy.suggestedPrompt, contextLabel]);
 
   const providerOptions = useMemo(
     () => [
@@ -363,6 +486,7 @@ export default function AIChatPage() {
           route_hash: typeof window !== 'undefined' ? String(window.location.hash || '') : '',
           ...(chatContext.entityType ? { entity_type: chatContext.entityType } : {}),
           ...(chatContext.entityId ? { entity_id: chatContext.entityId } : {}),
+          ...(contextEntityName ? { entity_display_name: contextEntityName } : {}),
         },
         system_prompt: buildCrmSystemPrompt(replyCopy),
         chat_history: nextHistory.map((entry) => ({
@@ -461,7 +585,7 @@ export default function AIChatPage() {
         <Text type="secondary">{providerHint}</Text>
         {chatContext.entityType && chatContext.entityId ? (
           <Text type="secondary">
-            {copy.contextLabel}: {chatContext.entityType} #{chatContext.entityId}
+            {copy.contextLabel}: {contextLabel || `${chatContext.entityType} #${chatContext.entityId}`}
           </Text>
         ) : null}
       </Space>

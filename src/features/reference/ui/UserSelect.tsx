@@ -17,7 +17,7 @@ export const UserSelect: React.FC<UserSelectProps> = (props) => {
         `${item.first_name || ''} ${item.last_name || ''}`.trim()
         || item.username
         || item.email
-        || `User #${item.id}`,
+        || 'Пользователь',
       value: item.id,
     })) || [];
   }, [data]);
@@ -56,12 +56,12 @@ export const UserSelect: React.FC<UserSelectProps> = (props) => {
             `${user.first_name || ''} ${user.last_name || ''}`.trim()
             || user.username
             || user.email
-            || `User #${selectedId}`,
+            || 'Пользователь',
         });
       })
       .catch(() => {
         if (cancelled) return;
-        setResolvedOption({ value: selectedId, label: `User #${selectedId}` });
+        setResolvedOption({ value: selectedId, label: 'Пользователь' });
       });
 
     return () => {

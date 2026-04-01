@@ -36,12 +36,12 @@ export const ContactDetailPage: React.FC<ContactDetailPageProps> = ({ id }) => {
     UsersService.usersRetrieve({ id: ownerId })
       .then((user) => {
         if (cancelled) return;
-        const name = `${user.first_name || ''} ${user.last_name || ''}`.trim() || user.username || user.email || String(ownerId);
+        const name = `${user.first_name || ''} ${user.last_name || ''}`.trim() || user.username || user.email || null;
         setResolvedOwnerName(name);
       })
       .catch(() => {
         if (cancelled) return;
-        setResolvedOwnerName(String(ownerId));
+        setResolvedOwnerName(null);
       });
 
     return () => {
@@ -55,7 +55,7 @@ export const ContactDetailPage: React.FC<ContactDetailPageProps> = ({ id }) => {
     return <Result status="404" title="Контакт не найден" extra={<Button onClick={() => navigate('/contacts')}>К контактам</Button>} />;
   }
 
-  const ownerName = resolvedOwnerName || (contact.owner ? String(contact.owner) : 'Не назначен');
+  const ownerName = resolvedOwnerName || (contact as any).owner_name || 'Не назначен';
 
   return (
     <Space direction="vertical" size={16} style={{ width: '100%' }}>

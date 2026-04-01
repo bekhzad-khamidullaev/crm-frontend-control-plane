@@ -455,7 +455,7 @@ function Dashboard() {
       key: `deal-critical-${deal.id}`,
       type: 'Критичная сделка',
       typeColor: 'warning',
-      title: deal?.name || `Сделка #${deal.id}`,
+      title: deal?.name || 'Сделка без названия',
       meta: deal?.expected_close_date
         ? `План закрытия: ${String(deal.expected_close_date).slice(0, 10)}`
         : 'Без даты закрытия',
@@ -479,7 +479,7 @@ function Dashboard() {
       key: `lead-new-${lead.id}`,
       type: 'Новый лид',
       typeColor: 'success',
-      title: lead?.name || lead?.full_name || lead?.title || `Лид #${lead.id}`,
+      title: lead?.name || lead?.full_name || lead?.title || 'Лид без названия',
       meta: lead?.source_name || lead?.source || 'Новый входящий лид',
       actionLabel: 'Открыть лид',
       onClick: () => navigate(lead?.id ? `/leads/${lead.id}` : '/leads'),

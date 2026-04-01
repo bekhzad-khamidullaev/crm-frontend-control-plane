@@ -107,12 +107,12 @@ export const LeadDetailPage: React.FC<LeadDetailPageProps> = ({ id }) => {
     UsersService.usersRetrieve({ id: ownerId })
       .then((user) => {
         if (cancelled) return;
-        const name = `${user.first_name || ''} ${user.last_name || ''}`.trim() || user.username || user.email || String(ownerId);
+        const name = `${user.first_name || ''} ${user.last_name || ''}`.trim() || user.username || user.email || null;
         setResolvedOwnerName(name);
       })
       .catch(() => {
         if (cancelled) return;
-        setResolvedOwnerName(String(ownerId));
+        setResolvedOwnerName(null);
       });
 
     return () => {
@@ -157,9 +157,13 @@ export const LeadDetailPage: React.FC<LeadDetailPageProps> = ({ id }) => {
     || 'Не указан';
   const ownerName =
     insights?.lead?.owner_name
-    || users.find((u) => String(u.id) === String(lead.owner))?.username
+    || (() => {
+      const user = users.find((u) => String(u.id) === String(lead.owner));
+      if (!user) return null;
+      return `${user.first_name || ''} ${user.last_name || ''}`.trim() || user.username || user.email || null;
+    })()
     || resolvedOwnerName
-    || (lead.owner ? String(lead.owner) : 'Не назначен');
+    || 'Не назначен';
 
   const leadStatusFunnel = Array.isArray(insights?.funnel?.lead_status) ? insights.funnel.lead_status : [];
   const currentLeadStatusStep = Math.max(0, leadStatusFunnel.findIndex((stage: any) => stage.is_current));
@@ -169,7 +173,7 @@ export const LeadDetailPage: React.FC<LeadDetailPageProps> = ({ id }) => {
   const activityEvents = [
     lead.creation_date ? { key: 'created', timestamp: lead.creation_date, color: 'green', icon: <ClockCircleOutlined />, title: 'Лид создан', description: 'Лид добавлен в CRM' } : null,
     lead.was_in_touch ? { key: 'converted', timestamp: lead.was_in_touch, color: 'blue', icon: <CheckCircleOutlined />, title: 'Лид конвертирован', description: leadDeal ? `Создана сделка #${leadDeal.id}` : 'Лид отмечен как конвертированный' } : null,
-    leadDeal?.creation_date ? { key: 'deal-created', timestamp: leadDeal.creation_date, color: 'cyan', icon: <LinkOutlined />, title: `Сделка #${leadDeal.id}`, description: leadDeal.name || 'Связанная сделка' } : null,
+    leadDeal?.creation_date ? { key: 'deal-created', timestamp: leadDeal.creation_date, color: 'cyan', icon: <LinkOutlined />, title: leadDeal.name || 'Связанная сделка', description: leadDeal.name || 'Связанная сделка' } : null,
     lead.disqualified ? { key: 'disqualified', timestamp: lead.update_date || lead.creation_date, color: 'red', icon: <ClockCircleOutlined />, title: 'Лид дисквалифицирован', description: 'Лид переведен в статус "Потерян"' } : null,
     lead.update_date && lead.update_date !== lead.creation_date ? { key: 'updated', timestamp: lead.update_date, color: 'gray', icon: <ClockCircleOutlined />, title: 'Последнее обновление', description: 'Изменены данные лида' } : null,
   ]
@@ -232,7 +236,7 @@ export const LeadDetailPage: React.FC<LeadDetailPageProps> = ({ id }) => {
                   <Descriptions.Item label="Источник">{leadSourceName}</Descriptions.Item>
                   <Descriptions.Item label="Дата создания">{lead.creation_date ? dayjs(lead.creation_date).format('DD.MM.YYYY HH:mm') : '-'}</Descriptions.Item>
                   <Descriptions.Item label="Теги" span={2}>{(lead.tags || []).map((tag) => <Tag key={tag}>{tag}</Tag>)}</Descriptions.Item>
-                  <Descriptions.Item label="Сделка" span={2}>{isConverted ? leadDeal ? <Button type="link" onClick={() => navigate(`/deals/${leadDeal.id}`)} style={{ paddingInline: 0 }}>{leadDeal.name || `Сделка #${leadDeal.id}`}</Button> : <Text type="secondary">{isLeadDealsLoading ? 'Поиск сделки...' : 'Сделка не найдена'}</Text> : '-'}</Descriptions.Item>
+                  <Descriptions.Item label="Сделка" span={2}>{isConverted ? leadDeal ? <Button type="link" onClick={() => navigate(`/deals/${leadDeal.id}`)} style={{ paddingInline: 0 }}>{leadDeal.name || 'Связанная сделка'}</Button> : <Text type="secondary">{isLeadDealsLoading ? 'Поиск сделки...' : 'Сделка не найдена'}</Text> : '-'}</Descriptions.Item>
                   <Descriptions.Item label="Сообщения" span={2}>
                     <Button type="link" style={{ paddingInline: 0 }} icon={<MessageOutlined />} onClick={() => setActiveTab('messages')}>
                       Перейти к сообщениям по лиду
