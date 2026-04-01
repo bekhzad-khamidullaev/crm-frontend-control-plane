@@ -172,7 +172,7 @@ export const LeadDetailPage: React.FC<LeadDetailPageProps> = ({ id }) => {
 
   const activityEvents = [
     lead.creation_date ? { key: 'created', timestamp: lead.creation_date, color: 'green', icon: <ClockCircleOutlined />, title: 'Лид создан', description: 'Лид добавлен в CRM' } : null,
-    lead.was_in_touch ? { key: 'converted', timestamp: lead.was_in_touch, color: 'blue', icon: <CheckCircleOutlined />, title: 'Лид конвертирован', description: leadDeal ? `Создана сделка #${leadDeal.id}` : 'Лид отмечен как конвертированный' } : null,
+    lead.was_in_touch ? { key: 'converted', timestamp: lead.was_in_touch, color: 'blue', icon: <CheckCircleOutlined />, title: 'Лид конвертирован', description: leadDeal ? 'Создана сделка' : 'Лид отмечен как конвертированный' } : null,
     leadDeal?.creation_date ? { key: 'deal-created', timestamp: leadDeal.creation_date, color: 'cyan', icon: <LinkOutlined />, title: leadDeal.name || 'Связанная сделка', description: leadDeal.name || 'Связанная сделка' } : null,
     lead.disqualified ? { key: 'disqualified', timestamp: lead.update_date || lead.creation_date, color: 'red', icon: <ClockCircleOutlined />, title: 'Лид дисквалифицирован', description: 'Лид переведен в статус "Потерян"' } : null,
     lead.update_date && lead.update_date !== lead.creation_date ? { key: 'updated', timestamp: lead.update_date, color: 'gray', icon: <ClockCircleOutlined />, title: 'Последнее обновление', description: 'Изменены данные лида' } : null,

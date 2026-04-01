@@ -49,7 +49,7 @@ export default function RemindersList() {
     try {
       const response = await getReminderContentTypes();
       const results = Array.isArray(response?.results) ? response.results : [];
-      setContentTypeOptions(results.map((item) => ({ value: item.id, label: item.label || item.model || `Type ${item.id}` })));
+      setContentTypeOptions(results.map((item) => ({ value: item.id, label: item.label || item.model || 'Type' })));
     } catch (fetchError) {
       setContentTypeOptions([]);
       console.error('Failed to load reminder content types', fetchError);

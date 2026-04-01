@@ -108,7 +108,7 @@ function ReminderForm({ id }) {
       setContentTypeOptions(
         results.map((item) => ({
           value: item.id,
-          label: item.label || item.model || `Type ${item.id}`,
+          label: item.label || item.model || 'Type',
         })),
       );
     } catch (error) {

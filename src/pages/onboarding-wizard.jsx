@@ -135,7 +135,7 @@ function stageName(stage) {
     stage?.name_uz ||
     stage?.name ||
     stage?.title ||
-    `Stage #${stage?.id || 'n/a'}`
+    'Stage'
   );
 }
 

@@ -122,6 +122,47 @@ h6,
   margin-inline-end: 0;
 }
 
+/* Inline editable table cells: subtle default state with clear hover/focus */
+.crm-editable-cell {
+  border: 1px solid transparent;
+  background: transparent;
+  transition:
+    border-color 120ms ease,
+    background-color 120ms ease,
+    box-shadow 120ms ease,
+    color 120ms ease;
+}
+
+.crm-editable-cell .crm-editable-cell__hint {
+  color: rgba(59, 130, 246, 0.82);
+  font-size: 12px;
+  flex-shrink: 0;
+  opacity: 0;
+  transition: opacity 120ms ease;
+}
+
+.crm-editable-cell:hover,
+.crm-editable-cell:focus-visible {
+  border-color: rgba(37, 99, 235, 0.35);
+  background: rgba(37, 99, 235, 0.05);
+  box-shadow: 0 0 0 1px rgba(37, 99, 235, 0.12);
+}
+
+.crm-editable-cell:hover .crm-editable-cell__hint,
+.crm-editable-cell:focus-visible .crm-editable-cell__hint {
+  opacity: 1;
+}
+
+.crm-editable-cell:focus-visible {
+  outline: none;
+}
+
+.crm-editable-cell--editing {
+  border-color: rgba(37, 99, 235, 0.42);
+  background: rgba(37, 99, 235, 0.08);
+  box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.1);
+}
+
 /* Status badges */
 .status-badge {
   display: inline-flex;
@@ -255,6 +296,22 @@ h6,
     rgba(255, 255, 255, 0.025) 0%,
     rgba(255, 255, 255, 0) 100%
   );
+}
+
+.dark .crm-editable-cell {
+  border-color: transparent;
+  background: transparent;
+}
+
+.dark .crm-editable-cell .crm-editable-cell__hint {
+  color: rgba(125, 211, 252, 0.9);
+}
+
+.dark .crm-editable-cell:hover,
+.dark .crm-editable-cell:focus-visible {
+  border-color: rgba(56, 189, 248, 0.5);
+  background: rgba(56, 189, 248, 0.13);
+  box-shadow: 0 0 0 1px rgba(56, 189, 248, 0.22);
 }
 
 .dark .ant-input,

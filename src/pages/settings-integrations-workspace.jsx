@@ -765,7 +765,7 @@ export default function SettingsIntegrationsWorkspace({ defaultTab = 'system' } 
     const webhookRows = webhooks.map((item) => ({
       key: `webhook-${item.id}`,
       type: 'webhook',
-      provider: item?.name || item?.event || `Webhook #${item.id}`,
+      provider: item?.name || item?.event || 'Webhook',
       channel: item?.event || 'Webhook',
       endpoint: item?.target_url || item?.url || '-',
       enabled: Boolean(item?.is_active ?? item?.enabled ?? true),
@@ -780,7 +780,7 @@ export default function SettingsIntegrationsWorkspace({ defaultTab = 'system' } 
       return {
         key: `extension-${item.id}`,
         type: 'extension',
-        provider: item?.name || item?.code || `Extension #${item.id}`,
+        provider: item?.name || item?.code || 'Extension',
         channel: item?.code || '-',
         endpoint: compatibility?.crm_version || item?.installed_version || '-',
         enabled: normalizeMarketplaceStatus(item?.status) !== 'uninstalled',

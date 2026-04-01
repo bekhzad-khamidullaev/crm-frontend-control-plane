@@ -15,7 +15,7 @@ export const ContactSelect: React.FC<ContactSelectProps> = (props) => {
         label:
           item.full_name ||
           `${item.first_name || ''} ${item.last_name || ''}`.trim() ||
-          `Contact #${item.id}`,
+          'Контакт',
         value: item.id,
       })) || []
     );

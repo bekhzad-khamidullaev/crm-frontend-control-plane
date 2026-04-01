@@ -108,7 +108,7 @@ export default function BusinessProcessesWorkspacePage() {
     const processEvents = filteredProjects.map((project) => ({
       key: `project-${project.id}`,
       entity: 'Процесс',
-      title: project.name || `#${project.id}`,
+      title: project.name || 'Процесс',
       status: project.status || 'draft',
       date: project.update_date || project.creation_date || null,
       link: `/projects/${project.id}`,
@@ -116,7 +116,7 @@ export default function BusinessProcessesWorkspacePage() {
     const requestEvents = filteredRequests.map((request) => ({
       key: `request-${request.id}`,
       entity: 'Инстанс',
-      title: request.title || request.description || `#${request.id}`,
+      title: request.title || request.description || 'Инстанс',
       status: request.status || 'new',
       date: request.update_date || request.creation_date || null,
       link: null,
@@ -178,7 +178,7 @@ export default function BusinessProcessesWorkspacePage() {
                       title: 'Процесс',
                       dataIndex: 'name',
                       key: 'name',
-                      render: (value, record) => <a onClick={() => navigate(`/projects/${record.id}`)}>{value || `#${record.id}`}</a>,
+                      render: (value, record) => <a onClick={() => navigate(`/projects/${record.id}`)}>{value || 'Без названия'}</a>,
                     },
                     { title: 'Описание', dataIndex: 'description', key: 'description', render: (value) => value || '-' },
                     { title: 'Ответственный', dataIndex: 'owner_name', key: 'owner_name', render: (value) => value || '-' },
@@ -198,7 +198,7 @@ export default function BusinessProcessesWorkspacePage() {
                   dataSource={filteredRequests}
                   pagination={{ pageSize: 10, hideOnSinglePage: true }}
                   columns={[
-                    { title: 'Инстанс', dataIndex: 'title', key: 'title', render: (value, record) => value || record.description || `#${record.id}` },
+                    { title: 'Инстанс', dataIndex: 'title', key: 'title', render: (value, record) => value || record.description || 'Без названия' },
                     { title: 'Тип', dataIndex: 'type', key: 'type', render: (value) => value || '-' },
                     { title: 'Статус', dataIndex: 'status', key: 'status', render: (value) => processStatusTag(value) },
                     { title: 'Приоритет', dataIndex: 'priority', key: 'priority', render: (value) => value || '-' },
@@ -221,7 +221,7 @@ export default function BusinessProcessesWorkspacePage() {
                       title: 'Задача',
                       dataIndex: 'name',
                       key: 'name',
-                      render: (value, record) => <a onClick={() => navigate(`/tasks/${record.id}`)}>{value || `#${record.id}`}</a>,
+                      render: (value, record) => <a onClick={() => navigate(`/tasks/${record.id}`)}>{value || 'Без названия'}</a>,
                     },
                     { title: 'Следующий шаг', dataIndex: 'next_step', key: 'next_step', render: (value) => value || '-' },
                     { title: 'Дата шага', dataIndex: 'next_step_date', key: 'next_step_date', render: (value) => formatDateSafe(value) },

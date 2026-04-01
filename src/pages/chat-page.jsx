@@ -159,9 +159,9 @@ function buildConversationKey(item) {
 function buildConversationTitle(item) {
   const participantId = resolveParticipantId(item);
   if (item?.subject_object_id) {
-    return `Сущность #${item.subject_object_id}`;
+    return 'Сущность';
   }
-  return participantId || `Диалог #${item?.id}`;
+  return participantId || 'Диалог';
 }
 
 function toLowerString(value) {

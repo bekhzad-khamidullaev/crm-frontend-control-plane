@@ -3327,7 +3327,7 @@ export default function LandingBuilderPage() {
                   >
                     <Popconfirm
                       title="Откатить версию?"
-                      description={`Откат к ревизии #${record.id}. Текущий draft будет заменён.`}
+                      description="Откат к выбранной ревизии. Текущий draft будет заменён."
                       okText="Откатить"
                       cancelText="Отмена"
                       onConfirm={async () => {

@@ -12,7 +12,7 @@ export const LeadSelect: React.FC<LeadSelectProps> = (props) => {
   const options = useMemo(() => {
     return (
       data?.results?.map((item) => ({
-        label: item.first_name ? `${item.first_name} ${item.last_name || ''}` : `Lead #${item.id}`,
+        label: item.first_name ? `${item.first_name} ${item.last_name || ''}` : 'Лид',
         value: item.id,
       })) || []
     );

@@ -180,7 +180,7 @@ const ReferenceSelect = ({
     >
       {data.map((item) => (
         <Option key={item[valueKey]} value={item[valueKey]}>
-          {item[labelKey] ?? item.name ?? item.title ?? item.slug ?? item.id}
+          {item[labelKey] ?? item.name ?? item.title ?? item.slug ?? 'Без названия'}
         </Option>
       ))}
     </Select>

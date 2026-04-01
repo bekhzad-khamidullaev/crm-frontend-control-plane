@@ -105,7 +105,7 @@ export default function BacklogWorkspacePage() {
                   dataSource={backlogTasks}
                   pagination={{ pageSize: 10, hideOnSinglePage: true }}
                   columns={[
-                    { title: 'Задача', dataIndex: 'name', key: 'name', render: (value, record) => <a onClick={() => navigate(`/tasks/${record.id}`)}>{value || `#${record.id}`}</a> },
+                    { title: 'Задача', dataIndex: 'name', key: 'name', render: (value, record) => <a onClick={() => navigate(`/tasks/${record.id}`)}>{value || 'Без названия'}</a> },
                     { title: 'Следующий шаг', dataIndex: 'next_step', key: 'next_step', render: (value) => value || '-' },
                     { title: 'Дедлайн', dataIndex: 'due_date', key: 'due_date', render: (value) => value ? <Tag color="error">{formatDateSafe(value)}</Tag> : <Tag color="warning">Не указан</Tag> },
                   ]}
@@ -122,7 +122,7 @@ export default function BacklogWorkspacePage() {
                   dataSource={backlogDeals}
                   pagination={{ pageSize: 10, hideOnSinglePage: true }}
                   columns={[
-                    { title: 'Сделка', dataIndex: 'name', key: 'name', render: (value, record) => <a onClick={() => navigate(`/deals/${record.id}`)}>{value || `#${record.id}`}</a> },
+                    { title: 'Сделка', dataIndex: 'name', key: 'name', render: (value, record) => <a onClick={() => navigate(`/deals/${record.id}`)}>{value || 'Без названия'}</a> },
                     { title: 'Компания', dataIndex: 'company_name', key: 'company_name', render: (value) => value || '-' },
                     { title: 'Стадия', dataIndex: 'stage_name', key: 'stage_name', render: (value) => value || '-' },
                     { title: 'Next step', key: 'next_step', render: () => <Tag color="warning">Не заполнен</Tag> },
@@ -140,7 +140,7 @@ export default function BacklogWorkspacePage() {
                   dataSource={backlogLeads}
                   pagination={{ pageSize: 10, hideOnSinglePage: true }}
                   columns={[
-                    { title: 'Лид', key: 'lead', render: (_, record) => <a onClick={() => navigate(`/leads/${record.id}`)}>{record.full_name || record.first_name || record.company_name || `#${record.id}`}</a> },
+                    { title: 'Лид', key: 'lead', render: (_, record) => <a onClick={() => navigate(`/leads/${record.id}`)}>{record.full_name || record.first_name || record.company_name || 'Лид'}</a> },
                     { title: 'Email', dataIndex: 'email', key: 'email', render: (value) => value || '-' },
                     { title: 'Телефон', dataIndex: 'phone', key: 'phone', render: (value) => value || '-' },
                     { title: 'Контакт', key: 'touch', render: () => <Tag color="error">Не выполнен</Tag> },

@@ -1,10 +1,9 @@
 import { useState, useEffect, useRef } from 'react';
 import dayjs from 'dayjs';
 import { Input, Select, DatePicker, InputNumber, Button, App } from 'antd';
-import { CheckOutlined, CloseOutlined } from '@ant-design/icons';
+import { CheckOutlined, CloseOutlined, EditOutlined } from '@ant-design/icons';
 
 const { TextArea } = Input;
-const { Option } = Select;
 
 const valuesEqual = (left, right) => String(left) === String(right);
 
@@ -13,21 +12,32 @@ const normalizeOptionValue = (value, options = []) => {
   return matched ? matched.value : value;
 };
 
-/**
- * EditableCell component for inline table editing
- * Supports text, number, select, and date fields with auto-save
- */
+const normalizeDateValue = (raw) => {
+  if (raw === null || raw === undefined || raw === '') return null;
+  const date = dayjs(raw);
+  return date.isValid() ? date.format('YYYY-MM-DD') : String(raw);
+};
+
+const normalizeComparableValue = (raw, type) => {
+  if (type === 'date') return normalizeDateValue(raw);
+  if (dayjs.isDayjs(raw)) return raw.toISOString();
+  if (raw === null || raw === undefined || raw === '') return '';
+  return String(raw);
+};
+
 export default function EditableCell({
   value: initialValue,
   record,
   dataIndex,
   editable = true,
-  type = 'text', // text, number, select, date, textarea
-  options = [], // for select type
+  type = 'text',
+  options = [],
   onSave,
-  format, // function to format display value
-  renderView, // custom render function for view mode
+  format,
+  renderView,
   placeholder,
+  saveOnBlur = true,
+  inputProps = {},
   ...restProps
 }) {
   const { message } = App.useApp();
@@ -47,14 +57,15 @@ export default function EditableCell({
   }, [editing]);
 
   const toggleEdit = () => {
-    if (editable) {
-      setEditing(!editing);
-      setValue(initialValue);
-    }
+    if (!editable) return;
+    setEditing((prev) => !prev);
+    setValue(initialValue);
   };
 
   const save = async () => {
-    if (value === initialValue) {
+    const normalizedCurrent = normalizeComparableValue(value, type);
+    const normalizedInitial = normalizeComparableValue(initialValue, type);
+    if (normalizedCurrent === normalizedInitial) {
       setEditing(false);
       return;
     }
@@ -78,21 +89,14 @@ export default function EditableCell({
     setEditing(false);
   };
 
-  const handleKeyDown = (event) => {
-    if (event.key === 'Enter' && type !== 'textarea') {
-      save();
-    } else if (event.key === 'Escape') {
-      cancel();
-    }
-  };
-
   const renderInput = () => {
     const commonProps = {
       ref: inputRef,
       disabled: saving,
       size: 'small',
       onPressEnter: type !== 'textarea' ? save : undefined,
-      onBlur: save,
+      onBlur: saveOnBlur ? save : undefined,
+      ...inputProps,
     };
 
     switch (type) {
@@ -113,14 +117,18 @@ export default function EditableCell({
             value={normalizeOptionValue(value, options) ?? undefined}
             onChange={(val) => setValue(val)}
             placeholder={placeholder || 'Выберите...'}
+            allowClear={inputProps.allowClear ?? true}
+            showSearch={inputProps.showSearch ?? true}
+            optionFilterProp="label"
+            popupMatchSelectWidth={false}
+            dropdownStyle={{ minWidth: 220, maxWidth: 360 }}
             style={{ width: '100%' }}
-          >
-            {options.map((option) => (
-              <Option key={option.value} value={option.value}>
-                {option.label}
-              </Option>
-            ))}
-          </Select>
+            options={options.map((option) => ({
+              value: option.value,
+              label: option.label,
+              disabled: option.disabled,
+            }))}
+          />
         );
 
       case 'date':
@@ -130,6 +138,7 @@ export default function EditableCell({
             value={value ? dayjs(value) : null}
             onChange={(date) => setValue(date)}
             format="DD.MM.YYYY"
+            allowClear={inputProps.allowClear ?? true}
             style={{ width: '100%' }}
           />
         );
@@ -178,35 +187,49 @@ export default function EditableCell({
     return <div style={restProps.style}>{renderView ? renderView(initialValue) : getDisplayValue()}</div>;
   }
 
-  return editing ? (
-    <div style={{ display: 'flex', gap: 4, alignItems: 'center', ...restProps.style }}>
-      <div style={{ flex: 1 }}>{renderInput()}</div>
-      <Button
-        type="link"
-        size="small"
-        icon={<CheckOutlined />}
-        onClick={save}
-        loading={saving}
-        style={{ color: '#52c41a' }}
-      />
-      <Button
-        type="link"
-        size="small"
-        icon={<CloseOutlined />}
-        onClick={cancel}
-        disabled={saving}
-        danger
-      />
-    </div>
-  ) : (
+  if (editing) {
+    return (
+      <div
+        className="crm-editable-cell crm-editable-cell--editing"
+        style={{ display: 'flex', gap: 4, alignItems: 'center', width: '100%', ...restProps.style }}
+      >
+        <div style={{ flex: 1, minWidth: 0 }}>{renderInput()}</div>
+        <Button
+          type="link"
+          size="small"
+          icon={<CheckOutlined />}
+          onClick={save}
+          onMouseDown={(event) => event.preventDefault()}
+          loading={saving}
+          style={{ color: '#52c41a', paddingInline: 4 }}
+        />
+        <Button
+          type="link"
+          size="small"
+          icon={<CloseOutlined />}
+          onClick={cancel}
+          onMouseDown={(event) => event.preventDefault()}
+          disabled={saving}
+          danger
+          style={{ paddingInline: 4 }}
+        />
+      </div>
+    );
+  }
+
+  return (
     <div
+      className="crm-editable-cell"
       style={{
-        cursor: 'pointer',
+        cursor: editable ? 'pointer' : 'default',
         padding: '4px 8px',
         borderRadius: 4,
         minHeight: 32,
         display: 'flex',
         alignItems: 'center',
+        justifyContent: 'space-between',
+        gap: 8,
+        width: '100%',
         ...restProps.style,
       }}
       onClick={toggleEdit}
@@ -219,17 +242,14 @@ export default function EditableCell({
       role="button"
       aria-label="Click to edit"
     >
-      {renderView ? renderView(initialValue) : getDisplayValue()}
+      <span style={{ flex: 1, minWidth: 0 }}>
+        {renderView ? renderView(initialValue) : getDisplayValue()}
+      </span>
+      <EditOutlined className="crm-editable-cell__hint" />
     </div>
   );
 }
 
-/**
- * HOC to make a column editable
- * @param {Object} column - Ant Design table column config
- * @param {Function} onSave - Save callback
- * @returns {Object} Enhanced column config
- */
 export function makeEditable(column, onSave) {
   return {
     ...column,

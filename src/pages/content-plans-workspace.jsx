@@ -66,11 +66,11 @@ export default function ContentPlansWorkspacePage() {
   const [editingCampaignId, setEditingCampaignId] = useState(null);
 
   const segmentOptions = useMemo(
-    () => segments.map((item) => ({ value: item.id, label: item.name || `Сегмент #${item.id}` })),
+    () => segments.map((item) => ({ value: item.id, label: item.name || 'Сегмент' })),
     [segments],
   );
   const templateOptions = useMemo(
-    () => templates.map((item) => ({ value: item.id, label: item.name || `Шаблон #${item.id}` })),
+    () => templates.map((item) => ({ value: item.id, label: item.name || 'Шаблон' })),
     [templates],
   );
 

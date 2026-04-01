@@ -9,7 +9,7 @@ export const CompanySelect: React.FC<SelectProps<any>> = (props) => {
 
   const options = useMemo(() => (
     data?.results?.map((item) => ({
-      label: item.full_name || `Company #${item.id}`,
+      label: item.full_name || 'Компания',
       value: item.id,
     })) || []
   ), [data]);

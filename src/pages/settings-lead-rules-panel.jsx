@@ -85,7 +85,7 @@ function LeadRulesPanel() {
     () =>
       users.map((user) => ({
         value: user.id,
-        label: user.full_name || `${user.first_name || ''} ${user.last_name || ''}`.trim() || user.username || `#${user.id}`,
+        label: user.full_name || `${user.first_name || ''} ${user.last_name || ''}`.trim() || user.username || 'Пользователь',
       })),
     [users]
   );
@@ -94,7 +94,7 @@ function LeadRulesPanel() {
     () =>
       leadSources.map((item) => ({
         value: item.id,
-        label: item.name || item.name_ru || item.name_en || `#${item.id}`,
+        label: item.name || item.name_ru || item.name_en || 'Источник',
       })),
     [leadSources]
   );

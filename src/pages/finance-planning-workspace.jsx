@@ -317,7 +317,7 @@ export default function FinancePlanningWorkspacePage() {
                   dataSource={filteredRequests}
                   pagination={{ pageSize: 10, hideOnSinglePage: true }}
                   columns={[
-                    { title: 'Заявка', dataIndex: 'title', key: 'title', render: (value, record) => value || record.description || `#${record.id}` },
+                    { title: 'Заявка', dataIndex: 'title', key: 'title', render: (value, record) => value || record.description || 'Без названия' },
                     { title: 'Тип', dataIndex: 'type', key: 'type', render: (value) => value || '-' },
                     {
                       title: 'Статус',

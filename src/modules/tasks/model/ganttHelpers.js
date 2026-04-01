@@ -55,7 +55,7 @@ export const buildTaskGanttRows = ({
 
       return {
         id: task.id,
-        name: task.name || `Task #${task.id}`,
+        name: task.name || 'Задача',
         stageId: task.stage ?? null,
         stageLabel: stagesById[task.stage]?.name || noStageLabel,
         responsibleLabel: responsibleLabel || '-',

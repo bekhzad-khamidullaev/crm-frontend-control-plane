@@ -114,7 +114,7 @@ function TaskKanbanCard({
       <Space direction="vertical" size={8} style={{ width: '100%' }}>
         <Space direction="vertical" size={0} style={{ width: '100%' }}>
           <Text strong ellipsis>
-            {task.name || `Task #${task.id}`}
+            {task.name || 'Задача'}
           </Text>
           {task.description ? (
             <Text type="secondary" ellipsis={{ tooltip: task.description }}>
@@ -449,7 +449,7 @@ function TasksList() {
     () =>
       users.map((user) => ({
         value: user.id,
-        label: userNameById[user.id] || `#${user.id}`,
+        label: userNameById[user.id] || 'Пользователь',
       })),
     [users, userNameById],
   );

@@ -301,7 +301,7 @@ export default function ReferenceDataPage() {
     {
       title: t('referenceDataPage.members.user'),
       key: 'name',
-      render: (_, record) => record.full_name || record.username || record.email || `#${record.id}`,
+      render: (_, record) => record.full_name || record.username || record.email || 'Пользователь',
     },
     {
       title: 'Email',

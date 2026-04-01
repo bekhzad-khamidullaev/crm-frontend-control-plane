@@ -78,7 +78,7 @@ export default function SitesWorkspacePage() {
           dataSource={filteredSites}
           pagination={{ pageSize: 10, hideOnSinglePage: true }}
           columns={[
-            { title: 'Сайт', dataIndex: 'title', key: 'title', render: (value, record) => value || record.slug || `#${record.id}` },
+            { title: 'Сайт', dataIndex: 'title', key: 'title', render: (value, record) => value || record.slug || 'Сайт' },
             { title: 'Slug', dataIndex: 'slug', key: 'slug', render: (value) => value || '-' },
             { title: 'Статус', dataIndex: 'status', key: 'status', render: (value) => statusTag(value) },
             { title: 'Активен', dataIndex: 'is_active', key: 'is_active', render: (value) => value ? <Tag color="success">Да</Tag> : <Tag>Нет</Tag> },

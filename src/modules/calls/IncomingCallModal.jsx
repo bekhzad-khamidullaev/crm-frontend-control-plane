@@ -95,7 +95,7 @@ function IncomingCallModal({ visible, callData, onAnswer, onReject, onDismiss })
     };
   }, [callData?.callId, callData?.callerName, phoneNumber]);
   const leadSourceOptions = useMemo(
-    () => leadSources.map((source) => ({ value: source.id, label: source.name || `#${source.id}` })),
+    () => leadSources.map((source) => ({ value: source.id, label: source.name || 'Источник' })),
     [leadSources],
   );
 

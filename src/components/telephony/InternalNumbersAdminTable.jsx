@@ -315,7 +315,7 @@ export default function InternalNumbersAdminTable({ canManage = false, onSuccess
               loading={usersLoading}
               options={users.map((item) => ({
                 value: item.id,
-                label: item.full_name || item.username || `#${item.id}`,
+                label: item.full_name || item.username || 'Пользователь',
               }))}
             />
           </Form.Item>

@@ -88,7 +88,7 @@ export default function DocumentsWorkspacePage() {
                   dataSource={filteredMemos}
                   pagination={{ pageSize: 10, hideOnSinglePage: true }}
                   columns={[
-                    { title: 'Документ', dataIndex: 'subject', key: 'subject', render: (value, record) => value || record.title || `#${record.id}` },
+                    { title: 'Документ', dataIndex: 'subject', key: 'subject', render: (value, record) => value || record.title || 'Документ' },
                     { title: 'Стадия', dataIndex: 'stage', key: 'stage', render: (value) => value ? <Tag>{value}</Tag> : '-' },
                     { title: 'Обновлено', dataIndex: 'update_date', key: 'update_date', render: (value) => formatDateSafe(value) },
                   ]}
