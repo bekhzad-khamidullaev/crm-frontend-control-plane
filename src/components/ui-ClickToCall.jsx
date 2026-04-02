@@ -5,10 +5,9 @@
  */
 
 import React, { useState } from 'react';
-import { Button, Dropdown, Space, App } from 'antd';
-import { PhoneOutlined, CopyOutlined, MessageOutlined } from '@ant-design/icons';
-import { initiateCall } from '../lib/api/telephony';
-import SendSMSModal from './SendSMSModal.jsx';
+import { Button, App } from 'antd';
+import { requestDialerOpen } from '../shared/ui/telephonyDialer.js';
+import ChannelBrandIcon from '../channel/ChannelBrandIcon.jsx';
 
 export default function ClickToCall({
   phoneNumber,
@@ -21,7 +20,6 @@ export default function ClickToCall({
 }) {
   const { message } = App.useApp();
   const [calling, setCalling] = useState(false);
-  const [smsModalVisible, setSmsModalVisible] = useState(false);
 
   const handleCall = async () => {
     if (!phoneNumber) {
@@ -31,82 +29,29 @@ export default function ClickToCall({
 
     setCalling(true);
     try {
-      await initiateCall({
-        phone_number: phoneNumber,
-        contact_name: contactName,
-        entity_type: entityType,
-        entity_id: contactId,
-      });
-
-      message.success(`Звонок на ${phoneNumber} инициирован`);
+      requestDialerOpen({ number: phoneNumber, autoCall: true });
     } catch (error) {
-      console.error('Error initiating call:', error);
-      message.error('Ошибка инициации звонка');
+      console.error('Error opening dialer:', error);
+      message.error('Ошибка запуска встроенной звонилки');
     } finally {
       setCalling(false);
     }
   };
-
-  const handleCopy = () => {
-    navigator.clipboard.writeText(phoneNumber);
-    message.success('Номер скопирован');
-  };
-
-  const handleSMS = () => {
-    setSmsModalVisible(true);
-  };
-
-  const menuItems = [
-    {
-      key: 'call',
-      icon: <PhoneOutlined />,
-      label: 'Позвонить',
-      onClick: handleCall,
-    },
-    {
-      key: 'copy',
-      icon: <CopyOutlined />,
-      label: 'Скопировать номер',
-      onClick: handleCopy,
-    },
-    {
-      key: 'sms',
-      icon: <MessageOutlined />,
-      label: 'Отправить SMS',
-      onClick: handleSMS,
-    },
-  ];
 
   if (!phoneNumber) {
     return null;
   }
 
   return (
-    <>
-      <Dropdown
-        menu={{ items: menuItems }}
-        trigger={['click']}
-        placement="bottomLeft"
-      >
-        <Button
-          type={type === 'link' ? 'link' : 'default'}
-          size={size}
-          loading={calling}
-          icon={showIcon ? <PhoneOutlined /> : null}
-          style={{ padding: type === 'link' ? 0 : undefined }}
-        >
-          {phoneNumber}
-        </Button>
-      </Dropdown>
-
-      <SendSMSModal
-        visible={smsModalVisible}
-        onClose={() => setSmsModalVisible(false)}
-        phoneNumber={phoneNumber}
-        contactName={contactName}
-        entityType={entityType}
-        entityId={contactId}
-      />
-    </>
+    <Button
+      type={type === 'link' ? 'link' : 'default'}
+      size={size}
+      loading={calling}
+      icon={showIcon ? <ChannelBrandIcon channel="telephony" size={14} /> : null}
+      style={{ padding: type === 'link' ? 0 : undefined }}
+      onClick={handleCall}
+    >
+      {phoneNumber}
+    </Button>
   );
 }

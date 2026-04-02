@@ -5,10 +5,11 @@
 
 import React, { useState } from 'react';
 import { Form, Input, Button, Space, Alert, Typography, Card, App } from 'antd';
-import { SendOutlined, CopyOutlined } from '@ant-design/icons';
+import { CopyOutlined } from '@ant-design/icons';
 import { connectTelegramBot, setTelegramWebhook } from '../lib/api/integrations/telegram';
 import { apiConfig } from '../lib/api/client';
 import { t } from '../lib/i18n';
+import ChannelBrandIcon from './channel/ChannelBrandIcon.jsx';
 
 const { Link, Paragraph } = Typography;
 
@@ -160,7 +161,7 @@ export default function TelegramConnect({ onSuccess, onCancel }) {
           extra={tr('telegramConnect.fields.tokenExtra', 'Токен бота, который вы получили от @BotFather')}
         >
           <Input.Password
-            prefix={<SendOutlined />}
+            prefix={<ChannelBrandIcon channel="telegram" size={16} />}
             placeholder="123456:ABC-DEF1234ghIkl-zyx57W2v1u123ew11"
           />
         </Form.Item>
@@ -210,7 +211,12 @@ export default function TelegramConnect({ onSuccess, onCancel }) {
 
         <Form.Item>
           <Space>
-            <Button type="primary" htmlType="submit" loading={loading} icon={<SendOutlined />}>
+            <Button
+              type="primary"
+              htmlType="submit"
+              loading={loading}
+              icon={<ChannelBrandIcon channel="telegram" size={16} />}
+            >
               {tr('telegramConnect.actions.connect', 'Подключить Telegram бота')}
             </Button>
             {onCancel && (

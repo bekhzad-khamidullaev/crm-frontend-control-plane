@@ -24,12 +24,8 @@ import {
 import {
   CheckCircleOutlined,
   ClockCircleOutlined,
-  FacebookOutlined,
-  InstagramOutlined,
-  MessageOutlined,
   ReloadOutlined,
   SendOutlined,
-  WhatsAppOutlined,
 } from '@ant-design/icons';
 import dayjs from 'dayjs';
 import 'dayjs/locale/ru';
@@ -46,6 +42,7 @@ import { readStoredLicenseFeatures } from '../lib/api/licenseFeatures.js';
 import { readStoredLicenseState, shouldEnforceLicenseFeatures } from '../lib/api/licenseState.js';
 import { useTheme } from '../lib/hooks/useTheme.js';
 import CommunicationsHub from '../modules/communications/CommunicationsHub.jsx';
+import ChannelBrandIcon from '../components/channel/ChannelBrandIcon.jsx';
 
 dayjs.extend(relativeTime);
 dayjs.locale('ru');
@@ -55,12 +52,12 @@ const { Search, TextArea } = Input;
 const { Title, Text } = Typography;
 
 const CHANNEL_META = {
-  whatsapp: { label: 'WhatsApp', color: 'green', icon: <WhatsAppOutlined /> },
-  telegram: { label: 'Telegram', color: 'blue', icon: <SendOutlined /> },
-  instagram: { label: 'Instagram', color: 'magenta', icon: <InstagramOutlined /> },
-  facebook: { label: 'Facebook', color: 'geekblue', icon: <FacebookOutlined /> },
-  playmobile: { label: 'SMS', color: 'gold', icon: <MessageOutlined /> },
-  eskiz: { label: 'SMS', color: 'gold', icon: <MessageOutlined /> },
+  whatsapp: { label: 'WhatsApp', color: 'green', icon: <ChannelBrandIcon channel="whatsapp" /> },
+  telegram: { label: 'Telegram', color: 'blue', icon: <ChannelBrandIcon channel="telegram" /> },
+  instagram: { label: 'Instagram', color: 'magenta', icon: <ChannelBrandIcon channel="instagram" /> },
+  facebook: { label: 'Facebook', color: 'geekblue', icon: <ChannelBrandIcon channel="facebook" /> },
+  playmobile: { label: 'SMS', color: 'gold', icon: <ChannelBrandIcon channel="sms" /> },
+  eskiz: { label: 'SMS', color: 'gold', icon: <ChannelBrandIcon channel="sms" /> },
 };
 
 const BUCKET_OPTIONS = [
@@ -87,7 +84,23 @@ const SEGMENT_LABELS = {
 const META_24H_CHANNELS = new Set(['whatsapp', 'instagram', 'facebook']);
 
 function channelMeta(channelType) {
-  return CHANNEL_META[channelType] || { label: channelType || 'Канал', color: 'default', icon: <MessageOutlined /> };
+  return (
+    CHANNEL_META[channelType] || {
+      label: channelType || 'Канал',
+      color: 'default',
+      icon: <ChannelBrandIcon channel={channelType || 'chat'} />,
+    }
+  );
+}
+
+function channelLabelNode(channelType, fallbackLabel = 'Канал') {
+  const meta = channelMeta(channelType);
+  return (
+    <Space size={6} align="center">
+      <ChannelBrandIcon channel={channelType || 'omnichannel'} size={14} />
+      <span>{channelType ? meta.label : fallbackLabel}</span>
+    </Space>
+  );
 }
 
 function normalizeQueueState(value) {
@@ -495,10 +508,10 @@ function ChatPage() {
   );
   const channelOptions = useMemo(() => {
     const dynamic = Array.from(new Set(conversations.map((item) => item.channelType).filter(Boolean))).map((value) => ({
-      label: channelMeta(value).label,
+      label: channelLabelNode(value),
       value,
     }));
-    return [{ label: 'Все каналы', value: 'all' }, ...dynamic];
+    return [{ label: channelLabelNode(null, 'Все каналы'), value: 'all' }, ...dynamic];
   }, [conversations]);
 
   const loadConversationContext = async (conversation) => {
@@ -664,24 +677,20 @@ function ChatPage() {
     );
   }
 
-  if (items.length === 0) {
-    return (
-      <Card variant="borderless" style={{ background: bg }}>
-        <Result
-          status="info"
-          title="Unified Inbox is empty"
-          subTitle="No omnichannel timeline rows were returned yet. Once conversations arrive, they will appear here."
-          extra={
-            <Button icon={<ReloadOutlined />} onClick={() => loadInbox()}>
-              Обновить
-            </Button>
-          }
-        />
-      </Card>
-    );
-  }
-
-  const inboxLayout = (
+  const inboxLayout = items.length === 0 ? (
+    <Card variant="borderless" style={{ background: bg }}>
+      <Result
+        status="info"
+        title="Unified Inbox is empty"
+        subTitle="No omnichannel timeline rows were returned yet. Once conversations arrive, they will appear here."
+        extra={
+          <Button icon={<ReloadOutlined />} onClick={() => loadInbox()}>
+            Обновить
+          </Button>
+        }
+      />
+    </Card>
+  ) : (
     <Space direction="vertical" size={12} style={{ width: '100%' }}>
       <Card
         variant="borderless"
@@ -802,7 +811,12 @@ function ChatPage() {
                               {conversation.preview}
                             </Text>
                             <Space wrap size={6}>
-                              <Tag color={meta.color}>{meta.label}</Tag>
+                              <Tag
+                                color={meta.color}
+                                icon={<ChannelBrandIcon channel={conversation.channelType || 'chat'} size={12} />}
+                              >
+                                {meta.label}
+                              </Tag>
                               <Tag>{SEGMENT_LABELS[conversation.segment] || 'Клиенты'}</Tag>
                               {queueMeta && <Tag color={queueMeta.color}>{queueMeta.label}</Tag>}
                               <Tag>{conversation.messages.length} msg</Tag>
@@ -849,7 +863,15 @@ function ChatPage() {
                       </Text>
                     </div>
                     <Space wrap size={8}>
-                      <Tag color={channelMeta(activeConversation.channelType).color}>
+                      <Tag
+                        color={channelMeta(activeConversation.channelType).color}
+                        icon={
+                          <ChannelBrandIcon
+                            channel={activeConversation.channelType || 'chat'}
+                            size={12}
+                          />
+                        }
+                      >
                         {channelMeta(activeConversation.channelType).label}
                       </Tag>
                       {activeQueueMeta && <Tag color={activeQueueMeta.color}>{activeQueueMeta.label}</Tag>}
@@ -914,7 +936,14 @@ function ChatPage() {
                             >
                               <Space direction="vertical" size={4} style={{ width: '100%' }}>
                                 <Space wrap size={6}>
-                                  <Tag color={channelMeta(item.channel_type).color}>{channelMeta(item.channel_type).label}</Tag>
+                                  <Tag
+                                    color={channelMeta(item.channel_type).color}
+                                    icon={
+                                      <ChannelBrandIcon channel={item.channel_type || 'chat'} size={12} />
+                                    }
+                                  >
+                                    {channelMeta(item.channel_type).label}
+                                  </Tag>
                                   <Tag>{inbound ? 'Входящее' : 'Исходящее'}</Tag>
                                   <Tag color={item.sla_status === 'breached' ? 'red' : 'default'}>
                                     {item.sla_status === 'breached' ? 'SLA breached' : 'SLA ok'}
@@ -1127,14 +1156,22 @@ function ChatPage() {
                         )}
                       </div>
 
-                      <div>
-                        <Text type="secondary">Канал</Text>
                         <div>
-                          <Tag color={channelMeta(activeConversation.channelType).color}>
-                            {channelMeta(activeConversation.channelType).label}
-                          </Tag>
+                          <Text type="secondary">Канал</Text>
+                          <div>
+                            <Tag
+                              color={channelMeta(activeConversation.channelType).color}
+                              icon={
+                                <ChannelBrandIcon
+                                  channel={activeConversation.channelType || 'chat'}
+                                  size={12}
+                                />
+                              }
+                            >
+                              {channelMeta(activeConversation.channelType).label}
+                            </Tag>
+                          </div>
                         </div>
-                      </div>
                       <div>
                         <Text type="secondary">Участник</Text>
                         <div>
@@ -1166,7 +1203,7 @@ function ChatPage() {
 
   return (
     <Tabs
-      defaultActiveKey="inbox"
+      defaultActiveKey={items.length === 0 ? 'dispatch' : 'inbox'}
       items={[
         { key: 'inbox', label: 'Omnichannel Inbox', children: inboxLayout },
         { key: 'dispatch', label: 'Outbound / Broadcast', children: <CommunicationsHub defaultTab="omnichannel" /> },

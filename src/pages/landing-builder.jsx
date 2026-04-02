@@ -5,6 +5,7 @@ import {
   Card,
   Carousel,
   Col,
+  Descriptions,
   DatePicker,
   Form,
   Input,
@@ -12,6 +13,7 @@ import {
   Popconfirm,
   Row,
   Select,
+  Steps,
   Space,
   Statistic,
   Switch,
@@ -23,18 +25,15 @@ import {
 } from 'antd';
 import {
   EnvironmentOutlined,
-  FacebookOutlined,
-  InstagramOutlined,
   LinkedinOutlined,
   MailOutlined,
   PhoneOutlined,
-  SendOutlined,
-  WhatsAppOutlined,
 } from '@ant-design/icons';
 import { Editor, Element, Frame, useEditor, useNode } from '@craftjs/core';
 import { createContext, useContext, useEffect, useMemo, useRef, useState } from 'react';
-import { landingsApi } from '../lib/api/client';
+import { landingsApi, ticketingApi } from '../lib/api/client';
 import brandLogo from '../assets/brand/logo.svg';
+import ChannelBrandIcon from '../components/channel/ChannelBrandIcon.jsx';
 import { useTheme } from '../lib/hooks/useTheme.js';
 import { canWrite } from '../lib/rbac.js';
 
@@ -47,6 +46,23 @@ const FONT_OPTIONS = [
   { value: '"SF Pro Display", "Inter", system-ui, sans-serif', label: 'SF Pro' },
   { value: '"Roboto", system-ui, sans-serif', label: 'Roboto' },
   { value: '"Georgia", serif', label: 'Georgia' },
+];
+const SECTION_ROLE_OPTIONS = [
+  { value: 'cover', label: 'Обложка / Hero' },
+  { value: 'tickets', label: 'Билеты и цены' },
+  { value: 'program', label: 'Программа события' },
+  { value: 'speakers', label: 'Спикеры / Участники' },
+  { value: 'location', label: 'Место / Карта' },
+  { value: 'faq', label: 'FAQ' },
+  { value: 'rules', label: 'Правила и возврат' },
+  { value: 'contacts', label: 'Контакты' },
+  { value: 'lead_form', label: 'Форма / Заявка' },
+  { value: 'custom', label: 'Другое' },
+];
+const TICKETING_TEMPLATE_OPTIONS = [
+  { value: 'concert', label: 'Шаблон: Концерт' },
+  { value: 'conference', label: 'Шаблон: Конференция' },
+  { value: 'multisession', label: 'Шаблон: Серия сессий' },
 ];
 
 const DEFAULT_THEME = {
@@ -297,6 +313,10 @@ function getNodeLabel(node) {
   if (name === 'ContactsBlock') return props.title || 'Contacts';
   if (props?.title) return props.title;
   return name || 'Block';
+}
+
+function roleLabel(value) {
+  return SECTION_ROLE_OPTIONS.find((item) => item.value === value)?.label || value || 'Не задано';
 }
 
 function useBlockSelection() {
@@ -575,10 +595,10 @@ function ContactsBlock(props) {
   const resolvedTextColor = resolveReadableTextColor(textColor, background, isDark, LIGHT_BLOCK_BG, DARK_BLOCK_BG);
   const locale = useContext(LandingLocaleContext);
   const socials = [
-    { key: 'wa', label: 'WhatsApp', url: whatsapp, icon: WhatsAppOutlined },
-    { key: 'tg', label: 'Telegram', url: telegram, icon: SendOutlined },
-    { key: 'ig', label: 'Instagram', url: instagram, icon: InstagramOutlined },
-    { key: 'fb', label: 'Facebook', url: facebook, icon: FacebookOutlined },
+    { key: 'wa', label: 'WhatsApp', url: whatsapp, channel: 'whatsapp' },
+    { key: 'tg', label: 'Telegram', url: telegram, channel: 'telegram' },
+    { key: 'ig', label: 'Instagram', url: instagram, channel: 'instagram' },
+    { key: 'fb', label: 'Facebook', url: facebook, channel: 'facebook' },
     { key: 'in', label: 'LinkedIn', url: linkedin, icon: LinkedinOutlined },
   ].filter((item) => item.url);
 
@@ -605,7 +625,13 @@ function ContactsBlock(props) {
             {socials.map((item) => {
               const Icon = item.icon;
               return (
-                <Button key={item.key} href={item.url} target="_blank" rel="noopener noreferrer" icon={<Icon />}>
+                <Button
+                  key={item.key}
+                  href={item.url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  icon={item.channel ? <ChannelBrandIcon channel={item.channel} size={16} /> : (Icon ? <Icon /> : null)}
+                >
                 {item.label}
               </Button>
               );
@@ -654,6 +680,7 @@ function defaultCraftObject() {
         buttonText_i18n: ensureI18nObject('Оставить заявку'),
         background: '#ffffff',
         textColor: '#111827',
+        sectionRole: 'cover',
       },
       displayName: 'HeroBlock',
       custom: {},
@@ -670,6 +697,7 @@ function defaultCraftObject() {
         items: ['Быстрый старт', 'Сквозная аналитика', 'Поддержка 24/7'],
         background: '#ffffff',
         textColor: '#111827',
+        sectionRole: 'custom',
       },
       displayName: 'FeaturesBlock',
       custom: {},
@@ -705,6 +733,7 @@ function defaultCraftObject() {
         sla_minutes: 15,
         dedup_window_minutes: 120,
         active: true,
+        sectionRole: 'lead_form',
       },
       displayName: 'FormBlock',
       custom: {},
@@ -715,18 +744,72 @@ function defaultCraftObject() {
   };
 }
 
-function defaultCrmSalesCraftObject() {
+function defaultCrmSalesCraftObject(template = 'concert') {
   const heroId = uid('hero');
   const introId = uid('text');
   const valueId = uid('features');
-  const roleId = uid('features');
-  const carouselId = uid('carousel');
-  const pricingId = uid('features');
+  const programId = uid('features');
+  const speakersId = uid('features');
+  const locationId = uid('text');
   const faqId = uid('features');
+  const rulesId = uid('text');
   const contactsId = uid('contacts');
   const ctaId = uid('cta');
   const formId = uid('form');
   const formBlockId = `form-${formId}`;
+
+  const isConference = template === 'conference';
+  const isMultiSession = template === 'multisession';
+  const eventLabel = isConference ? 'конференцию' : isMultiSession ? 'серию сессий' : 'событие';
+  const ticketItems = isConference
+    ? [
+        'Standard: доступ на все доклады',
+        'Business: Standard + networking-зона',
+        'VIP: Business + закрытая сессия со спикерами',
+      ]
+    : isMultiSession
+      ? [
+          'Session Pass: 1 выбранная сессия',
+          'Day Pass: доступ ко всем сессиям дня',
+          'Full Pass: доступ ко всей серии мероприятий',
+        ]
+      : [
+          'Early Bird: ограниченная квота по сниженной цене',
+          'Regular: базовый билет',
+          'VIP: отдельный вход и дополнительные привилегии',
+        ];
+  const programItems = isMultiSession
+    ? [
+        'День 1: открытие продаж и первый слот сессий',
+        'День 2: тематические треки и воркшопы',
+        'День 3: финальные выступления и closing',
+      ]
+    : [
+        'Открытие дверей и welcome-активация',
+        'Основная программа и ключевые выступления',
+        'Финальный блок и пост-ивент коммуникация',
+      ];
+  const speakersItems = isConference
+    ? [
+        'Keynote: отраслевой эксперт',
+        'Практик #1: кейс внедрения',
+        'Практик #2: финансы и рост конверсии',
+      ]
+    : [
+        'Хедлайнер события',
+        'Специальный гость',
+        'Локальные участники программы',
+      ];
+  const faqItems = [
+    'Можно ли вернуть билет? Да, согласно политике возврата организатора.',
+    'Где найти e-билет? После оплаты билет придёт на email с QR-кодом.',
+    'Можно ли передать билет? Опция доступна, если включена в настройках события.',
+  ];
+  const title = isConference
+    ? 'Продажа билетов на конференцию'
+    : isMultiSession
+      ? 'Продажа билетов на серию сессий'
+      : 'Продажа билетов на событие';
 
   return {
     ROOT: {
@@ -734,34 +817,40 @@ function defaultCrmSalesCraftObject() {
       isCanvas: true,
       props: {
         background: '#f1f7ff',
-        title: 'Enterprise CRM Sales Landing',
-        title_i18n: ensureI18nObject('Enterprise CRM Sales Landing'),
-        description: 'Готовый продающий шаблон CRM: оффер, ценность, кейсы, тарифы, FAQ и лид-форма.',
-        description_i18n: ensureI18nObject('Готовый продающий шаблон CRM: оффер, ценность, кейсы, тарифы, FAQ и лид-форма.'),
+        title,
+        title_i18n: ensureI18nObject(title),
+        description: 'Лендинг билетера: выбор билетов, программа, правила, контакты и форма заявки.',
+        description_i18n: ensureI18nObject('Лендинг билетера: выбор билетов, программа, правила, контакты и форма заявки.'),
         titleColor: '#111827',
+        seo_title: title,
+        seo_description: 'Официальная страница продажи билетов. Безопасная оплата и электронные билеты с QR.',
+        og_title: title,
+        og_description: 'Выберите билеты, оплатите онлайн и получите e-билет с QR-кодом.',
+        noindex: false,
       },
       displayName: 'CanvasRoot',
       custom: {},
       hidden: false,
-      nodes: [heroId, introId, valueId, roleId, carouselId, pricingId, faqId, contactsId, ctaId, formId],
+      nodes: [heroId, introId, valueId, programId, speakersId, locationId, faqId, rulesId, contactsId, ctaId, formId],
       linkedNodes: {},
     },
     [heroId]: {
       type: { resolvedName: 'HeroBlock' },
       isCanvas: false,
       props: {
-        title: 'Превратите хаос продаж в управляемую систему роста',
-        title_i18n: ensureI18nObject('Превратите хаос продаж в управляемую систему роста'),
-        subtitle: 'Enterprise CRM объединяет лиды, сделки, задачи, коммуникации и аналитику в одной платформе.',
-        subtitle_i18n: ensureI18nObject('Enterprise CRM объединяет лиды, сделки, задачи, коммуникации и аналитику в одной платформе.'),
-        buttonText: 'Получить персональное демо',
-        buttonText_i18n: ensureI18nObject('Получить персональное демо'),
+        title: `Купите билеты на ${eventLabel} онлайн`,
+        title_i18n: ensureI18nObject(`Купите билеты на ${eventLabel} онлайн`),
+        subtitle: 'Выберите тип билета, примените промокод и получите e-билет с QR сразу после оплаты.',
+        subtitle_i18n: ensureI18nObject('Выберите тип билета, примените промокод и получите e-билет с QR сразу после оплаты.'),
+        buttonText: 'Выбрать билет',
+        buttonText_i18n: ensureI18nObject('Выбрать билет'),
         background: '#0f2748',
         textColor: '#ffffff',
         fontFamily: '"Manrope", "Inter", system-ui, sans-serif',
         fontSize: 18,
         paddingY: 84,
         borderRadius: 20,
+        sectionRole: 'cover',
       },
       displayName: 'HeroBlock',
       custom: {},
@@ -773,15 +862,16 @@ function defaultCrmSalesCraftObject() {
       type: { resolvedName: 'TextBlock' },
       isCanvas: false,
       props: {
-        title: 'Почему Enterprise CRM работает',
-        title_i18n: ensureI18nObject('Почему Enterprise CRM работает'),
-        body: 'Вы получаете контроль над воронкой, прозрачные метрики и автоматизацию рутины. Менеджеры продают больше, а руководители видят причины роста и просадок в реальном времени.',
-        body_i18n: ensureI18nObject('Вы получаете контроль над воронкой, прозрачные метрики и автоматизацию рутины. Менеджеры продают больше, а руководители видят причины роста и просадок в реальном времени.'),
+        title: 'О событии',
+        title_i18n: ensureI18nObject('О событии'),
+        body: 'Здесь разместите ключевую информацию о формате события, ценности и преимуществах для посетителей.',
+        body_i18n: ensureI18nObject('Здесь разместите ключевую информацию о формате события, ценности и преимуществах для посетителей.'),
         background: '#ffffff',
         textColor: '#111827',
         fontFamily: '"Manrope", "Inter", system-ui, sans-serif',
         fontSize: 17,
         borderRadius: 18,
+        sectionRole: 'custom',
       },
       displayName: 'TextBlock',
       custom: {},
@@ -793,19 +883,15 @@ function defaultCrmSalesCraftObject() {
       type: { resolvedName: 'FeaturesBlock' },
       isCanvas: false,
       props: {
-        title: 'Ценности для бизнеса',
-        title_i18n: ensureI18nObject('Ценности для бизнеса'),
-        items: [
-          'Единая платформа вместо набора разрозненных сервисов',
-          'Автоматизация этапов и задач без ручного контроля',
-          'Сквозная аналитика по каналам, менеджерам и этапам',
-          'Быстрый запуск и понятное масштабирование команды',
-        ],
+        title: 'Типы билетов и цены',
+        title_i18n: ensureI18nObject('Типы билетов и цены'),
+        items: ticketItems,
         background: '#ffffff',
         textColor: '#111827',
         fontFamily: '"Manrope", "Inter", system-ui, sans-serif',
         fontSize: 16,
         borderRadius: 18,
+        sectionRole: 'tickets',
       },
       displayName: 'FeaturesBlock',
       custom: {},
@@ -813,22 +899,19 @@ function defaultCrmSalesCraftObject() {
       nodes: [],
       linkedNodes: {},
     },
-    [roleId]: {
+    [programId]: {
       type: { resolvedName: 'FeaturesBlock' },
       isCanvas: false,
       props: {
-        title: 'Польза по ролям',
-        title_i18n: ensureI18nObject('Польза по ролям'),
-        items: [
-          'Собственник: прогноз выручки и контроль воронки без Excel',
-          'РОП: рост конверсии, дисциплина и контроль SLA команды',
-          'Менеджер: меньше рутины, больше времени на продажи',
-        ],
+        title: 'Программа',
+        title_i18n: ensureI18nObject('Программа'),
+        items: programItems,
         background: '#ffffff',
         textColor: '#111827',
         fontFamily: '"Manrope", "Inter", system-ui, sans-serif',
         fontSize: 16,
         borderRadius: 18,
+        sectionRole: 'program',
       },
       displayName: 'FeaturesBlock',
       custom: {},
@@ -836,48 +919,40 @@ function defaultCrmSalesCraftObject() {
       nodes: [],
       linkedNodes: {},
     },
-    [carouselId]: {
-      type: { resolvedName: 'CarouselBlock' },
-      isCanvas: false,
-      props: {
-        title: 'CRM в действии',
-        title_i18n: ensureI18nObject('CRM в действии'),
-        images: [
-          'https://images.unsplash.com/photo-1460925895917-afdab827c52f?auto=format&fit=crop&w=1400&q=80',
-          'https://picsum.photos/seed/crm-hero/1400/800',
-          'https://images.unsplash.com/photo-1552664730-d307ca884978?auto=format&fit=crop&w=1400&q=80',
-        ],
-        background: '#ffffff',
-        textColor: '#111827',
-        slideHeight: 360,
-        imageFit: 'cover',
-        imageBorderRadius: 14,
-        fontFamily: '"Manrope", "Inter", system-ui, sans-serif',
-        borderRadius: 18,
-      },
-      displayName: 'CarouselBlock',
-      custom: {},
-      hidden: false,
-      nodes: [],
-      linkedNodes: {},
-    },
-    [pricingId]: {
+    [speakersId]: {
       type: { resolvedName: 'FeaturesBlock' },
       isCanvas: false,
       props: {
-        title: 'Тарифы',
-        title_i18n: ensureI18nObject('Тарифы'),
-        items: [
-          'Start: $19/user/mo — лиды, сделки, задачи, базовая аналитика',
-          'Growth: $39/user/mo — автоматизация, расширенная аналитика, API',
-          'Enterprise: custom — безопасность, SLA, кастомные роли и отчеты',
-        ],
+        title: 'Спикеры / Участники',
+        title_i18n: ensureI18nObject('Спикеры / Участники'),
+        items: speakersItems,
         background: '#ffffff',
         textColor: '#111827',
         fontFamily: '"Manrope", "Inter", system-ui, sans-serif',
         borderRadius: 18,
+        sectionRole: 'speakers',
       },
       displayName: 'FeaturesBlock',
+      custom: {},
+      hidden: false,
+      nodes: [],
+      linkedNodes: {},
+    },
+    [locationId]: {
+      type: { resolvedName: 'TextBlock' },
+      isCanvas: false,
+      props: {
+        title: 'Место и доступ',
+        title_i18n: ensureI18nObject('Место и доступ'),
+        body: 'Укажите адрес площадки, схему прохода, парковку и особенности доступа для гостей.',
+        body_i18n: ensureI18nObject('Укажите адрес площадки, схему прохода, парковку и особенности доступа для гостей.'),
+        background: '#ffffff',
+        textColor: '#111827',
+        fontFamily: '"Manrope", "Inter", system-ui, sans-serif',
+        borderRadius: 18,
+        sectionRole: 'location',
+      },
+      displayName: 'TextBlock',
       custom: {},
       hidden: false,
       nodes: [],
@@ -889,18 +964,34 @@ function defaultCrmSalesCraftObject() {
       props: {
         title: 'FAQ',
         title_i18n: ensureI18nObject('FAQ'),
-        items: [
-          'Внедрение: базовый запуск 1-3 дня, полный цикл 2-4 недели',
-          'Миграция: переносим данные из Excel и других CRM',
-          'Интеграции: телефония, мессенджеры, email, API и webhooks',
-          'ROI: первые эффекты обычно видны в первые 2-3 недели',
-        ],
+        items: faqItems,
         background: '#ffffff',
         textColor: '#111827',
         fontFamily: '"Manrope", "Inter", system-ui, sans-serif',
         borderRadius: 18,
+        sectionRole: 'faq',
       },
       displayName: 'FeaturesBlock',
+      custom: {},
+      hidden: false,
+      nodes: [],
+      linkedNodes: {},
+    },
+    [rulesId]: {
+      type: { resolvedName: 'TextBlock' },
+      isCanvas: false,
+      props: {
+        title: 'Правила посещения и возврата',
+        title_i18n: ensureI18nObject('Правила посещения и возврата'),
+        body: 'Опишите правила входа, возрастные ограничения, порядок возврата/обмена и сроки обработки.',
+        body_i18n: ensureI18nObject('Опишите правила входа, возрастные ограничения, порядок возврата/обмена и сроки обработки.'),
+        background: '#ffffff',
+        textColor: '#111827',
+        fontFamily: '"Manrope", "Inter", system-ui, sans-serif',
+        borderRadius: 18,
+        sectionRole: 'rules',
+      },
+      displayName: 'TextBlock',
       custom: {},
       hidden: false,
       nodes: [],
@@ -926,6 +1017,7 @@ function defaultCrmSalesCraftObject() {
         textColor: '#111827',
         fontFamily: '"Manrope", "Inter", system-ui, sans-serif',
         borderRadius: 18,
+        sectionRole: 'contacts',
       },
       displayName: 'ContactsBlock',
       custom: {},
@@ -937,16 +1029,17 @@ function defaultCrmSalesCraftObject() {
       type: { resolvedName: 'CtaBlock' },
       isCanvas: false,
       props: {
-        title: 'Готовы увеличить продажи без лишних затрат?',
-        title_i18n: ensureI18nObject('Готовы увеличить продажи без лишних затрат?'),
-        body: 'Оставьте заявку, и мы покажем персональный план внедрения CRM под ваш отдел продаж.',
-        body_i18n: ensureI18nObject('Оставьте заявку, и мы покажем персональный план внедрения CRM под ваш отдел продаж.'),
-        buttonText: 'Получить план внедрения',
-        buttonText_i18n: ensureI18nObject('Получить план внедрения'),
+        title: 'Готовы к покупке?',
+        title_i18n: ensureI18nObject('Готовы к покупке?'),
+        body: 'Выберите подходящий билет и переходите к безопасной оплате.',
+        body_i18n: ensureI18nObject('Выберите подходящий билет и переходите к безопасной оплате.'),
+        buttonText: 'Перейти к оплате',
+        buttonText_i18n: ensureI18nObject('Перейти к оплате'),
         background: '#0b1e3b',
         textColor: '#ffffff',
         fontFamily: '"Manrope", "Inter", system-ui, sans-serif',
         borderRadius: 18,
+        sectionRole: 'tickets',
       },
       displayName: 'CtaBlock',
       custom: {},
@@ -958,23 +1051,23 @@ function defaultCrmSalesCraftObject() {
       type: { resolvedName: 'FormBlock' },
       isCanvas: false,
       props: {
-        title: 'Запросить демо и расчёт ROI',
-        title_i18n: ensureI18nObject('Запросить демо и расчёт ROI'),
-        subtitle: 'Ответим в течение 15 минут в рабочее время.',
-        subtitle_i18n: ensureI18nObject('Ответим в течение 15 минут в рабочее время.'),
-        buttonText: 'Получить демо',
-        buttonText_i18n: ensureI18nObject('Получить демо'),
+        title: 'Получить напоминание и специальные предложения',
+        title_i18n: ensureI18nObject('Получить напоминание и специальные предложения'),
+        subtitle: 'Оставьте контакты и мы отправим подтверждение и обновления по событию.',
+        subtitle_i18n: ensureI18nObject('Оставьте контакты и мы отправим подтверждение и обновления по событию.'),
+        buttonText: 'Отправить',
+        buttonText_i18n: ensureI18nObject('Отправить'),
         background: '#ffffff',
         textColor: '#111827',
         fontFamily: '"Manrope", "Inter", system-ui, sans-serif',
         borderRadius: 18,
         blockId: formBlockId,
-        formKey: 'crm_sales_demo',
+        formKey: isMultiSession ? 'ticket_waitlist' : 'ticket_interest',
         fields: [
           { key: 'name', label: 'Имя', label_i18n: ensureI18nObject('Имя'), type: 'text', required: true },
           { key: 'phone', label: 'Телефон', label_i18n: ensureI18nObject('Телефон'), type: 'tel', required: true },
-          { key: 'email', label: 'Рабочий email', label_i18n: ensureI18nObject('Рабочий email'), type: 'email', required: false },
-          { key: 'company', label: 'Компания', label_i18n: ensureI18nObject('Компания'), type: 'text', required: false },
+          { key: 'email', label: 'Email', label_i18n: ensureI18nObject('Email'), type: 'email', required: false },
+          { key: 'promo_code', label: 'Промокод', label_i18n: ensureI18nObject('Промокод'), type: 'text', required: false },
         ],
         lead_source: null,
         stage_on_deal_create: null,
@@ -985,6 +1078,7 @@ function defaultCrmSalesCraftObject() {
         sla_minutes: 15,
         dedup_window_minutes: 120,
         active: true,
+        sectionRole: 'lead_form',
       },
       displayName: 'FormBlock',
       custom: {},
@@ -1355,6 +1449,10 @@ function legacySectionsToCraft(schema) {
       };
     }
 
+    if (draft[id]?.props && !draft[id].props.sectionRole) {
+      draft[id].props.sectionRole = section.sectionRole || section.section_role || 'custom';
+    }
+
     nodes.push(id);
   });
 
@@ -1367,6 +1465,11 @@ function legacySectionsToCraft(schema) {
       title_i18n: ensureI18nObject(schema?.page?.meta?.title_i18n || schema?.page?.meta?.title || 'Landing Page'),
       description: schema?.page?.meta?.description || '',
       description_i18n: ensureI18nObject(schema?.page?.meta?.description_i18n || schema?.page?.meta?.description || ''),
+      seo_title: schema?.page?.meta?.seo?.title || '',
+      seo_description: schema?.page?.meta?.seo?.description || '',
+      og_title: schema?.page?.meta?.seo?.og_title || '',
+      og_description: schema?.page?.meta?.seo?.og_description || '',
+      noindex: Boolean(schema?.page?.meta?.seo?.noindex),
       background: schema?.page?.theme?.background || DEFAULT_THEME.background,
       titleColor: schema?.page?.theme?.text || DEFAULT_THEME.text,
     },
@@ -1384,6 +1487,19 @@ function schemaToCraftObject(schema, bindings, landing) {
     craft = legacySectionsToCraft(schema);
   } else {
     craft = defaultCraftObject();
+  }
+
+  if (craft?.ROOT?.props) {
+    const meta = schema?.page?.meta || {};
+    const seo = meta?.seo || {};
+    craft.ROOT.props = {
+      ...craft.ROOT.props,
+      seo_title: craft.ROOT.props.seo_title || seo.title || '',
+      seo_description: craft.ROOT.props.seo_description || seo.description || '',
+      og_title: craft.ROOT.props.og_title || seo.og_title || '',
+      og_description: craft.ROOT.props.og_description || seo.og_description || '',
+      noindex: craft.ROOT.props.noindex ?? Boolean(seo.noindex),
+    };
   }
 
   return ensureCraftI18n(mapBindingsToCraft(craft, bindings, landing));
@@ -1412,6 +1528,7 @@ function AddBlockToolbar() {
             buttonText_i18n={ensureI18nObject('Оставить заявку')}
             background=""
             textColor=""
+            sectionRole="cover"
           />,
         )
         .toNodeTree();
@@ -1429,6 +1546,7 @@ function AddBlockToolbar() {
             body_i18n={ensureI18nObject('Добавьте описание')}
             background=""
             textColor=""
+            sectionRole="custom"
           />,
         )
         .toNodeTree();
@@ -1445,6 +1563,7 @@ function AddBlockToolbar() {
             items={['Преимущество 1', 'Преимущество 2']}
             background=""
             textColor=""
+            sectionRole="custom"
           />,
         )
         .toNodeTree();
@@ -1464,6 +1583,7 @@ function AddBlockToolbar() {
             buttonText_i18n={ensureI18nObject('Связаться')}
             background=""
             textColor=""
+            sectionRole="tickets"
           />,
         )
         .toNodeTree();
@@ -1486,6 +1606,7 @@ function AddBlockToolbar() {
             slideHeight={340}
             imageFit="cover"
             imageBorderRadius={12}
+            sectionRole="custom"
           />,
         )
         .toNodeTree();
@@ -1511,6 +1632,7 @@ function AddBlockToolbar() {
             linkedin=""
             background=""
             textColor=""
+            sectionRole="contacts"
           />,
         )
         .toNodeTree();
@@ -1545,6 +1667,7 @@ function AddBlockToolbar() {
           sla_minutes={15}
           dedup_window_minutes={120}
           active
+          sectionRole="lead_form"
         />,
       )
       .toNodeTree();
@@ -1558,16 +1681,45 @@ function AddBlockToolbar() {
     addBlock('FormBlock');
   };
 
+  const addTicketingBlock = (role) => {
+    if (role === 'program' || role === 'speakers' || role === 'faq' || role === 'tickets') {
+      addBlock('FeaturesBlock');
+      const rootNodes = query.getNodes()['ROOT']?.data?.nodes || [];
+      const lastNodeId = rootNodes[rootNodes.length - 1];
+      if (lastNodeId) {
+        actions.setProp(lastNodeId, (draft) => {
+          draft.sectionRole = role;
+        });
+      }
+      return;
+    }
+    if (role === 'location' || role === 'rules') {
+      addBlock('TextBlock');
+      const rootNodes = query.getNodes()['ROOT']?.data?.nodes || [];
+      const lastNodeId = rootNodes[rootNodes.length - 1];
+      if (lastNodeId) {
+        actions.setProp(lastNodeId, (draft) => {
+          draft.sectionRole = role;
+        });
+      }
+    }
+  };
+
   return (
     <Space wrap>
-      <Button size="small" onClick={() => addBlock('HeroBlock')}>+ Cover</Button>
-      <Button size="small" onClick={() => addBlock('TextBlock')}>+ Text</Button>
-      <Button size="small" onClick={() => addBlock('FeaturesBlock')}>+ Cards</Button>
+      <Button size="small" onClick={() => addBlock('HeroBlock')}>+ Обложка</Button>
+      <Button size="small" onClick={() => addTicketingBlock('tickets')}>+ Блок билетов</Button>
+      <Button size="small" onClick={() => addTicketingBlock('program')}>+ Программа</Button>
+      <Button size="small" onClick={() => addTicketingBlock('speakers')}>+ Спикеры</Button>
+      <Button size="small" onClick={() => addTicketingBlock('location')}>+ Место</Button>
+      <Button size="small" onClick={() => addTicketingBlock('faq')}>+ FAQ</Button>
+      <Button size="small" onClick={() => addTicketingBlock('rules')}>+ Правила</Button>
+      <Button size="small" onClick={() => addBlock('FormBlock')}>+ Форма</Button>
+      <Button size="small" onClick={() => addBlock('ContactsBlock')}>+ Контакты</Button>
+      <Button size="small" onClick={() => addBlock('CarouselBlock')}>+ Галерея</Button>
+      <Button size="small" onClick={() => addBlock('TextBlock')}>+ Текст</Button>
       <Button size="small" onClick={() => addBlock('CtaBlock')}>+ CTA</Button>
-      <Button size="small" onClick={() => addBlock('FormBlock')}>+ Form</Button>
-      <Button size="small" onClick={() => addBlock('CarouselBlock')}>+ Carousel</Button>
-      <Button size="small" onClick={() => addBlock('ContactsBlock')}>+ Contacts</Button>
-      <Button size="small" type="dashed" onClick={addPromoTemplate}>+ Template Promo</Button>
+      <Button size="small" type="dashed" onClick={addPromoTemplate}>+ Быстрый промо-шаблон</Button>
     </Space>
   );
 }
@@ -1608,6 +1760,7 @@ function LayersPanel() {
                 <Text strong>{getNodeLabel(node)}</Text>
                 <Tag>{node?.type?.resolvedName || 'Block'}</Tag>
               </Space>
+              {node?.props?.sectionRole && <Text type="secondary">{roleLabel(node.props.sectionRole)}</Text>}
               <Space>
                 <Button size="small" disabled={index === 0} onClick={() => actions.move(nodeId, 'ROOT', index - 1)}>
                   Up
@@ -1726,7 +1879,7 @@ function NodePropertiesPanel({ lookups, activeLocale, selectedLandingId }) {
     <Form layout="vertical">
       {isCanvasRoot && (
         <>
-          <Form.Item label="Page title">
+          <Form.Item label="Заголовок страницы">
             <Input
               value={textByLocale(props, 'title', activeLocale, props.title || '')}
               onChange={(e) => setI18nProp('title', e.target.value)}
@@ -1738,6 +1891,39 @@ function NodePropertiesPanel({ lookups, activeLocale, selectedLandingId }) {
               value={textByLocale(props, 'description', activeLocale, props.description || '')}
               onChange={(e) => setI18nProp('description', e.target.value)}
             />
+          </Form.Item>
+          <Form.Item label="SEO title">
+            <Input
+              value={props.seo_title || ''}
+              onChange={(e) => setProp('seo_title', e.target.value)}
+              placeholder="Заголовок для search snippets"
+            />
+          </Form.Item>
+          <Form.Item label="SEO description">
+            <Input.TextArea
+              rows={2}
+              value={props.seo_description || ''}
+              onChange={(e) => setProp('seo_description', e.target.value)}
+              placeholder="Описание для search snippets"
+            />
+          </Form.Item>
+          <Form.Item label="OG title">
+            <Input
+              value={props.og_title || ''}
+              onChange={(e) => setProp('og_title', e.target.value)}
+              placeholder="Заголовок для соцсетей"
+            />
+          </Form.Item>
+          <Form.Item label="OG description">
+            <Input.TextArea
+              rows={2}
+              value={props.og_description || ''}
+              onChange={(e) => setProp('og_description', e.target.value)}
+              placeholder="Описание для соцсетей"
+            />
+          </Form.Item>
+          <Form.Item label="Noindex" valuePropName="checked">
+            <Switch checked={Boolean(props.noindex)} onChange={(checked) => setProp('noindex', checked)} />
           </Form.Item>
           <Form.Item label="Background color">
             <Input type="color" value={props.background || DEFAULT_THEME.background} onChange={(e) => setProp('background', e.target.value)} style={{ width: 72, padding: 4 }} />
@@ -1806,6 +1992,13 @@ function NodePropertiesPanel({ lookups, activeLocale, selectedLandingId }) {
 
       {!isCanvasRoot && (
         <>
+          <Form.Item label="Роль блока">
+            <Select
+              value={props.sectionRole || 'custom'}
+              options={SECTION_ROLE_OPTIONS}
+              onChange={(value) => setProp('sectionRole', value)}
+            />
+          </Form.Item>
           <Form.Item label="Background color">
             <Input type="color" value={props.background || '#ffffff'} onChange={(e) => setProp('background', e.target.value)} style={{ width: 72, padding: 4 }} />
           </Form.Item>
@@ -2309,6 +2502,19 @@ export default function LandingBuilderPage() {
     form_key: '',
     utm_campaign: '',
   });
+  const [ticketingEvent, setTicketingEvent] = useState(null);
+  const [ticketingSessions, setTicketingSessions] = useState([]);
+  const [ticketingTiers, setTicketingTiers] = useState([]);
+  const [ticketingPromocodes, setTicketingPromocodes] = useState([]);
+  const [ticketingOrders, setTicketingOrders] = useState([]);
+  const [ticketingCheckins, setTicketingCheckins] = useState([]);
+  const [ticketingLoading, setTicketingLoading] = useState(false);
+  const [ticketingBusy, setTicketingBusy] = useState(false);
+  const [checkoutPreview, setCheckoutPreview] = useState(null);
+  const [checkinPreview, setCheckinPreview] = useState(null);
+  const [ticketingEventForm] = Form.useForm();
+  const [checkoutForm] = Form.useForm();
+  const [checkinForm] = Form.useForm();
   const [createForm] = Form.useForm();
   const blurAutosaveAtRef = useRef(0);
   const ui = useMemo(
@@ -2345,6 +2551,30 @@ export default function LandingBuilderPage() {
   );
   const effectiveEditorMode = canManageLandings ? editorMode : 'preview';
   const isDirty = Boolean(selectedId) && craftSerialized !== savedSerialized;
+  const readiness = useMemo(() => {
+    const craftObj = safeParseJson(craftSerialized, null);
+    const sections = extractSectionsFromCraft(craftObj || {});
+    const roles = new Set(sections.map((section) => section.sectionRole || section.section_role).filter(Boolean));
+    const hasTickets = roles.has('tickets');
+    const hasProgram = roles.has('program');
+    const hasContacts = roles.has('contacts');
+    const hasForm = sections.some((section) => section.type === 'form');
+    const seoTitle = String(craftObj?.ROOT?.props?.seo_title || '').trim();
+    const seoDescription = String(craftObj?.ROOT?.props?.seo_description || '').trim();
+    const hasSeo = Boolean(seoTitle && seoDescription);
+    const hasPublished = selectedLandingItem?.status === 'published';
+    const done = [hasTickets, hasProgram, hasContacts, hasForm, hasSeo, hasPublished].filter(Boolean).length;
+    return {
+      hasTickets,
+      hasProgram,
+      hasContacts,
+      hasForm,
+      hasSeo,
+      hasPublished,
+      done,
+      total: 6,
+    };
+  }, [craftSerialized, selectedLandingItem?.status]);
 
   const loadLandings = async () => {
     setLoading(true);
@@ -2402,6 +2632,63 @@ export default function LandingBuilderPage() {
     }
   };
 
+  const loadTicketingByLanding = async (landingId) => {
+    if (!landingId) {
+      setTicketingEvent(null);
+      setTicketingSessions([]);
+      setTicketingTiers([]);
+      setTicketingPromocodes([]);
+      setTicketingOrders([]);
+      setTicketingCheckins([]);
+      return;
+    }
+    setTicketingLoading(true);
+    try {
+      const event = await ticketingApi.byLanding(landingId);
+      setTicketingEvent(event || null);
+      const eventId = event?.id;
+      if (!eventId) {
+        setTicketingSessions([]);
+        setTicketingTiers([]);
+        setTicketingPromocodes([]);
+        setTicketingOrders([]);
+        setTicketingCheckins([]);
+        return;
+      }
+      const [sessions, tiers, promos, orders, checkins] = await Promise.all([
+        ticketingApi.getSessions(eventId),
+        ticketingApi.getTiers(eventId),
+        ticketingApi.getPromocodes(eventId),
+        ticketingApi.getOrders(eventId),
+        ticketingApi.getCheckins(eventId),
+      ]);
+      setTicketingSessions(Array.isArray(sessions) ? sessions : []);
+      setTicketingTiers(Array.isArray(tiers) ? tiers : []);
+      setTicketingPromocodes(Array.isArray(promos) ? promos : []);
+      setTicketingOrders(Array.isArray(orders) ? orders : []);
+      setTicketingCheckins(Array.isArray(checkins) ? checkins : []);
+      ticketingEventForm.setFieldsValue({
+        title: event.title,
+        slug: event.slug,
+        currency: event.currency || 'UZS',
+        event_mode: event.event_mode || 'ga',
+        venue_name: event.venue_name || '',
+        venue_address: event.venue_address || '',
+        policy_refund: event.policy_refund || '',
+        is_active: event.is_active !== false,
+      });
+    } catch {
+      setTicketingEvent(null);
+      setTicketingSessions([]);
+      setTicketingTiers([]);
+      setTicketingPromocodes([]);
+      setTicketingOrders([]);
+      setTicketingCheckins([]);
+    } finally {
+      setTicketingLoading(false);
+    }
+  };
+
   useEffect(() => {
     loadLandings();
     loadLookups();
@@ -2410,6 +2697,9 @@ export default function LandingBuilderPage() {
   useEffect(() => {
     if (selectedId) {
       loadLandingDetails(selectedId);
+      loadTicketingByLanding(selectedId);
+    } else {
+      loadTicketingByLanding(null);
     }
   }, [selectedId]);
 
@@ -2434,7 +2724,17 @@ export default function LandingBuilderPage() {
     const formError = validateFormSections(sections);
     if (formError) errors.push(formError);
     if ((craftObj?.ROOT?.props?.title || '').trim() === '') {
-      errors.push('Заполните заголовок страницы (Page title).');
+      errors.push('Заполните заголовок страницы.');
+    }
+    const roles = new Set(sections.map((section) => section.sectionRole || section.section_role).filter(Boolean));
+    if (!roles.has('tickets')) {
+      errors.push('Добавьте блок с ролью "Билеты и цены" (tickets).');
+    }
+    if (!roles.has('program')) {
+      errors.push('Добавьте блок с ролью "Программа" (program).');
+    }
+    if (!roles.has('contacts')) {
+      errors.push('Добавьте блок с ролью "Контакты".');
     }
     setLiveValidationErrors(errors);
   }, [craftSerialized]);
@@ -2501,6 +2801,13 @@ export default function LandingBuilderPage() {
           title_i18n: ensureI18nObject(rootProps.title_i18n || rootProps.title || selectedLandingItem?.title || 'Landing Page'),
           description: rootProps.description || '',
           description_i18n: ensureI18nObject(rootProps.description_i18n || rootProps.description || ''),
+          seo: {
+            title: rootProps.seo_title || rootProps.title || selectedLandingItem?.title || '',
+            description: rootProps.seo_description || rootProps.description || '',
+            og_title: rootProps.og_title || rootProps.seo_title || rootProps.title || '',
+            og_description: rootProps.og_description || rootProps.seo_description || rootProps.description || '',
+            noindex: Boolean(rootProps.noindex),
+          },
         },
         theme: {
           ...DEFAULT_THEME,
@@ -2596,6 +2903,13 @@ export default function LandingBuilderPage() {
           title_i18n: ensureI18nObject(rootProps.title_i18n || rootProps.title || landingValues.title || 'Landing Page'),
           description: rootProps.description || '',
           description_i18n: ensureI18nObject(rootProps.description_i18n || rootProps.description || ''),
+          seo: {
+            title: rootProps.seo_title || rootProps.title || landingValues.title || '',
+            description: rootProps.seo_description || rootProps.description || '',
+            og_title: rootProps.og_title || rootProps.seo_title || rootProps.title || '',
+            og_description: rootProps.og_description || rootProps.seo_description || rootProps.description || '',
+            noindex: Boolean(rootProps.noindex),
+          },
         },
         theme: {
           ...DEFAULT_THEME,
@@ -2626,22 +2940,23 @@ export default function LandingBuilderPage() {
     return { schema, bindings };
   };
 
-  const handleCreateCrmSalesLanding = async () => {
+  const handleCreateCrmSalesLanding = async (template = 'concert') => {
     if (!canManageLandings) {
       message.error('Недостаточно прав для создания шаблонов лендинга');
       return;
     }
     try {
       const suffix = Date.now().toString().slice(-6);
+      const label = template === 'conference' ? 'Conference' : template === 'multisession' ? 'Multi-session' : 'Concert';
       const payload = {
-        title: 'Enterprise CRM - Sales Landing (Template)',
-        slug: `enterprise-crm-sales-${suffix}`,
+        title: `Ticketing Landing - ${label} (Template)`,
+        slug: `ticketing-${template}-${suffix}`,
         is_active: true,
         department: null,
         lead_source: null,
       };
       const created = await landingsApi.create(payload);
-      const craftObj = defaultCrmSalesCraftObject();
+      const craftObj = defaultCrmSalesCraftObject(template);
       const { schema, bindings } = buildDraftPayloadFromCraft(craftObj, payload);
 
       await landingsApi.putDraft(
@@ -2653,7 +2968,7 @@ export default function LandingBuilderPage() {
         await landingsApi.putBindings(created.id, bindings);
       }
 
-      message.success('Обновленный шаблон CRM Sales лендинга создан');
+      message.success('Шаблон лендинга билетера создан');
       await loadLandings();
       setSelectedId(created.id);
     } catch (err) {
@@ -3075,17 +3390,153 @@ export default function LandingBuilderPage() {
     }
   };
 
+  const handleUpsertTicketingEvent = async () => {
+    if (!selectedId) return;
+    if (!canManageLandings) {
+      message.error('Недостаточно прав для управления билетером');
+      return;
+    }
+    setTicketingBusy(true);
+    try {
+      const values = await ticketingEventForm.validateFields();
+      const payload = {
+        landing: selectedId,
+        title: values.title,
+        slug: toSlug(values.slug || values.title),
+        currency: values.currency || 'UZS',
+        event_mode: values.event_mode || 'ga',
+        venue_name: values.venue_name || '',
+        venue_address: values.venue_address || '',
+        policy_refund: values.policy_refund || '',
+        is_active: values.is_active !== false,
+      };
+      if (ticketingEvent?.id) {
+        await ticketingApi.patch(ticketingEvent.id, payload);
+      } else {
+        await ticketingApi.create(payload);
+      }
+      message.success('Событие билетера сохранено');
+      await loadTicketingByLanding(selectedId);
+    } catch (err) {
+      if (err?.errorFields) return;
+      message.error(err?.details?.detail || err?.message || 'Не удалось сохранить событие билетера');
+    } finally {
+      setTicketingBusy(false);
+    }
+  };
+
+  const handleSaveTicketingCollections = async () => {
+    if (!ticketingEvent?.id) {
+      message.error('Сначала создайте событие билетера');
+      return;
+    }
+    setTicketingBusy(true);
+    try {
+      await Promise.all([
+        ticketingApi.putSessions(ticketingEvent.id, ticketingSessions),
+        ticketingApi.putTiers(ticketingEvent.id, ticketingTiers),
+        ticketingApi.putPromocodes(ticketingEvent.id, ticketingPromocodes),
+      ]);
+      message.success('Сессии, тарифы и промокоды сохранены');
+      await loadTicketingByLanding(selectedId);
+    } catch (err) {
+      message.error(err?.details?.detail || err?.message || 'Не удалось сохранить настройки билетера');
+    } finally {
+      setTicketingBusy(false);
+    }
+  };
+
+  const handlePublicCheckoutPreview = async () => {
+    if (!ticketingEvent?.slug || !ticketingTiers.length) {
+      message.error('Для теста checkout нужны событие и минимум 1 тариф');
+      return;
+    }
+    setTicketingBusy(true);
+    try {
+      const values = await checkoutForm.validateFields();
+      const payload = {
+        customer_name: values.customer_name || 'Demo Buyer',
+        customer_phone: values.customer_phone || '+998900000000',
+        customer_email: values.customer_email || 'demo@example.com',
+        payment_provider: 'mock',
+        promo_code: values.promo_code || '',
+        items: [
+          {
+            tier_id: Number(values.tier_id || ticketingTiers[0]?.id),
+            quantity: Number(values.quantity || 1),
+            session_id: values.session_id ? Number(values.session_id) : undefined,
+          },
+        ],
+      };
+      const data = await ticketingApi.publicCheckout(ticketingEvent.slug, payload);
+      setCheckoutPreview(data || null);
+      message.success('Тестовый checkout выполнен');
+    } catch (err) {
+      if (err?.errorFields) return;
+      message.error(err?.details?.detail || err?.message || 'Checkout preview failed');
+    } finally {
+      setTicketingBusy(false);
+    }
+  };
+
+  const handlePublicCheckinPreview = async () => {
+    if (!ticketingEvent?.slug || !ticketingEvent?.checkin_secret) {
+      message.error('Событие билетера не готово для check-in');
+      return;
+    }
+    setTicketingBusy(true);
+    try {
+      const values = await checkinForm.validateFields();
+      const payload = {
+        scanned_code: values.scanned_code,
+        gate: values.gate || 'Main Gate',
+        checkin_secret: ticketingEvent.checkin_secret,
+      };
+      const data = await ticketingApi.publicCheckin(ticketingEvent.slug, payload);
+      setCheckinPreview(data || null);
+      await loadTicketingByLanding(selectedId);
+      message.success('Check-in запрос выполнен');
+    } catch (err) {
+      if (err?.errorFields) return;
+      message.error(err?.details?.detail || err?.message || 'Check-in preview failed');
+    } finally {
+      setTicketingBusy(false);
+    }
+  };
+
   return (
     <div style={{ padding: 24, background: ui.pageBg, minHeight: '100vh' }}>
       <Space direction="vertical" size="large" style={{ width: '100%' }}>
         <Card variant="borderless" style={{ ...ui.cardStyle, background: ui.heroBg }}>
           <Space direction="vertical" size={6} style={{ width: '100%' }}>
             <Title level={3} style={{ margin: 0, color: ui.titleColor }}>
-              Landing Builder
+              Лендинг Билетера
             </Title>
             <Text style={{ color: ui.subtitleColor }}>
-              Визуальный конструктор посадочных страниц с CRM-формами, публикацией и аналитикой воронки.
+              Пошаговый конструктор продажи билетов: контент, билеты и цены, публикация, CRM-интеграция и аналитика.
             </Text>
+          </Space>
+        </Card>
+        <Card title="Запуск билетного лендинга" style={ui.cardStyle} styles={{ body: ui.cardBody }}>
+          <Space direction="vertical" style={{ width: '100%' }} size="middle">
+            <Steps
+              responsive
+              current={readiness.done >= readiness.total ? 4 : Math.min(3, readiness.done >= 4 ? 3 : readiness.done >= 2 ? 2 : readiness.done >= 1 ? 1 : 0)}
+              items={[
+                { title: 'Контент и событие', description: 'Обложка, описание, программа' },
+                { title: 'Билеты и лид-форма', description: 'Типы билетов, CTA, форма захвата' },
+                { title: 'SEO и ссылки', description: 'Meta/OG и preview/public URL' },
+                { title: 'Публикация', description: 'Сохранить, опубликовать и управлять ревизиями' },
+              ]}
+            />
+            <Space wrap>
+              <Tag color={readiness.hasTickets ? 'green' : 'orange'}>{readiness.hasTickets ? 'Блок билетов: готово' : 'Блок билетов: отсутствует'}</Tag>
+              <Tag color={readiness.hasProgram ? 'green' : 'orange'}>{readiness.hasProgram ? 'Программа: готово' : 'Программа: отсутствует'}</Tag>
+              <Tag color={readiness.hasContacts ? 'green' : 'orange'}>{readiness.hasContacts ? 'Контакты: готово' : 'Контакты: отсутствуют'}</Tag>
+              <Tag color={readiness.hasForm ? 'green' : 'orange'}>{readiness.hasForm ? 'Форма: готово' : 'Форма: отсутствует'}</Tag>
+              <Tag color={readiness.hasSeo ? 'green' : 'orange'}>{readiness.hasSeo ? 'SEO: готово' : 'SEO: не заполнено'}</Tag>
+              <Tag color={readiness.hasPublished ? 'green' : 'default'}>{readiness.hasPublished ? 'Статус: опубликован' : 'Статус: draft'}</Tag>
+            </Space>
           </Space>
         </Card>
         {!canManageLandings && (
@@ -3097,11 +3548,11 @@ export default function LandingBuilderPage() {
           />
         )}
 
-        <Card title="Новый лендинг" style={ui.cardStyle} styles={{ body: ui.cardBody }}>
+        <Card title="Новый лендинг билетера" style={ui.cardStyle} styles={{ body: ui.cardBody }}>
           <Form layout="vertical" form={createForm}>
             <Row gutter={12} style={{ position: 'sticky', top: 8, zIndex: 20, background: ui.stickyBg, backdropFilter: 'blur(6px)', padding: '8px 0', marginBottom: 6 }}>
               <Col xs={24} md={6}>
-                <Form.Item name="title" label="Title" rules={[{ required: true }]}>
+                <Form.Item name="title" label="Название события/лендинга" rules={[{ required: true }]}>
                   <Input
                     placeholder="Summer Campaign"
                     onBlur={(event) => {
@@ -3114,7 +3565,7 @@ export default function LandingBuilderPage() {
                 </Form.Item>
               </Col>
               <Col xs={24} md={5}>
-                <Form.Item name="slug" label="Slug" rules={[{ required: true }]}>
+                <Form.Item name="slug" label="Slug (URL)" rules={[{ required: true }]}>
                   <Input placeholder="summer-campaign" />
                 </Form.Item>
               </Col>
@@ -3135,7 +3586,7 @@ export default function LandingBuilderPage() {
               <Col xs={24} md={5}>
                 <Form.Item
                   name="lead_source"
-                  label="Lead Source"
+                  label="Источник лида"
                   getValueProps={(value) => ({
                     value: normalizeOptionValue(
                       value,
@@ -3147,20 +3598,24 @@ export default function LandingBuilderPage() {
                 </Form.Item>
               </Col>
               <Col xs={24} md={3}>
-                <Form.Item name="is_active" label="Active" valuePropName="checked" initialValue>
+                <Form.Item name="is_active" label="Активен" valuePropName="checked" initialValue>
                   <Switch />
                 </Form.Item>
               </Col>
             </Row>
             <Space>
               <Button type="primary" onClick={handleCreateLanding} disabled={!canManageLandings}>Создать</Button>
-              <Button onClick={handleCreateCrmSalesLanding} disabled={!canManageLandings}>Создать шаблон CRM Sales</Button>
+              {TICKETING_TEMPLATE_OPTIONS.map((item) => (
+                <Button key={item.value} onClick={() => handleCreateCrmSalesLanding(item.value)} disabled={!canManageLandings}>
+                  {item.label}
+                </Button>
+              ))}
             </Space>
           </Form>
         </Card>
 
         <Card
-          title="Визуальный редактор"
+          title="Конструктор лендинга билетера"
           style={ui.cardStyle}
           styles={{ body: ui.cardBody }}
           onBlurCapture={(event) => {
@@ -3218,9 +3673,9 @@ export default function LandingBuilderPage() {
                     ]}
                   />
                   <Button onClick={handleSaveDraft} loading={saving} disabled={!selectedId || saveAndPublishing || !canManageLandings}>Сохранить</Button>
-                  <Button onClick={handlePublish} loading={publishing} disabled={!selectedId || saveAndPublishing || !canManageLandings}>Publish</Button>
+                  <Button onClick={handlePublish} loading={publishing} disabled={!selectedId || saveAndPublishing || !canManageLandings}>Опубликовать</Button>
                   <Button type="primary" onClick={handleSaveAndPublish} loading={saveAndPublishing} disabled={!selectedId || saving || publishing || !canManageLandings}>
-                    Save & Publish
+                    Сохранить и опубликовать
                   </Button>
                   <Space size={4}>
                     <Text type="secondary" style={{ fontSize: 12 }}>Autosave</Text>
@@ -3274,7 +3729,7 @@ export default function LandingBuilderPage() {
               />
             )}
             {selectedLandingItem && (
-              <Card size="small" title="Share link" style={{ borderRadius: 12, borderColor: ui.softBorder }}>
+              <Card size="small" title="Share-ссылка" style={{ borderRadius: 12, borderColor: ui.softBorder }}>
                 <Space direction="vertical" size="small" style={{ width: '100%' }}>
                   <Space wrap>
                     <Input
@@ -3303,6 +3758,197 @@ export default function LandingBuilderPage() {
               ui={ui}
               selectedLandingId={selectedId}
             />
+          </Space>
+        </Card>
+
+        <Card title="Билетер: событие, тарифы, checkout, check-in (E2E)" style={ui.cardStyle} styles={{ body: ui.cardBody }}>
+          <Space direction="vertical" size="middle" style={{ width: '100%' }}>
+            <Alert
+              type="info"
+              showIcon
+              message="Операционный модуль билетера"
+              description="Этот блок закрывает E2E-цепочку: событие -> тарифы/промокоды -> checkout -> заказ -> check-in."
+            />
+            <Form layout="vertical" form={ticketingEventForm}>
+              <Row gutter={12}>
+                <Col xs={24} md={6}>
+                  <Form.Item name="title" label="Название события" rules={[{ required: true }]}>
+                    <Input placeholder="Tech Conference 2026" />
+                  </Form.Item>
+                </Col>
+                <Col xs={24} md={4}>
+                  <Form.Item name="slug" label="Slug" rules={[{ required: true }]}>
+                    <Input placeholder="tech-conference-2026" />
+                  </Form.Item>
+                </Col>
+                <Col xs={24} md={3}>
+                  <Form.Item name="currency" label="Валюта" initialValue="UZS">
+                    <Input />
+                  </Form.Item>
+                </Col>
+                <Col xs={24} md={4}>
+                  <Form.Item name="event_mode" label="Режим" initialValue="ga">
+                    <Select options={[{ value: 'ga', label: 'Общий вход' }, { value: 'reserved', label: 'С местами' }]} />
+                  </Form.Item>
+                </Col>
+                <Col xs={24} md={3}>
+                  <Form.Item name="is_active" label="Активно" valuePropName="checked" initialValue>
+                    <Switch />
+                  </Form.Item>
+                </Col>
+                <Col xs={24} md={4}>
+                  <Form.Item name="venue_name" label="Площадка">
+                    <Input placeholder="Central Hall" />
+                  </Form.Item>
+                </Col>
+              </Row>
+              <Row gutter={12}>
+                <Col xs={24} md={12}>
+                  <Form.Item name="venue_address" label="Адрес площадки">
+                    <Input placeholder="Tashkent, ..." />
+                  </Form.Item>
+                </Col>
+                <Col xs={24} md={12}>
+                  <Form.Item name="policy_refund" label="Политика возврата">
+                    <Input.TextArea rows={2} />
+                  </Form.Item>
+                </Col>
+              </Row>
+              <Space>
+                <Button type="primary" onClick={handleUpsertTicketingEvent} loading={ticketingBusy} disabled={!selectedId || !canManageLandings}>
+                  {ticketingEvent?.id ? 'Обновить событие' : 'Создать событие'}
+                </Button>
+                <Button onClick={() => loadTicketingByLanding(selectedId)} loading={ticketingLoading}>Обновить данные</Button>
+              </Space>
+            </Form>
+
+            {ticketingEvent && (
+              <Descriptions size="small" bordered column={{ xs: 1, md: 2 }}>
+                <Descriptions.Item label="Event ID">{ticketingEvent.id}</Descriptions.Item>
+                <Descriptions.Item label="Check-in secret">{ticketingEvent.checkin_secret}</Descriptions.Item>
+                <Descriptions.Item label="Orders">{ticketingOrders.length}</Descriptions.Item>
+                <Descriptions.Item label="Check-ins">{ticketingCheckins.length}</Descriptions.Item>
+              </Descriptions>
+            )}
+
+            <Card size="small" title="Сессии">
+              <Space direction="vertical" style={{ width: '100%' }}>
+                {ticketingSessions.map((session, idx) => (
+                  <Row key={`session-${idx}`} gutter={8}>
+                    <Col span={7}><Input value={session.title || ''} onChange={(e) => setTicketingSessions((prev) => prev.map((x, i) => (i === idx ? { ...x, title: e.target.value } : x)))} placeholder="Название сессии" /></Col>
+                    <Col span={6}><Input value={session.starts_at || ''} onChange={(e) => setTicketingSessions((prev) => prev.map((x, i) => (i === idx ? { ...x, starts_at: e.target.value } : x)))} placeholder="2026-05-01T09:00:00Z" /></Col>
+                    <Col span={6}><Input value={session.ends_at || ''} onChange={(e) => setTicketingSessions((prev) => prev.map((x, i) => (i === idx ? { ...x, ends_at: e.target.value } : x)))} placeholder="2026-05-01T18:00:00Z" /></Col>
+                    <Col span={3}><InputNumber min={0} value={Number(session.capacity || 0)} onChange={(v) => setTicketingSessions((prev) => prev.map((x, i) => (i === idx ? { ...x, capacity: Number(v || 0) } : x)))} style={{ width: '100%' }} /></Col>
+                    <Col span={2}><Button danger onClick={() => setTicketingSessions((prev) => prev.filter((_, i) => i !== idx))}>Del</Button></Col>
+                  </Row>
+                ))}
+                <Button onClick={() => setTicketingSessions((prev) => [...prev, { title: 'Session', starts_at: '', ends_at: '', capacity: 0, is_active: true }])}>+ Добавить сессию</Button>
+              </Space>
+            </Card>
+
+            <Card size="small" title="Тарифы / квоты">
+              <Space direction="vertical" style={{ width: '100%' }}>
+                {ticketingTiers.map((tier, idx) => (
+                  <Row key={`tier-${idx}`} gutter={8}>
+                    <Col span={5}><Input value={tier.name || ''} onChange={(e) => setTicketingTiers((prev) => prev.map((x, i) => (i === idx ? { ...x, name: e.target.value } : x)))} placeholder="Standard" /></Col>
+                    <Col span={5}><InputNumber min={0} value={Number(tier.price || 0)} onChange={(v) => setTicketingTiers((prev) => prev.map((x, i) => (i === idx ? { ...x, price: Number(v || 0) } : x)))} style={{ width: '100%' }} /></Col>
+                    <Col span={4}><InputNumber min={0} value={Number(tier.fee_amount || 0)} onChange={(v) => setTicketingTiers((prev) => prev.map((x, i) => (i === idx ? { ...x, fee_amount: Number(v || 0) } : x)))} style={{ width: '100%' }} /></Col>
+                    <Col span={4}><InputNumber min={0} max={100} value={Number(tier.tax_percent || 0)} onChange={(v) => setTicketingTiers((prev) => prev.map((x, i) => (i === idx ? { ...x, tax_percent: Number(v || 0) } : x)))} style={{ width: '100%' }} /></Col>
+                    <Col span={4}><InputNumber min={0} value={Number(tier.quota_total || 0)} onChange={(v) => setTicketingTiers((prev) => prev.map((x, i) => (i === idx ? { ...x, quota_total: Number(v || 0) } : x)))} style={{ width: '100%' }} /></Col>
+                    <Col span={2}><Button danger onClick={() => setTicketingTiers((prev) => prev.filter((_, i) => i !== idx))}>Del</Button></Col>
+                  </Row>
+                ))}
+                <Button onClick={() => setTicketingTiers((prev) => [...prev, { name: 'New Tier', description: '', price: 0, fee_amount: 0, tax_percent: 0, max_per_order: 10, quota_total: 100, is_active: true }])}>+ Добавить тариф</Button>
+              </Space>
+            </Card>
+
+            <Card size="small" title="Промокоды">
+              <Space direction="vertical" style={{ width: '100%' }}>
+                {ticketingPromocodes.map((promo, idx) => (
+                  <Row key={`promo-${idx}`} gutter={8}>
+                    <Col span={6}><Input value={promo.code || ''} onChange={(e) => setTicketingPromocodes((prev) => prev.map((x, i) => (i === idx ? { ...x, code: e.target.value } : x)))} placeholder="EARLY10" /></Col>
+                    <Col span={6}>
+                      <Select value={promo.discount_type || 'percent'} options={[{ value: 'percent', label: '%' }, { value: 'fixed', label: 'Fixed' }]} onChange={(v) => setTicketingPromocodes((prev) => prev.map((x, i) => (i === idx ? { ...x, discount_type: v } : x)))} />
+                    </Col>
+                    <Col span={6}><InputNumber min={0} value={Number(promo.discount_value || 0)} onChange={(v) => setTicketingPromocodes((prev) => prev.map((x, i) => (i === idx ? { ...x, discount_value: Number(v || 0) } : x)))} style={{ width: '100%' }} /></Col>
+                    <Col span={4}><InputNumber min={0} value={Number(promo.usage_limit || 0)} onChange={(v) => setTicketingPromocodes((prev) => prev.map((x, i) => (i === idx ? { ...x, usage_limit: Number(v || 0) } : x)))} style={{ width: '100%' }} /></Col>
+                    <Col span={2}><Button danger onClick={() => setTicketingPromocodes((prev) => prev.filter((_, i) => i !== idx))}>Del</Button></Col>
+                  </Row>
+                ))}
+                <Button onClick={() => setTicketingPromocodes((prev) => [...prev, { code: 'PROMO10', discount_type: 'percent', discount_value: 10, usage_limit: 0, is_active: true, applicable_tier_ids: [] }])}>+ Добавить промокод</Button>
+              </Space>
+            </Card>
+
+            <Space>
+              <Button type="primary" onClick={handleSaveTicketingCollections} loading={ticketingBusy} disabled={!ticketingEvent?.id || !canManageLandings}>
+                Сохранить сессии/тарифы/промокоды
+              </Button>
+            </Space>
+
+            <Card size="small" title="Публичный checkout (демо E2E)">
+              <Form layout="vertical" form={checkoutForm}>
+                <Row gutter={12}>
+                  <Col xs={24} md={6}><Form.Item name="customer_name" label="Покупатель"><Input placeholder="John Doe" /></Form.Item></Col>
+                  <Col xs={24} md={6}><Form.Item name="customer_phone" label="Телефон"><Input placeholder="+998..." /></Form.Item></Col>
+                  <Col xs={24} md={6}><Form.Item name="customer_email" label="Email"><Input placeholder="john@example.com" /></Form.Item></Col>
+                  <Col xs={24} md={6}><Form.Item name="promo_code" label="Промокод"><Input placeholder="EARLY10" /></Form.Item></Col>
+                </Row>
+                <Row gutter={12}>
+                  <Col xs={24} md={8}>
+                    <Form.Item name="tier_id" label="Тариф">
+                      <Select
+                        allowClear
+                        options={ticketingTiers.map((item) => ({ value: item.id, label: `${item.name} (${item.price || 0})` }))}
+                      />
+                    </Form.Item>
+                  </Col>
+                  <Col xs={24} md={8}>
+                    <Form.Item name="session_id" label="Сессия">
+                      <Select
+                        allowClear
+                        options={ticketingSessions.map((item) => ({ value: item.id, label: item.title }))}
+                      />
+                    </Form.Item>
+                  </Col>
+                  <Col xs={24} md={4}><Form.Item name="quantity" label="Кол-во" initialValue={1}><InputNumber min={1} max={20} style={{ width: '100%' }} /></Form.Item></Col>
+                  <Col xs={24} md={4} style={{ display: 'flex', alignItems: 'end' }}>
+                    <Button type="primary" onClick={handlePublicCheckoutPreview} loading={ticketingBusy} disabled={!ticketingEvent?.slug}>Выполнить checkout</Button>
+                  </Col>
+                </Row>
+              </Form>
+              {checkoutPreview && (
+                <Alert
+                  style={{ marginTop: 8 }}
+                  type="success"
+                  message={`Order #${checkoutPreview.order_id} (${checkoutPreview.total_amount} ${checkoutPreview.currency})`}
+                  description={`Ticket code: ${checkoutPreview?.items?.[0]?.ticket_code || '-'}`}
+                />
+              )}
+            </Card>
+
+            <Card size="small" title="Check-in (демо E2E)">
+              <Form layout="vertical" form={checkinForm}>
+                <Row gutter={12}>
+                  <Col xs={24} md={10}>
+                    <Form.Item name="scanned_code" label="Ticket code / QR payload" rules={[{ required: true }]}>
+                      <Input placeholder="UUID ticket code или qr_payload" />
+                    </Form.Item>
+                  </Col>
+                  <Col xs={24} md={6}><Form.Item name="gate" label="Gate"><Input placeholder="Main Gate" /></Form.Item></Col>
+                  <Col xs={24} md={8} style={{ display: 'flex', alignItems: 'end' }}>
+                    <Button type="primary" onClick={handlePublicCheckinPreview} loading={ticketingBusy} disabled={!ticketingEvent?.slug}>Выполнить check-in</Button>
+                  </Col>
+                </Row>
+              </Form>
+              {checkinPreview && (
+                <Alert
+                  style={{ marginTop: 8 }}
+                  type={checkinPreview.result === 'valid' ? 'success' : checkinPreview.result === 'duplicate' ? 'warning' : 'error'}
+                  message={`Check-in result: ${checkinPreview.result}`}
+                  description={checkinPreview.message}
+                />
+              )}
+            </Card>
           </Space>
         </Card>
 
@@ -3353,7 +3999,7 @@ export default function LandingBuilderPage() {
           />
         </Card>
 
-        <Card title="Funnel Filters" style={ui.cardStyle} styles={{ body: ui.cardBody }}>
+        <Card title="Фильтры аналитики" style={ui.cardStyle} styles={{ body: ui.cardBody }}>
           <Row gutter={12}>
             <Col xs={24} md={8}>
               <Space>
@@ -3387,7 +4033,7 @@ export default function LandingBuilderPage() {
             </Col>
             <Col xs={24} md={8}>
               <Space>
-                <Button onClick={handleLoadReport} loading={reportLoading} disabled={!selectedId}>Conversion report</Button>
+                <Button onClick={handleLoadReport} loading={reportLoading} disabled={!selectedId}>Конверсионный отчет</Button>
                 <Button onClick={handleExportCsv} disabled={!report}>Export CSV</Button>
                 <Button onClick={handleExportPdf} disabled={!report}>Export PDF</Button>
               </Space>
@@ -3396,7 +4042,7 @@ export default function LandingBuilderPage() {
         </Card>
 
         {report && (
-          <Card title="Funnel Report" style={ui.cardStyle} styles={{ body: ui.cardBody }}>
+          <Card title="Отчет воронки" style={ui.cardStyle} styles={{ body: ui.cardBody }}>
             <Row gutter={12}>
               <Col xs={12} md={6}><Statistic title="Views" value={report?.metrics?.landing_view || 0} /></Col>
               <Col xs={12} md={6}><Statistic title="Form start" value={report?.metrics?.form_start || 0} /></Col>

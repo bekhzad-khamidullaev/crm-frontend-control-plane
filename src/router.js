@@ -70,7 +70,6 @@ export const routeMeta = {
  'functional': { auth: true, title: 'Functional' },
  'reference-data': { auth: true, title: 'Reference Data' },
  'help-center': { auth: true, title: 'Help Center' },
- 'analytics': { auth: true, title: 'Analytics' },
  'sms-center': { auth: true, title: 'SMS Center' },
  'telephony': { auth: true, title: 'Telephony' },
  'users': { auth: true, title: 'Users' },
@@ -126,7 +125,6 @@ const ADMIN_PERMISSIONS = ['auth.view_user', 'settings.view_systemsettings'];
   'crm-emails',
   'massmail',
   'help-center',
-  'analytics',
   'sms-center',
   'telephony',
   'clients-workspace',
@@ -249,7 +247,6 @@ const ADMIN_PERMISSIONS = ['auth.view_user', 'settings.view_systemsettings'];
   ['telephony', 'voip.view_connection'],
   ['control-plane', 'settings.view_systemsettings'],
   ['massmail', 'massmail.view_mailingout'],
-  ['analytics', 'analytics.view_incomestat'],
   ['landing-builder', 'landings.view_landingpage'],
 ].forEach(([route, permission]) => {
   if (routeMeta[route]) routeMeta[route].permissions = [permission];
@@ -340,7 +337,6 @@ const ADMIN_PERMISSIONS = ['auth.view_user', 'settings.view_systemsettings'];
   ['calls-list', 'communications.voip'],
   ['calls-dashboard', 'communications.voip'],
   ['telephony', 'communications.voip'],
-  ['analytics', 'analytics.core'],
   ['products-list', 'crm.products'],
   ['products-new', 'crm.products'],
   ['products-detail', 'crm.products'],
@@ -480,7 +476,7 @@ export function parseHash() {
   if (segments[0] === 'functional') return { name: 'functional', params: {} };
   if (segments[0] === 'reference-data') return { name: 'reference-data', params: {} };
   if (segments[0] === 'help') return { name: 'help-center', params: {} };
-  if (segments[0] === 'analytics') return { name: 'analytics', params: {} };
+  if (segments[0] === 'analytics') return { name: 'dashboard', params: {} };
   if (segments[0] === 'sms') return { name: 'sms-center', params: {} };
   if (segments[0] === 'telephony') return { name: 'telephony', params: {} };
   if (segments[0] === 'users') return { name: 'users', params: {} };

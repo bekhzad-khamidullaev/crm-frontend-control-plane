@@ -60,7 +60,7 @@ function buildRulesPayload(values) {
   };
 }
 
-export default function MarketingSegmentsPage() {
+export default function MarketingSegmentsPage({ embedded = false }) {
   const { message } = App.useApp();
   const [form] = Form.useForm();
   const [loading, setLoading] = useState(false);
@@ -172,74 +172,87 @@ export default function MarketingSegmentsPage() {
     }
   };
 
-  return (
+  const content = (
     <Space direction="vertical" size={12} style={{ width: '100%' }}>
-      <Card>
-        <Space direction="vertical" size={12} style={{ width: '100%' }}>
-          <Space wrap style={{ width: '100%', justifyContent: 'space-between' }}>
-            <div>
+      <Space wrap style={{ width: '100%', justifyContent: 'space-between' }}>
+        <div>
+          {embedded ? (
+            <>
+              <Text strong>Сегменты аудитории</Text>
+              <div>
+                <Text type="secondary">Конструктор правил сегментации клиентов.</Text>
+              </div>
+            </>
+          ) : (
+            <>
               <Title level={3} style={{ margin: 0 }}>Маркетинговые сегменты</Title>
               <Text type="secondary">
                 Графический конструктор правил сегментации без ручного JSON.
               </Text>
-            </div>
-            <Button type="primary" icon={<PlusOutlined />} onClick={openCreate}>
-              Создать сегмент
-            </Button>
-          </Space>
+            </>
+          )}
+        </div>
+        <Button type="primary" icon={<PlusOutlined />} onClick={openCreate}>
+          Создать сегмент
+        </Button>
+      </Space>
 
-          <EntityListToolbar
-            searchValue={search}
-            searchPlaceholder="Поиск по названию или описанию"
-            onSearchChange={setSearch}
-            onRefresh={loadSegments}
-            onReset={() => setSearch('')}
-            loading={loading}
-            resultSummary={`Всего сегментов: ${filteredData.length}`}
-            activeFilters={search ? [{ key: 'search', label: 'Поиск', value: search, onClear: () => setSearch('') }] : []}
-          />
+      <EntityListToolbar
+        searchValue={search}
+        searchPlaceholder="Поиск по названию или описанию"
+        onSearchChange={setSearch}
+        onRefresh={loadSegments}
+        onReset={() => setSearch('')}
+        loading={loading}
+        resultSummary={`Всего сегментов: ${filteredData.length}`}
+        activeFilters={search ? [{ key: 'search', label: 'Поиск', value: search, onClear: () => setSearch('') }] : []}
+      />
 
-          <Table
-            rowKey="id"
-            loading={loading}
-            dataSource={filteredData}
-            columns={[
-              { title: 'Название', dataIndex: 'name', key: 'name', render: (value) => <Text strong>{value || '-'}</Text> },
-              { title: 'Описание', dataIndex: 'description', key: 'description', render: (value) => value || '-' },
-              { title: 'Размер', dataIndex: 'size_cache', key: 'size_cache', width: 140, render: (value) => value ?? '-' },
-              {
-                title: 'Тип',
-                dataIndex: 'is_dynamic',
-                key: 'is_dynamic',
-                width: 140,
-                render: (value) => (value ? <Tag color="processing">Динамический</Tag> : <Tag>Статический</Tag>),
-              },
-              {
-                title: 'Действия',
-                key: 'actions',
-                width: 170,
-                render: (_, record) => (
-                  <Space size={4}>
-                    <Button size="small" icon={<EditOutlined />} onClick={() => openEdit(record)}>
-                      Ред.
-                    </Button>
-                    <Popconfirm
-                      title="Удалить сегмент?"
-                      description="Действие нельзя отменить"
-                      okText="Удалить"
-                      cancelText="Отмена"
-                      onConfirm={() => handleDelete(record)}
-                    >
-                      <Button size="small" danger icon={<DeleteOutlined />}>Удал.</Button>
-                    </Popconfirm>
-                  </Space>
-                ),
-              },
-            ]}
-            pagination={{ pageSize: 10, hideOnSinglePage: true }}
-          />
-        </Space>
-      </Card>
+      <Table
+        rowKey="id"
+        loading={loading}
+        dataSource={filteredData}
+        columns={[
+          { title: 'Название', dataIndex: 'name', key: 'name', render: (value) => <Text strong>{value || '-'}</Text> },
+          { title: 'Описание', dataIndex: 'description', key: 'description', render: (value) => value || '-' },
+          { title: 'Размер', dataIndex: 'size_cache', key: 'size_cache', width: 140, render: (value) => value ?? '-' },
+          {
+            title: 'Тип',
+            dataIndex: 'is_dynamic',
+            key: 'is_dynamic',
+            width: 140,
+            render: (value) => (value ? <Tag color="processing">Динамический</Tag> : <Tag>Статический</Tag>),
+          },
+          {
+            title: 'Действия',
+            key: 'actions',
+            width: 170,
+            render: (_, record) => (
+              <Space size={4}>
+                <Button size="small" icon={<EditOutlined />} onClick={() => openEdit(record)}>
+                  Ред.
+                </Button>
+                <Popconfirm
+                  title="Удалить сегмент?"
+                  description="Действие нельзя отменить"
+                  okText="Удалить"
+                  cancelText="Отмена"
+                  onConfirm={() => handleDelete(record)}
+                >
+                  <Button size="small" danger icon={<DeleteOutlined />}>Удал.</Button>
+                </Popconfirm>
+              </Space>
+            ),
+          },
+        ]}
+        pagination={{ pageSize: 10, hideOnSinglePage: true }}
+      />
+    </Space>
+  );
+
+  return (
+    <Space direction="vertical" size={12} style={{ width: '100%' }}>
+      {embedded ? content : <Card>{content}</Card>}
 
       <Drawer
         title={editingSegmentId ? 'Редактирование сегмента' : 'Создание сегмента'}

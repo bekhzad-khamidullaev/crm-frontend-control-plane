@@ -10,7 +10,7 @@ import { LIST_HEADER_STYLE, LIST_STACK_STYLE, LIST_TITLE_STYLE } from '../../sha
 
 const { Text, Title } = Typography;
 
-function CampaignsList() {
+function CampaignsList({ embedded = false }) {
   const { message } = App.useApp();
   const canManage = canWrite('marketing.change_campaign');
   const [campaigns, setCampaigns] = useState([]);
@@ -181,18 +181,23 @@ function CampaignsList() {
     },
   ];
 
-  return (
-    <Card>
-      <Space direction="vertical" size={16} style={LIST_STACK_STYLE}>
-        <Space wrap style={LIST_HEADER_STYLE}>
-          <div>
-            <Title level={3} style={LIST_TITLE_STYLE}>Кампании</Title>
-            <Text type="secondary">Список маркетинговых кампаний</Text>
-          </div>
-          {canManage ? (
-            <Button type="primary" icon={<PlusOutlined />} onClick={() => navigate('/campaigns/new')}>Создать кампанию</Button>
-          ) : null}
-        </Space>
+  const content = (
+    <Space direction="vertical" size={16} style={LIST_STACK_STYLE}>
+      <Space wrap style={LIST_HEADER_STYLE}>
+        <div>
+          {embedded ? (
+            <Text strong>Кампании</Text>
+          ) : (
+            <>
+              <Title level={3} style={LIST_TITLE_STYLE}>Кампании</Title>
+              <Text type="secondary">Список маркетинговых кампаний</Text>
+            </>
+          )}
+        </div>
+        {canManage ? (
+          <Button type="primary" icon={<PlusOutlined />} onClick={() => navigate('/campaigns/new')}>Создать кампанию</Button>
+        ) : null}
+      </Space>
 
         <EntityListToolbar
           searchValue={searchText}
@@ -259,7 +264,16 @@ function CampaignsList() {
             rowExpandable: () => true,
           }}
         />
-      </Space>
+    </Space>
+  );
+
+  if (embedded) {
+    return content;
+  }
+
+  return (
+    <Card>
+      {content}
     </Card>
   );
 }

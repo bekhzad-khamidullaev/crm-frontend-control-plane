@@ -2,7 +2,7 @@ import { Deal } from '@/entities/deal';
 import { dealKeys } from '@/entities/deal/api/keys';
 import { useDeleteDeal, usePatchDeal } from '@/entities/deal/api/mutations';
 // @ts-ignore
-import EditableCell from '@/components/ui-EditableCell';
+import EditableCell from '@/components/editable-cell';
 import { DealsService } from '@/shared/api/generated/services/DealsService';
 import { useServerTable } from '@/shared/hooks';
 import {
@@ -55,6 +55,7 @@ export const DealsTable: React.FC = () => {
       id: record.id,
       data: { [dataIndex]: normalizedValue } as any,
     });
+    await refetch();
   };
 
   const singleLineEllipsis: React.CSSProperties = {

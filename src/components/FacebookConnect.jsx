@@ -5,10 +5,11 @@
 
 import React, { useState } from 'react';
 import { Form, Input, Button, Space, Alert, Typography, Card, App, Select, theme as antdTheme } from 'antd';
-import { FacebookOutlined, ReloadOutlined } from '@ant-design/icons';
+import { ReloadOutlined } from '@ant-design/icons';
 import { connectFacebook, discoverFacebookPages } from '../lib/api/integrations/facebook';
 import { t } from '../lib/i18n';
 import { useTheme } from '../lib/hooks/useTheme';
+import ChannelBrandIcon from './channel/ChannelBrandIcon.jsx';
 
 const { Link, Paragraph } = Typography;
 
@@ -176,7 +177,7 @@ export default function FacebookConnect({ onSuccess, onCancel }) {
           extra={tr('facebookConnect.fields.tokenExtra', 'Долгосрочный токен доступа вашей Facebook страницы')}
         >
           <Input.Password
-            prefix={<FacebookOutlined />}
+            prefix={<ChannelBrandIcon channel="facebook" size={16} />}
             placeholder="EAAxxxxxxxxxxxxx"
           />
         </Form.Item>
@@ -254,7 +255,12 @@ export default function FacebookConnect({ onSuccess, onCancel }) {
 
           <Form.Item style={{ marginBottom: 0 }}>
             <Space wrap>
-              <Button type="primary" htmlType="submit" loading={loading} icon={<FacebookOutlined />}>
+              <Button
+                type="primary"
+                htmlType="submit"
+                loading={loading}
+                icon={<ChannelBrandIcon channel="facebook" size={16} />}
+              >
                 {tr('facebookConnect.actions.connect', 'Подключить Facebook Messenger')}
               </Button>
               {onCancel && (

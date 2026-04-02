@@ -26,8 +26,6 @@ import {
   CheckCircleOutlined,
   CloudUploadOutlined,
   DashboardOutlined,
-  MessageOutlined,
-  PhoneOutlined,
   ReloadOutlined,
   SettingOutlined,
   TeamOutlined,
@@ -45,6 +43,7 @@ import { getVoIPConnections } from '../lib/api/telephony.js';
 import { getProfiles, getUsers } from '../lib/api/user.js';
 import { useTheme } from '../lib/hooks/useTheme.js';
 import { navigate } from '../router.js';
+import ChannelBrandIcon from '../components/channel/ChannelBrandIcon.jsx';
 import {
   bootstrapOnboardingTemplate,
   getOnboardingState,
@@ -899,7 +898,12 @@ export default function OnboardingWizardPage() {
                 <Col xs={24} md={12} xl={6} key={row.key}>
                   <Card size="small">
                     <Space direction="vertical" size={8}>
-                      <Tag color={row.color}>{row.label}</Tag>
+                      <Tag color={row.color}>
+                        <Space size={6}>
+                          <ChannelBrandIcon channel={row.key} size={14} />
+                          <span>{row.label}</span>
+                        </Space>
+                      </Tag>
                       <Statistic title="Подключено" value={row.count} />
                       <Tag color={row.connected ? 'success' : 'default'}>
                         {row.connected ? 'Готово' : 'Не подключено'}
@@ -910,7 +914,7 @@ export default function OnboardingWizardPage() {
               ))}
             </Row>
             <Space>
-              <Button type="primary" icon={<MessageOutlined />} onClick={() => navigate('/integrations')}>
+              <Button type="primary" icon={<ChannelBrandIcon channel="omnichannel" size={16} />} onClick={() => navigate('/integrations')}>
                 Открыть интеграции
               </Button>
               <Button onClick={() => goToStep(Math.max(5, safeNextIndex))}>Следующий шаг</Button>
@@ -962,7 +966,7 @@ export default function OnboardingWizardPage() {
               ]}
             />
             <Space>
-              <Button type="primary" icon={<PhoneOutlined />} onClick={() => navigate('/telephony')}>
+              <Button type="primary" icon={<ChannelBrandIcon channel="telephony" size={16} />} onClick={() => navigate('/telephony')}>
                 Открыть телефонию
               </Button>
               <Button onClick={() => goToStep(Math.max(6, safeNextIndex))}>Следующий шаг</Button>

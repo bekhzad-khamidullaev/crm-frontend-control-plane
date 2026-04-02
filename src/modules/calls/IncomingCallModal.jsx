@@ -17,7 +17,6 @@ import {
 } from 'antd';
 import {
   DatabaseOutlined,
-  PhoneOutlined,
   PhoneTwoTone,
   UserOutlined,
 } from '@ant-design/icons';
@@ -28,6 +27,7 @@ import sipClient from '../../lib/telephony/SIPClient.js';
 import { navigate } from '../../router.js';
 import { VoIpColdCallsService } from '../../shared/api/generated/services/VoIpColdCallsService.ts';
 import { TELEPHONY_MODAL_PROPS } from '../../shared/ui/telephonyModal.js';
+import ChannelBrandIcon from '../../components/channel/ChannelBrandIcon.jsx';
 
 const { Text, Title } = Typography;
 
@@ -304,7 +304,7 @@ function IncomingCallModal({ visible, callData, onAnswer, onReject, onDismiss })
                       ]}
                     >
                       <List.Item.Meta
-                        avatar={<PhoneOutlined />}
+                        avatar={<ChannelBrandIcon channel="telephony" size={14} />}
                         title={item.title}
                         description={item.description}
                       />
@@ -336,7 +336,7 @@ function IncomingCallModal({ visible, callData, onAnswer, onReject, onDismiss })
 
           <Space style={{ width: '100%', justifyContent: 'space-between' }}>
             <Button danger onClick={handleReject}>Отклонить</Button>
-            <Button type="primary" icon={<PhoneOutlined />} onClick={handleAnswer}>Ответить</Button>
+            <Button type="primary" icon={<ChannelBrandIcon channel="telephony" size={14} />} onClick={handleAnswer}>Ответить</Button>
           </Space>
 
           <audio id="incoming-call-audio" autoPlay />

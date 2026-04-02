@@ -9,14 +9,13 @@ import { Button, Badge, Dropdown, Modal, Space, App } from 'antd';
 import {
   EditOutlined,
   DownloadOutlined,
-  MailOutlined,
-  MessageOutlined,
   TagsOutlined,
   DeleteOutlined,
   MoreOutlined,
 } from '@ant-design/icons';
 import { useTheme } from '../lib/hooks/useTheme';
 import { canWrite as canWriteByRole } from '../lib/rbac.js';
+import ChannelBrandIcon from './channel/ChannelBrandIcon.jsx';
 
 export default function BulkActions({
   selectedRowKeys = [],
@@ -87,13 +86,13 @@ export default function BulkActions({
     },
     onSendEmail && canSendEmail && {
       key: 'email',
-      icon: <MailOutlined />,
+      icon: <ChannelBrandIcon channel="crm-email" size={14} />,
       label: 'Отправить Email',
       onClick: () => onSendEmail(selectedRowKeys),
     },
     onSendSMS && canSendSMS && {
       key: 'sms',
-      icon: <MessageOutlined />,
+      icon: <ChannelBrandIcon channel="sms" size={14} />,
       label: 'Отправить SMS',
       onClick: () => onSendSMS(selectedRowKeys),
     },

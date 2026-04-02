@@ -30,6 +30,7 @@ import {
 
 import AudioPlayer from '../../components/AudioPlayer.jsx';
 import CallButton from '../../components/CallButton.jsx';
+import ChannelBrandIcon from '../../components/channel/ChannelBrandIcon.jsx';
 import { t } from '../../lib/i18n';
 import { addCallNote, getCallStatistics, getVoipCallLog, getVoipCallLogs } from '../../lib/api/calls.js';
 
@@ -293,7 +294,10 @@ function CallsList() {
       <Space direction="vertical" size={12} style={{ width: '100%', maxWidth: 1320 }}>
         <Space wrap style={{ width: '100%', justifyContent: 'space-between' }}>
           <div>
-            <Title level={3} style={{ margin: 0 }}>{tr('callsList.title', 'Call history')}</Title>
+            <Space size={8} align="center" style={{ marginBottom: 2 }}>
+              <ChannelBrandIcon channel="telephony" size={16} />
+              <Title level={3} style={{ margin: 0 }}>{tr('callsList.title', 'Call history')}</Title>
+            </Space>
             <Text type="secondary">{tr('callsList.subtitle', 'VoIP log and analytics')}</Text>
           </div>
           <Button icon={<ReloadOutlined />} onClick={fetchCalls} loading={loading}>{tr('actions.refresh', 'Refresh')}</Button>

@@ -7,20 +7,15 @@ import React, { useEffect, useState } from 'react';
 import { Card, Space, Button, Modal, App, Table, Tag, Form, Input, InputNumber, Select, Switch, Popconfirm, Alert, Typography, Descriptions, theme as antdTheme } from 'antd';
 import {
   ApiOutlined,
-  MessageOutlined,
-  PhoneOutlined,
   ReloadOutlined,
-  FacebookOutlined,
-  InstagramOutlined,
-  SendOutlined,
   RobotOutlined,
-  WhatsAppOutlined,
   CopyOutlined,
 } from '@ant-design/icons';
 import dayjs from 'dayjs';
 import relativeTime from 'dayjs/plugin/relativeTime';
 import IntegrationCard from '../components/IntegrationCard';
 import LicenseRestrictedAction from '../components/LicenseRestrictedAction.jsx';
+import ChannelBrandIcon from '../components/channel/ChannelBrandIcon.jsx';
 import SMSSettings from '../components/SMSSettings';
 import TelephonySettings from '../components/TelephonySettings';
 import FacebookConnect from '../components/FacebookConnect.jsx';
@@ -82,6 +77,52 @@ const formatDateTime = (value) => {
 dayjs.extend(relativeTime);
 
 const { Text } = Typography;
+
+const CHANNEL_ICON_ALIASES = {
+  whatsapp: 'whatsapp',
+  whatsapp_business: 'whatsapp',
+  whatsapp_cloud: 'whatsapp',
+  wa: 'whatsapp',
+  facebook: 'facebook',
+  facebook_messenger: 'facebook',
+  messenger: 'facebook',
+  fb: 'facebook',
+  instagram: 'instagram',
+  instagram_direct: 'instagram',
+  ig: 'instagram',
+  telegram: 'telegram',
+  telegram_bot: 'telegram',
+  telegram_user: 'telegram',
+  tg: 'telegram',
+  sms: 'sms',
+  playmobile: 'sms',
+  eskiz: 'sms',
+  telephony: 'telephony',
+  voip: 'telephony',
+  calls: 'telephony',
+  phone: 'telephony',
+  crm_email: 'crm-email',
+  crm_emails: 'crm-email',
+  email: 'crm-email',
+  massmail: 'massmail',
+  omnichannel: 'omnichannel',
+  crm_chat: 'chat',
+};
+
+const normalizeChannelIconKey = (value) => {
+  const normalized = String(value || '')
+    .trim()
+    .toLowerCase()
+    .replace(/\s+/g, '_');
+  return CHANNEL_ICON_ALIASES[normalized] || normalized;
+};
+
+const renderChannelIdentity = (label, channelHint) => (
+  <Space size={8} align="center">
+    <ChannelBrandIcon channel={normalizeChannelIconKey(channelHint || label || 'omnichannel')} size={16} />
+    <span>{label || '-'}</span>
+  </Space>
+);
 
 const formatDiagnosticsTimestamp = (value) => {
   if (!value) return '';
@@ -1288,7 +1329,10 @@ export default function IntegrationsPage({ embedded = false } = {}) {
   }
   const diagnosticsChannelOptions = [
     { value: 'all', label: tr('integrationsPage.filters.allChannels', 'Все каналы') },
-    ...Array.from(diagnosticsChannelValues).map((value) => ({ value, label: value })),
+    ...Array.from(diagnosticsChannelValues).map((value) => ({
+      value,
+      label: renderChannelIdentity(value, value),
+    })),
   ];
   const diagnosticsAlertType =
     diagnosticsSummary.transport_health === 'degraded' ||
@@ -1373,6 +1417,7 @@ export default function IntegrationsPage({ embedded = false } = {}) {
     {
       key: 'sms',
       channel: 'SMS',
+      channelKey: 'sms',
       status: statuses.sms.status,
       reason: statuses.sms.error || tr('integrationsPage.catalog.smsReason', 'Провайдеры и SMS delivery health'),
       onConnect: () => openModal('sms'),
@@ -1383,6 +1428,7 @@ export default function IntegrationsPage({ embedded = false } = {}) {
     {
       key: 'telephony',
       channel: tr('integrationsPage.cards.telephony.title', 'Телефония'),
+      channelKey: 'telephony',
       status: statuses.telephony.status,
       reason: statuses.telephony.error || tr('integrationsPage.catalog.telephonyReason', 'VoIP/SIP health и active connection'),
       onConnect: () => openModal('telephony'),
@@ -1393,6 +1439,7 @@ export default function IntegrationsPage({ embedded = false } = {}) {
     {
       key: 'whatsapp',
       channel: 'WhatsApp Business',
+      channelKey: 'whatsapp',
       status: statuses.whatsapp.status,
       reason: statuses.whatsapp.error || tr('integrationsPage.catalog.whatsappReason', 'Cloud API аккаунты и webhook доставки'),
       onConnect: () => openModal('whatsapp'),
@@ -1411,6 +1458,7 @@ export default function IntegrationsPage({ embedded = false } = {}) {
     {
       key: 'facebook',
       channel: 'Facebook Messenger',
+      channelKey: 'facebook',
       status: statuses.facebook.status,
       reason: statuses.facebook.error || tr('integrationsPage.catalog.facebookReason', 'Meta webhook и token состояние страниц'),
       onConnect: () => openModal('facebook'),
@@ -1429,6 +1477,7 @@ export default function IntegrationsPage({ embedded = false } = {}) {
     {
       key: 'instagram',
       channel: tr('integrationsPage.cards.instagram.title', 'Instagram'),
+      channelKey: 'instagram',
       status: statuses.instagram.status,
       reason: statuses.instagram.error || tr('integrationsPage.catalog.instagramReason', 'Meta IG token, webhook и comments sync'),
       onConnect: () => openModal('instagram'),
@@ -1447,6 +1496,7 @@ export default function IntegrationsPage({ embedded = false } = {}) {
     {
       key: 'telegram',
       channel: tr('integrationsPage.cards.telegram.title', 'Telegram'),
+      channelKey: 'telegram',
       status: statuses.telegram.status,
       reason: statuses.telegram.error || tr('integrationsPage.catalog.telegramReason', 'Bot token, webhook URL и activity sync'),
       onConnect: () => openModal('telegram'),
@@ -1465,6 +1515,7 @@ export default function IntegrationsPage({ embedded = false } = {}) {
     {
       key: 'ai',
       channel: tr('integrationsPage.cards.ai.title', 'AI'),
+      channelKey: 'ai',
       status: statuses.ai.status,
       reason: statuses.ai.error || tr('integrationsPage.catalog.aiReason', 'Провайдеры моделей и connection test'),
       onConnect: () => openAIModal(),
@@ -1518,6 +1569,7 @@ export default function IntegrationsPage({ embedded = false } = {}) {
                   title: tr('integrationsPage.table.channel', 'Канал'),
                   dataIndex: 'channel',
                   key: 'channel',
+                  render: (value, record) => renderChannelIdentity(value, record.channelKey || record.key),
                 },
                 {
                   title: tr('integrationsPage.table.status', 'Состояние'),
@@ -1732,6 +1784,7 @@ export default function IntegrationsPage({ embedded = false } = {}) {
                     >
                       <Space direction="vertical" size={10} style={{ width: '100%' }}>
                         <Space align="center" wrap>
+                          <ChannelBrandIcon channel={normalizeChannelIconKey(channel.channel)} size={16} />
                           <Text strong>{channel.channel}</Text>
                           <Tag color={channel.health === 'degraded' ? 'error' : 'success'} style={{ marginInlineEnd: 0 }}>
                             {channel.health === 'degraded'
@@ -1767,7 +1820,14 @@ export default function IntegrationsPage({ embedded = false } = {}) {
                     title: tr('integrationsPage.table.channel', 'Канал'),
                     dataIndex: 'channel_type',
                     key: 'channel_type',
-                    render: (value) => <Tag>{value || '-'}</Tag>,
+                    render: (value) => (
+                      <Tag style={{ marginInlineEnd: 0 }}>
+                        <Space size={6} align="center">
+                          <ChannelBrandIcon channel={normalizeChannelIconKey(value)} size={14} />
+                          <span>{value || '-'}</span>
+                        </Space>
+                      </Tag>
+                    ),
                   },
                   {
                     title: tr('integrationsPage.table.status', 'Статус'),
@@ -1918,7 +1978,7 @@ export default function IntegrationsPage({ embedded = false } = {}) {
           <IntegrationCard
             title="SMS"
             description={tr('integrationsPage.cards.sms.description', 'Провайдеры и статус отправки SMS')}
-            icon={<MessageOutlined style={{ fontSize: 24, color: '#52c41a' }} />}
+            icon={<ChannelBrandIcon channel="sms" size={24} />}
             type="sms"
             status={statuses.sms.status}
             stats={statuses.sms.stats}
@@ -1934,7 +1994,7 @@ export default function IntegrationsPage({ embedded = false } = {}) {
           <IntegrationCard
             title={tr('integrationsPage.cards.telephony.title', 'Телефония')}
             description={tr('integrationsPage.cards.telephony.description', 'Подключения VoIP/SIP для звонков из CRM')}
-            icon={<PhoneOutlined style={{ fontSize: 24, color: '#1890ff' }} />}
+            icon={<ChannelBrandIcon channel="telephony" size={24} />}
             type="telephony"
             status={statuses.telephony.status}
             stats={statuses.telephony.stats}
@@ -1950,7 +2010,7 @@ export default function IntegrationsPage({ embedded = false } = {}) {
           <IntegrationCard
             title="WhatsApp Business"
             description={tr('integrationsPage.cards.whatsapp.description', 'Cloud API аккаунты для омниканала поддержки и продаж')}
-            icon={<WhatsAppOutlined style={{ fontSize: 24, color: '#25D366' }} />}
+            icon={<ChannelBrandIcon channel="whatsapp" size={24} />}
             type="whatsapp"
             status={statuses.whatsapp.status}
             stats={statuses.whatsapp.stats}
@@ -2028,7 +2088,7 @@ export default function IntegrationsPage({ embedded = false } = {}) {
           <IntegrationCard
             title="Facebook Messenger"
             description={tr('integrationsPage.cards.facebook.description', 'Подключенные страницы для обработки сообщений')}
-            icon={<FacebookOutlined style={{ fontSize: 24, color: '#1877F2' }} />}
+            icon={<ChannelBrandIcon channel="facebook" size={24} />}
             type="facebook"
             status={statuses.facebook.status}
             stats={statuses.facebook.stats}
@@ -2104,7 +2164,7 @@ export default function IntegrationsPage({ embedded = false } = {}) {
           <IntegrationCard
             title={t('integrationsPage.cards.instagram.title')}
             description={t('integrationsPage.cards.instagram.description')}
-            icon={<InstagramOutlined style={{ fontSize: 24, color: '#E1306C' }} />}
+            icon={<ChannelBrandIcon channel="instagram" size={24} />}
             type="instagram"
             status={statuses.instagram.status}
             stats={statuses.instagram.stats}
@@ -2180,7 +2240,7 @@ export default function IntegrationsPage({ embedded = false } = {}) {
           <IntegrationCard
             title={t('integrationsPage.cards.telegram.title')}
             description={t('integrationsPage.cards.telegram.description')}
-            icon={<SendOutlined style={{ fontSize: 24, color: '#2AABEE' }} />}
+            icon={<ChannelBrandIcon channel="telegram" size={24} />}
             type="telegram"
             status={statuses.telegram.status}
             stats={statuses.telegram.stats}
@@ -2425,11 +2485,17 @@ export default function IntegrationsPage({ embedded = false } = {}) {
           >
             <Descriptions size="small" column={2} bordered>
               <Descriptions.Item label={tr('integrationsPage.table.channel', 'Канал')}>
-                {omnichannelEventModal.payload?.channel_name ||
-                  omnichannelEventModal.record?.channel_name ||
+                {renderChannelIdentity(
+                  omnichannelEventModal.payload?.channel_name ||
+                    omnichannelEventModal.record?.channel_name ||
+                    omnichannelEventModal.payload?.channel_type ||
+                    omnichannelEventModal.record?.channel_type ||
+                    '-',
                   omnichannelEventModal.payload?.channel_type ||
-                  omnichannelEventModal.record?.channel_type ||
-                  '-'}
+                    omnichannelEventModal.record?.channel_type ||
+                    omnichannelEventModal.payload?.channel_name ||
+                    omnichannelEventModal.record?.channel_name
+                )}
               </Descriptions.Item>
               <Descriptions.Item label={tr('integrationsPage.table.status', 'Статус')}>
                 <Space size={[4, 4]} wrap>

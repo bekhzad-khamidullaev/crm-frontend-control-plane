@@ -449,6 +449,24 @@ export const landingsApi = {
     api.post(`/api/public/landings/${slug}/lead/`, { body: payload, skipAuth: true }),
 };
 
+export const ticketingApi = {
+  ...crudResource('/api/ticketing/events/'),
+  byLanding: (landingId) => api.get(`/api/ticketing/events/by-landing/${landingId}/`),
+  getSessions: (eventId) => api.get(`/api/ticketing/events/${eventId}/sessions/`),
+  putSessions: (eventId, items) => api.put(`/api/ticketing/events/${eventId}/sessions/`, { body: items }),
+  getTiers: (eventId) => api.get(`/api/ticketing/events/${eventId}/tiers/`),
+  putTiers: (eventId, items) => api.put(`/api/ticketing/events/${eventId}/tiers/`, { body: items }),
+  getPromocodes: (eventId) => api.get(`/api/ticketing/events/${eventId}/promocodes/`),
+  putPromocodes: (eventId, items) => api.put(`/api/ticketing/events/${eventId}/promocodes/`, { body: items }),
+  getOrders: (eventId) => api.get(`/api/ticketing/events/${eventId}/orders/`),
+  getCheckins: (eventId) => api.get(`/api/ticketing/events/${eventId}/checkins/`),
+  publicCatalog: (slug) => api.get(`/api/public/ticketing/events/${slug}/catalog/`, { skipAuth: true }),
+  publicCheckout: (slug, payload) =>
+    api.post(`/api/public/ticketing/events/${slug}/checkout/`, { body: payload, skipAuth: true }),
+  publicCheckin: (slug, payload) =>
+    api.post(`/api/public/ticketing/events/${slug}/checkin/`, { body: payload, skipAuth: true }),
+};
+
 export const projectsApi = {
   ...crudResource('/api/projects/'),
   assign: (id, payload) => api.post(`/api/projects/${id}/assign/`, { body: payload }),

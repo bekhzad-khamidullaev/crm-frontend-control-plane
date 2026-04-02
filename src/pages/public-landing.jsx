@@ -1,16 +1,13 @@
 import { Alert, App, Button, Card, Carousel, Input, Space, Spin, Typography } from 'antd';
 import {
   EnvironmentOutlined,
-  FacebookOutlined,
-  InstagramOutlined,
   LinkedinOutlined,
   MailOutlined,
   PhoneOutlined,
-  SendOutlined,
-  WhatsAppOutlined,
 } from '@ant-design/icons';
 import { useEffect, useState } from 'react';
 import { api, landingsApi } from '../lib/api/client';
+import ChannelBrandIcon from '../components/channel/ChannelBrandIcon.jsx';
 import { useTheme } from '../lib/hooks/useTheme.js';
 
 const { Title, Text } = Typography;
@@ -389,10 +386,10 @@ export default function PublicLandingPage() {
 
             if (type === 'contacts') {
               const socials = [
-                { key: 'wa', label: 'WhatsApp', url: section.whatsapp, icon: WhatsAppOutlined },
-                { key: 'tg', label: 'Telegram', url: section.telegram, icon: SendOutlined },
-                { key: 'ig', label: 'Instagram', url: section.instagram, icon: InstagramOutlined },
-                { key: 'fb', label: 'Facebook', url: section.facebook, icon: FacebookOutlined },
+                { key: 'wa', label: 'WhatsApp', url: section.whatsapp, channel: 'whatsapp' },
+                { key: 'tg', label: 'Telegram', url: section.telegram, channel: 'telegram' },
+                { key: 'ig', label: 'Instagram', url: section.instagram, channel: 'instagram' },
+                { key: 'fb', label: 'Facebook', url: section.facebook, channel: 'facebook' },
                 { key: 'in', label: 'LinkedIn', url: section.linkedin, icon: LinkedinOutlined },
               ].filter((item) => item.url);
               return (
@@ -410,9 +407,15 @@ export default function PublicLandingPage() {
                           {socials.map((item) => {
                             const Icon = item.icon;
                             return (
-                              <Button key={item.key} href={item.url} target="_blank" rel="noopener noreferrer" icon={<Icon />}>
+                              <Button
+                                key={item.key}
+                                href={item.url}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                icon={item.channel ? <ChannelBrandIcon channel={item.channel} size={16} /> : (Icon ? <Icon /> : null)}
+                              >
                               {item.label}
-                              </Button>
+                            </Button>
                             );
                           })}
                         </Space>

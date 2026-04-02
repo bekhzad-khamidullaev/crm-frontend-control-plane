@@ -24,7 +24,6 @@ import {
   message,
 } from 'antd';
 import {
-  PhoneOutlined,
   ClockCircleOutlined,
   ReloadOutlined,
   PhoneTwoTone,
@@ -51,6 +50,7 @@ import {
   CallsStatusChart,
   CallsDurationChart,
 } from '../components/CallsCharts.jsx';
+import ChannelBrandIcon from '../components/channel/ChannelBrandIcon.jsx';
 import dayjs from 'dayjs';
 import { t } from '../lib/i18n/index.js';
 
@@ -608,7 +608,7 @@ function CallsDashboard() {
             <Statistic
               title={t('callsDashboardPage.stats.totalCalls')}
               value={statistics?.total || 0}
-              prefix={<PhoneOutlined />}
+              prefix={<ChannelBrandIcon channel="telephony" size={16} />}
               valueStyle={{ color: '#1890ff' }}
             />
           </Card>

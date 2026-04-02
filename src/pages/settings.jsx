@@ -31,12 +31,12 @@ import {
   DatabaseOutlined,
   DownloadOutlined,
   GlobalOutlined,
-  MailOutlined,
   ReloadOutlined,
   SettingOutlined,
   UploadOutlined,
 } from '@ant-design/icons';
 import settingsApi from '../lib/api/settings.js';
+import ChannelBrandIcon from '../components/channel/ChannelBrandIcon.jsx';
 import { useTheme } from '../lib/hooks/useTheme.js';
 import { exportCrmDataExcel, importCrmDataExcel } from '../lib/api/crmData.js';
 import {
@@ -559,7 +559,7 @@ function SettingsPage() {
       key: 'massmail',
       label: (
         <span>
-          <MailOutlined />
+          <ChannelBrandIcon channel="crm-email" size={14} />
           {tr('settingsPage.tabs.massmail', 'Рассылки')}
         </span>
       ),
@@ -567,7 +567,7 @@ function SettingsPage() {
         <SettingsConfigurator
           title={tr('settingsPage.massmail.title', 'Настройки массовых рассылок')}
           description={tr('settingsPage.massmail.description', 'Параметры рассылок редактируются через визуальные контролы, без JSON.')}
-          icon={<MailOutlined />}
+          icon={<ChannelBrandIcon channel="crm-email" size={16} />}
           data={massmailSettings}
           loading={settingsLoading.massmail}
           saving={settingsSaving.massmail}

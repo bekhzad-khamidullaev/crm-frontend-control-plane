@@ -9,11 +9,11 @@ const channelOptions = [
   { label: 'Email', value: 'email' },
 ];
 
-export default function MarketingTemplatesPage() {
+export default function MarketingTemplatesPage({ embedded = false }) {
   return (
     <CrudPage
       title="Шаблоны сообщений"
-      description="Шаблоны для рассылок и автоматических сообщений."
+      description={embedded ? 'Управление шаблонами для каналов коммуникаций.' : 'Шаблоны для рассылок и автоматических сообщений.'}
       api={{
         list: getTemplates,
         retrieve: getTemplate,

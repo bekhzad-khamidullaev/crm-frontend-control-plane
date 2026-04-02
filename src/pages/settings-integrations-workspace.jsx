@@ -36,7 +36,6 @@ import {
   DownloadOutlined,
   GlobalOutlined,
   LinkOutlined,
-  MailOutlined,
   ReloadOutlined,
   SearchOutlined,
   SafetyCertificateOutlined,
@@ -63,6 +62,7 @@ import { useTheme } from '../lib/hooks/useTheme.js';
 import { formatValueForUi, isPlainObject as isPlainObjectValue } from '../lib/utils/value-display.js';
 import { t } from '../lib/i18n/index.js';
 import { navigate } from '../router.js';
+import ChannelBrandIcon from '../components/channel/ChannelBrandIcon.jsx';
 
 const { Text } = Typography;
 
@@ -75,6 +75,32 @@ function prettifyKey(key) {
   return String(key || '')
     .replace(/_/g, ' ')
     .replace(/\b\w/g, (char) => char.toUpperCase());
+}
+
+function resolveChannelBrandKey(value) {
+  const normalized = String(value || '')
+    .trim()
+    .toLowerCase();
+  if (!normalized) return 'omnichannel';
+  if (/(whatsapp|wa\b)/.test(normalized)) return 'whatsapp';
+  if (/(facebook|messenger|\bfb\b)/.test(normalized)) return 'facebook';
+  if (/(instagram|\big\b)/.test(normalized)) return 'instagram';
+  if (/(telegram|\btg\b)/.test(normalized)) return 'telegram';
+  if (/(playmobile|eskiz|sms)/.test(normalized)) return 'sms';
+  if (/(email|mail|massmail)/.test(normalized)) return 'crm-email';
+  if (/(telephony|voip|sip|asterisk|call|phone)/.test(normalized)) return 'telephony';
+  if (/(omnichannel|inbox|chat|webhook)/.test(normalized)) return 'omnichannel';
+  return normalized;
+}
+
+function renderChannelCell(value) {
+  const label = value || '-';
+  return (
+    <Space size={8} align="center">
+      <ChannelBrandIcon channel={resolveChannelBrandKey(label)} size={14} />
+      <span>{label}</span>
+    </Space>
+  );
 }
 
 function interpolateFallback(template, vars = {}) {
@@ -1573,7 +1599,7 @@ export default function SettingsIntegrationsWorkspace({ defaultTab = 'system' } 
                 <SettingsConfigurator
                   title={tr('settingsWorkspace.massmail.title', 'Massmail settings')}
                   description={tr('settingsWorkspace.massmail.description', 'Лимиты, business hours и unsubscribe policy для массовых email-рассылок.')}
-                  icon={<MailOutlined />}
+                  icon={<ChannelBrandIcon channel="crm-email" size={16} />}
                   data={massmailSettings}
                   loading={sectionLoading.massmail}
                   saving={sectionSaving.massmail}
@@ -1643,6 +1669,13 @@ export default function SettingsIntegrationsWorkspace({ defaultTab = 'system' } 
                   pagination={false}
                   locale={{ emptyText: tr('settingsWorkspace.empty.webhooks', 'Webhook endpoints пока не настроены') }}
                   columns={[
+                    {
+                      title: tr('settingsWorkspace.table.channel', 'Канал'),
+                      dataIndex: 'event',
+                      key: 'event',
+                      width: 220,
+                      render: (value) => renderChannelCell(value || 'Webhook'),
+                    },
                     { title: 'URL', dataIndex: 'url', key: 'url', render: (value) => <Text ellipsis={{ tooltip: value }}>{value}</Text> },
                     {
                       title: tr('settingsWorkspace.table.status', 'Статус'),
@@ -1816,7 +1849,7 @@ export default function SettingsIntegrationsWorkspace({ defaultTab = 'system' } 
                   title: tr('settingsWorkspace.table.integration', 'Интеграция'),
                   dataIndex: 'integration',
                   key: 'integration',
-                  render: (value) => <Text ellipsis={{ tooltip: value }}>{value || '-'}</Text>,
+                  render: (value) => renderChannelCell(value || '-'),
                 },
                 {
                   title: tr('settingsWorkspace.table.action', 'Действие'),
@@ -2585,7 +2618,12 @@ export default function SettingsIntegrationsWorkspace({ defaultTab = 'system' } 
                   ),
                 },
                 { title: tr('settingsWorkspace.table.name', 'Название'), dataIndex: 'provider', key: 'provider' },
-                { title: tr('settingsWorkspace.table.channel', 'Канал'), dataIndex: 'channel', key: 'channel' },
+                {
+                  title: tr('settingsWorkspace.table.channel', 'Канал'),
+                  dataIndex: 'channel',
+                  key: 'channel',
+                  render: (value) => renderChannelCell(value),
+                },
                 {
                   title: tr('settingsWorkspace.table.status', 'Статус'),
                   key: 'status',
@@ -3127,7 +3165,7 @@ export default function SettingsIntegrationsWorkspace({ defaultTab = 'system' } 
                   title: tr('settingsWorkspace.table.event', 'Событие'),
                   dataIndex: 'event',
                   key: 'event',
-                  render: (value) => <Text ellipsis={{ tooltip: value }}>{value || '-'}</Text>,
+                  render: (value) => renderChannelCell(value || '-'),
                 },
                 {
                   title: tr('settingsWorkspace.table.status', 'Статус'),
@@ -3291,7 +3329,7 @@ export default function SettingsIntegrationsWorkspace({ defaultTab = 'system' } 
                 </div>
                 <Descriptions column={2} size="small">
                   <Descriptions.Item label={tr('settingsWorkspace.table.event', 'Событие')}>
-                    {selectedWebhookDelivery.event || '-'}
+                    {renderChannelCell(selectedWebhookDelivery.event || '-')}
                   </Descriptions.Item>
                   <Descriptions.Item label={tr('settingsWorkspace.table.status', 'Статус')}>
                     <Space size={[4, 4]} wrap>

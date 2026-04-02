@@ -1,4 +1,4 @@
-import { BankOutlined, BellOutlined, CheckCircleOutlined, ClockCircleOutlined, EditOutlined, LinkOutlined, MailOutlined, MessageOutlined, PhoneOutlined, ReloadOutlined, RobotOutlined, UserOutlined } from '@ant-design/icons';
+import { BankOutlined, BellOutlined, CheckCircleOutlined, ClockCircleOutlined, EditOutlined, LinkOutlined, MailOutlined, PhoneOutlined, ReloadOutlined, RobotOutlined, UserOutlined } from '@ant-design/icons';
 import { Alert, App, Avatar, Button, Card, Descriptions, Empty, List, Modal, Result, Space, Spin, Steps, Tag, Tabs, Timeline, Typography } from 'antd';
 import dayjs from 'dayjs';
 import React from 'react';
@@ -11,6 +11,8 @@ import { navigate } from '@/router.js';
 import ChatWidget from '@/modules/chat/ChatWidget.jsx';
 import ActivityLog from '@/components/ActivityLog.jsx';
 import QuickReminderModal from '@/components/reminders/QuickReminderModal.jsx';
+import ChannelBrandIcon from '@/components/channel/ChannelBrandIcon.jsx';
+import { buildAiChatUrl } from '@/lib/utils/ai-chat-context.js';
 // @ts-ignore
 import { canWrite, hasAnyFeature } from '@/lib/rbac.js';
 // @ts-ignore
@@ -38,7 +40,14 @@ export const LeadDetailPage: React.FC<LeadDetailPageProps> = ({ id }) => {
   const [quickReminderOpen, setQuickReminderOpen] = React.useState(false);
   const canManage = canWrite();
   const canUseAiAssist = hasAnyFeature('ai.assist');
-  const openAiChat = () => navigate(`/ai-chat?entity_type=lead&entity_id=${id}`);
+  const openAiChat = () =>
+    navigate(
+      buildAiChatUrl({
+        entityType: 'lead',
+        entityId: id,
+        entityName: lead?.full_name || (lead as any)?.name,
+      }),
+    );
 
   const isConverted = Boolean(lead?.contact || lead?.company || lead?.was_in_touch);
   const leadDeal = leadDealsResponse?.results?.[0];
@@ -196,7 +205,7 @@ export const LeadDetailPage: React.FC<LeadDetailPageProps> = ({ id }) => {
           {lead.disqualified ? <Tag color="red">Потерян</Tag> : isConverted ? <Tag color="success">Конвертирован</Tag> : <Tag color="processing">В работе</Tag>}
         </Space>
         <Space wrap>
-          <Button icon={<MessageOutlined />} onClick={() => setActiveTab('messages')}>Сообщения</Button>
+          <Button icon={<ChannelBrandIcon channel="omnichannel" size={14} />} onClick={() => setActiveTab('messages')}>Сообщения</Button>
           <Button icon={<BellOutlined />} onClick={() => setQuickReminderOpen(true)}>Напомнить</Button>
           {canUseAiAssist ? <Button icon={<RobotOutlined />} onClick={openAiChat}>Спросить AI</Button> : null}
           {canManage ? <Button type="primary" icon={<EditOutlined />} onClick={() => navigate(`/leads/${id}/edit`)}>Редактировать</Button> : null}
@@ -238,7 +247,7 @@ export const LeadDetailPage: React.FC<LeadDetailPageProps> = ({ id }) => {
                   <Descriptions.Item label="Теги" span={2}>{(lead.tags || []).map((tag) => <Tag key={tag}>{tag}</Tag>)}</Descriptions.Item>
                   <Descriptions.Item label="Сделка" span={2}>{isConverted ? leadDeal ? <Button type="link" onClick={() => navigate(`/deals/${leadDeal.id}`)} style={{ paddingInline: 0 }}>{leadDeal.name || 'Связанная сделка'}</Button> : <Text type="secondary">{isLeadDealsLoading ? 'Поиск сделки...' : 'Сделка не найдена'}</Text> : '-'}</Descriptions.Item>
                   <Descriptions.Item label="Сообщения" span={2}>
-                    <Button type="link" style={{ paddingInline: 0 }} icon={<MessageOutlined />} onClick={() => setActiveTab('messages')}>
+                    <Button type="link" style={{ paddingInline: 0 }} icon={<ChannelBrandIcon channel="omnichannel" size={14} />} onClick={() => setActiveTab('messages')}>
                       Перейти к сообщениям по лиду
                     </Button>
                   </Descriptions.Item>

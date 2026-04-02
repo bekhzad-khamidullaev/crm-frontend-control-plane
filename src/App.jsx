@@ -25,6 +25,11 @@ import { getVoIPConnections } from './lib/api/telephony.js';
 import { getProfile } from './lib/api/user.js';
 import { mergeRoles, rolesFromProfile, rolesFromTokenPayload } from './lib/roles.js';
 import { getFrontendVersionInfo } from './shared/version.js';
+import {
+  TELEPHONY_DIALER_OPEN_EVENT,
+  normalizeDialerNumber,
+  requestDialerOpen,
+} from './shared/ui/telephonyDialer.js';
 import { applyLegacyContentLocalization } from './lib/i18n/legacy-content-dom.js';
 import { setLocale } from './lib/i18n/index.js';
 import {
@@ -126,9 +131,6 @@ const ReminderForm = lazy(() =>
   import('./modules/reminders/index.js').then((m) => ({ default: m.ReminderForm }))
 );
 
-const CampaignsList = lazy(() =>
-  import('./modules/marketing/index.js').then((m) => ({ default: m.CampaignsList }))
-);
 const CampaignDetail = lazy(() =>
   import('./modules/marketing/index.js').then((m) => ({ default: m.CampaignDetail }))
 );
@@ -151,10 +153,6 @@ const ProductsList = lazy(() => import('./modules/products/ProductsList.jsx'));
 const ProductDetail = lazy(() => import('./modules/products/ProductDetail.jsx'));
 const ProductForm = lazy(() => import('./modules/products/ProductForm.jsx'));
 
-// Marketing extra
-const MarketingSegmentsPage = lazy(() => import('./pages/marketing-segments.jsx'));
-const MarketingTemplatesPage = lazy(() => import('./pages/marketing-templates.jsx'));
-
 // Admin/system pages
 const EnterpriseCRMEmailsPage = lazy(() => import('./pages/crm-emails.jsx'));
 const MassmailPage = lazy(() => import('./pages/massmail.jsx'));
@@ -170,7 +168,6 @@ const BacklogWorkspacePage = lazy(() => import('./pages/backlog-workspace.jsx'))
 const SitesWorkspacePage = lazy(() => import('./pages/sites-workspace.jsx'));
 const ReferenceDataPage = lazy(() => import('./pages/reference-data.jsx'));
 const HelpCenterPage = lazy(() => import('./pages/help-center.jsx'));
-const AnalyticsPage = lazy(() => import('./pages/analytics.jsx'));
 const SmsCenterPage = lazy(() => import('./pages/sms-center.jsx'));
 const TelephonyPage = lazy(() => import('./pages/telephony.jsx'));
 const UsersPage = lazy(() => import('./pages/users.jsx'));
@@ -200,6 +197,11 @@ function normalizeUser(raw, fallback = {}) {
     if (value === null || value === undefined) return '';
     const normalized = String(value).trim();
     return normalized;
+  };
+
+  const isGenericDisplayName = (value) => {
+    const normalized = toStr(value).toLowerCase();
+    return normalized === 'user' || normalized === 'пользователь' || normalized === 'foydalanuvchi';
   };
 
   const pick = (...values) => values.map(toStr).find(Boolean) || '';
@@ -263,12 +265,17 @@ function normalizeUser(raw, fallback = {}) {
     fallbackUser?.email,
   );
 
-  const name = pick(fullName, username, email.split('@')[0], 'User');
+  const firstAndLastName = [firstName, lastName].filter(Boolean).join(' ');
+  const preferredFullName = isGenericDisplayName(fullName) ? '' : fullName;
+  const name = pick(preferredFullName, firstAndLastName, username, email.split('@')[0], 'User');
 
   return {
     id: raw?.id ?? raw?.user_id ?? rawUser?.id ?? fallback?.id ?? fallbackUser?.id ?? null,
     username: username || name,
     name,
+    first_name: firstName || '',
+    last_name: lastName || '',
+    full_name: preferredFullName || firstAndLastName || '',
     email,
     roles: Array.isArray(raw?.roles)
       ? raw.roles
@@ -339,6 +346,8 @@ function App() {
   const [localeInitialized, setLocaleInitialized] = useState(false);
   const [licenseReady, setLicenseReady] = useState(false);
   const [dialerVisible, setDialerVisible] = useState(false);
+  const [dialerInitialNumber, setDialerInitialNumber] = useState('');
+  const [dialerAutoCallRequestId, setDialerAutoCallRequestId] = useState('');
   const frontendVersion = getFrontendVersionInfo();
   const telephonyModulesRef = useRef({
     loaded: false,
@@ -348,6 +357,47 @@ function App() {
     chatWebSocket: null,
   });
   const telephonyBootstrappedRef = useRef(false);
+
+  useEffect(() => {
+    const onOpenDialer = (event) => {
+      const number = normalizeDialerNumber(event?.detail?.number || '');
+      const requestId = String(event?.detail?.requestId || '');
+      const autoCall = Boolean(event?.detail?.autoCall);
+
+      setDialerInitialNumber(number);
+      setDialerAutoCallRequestId(autoCall ? requestId || `${Date.now()}` : '');
+      setDialerVisible(true);
+    };
+
+    window.addEventListener(TELEPHONY_DIALER_OPEN_EVENT, onOpenDialer);
+    return () => {
+      window.removeEventListener(TELEPHONY_DIALER_OPEN_EVENT, onOpenDialer);
+    };
+  }, []);
+
+  useEffect(() => {
+    if (!isAuthenticated()) return undefined;
+    if (PUBLIC_ROUTE_NAMES.has(route.name)) return undefined;
+
+    const onDocumentClick = (event) => {
+      if (event.defaultPrevented || event.button !== 0) return;
+      if (event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
+      const target = event.target instanceof Element ? event.target.closest('a[href^="tel:"]') : null;
+      if (!target) return;
+
+      const href = String(target.getAttribute('href') || '');
+      const number = normalizeDialerNumber(href.replace(/^tel:/i, ''));
+      if (!number) return;
+
+      event.preventDefault();
+      requestDialerOpen({ number, autoCall: true });
+    };
+
+    document.addEventListener('click', onDocumentClick, true);
+    return () => {
+      document.removeEventListener('click', onDocumentClick, true);
+    };
+  }, [route.name]);
 
   const ensureTelephonyModules = async () => {
     if (telephonyModulesRef.current.loaded) {
@@ -816,6 +866,7 @@ function App() {
     campaigns: 'campaigns-list',
     segments: 'marketing-segments',
     templates: 'marketing-templates',
+    'marketing-workspace': 'content-plans',
     memos: 'memos-list',
     'crm-emails': 'crm-emails',
     massmail: 'massmail',
@@ -832,7 +883,6 @@ function App() {
     'sites-workspace': 'sites-workspace',
     functional: 'functional',
     'reference-data': 'reference-data',
-    analytics: 'analytics',
     'help-center': 'help-center',
     telephony: 'telephony',
     users: 'users',
@@ -846,6 +896,16 @@ function App() {
   const allowedNavKeys = Object.entries(navAccessMap)
     .filter(([, routeName]) => canAccessRoute(routeName))
     .map(([key]) => key);
+
+  const marketingWorkspaceAllowed = [
+    'campaigns-list',
+    'content-plans',
+    'marketing-segments',
+    'marketing-templates',
+  ].some((routeName) => canAccessRoute(routeName));
+  if (marketingWorkspaceAllowed && !allowedNavKeys.includes('marketing-workspace')) {
+    allowedNavKeys.push('marketing-workspace');
+  }
 
   if (settingsWorkspaceAllowed) {
     allowedNavKeys.push(SETTINGS_WORKSPACE_NAV_KEY);
@@ -865,9 +925,9 @@ function App() {
     if (name.startsWith('calls')) return 'calls';
     if (name.startsWith('payments')) return 'payments';
     if (name.startsWith('reminders')) return 'reminders';
-    if (name.startsWith('campaigns')) return 'campaigns';
-    if (name === 'marketing-segments') return 'segments';
-    if (name === 'marketing-templates') return 'templates';
+    if (name.startsWith('campaigns')) return 'marketing-workspace';
+    if (name === 'marketing-segments') return 'marketing-workspace';
+    if (name === 'marketing-templates') return 'marketing-workspace';
     if (name.startsWith('memos')) return 'memos';
     if (name === 'crm-emails' || name === 'massmail' || name === 'sms-center') return name;
     if (name === 'operations') return 'operations';
@@ -877,12 +937,11 @@ function App() {
     if (name === 'business-processes') return 'business-processes';
     if (name === 'meetings') return 'meetings';
     if (name === 'documents-workspace') return 'documents-workspace';
-    if (name === 'content-plans') return 'content-plans';
+    if (name === 'content-plans') return 'marketing-workspace';
     if (name === 'backlog') return 'backlog';
     if (name === 'sites-workspace') return 'sites-workspace';
     if (name === 'functional') return 'functional';
     if (name === 'reference-data') return 'reference-data';
-    if (name === 'analytics') return 'analytics';
     if (name === 'help-center') return 'help-center';
     if (name === 'telephony') return 'telephony';
     if (name === 'users') return 'users';
@@ -1008,7 +1067,7 @@ function App() {
       case 'reminders-detail':
         return <ReminderDetail id={route.params.id} />;
       case 'campaigns-list':
-        return <CampaignsList />;
+        return <ContentPlansWorkspacePage initialTab="campaigns" />;
       case 'campaigns-new':
         return <CampaignForm />;
       case 'campaigns-edit':
@@ -1032,9 +1091,9 @@ function App() {
       case 'products-detail':
         return <ProductDetail id={route.params.id} />;
       case 'marketing-segments':
-        return <MarketingSegmentsPage />;
+        return <ContentPlansWorkspacePage initialTab="segments" />;
       case 'marketing-templates':
-        return <MarketingTemplatesPage />;
+        return <ContentPlansWorkspacePage initialTab="templates" />;
       case 'crm-emails':
         return <EnterpriseCRMEmailsPage />;
       case 'massmail':
@@ -1054,7 +1113,7 @@ function App() {
       case 'documents-workspace':
         return <DocumentsWorkspacePage />;
       case 'content-plans':
-        return <ContentPlansWorkspacePage />;
+        return <ContentPlansWorkspacePage initialTab="plans" />;
       case 'backlog':
         return <BacklogWorkspacePage />;
       case 'sites-workspace':
@@ -1065,8 +1124,6 @@ function App() {
         return <ReferenceDataPage />;
       case 'help-center':
         return <HelpCenterPage />;
-      case 'analytics':
-        return <AnalyticsPage />;
       case 'sms-center':
         return <SmsCenterPage />;
       case 'telephony':
@@ -1118,7 +1175,7 @@ function App() {
       >
         <LoginPage
           onLogin={(userData) => {
-            setUser(userData);
+            setUser(normalizeUser(userData || {}));
             // After successful login, navigate to dashboard
             navigate('/dashboard');
           }}
@@ -1161,7 +1218,11 @@ function App() {
       activeIntegrations={activeIntegrations}
       incomingCallsCount={incomingCalls.length}
       unreadCount={unreadCount}
-      onOpenDialer={() => setDialerVisible(true)}
+      onOpenDialer={() => {
+        setDialerInitialNumber('');
+        setDialerAutoCallRequestId('');
+        setDialerVisible(true);
+      }}
       onLogout={handleLogout}
     >
       <Suspense
@@ -1187,7 +1248,12 @@ function App() {
 
         <TelephonyDialerModal
           visible={dialerVisible}
-          onClose={() => setDialerVisible(false)}
+          initialNumber={dialerInitialNumber}
+          autoCallRequestId={dialerAutoCallRequestId}
+          onClose={() => {
+            setDialerVisible(false);
+            setDialerAutoCallRequestId('');
+          }}
         />
       </Suspense>
     </AppLayout>

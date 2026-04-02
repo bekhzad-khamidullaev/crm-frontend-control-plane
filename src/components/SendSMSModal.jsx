@@ -5,9 +5,10 @@
 
 import React, { useState, useEffect } from 'react';
 import { Modal, Form, Input, Select, Button, Space, App, Typography, Alert, Divider } from 'antd';
-import { MessageOutlined, SendOutlined, EyeOutlined } from '@ant-design/icons';
+import { SendOutlined, EyeOutlined } from '@ant-design/icons';
 import smsApi from '../lib/api/sms.js';
 import { useTheme } from '../lib/hooks/useTheme.js';
+import ChannelBrandIcon from './channel/ChannelBrandIcon.jsx';
 
 const { TextArea } = Input;
 const { Text, Paragraph } = Typography;
@@ -88,7 +89,7 @@ export default function SendSMSModal({
     <Modal
       title={
         <Space>
-          <MessageOutlined />
+          <ChannelBrandIcon channel="sms" size={18} />
           <span>Отправить SMS</span>
         </Space>
       }

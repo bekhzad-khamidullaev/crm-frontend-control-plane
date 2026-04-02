@@ -8,6 +8,7 @@ import sipClient from '../lib/telephony/SIPClient.js';
 import { loadTelephonyRuntimeConfig } from '../lib/telephony/runtimeConfig.js';
 import { DEFAULT_TELEPHONY_ROUTE_MODE } from '../lib/telephony/constants.js';
 import { TELEPHONY_MODAL_PROPS } from '../shared/ui/telephonyModal.js';
+import ChannelBrandIcon from './channel/ChannelBrandIcon.jsx';
 
 const { Text, Title } = Typography;
 
@@ -355,7 +356,7 @@ function CallButton({ phone, name, entityType, entityId, size = 'middle', type =
               type="primary"
               size="large"
               block
-              icon={<PhoneOutlined />}
+              icon={<ChannelBrandIcon channel="telephony" size={16} />}
               onClick={startCall}
               style={{ height: 48 }}
             >
@@ -471,7 +472,7 @@ function CallButton({ phone, name, entityType, entityId, size = 'middle', type =
       <Button
         type={type}
         size={size}
-        icon={icon ? <PhoneOutlined /> : null}
+        icon={icon ? <ChannelBrandIcon channel="telephony" size={14} /> : null}
         onClick={handleCall}
       >
         {icon ? 'Позвонить' : phone}

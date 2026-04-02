@@ -5,8 +5,9 @@
 
 import React, { useState, useEffect } from 'react';
 import { Modal, Form, Input, Select, Button, Space, App, Typography, Alert, Table, Progress } from 'antd';
-import { MessageOutlined, SendOutlined } from '@ant-design/icons';
+import { SendOutlined } from '@ant-design/icons';
 import smsApi from '../lib/api/sms.js';
+import ChannelBrandIcon from './channel/ChannelBrandIcon.jsx';
 
 const { TextArea } = Input;
 const { Text } = Typography;
@@ -82,7 +83,7 @@ export default function BulkSMSModal({
     <Modal
       title={
         <Space>
-          <MessageOutlined />
+          <ChannelBrandIcon channel="sms" size={18} />
           <span>Массовая отправка SMS</span>
         </Space>
       }

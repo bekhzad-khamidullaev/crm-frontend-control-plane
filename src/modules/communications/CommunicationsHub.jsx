@@ -3,21 +3,28 @@ import { ReloadOutlined, SendOutlined } from '@ant-design/icons';
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { sendOmnichannelMessage } from '../../lib/api/compliance.js';
 import { createCrmEmail, getCrmEmails } from '../../lib/api/emails.js';
+import { getFacebookPages } from '../../lib/api/integrations/facebook.js';
+import { getInstagramAccounts } from '../../lib/api/integrations/instagram.js';
+import { getTelegramBots } from '../../lib/api/integrations/telegram.js';
+import { getWhatsAppAccounts } from '../../lib/api/integrations/whatsapp.js';
 import { getMailings, getMessages } from '../../lib/api/massmail.js';
+import smsApi from '../../lib/api/sms.js';
+import ChannelBrandIcon from '../../components/channel/ChannelBrandIcon.jsx';
 
 const { TextArea } = Input;
 const { Text, Title } = Typography;
 
 const CHANNEL_OPTIONS = [
-  { value: 'email', label: 'Email' },
-  { value: 'whatsapp', label: 'WhatsApp' },
-  { value: 'telegram', label: 'Telegram' },
-  { value: 'instagram', label: 'Instagram' },
-  { value: 'facebook', label: 'Facebook' },
+  { value: 'email', label: <Space size={8}><ChannelBrandIcon channel="crm-email" /><span>Email</span></Space> },
+  { value: 'whatsapp', label: <Space size={8}><ChannelBrandIcon channel="whatsapp" /><span>WhatsApp</span></Space> },
+  { value: 'telegram', label: <Space size={8}><ChannelBrandIcon channel="telegram" /><span>Telegram</span></Space> },
+  { value: 'instagram', label: <Space size={8}><ChannelBrandIcon channel="instagram" /><span>Instagram</span></Space> },
+  { value: 'facebook', label: <Space size={8}><ChannelBrandIcon channel="facebook" /><span>Facebook</span></Space> },
 ];
 
 function normalizeList(response) {
-  return Array.isArray(response?.results) ? response.results : [];
+  if (Array.isArray(response?.results)) return response.results;
+  return Array.isArray(response) ? response : [];
 }
 
 export default function CommunicationsHub({ defaultTab = 'omnichannel' }) {
@@ -28,6 +35,38 @@ export default function CommunicationsHub({ defaultTab = 'omnichannel' }) {
   const [crmEmails, setCrmEmails] = useState([]);
   const [mailings, setMailings] = useState([]);
   const [massmailMessages, setMassmailMessages] = useState([]);
+  const [channelAccounts, setChannelAccounts] = useState({
+    whatsapp: [],
+    telegram: [],
+    instagram: [],
+    facebook: [],
+    sms: [],
+  });
+  const [channelAccountsLoading, setChannelAccountsLoading] = useState(false);
+  const selectedChannel = Form.useWatch('channel', form);
+
+  const loadOmnichannelAccounts = useCallback(async () => {
+    setChannelAccountsLoading(true);
+    try {
+      const [whatsappRes, telegramRes, instagramRes, facebookRes, smsRes] = await Promise.allSettled([
+        getWhatsAppAccounts({ page_size: 200 }),
+        getTelegramBots({ page_size: 200 }),
+        getInstagramAccounts({ page_size: 200 }),
+        getFacebookPages({ page_size: 200 }),
+        smsApi.providers(),
+      ]);
+      const valueOrEmpty = (result) => (result?.status === 'fulfilled' ? normalizeList(result.value) : []);
+      setChannelAccounts({
+        whatsapp: valueOrEmpty(whatsappRes),
+        telegram: valueOrEmpty(telegramRes),
+        instagram: valueOrEmpty(instagramRes),
+        facebook: valueOrEmpty(facebookRes),
+        sms: valueOrEmpty(smsRes),
+      });
+    } finally {
+      setChannelAccountsLoading(false);
+    }
+  }, []);
 
   const loadData = useCallback(async () => {
     setLoading(true);
@@ -40,15 +79,23 @@ export default function CommunicationsHub({ defaultTab = 'omnichannel' }) {
       setCrmEmails(normalizeList(emailsRes));
       setMailings(normalizeList(mailingsRes));
       setMassmailMessages(normalizeList(messagesRes));
+      await loadOmnichannelAccounts();
     } catch (error) {
       message.error(error?.message || 'Не удалось загрузить коммуникации');
       setCrmEmails([]);
       setMailings([]);
       setMassmailMessages([]);
+      setChannelAccounts({
+        whatsapp: [],
+        telegram: [],
+        instagram: [],
+        facebook: [],
+        sms: [],
+      });
     } finally {
       setLoading(false);
     }
-  }, [message]);
+  }, [loadOmnichannelAccounts, message]);
 
   useEffect(() => {
     loadData();
@@ -106,6 +153,44 @@ export default function CommunicationsHub({ defaultTab = 'omnichannel' }) {
     return { failed, sent, total: massmailMessages.length };
   }, [massmailMessages]);
 
+  const channelIdOptions = useMemo(() => {
+    const accountLabelByType = {
+      whatsapp: (item) => item?.business_name || item?.name || item?.phone_number || item?.display_phone_number || 'WhatsApp account',
+      telegram: (item) => item?.name || item?.bot_username || item?.username || 'Telegram bot',
+      instagram: (item) => item?.username ? `@${item.username}` : item?.name || 'Instagram account',
+      facebook: (item) => item?.page_name || item?.name || 'Facebook page',
+      sms: (item) => item?.name || item?.provider || item?.title || 'SMS provider',
+    };
+    const list = channelAccounts?.[selectedChannel] || [];
+    return list
+      .map((item) => {
+        const rawId = item?.id || item?.channel_id || item?.phone_number_id || item?.facebook_page_id || item?.instagram_user_id;
+        if (!rawId) return null;
+        const externalId = item?.channel_id || item?.phone_number_id || item?.facebook_page_id || item?.instagram_user_id;
+        const suffix = externalId ? ` • #${externalId}` : '';
+        return {
+          value: String(rawId),
+          label: `${accountLabelByType[selectedChannel]?.(item) || 'Account'}${suffix}`,
+        };
+      })
+      .filter(Boolean);
+  }, [channelAccounts, selectedChannel]);
+
+  useEffect(() => {
+    if (!selectedChannel || selectedChannel === 'email') {
+      form.setFieldValue('channel_id', undefined);
+      return;
+    }
+    const current = form.getFieldValue('channel_id');
+    const hasCurrent = channelIdOptions.some((option) => String(option.value) === String(current));
+    if (hasCurrent) return;
+    if (channelIdOptions.length > 0) {
+      form.setFieldValue('channel_id', channelIdOptions[0].value);
+      return;
+    }
+    form.setFieldValue('channel_id', undefined);
+  }, [channelIdOptions, form, selectedChannel]);
+
   return (
     <Space direction="vertical" size={12} style={{ width: '100%' }}>
       <Card
@@ -132,8 +217,15 @@ export default function CommunicationsHub({ defaultTab = 'omnichannel' }) {
                     <Form.Item name="channel" label="Канал" rules={[{ required: true, message: 'Выберите канал' }]}>
                       <Select options={CHANNEL_OPTIONS} />
                     </Form.Item>
-                    <Form.Item name="channel_id" label="Идентификатор канала (опционально)">
-                      <Input placeholder="Например: whatsapp_main или bot_1" />
+                    <Form.Item name="channel_id" label="Аккаунт канала (опционально)">
+                      <Select
+                        allowClear
+                        showSearch
+                        optionFilterProp="label"
+                        loading={channelAccountsLoading}
+                        options={channelIdOptions}
+                        placeholder={selectedChannel === 'email' ? 'Для Email не требуется' : 'Выберите подключённый аккаунт канала'}
+                      />
                     </Form.Item>
                     <Form.Item name="recipient" label="Получатель" rules={[{ required: true, message: 'Введите получателя' }]}>
                       <Input placeholder="Email / phone / chat_id / recipient_id" />

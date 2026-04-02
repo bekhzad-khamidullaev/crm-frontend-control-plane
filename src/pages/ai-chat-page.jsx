@@ -7,6 +7,7 @@ import { getLocale, t } from '../lib/i18n/index.js';
 import { useTheme } from '../lib/hooks/useTheme.js';
 import { hasAnyFeature } from '../lib/rbac.js';
 import { getFeatureRestrictionReason } from '../lib/api/licenseRestrictionState.js';
+import { normalizeAiContextEntityName } from '../lib/utils/ai-chat-context.js';
 import LicenseRestrictedAction from '../components/LicenseRestrictedAction.jsx';
 
 const { Text } = Typography;
@@ -331,9 +332,11 @@ const parseAiContextFromHash = () => {
   const entityType = (params.get('entity_type') || '').trim().toLowerCase();
   const rawEntityId = (params.get('entity_id') || '').trim();
   const entityId = rawEntityId ? Number(rawEntityId) : null;
+  const entityName = normalizeAiContextEntityName(params.get('entity_name') || params.get('entity_label') || '');
   return {
     entityType: entityType || '',
     entityId: Number.isFinite(entityId) ? entityId : null,
+    entityName,
   };
 };
 
@@ -351,8 +354,9 @@ export default function AIChatPage() {
   const [inputText, setInputText] = useState('');
   const [loading, setLoading] = useState(false);
   const [chat, setChat] = useState([]);
-  const [chatContext, setChatContext] = useState(() => parseAiContextFromHash());
-  const [contextEntityName, setContextEntityName] = useState('');
+  const initialContext = useMemo(() => parseAiContextFromHash(), []);
+  const [chatContext, setChatContext] = useState(initialContext);
+  const [contextEntityName, setContextEntityName] = useState(initialContext.entityName);
   const [licenseBlocked, setLicenseBlocked] = useState(() => !hasAnyFeature('ai.assist'));
 
   const bg = theme === 'dark' ? '#141a22' : '#ffffff';
@@ -401,7 +405,9 @@ export default function AIChatPage() {
 
   useEffect(() => {
     const syncContext = () => {
-      setChatContext(parseAiContextFromHash());
+      const parsed = parseAiContextFromHash();
+      setChatContext(parsed);
+      setContextEntityName(parsed.entityName || '');
     };
     window.addEventListener('hashchange', syncContext);
     syncContext();
@@ -409,9 +415,13 @@ export default function AIChatPage() {
   }, []);
 
   useEffect(() => {
-    const { entityType, entityId } = chatContext;
+    const { entityType, entityId, entityName } = chatContext;
     if (!entityType || !entityId) {
-      setContextEntityName('');
+      setContextEntityName(entityName || '');
+      return;
+    }
+    if (entityName) {
+      setContextEntityName(entityName);
       return;
     }
     let cancelled = false;
@@ -428,24 +438,24 @@ export default function AIChatPage() {
     return () => {
       cancelled = true;
     };
-  }, [chatContext.entityType, chatContext.entityId]);
+  }, [chatContext.entityType, chatContext.entityId, chatContext.entityName]);
 
   const contextLabel = useMemo(() => {
-    if (!chatContext.entityType || !chatContext.entityId) return '';
+    if (!chatContext.entityType) return '';
     const typeLabel = getEntityTypeLabel(chatContext.entityType, locale);
-    return contextEntityName
-      ? `${typeLabel}: ${contextEntityName}`
-      : `${typeLabel} #${chatContext.entityId}`;
+    if (contextEntityName) return `${typeLabel}: ${contextEntityName}`;
+    if (chatContext.entityId) return `${typeLabel} #${chatContext.entityId}`;
+    return typeLabel;
   }, [chatContext.entityType, chatContext.entityId, contextEntityName, locale]);
 
   useEffect(() => {
-    if (!chat.length && !inputText && chatContext.entityType && chatContext.entityId) {
+    if (!chat.length && !inputText && chatContext.entityType && (chatContext.entityId || contextEntityName)) {
       setInputText(
         copy.suggestedPrompt
-          .replace('{entityRef}', contextLabel || `${chatContext.entityType} #${chatContext.entityId}`)
+          .replace('{entityRef}', contextLabel || chatContext.entityType)
       );
     }
-  }, [chatContext, chat.length, inputText, copy.suggestedPrompt, contextLabel]);
+  }, [chatContext.entityType, chatContext.entityId, chat.length, inputText, copy.suggestedPrompt, contextLabel, contextEntityName]);
 
   const providerOptions = useMemo(
     () => [
@@ -583,9 +593,9 @@ export default function AIChatPage() {
           />
         </LicenseRestrictedAction>
         <Text type="secondary">{providerHint}</Text>
-        {chatContext.entityType && chatContext.entityId ? (
+        {chatContext.entityType && (chatContext.entityId || contextEntityName) ? (
           <Text type="secondary">
-            {copy.contextLabel}: {contextLabel || `${chatContext.entityType} #${chatContext.entityId}`}
+            {copy.contextLabel}: {contextLabel || chatContext.entityType}
           </Text>
         ) : null}
       </Space>

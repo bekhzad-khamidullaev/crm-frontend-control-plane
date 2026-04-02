@@ -137,6 +137,180 @@
       "licenseRevoked": "Litsenziya bekor qilingan",
       "licenseInvalid": "Litsenziya yaroqsiz",
       "licenseRestrictionDescription": "Amal joriy litsenziya holati bilan cheklangan. Litsenziyalash bo'limini tekshiring."
+    },
+    "user": "Foydalanuvchi",
+    "updated": "Yangilanish",
+    "actions": {
+      "share": "Havolani ulashish",
+      "saveView": "Ko‘rinishni saqlash",
+      "drilldown": "Ro‘yxatga o‘tish",
+      "openTask": "Vazifani ochish",
+      "openLead": "Lidni ochish",
+      "openDeal": "Bitimni ochish",
+      "openList": "Ro‘yxatni ochish"
+    },
+    "filters": {
+      "allManagers": "Barcha menejerlar",
+      "allPipelines": "Barcha voronkalar",
+      "allSources": "Barcha manbalar",
+      "savedView": "Saqlangan ko‘rinish"
+    },
+    "kpi": {
+      "leadsNew": "Yangi lidlar",
+      "leadsProcessed": "Qayta ishlangan lidlar",
+      "overdueSla": "SLA / muddat buzilishi",
+      "pipelineAmount": "Ishdagi bitimlar summasi",
+      "forecastClose": "Prognoz yopilish summasi",
+      "wonLost": "Won / Lost",
+      "conversion": "Konversiya",
+      "dealToWon": "Bitim→Won",
+      "salesVelocity": "Savdo tezligi (kuniga)"
+    },
+    "kpiDef": {
+      "leadsNew": "Tanlangan davrda yaratilgan yangi lidlar soni.",
+      "leadsProcessed": "Statusi yangi holatdan o‘zgargan lidlar soni.",
+      "overdueSla": "Muddati o‘tgan vazifalar va birinchi javob SLA limiti oshgan holatlar.",
+      "pipelineAmount": "Yopilmagan bitimlarning umumiy summasi.",
+      "forecastClose": "Tanlangan davrda yopilishi kutilayotgan bitimlar summasi.",
+      "wonLost": "Yutilgan va yo‘qotilgan bitimlar nisbati.",
+      "conversion": "Lead→Deal va Deal→Won bosqich konversiyalari.",
+      "salesVelocity": "Davr bo‘yicha yutilgan summa / kunlar soni."
+    },
+    "noPrevComparison": "Oldingi davr bilan to‘liq taqqoslash yo‘q",
+    "exceptions": {
+      "title": "Diqqat talab qiladigan holatlar",
+      "empty": "Hozircha kritik holatlar yo‘q",
+      "taskOverdue": "Muddati o‘tgan vazifa",
+      "leadNoActivity": "Faolliksiz lid",
+      "leadNoActivityHint": "{days} kundan beri faollik yo‘q",
+      "riskyDeal": "Xatarli bitim"
+    },
+    "activity": {
+      "title": "Faollik va SLA",
+      "calls": "Qo‘ng‘iroqlar",
+      "messages": "Xabarlar",
+      "meetings": "Uchrashuvlar",
+      "firstResponse": "O‘rtacha birinchi javob",
+      "noActivityLeads": "Faolliksiz lidlar",
+      "taskCompletion": "Vazifalar bajarilishi"
+    },
+    "minutes": "daq",
+    "mode": {
+      "myDay": "Mening kunim",
+      "team": "Jamoa"
+    },
+    "team": {
+      "empty": "Jamoa bo‘yicha maʼlumot yo‘q",
+      "columns": {
+        "manager": "Menejer",
+        "total": "Jami faollik",
+        "calls": "Qo‘ng‘iroq",
+        "messages": "Xabar",
+        "breaches": "SLA buzilishi"
+      }
+    },
+    "company": {
+      "funnel": "Voronka bosqichlari",
+      "funnelEmpty": "Voronka maʼlumoti yo‘q",
+      "kpiCatalog": "KPI maʼlumotnomasi",
+      "columns": {
+        "stage": "Bosqich",
+        "count": "Soni",
+        "amount": "Summa",
+        "kpi": "KPI",
+        "definition": "Taʼrif",
+        "source": "Manba",
+        "refresh": "Yangilanish"
+      }
+    },
+    "export": {
+      "title": "CRM Dashboard hisoboti",
+      "sectionKpi": "KPI",
+      "sectionExceptions": "Istisnolar",
+      "columns": {
+        "section": "Bo‘lim",
+        "metric": "Ko‘rsatkich",
+        "value": "Qiymat",
+        "details": "Tafsilot"
+      }
+    },
+    "freshness": {
+      "title": "Vidjetlar yangilanish holati",
+      "overview": "KPI bloki",
+      "activity": "Faollik bloki",
+      "funnel": "Voronka bloki",
+      "entities": "Istisnolar bloki",
+      "live": "hozir yangilandi",
+      "recent": "yaqinda yangilandi",
+      "stale": "maʼlumot eskirgan"
+    },
+    "quality": {
+      "title": "Maʼlumot sifati bo‘yicha ogohlantirishlar",
+      "overviewUnavailable": "Umumiy analitika mavjud emas",
+      "activityUnavailable": "Faollik lentasi mavjud emas",
+      "funnelUnavailable": "Voronka maʼlumotlari mavjud emas",
+      "tasksUnavailable": "Istisnolar bloki uchun vazifalarni yuklab bo‘lmadi",
+      "dealsUnavailable": "KPI uchun bitimlarni yuklab bo‘lmadi",
+      "leadsUnavailable": "KPI uchun lidlarni yuklab bo‘lmadi"
+    },
+    "refreshSource": {
+      "live": "Real-time + qo‘lda yangilash",
+      "hourly": "Har soatda",
+      "daily": "Kunlik"
+    },
+    "saveView": {
+      "title": "Ko‘rinishni saqlash",
+      "description": "Joriy filtr va ko‘rinish sozlamalarini saqlang.",
+      "placeholder": "Masalan: Ertalabki nazorat",
+      "save": "Saqlash",
+      "cancel": "Bekor qilish"
+    },
+    "messages": {
+      "viewNameRequired": "Saqlangan ko‘rinish nomini kiriting",
+      "viewSaved": "Ko‘rinish saqlandi",
+      "linkCopied": "Havola nusxalandi"
+    },
+    "stage": "Bosqich",
+    "deadline": "Muddat",
+    "closeDate": "Yopilish sanasi",
+    "noCloseDate": "Yopilish sanasi yo‘q",
+    "unknownTask": "Vazifa",
+    "unknownLead": "Lid",
+    "unknownDeal": "Bitim",
+    "sourceUnknown": "Ko‘rsatilmagan",
+    "insights": {
+      "title": "Kengaytirilgan axborot paneli",
+      "planFact": "Davr yopilishi plan/fakt",
+      "avgDealSize": "Ochiq bitimlar bo‘yicha o‘rtacha chek",
+      "winRate": "Yutilgan bitimlar ulushi",
+      "velocity": "Savdo tezligi"
+    },
+    "dashboards": {
+      "title": "Qo‘shimcha dashbordlar",
+      "salesTab": "Savdo",
+      "teamTab": "Jamoa",
+      "sourcesTab": "Manbalar",
+      "communicationsTab": "Kommunikatsiyalar",
+      "planFact": "Yopilish plan/fakt",
+      "avgDealSize": "Bitimning o‘rtacha hajmi",
+      "winRate": "Win rate",
+      "sourcesEmpty": "Manbalar bo‘yicha maʼlumot yo‘q",
+      "sourceColumn": "Manba",
+      "leadsColumn": "Lidlar",
+      "processedColumn": "Qayta ishlangan",
+      "sourceConversionColumn": "Konversiya"
+    },
+    "extraDashboards": {
+      "title": "Maxsus dashbordlarga o‘tish",
+      "analyticsTitle": "Savdo analitikasi",
+      "analyticsDesc": "Konversiya, manbalar va voronka bo‘yicha chuqur analitika.",
+      "callsTitle": "Qo‘ng‘iroqlar dashbordi",
+      "callsDesc": "Qo‘ng‘iroqlar, SLA va QA bo‘yicha operatsion ko‘rsatkichlar.",
+      "telephonyTitle": "Telefoniya",
+      "telephonyDesc": "Qo‘ng‘iroq navbatlari, kanallar va marshrutlash.",
+      "integrationsTitle": "Integratsiyalar",
+      "integrationsDesc": "Meta/aloqa kanallari va ulanishlar holati.",
+      "open": "Ochish"
     }
   },
   "licensingPage": {

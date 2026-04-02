@@ -24,10 +24,11 @@ import {
   Table,
   Tag,
 } from 'antd';
-import { CopyOutlined, DeleteOutlined, EditOutlined, MessageOutlined, PlusOutlined, ReloadOutlined } from '@ant-design/icons';
+import { CopyOutlined, DeleteOutlined, EditOutlined, PlusOutlined, ReloadOutlined } from '@ant-design/icons';
 import smsApi from '../lib/api/sms.js';
 import { t } from '../lib/i18n';
 import { formatValueForUi } from '../lib/utils/value-display.js';
+import ChannelBrandIcon from './channel/ChannelBrandIcon.jsx';
 
 const { TextArea } = Input;
 
@@ -420,7 +421,7 @@ export default function SMSSettings({ onSuccess }) {
 
           <Form.Item>
             <Space>
-              <Button type="primary" htmlType="submit" icon={<MessageOutlined />} loading={sending}>
+              <Button type="primary" htmlType="submit" icon={<ChannelBrandIcon channel="sms" size={16} />} loading={sending}>
                 {tr('smsSettings.actions.sendTest', 'Отправить тест')}
               </Button>
             </Space>

@@ -5,6 +5,7 @@ import { Badge, Button, Card, Descriptions, Result, Space, Spin, Tag, Tabs, Typo
 import React from 'react';
 // @ts-ignore
 import { formatCurrencyForRecord } from '@/lib/utils/format.js';
+import { buildAiChatUrl } from '@/lib/utils/ai-chat-context.js';
 // @ts-ignore
 import { canWrite, hasAnyFeature } from '@/lib/rbac.js';
 import QuickReminderModal from '@/components/reminders/QuickReminderModal.jsx';
@@ -21,7 +22,14 @@ export const DealDetailPage: React.FC<DealDetailPageProps> = ({ id }) => {
   const canManage = canWrite();
   const canUseAiAssist = hasAnyFeature('ai.assist');
   const [quickReminderOpen, setQuickReminderOpen] = React.useState(false);
-  const openAiChat = () => navigate(`/ai-chat?entity_type=deal&entity_id=${dealId}`);
+  const openAiChat = () =>
+    navigate(
+      buildAiChatUrl({
+        entityType: 'deal',
+        entityId: dealId,
+        entityName: deal?.name,
+      }),
+    );
 
   if (isLoading) {
     return <Spin size="large" style={{ display: 'block', margin: '50px auto' }} />;

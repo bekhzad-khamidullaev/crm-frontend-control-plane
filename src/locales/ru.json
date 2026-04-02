@@ -137,6 +137,180 @@
       "licenseRevoked": "Лицензия отозвана",
       "licenseInvalid": "Лицензия недействительна",
       "licenseRestrictionDescription": "Операция ограничена текущим состоянием лицензии. Проверьте раздел лицензирования."
+    },
+    "user": "Пользователь",
+    "updated": "Обновление",
+    "actions": {
+      "share": "Поделиться ссылкой",
+      "saveView": "Сохранить вид",
+      "drilldown": "Перейти к списку",
+      "openTask": "Открыть задачу",
+      "openLead": "Открыть лид",
+      "openDeal": "Открыть сделку",
+      "openList": "Открыть список"
+    },
+    "filters": {
+      "allManagers": "Все менеджеры",
+      "allPipelines": "Все воронки",
+      "allSources": "Все источники",
+      "savedView": "Сохраненный вид"
+    },
+    "kpi": {
+      "leadsNew": "Новые лиды",
+      "leadsProcessed": "Обработанные лиды",
+      "overdueSla": "SLA / просрочки",
+      "pipelineAmount": "Сумма сделок в работе",
+      "forecastClose": "Прогноз закрытия",
+      "wonLost": "Won / Lost",
+      "conversion": "Конверсия",
+      "dealToWon": "Сделка→Won",
+      "salesVelocity": "Скорость продаж (в день)"
+    },
+    "kpiDef": {
+      "leadsNew": "Количество лидов, созданных за выбранный период.",
+      "leadsProcessed": "Количество лидов, статус которых изменился с нового.",
+      "overdueSla": "Просроченные задачи и случаи превышения лимита первого ответа SLA.",
+      "pipelineAmount": "Общая сумма незакрытых сделок в работе.",
+      "forecastClose": "Сумма сделок, планируемых к закрытию в выбранный период.",
+      "wonLost": "Соотношение успешно закрытых и потерянных сделок.",
+      "conversion": "Этапные конверсии Lead→Deal и Deal→Won.",
+      "salesVelocity": "Сумма выигранных сделок за период, деленная на число дней."
+    },
+    "noPrevComparison": "Нет корректного сравнения с прошлым периодом",
+    "exceptions": {
+      "title": "Требует внимания",
+      "empty": "Сейчас нет критичных исключений",
+      "taskOverdue": "Просроченная задача",
+      "leadNoActivity": "Лид без активности",
+      "leadNoActivityHint": "Нет активности уже {days} дней",
+      "riskyDeal": "Рискованная сделка"
+    },
+    "activity": {
+      "title": "Активность и SLA",
+      "calls": "Звонки",
+      "messages": "Сообщения",
+      "meetings": "Встречи",
+      "firstResponse": "Средний первый ответ",
+      "noActivityLeads": "Лиды без активности",
+      "taskCompletion": "Выполнение задач"
+    },
+    "minutes": "мин",
+    "mode": {
+      "myDay": "Мой день",
+      "team": "Команда"
+    },
+    "team": {
+      "empty": "Нет данных по команде",
+      "columns": {
+        "manager": "Менеджер",
+        "total": "Всего активности",
+        "calls": "Звонки",
+        "messages": "Сообщения",
+        "breaches": "Нарушения SLA"
+      }
+    },
+    "company": {
+      "funnel": "Этапы воронки",
+      "funnelEmpty": "Нет данных воронки",
+      "kpiCatalog": "Справочник KPI",
+      "columns": {
+        "stage": "Этап",
+        "count": "Количество",
+        "amount": "Сумма",
+        "kpi": "KPI",
+        "definition": "Определение",
+        "source": "Источник",
+        "refresh": "Обновление"
+      }
+    },
+    "export": {
+      "title": "Отчет CRM Dashboard",
+      "sectionKpi": "KPI",
+      "sectionExceptions": "Исключения",
+      "columns": {
+        "section": "Раздел",
+        "metric": "Показатель",
+        "value": "Значение",
+        "details": "Описание"
+      }
+    },
+    "freshness": {
+      "title": "Актуальность виджетов",
+      "overview": "Блок KPI",
+      "activity": "Блок активности",
+      "funnel": "Блок воронки",
+      "entities": "Блок исключений",
+      "live": "обновлено только что",
+      "recent": "обновлено недавно",
+      "stale": "данные устарели"
+    },
+    "quality": {
+      "title": "Предупреждения по качеству данных",
+      "overviewUnavailable": "Сводная аналитика недоступна",
+      "activityUnavailable": "Лента активности недоступна",
+      "funnelUnavailable": "Воронка недоступна",
+      "tasksUnavailable": "Не удалось загрузить задачи для блока исключений",
+      "dealsUnavailable": "Не удалось загрузить сделки для KPI",
+      "leadsUnavailable": "Не удалось загрузить лиды для KPI"
+    },
+    "refreshSource": {
+      "live": "Реальное время + ручное обновление",
+      "hourly": "Ежечасно",
+      "daily": "Ежедневно"
+    },
+    "saveView": {
+      "title": "Сохранить вид",
+      "description": "Сохраните текущую конфигурацию фильтров и режима.",
+      "placeholder": "Например: Утренний контроль",
+      "save": "Сохранить",
+      "cancel": "Отмена"
+    },
+    "messages": {
+      "viewNameRequired": "Введите название сохраненного вида",
+      "viewSaved": "Вид сохранен",
+      "linkCopied": "Ссылка скопирована"
+    },
+    "stage": "Этап",
+    "deadline": "Дедлайн",
+    "closeDate": "Дата закрытия",
+    "noCloseDate": "Дата закрытия не указана",
+    "unknownTask": "Задача",
+    "unknownLead": "Лид",
+    "unknownDeal": "Сделка",
+    "sourceUnknown": "Не указан",
+    "insights": {
+      "title": "Расширенная информационная панель",
+      "planFact": "План/факт закрытия периода",
+      "avgDealSize": "Средний чек по открытым сделкам",
+      "winRate": "Доля выигранных сделок",
+      "velocity": "Скорость продаж"
+    },
+    "dashboards": {
+      "title": "Дополнительные дашборды",
+      "salesTab": "Продажи",
+      "teamTab": "Команда",
+      "sourcesTab": "Источники",
+      "communicationsTab": "Коммуникации",
+      "planFact": "План/факт закрытия",
+      "avgDealSize": "Средний размер сделки",
+      "winRate": "Win rate",
+      "sourcesEmpty": "Нет данных по источникам",
+      "sourceColumn": "Источник",
+      "leadsColumn": "Лиды",
+      "processedColumn": "Обработано",
+      "sourceConversionColumn": "Конверсия"
+    },
+    "extraDashboards": {
+      "title": "Переход к специализированным дашбордам",
+      "analyticsTitle": "Аналитика продаж",
+      "analyticsDesc": "Глубокая аналитика по конверсии, источникам и воронке.",
+      "callsTitle": "Дашборд звонков",
+      "callsDesc": "Операционные показатели звонков, SLA и QA.",
+      "telephonyTitle": "Телефония",
+      "telephonyDesc": "Очереди звонков, каналы и маршрутизация обращений.",
+      "integrationsTitle": "Интеграции",
+      "integrationsDesc": "Meta/каналы коммуникаций и состояние подключений.",
+      "open": "Открыть"
     }
   },
   "licensingPage": {

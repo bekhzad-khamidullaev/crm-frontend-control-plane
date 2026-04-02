@@ -6,7 +6,6 @@
 import React, { useState, useEffect } from 'react';
 import { Card, Button, Space, Avatar, Input, App, Tooltip, Tag } from 'antd';
 import {
-  PhoneOutlined,
   AudioMutedOutlined,
   AudioOutlined,
   PauseCircleOutlined,
@@ -17,6 +16,7 @@ import {
 } from '@ant-design/icons';
 import { addCallNote } from '../lib/api/telephony';
 import sipClient from '../lib/telephony/SIPClient.js';
+import ChannelBrandIcon from './channel/ChannelBrandIcon.jsx';
 
 const { TextArea } = Input;
 
@@ -137,7 +137,7 @@ export default function ActiveCallWidget({ call, onCallEnd, onUpdate }) {
         <Space direction="vertical" style={{ width: '100%' }} size="middle">
           {/* Call Info */}
           <div style={{ textAlign: 'center' }}>
-            <Avatar size={64} icon={<PhoneOutlined />} style={{ marginBottom: 8 }} />
+            <Avatar size={64} icon={<ChannelBrandIcon channel="telephony" size={28} />} style={{ marginBottom: 8 }} />
             <div style={{ fontSize: 16, fontWeight: 500 }}>
               {call.contact_name || call.number}
             </div>

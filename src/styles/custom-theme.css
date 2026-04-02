@@ -343,23 +343,6 @@ h6,
 
 .dark .ant-table-thead > tr > th {
   box-shadow: inset 0 -1px 0 rgba(226, 232, 240, 0.14);
-  color: #dbe7f3;
-}
-
-.dark .ant-typography,
-.dark .empty-state-description,
-.dark .ant-table-cell,
-.dark .ant-list-item-meta-description,
-.dark .ant-form-item-explain,
-.dark .ant-typography-secondary {
-  color: #d6e1ec;
-}
-
-.dark .ant-form-item-label > label,
-.dark .ant-descriptions-item-label,
-.dark .ant-empty-description,
-.dark .ant-tabs-tab-btn {
-  color: #dbe7f3 !important;
 }
 
 .dark .ant-btn-text:hover,
@@ -436,6 +419,29 @@ h6,
 .dark .ant-tour-mask,
 .dark .ant-modal-root .ant-modal-mask {
   background: rgba(2, 6, 12, 0.54) !important;
+}
+
+/* Keep overlays above sticky top bar (header z-index: 1100) */
+.ant-modal-root .ant-modal-mask,
+.ant-modal-root .ant-modal-wrap,
+.ant-image-preview-root .ant-image-preview-mask,
+.ant-image-preview-root .ant-image-preview-wrap,
+.ant-drawer-mask,
+.ant-drawer-content-wrapper,
+.ant-tour {
+  z-index: 1300 !important;
+}
+
+/* Keep dropdown popups above sticky top bar */
+.ant-select-dropdown,
+.ant-dropdown,
+.ant-dropdown-menu,
+.ant-picker-dropdown,
+.ant-cascader-dropdown,
+.ant-popover,
+.ant-tooltip,
+.ant-popconfirm {
+  z-index: 1300 !important;
 }
 
 .dark .ant-card,

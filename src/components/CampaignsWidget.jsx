@@ -1,9 +1,10 @@
 import { useState, useEffect } from 'react';
 import { Card, List, Tag, Button, Space, Progress, Empty, Spin, Statistic, Row, Col } from 'antd';
-import { MailOutlined, EyeOutlined, LinkOutlined } from '@ant-design/icons';
+import { EyeOutlined, LinkOutlined } from '@ant-design/icons';
 import { getCampaigns } from '../lib/api/marketing';
 import { navigate } from '../router';
 import dayjs from 'dayjs';
+import ChannelBrandIcon from './channel/ChannelBrandIcon.jsx';
 
 export default function CampaignsWidget() {
   const [data, setData] = useState([]);
@@ -40,7 +41,7 @@ export default function CampaignsWidget() {
     <Card
       title={
         <Space>
-          <MailOutlined />
+          <ChannelBrandIcon channel="crm-email" size={16} />
           <span>Active Campaigns</span>
         </Space>
       }

@@ -5,6 +5,202 @@
 
 import { api } from './client';
 
+function asObject(value) {
+  return value && typeof value === 'object' && !Array.isArray(value) ? value : {};
+}
+
+function firstNonEmpty(...values) {
+  for (const value of values) {
+    if (value === null || value === undefined) continue;
+    if (typeof value === 'string') {
+      const trimmed = value.trim();
+      if (trimmed) return trimmed;
+      continue;
+    }
+    return value;
+  }
+  return null;
+}
+
+function toOptionalNumber(value, fallback = null) {
+  if (value === null || value === undefined || value === '') return fallback;
+  const parsed = Number(value);
+  return Number.isFinite(parsed) ? parsed : fallback;
+}
+
+function normalizePhoneNumber(value) {
+  return String(value || '').replace(/[^\d+]/g, '');
+}
+
+function extractTechnicalPayload(call) {
+  return asObject(call?.technical_payload);
+}
+
+export function normalizeTelephonyCallPayload(rawCall = {}) {
+  const call = asObject(rawCall);
+  const technicalPayload = extractTechnicalPayload(call);
+
+  const sessionId = firstNonEmpty(
+    call.sessionId,
+    call.session_id,
+    call.call_session_id,
+    call.callId,
+    call.call_id,
+    call.id,
+    call.uniqueid,
+    call.linkedid,
+    technicalPayload.session_id,
+    technicalPayload.call_id,
+    technicalPayload.uniqueid,
+    technicalPayload.linkedid,
+  );
+
+  const callId = firstNonEmpty(
+    call.callId,
+    call.call_id,
+    call.id,
+    sessionId,
+    technicalPayload.call_id,
+  );
+
+  const direction = String(
+    firstNonEmpty(call.direction, technicalPayload.direction, 'inbound') || 'inbound',
+  ).toLowerCase();
+
+  const phoneNumber = firstNonEmpty(
+    call.phoneNumber,
+    call.phone_number,
+    call.number,
+    direction === 'inbound' ? call.caller_id : null,
+    direction === 'outbound' ? call.called_number : null,
+    call.called_number,
+    call.caller_id,
+    technicalPayload.phone_number,
+    technicalPayload.number,
+    technicalPayload.called_number,
+    technicalPayload.caller_id,
+  );
+
+  const agentExtension = firstNonEmpty(
+    call.agentExtension,
+    call.agent_extension,
+    call.extension,
+    call.target_extension,
+    technicalPayload.agent_extension,
+    technicalPayload.extension,
+    technicalPayload.target_extension,
+    technicalPayload.DestExten,
+    technicalPayload.Exten,
+  );
+
+  const queue = firstNonEmpty(
+    call.queue,
+    call.queue_name,
+    call.queueNumber,
+    technicalPayload.queue,
+    technicalPayload.queue_name,
+    technicalPayload.queue_number,
+    technicalPayload.Queue,
+    technicalPayload.QueueName,
+  );
+
+  const queuePosition = toOptionalNumber(
+    firstNonEmpty(
+      call.queuePosition,
+      call.queue_position,
+      technicalPayload.queue_position,
+      technicalPayload.position,
+    ),
+  );
+
+  const waitTime = toOptionalNumber(
+    firstNonEmpty(
+      call.waitTime,
+      call.wait_time,
+      technicalPayload.wait_time,
+      technicalPayload.queue_wait_time,
+    ),
+  );
+
+  const normalizedPhoneNumber = normalizePhoneNumber(phoneNumber || '');
+  const normalizedCallerId = normalizePhoneNumber(
+    firstNonEmpty(call.caller_id, technicalPayload.caller_id) || '',
+  );
+  const normalizedCalledNumber = normalizePhoneNumber(
+    firstNonEmpty(call.called_number, technicalPayload.called_number) || '',
+  );
+
+  const recordingUrl = firstNonEmpty(
+    call.recordingUrl,
+    call.recording_url,
+    call.recording_file,
+    technicalPayload.recording_url,
+    technicalPayload.recording_file,
+  ) || '';
+
+  const status = firstNonEmpty(
+    call.status,
+    call.state,
+    call.call_status,
+    technicalPayload.status,
+    technicalPayload.state,
+  );
+
+  return {
+    ...call,
+    technical_payload: technicalPayload,
+    callId,
+    call_id: call.call_id ?? callId,
+    sessionId,
+    session_id: call.session_id ?? sessionId,
+    phoneNumber,
+    phone_number: call.phone_number ?? phoneNumber,
+    callerName: firstNonEmpty(
+      call.callerName,
+      call.caller_name,
+      call.client_name,
+      call.contact_name,
+      technicalPayload.caller_name,
+      technicalPayload.client_name,
+    ),
+    status,
+    duration: toOptionalNumber(
+      firstNonEmpty(call.duration, call.billsec, technicalPayload.duration, technicalPayload.billsec),
+      0,
+    ),
+    direction,
+    agentExtension,
+    agent_extension: call.agent_extension ?? agentExtension,
+    extension: call.extension ?? agentExtension,
+    queue,
+    queuePosition,
+    queue_position: call.queue_position ?? queuePosition,
+    waitTime,
+    wait_time: call.wait_time ?? waitTime,
+    recordingUrl,
+    recording_url: call.recording_url ?? recordingUrl,
+    recordingReady: Boolean(
+      recordingUrl ||
+      firstNonEmpty(
+        call.recording_ready,
+        call.recordingReady,
+        call.recording_ready_at,
+        technicalPayload.recording_ready_at,
+      )
+    ),
+    routeTargetType: queue ? 'queue' : agentExtension ? 'extension' : 'external',
+    routeTargetLabel: queue || agentExtension || firstNonEmpty(call.called_number, technicalPayload.called_number),
+    linkedId: firstNonEmpty(call.linkedId, call.linkedid, technicalPayload.linkedid, technicalPayload.Linkedid),
+    uniqueId: firstNonEmpty(call.uniqueId, call.uniqueid, technicalPayload.uniqueid, technicalPayload.Uniqueid),
+    normalizedPhoneNumber,
+    normalizedCallerId,
+    normalizedCalledNumber,
+    startedAt: firstNonEmpty(call.startedAt, call.started_at, call.start_time, technicalPayload.started_at),
+    answeredAt: firstNonEmpty(call.answeredAt, call.answered_at, call.answer_time, technicalPayload.answered_at),
+    endedAt: firstNonEmpty(call.endedAt, call.ended_at, call.end_time, technicalPayload.ended_at),
+  };
+}
+
 /**
  * Initiate outgoing call
  * Note: This should use VoIP integration endpoints like /api/voip/cold-call/initiate/

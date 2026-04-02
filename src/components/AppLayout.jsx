@@ -6,19 +6,16 @@ import {
     CheckSquareOutlined,
     ClockCircleOutlined,
     CustomerServiceOutlined,
+    CheckOutlined,
     DollarOutlined,
-    FacebookOutlined,
+    DownOutlined,
     FileTextOutlined,
     FolderOutlined,
     GlobalOutlined,
-    InstagramOutlined,
     LogoutOutlined,
-    MailOutlined,
     MenuFoldOutlined,
     MenuUnfoldOutlined,
-    MessageOutlined,
     MoonOutlined,
-    PhoneOutlined,
     QuestionCircleOutlined,
     RobotOutlined,
     SendOutlined,
@@ -27,13 +24,13 @@ import {
     ThunderboltOutlined,
     TeamOutlined,
     UserOutlined,
-    WhatsAppOutlined,
 } from '@ant-design/icons';
 import { Alert, Avatar, Badge, Button, ConfigProvider, Drawer, Dropdown, Grid, Layout, Menu, Space, Tooltip, Typography } from 'antd';
 import { useEffect, useState } from 'react';
 import brandMark from '../assets/brand/favicon.svg';
 import brandLogo from '../assets/brand/logo.svg';
 import brandLogoDark from '../assets/brand/logo-dark.svg';
+import ChannelBrandIcon from './channel/ChannelBrandIcon.jsx';
 import { LICENSE_RESTRICTION_EVENT } from '../lib/api/licenseRestrictionBus.js';
 import {
   getLicenseRestrictionMessage,
@@ -182,13 +179,13 @@ export function AppLayout({
       key: 'communications-group',
       label: tr('nav.communicationsGroup', 'Коммуникации'),
       children: [
-        { key: 'chat', label: tr('nav.chat', 'Чаты'), icon: <MessageOutlined />, path: '/chat' },
+        { key: 'chat', label: tr('nav.chat', 'Чаты'), icon: <ChannelBrandIcon channel="omnichannel" />, path: '/chat' },
         { key: 'ai-chat', label: tr('nav.aiChat', 'AI чат CRM'), icon: <RobotOutlined />, path: '/ai-chat' },
-        { key: 'calls', label: tr('nav.calls', 'Звонки'), icon: <PhoneOutlined />, path: '/calls' },
+        { key: 'calls', label: tr('nav.calls', 'Звонки'), icon: <ChannelBrandIcon channel="calls" />, path: '/calls' },
         { key: 'reminders', label: tr('nav.reminders', 'Напоминания'), icon: <ClockCircleOutlined />, path: '/reminders' },
-        { key: 'crm-emails', label: tr('nav.crmEmails', 'CRM Email'), icon: <MailOutlined />, path: '/crm-emails' },
-        { key: 'massmail', label: tr('nav.massmail', 'Массовые рассылки'), icon: <FileTextOutlined />, path: '/massmail' },
-        { key: 'sms-center', label: tr('nav.smsCenter', 'SMS'), icon: <MessageOutlined />, path: '/sms' },
+        { key: 'crm-emails', label: tr('nav.crmEmails', 'CRM Email'), icon: <ChannelBrandIcon channel="crm-email" />, path: '/crm-emails' },
+        { key: 'massmail', label: tr('nav.massmail', 'Массовые рассылки'), icon: <ChannelBrandIcon channel="massmail" />, path: '/massmail' },
+        { key: 'sms-center', label: tr('nav.smsCenter', 'SMS'), icon: <ChannelBrandIcon channel="sms" />, path: '/sms' },
         { key: 'memos', label: tr('nav.memos', 'Заметки'), icon: <FileTextOutlined />, path: '/memos' },
       ],
     },
@@ -196,11 +193,7 @@ export function AppLayout({
       key: 'marketing-group',
       label: tr('nav.marketingGroup', 'Маркетинг'),
       children: [
-        { key: 'campaigns', label: tr('nav.campaigns', 'Кампании'), icon: <CustomerServiceOutlined />, path: '/campaigns' },
-        { key: 'content-plans', label: tr('nav.contentPlans', 'Контент планы'), icon: <FileTextOutlined />, path: '/content-plans' },
-        { key: 'segments', label: tr('nav.segments', 'Сегменты'), icon: <TeamOutlined />, path: '/marketing/segments' },
-        { key: 'templates', label: tr('nav.templates', 'Шаблоны'), icon: <FileTextOutlined />, path: '/marketing/templates' },
-        { key: 'analytics', label: tr('nav.analytics', 'Аналитика'), icon: <BarChartOutlined />, path: '/analytics' },
+        { key: 'marketing-workspace', label: tr('nav.marketingGroup', 'Маркетинг'), icon: <CustomerServiceOutlined />, path: '/content-plans' },
       ],
     },
     {
@@ -208,7 +201,7 @@ export function AppLayout({
       label: tr('nav.operationsGroup', 'Операции'),
       children: [
         { key: 'payments', label: tr('nav.payments', 'Платежи'), icon: <DollarOutlined />, path: '/payments' },
-        { key: 'telephony', label: tr('nav.telephony', 'Телефония'), icon: <PhoneOutlined />, path: '/telephony' },
+        { key: 'telephony', label: tr('nav.telephony', 'Телефония'), icon: <ChannelBrandIcon channel="telephony" />, path: '/telephony' },
         { key: 'operations', label: tr('nav.operations', 'Операции'), icon: <SettingOutlined />, path: '/operations' },
         {
           key: 'clients-workspace',
@@ -316,10 +309,10 @@ export function AppLayout({
     if (normalized.startsWith('calls')) return 'calls';
     if (normalized.startsWith('payments')) return 'payments';
     if (normalized.startsWith('reminders')) return 'reminders';
-    if (normalized.startsWith('campaigns')) return 'campaigns';
-    if (normalized === 'marketing-segments') return 'segments';
-    if (normalized === 'marketing-templates') return 'templates';
-    if (normalized === 'content-plans') return 'content-plans';
+    if (normalized.startsWith('campaigns')) return 'marketing-workspace';
+    if (normalized === 'marketing-segments') return 'marketing-workspace';
+    if (normalized === 'marketing-templates') return 'marketing-workspace';
+    if (normalized === 'content-plans') return 'marketing-workspace';
     if (normalized.startsWith('memos')) return 'memos';
     if (normalized === 'warehouse-workspace') return 'warehouse';
     if (normalized === 'documents-workspace') return 'documents-workspace';
@@ -341,15 +334,13 @@ export function AppLayout({
     if (!section) return null;
 
     if (section === 'marketing') {
-      if (segments[1] === 'segments') return 'segments';
-      if (segments[1] === 'templates') return 'templates';
-      return null;
+      return 'marketing-workspace';
     }
     if (section === 'chat') return 'chat';
     if (section === 'calls') return 'calls';
     if (section === 'warehouse') return 'warehouse';
     if (section === 'documents') return 'documents-workspace';
-    if (section === 'content-plans') return 'content-plans';
+    if (section === 'content-plans' || section === 'campaigns') return 'marketing-workspace';
     if (section === 'backlog') return 'backlog';
     if (section === 'sites') return 'sites-workspace';
     if (section === 'functional') return 'functional';
@@ -389,7 +380,7 @@ export function AppLayout({
       'sites',
       'functional',
       'reference-data',
-      'analytics',
+      'dashboard',
       'telephony',
       'users',
       'landing-builder',
@@ -417,33 +408,89 @@ export function AppLayout({
     ai: 'AI',
   };
   const integrationIconMap = {
-    sms: MessageOutlined,
-    telephony: PhoneOutlined,
-    whatsapp: WhatsAppOutlined,
-    facebook: FacebookOutlined,
-    instagram: InstagramOutlined,
-    telegram: SendOutlined,
-    ai: RobotOutlined,
+    sms: 'sms',
+    telephony: 'telephony',
+    whatsapp: 'whatsapp',
+    facebook: 'facebook',
+    instagram: 'instagram',
+    telegram: 'telegram',
+    ai: 'ai',
   };
   const hasActiveTelephony = Array.isArray(activeIntegrations)
     && activeIntegrations.some((integration) => integration?.key === 'telephony');
   const displayName = (() => {
-    const firstAndLastName = `${user?.first_name || ''} ${user?.last_name || ''}`.trim();
-    const fullName = String(user?.full_name || '').trim();
-    const username = String(user?.username || '').trim();
-    const normalizedName = String(user?.name || '').trim();
+    const toStr = (value) => (value === null || value === undefined ? '' : String(value).trim());
+    const pick = (...values) => values.map(toStr).find(Boolean) || '';
+    const profile = user?.profile && typeof user.profile === 'object' ? user.profile : {};
+    const nestedUser = user?.user && typeof user.user === 'object' ? user.user : {};
+    const firstName = pick(
+      user?.first_name,
+      user?.firstName,
+      profile?.first_name,
+      profile?.firstName,
+      nestedUser?.first_name,
+      nestedUser?.firstName
+    );
+    const lastName = pick(
+      user?.last_name,
+      user?.lastName,
+      profile?.last_name,
+      profile?.lastName,
+      nestedUser?.last_name,
+      nestedUser?.lastName
+    );
+    const middleName = pick(
+      user?.middle_name,
+      user?.middleName,
+      user?.patronymic,
+      user?.father_name,
+      profile?.middle_name,
+      profile?.middleName,
+      profile?.patronymic,
+      nestedUser?.middle_name,
+      nestedUser?.middleName,
+      nestedUser?.patronymic
+    );
+    const fioName = [lastName, firstName, middleName].filter(Boolean).join(' ');
+    const firstAndLastName = [firstName, middleName, lastName].filter(Boolean).join(' ');
+    const fullName = pick(
+      user?.full_name,
+      user?.fullName,
+      profile?.full_name,
+      profile?.fullName,
+      nestedUser?.full_name,
+      nestedUser?.fullName
+    );
+    const username = pick(user?.username, user?.login, profile?.username, nestedUser?.username, nestedUser?.login);
+    const email = pick(user?.email, profile?.email, nestedUser?.email);
+    const normalizedName = pick(
+      user?.name,
+      user?.display_name,
+      user?.displayName,
+      profile?.name,
+      profile?.display_name,
+      nestedUser?.name,
+      nestedUser?.display_name
+    );
     const genericNames = new Set(['user', 'пользователь', 'foydalanuvchi']);
     const normalizedNameIsGeneric = genericNames.has(normalizedName.toLowerCase());
+    const normalizedUsernameIsGeneric = genericNames.has(username.toLowerCase());
+    const normalizedFullNameIsGeneric = genericNames.has(fullName.toLowerCase());
+    const preferredFullName = normalizedFullNameIsGeneric ? '' : fullName;
+    const preferredUsername = normalizedUsernameIsGeneric ? '' : username;
 
     return (
-      firstAndLastName
-      || fullName
-      || username
+      fioName
+      || firstAndLastName
+      || preferredFullName
+      || email
+      || preferredUsername
       || (!normalizedNameIsGeneric ? normalizedName : '')
-      || 'User'
+      || tr('nav.user', 'Пользователь')
     );
   })();
   const avatarLetter = displayName.charAt(0).toUpperCase() || 'U';
+  const userSecondaryLabel = String(user?.email || user?.username || '').trim();
   const userRoles = Array.isArray(user?.roles) ? user.roles : [];
   const userIsAdmin = Boolean(
     user?.is_superuser
@@ -553,17 +600,32 @@ export function AppLayout({
   const localeMenuItems = [
     {
       key: 'en',
-      label: activeLocale === 'en' ? 'English ✓' : 'English',
+      label: (
+        <Space size={8} style={{ width: '100%', justifyContent: 'space-between' }}>
+          <span>English</span>
+          {activeLocale === 'en' ? <CheckOutlined aria-hidden /> : null}
+        </Space>
+      ),
       onClick: () => onLocaleChange('en'),
     },
     {
       key: 'ru',
-      label: activeLocale === 'ru' ? 'Русский ✓' : 'Русский',
+      label: (
+        <Space size={8} style={{ width: '100%', justifyContent: 'space-between' }}>
+          <span>Русский</span>
+          {activeLocale === 'ru' ? <CheckOutlined aria-hidden /> : null}
+        </Space>
+      ),
       onClick: () => onLocaleChange('ru'),
     },
     {
       key: 'uz',
-      label: activeLocale === 'uz' ? "O'zbekcha ✓" : "O'zbekcha",
+      label: (
+        <Space size={8} style={{ width: '100%', justifyContent: 'space-between' }}>
+          <span>O'zbekcha</span>
+          {activeLocale === 'uz' ? <CheckOutlined aria-hidden /> : null}
+        </Space>
+      ),
       onClick: () => onLocaleChange('uz'),
     },
   ];
@@ -572,9 +634,12 @@ export function AppLayout({
     {
       key: 'light',
       icon: <SunOutlined />,
-      label: theme === 'light'
-        ? `${tr('nav.themeLight', 'Светлая')} ✓`
-        : tr('nav.themeLight', 'Светлая'),
+      label: (
+        <Space size={8} style={{ width: '100%', justifyContent: 'space-between' }}>
+          <span>{tr('nav.themeLight', 'Светлая')}</span>
+          {theme === 'light' ? <CheckOutlined aria-hidden /> : null}
+        </Space>
+      ),
       onClick: () => {
         if (theme !== 'light') toggleTheme();
       },
@@ -582,9 +647,12 @@ export function AppLayout({
     {
       key: 'dark',
       icon: <MoonOutlined />,
-      label: theme === 'dark'
-        ? `${tr('nav.themeDark', 'Темная')} ✓`
-        : tr('nav.themeDark', 'Темная'),
+      label: (
+        <Space size={8} style={{ width: '100%', justifyContent: 'space-between' }}>
+          <span>{tr('nav.themeDark', 'Темная')}</span>
+          {theme === 'dark' ? <CheckOutlined aria-hidden /> : null}
+        </Space>
+      ),
       onClick: () => {
         if (theme !== 'dark') toggleTheme();
       },
@@ -634,8 +702,31 @@ export function AppLayout({
       </span>
     </span>
   );
+  const buildUserSummaryMenuLabel = () => (
+    <span
+      style={{
+        display: 'flex',
+        flexDirection: 'column',
+        gap: 2,
+        width: '100%',
+      }}
+    >
+      <span style={{ fontWeight: 600, color: shell.text }}>{displayName}</span>
+      {userSecondaryLabel ? (
+        <span style={{ fontSize: 12, color: shell.textMuted, lineHeight: 1.35 }}>
+          {userSecondaryLabel}
+        </span>
+      ) : null}
+    </span>
+  );
 
   const userMenuItems = [
+    {
+      key: 'user-summary',
+      disabled: true,
+      label: buildUserSummaryMenuLabel(),
+    },
+    { type: 'divider' },
     {
       key: 'profile',
       icon: <UserOutlined />,
@@ -677,6 +768,7 @@ export function AppLayout({
     {
       key: 'logout',
       icon: <LogoutOutlined />,
+      danger: true,
       label: tr('nav.logout', 'Выход'),
       onClick: onLogout,
     },
@@ -866,13 +958,19 @@ export function AppLayout({
             {hasActiveTelephony && (
               <Button
                 size={isMobile ? 'small' : 'middle'}
-                icon={<PhoneOutlined />}
+                icon={<ChannelBrandIcon channel="telephony" size={16} />}
                 onClick={onOpenDialer}
               />
             )}
 
             <ConfigProvider theme={menuTheme}>
-              <Dropdown menu={{ items: userMenuItems }} placement="bottomRight">
+              <Dropdown
+                menu={{ items: userMenuItems }}
+                placement="bottomRight"
+                trigger={['click']}
+                arrow={{ pointAtCenter: true }}
+                overlayStyle={{ minWidth: 280 }}
+              >
               <Space
                 align="center"
                 style={{
@@ -901,15 +999,19 @@ export function AppLayout({
                 {Array.isArray(activeIntegrations) && activeIntegrations.length > 0 && (
                   <Space size={8} align="center">
                     {activeIntegrations.map((integration) => {
-                      const IconComponent = integrationIconMap[integration.key];
-                      if (!IconComponent) return null;
+                      const iconKey = integrationIconMap[integration.key];
+                      if (!iconKey) return null;
                       return (
                         <Tooltip
                           key={integration.key}
                           title={integrationLabelMap[integration.key] || integration.key}
                         >
                           <Space size={4} align="center">
-                            <IconComponent style={{ color: shell.textMuted }} />
+                            {iconKey === 'ai' ? (
+                              <RobotOutlined style={{ color: shell.textMuted }} />
+                            ) : (
+                              <ChannelBrandIcon channel={iconKey} size={14} />
+                            )}
                             <Badge status={integration.status || 'success'} />
                           </Space>
                         </Tooltip>
@@ -919,12 +1021,12 @@ export function AppLayout({
                 )}
                 {incomingCallsCount > 0 && (
                   <Badge count={incomingCallsCount}>
-                    <PhoneOutlined />
+                    <ChannelBrandIcon channel="telephony" size={14} />
                   </Badge>
                 )}
                 {unreadCount > 0 && (
                   <Badge count={unreadCount}>
-                    <MessageOutlined />
+                    <ChannelBrandIcon channel="omnichannel" size={14} />
                   </Badge>
                 )}
                 <Avatar
@@ -938,6 +1040,7 @@ export function AppLayout({
                   {avatarLetter}
                 </Avatar>
                 {!isMobile && <Text style={{ color: shell.text, fontWeight: 500 }}>{displayName}</Text>}
+                <DownOutlined style={{ color: shell.textMuted, fontSize: 12 }} aria-hidden />
               </Space>
               </Dropdown>
             </ConfigProvider>

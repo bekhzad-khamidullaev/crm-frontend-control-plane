@@ -5,10 +5,11 @@
 
 import React, { useState } from 'react';
 import { Form, Input, Button, Space, Alert, Typography, Steps, Card, App, Select, theme as antdTheme } from 'antd';
-import { InstagramOutlined, ReloadOutlined } from '@ant-design/icons';
+import { ReloadOutlined } from '@ant-design/icons';
 import { connectInstagram, discoverInstagramAccounts } from '../lib/api/integrations/instagram';
 import { t } from '../lib/i18n';
 import { useTheme } from '../lib/hooks/useTheme';
+import ChannelBrandIcon from './channel/ChannelBrandIcon.jsx';
 
 const { Link, Paragraph } = Typography;
 const { Step } = Steps;
@@ -192,7 +193,7 @@ export default function InstagramConnect({ onSuccess, onCancel }) {
             extra={tr('instagramConnect.fields.tokenExtra', 'Токен доступа от Facebook для Instagram Business API')}
           >
             <Input.Password
-              prefix={<InstagramOutlined />}
+              prefix={<ChannelBrandIcon channel="instagram" size={16} />}
               placeholder="EAAxxxxxxxxxxxxx"
             />
           </Form.Item>

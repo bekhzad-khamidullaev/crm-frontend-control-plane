@@ -4,7 +4,7 @@ import type { LeadListParams } from '@/entities/lead/api/queries';
 import type { Lead } from '@/entities/lead/model/types';
 import { deriveLeadStatus } from '@/entities/lead/model/utils';
 // @ts-ignore
-import EditableCell from '@/components/ui-EditableCell';
+import EditableCell from '@/components/editable-cell';
 import { useTags } from '@/features/reference';
 // @ts-ignore
 import { LeadsService } from '@/shared/api/generated/services/LeadsService';
@@ -64,12 +64,24 @@ export const LeadsTable: React.FC = () => {
     }
   };
 
+  const normalizeForeignKeyValue = (raw: unknown): number | null => {
+    if (raw === null || raw === undefined || raw === '') return null;
+    if (typeof raw === 'number') return Number.isFinite(raw) ? raw : null;
+    const asNumber = Number(raw);
+    return Number.isFinite(asNumber) ? asNumber : null;
+  };
+
   const handleInlineSave = async (record: Lead, dataIndex: string, value: any) => {
     if (!canManage) return;
+    const normalizedValue =
+      dataIndex === 'lead_source' || dataIndex === 'owner'
+        ? normalizeForeignKeyValue(value)
+        : value;
     await patchMutation.mutateAsync({
       id: record.id,
-      data: { [dataIndex]: value } as any,
+      data: { [dataIndex]: normalizedValue } as any,
     });
+    await refetch();
   };
 
   const statusMap: Record<string, { color: string; text: string }> = {

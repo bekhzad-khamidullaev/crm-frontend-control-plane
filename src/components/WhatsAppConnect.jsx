@@ -1,9 +1,10 @@
 import React, { useState } from 'react';
 import { Alert, App, Button, Card, Form, Input, Select, Space, Switch, theme as antdTheme } from 'antd';
-import { MessageOutlined, ReloadOutlined } from '@ant-design/icons';
+import { ReloadOutlined } from '@ant-design/icons';
 import { connectWhatsAppAccount, discoverWhatsAppAssets } from '../lib/api/integrations/whatsapp.js';
 import { t } from '../lib/i18n';
 import { useTheme } from '../lib/hooks/useTheme';
+import ChannelBrandIcon from './channel/ChannelBrandIcon.jsx';
 
 const idsEqual = (left, right) => String(left) === String(right);
 
@@ -147,7 +148,7 @@ export default function WhatsAppConnect({ onSuccess, onCancel }) {
           name="business_name"
           rules={[{ required: true, message: tr('whatsappConnect.validation.enterAccountName', 'Введите название аккаунта') }]}
         >
-          <Input prefix={<MessageOutlined />} placeholder="Main WhatsApp" />
+          <Input prefix={<ChannelBrandIcon channel="whatsapp" size={16} />} placeholder="Main WhatsApp" />
         </Form.Item>
 
         <Form.Item

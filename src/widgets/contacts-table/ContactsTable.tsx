@@ -11,7 +11,7 @@ import {
 import { Alert, Avatar, Button, Grid, Popconfirm, Space, Table, Tooltip } from 'antd';
 import React, { useMemo } from 'react';
 // @ts-ignore
-import EditableCell from '@/components/ui-EditableCell';
+import EditableCell from '@/components/editable-cell';
 // @ts-ignore
 import { contactKeys } from '@/entities/contact/api/keys';
 import { useDeleteContact, usePatchContact } from '@/entities/contact/api/mutations';
@@ -72,12 +72,24 @@ export const ContactsTable: React.FC = () => {
     });
   };
 
+  const normalizeForeignKeyValue = (raw: unknown): number | null => {
+    if (raw === null || raw === undefined || raw === '') return null;
+    if (typeof raw === 'number') return Number.isFinite(raw) ? raw : null;
+    const asNumber = Number(raw);
+    return Number.isFinite(asNumber) ? asNumber : null;
+  };
+
   const handleInlineSave = async (record: Contact, dataIndex: string, value: any) => {
     if (!canManage) return;
+    const normalizedValue =
+      dataIndex === 'company' || dataIndex === 'owner'
+        ? normalizeForeignKeyValue(value)
+        : value;
     await patchMutation.mutateAsync({
       id: record.id,
-      data: { [dataIndex]: value } as any,
+      data: { [dataIndex]: normalizedValue } as any,
     });
+    await refetch();
   };
 
   const singleLineEllipsis: React.CSSProperties = {

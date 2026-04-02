@@ -18,11 +18,7 @@ import {
   Input,
   Tabs,
 } from 'antd';
-import {
-  MessageOutlined,
-  PhoneOutlined,
-  ReloadOutlined,
-} from '@ant-design/icons';
+import { ReloadOutlined } from '@ant-design/icons';
 import {
   getEntityChatMessages,
   createChatMessage,
@@ -36,6 +32,7 @@ import { subscribe, addChatMessage, updateChatMessage as updateStoreMessage, del
 import ChatMessageItem from '../../components/ChatMessageItem';
 import ChatMessageComposer from '../../components/ChatMessageComposer';
 import CallButton from '../../components/CallButton';
+import ChannelBrandIcon from '../../components/channel/ChannelBrandIcon.jsx';
 import { getUserFromToken } from '../../lib/api/auth.js';
 import { useTheme } from '../../lib/hooks/useTheme.js';
 
@@ -376,7 +373,7 @@ function ChatWidget({ entityType, entityId, entityName, entityPhone }) {
       title={
         <Space direction="vertical" size={2} style={{ width: '100%' }}>
           <Space align="center" wrap>
-            <MessageOutlined />
+            <ChannelBrandIcon channel="omnichannel" size={16} />
             <span>Сообщения</span>
             {entityPhone && (
               <CallButton

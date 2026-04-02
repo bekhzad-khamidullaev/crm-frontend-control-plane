@@ -8,14 +8,12 @@ import {
   UserOutlined,
   FileTextOutlined,
   CheckOutlined,
-  PhoneOutlined,
-  MessageOutlined,
-  MailOutlined,
   EyeOutlined,
   SwapOutlined,
   LockOutlined,
 } from '@ant-design/icons';
 import { canWrite as canWriteByRole } from '../lib/rbac.js';
+import ChannelBrandIcon from './channel/ChannelBrandIcon.jsx';
 
 /**
  * QuickActions component - Dropdown menu for common row actions using Ant Design 5.x
@@ -121,7 +119,7 @@ export default function QuickActions({
     communicationActions.push({
       key: 'call',
       label: 'Позвонить',
-      icon: <PhoneOutlined />,
+      icon: <ChannelBrandIcon channel="telephony" size={14} />,
       onClick: () => onCall(record),
     });
   }
@@ -129,7 +127,7 @@ export default function QuickActions({
     communicationActions.push({
       key: 'sms',
       label: 'Отправить SMS',
-      icon: <MessageOutlined />,
+      icon: <ChannelBrandIcon channel="sms" size={14} />,
       onClick: () => onSMS(record),
     });
   }
@@ -137,7 +135,7 @@ export default function QuickActions({
     communicationActions.push({
       key: 'email',
       label: 'Отправить Email',
-      icon: <MailOutlined />,
+      icon: <ChannelBrandIcon channel="crm-email" size={14} />,
       onClick: () => onEmail(record),
     });
   }

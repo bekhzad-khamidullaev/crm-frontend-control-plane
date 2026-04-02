@@ -1,6 +1,7 @@
 import { useCompany } from '@/entities/company/api/queries';
 import { useContact } from '@/entities/contact/api/queries';
 import { UsersService } from '@/shared/api/generated/services/UsersService';
+import { buildAiChatUrl } from '@/lib/utils/ai-chat-context.js';
 import { navigate } from '@/router.js';
 import { BankOutlined, BellOutlined, EditOutlined, MailOutlined, PhoneOutlined, RobotOutlined, UserOutlined } from '@ant-design/icons';
 import { Avatar, Button, Card, Descriptions, Result, Space, Spin, Tabs, Tag, Typography } from 'antd';
@@ -23,7 +24,14 @@ export const ContactDetailPage: React.FC<ContactDetailPageProps> = ({ id }) => {
   const { data: company } = useCompany(contact?.company || 0, !!contact?.company);
   const [resolvedOwnerName, setResolvedOwnerName] = React.useState<string | null>(null);
   const [quickReminderOpen, setQuickReminderOpen] = React.useState(false);
-  const openAiChat = () => navigate(`/ai-chat?entity_type=contact&entity_id=${id}`);
+  const openAiChat = () =>
+    navigate(
+      buildAiChatUrl({
+        entityType: 'contact',
+        entityId: id,
+        entityName: contact?.full_name || (contact as any)?.name,
+      }),
+    );
 
   React.useEffect(() => {
     const ownerId = Number(contact?.owner);

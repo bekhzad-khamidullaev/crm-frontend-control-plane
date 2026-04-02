@@ -137,6 +137,180 @@
       "licenseRevoked": "License has been revoked",
       "licenseInvalid": "License is invalid",
       "licenseRestrictionDescription": "Operation is restricted by current license state. Check licensing page."
+    },
+    "user": "User",
+    "updated": "Updated",
+    "actions": {
+      "share": "Share link",
+      "saveView": "Save view",
+      "drilldown": "Open list",
+      "openTask": "Open task",
+      "openLead": "Open lead",
+      "openDeal": "Open deal",
+      "openList": "Open list"
+    },
+    "filters": {
+      "allManagers": "All managers",
+      "allPipelines": "All pipelines",
+      "allSources": "All sources",
+      "savedView": "Saved view"
+    },
+    "kpi": {
+      "leadsNew": "New leads",
+      "leadsProcessed": "Processed leads",
+      "overdueSla": "SLA / overdue",
+      "pipelineAmount": "Open pipeline amount",
+      "forecastClose": "Forecast close amount",
+      "wonLost": "Won / Lost",
+      "conversion": "Conversion",
+      "dealToWon": "Deal→Won",
+      "salesVelocity": "Sales velocity (per day)"
+    },
+    "kpiDef": {
+      "leadsNew": "Number of leads created in the selected period.",
+      "leadsProcessed": "Number of leads whose status moved beyond new.",
+      "overdueSla": "Overdue tasks and first-response SLA breaches.",
+      "pipelineAmount": "Total amount of open deals in pipeline.",
+      "forecastClose": "Amount expected to close in the selected period.",
+      "wonLost": "Ratio of won to lost deals.",
+      "conversion": "Lead→Deal and Deal→Won stage conversion.",
+      "salesVelocity": "Won amount in period divided by number of days."
+    },
+    "noPrevComparison": "No valid previous period comparison",
+    "exceptions": {
+      "title": "Needs attention",
+      "empty": "No critical exceptions right now",
+      "taskOverdue": "Overdue task",
+      "leadNoActivity": "Inactive lead",
+      "leadNoActivityHint": "No activity for {days} days",
+      "riskyDeal": "Risky deal"
+    },
+    "activity": {
+      "title": "Activity and SLA",
+      "calls": "Calls",
+      "messages": "Messages",
+      "meetings": "Meetings",
+      "firstResponse": "Avg first response",
+      "noActivityLeads": "Inactive leads",
+      "taskCompletion": "Task completion"
+    },
+    "minutes": "min",
+    "mode": {
+      "myDay": "My day",
+      "team": "Team"
+    },
+    "team": {
+      "empty": "No team data",
+      "columns": {
+        "manager": "Manager",
+        "total": "Total activity",
+        "calls": "Calls",
+        "messages": "Messages",
+        "breaches": "SLA breaches"
+      }
+    },
+    "company": {
+      "funnel": "Funnel stages",
+      "funnelEmpty": "No funnel data",
+      "kpiCatalog": "KPI catalog",
+      "columns": {
+        "stage": "Stage",
+        "count": "Count",
+        "amount": "Amount",
+        "kpi": "KPI",
+        "definition": "Definition",
+        "source": "Source",
+        "refresh": "Refresh"
+      }
+    },
+    "export": {
+      "title": "CRM Dashboard report",
+      "sectionKpi": "KPI",
+      "sectionExceptions": "Exceptions",
+      "columns": {
+        "section": "Section",
+        "metric": "Metric",
+        "value": "Value",
+        "details": "Details"
+      }
+    },
+    "freshness": {
+      "title": "Widget freshness",
+      "overview": "KPI block",
+      "activity": "Activity block",
+      "funnel": "Funnel block",
+      "entities": "Exceptions block",
+      "live": "updated just now",
+      "recent": "updated recently",
+      "stale": "data is stale"
+    },
+    "quality": {
+      "title": "Data quality warnings",
+      "overviewUnavailable": "Overview analytics unavailable",
+      "activityUnavailable": "Activity feed unavailable",
+      "funnelUnavailable": "Funnel data unavailable",
+      "tasksUnavailable": "Tasks for exceptions block are unavailable",
+      "dealsUnavailable": "Deals for KPI are unavailable",
+      "leadsUnavailable": "Leads for KPI are unavailable"
+    },
+    "refreshSource": {
+      "live": "Realtime + manual refresh",
+      "hourly": "Hourly",
+      "daily": "Daily"
+    },
+    "saveView": {
+      "title": "Save view",
+      "description": "Save current filters and mode configuration.",
+      "placeholder": "Example: Morning control",
+      "save": "Save",
+      "cancel": "Cancel"
+    },
+    "messages": {
+      "viewNameRequired": "Enter a saved view name",
+      "viewSaved": "View saved",
+      "linkCopied": "Link copied"
+    },
+    "stage": "Stage",
+    "deadline": "Deadline",
+    "closeDate": "Close date",
+    "noCloseDate": "No close date",
+    "unknownTask": "Task",
+    "unknownLead": "Lead",
+    "unknownDeal": "Deal",
+    "sourceUnknown": "Not specified",
+    "insights": {
+      "title": "Extended insight panel",
+      "planFact": "Period close plan/fact",
+      "avgDealSize": "Average open deal size",
+      "winRate": "Won deals share",
+      "velocity": "Sales velocity"
+    },
+    "dashboards": {
+      "title": "Additional dashboards",
+      "salesTab": "Sales",
+      "teamTab": "Team",
+      "sourcesTab": "Sources",
+      "communicationsTab": "Communications",
+      "planFact": "Close plan/fact",
+      "avgDealSize": "Average deal size",
+      "winRate": "Win rate",
+      "sourcesEmpty": "No source data",
+      "sourceColumn": "Source",
+      "leadsColumn": "Leads",
+      "processedColumn": "Processed",
+      "sourceConversionColumn": "Conversion"
+    },
+    "extraDashboards": {
+      "title": "Open specialized dashboards",
+      "analyticsTitle": "Sales analytics",
+      "analyticsDesc": "Deep analytics for conversion, sources, and funnel.",
+      "callsTitle": "Calls dashboard",
+      "callsDesc": "Operational call KPIs, SLA, and QA.",
+      "telephonyTitle": "Telephony",
+      "telephonyDesc": "Call queues, channels, and routing.",
+      "integrationsTitle": "Integrations",
+      "integrationsDesc": "Meta communication channels and connection state.",
+      "open": "Open"
     }
   },
   "licensingPage": {

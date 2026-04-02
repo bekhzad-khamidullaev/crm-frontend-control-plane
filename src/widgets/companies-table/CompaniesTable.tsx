@@ -4,7 +4,7 @@ import type { Company } from '@/entities/company/model/types';
 import { useClientTypes, useIndustries } from '@/features/reference';
 import { getClientTypeLabel } from '@/features/reference/lib/clientTypeLabel';
 // @ts-ignore
-import EditableCell from '@/components/ui-EditableCell';
+import EditableCell from '@/components/editable-cell';
 // @ts-ignore
 import { CompaniesService } from '@/shared/api/generated/services/CompaniesService';
 import { useServerTable } from '@/shared/hooks';
@@ -83,12 +83,24 @@ export const CompaniesTable: React.FC = () => {
     applyFilters(filters);
   };
 
+  const normalizeForeignKeyValue = (raw: unknown): number | null => {
+    if (raw === null || raw === undefined || raw === '') return null;
+    if (typeof raw === 'number') return Number.isFinite(raw) ? raw : null;
+    const asNumber = Number(raw);
+    return Number.isFinite(asNumber) ? asNumber : null;
+  };
+
   const handleInlineSave = async (record: Company, dataIndex: string, value: any) => {
     if (!canManage) return;
+    const normalizedValue =
+      dataIndex === 'type' || dataIndex === 'owner'
+        ? normalizeForeignKeyValue(value)
+        : value;
     await patchMutation.mutateAsync({
       id: record.id,
-      data: { [dataIndex]: value } as any,
+      data: { [dataIndex]: normalizedValue } as any,
     });
+    await refetch();
   };
 
   const singleLineEllipsis: React.CSSProperties = {
