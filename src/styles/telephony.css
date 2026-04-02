@@ -67,6 +67,43 @@
   background: #f44336;
 }
 
+.telephony-window-controls {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.telephony-window-control-btn.ant-btn {
+  width: 32px;
+  min-width: 32px;
+  height: 24px;
+  border-radius: 6px;
+  padding: 0;
+  color: #424242;
+  transition:
+    background-color 0.15s ease,
+    color 0.15s ease;
+}
+
+.telephony-window-control-btn.ant-btn .anticon {
+  font-size: 12px;
+}
+
+.telephony-window-control-btn.ant-btn:hover {
+  background: rgba(0, 0, 0, 0.08);
+  color: #424242;
+}
+
+.telephony-window-control-btn.ant-btn:active {
+  background: rgba(0, 0, 0, 0.14);
+}
+
+.telephony-window-control-btn--close.ant-btn:hover,
+.telephony-window-control-btn--close.ant-btn:active {
+  background: #e81123;
+  color: #fff;
+}
+
 .call-widget__body {
   padding: 16px;
 }

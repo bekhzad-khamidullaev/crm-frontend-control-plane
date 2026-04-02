@@ -16,6 +16,7 @@ import sipClient from '../lib/telephony/SIPClient.js';
 import { loadTelephonyRuntimeConfig } from '../lib/telephony/runtimeConfig.js';
 import { DEFAULT_TELEPHONY_ROUTE_MODE } from '../lib/telephony/constants.js';
 import { TELEPHONY_MODAL_PROPS } from '../shared/ui/telephonyModal.js';
+import '../styles/telephony.css';
 
 const DTMF_KEYS = ['1', '2', '3', '4', '5', '6', '7', '8', '9', '*', '0', '#'];
 const DTMF_HINTS = {
@@ -866,24 +867,24 @@ export default function TelephonyDialerModal({
                 Телефонная звонилка
               </span>
             </Space>
-            <Space size={4}>
+            <div className="telephony-window-controls">
               <Button
                 size="small"
                 type="text"
                 icon={<ArrowsAltOutlined />}
+                className="telephony-window-control-btn"
                 onMouseDown={(event) => event.stopPropagation()}
                 onClick={() => setMinimized(false)}
               />
               <Button
                 size="small"
                 type="text"
-                danger
+                icon={<CloseOutlined />}
+                className="telephony-window-control-btn telephony-window-control-btn--close"
                 onMouseDown={(event) => event.stopPropagation()}
                 onClick={closeAndReset}
-              >
-                ✕
-              </Button>
-            </Space>
+              />
+            </div>
           </div>
           <div style={{ padding: '0 12px 10px', color: token.colorTextSecondary, fontSize: 12 }}>
             {callTag.text}
@@ -916,20 +917,24 @@ export default function TelephonyDialerModal({
             <ArrowsAltOutlined style={{ color: token.colorTextSecondary }} />
             <span>Телефонная звонилка</span>
           </Space>
-          <Button
-            size="small"
-            type="text"
-            icon={<MinusOutlined />}
-            onMouseDown={(event) => event.stopPropagation()}
-            onClick={() => setMinimized(true)}
-          />
-          <Button
-            size="small"
-            type="text"
-            icon={<CloseOutlined />}
-            onMouseDown={(event) => event.stopPropagation()}
-            onClick={closeAndReset}
-          />
+          <div className="telephony-window-controls">
+            <Button
+              size="small"
+              type="text"
+              icon={<MinusOutlined />}
+              className="telephony-window-control-btn"
+              onMouseDown={(event) => event.stopPropagation()}
+              onClick={() => setMinimized(true)}
+            />
+            <Button
+              size="small"
+              type="text"
+              icon={<CloseOutlined />}
+              className="telephony-window-control-btn telephony-window-control-btn--close"
+              onMouseDown={(event) => event.stopPropagation()}
+              onClick={closeAndReset}
+            />
+          </div>
         </div>
       )}
       open={visible}

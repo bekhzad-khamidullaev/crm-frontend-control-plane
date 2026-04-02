@@ -396,7 +396,7 @@ const QUICK_ACTIONS = [
   { action: 'start_call', label: 'Start call' },
 ];
 
-function ChatPage() {
+function ChatPage({ initialWorkspaceTab = null }) {
   const { message } = App.useApp();
   const { theme } = useTheme();
   const screens = Grid.useBreakpoint();
@@ -418,6 +418,7 @@ function ChatPage() {
   const [bucket, setBucket] = useState('all');
   const [channel, setChannel] = useState('all');
   const [activeConversationKey, setActiveConversationKey] = useState(null);
+  const [activeWorkspaceTab, setActiveWorkspaceTab] = useState(initialWorkspaceTab || 'inbox');
   const [draft, setDraft] = useState('');
   const [sending, setSending] = useState(false);
   const [contextState, setContextState] = useState(null);
@@ -479,6 +480,16 @@ function ChatPage() {
   useEffect(() => {
     loadInbox();
   }, []);
+
+  useEffect(() => {
+    if (initialWorkspaceTab) {
+      setActiveWorkspaceTab(initialWorkspaceTab);
+      return;
+    }
+    if (!loading) {
+      setActiveWorkspaceTab(items.length === 0 ? 'dispatch' : 'inbox');
+    }
+  }, [initialWorkspaceTab, items.length, loading]);
 
   const conversations = useMemo(() => groupConversations(items), [items]);
   const filteredConversations = useMemo(
@@ -1203,7 +1214,8 @@ function ChatPage() {
 
   return (
     <Tabs
-      defaultActiveKey={items.length === 0 ? 'dispatch' : 'inbox'}
+      activeKey={activeWorkspaceTab}
+      onChange={setActiveWorkspaceTab}
       items={[
         { key: 'inbox', label: 'Omnichannel Inbox', children: inboxLayout },
         { key: 'dispatch', label: 'Outbound / Broadcast', children: <CommunicationsHub defaultTab="omnichannel" /> },

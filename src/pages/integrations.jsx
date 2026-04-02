@@ -109,6 +109,19 @@ const CHANNEL_ICON_ALIASES = {
   crm_chat: 'chat',
 };
 
+const CHANNEL_DISPLAY_LABELS = {
+  whatsapp: 'WhatsApp',
+  facebook: 'Facebook Messenger',
+  instagram: 'Instagram',
+  telegram: 'Telegram',
+  sms: 'SMS',
+  telephony: 'Телефония',
+  'crm-email': 'CRM Email',
+  massmail: 'Массовые рассылки',
+  omnichannel: 'Omnichannel',
+  chat: 'Чат',
+};
+
 const normalizeChannelIconKey = (value) => {
   const normalized = String(value || '')
     .trim()
@@ -117,10 +130,19 @@ const normalizeChannelIconKey = (value) => {
   return CHANNEL_ICON_ALIASES[normalized] || normalized;
 };
 
+const getChannelDisplayLabel = (value) => {
+  const normalized = normalizeChannelIconKey(value);
+  const aliasLabel = CHANNEL_DISPLAY_LABELS[normalized];
+  if (aliasLabel) return aliasLabel;
+  const prepared = String(value || '').trim();
+  if (!prepared) return '-';
+  return prepared;
+};
+
 const renderChannelIdentity = (label, channelHint) => (
   <Space size={8} align="center">
     <ChannelBrandIcon channel={normalizeChannelIconKey(channelHint || label || 'omnichannel')} size={16} />
-    <span>{label || '-'}</span>
+    <span>{label || getChannelDisplayLabel(channelHint) || '-'}</span>
   </Space>
 );
 
@@ -1327,11 +1349,24 @@ export default function IntegrationsPage({ embedded = false } = {}) {
   if (diagnosticsFilters.channel && diagnosticsFilters.channel !== 'all') {
     diagnosticsChannelValues.add(diagnosticsFilters.channel);
   }
+  const diagnosticsAllChannelsLabel = tr('integrationsPage.filters.allChannels', 'Все каналы');
+  const diagnosticsChannelLabel = (value) =>
+    String(value || '').trim().toLowerCase() === 'all'
+      ? diagnosticsAllChannelsLabel
+      : getChannelDisplayLabel(value);
+  const renderDiagnosticsChannelOption = (option) => {
+    const value = String(option?.value || '').trim();
+    const label = diagnosticsChannelLabel(option?.label || value);
+    if (!value || value.toLowerCase() === 'all') {
+      return <span>{label}</span>;
+    }
+    return renderChannelIdentity(label, value);
+  };
   const diagnosticsChannelOptions = [
-    { value: 'all', label: tr('integrationsPage.filters.allChannels', 'Все каналы') },
+    { value: 'all', label: diagnosticsAllChannelsLabel },
     ...Array.from(diagnosticsChannelValues).map((value) => ({
       value,
-      label: renderChannelIdentity(value, value),
+      label: diagnosticsChannelLabel(value),
     })),
   ];
   const diagnosticsAlertType =
@@ -1742,6 +1777,8 @@ export default function IntegrationsPage({ embedded = false } = {}) {
                     style={{ width: 170 }}
                     onChange={(value) => setDiagnosticsFilters((prev) => ({ ...prev, channel: value }))}
                     options={diagnosticsChannelOptions}
+                    optionRender={(option) => renderDiagnosticsChannelOption(option?.data)}
+                    labelRender={(props) => renderDiagnosticsChannelOption(props)}
                   />
                   <Switch
                     size="small"
@@ -1785,7 +1822,7 @@ export default function IntegrationsPage({ embedded = false } = {}) {
                       <Space direction="vertical" size={10} style={{ width: '100%' }}>
                         <Space align="center" wrap>
                           <ChannelBrandIcon channel={normalizeChannelIconKey(channel.channel)} size={16} />
-                          <Text strong>{channel.channel}</Text>
+                          <Text strong>{getChannelDisplayLabel(channel.channel)}</Text>
                           <Tag color={channel.health === 'degraded' ? 'error' : 'success'} style={{ marginInlineEnd: 0 }}>
                             {channel.health === 'degraded'
                               ? tr('integrationsPage.diagnostics.degraded', 'Degraded')
@@ -1824,7 +1861,7 @@ export default function IntegrationsPage({ embedded = false } = {}) {
                       <Tag style={{ marginInlineEnd: 0 }}>
                         <Space size={6} align="center">
                           <ChannelBrandIcon channel={normalizeChannelIconKey(value)} size={14} />
-                          <span>{value || '-'}</span>
+                          <span>{getChannelDisplayLabel(value)}</span>
                         </Space>
                       </Tag>
                     ),
