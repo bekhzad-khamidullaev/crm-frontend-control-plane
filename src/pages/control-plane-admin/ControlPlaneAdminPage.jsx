@@ -7,7 +7,6 @@ import {
   Descriptions,
   Row,
   Space,
-  Statistic,
   Tabs,
   Tag,
   Typography,
@@ -22,6 +21,7 @@ import SubscriptionsSection from './sections/SubscriptionsSection.jsx';
 import PlansFeaturesSection from './sections/PlansFeaturesSection.jsx';
 import QueueSection from './sections/QueueSection.jsx';
 import AuditSection from './sections/AuditSection.jsx';
+import { KpiStatCard } from '../../shared/ui';
 
 const { Text } = Typography;
 
@@ -226,33 +226,44 @@ export default function ControlPlaneAdminPage() {
       </Card>
       <Row gutter={[16, 16]}>
         <Col xs={24} md={6}>
-          <Card>
-            <Statistic title="Customers" value={renderOverviewValue(overview?.customers?.total)} />
-          </Card>
+          <KpiStatCard
+            width="100%"
+            height={112}
+            bodyPadding="12px"
+            titleMinHeight={40}
+            title="Customers"
+            value={renderOverviewValue(overview?.customers?.total)}
+          />
         </Col>
         <Col xs={24} md={6}>
-          <Card>
-            <Statistic
-              title="Active licenses"
-              value={renderOverviewValue(overview?.licenses?.active_non_revoked)}
-            />
-          </Card>
+          <KpiStatCard
+            width="100%"
+            height={112}
+            bodyPadding="12px"
+            titleMinHeight={40}
+            title="Active licenses"
+            value={renderOverviewValue(overview?.licenses?.active_non_revoked)}
+          />
         </Col>
         <Col xs={24} md={6}>
-          <Card>
-            <Statistic
-              title="Pending runtime review"
-              value={renderOverviewValue(overview?.runtime_queue?.pending_review)}
-            />
-          </Card>
+          <KpiStatCard
+            width="100%"
+            height={112}
+            bodyPadding="12px"
+            titleMinHeight={40}
+            title="Pending runtime review"
+            value={renderOverviewValue(overview?.runtime_queue?.pending_review)}
+          />
         </Col>
         <Col xs={24} md={6}>
-          <Card>
-            <Statistic
-              title="Unlicensed deployments"
-              value={renderOverviewValue(overview?.deployments?.unlicensed)}
-            />
-          </Card>
+          <KpiStatCard
+            width="100%"
+            height={112}
+            bodyPadding="12px"
+            titleMinHeight={40}
+            title="Unlicensed deployments"
+            value={renderOverviewValue(overview?.deployments?.unlicensed)}
+          />
         </Col>
       </Row>
 

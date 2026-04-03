@@ -8,7 +8,6 @@ import {
   Card,
   Row,
   Col,
-  Statistic,
   Typography,
   Space,
   Button,
@@ -51,6 +50,7 @@ import {
   CallsDurationChart,
 } from '../components/CallsCharts.jsx';
 import ChannelBrandIcon from '../components/channel/ChannelBrandIcon.jsx';
+import { KpiStatCard } from '../shared/ui';
 import dayjs from 'dayjs';
 import { t } from '../lib/i18n/index.js';
 
@@ -80,6 +80,12 @@ function CallsDashboard() {
   ]);
   const [period, setPeriod] = useState('week'); // week, month, year
   const [qaForm] = Form.useForm();
+  const fixedStatCardProps = {
+    width: '100%',
+    height: 112,
+    bodyPadding: '12px',
+    titleMinHeight: 40,
+  };
 
   useEffect(() => {
     loadData();
@@ -604,150 +610,150 @@ function CallsDashboard() {
       {/* Main Statistics */}
       <Row gutter={[16, 16]} style={{ marginBottom: 24 }}>
         <Col xs={24} sm={12} lg={6}>
-          <Card loading={loading}>
-            <Statistic
-              title={t('callsDashboardPage.stats.totalCalls')}
-              value={statistics?.total || 0}
-              prefix={<ChannelBrandIcon channel="telephony" size={16} />}
-              valueStyle={{ color: '#1890ff' }}
-            />
-          </Card>
+          <KpiStatCard
+            loading={loading}
+            {...fixedStatCardProps}
+            title={t('callsDashboardPage.stats.totalCalls')}
+            value={statistics?.total || 0}
+            prefix={<ChannelBrandIcon channel="telephony" size={16} />}
+            valueStyle={{ color: '#1890ff' }}
+          />
         </Col>
         <Col xs={24} sm={12} lg={6}>
-          <Card loading={loading}>
-            <Statistic
-              title={t('callsDashboardPage.stats.inbound')}
-              value={statistics?.inbound || 0}
-              prefix={<PhoneTwoTone twoToneColor="#52c41a" />}
-              valueStyle={{ color: '#52c41a' }}
-            />
-          </Card>
+          <KpiStatCard
+            loading={loading}
+            {...fixedStatCardProps}
+            title={t('callsDashboardPage.stats.inbound')}
+            value={statistics?.inbound || 0}
+            prefix={<PhoneTwoTone twoToneColor="#52c41a" />}
+            valueStyle={{ color: '#52c41a' }}
+          />
         </Col>
         <Col xs={24} sm={12} lg={6}>
-          <Card loading={loading}>
-            <Statistic
-              title={t('callsDashboardPage.stats.outbound')}
-              value={statistics?.outbound || 0}
-              prefix={<PhoneTwoTone twoToneColor="#1890ff" />}
-              valueStyle={{ color: '#1890ff' }}
-            />
-          </Card>
+          <KpiStatCard
+            loading={loading}
+            {...fixedStatCardProps}
+            title={t('callsDashboardPage.stats.outbound')}
+            value={statistics?.outbound || 0}
+            prefix={<PhoneTwoTone twoToneColor="#1890ff" />}
+            valueStyle={{ color: '#1890ff' }}
+          />
         </Col>
         <Col xs={24} sm={12} lg={6}>
-          <Card loading={loading}>
-            <Statistic
-              title={t('callsDashboardPage.stats.successRate')}
-              value={calculateSuccessRate()}
-              suffix="%"
-              prefix={<CheckCircleOutlined />}
-              valueStyle={{ color: '#52c41a' }}
-            />
-          </Card>
+          <KpiStatCard
+            loading={loading}
+            {...fixedStatCardProps}
+            title={t('callsDashboardPage.stats.successRate')}
+            value={calculateSuccessRate()}
+            suffix="%"
+            prefix={<CheckCircleOutlined />}
+            valueStyle={{ color: '#52c41a' }}
+          />
         </Col>
       </Row>
 
       {/* QA Summary */}
       <Row gutter={[16, 16]} style={{ marginBottom: 24 }}>
         <Col xs={24} sm={12} lg={6}>
-          <Card loading={loading}>
-            <Statistic
-              title="QA Pass Rate"
-              value={currentQaSummary?.pass_rate || 0}
-              suffix="%"
-              valueStyle={{ color: '#52c41a' }}
-            />
-          </Card>
+          <KpiStatCard
+            loading={loading}
+            {...fixedStatCardProps}
+            title="QA Pass Rate"
+            value={currentQaSummary?.pass_rate || 0}
+            suffix="%"
+            valueStyle={{ color: '#52c41a' }}
+          />
         </Col>
         <Col xs={24} sm={12} lg={6}>
-          <Card loading={loading}>
-            <Statistic
-              title="Avg Script Adherence"
-              value={currentQaSummary?.avg_script_adherence || 0}
-            />
-          </Card>
+          <KpiStatCard
+            loading={loading}
+            {...fixedStatCardProps}
+            title="Avg Script Adherence"
+            value={currentQaSummary?.avg_script_adherence || 0}
+          />
         </Col>
         <Col xs={24} sm={12} lg={6}>
-          <Card loading={loading}>
-            <Statistic
-              title="Avg Communication"
-              value={currentQaSummary?.avg_communication || 0}
-            />
-          </Card>
+          <KpiStatCard
+            loading={loading}
+            {...fixedStatCardProps}
+            title="Avg Communication"
+            value={currentQaSummary?.avg_communication || 0}
+          />
         </Col>
         <Col xs={24} sm={12} lg={6}>
-          <Card loading={loading}>
-            <Statistic
-              title="Avg Resolution Quality"
-              value={currentQaSummary?.avg_resolution_quality || 0}
-            />
-          </Card>
+          <KpiStatCard
+            loading={loading}
+            {...fixedStatCardProps}
+            title="Avg Resolution Quality"
+            value={currentQaSummary?.avg_resolution_quality || 0}
+          />
         </Col>
       </Row>
 
       {/* Contact Center KPI Economics */}
       <Row gutter={[16, 16]} style={{ marginBottom: 24 }}>
         <Col xs={24} sm={12} lg={6}>
-          <Card loading={loading}>
-            <Statistic
-              title="AHT"
-              value={formatSeconds(currentKpi?.aht_seconds || 0)}
-              prefix={<ClockCircleOutlined />}
-            />
-          </Card>
+          <KpiStatCard
+            loading={loading}
+            {...fixedStatCardProps}
+            title="AHT"
+            value={formatSeconds(currentKpi?.aht_seconds || 0)}
+            prefix={<ClockCircleOutlined />}
+          />
         </Col>
         <Col xs={24} sm={12} lg={6}>
-          <Card loading={loading}>
-            <Statistic
-              title="ASA"
-              value={formatSeconds(currentKpi?.asa_seconds || 0)}
-              prefix={<ClockCircleOutlined />}
-            />
-          </Card>
+          <KpiStatCard
+            loading={loading}
+            {...fixedStatCardProps}
+            title="ASA"
+            value={formatSeconds(currentKpi?.asa_seconds || 0)}
+            prefix={<ClockCircleOutlined />}
+          />
         </Col>
         <Col xs={24} sm={12} lg={6}>
-          <Card loading={loading}>
-            <Statistic
-              title="FCR"
-              value={currentKpi?.fcr_rate || 0}
-              suffix="%"
-              prefix={<CheckCircleOutlined />}
-              valueStyle={{ color: '#52c41a' }}
-            />
-          </Card>
+          <KpiStatCard
+            loading={loading}
+            {...fixedStatCardProps}
+            title="FCR"
+            value={currentKpi?.fcr_rate || 0}
+            suffix="%"
+            prefix={<CheckCircleOutlined />}
+            valueStyle={{ color: '#52c41a' }}
+          />
         </Col>
         <Col xs={24} sm={12} lg={6}>
-          <Card loading={loading}>
-            <Statistic
-              title="Abandon Rate"
-              value={currentKpi?.abandon_rate || 0}
-              suffix="%"
-              prefix={<CloseCircleOutlined />}
-              valueStyle={{ color: '#ff4d4f' }}
-            />
-          </Card>
+          <KpiStatCard
+            loading={loading}
+            {...fixedStatCardProps}
+            title="Abandon Rate"
+            value={currentKpi?.abandon_rate || 0}
+            suffix="%"
+            prefix={<CloseCircleOutlined />}
+            valueStyle={{ color: '#ff4d4f' }}
+          />
         </Col>
       </Row>
 
       <Row gutter={[16, 16]} style={{ marginBottom: 24 }}>
         <Col xs={24} sm={12} lg={8}>
-          <Card loading={loading}>
-            <Statistic
-              title="SLA Breach Rate"
-              value={currentKpi?.sla_breach_rate || 0}
-              suffix="%"
-              valueStyle={{ color: '#fa8c16' }}
-            />
-          </Card>
+          <KpiStatCard
+            loading={loading}
+            {...fixedStatCardProps}
+            title="SLA Breach Rate"
+            value={currentKpi?.sla_breach_rate || 0}
+            suffix="%"
+            valueStyle={{ color: '#fa8c16' }}
+          />
         </Col>
         <Col xs={24} sm={12} lg={8}>
-          <Card loading={loading}>
-            <Statistic
-              title="Answer Rate Delta vs Previous"
-              value={answerRateDelta ?? 0}
-              suffix="%"
-              valueStyle={{ color: Number(answerRateDelta || 0) >= 0 ? '#52c41a' : '#ff4d4f' }}
-            />
-          </Card>
+          <KpiStatCard
+            loading={loading}
+            {...fixedStatCardProps}
+            title="Answer Rate Delta vs Previous"
+            value={answerRateDelta ?? 0}
+            suffix="%"
+            valueStyle={{ color: Number(answerRateDelta || 0) >= 0 ? '#52c41a' : '#ff4d4f' }}
+          />
         </Col>
         <Col xs={24} sm={24} lg={8}>
           <Card loading={loading} title="Conversion by Direction">
@@ -763,42 +769,62 @@ function CallsDashboard() {
       {/* Secondary Statistics */}
       <Row gutter={[16, 16]} style={{ marginBottom: 24 }}>
         <Col xs={24} sm={12} lg={6}>
-          <Card loading={loading}>
-            <Statistic
-              title={t('callsDashboardPage.stats.completed')}
-              value={statistics?.completed ?? statistics?.answered ?? statistics?.connected ?? 0}
-              prefix={<CheckCircleOutlined />}
-              valueStyle={{ color: '#52c41a' }}
-            />
-          </Card>
+          <KpiStatCard
+            loading={loading}
+            width="100%"
+            height={112}
+            title={t('callsDashboardPage.stats.completed')}
+            value={statistics?.completed ?? statistics?.answered ?? statistics?.connected ?? 0}
+            prefix={<CheckCircleOutlined />}
+            valueStyle={{ color: '#52c41a' }}
+            bodyPadding="12px"
+            titleMinHeight={40}
+          />
         </Col>
         <Col xs={24} sm={12} lg={6}>
-          <Card loading={loading}>
-            <Statistic
-              title={t('callsDashboardPage.stats.missed')}
-              value={statistics?.missed ?? statistics?.missed_calls ?? statistics?.no_answer ?? 0}
-              prefix={<CloseCircleOutlined />}
-              valueStyle={{ color: '#ff4d4f' }}
-            />
-          </Card>
+          <KpiStatCard
+            loading={loading}
+            width="100%"
+            height={112}
+            title={t('callsDashboardPage.stats.missed')}
+            value={statistics?.missed ?? statistics?.missed_calls ?? statistics?.no_answer ?? 0}
+            prefix={<CloseCircleOutlined />}
+            valueStyle={{ color: '#ff4d4f' }}
+            bodyPadding="12px"
+            titleMinHeight={40}
+          />
         </Col>
         <Col xs={24} sm={12} lg={6}>
-          <Card loading={loading}>
-            <Statistic
-              title={t('callsDashboardPage.stats.totalDuration')}
-              value={statistics ? formatTotalDuration(statistics.totalDuration || statistics.total_duration || 0) : t('callsDashboardPage.duration.hoursMinutes', { hours: '0', minutes: '0' })}
-              prefix={<ClockCircleOutlined />}
-            />
-          </Card>
+          <KpiStatCard
+            loading={loading}
+            width="100%"
+            height={112}
+            title={t('callsDashboardPage.stats.totalDuration')}
+            value={
+              statistics
+                ? formatTotalDuration(statistics.totalDuration || statistics.total_duration || 0)
+                : t('callsDashboardPage.duration.hoursMinutes', { hours: '0', minutes: '0' })
+            }
+            prefix={<ClockCircleOutlined />}
+            bodyPadding="12px"
+            titleMinHeight={40}
+          />
         </Col>
         <Col xs={24} sm={12} lg={6}>
-          <Card loading={loading}>
-            <Statistic
-              title={t('callsDashboardPage.stats.averageDuration')}
-              value={statistics ? formatDuration(Math.round(statistics.averageDuration || statistics.average_duration || 0)) : '0:00'}
-              prefix={<ClockCircleOutlined />}
-            />
-          </Card>
+          <KpiStatCard
+            loading={loading}
+            width="100%"
+            height={112}
+            title={t('callsDashboardPage.stats.averageDuration')}
+            value={
+              statistics
+                ? formatDuration(Math.round(statistics.averageDuration || statistics.average_duration || 0))
+                : '0:00'
+            }
+            prefix={<ClockCircleOutlined />}
+            bodyPadding="12px"
+            titleMinHeight={40}
+          />
         </Col>
       </Row>
 
@@ -877,16 +903,33 @@ function CallsDashboard() {
           >
             <Row gutter={[16, 16]} style={{ marginBottom: 16 }}>
               <Col xs={24} sm={12} lg={6}>
-                <Statistic title="Total Runs" value={automationHealth?.summary?.total_runs || 0} />
+                <KpiStatCard
+                  {...fixedStatCardProps}
+                  title="Total Runs"
+                  value={automationHealth?.summary?.total_runs || 0}
+                />
               </Col>
               <Col xs={24} sm={12} lg={6}>
-                <Statistic title="Success Runs" value={automationHealth?.summary?.success_runs || 0} />
+                <KpiStatCard
+                  {...fixedStatCardProps}
+                  title="Success Runs"
+                  value={automationHealth?.summary?.success_runs || 0}
+                />
               </Col>
               <Col xs={24} sm={12} lg={6}>
-                <Statistic title="Failed Runs" value={automationHealth?.summary?.failed_runs || 0} />
+                <KpiStatCard
+                  {...fixedStatCardProps}
+                  title="Failed Runs"
+                  value={automationHealth?.summary?.failed_runs || 0}
+                />
               </Col>
               <Col xs={24} sm={12} lg={6}>
-                <Statistic title="Failure Rate" value={automationHealth?.summary?.failure_rate || 0} suffix="%" />
+                <KpiStatCard
+                  {...fixedStatCardProps}
+                  title="Failure Rate"
+                  value={automationHealth?.summary?.failure_rate || 0}
+                  suffix="%"
+                />
               </Col>
             </Row>
             <Table

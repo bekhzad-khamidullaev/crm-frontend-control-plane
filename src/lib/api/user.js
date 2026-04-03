@@ -57,6 +57,14 @@ export async function updateProfile(data) {
   return api.patch('/api/profiles/me/', { body: data });
 }
 
+export async function getTelephonyCredentials() {
+  return api.get('/api/profiles/me/telephony-credentials/');
+}
+
+export async function updateTelephonyCredentials(data) {
+  return api.patch('/api/profiles/me/telephony-credentials/', { body: data });
+}
+
 /**
  * Upload user avatar
  * Uses /api/profiles/me/ with avatar field

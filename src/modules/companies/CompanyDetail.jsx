@@ -12,7 +12,6 @@ import {
   Avatar,
   Row,
   Col,
-  Statistic,
   List,
   Table,
   Empty,
@@ -51,6 +50,7 @@ import { canWrite } from '../../lib/rbac.js';
 import dayjs from 'dayjs';
 import { getLocale } from '../../lib/i18n';
 import { getClientTypeLabel } from '../../features/reference/lib/clientTypeLabel';
+import { KpiStatCard } from '../../shared/ui';
 
 const { Title, Text } = Typography;
 
@@ -334,35 +334,41 @@ function CompanyDetail({ id }) {
 
           <Row gutter={16}>
             <Col xs={24} md={6}>
-              <Card>
-                <Statistic
-                  title="Контактов"
-                  value={contactsCount}
-                  prefix={<TeamOutlined />}
-                  valueStyle={{ color: '#3f8600' }}
-                />
-              </Card>
+              <KpiStatCard
+                width="100%"
+                height={112}
+                bodyPadding="12px"
+                titleMinHeight={40}
+                title="Контактов"
+                value={contactsCount}
+                prefix={<TeamOutlined />}
+                valueStyle={{ color: '#3f8600' }}
+              />
             </Col>
             <Col xs={24} md={6}>
-              <Card>
-                <Statistic
-                  title="Активных сделок"
-                  value={dealsCount}
-                  prefix={<RiseOutlined />}
-                  valueStyle={{ color: '#1890ff' }}
-                />
-              </Card>
+              <KpiStatCard
+                width="100%"
+                height={112}
+                bodyPadding="12px"
+                titleMinHeight={40}
+                title="Активных сделок"
+                value={dealsCount}
+                prefix={<RiseOutlined />}
+                valueStyle={{ color: '#1890ff' }}
+              />
             </Col>
             <Col xs={24} md={6}>
-              <Card>
-                <Statistic
-                  title="Сумма сделок"
-                  value={dealsAmount}
-                  prefix={<DollarOutlined />}
-                  suffix="₽"
-                  valueStyle={{ color: '#cf1322' }}
-                />
-              </Card>
+              <KpiStatCard
+                width="100%"
+                height={112}
+                bodyPadding="12px"
+                titleMinHeight={40}
+                title="Сумма сделок"
+                value={dealsAmount}
+                prefix={<DollarOutlined />}
+                suffix="₽"
+                valueStyle={{ color: '#cf1322' }}
+              />
             </Col>
           </Row>
         </>

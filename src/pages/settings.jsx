@@ -48,6 +48,7 @@ import {
 } from '../lib/api/compliance.js';
 import { formatValueForUi, isPlainObject as isPlainObjectValue } from '../lib/utils/value-display.js';
 import { t } from '../lib/i18n/index.js';
+import { KpiStatCard } from '../shared/ui';
 
 const { Text } = Typography;
 
@@ -343,10 +344,21 @@ function ComplianceSummary({ report }) {
         <Row gutter={[16, 16]}>
           {scalarEntries.map(([key, formatted]) => (
             <Col xs={24} md={8} key={key}>
-              <Card size="small">
-                <Statistic title={prettifyKey(key)} value={formatted.kind === 'number' ? formatted.number : undefined} />
-                {formatted.kind !== 'number' ? <Text strong>{formatted.text}</Text> : null}
-              </Card>
+              {formatted.kind === 'number' ? (
+                <KpiStatCard
+                  width="100%"
+                  height={112}
+                  bodyPadding="12px"
+                  titleMinHeight={40}
+                  title={prettifyKey(key)}
+                  value={formatted.number}
+                />
+              ) : (
+                <Card size="small">
+                  <Statistic title={prettifyKey(key)} value={undefined} />
+                  <Text strong>{formatted.text}</Text>
+                </Card>
+              )}
             </Col>
           ))}
         </Row>

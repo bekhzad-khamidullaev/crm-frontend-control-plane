@@ -912,12 +912,34 @@ function Dashboard() {
   }, [filteredActivity]);
 
   const funnelRows = useMemo(() => {
-    return safeArray(funnel).map((item, index) => ({
-      key: `${item?.id || item?.stage || index}`,
-      stage: readField(item, ['stage_name', 'stage', 'name', 'label'], `${tr('dashboardPage.stage', 'Bosqich')} ${index + 1}`),
-      count: parseFiniteNumber(item?.value ?? item?.count ?? item?.total, 0),
-      amount: parseFiniteNumber(item?.amount ?? item?.sum ?? item?.revenue, 0),
-    }));
+    const grouped = new Map();
+
+    safeArray(funnel).forEach((item, index) => {
+      const stageName = readField(
+        item,
+        ['stage_name', 'stage', 'name', 'label'],
+        `${tr('dashboardPage.stage', 'Bosqich')} ${index + 1}`,
+      );
+      const normalizedStage = String(stageName || '').trim();
+      const stageKey = normalizedStage.toLocaleLowerCase() || `__stage_${index}`;
+      const count = parseFiniteNumber(item?.value ?? item?.count ?? item?.total, 0);
+      const amount = parseFiniteNumber(item?.amount ?? item?.sum ?? item?.revenue, 0);
+
+      if (!grouped.has(stageKey)) {
+        grouped.set(stageKey, {
+          key: stageKey,
+          stage: normalizedStage || stageName,
+          count: 0,
+          amount: 0,
+        });
+      }
+
+      const row = grouped.get(stageKey);
+      row.count += count;
+      row.amount += amount;
+    });
+
+    return Array.from(grouped.values());
   }, [funnel]);
 
   const kpiCatalogRows = useMemo(() => [
@@ -1058,6 +1080,21 @@ function Dashboard() {
     };
   }, [derivedMetrics, period, predictionSeries]);
 
+  const compactMetricCardStyle = useMemo(() => ({
+    borderRadius: token.borderRadius,
+    border: `1px solid ${token.colorBorderSecondary}`,
+    background: token.colorBgContainer,
+    minHeight: 132,
+  }), [token.borderRadius, token.colorBgContainer, token.colorBorderSecondary]);
+
+  const compactMetricCardBody = useMemo(() => ({
+    padding: 14,
+    display: 'flex',
+    flexDirection: 'column',
+    justifyContent: 'space-between',
+    minHeight: 132,
+  }), []);
+
   const dashboardTabItems = useMemo(() => ([
     {
       key: 'sales',
@@ -1065,7 +1102,7 @@ function Dashboard() {
       children: (
         <Row gutter={[12, 12]}>
           <Col xs={24} md={8}>
-            <Card size="small">
+            <Card size="small" style={compactMetricCardStyle} styles={{ body: compactMetricCardBody }}>
               <Statistic
                 title={tr('dashboardPage.dashboards.planFact', 'План/факт закрытия')}
                 value={Math.max(0, Math.min(100, derivedMetrics.forecastCoveragePercent))}
@@ -1080,7 +1117,7 @@ function Dashboard() {
             </Card>
           </Col>
           <Col xs={24} md={8}>
-            <Card size="small">
+            <Card size="small" style={compactMetricCardStyle} styles={{ body: compactMetricCardBody }}>
               <Statistic
                 title={tr('dashboardPage.dashboards.avgDealSize', 'Средний размер сделки')}
                 value={derivedMetrics.averageDealSize}
@@ -1089,7 +1126,7 @@ function Dashboard() {
             </Card>
           </Col>
           <Col xs={24} md={8}>
-            <Card size="small">
+            <Card size="small" style={compactMetricCardStyle} styles={{ body: compactMetricCardBody }}>
               <Statistic
                 title={tr('dashboardPage.dashboards.winRate', 'Win rate')}
                 value={derivedMetrics.winRatePercent}
@@ -1219,22 +1256,22 @@ function Dashboard() {
       children: (
         <Row gutter={[12, 12]}>
           <Col xs={24} md={6}>
-            <Card size="small">
+            <Card size="small" style={compactMetricCardStyle} styles={{ body: compactMetricCardBody }}>
               <Statistic title={tr('dashboardPage.activity.calls', 'Звонки')} value={activityStats.byType.call} />
             </Card>
           </Col>
           <Col xs={24} md={6}>
-            <Card size="small">
+            <Card size="small" style={compactMetricCardStyle} styles={{ body: compactMetricCardBody }}>
               <Statistic title={tr('dashboardPage.activity.messages', 'Сообщения')} value={activityStats.byType.message} />
             </Card>
           </Col>
           <Col xs={24} md={6}>
-            <Card size="small">
+            <Card size="small" style={compactMetricCardStyle} styles={{ body: compactMetricCardBody }}>
               <Statistic title={tr('dashboardPage.activity.meetings', 'Встречи')} value={activityStats.byType.meeting} />
             </Card>
           </Col>
           <Col xs={24} md={6}>
-            <Card size="small">
+            <Card size="small" style={compactMetricCardStyle} styles={{ body: compactMetricCardBody }}>
               <Statistic
                 title={tr('dashboardPage.activity.firstResponse', 'Средний первый ответ')}
                 value={Number.isFinite(activityStats.firstResponseAvg) ? activityStats.firstResponseAvg : 0}
@@ -1499,7 +1536,7 @@ function Dashboard() {
       >
         <Row gutter={[12, 12]}>
           <Col xs={24} md={8}>
-            <Card size="small">
+            <Card size="small" style={compactMetricCardStyle} styles={{ body: compactMetricCardBody }}>
               <Statistic
                 title={tr('dashboardPage.insights.planFact', 'План/факт закрытия периода')}
                 value={Math.max(0, Math.min(100, derivedMetrics.forecastCoveragePercent))}
@@ -1514,7 +1551,7 @@ function Dashboard() {
             </Card>
           </Col>
           <Col xs={24} md={8}>
-            <Card size="small">
+            <Card size="small" style={compactMetricCardStyle} styles={{ body: compactMetricCardBody }}>
               <Statistic
                 title={tr('dashboardPage.insights.avgDealSize', 'Средний чек по открытым сделкам')}
                 value={derivedMetrics.averageDealSize}
@@ -1523,7 +1560,7 @@ function Dashboard() {
             </Card>
           </Col>
           <Col xs={24} md={8}>
-            <Card size="small">
+            <Card size="small" style={compactMetricCardStyle} styles={{ body: compactMetricCardBody }}>
               <Statistic
                 title={tr('dashboardPage.insights.winRate', 'Доля выигранных сделок')}
                 value={derivedMetrics.winRatePercent}

@@ -35,6 +35,8 @@ import {
 import {
   getProfile,
   updateProfile,
+  getTelephonyCredentials,
+  updateTelephonyCredentials,
   uploadAvatar,
   deleteAvatar,
   changePassword,
@@ -98,6 +100,7 @@ function ProfilePage() {
   const [avatarUrl, setAvatarUrl] = useState(null);
   const [activity, setActivity] = useState([]);
   const [callHistory, setCallHistory] = useState([]);
+  const [telephonyCredentials, setTelephonyCredentials] = useState(null);
 
   useEffect(() => {
     loadProfile();
@@ -112,7 +115,28 @@ function ProfilePage() {
       const data = await getProfile();
       setProfile(data);
       setAvatarUrl(getAvatarUrl(data));
-      form.setFieldsValue(data);
+      form.setFieldsValue({
+        ...data,
+        telephony_ws_uri: data?.jssip_ws_uri || '',
+        telephony_sip_uri: data?.jssip_sip_uri || '',
+      });
+      try {
+        const creds = await getTelephonyCredentials();
+        setTelephonyCredentials(creds);
+        form.setFieldsValue({
+          telephony_extension: creds?.extension || '',
+          telephony_login: creds?.login || '',
+          telephony_password: creds?.password || '',
+        });
+      } catch (telephonyError) {
+        setTelephonyCredentials(null);
+        form.setFieldsValue({
+          telephony_extension: '',
+          telephony_login: '',
+          telephony_password: '',
+        });
+        console.warn('User SIP credentials are not configured yet:', telephonyError);
+      }
     } catch (error) {
       console.error('Error loading profile:', error);
       message.error(tr('profilePage.messages.loadError', 'Failed to load profile'));
@@ -140,11 +164,29 @@ function ProfilePage() {
   const handleProfileUpdate = async (values) => {
     setLoading(true);
     try {
-      const payload = {
-        pbx_number: values.pbx_number,
+      const profilePayload = {
         jssip_display_name: values.jssip_display_name,
       };
-      await updateProfile(payload);
+      await updateProfile(profilePayload);
+      const nextExtension = String(values.telephony_extension || '').trim();
+      const nextLogin = String(values.telephony_login || '').trim();
+      const nextPassword = String(values.telephony_password || '').trim();
+      const prevExtension = String(telephonyCredentials?.extension || '').trim();
+      const prevLogin = String(telephonyCredentials?.login || '').trim();
+      const prevPassword = String(telephonyCredentials?.password || '').trim();
+      const telephonyPayload = {};
+      if (nextExtension && (nextExtension !== prevExtension || !telephonyCredentials)) {
+        telephonyPayload.extension = nextExtension;
+      }
+      if (nextLogin && (nextLogin !== prevLogin || !telephonyCredentials)) {
+        telephonyPayload.login = nextLogin;
+      }
+      if (nextPassword && (nextPassword !== prevPassword || !telephonyCredentials)) {
+        telephonyPayload.password = nextPassword;
+      }
+      if (Object.keys(telephonyPayload).length > 0) {
+        await updateTelephonyCredentials(telephonyPayload);
+      }
       message.success(tr('profilePage.messages.profileUpdated', 'Profile updated'));
       loadProfile();
     } catch (error) {
@@ -352,13 +394,99 @@ function ProfilePage() {
                 description={tr('profilePage.telephony.agentSettingsDescription', 'Only personal call settings are configured here. System SIP/WebRTC and routing are managed by admin in Integrations -> Telephony.')}
               />
 
+              {!telephonyCredentials && (
+                <Alert
+                  type="warning"
+                  showIcon
+                  style={{ marginBottom: 16 }}
+                  message={tr('profilePage.telephony.notProvisionedTitle', 'Telephony credentials are not provisioned')}
+                  description={tr('profilePage.telephony.notProvisionedDescription', 'Ask CRM administrator to create your internal extension in Telephony integration module.')}
+                />
+              )}
+
+              {!String(profile?.jssip_ws_uri || '').trim() && (
+                <Alert
+                  type="warning"
+                  showIcon
+                  style={{ marginBottom: 16 }}
+                  message={tr('profilePage.telephony.missingWsTitle', 'WSS SIP transport is not configured')}
+                  description={tr('profilePage.telephony.missingWsDescription', 'Administrator must configure WebSocket SIP URI (wss://...) in Integrations -> Telephony.')}
+                />
+              )}
+
+              {!String(profile?.jssip_sip_uri || '').trim() && (
+                <Alert
+                  type="warning"
+                  showIcon
+                  style={{ marginBottom: 16 }}
+                  message={tr('profilePage.telephony.missingSipUriTitle', 'SIP URI is not configured')}
+                  description={tr('profilePage.telephony.missingSipUriDescription', 'Administrator must provision SIP URI for your internal extension in Telephony integration module.')}
+                />
+              )}
+
               <Form.Item 
-                label={tr('profilePage.telephony.pbxNumber', 'Internal number (PBX)')} 
-                name="pbx_number"
-                tooltip={tr('profilePage.telephony.pbxTooltip', 'Your internal phone number in the system')}
-                extra={tr('profilePage.telephony.pbxExtra', 'Example: 101, 7477. Main number for internal calls.')}
+                label={tr('profilePage.telephony.internalNumber', 'Internal number')}
+                name="telephony_extension"
+                extra={tr('profilePage.telephony.internalNumberExtra', 'Assigned by CRM admin and PBX integration module.')}
+                rules={[
+                  {
+                    pattern: /^[0-9*#]{2,10}$/,
+                    message: tr('profilePage.validation.extensionFormat', 'Use 2-10 symbols: digits, *, #'),
+                  },
+                ]}
               >
-                <Input prefix={<PhoneOutlined />} placeholder={tr('profilePage.placeholders.pbxNumber', '1001')} />
+                <Input prefix={<PhoneOutlined />} />
+              </Form.Item>
+
+              <Form.Item 
+                label={tr('profilePage.telephony.login', 'SIP login')}
+                name="telephony_login"
+                extra={tr('profilePage.telephony.loginExtra', 'Usually equals internal extension for PBX auth.')}
+                rules={[
+                  {
+                    pattern: /^[0-9*#]{2,10}$/,
+                    message: tr('profilePage.validation.extensionFormat', 'Use 2-10 symbols: digits, *, #'),
+                  },
+                ]}
+              >
+                <Input prefix={<UserOutlined />} />
+              </Form.Item>
+
+              <Form.Item 
+                label={tr('profilePage.telephony.password', 'SIP password')}
+                name="telephony_password"
+                tooltip={tr('profilePage.telephony.passwordTooltip', 'Used by CRM softphone (WSS/SIP registration)')}
+                rules={[
+                  {
+                    validator: (_, value) => {
+                      if (!value) return Promise.resolve();
+                      if (String(value).length < 8) {
+                        return Promise.reject(new Error(tr('profilePage.validation.passwordMin', 'Password must be at least 8 characters')));
+                      }
+                      return Promise.resolve();
+                    },
+                  },
+                ]}
+              >
+                <Input.Password prefix={<LockOutlined />} />
+              </Form.Item>
+
+              <Form.Item
+                label={tr('profilePage.telephony.wsUri', 'SIP WebSocket URI (WSS)')}
+                name="telephony_ws_uri"
+                tooltip={tr('profilePage.telephony.wsUriTooltip', 'Used by CRM softphone transport')}
+                extra={tr('profilePage.telephony.wsUriExtra', 'System-level setting managed in Integrations -> Telephony')}
+              >
+                <Input disabled />
+              </Form.Item>
+
+              <Form.Item
+                label={tr('profilePage.telephony.sipUri', 'SIP URI')}
+                name="telephony_sip_uri"
+                tooltip={tr('profilePage.telephony.sipUriTooltip', 'SIP identity used for registration')}
+                extra={tr('profilePage.telephony.sipUriExtra', 'Provisioned from your internal extension in Telephony integration')}
+              >
+                <Input disabled />
               </Form.Item>
 
               <Form.Item 

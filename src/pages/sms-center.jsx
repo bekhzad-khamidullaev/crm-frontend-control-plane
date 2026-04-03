@@ -1,7 +1,8 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { Tabs, Card, Table, Form, Input, Button, Switch, message, Select, Row, Col, Statistic, Tag, Empty, Descriptions } from 'antd';
+import { Tabs, Card, Table, Form, Input, Button, Switch, message, Select, Row, Col, Tag, Empty, Descriptions } from 'antd';
 import { t } from '../lib/i18n/index.js';
 import smsApi from '../lib/api/sms.js';
+import { KpiStatCard } from '../shared/ui';
 
 const { TextArea } = Input;
 
@@ -149,10 +150,18 @@ function StatusTab() {
         <Row gutter={[16, 16]}>
           {scalarRows.map((row) => (
             <Col xs={24} md={8} key={row.key}>
-              <Card size="small">
-                {typeof row.value === 'number' ? (
-                  <Statistic title={row.label} value={row.value} />
-                ) : typeof row.value === 'boolean' ? (
+              {typeof row.value === 'number' ? (
+                <KpiStatCard
+                  width="100%"
+                  height={112}
+                  bodyPadding="12px"
+                  titleMinHeight={40}
+                  title={row.label}
+                  value={row.value}
+                />
+              ) : (
+                <Card size="small">
+                {typeof row.value === 'boolean' ? (
                   <>
                     <div style={{ marginBottom: 8, color: '#71717a' }}>{row.label}</div>
                     <Tag color={row.value ? 'green' : 'default'}>{row.value ? t('smsCenterPage.common.yes') : t('smsCenterPage.common.no')}</Tag>
@@ -163,7 +172,8 @@ function StatusTab() {
                     <strong>{String(row.value ?? '-')}</strong>
                   </>
                 )}
-              </Card>
+                </Card>
+              )}
             </Col>
           ))}
           {collectionRows.map((row) => (

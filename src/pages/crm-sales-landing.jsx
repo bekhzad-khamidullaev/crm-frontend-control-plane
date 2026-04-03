@@ -1,6 +1,7 @@
 import { App, Button, Card, Col, Collapse, Form, Input, Row, Space, Statistic, Tag, Typography } from 'antd';
 import { useMemo, useState } from 'react';
 import { useTheme } from '../lib/hooks/useTheme.js';
+import { KpiStatCard } from '../shared/ui';
 
 const { Title, Text, Paragraph } = Typography;
 
@@ -208,10 +209,61 @@ export default function CrmSalesLandingPage() {
         </Card>
 
         <Row gutter={[14, 14]} style={{ marginBottom: 12 }}>
-          <Col xs={12} md={6}><Card className="crm-sales-reveal" style={{ borderRadius: 14, background: ui.cardBg, borderColor: ui.cardBorder, boxShadow: ui.sectionShadow }}><Statistic title="Средний рост конверсии" value={27} suffix="%" /></Card></Col>
-          <Col xs={12} md={6}><Card className="crm-sales-reveal" style={{ borderRadius: 14, background: ui.cardBg, borderColor: ui.cardBorder, boxShadow: ui.sectionShadow }}><Statistic title="Скорость сделки" value={34} suffix="%" /></Card></Col>
-          <Col xs={12} md={6}><Card className="crm-sales-reveal" style={{ borderRadius: 14, background: ui.cardBg, borderColor: ui.cardBorder, boxShadow: ui.sectionShadow }}><Statistic title="Время запуска" value={3} suffix="дня" /></Card></Col>
-          <Col xs={12} md={6}><Card className="crm-sales-reveal" style={{ borderRadius: 14, background: ui.cardBg, borderColor: ui.cardBorder, boxShadow: ui.sectionShadow }}><Statistic title="Поддержка" value="24/7" /></Card></Col>
+          <Col xs={12} md={6}>
+            <KpiStatCard
+              className="crm-sales-reveal"
+              width="100%"
+              height={112}
+              borderRadius={14}
+              bodyPadding="12px"
+              titleMinHeight={40}
+              title="Средний рост конверсии"
+              value={27}
+              suffix="%"
+              cardStyle={{ background: ui.cardBg, borderColor: ui.cardBorder, boxShadow: ui.sectionShadow }}
+            />
+          </Col>
+          <Col xs={12} md={6}>
+            <KpiStatCard
+              className="crm-sales-reveal"
+              width="100%"
+              height={112}
+              borderRadius={14}
+              bodyPadding="12px"
+              titleMinHeight={40}
+              title="Скорость сделки"
+              value={34}
+              suffix="%"
+              cardStyle={{ background: ui.cardBg, borderColor: ui.cardBorder, boxShadow: ui.sectionShadow }}
+            />
+          </Col>
+          <Col xs={12} md={6}>
+            <KpiStatCard
+              className="crm-sales-reveal"
+              width="100%"
+              height={112}
+              borderRadius={14}
+              bodyPadding="12px"
+              titleMinHeight={40}
+              title="Время запуска"
+              value={3}
+              suffix="дня"
+              cardStyle={{ background: ui.cardBg, borderColor: ui.cardBorder, boxShadow: ui.sectionShadow }}
+            />
+          </Col>
+          <Col xs={12} md={6}>
+            <KpiStatCard
+              className="crm-sales-reveal"
+              width="100%"
+              height={112}
+              borderRadius={14}
+              bodyPadding="12px"
+              titleMinHeight={40}
+              title="Поддержка"
+              value="24/7"
+              cardStyle={{ background: ui.cardBg, borderColor: ui.cardBorder, boxShadow: ui.sectionShadow }}
+            />
+          </Col>
         </Row>
 
         <Card className="crm-sales-reveal" title="Почему Enterprise CRM дает результат" style={{ borderRadius: 16, background: ui.cardBg, borderColor: ui.cardBorder, marginBottom: 16, boxShadow: ui.sectionShadow }}>

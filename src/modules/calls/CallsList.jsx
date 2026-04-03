@@ -22,7 +22,6 @@ import {
   Modal,
   Select,
   Space,
-  Statistic,
   Table,
   Tag,
   Typography,
@@ -33,6 +32,7 @@ import CallButton from '../../components/CallButton.jsx';
 import ChannelBrandIcon from '../../components/channel/ChannelBrandIcon.jsx';
 import { t } from '../../lib/i18n';
 import { addCallNote, getCallStatistics, getVoipCallLog, getVoipCallLogs } from '../../lib/api/calls.js';
+import { KpiStatCard } from '../../shared/ui';
 
 const { RangePicker } = DatePicker;
 const { Search } = Input;
@@ -305,18 +305,30 @@ function CallsList() {
 
         {stats ? (
           <Space wrap size={10}>
-            <Card size="small" bodyStyle={{ padding: '10px 14px' }} style={{ width: 112, borderRadius: 14 }}>
-              <Statistic title={tr('callsList.stats.total', 'Total')} value={stats.total} />
-            </Card>
-            <Card size="small" bodyStyle={{ padding: '10px 14px' }} style={{ width: 126, borderRadius: 14 }}>
-              <Statistic title={tr('callsList.stats.answered', 'Answered')} value={stats.answered} />
-            </Card>
-            <Card size="small" bodyStyle={{ padding: '10px 14px' }} style={{ width: 128, borderRadius: 14 }}>
-              <Statistic title={tr('callsList.stats.missed', 'Missed')} value={stats.missed} />
-            </Card>
-            <Card size="small" bodyStyle={{ padding: '10px 14px' }} style={{ width: 186, borderRadius: 14 }}>
-              <Statistic title={tr('callsList.stats.durationSec', 'Duration, sec')} value={stats.duration} />
-            </Card>
+            <KpiStatCard
+              title={tr('callsList.stats.total', 'Total')}
+              value={stats.total}
+              borderRadius={14}
+              bodyPadding="10px 14px"
+            />
+            <KpiStatCard
+              title={tr('callsList.stats.answered', 'Answered')}
+              value={stats.answered}
+              borderRadius={14}
+              bodyPadding="10px 14px"
+            />
+            <KpiStatCard
+              title={tr('callsList.stats.missed', 'Missed')}
+              value={stats.missed}
+              borderRadius={14}
+              bodyPadding="10px 14px"
+            />
+            <KpiStatCard
+              title={tr('callsList.stats.durationSec', 'Duration, sec')}
+              value={stats.duration}
+              borderRadius={14}
+              bodyPadding="10px 14px"
+            />
           </Space>
         ) : null}
 

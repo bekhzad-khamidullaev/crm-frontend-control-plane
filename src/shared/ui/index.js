@@ -11,6 +11,7 @@ export { EntityListPageShell } from './EntityListPageShell.tsx';
 export { EntityListToolbar } from './EntityListToolbar.tsx';
 export { PageHeader } from './PageHeader.tsx';
 export { PhoneInput } from './PhoneInput.tsx';
+export { KpiStatCard } from './KpiStatCard.tsx';
 export { StatusTag } from './StatusTag.tsx';
 export { compactFilterChips } from './filterChips.ts';
 

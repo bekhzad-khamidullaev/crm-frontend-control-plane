@@ -628,16 +628,7 @@ export default function QueueSection({ onMutated }) {
     setArtifactLoading(false);
   };
 
-  const artifactPayloadText = JSON.stringify(artifactData?.payload || {}, null, 2);
   const artifactBundleText = JSON.stringify(artifactData?.bundle || {}, null, 2);
-  const artifactObjectText = JSON.stringify(
-    artifactData?.artifact || {
-      payload: artifactData?.payload || {},
-      signature: artifactData?.signature || "",
-    },
-    null,
-    2
-  );
 
   return (
     <Space direction="vertical" size="middle" style={{ width: "100%" }}>
@@ -649,7 +640,7 @@ export default function QueueSection({ onMutated }) {
           <Space direction="vertical" size={0}>
             <Text>1) Runtime sends request -&gt; status PENDING_REVIEW</Text>
             <Text>2) Operator approves/rejects request in queue</Text>
-            <Text>3) Runtime pulls signed artifact and installs it</Text>
+            <Text>3) Operator exports signed .licb bundle for offline install (or runtime auto-pulls after approval)</Text>
             <Text>4) Reissue/revoke is performed from issued licenses list</Text>
           </Space>
         }
@@ -738,6 +729,9 @@ export default function QueueSection({ onMutated }) {
                     />
                     <Button type="primary" loading={Boolean(assignLoading[row.id])} onClick={() => onAssign(row.id)}>
                       Assign
+                    </Button>
+                    <Button onClick={() => openAssignWizard("deployment", row)}>
+                      Wizard
                     </Button>
                   </Space>
                 );
@@ -881,6 +875,9 @@ export default function QueueSection({ onMutated }) {
                 const showReapprove = ttlMeta?.level === "warning" || ttlMeta?.level === "expired";
                 return (
                   <Space wrap>
+                    <Button onClick={() => openAssignWizard("runtime_request", row)}>
+                      Wizard
+                    </Button>
                     <Select
                       style={{ width: 220 }}
                       placeholder="Deployment"
@@ -954,8 +951,8 @@ export default function QueueSection({ onMutated }) {
           showIcon
           type="info"
           style={{ marginBottom: 12 }}
-          message="How to provide signature to runtime team"
-          description="Open any issued license row and click Show artifact. Copy Signature (or full artifact JSON) and pass it to the runtime install form."
+          message="How to deliver license to runtime"
+          description="Open issued license, download signed .licb bundle, and send this file to runtime team for upload in runtime wizard."
         />
         {issuedError ? (
           <Alert
@@ -1008,23 +1005,6 @@ export default function QueueSection({ onMutated }) {
               render: (_, row) => (
                 <Space wrap>
                   <Button onClick={() => onOpenArtifact(row)}>Show artifact</Button>
-                  <Button
-                    onClick={() =>
-                      copyToClipboard(
-                        JSON.stringify(
-                          {
-                            payload: row?.payload_json || {},
-                            signature: row?.signature || "",
-                          },
-                          null,
-                          2
-                        ),
-                        "Artifact JSON copied"
-                      )
-                    }
-                  >
-                    Copy artifact
-                  </Button>
                   <Button danger disabled={Boolean(row?.is_revoked)} onClick={() => openRevoke(row)}>
                     Revoke
                   </Button>
@@ -1055,6 +1035,103 @@ export default function QueueSection({ onMutated }) {
         </Form>
       </Modal>
       <Modal
+        title="License assignment wizard"
+        open={wizardOpen}
+        onCancel={closeAssignWizard}
+        onOk={runAssignWizard}
+        okText="Assign and continue"
+        confirmLoading={wizardSubmitting}
+      >
+        <Space direction="vertical" size="middle" style={{ width: "100%" }}>
+          <Steps
+            size="small"
+            direction="vertical"
+            current={wizardResult ? 2 : 1}
+            items={[
+              {
+                title: "Select deployment",
+                description:
+                  wizardMode === "runtime_request"
+                    ? "Bind runtime request to deployment."
+                    : "Deployment is preselected from unlicensed list.",
+              },
+              {
+                title: "Select tariff plan",
+                description: "Choose active subscription for selected deployment.",
+              },
+              {
+                title: "Apply assignment",
+                description:
+                  wizardMode === "runtime_request"
+                    ? "Request will be approved with selected binding."
+                    : "License will be issued for deployment immediately.",
+              },
+              {
+                title: "Binding policy",
+                description: "Issued license is cryptographically bound to runtime domain and server hardware fingerprint.",
+              },
+            ]}
+          />
+          <Descriptions size="small" column={1} colon={false}>
+            <Descriptions.Item label="Flow source">
+              {wizardMode === "runtime_request" ? "Runtime request" : "New deployment"}
+            </Descriptions.Item>
+            <Descriptions.Item label="Instance">
+              <Text code>{wizardRow?.instance_id || "-"}</Text>
+            </Descriptions.Item>
+          </Descriptions>
+          <Select
+            style={{ width: "100%" }}
+            placeholder="Deployment"
+            value={wizardDeploymentId}
+            options={(() => {
+              if (wizardMode === "runtime_request") {
+                const options = getDeploymentOptionsForRequest(wizardRow, allDeployments);
+                if (options.length) return options;
+                return (deploymentOptionsByInstance[wizardRow?.instance_id] || []);
+              }
+              return [
+                {
+                  label: `${wizardRow?.instance_id || "-"} (${wizardRow?.environment || "-"})`,
+                  value: wizardRow?.id,
+                },
+              ];
+            })()}
+            onChange={(value) => {
+              setWizardDeploymentId(value);
+              setWizardSubscriptionId(undefined);
+            }}
+          />
+          <Select
+            style={{ width: "100%" }}
+            placeholder="Subscription (tariff plan)"
+            value={wizardSubscriptionId}
+            options={allSubscriptions
+              .filter((sub) => {
+                const dep = allDeployments.find((item) => item.id === wizardDeploymentId);
+                return dep ? sub.customer === dep.customer : true;
+              })
+              .map((sub) => ({
+                label: `${sub.plan_code || sub.plan} • ${sub.status} • ${formatDateTime(sub.valid_to)}`,
+                value: sub.id,
+              }))}
+            onChange={(value) => setWizardSubscriptionId(value)}
+          />
+          {wizardResult ? (
+            <Alert
+              showIcon
+              type="success"
+              message="Assignment completed"
+              description={
+                wizardResult.mode === "deployment"
+                  ? `License ${wizardResult.licenseId || "-"} issued${wizardResult.planCode ? ` for ${wizardResult.planCode}` : ""}.`
+                  : `Request #${wizardResult.requestId || "-"} approved and waiting runtime install.`
+              }
+            />
+          ) : null}
+        </Space>
+      </Modal>
+      <Modal
         title="License artifact"
         open={artifactOpen}
         onCancel={closeArtifactModal}
@@ -1072,17 +1149,17 @@ export default function QueueSection({ onMutated }) {
           <Button
             key="copy-artifact"
             type="primary"
-            disabled={artifactLoading || !artifactData}
-            onClick={() => copyToClipboard(artifactObjectText, "Artifact copied")}
+            disabled={artifactLoading || !artifactData?.bundle}
+            onClick={() => copyToClipboard(artifactBundleText, "Bundle copied")}
           >
-            Copy artifact JSON
+            Copy bundle
           </Button>,
           <Button
             key="download-artifact"
             disabled={artifactLoading || !artifactData}
             onClick={onDownloadArtifact}
           >
-            Download artifact.json
+            Download .licb bundle
           </Button>,
         ]}
         width={860}
@@ -1104,31 +1181,23 @@ export default function QueueSection({ onMutated }) {
             message="Where to use this"
             description={
               artifactData?.runtime_install_help ||
-              "In runtime CRM -> License page -> Install signed artifact. Paste full artifact JSON or paste payload and signature separately."
+              "In runtime CRM -> License page -> upload .licb bundle and complete wizard."
             }
           />
           <div>
-            <Text strong>Signature</Text>
+            <Text strong>License bundle (.licb content)</Text>
+            <Input.TextArea
+              readOnly
+              autoSize={{ minRows: 6, maxRows: 16 }}
+              value={artifactLoading ? "Loading..." : artifactBundleText}
+            />
+          </div>
+          <div>
+            <Text strong>Support data: signature</Text>
             <Input.TextArea
               readOnly
               autoSize={{ minRows: 3, maxRows: 6 }}
               value={artifactLoading ? "Loading..." : artifactData?.signature || ""}
-            />
-          </div>
-          <div>
-            <Text strong>Payload JSON</Text>
-            <Input.TextArea
-              readOnly
-              autoSize={{ minRows: 6, maxRows: 16 }}
-              value={artifactLoading ? "Loading..." : artifactPayloadText}
-            />
-          </div>
-          <div>
-            <Text strong>Full artifact JSON</Text>
-            <Input.TextArea
-              readOnly
-              autoSize={{ minRows: 6, maxRows: 16 }}
-              value={artifactLoading ? "Loading..." : artifactObjectText}
             />
           </div>
         </Space>

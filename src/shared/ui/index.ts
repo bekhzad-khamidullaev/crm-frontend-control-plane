@@ -6,6 +6,7 @@ export { EntityListPageShell } from './EntityListPageShell';
 export { EntityListToolbar } from './EntityListToolbar';
 export { PageHeader } from './PageHeader';
 export { PhoneInput } from './PhoneInput';
+export { KpiStatCard } from './KpiStatCard';
 export { StatusTag } from './StatusTag';
 export { compactFilterChips } from './filterChips';
 export type { EntityDetailShellProps, EntityDetailStat, EntityDetailTab } from './EntityDetailShell';
