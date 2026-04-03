@@ -2,11 +2,16 @@ import { render, screen, waitFor, within } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import ControlPlaneAdminPage from '../../src/pages/control-plane-admin/ControlPlaneAdminPage.jsx';
-import { getCpOverview, getLicenseMe } from '../../src/lib/api/licenseControl.js';
+import {
+  getCpOverview,
+  getLicenseMe,
+  getLicenseOperationsSummary,
+} from '../../src/lib/api/licenseControl.js';
 
 vi.mock('../../src/lib/api/licenseControl.js', () => ({
   getCpOverview: vi.fn(),
   getLicenseMe: vi.fn(),
+  getLicenseOperationsSummary: vi.fn(),
 }));
 
 vi.mock('../../src/components/LicenseRestrictedResult.jsx', () => ({
@@ -46,6 +51,39 @@ describe('ControlPlaneAdminPage license restriction', () => {
       seat_usage: { used: 3, limit: 25 },
       max_active_users: 25,
       plan_code: 'pro',
+    });
+    getLicenseOperationsSummary.mockResolvedValue({
+      source: 'runtime',
+      window_hours: 24,
+      generated_at: '2026-04-03T12:00:00Z',
+      totals: {
+        total_denials: 3,
+        unique_codes: 2,
+        unique_features: 2,
+        unique_correlations: 2,
+      },
+      by_code: [
+        { code: 'LICENSE_FEATURE_DISABLED', count: 2 },
+        { code: 'LICENSE_SEAT_LIMIT_EXCEEDED', count: 1 },
+      ],
+      by_feature: [
+        { feature: 'crm.leads', count: 2, top_code: 'LICENSE_FEATURE_DISABLED' },
+        { feature: 'integrations.core', count: 1, top_code: 'LICENSE_FEATURE_DISABLED' },
+      ],
+      trend: [
+        {
+          bucket_start: '2026-04-03T10:00:00Z',
+          total: 2,
+          top_code: 'LICENSE_FEATURE_DISABLED',
+          codes: [{ code: 'LICENSE_FEATURE_DISABLED', count: 2 }],
+        },
+        {
+          bucket_start: '2026-04-03T11:00:00Z',
+          total: 1,
+          top_code: 'LICENSE_SEAT_LIMIT_EXCEEDED',
+          codes: [{ code: 'LICENSE_SEAT_LIMIT_EXCEEDED', count: 1 }],
+        },
+      ],
     });
   });
 
@@ -116,6 +154,60 @@ describe('ControlPlaneAdminPage license restriction', () => {
     });
   });
 
+  it('renders recent license denials summary from control-plane overview', async () => {
+    getCpOverview.mockResolvedValue({
+      customers: { total: 1 },
+      licenses: { active_non_revoked: 1 },
+      runtime_queue: { pending_review: 0 },
+      deployments: { unlicensed: 0 },
+      license_denials: {
+        last_24h_total: 4,
+        top_codes: [{ code: 'LICENSE_FEATURE_DISABLED', count: 3 }],
+        recent: [
+          {
+            id: 11,
+            details: {
+              code: 'LICENSE_FEATURE_DISABLED',
+              correlation_id: 'corr-cp-ui-1',
+              path: '/api/cp/overview/',
+            },
+          },
+        ],
+      },
+    });
+
+    render(<ControlPlaneAdminPage />);
+
+    await waitFor(() => {
+      expect(screen.getByText('Recent license denials')).toBeInTheDocument();
+    });
+
+    expect(screen.getByText(/24h total:/)).toBeInTheDocument();
+    expect(screen.getByText((content) => content.includes('corr-cp-ui-1'))).toBeInTheDocument();
+    expect(screen.getAllByText('LICENSE_FEATURE_DISABLED').length).toBeGreaterThan(0);
+  });
+
+  it('renders runtime operations summary cards and breakdown tables', async () => {
+    getCpOverview.mockResolvedValue({
+      customers: { total: 1 },
+      licenses: { active_non_revoked: 1 },
+      runtime_queue: { pending_review: 0 },
+      deployments: { unlicensed: 0 },
+    });
+
+    render(<ControlPlaneAdminPage />);
+
+    await waitFor(() => {
+      expect(screen.getByText('Runtime denial trend (24h)')).toBeInTheDocument();
+    });
+
+    expect(screen.getByText('Feature breakdown')).toBeInTheDocument();
+    expect(screen.getByText('Top denial codes')).toBeInTheDocument();
+    expect(screen.getAllByText('LICENSE_FEATURE_DISABLED').length).toBeGreaterThan(0);
+    expect(screen.getByText('crm.leads')).toBeInTheDocument();
+    expect(screen.getByText('Runtime denials')).toBeInTheDocument();
+  });
+
   it('shows unavailable state without misleading zero stats for generic overview failures', async () => {
     getCpOverview.mockRejectedValue(new Error('cp endpoint unavailable'));
 
@@ -125,12 +217,7 @@ describe('ControlPlaneAdminPage license restriction', () => {
       expect(screen.getByText('Control-plane API unavailable')).toBeInTheDocument();
     });
 
-    const customersTitle = screen
-      .getAllByText('Customers')
-      .find((node) => node.classList.contains('ant-statistic-title'));
-    const customersCard = customersTitle?.closest('.ant-card');
-    expect(customersCard).not.toBeNull();
-    expect(within(customersCard).getByText('—')).toBeInTheDocument();
-    expect(within(customersCard).queryByText('0')).not.toBeInTheDocument();
+    expect(screen.getAllByText('—').length).toBeGreaterThan(0);
+    expect(screen.queryByText(/^0$/)).not.toBeInTheDocument();
   });
 });

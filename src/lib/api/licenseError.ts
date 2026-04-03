@@ -10,6 +10,18 @@ type AnyError = {
   };
 };
 
+function normalizeLicenseCode(code: unknown): string {
+  const raw = String(code || '')
+    .trim()
+    .replace(/[\s-]+/g, '_')
+    .replace(/[^a-zA-Z0-9_]/g, '_')
+    .replace(/_+/g, '_')
+    .replace(/^_+|_+$/g, '')
+    .toUpperCase();
+  if (!raw) return '';
+  return raw.startsWith('LICENSE_') ? raw : `LICENSE_${raw}`;
+}
+
 function readPayloadCandidates(error: AnyError | null | undefined): any[] {
   if (!error || typeof error !== 'object') return [];
   return [
@@ -66,7 +78,8 @@ export function parseLicenseRestriction(error: AnyError | null | undefined): Lic
     'LICENSE_INVALID_SIGNATURE',
     'LICENSE_BINDING_MISMATCH',
   ]);
-  if (!restrictiveCodes.has(String(code || ''))) return null;
+  const normalizedCode = normalizeLicenseCode(code);
+  if (!restrictiveCodes.has(normalizedCode)) return null;
 
   const feature = findFirst(
     [
@@ -88,7 +101,7 @@ export function parseLicenseRestriction(error: AnyError | null | undefined): Lic
   );
 
   return {
-    code: String(code),
+    code: normalizedCode,
     feature: feature ? String(feature) : undefined,
     message: message ? String(message) : undefined,
   };

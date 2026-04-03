@@ -12,9 +12,10 @@ export interface WorkspaceSummaryItem {
 
 interface WorkspaceSummaryStripProps {
   items: WorkspaceSummaryItem[];
+  compact?: boolean;
 }
 
-export const WorkspaceSummaryStrip: React.FC<WorkspaceSummaryStripProps> = ({ items }) => {
+export const WorkspaceSummaryStrip: React.FC<WorkspaceSummaryStripProps> = ({ items, compact = false }) => {
   const filteredItems = Array.isArray(items) ? items.filter(Boolean) : [];
   const screens = Grid.useBreakpoint();
   const isMobile = !screens.md;
@@ -22,10 +23,22 @@ export const WorkspaceSummaryStrip: React.FC<WorkspaceSummaryStripProps> = ({ it
 
   if (filteredItems.length === 0) return null;
 
-  const span = filteredItems.length >= 4 ? 6 : filteredItems.length === 3 ? 8 : 12;
+  const span = compact
+    ? filteredItems.length >= 5
+      ? 4
+      : filteredItems.length >= 4
+        ? 6
+        : filteredItems.length === 3
+          ? 8
+          : 12
+    : filteredItems.length >= 4
+      ? 6
+      : filteredItems.length === 3
+        ? 8
+        : 12;
 
   return (
-    <Row gutter={[8, 8]}>
+    <Row gutter={compact ? [6, 6] : [8, 8]}>
       {filteredItems.map((item) => (
         <Col key={item.key} xs={24} sm={12} lg={span}>
           <Card
@@ -39,18 +52,21 @@ export const WorkspaceSummaryStrip: React.FC<WorkspaceSummaryStripProps> = ({ it
             }}
             styles={{
               body: {
-                padding: isMobile ? 10 : 12,
+                padding: compact ? (isMobile ? 8 : 10) : (isMobile ? 10 : 12),
               },
             }}
           >
             <Space direction="vertical" size={2} style={{ width: '100%' }}>
-              <Text type="secondary" style={{ fontSize: 11, fontWeight: 600, letterSpacing: '0.01em' }}>
+              <Text
+                type="secondary"
+                style={{ fontSize: compact ? 10 : 11, fontWeight: 600, letterSpacing: '0.01em' }}
+              >
                 {item.label}
               </Text>
               <Text
                 strong
                 style={{
-                  fontSize: isMobile ? 18 : 20,
+                  fontSize: compact ? (isMobile ? 16 : 18) : (isMobile ? 18 : 20),
                   lineHeight: 1.15,
                   letterSpacing: '-0.02em',
                 }}
@@ -58,7 +74,7 @@ export const WorkspaceSummaryStrip: React.FC<WorkspaceSummaryStripProps> = ({ it
                 {item.value}
               </Text>
               {item.hint ? (
-                <Text type="secondary" style={{ fontSize: 11 }}>
+                <Text type="secondary" style={{ fontSize: compact ? 10 : 11 }}>
                   {item.hint}
                 </Text>
               ) : null}

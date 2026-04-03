@@ -335,11 +335,12 @@ const getProviderModelOptions = (provider, currentValue) => {
   return options;
 };
 
-export default function IntegrationsPage({ embedded = false } = {}) {
+export default function IntegrationsPage({ embedded = false, compact = false } = {}) {
   const { token } = antdTheme.useToken();
   const { message } = App.useApp();
   const { theme: currentTheme } = useTheme();
   const isDark = currentTheme === 'dark';
+  const isEmbeddedCompact = embedded && compact;
   const tr = (key, fallback, vars = {}) => {
     const localized = t(key, vars);
     return localized === key ? fallback : localized;
@@ -1582,87 +1583,91 @@ export default function IntegrationsPage({ embedded = false } = {}) {
         )}
       >
         <Space direction="vertical" style={{ width: '100%' }} size="large">
-          <Alert
-            type="info"
-            showIcon
-            message={tr('integrationsPage.messages.omnichannelSummary', 'Omnichannel: всего {count}, в очереди {queue}, в работе {active}, закрыто {resolved}', omnichannelSummary)}
-          />
-          <Card
-            size="small"
-            title={tr('integrationsPage.catalog.title', 'Каталог интеграций: канал -> состояние -> действие')}
-          >
-            <Table
-              size="small"
-              pagination={false}
-              rowKey={(record) => record.key}
-              dataSource={catalogRows}
-              locale={{
-                emptyText: tr('integrationsPage.catalog.empty', 'Интеграции пока не инициализированы'),
-              }}
-              columns={[
-                {
-                  title: tr('integrationsPage.table.channel', 'Канал'),
-                  dataIndex: 'channel',
-                  key: 'channel',
-                  render: (value, record) => renderChannelIdentity(value, record.channelKey || record.key),
-                },
-                {
-                  title: tr('integrationsPage.table.status', 'Состояние'),
-                  dataIndex: 'status',
-                  key: 'status',
-                  width: 160,
-                  render: (value) => {
-                    if (value === 'connected') return <Tag color="success">{tr('integrationsPage.status.connected', 'Подключено')}</Tag>;
-                    if (value === 'error') return <Tag color="error">{tr('integrationsPage.status.error', 'Ошибка')}</Tag>;
-                    return <Tag>{tr('integrationsPage.status.disconnected', 'Не подключено')}</Tag>;
-                  },
-                },
-                {
-                  title: tr('integrationsPage.catalog.reason', 'Причина/контекст'),
-                  dataIndex: 'reason',
-                  key: 'reason',
-                  render: (value) => <Text type="secondary">{value || '-'}</Text>,
-                },
-                {
-                  title: tr('integrationsPage.table.actions', 'Действия'),
-                  key: 'actions',
-                  width: 360,
-                  render: (_, record) => (
-                    <Space size={[6, 6]} wrap>
-                      {record.status === 'disconnected' ? (
-                        <Button size="small" type="primary" onClick={record.onConnect} disabled={integrationsRestricted}>
-                          {tr('integrationsPage.actions.connect', 'Подключить')}
-                        </Button>
-                      ) : record.status === 'error' ? (
-                        <Button size="small" onClick={record.onRetry} disabled={integrationsRestricted}>
-                          {tr('integrationsPage.actions.retry', 'Повторить')}
-                        </Button>
-                      ) : (
-                        <Button size="small" onClick={record.onCheck} disabled={integrationsRestricted}>
-                          {tr('integrationsPage.actions.test', 'Проверить')}
-                        </Button>
-                      )}
-                      <Button size="small" onClick={record.onCheck} disabled={integrationsRestricted}>
-                        {tr('integrationsPage.actions.checkHealth', 'Проверить')}
-                      </Button>
-                      {record.onDisconnect ? (
-                        <Button size="small" danger onClick={record.onDisconnect} disabled={integrationsRestricted}>
-                          {tr('integrationsPage.actions.disconnect', 'Отключить')}
-                        </Button>
-                      ) : (
-                        <Button size="small" danger disabled>
-                          {tr('integrationsPage.actions.disconnect', 'Отключить')}
-                        </Button>
-                      )}
-                      <Button size="small" type="link" onClick={openDiagnosticsCenter}>
-                        {tr('integrationsPage.actions.openDiagnostics', 'Diagnostics')}
-                      </Button>
-                    </Space>
-                  ),
-                },
-              ]}
+          {!isEmbeddedCompact ? (
+            <Alert
+              type="info"
+              showIcon
+              message={tr('integrationsPage.messages.omnichannelSummary', 'Omnichannel: всего {count}, в очереди {queue}, в работе {active}, закрыто {resolved}', omnichannelSummary)}
             />
-          </Card>
+          ) : null}
+          {!isEmbeddedCompact ? (
+            <Card
+              size="small"
+              title={tr('integrationsPage.catalog.title', 'Каталог интеграций: канал -> состояние -> действие')}
+            >
+              <Table
+                size="small"
+                pagination={false}
+                rowKey={(record) => record.key}
+                dataSource={catalogRows}
+                locale={{
+                  emptyText: tr('integrationsPage.catalog.empty', 'Интеграции пока не инициализированы'),
+                }}
+                columns={[
+                  {
+                    title: tr('integrationsPage.table.channel', 'Канал'),
+                    dataIndex: 'channel',
+                    key: 'channel',
+                    render: (value, record) => renderChannelIdentity(value, record.channelKey || record.key),
+                  },
+                  {
+                    title: tr('integrationsPage.table.status', 'Состояние'),
+                    dataIndex: 'status',
+                    key: 'status',
+                    width: 160,
+                    render: (value) => {
+                      if (value === 'connected') return <Tag color="success">{tr('integrationsPage.status.connected', 'Подключено')}</Tag>;
+                      if (value === 'error') return <Tag color="error">{tr('integrationsPage.status.error', 'Ошибка')}</Tag>;
+                      return <Tag>{tr('integrationsPage.status.disconnected', 'Не подключено')}</Tag>;
+                    },
+                  },
+                  {
+                    title: tr('integrationsPage.catalog.reason', 'Причина/контекст'),
+                    dataIndex: 'reason',
+                    key: 'reason',
+                    render: (value) => <Text type="secondary">{value || '-'}</Text>,
+                  },
+                  {
+                    title: tr('integrationsPage.table.actions', 'Действия'),
+                    key: 'actions',
+                    width: 360,
+                    render: (_, record) => (
+                      <Space size={[6, 6]} wrap>
+                        {record.status === 'disconnected' ? (
+                          <Button size="small" type="primary" onClick={record.onConnect} disabled={integrationsRestricted}>
+                            {tr('integrationsPage.actions.connect', 'Подключить')}
+                          </Button>
+                        ) : record.status === 'error' ? (
+                          <Button size="small" onClick={record.onRetry} disabled={integrationsRestricted}>
+                            {tr('integrationsPage.actions.retry', 'Повторить')}
+                          </Button>
+                        ) : (
+                          <Button size="small" onClick={record.onCheck} disabled={integrationsRestricted}>
+                            {tr('integrationsPage.actions.test', 'Проверить')}
+                          </Button>
+                        )}
+                        <Button size="small" onClick={record.onCheck} disabled={integrationsRestricted}>
+                          {tr('integrationsPage.actions.checkHealth', 'Проверить')}
+                        </Button>
+                        {record.onDisconnect ? (
+                          <Button size="small" danger onClick={record.onDisconnect} disabled={integrationsRestricted}>
+                            {tr('integrationsPage.actions.disconnect', 'Отключить')}
+                          </Button>
+                        ) : (
+                          <Button size="small" danger disabled>
+                            {tr('integrationsPage.actions.disconnect', 'Отключить')}
+                          </Button>
+                        )}
+                        <Button size="small" type="link" onClick={openDiagnosticsCenter}>
+                          {tr('integrationsPage.actions.openDiagnostics', 'Diagnostics')}
+                        </Button>
+                      </Space>
+                    ),
+                  },
+                ]}
+              />
+            </Card>
+          ) : null}
           <Card
             id="integrations-diagnostics"
             size="small"

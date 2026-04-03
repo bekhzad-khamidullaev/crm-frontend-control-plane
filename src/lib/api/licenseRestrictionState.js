@@ -12,6 +12,18 @@ export const RESTRICTIVE_CODES = new Set([
   'LICENSE_BINDING_MISMATCH',
 ]);
 
+function normalizeLicenseCode(code) {
+  const raw = String(code || '')
+    .trim()
+    .replace(/[\s-]+/g, '_')
+    .replace(/[^a-zA-Z0-9_]/g, '_')
+    .replace(/_+/g, '_')
+    .replace(/^_+|_+$/g, '')
+    .toUpperCase();
+  if (!raw) return '';
+  return raw.startsWith('LICENSE_') ? raw : `LICENSE_${raw}`;
+}
+
 export function getFeatureRestrictionReason(feature, translate) {
   const t = typeof translate === 'function' ? translate : (key, fallback) => fallback || key;
   return t('dashboardPage.errors.licenseFeatureDisabledDescription', {
@@ -21,7 +33,7 @@ export function getFeatureRestrictionReason(feature, translate) {
 
 export function getLicenseRestrictionMessage(restriction, translate) {
   const t = typeof translate === 'function' ? translate : (key, fallback) => fallback || key;
-  const code = String(restriction?.code || '').trim();
+  const code = normalizeLicenseCode(restriction?.code);
   const serverMessage = String(restriction?.message || '').trim();
 
   if (code === 'LICENSE_FEATURE_DISABLED') {
@@ -105,7 +117,7 @@ export function readStoredLicenseRestriction() {
     if (!raw) return null;
     const parsed = JSON.parse(raw);
     if (!parsed || typeof parsed !== 'object') return null;
-    const code = String(parsed.code || '').trim();
+    const code = normalizeLicenseCode(parsed.code);
     const feature = String(parsed.feature || '').trim();
     const message = String(parsed.message || '').trim();
     if (!RESTRICTIVE_CODES.has(code)) return null;
@@ -122,10 +134,11 @@ export function storeLicenseRestriction(restriction) {
       sessionStorage.removeItem(LICENSE_RESTRICTION_STORAGE_KEY);
       return;
     }
+    const code = normalizeLicenseCode(restriction.code || 'LICENSE_FEATURE_DISABLED') || 'LICENSE_FEATURE_DISABLED';
     sessionStorage.setItem(
       LICENSE_RESTRICTION_STORAGE_KEY,
       JSON.stringify({
-        code: restriction.code || 'LICENSE_FEATURE_DISABLED',
+        code,
         feature: restriction.feature || 'unknown.feature',
         message: restriction.message || '',
       }),

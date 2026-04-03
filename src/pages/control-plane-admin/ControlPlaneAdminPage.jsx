@@ -12,9 +12,14 @@ import {
   Typography,
 } from 'antd';
 import { ReloadOutlined } from '@ant-design/icons';
-import { getCpOverview, getLicenseMe } from '../../lib/api/licenseControl.js';
+import {
+  getCpOverview,
+  getLicenseMe,
+  getLicenseOperationsSummary,
+} from '../../lib/api/licenseControl.js';
 import parseLicenseRestriction from '../../lib/api/licenseError.ts';
 import LicenseRestrictedResult from '../../components/LicenseRestrictedResult.jsx';
+import { LicenseOperationsPanel } from '../../components/license-operations-panel';
 import CustomersSection from './sections/CustomersSection.jsx';
 import DeploymentsSection from './sections/DeploymentsSection.jsx';
 import SubscriptionsSection from './sections/SubscriptionsSection.jsx';
@@ -28,17 +33,22 @@ const { Text } = Typography;
 export default function ControlPlaneAdminPage() {
   const [overview, setOverview] = useState(null);
   const [licenseMe, setLicenseMe] = useState(null);
+  const [operationsSummary, setOperationsSummary] = useState(null);
   const [overviewError, setOverviewError] = useState(null);
   const [licenseError, setLicenseError] = useState(null);
+  const [operationsError, setOperationsError] = useState(null);
   const [pageRestriction, setPageRestriction] = useState(null);
   const [loading, setLoading] = useState(false);
   const [refreshKey, setRefreshKey] = useState(0);
+  const [activeTab, setActiveTab] = useState('customers');
+  const [auditPresetFilters, setAuditPresetFilters] = useState(null);
 
   const loadOverview = async () => {
     setLoading(true);
-    const [overviewResult, licenseResult] = await Promise.allSettled([
+    const [overviewResult, licenseResult, operationsResult] = await Promise.allSettled([
       getCpOverview(),
       getLicenseMe(),
+      getLicenseOperationsSummary(),
     ]);
     const overviewRestriction =
       overviewResult.status === 'rejected' ? parseLicenseRestriction(overviewResult.reason) : null;
@@ -69,6 +79,16 @@ export default function ControlPlaneAdminPage() {
       setLicenseError(licenseResult.reason || new Error('Failed to load license summary'));
     }
 
+    if (operationsResult.status === 'fulfilled') {
+      setOperationsSummary(operationsResult.value || null);
+      setOperationsError(null);
+    } else {
+      setOperationsSummary(null);
+      setOperationsError(
+        operationsResult.reason || new Error('Failed to load runtime operations summary')
+      );
+    }
+
     setLoading(false);
   };
 
@@ -77,6 +97,13 @@ export default function ControlPlaneAdminPage() {
   }, [refreshKey]);
 
   const refreshAll = () => setRefreshKey((v) => v + 1);
+  const openAuditFromOperations = (filters = {}) => {
+    setAuditPresetFilters({
+      ...filters,
+      token: Date.now(),
+    });
+    setActiveTab('audit');
+  };
 
   const licenseStatus = String(licenseMe?.status || '').trim();
   const licenseStatusKey = licenseStatus.toLowerCase();
@@ -87,6 +114,9 @@ export default function ControlPlaneAdminPage() {
   const overLimit =
     licenseMe?.over_limit ??
     (seatUsed != null && seatLimit != null ? Number(seatUsed) > Number(seatLimit) : false);
+  const licenseDenials = overview?.license_denials || {};
+  const denialTopCode = Array.isArray(licenseDenials.top_codes) ? licenseDenials.top_codes[0] : null;
+  const recentDenials = Array.isArray(licenseDenials.recent) ? licenseDenials.recent : [];
 
   const statusTagColor =
     licenseStatusKey === 'active'
@@ -266,9 +296,45 @@ export default function ControlPlaneAdminPage() {
           />
         </Col>
       </Row>
+      {recentDenials.length ? (
+        <Alert
+          type="warning"
+          showIcon
+          message="Recent license denials"
+          description={
+            <Space direction="vertical" size={4} style={{ width: '100%' }}>
+              <Text>
+                24h total: <Text strong>{renderOverviewValue(licenseDenials.last_24h_total)}</Text>
+                {denialTopCode ? (
+                  <>
+                    {' · '}top code: <Text code>{String(denialTopCode.code || 'UNKNOWN')}</Text> ({denialTopCode.count})
+                  </>
+                ) : null}
+              </Text>
+              {recentDenials.slice(0, 3).map((row) => (
+                <Text key={row.id}>
+                  <Text code>{String(row?.details?.code || 'UNKNOWN')}</Text>
+                  {' · '}
+                  {String(row?.details?.correlation_id || 'no-correlation')}
+                  {' · '}
+                  {String(row?.details?.path || '-')}
+                </Text>
+              ))}
+            </Space>
+          }
+        />
+      ) : null}
+      <LicenseOperationsPanel
+        summary={operationsSummary}
+        loading={loading && !operationsSummary && !operationsError}
+        error={operationsError}
+        onOpenAudit={openAuditFromOperations}
+      />
 
       <Card>
         <Tabs
+          activeKey={activeTab}
+          onChange={setActiveTab}
           items={[
             {
               key: 'customers',
@@ -291,7 +357,7 @@ export default function ControlPlaneAdminPage() {
               children: <PlansFeaturesSection onMutated={refreshAll} />,
             },
             { key: 'queue', label: 'Queue', children: <QueueSection onMutated={refreshAll} /> },
-            { key: 'audit', label: 'Audit', children: <AuditSection /> },
+            { key: 'audit', label: 'Audit', children: <AuditSection presetFilters={auditPresetFilters} /> },
           ]}
         />
       </Card>

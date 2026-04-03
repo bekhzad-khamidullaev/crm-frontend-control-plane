@@ -35,7 +35,6 @@ import {
   DatabaseOutlined,
   DownloadOutlined,
   GlobalOutlined,
-  LinkOutlined,
   ReloadOutlined,
   SearchOutlined,
   SafetyCertificateOutlined,
@@ -492,24 +491,6 @@ function resolveMarketplaceCompatibility(extension, compatibility = []) {
   }) || null;
 }
 
-function getIntegrationHealthMeta(item) {
-  const type = item?.type;
-  if (type === 'webhook') {
-    if (!item?.enabled) return { color: 'default', label: 'Disabled' };
-    if (Number(item?.failure_count || 0) > 0) return { color: 'error', label: 'Errors' };
-    return { color: 'success', label: 'Healthy' };
-  }
-  if (type === 'extension') {
-    const status = normalizeMarketplaceStatus(item?.status);
-    if (status === 'installed' && item?.compatible !== false) return { color: 'success', label: 'Installed' };
-    if (status === 'failed' || status === 'error') return { color: 'error', label: 'Failed' };
-    if (item?.compatible === false) return { color: 'warning', label: 'Blocked' };
-    if (status === 'uninstalled') return { color: 'default', label: 'Uninstalled' };
-    return { color: 'processing', label: 'In progress' };
-  }
-  return { color: 'default', label: 'Unknown' };
-}
-
 function normalizeMarketplaceCatalogPayload(payload) {
   const modules = Array.isArray(payload)
     ? payload
@@ -799,39 +780,6 @@ export default function SettingsIntegrationsWorkspace({ defaultTab = 'system' } 
     ],
     [moduleCatalogSections, tr],
   );
-  const integrationRegistryRows = useMemo(() => {
-    const webhookRows = webhooks.map((item) => ({
-      key: `webhook-${item.id}`,
-      type: 'webhook',
-      provider: item?.name || item?.event || 'Webhook',
-      channel: item?.event || 'Webhook',
-      endpoint: item?.target_url || item?.url || '-',
-      enabled: Boolean(item?.is_active ?? item?.enabled ?? true),
-      failure_count: Number(item?.failure_count || 0),
-      recent_activity: item?.updated_at || item?.last_delivery_at || item?.created_at || null,
-      status: item?.is_active === false ? 'disabled' : item?.failure_count ? 'error' : 'healthy',
-      reason: item?.last_error || null,
-      source: item,
-    }));
-    const extensionRows = marketplaceExtensions.map((item) => {
-      const compatibility = resolveMarketplaceCompatibility(item, marketplaceCompatibility);
-      return {
-        key: `extension-${item.id}`,
-        type: 'extension',
-        provider: item?.name || item?.code || 'Extension',
-        channel: item?.code || '-',
-        endpoint: compatibility?.crm_version || item?.installed_version || '-',
-        enabled: normalizeMarketplaceStatus(item?.status) !== 'uninstalled',
-        failure_count: ['failed', 'error'].includes(normalizeMarketplaceStatus(item?.status)) ? 1 : 0,
-        recent_activity: item?.updated_at || item?.installed_at || null,
-        status: item?.status,
-        compatible: compatibility?.compatible,
-        reason: compatibility?.reason || null,
-        source: item,
-      };
-    });
-    return [...extensionRows, ...webhookRows].sort((a, b) => dayjs(b.recent_activity).valueOf() - dayjs(a.recent_activity).valueOf());
-  }, [marketplaceCompatibility, marketplaceExtensions, webhooks]);
   const marketplaceAlertType =
     marketplaceStats.failed > 0 || marketplaceStats.blocked > 0 ? 'warning' : 'info';
 
@@ -2574,101 +2522,28 @@ export default function SettingsIntegrationsWorkspace({ defaultTab = 'system' } 
           <Alert
             type={operationsAlertType}
             showIcon
-            message={tr('settingsWorkspace.integrations.registryTitle', 'Integration Registry')}
+            message={tr('settingsWorkspace.integrations.registryTitle', 'Центр подключений и каналов')}
             description={tr(
               'settingsWorkspace.integrations.registryDescription',
-              'Единая операционная панель интеграций: webhooks, marketplace extensions, последние ошибки и health сигнал.',
+              'Во вкладке собраны только сценарии подключения, проверки и диагностики каналов. Webhooks, integration logs и delivery-разбор вынесены в отдельную вкладку ops, чтобы не дублировать контекст.',
             )}
             action={(
               <Space wrap>
                 <Button icon={<ReloadOutlined />} onClick={loadWorkspace} loading={Object.values(sectionLoading).some(Boolean)}>
                   {tr('actions.refresh', 'Обновить')}
                 </Button>
+                {visibleTabKeys.includes('operations') ? (
+                  <Button onClick={() => setActiveTab('operations')}>
+                    {tr('settingsWorkspace.actions.openOps', 'Открыть ops')}
+                  </Button>
+                ) : null}
                 <Button onClick={() => setActiveTab('marketplace')}>
                   {tr('settingsWorkspace.actions.openMarketplace', 'Открыть marketplace')}
                 </Button>
               </Space>
             )}
           />
-          <Row gutter={[12, 12]}>
-            <Col xs={24} md={6}>
-              <Card size="small">
-                <Statistic title={tr('settingsWorkspace.integrations.cards.registryItems', 'Registry items')} value={integrationRegistryRows.length} />
-              </Card>
-            </Col>
-            <Col xs={24} md={6}>
-              <Card size="small">
-                <Statistic title={tr('settingsWorkspace.integrations.cards.webhooks', 'Webhooks')} value={webhooks.length} />
-              </Card>
-            </Col>
-            <Col xs={24} md={6}>
-              <Card size="small">
-                <Statistic title={tr('settingsWorkspace.integrations.cards.extensions', 'Extensions')} value={marketplaceExtensions.length} />
-              </Card>
-            </Col>
-            <Col xs={24} md={6}>
-              <Card size="small">
-                <Statistic title={tr('settingsWorkspace.integrations.cards.logErrors', 'Ошибки логов')} value={integrationErrorCount} />
-              </Card>
-            </Col>
-          </Row>
-          <Card title={tr('settingsWorkspace.integrations.registryTable', 'Реестр интеграций')}>
-            <Table
-              rowKey="key"
-              dataSource={integrationRegistryRows}
-              pagination={{ pageSize: 10, hideOnSinglePage: true }}
-              columns={[
-                {
-                  title: tr('settingsWorkspace.table.type', 'Тип'),
-                  dataIndex: 'type',
-                  key: 'type',
-                  width: 120,
-                  render: (value) => (
-                    <Tag icon={value === 'extension' ? <AppstoreAddOutlined /> : <LinkOutlined />}>
-                      {value === 'extension' ? 'Extension' : 'Webhook'}
-                    </Tag>
-                  ),
-                },
-                { title: tr('settingsWorkspace.table.name', 'Название'), dataIndex: 'provider', key: 'provider' },
-                {
-                  title: tr('settingsWorkspace.table.channel', 'Канал'),
-                  dataIndex: 'channel',
-                  key: 'channel',
-                  render: (value) => renderChannelCell(value),
-                },
-                {
-                  title: tr('settingsWorkspace.table.status', 'Статус'),
-                  key: 'status',
-                  width: 160,
-                  render: (_, record) => {
-                    const meta = getIntegrationHealthMeta(record);
-                    return <Tag color={meta.color}>{meta.label}</Tag>;
-                  },
-                },
-                {
-                  title: tr('settingsWorkspace.table.failures', 'Ошибки'),
-                  dataIndex: 'failure_count',
-                  key: 'failure_count',
-                  width: 120,
-                  render: (value) => Number(value || 0),
-                },
-                {
-                  title: tr('settingsWorkspace.table.lastRun', 'Последняя активность'),
-                  dataIndex: 'recent_activity',
-                  key: 'recent_activity',
-                  width: 220,
-                  render: (value) => formatDateTime(value),
-                },
-                {
-                  title: tr('settingsWorkspace.table.reason', 'Причина'),
-                  dataIndex: 'reason',
-                  key: 'reason',
-                  render: (value) => value || '-',
-                },
-              ]}
-            />
-          </Card>
-          <LegacyIntegrationsPage embedded />
+          <LegacyIntegrationsPage embedded compact />
         </Space>
       ),
     },

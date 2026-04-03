@@ -43,8 +43,15 @@ function CampaignsList({ embedded = false }) {
         params.start_date_before = startRange[1].format('YYYY-MM-DD');
       }
       const response = await getCampaigns(params);
-      const results = response.results || [];
-      const totalCount = response.count || 0;
+      const results = Array.isArray(response)
+        ? response
+        : Array.isArray(response?.results)
+          ? response.results
+          : [];
+      const parsedCount = Number(response?.count);
+      const totalCount = Number.isFinite(parsedCount) && parsedCount >= results.length
+        ? parsedCount
+        : results.length;
 
       if (results.length > pageSize && results.length === totalCount) {
         setAllCampaignsCache(results);

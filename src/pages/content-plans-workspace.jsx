@@ -219,14 +219,19 @@ export default function ContentPlansWorkspacePage({ initialTab = 'plans' }) {
   const loadData = useCallback(async () => {
     setLoading(true);
     try {
-      const [campaignsRes, segmentsRes, templatesRes] = await Promise.all([
-        getCampaigns({ page_size: 500, ordering: '-update_date' }),
-        getSegments({ page_size: 500, ordering: '-update_date' }),
-        getTemplates({ page_size: 500, ordering: '-update_date' }),
+      const [campaignsRes, segmentsRes, templatesRes] = await Promise.allSettled([
+        getCampaigns({ page_size: 500, ordering: '-created_at' }),
+        getSegments({ page_size: 500, ordering: '-updated_at' }),
+        getTemplates({ page_size: 500, ordering: '-updated_at' }),
       ]);
-      setCampaigns(toResults(campaignsRes));
-      setSegments(toResults(segmentsRes));
-      setTemplates(toResults(templatesRes));
+      setCampaigns(campaignsRes.status === 'fulfilled' ? toResults(campaignsRes.value) : []);
+      setSegments(segmentsRes.status === 'fulfilled' ? toResults(segmentsRes.value) : []);
+      setTemplates(templatesRes.status === 'fulfilled' ? toResults(templatesRes.value) : []);
+
+      const failed = [campaignsRes, segmentsRes, templatesRes].some((item) => item.status === 'rejected');
+      if (failed) {
+        message.warning('Часть данных маркетинга не загрузилась. Проверьте права доступа и повторите обновление.');
+      }
     } catch (error) {
       message.error(error?.message || 'Не удалось загрузить контент-планы');
       setCampaigns([]);
@@ -273,7 +278,10 @@ export default function ContentPlansWorkspacePage({ initialTab = 'plans' }) {
   }, [activeTab, filteredCampaigns, activePlanId]);
 
   const activeCampaigns = useMemo(
-    () => filteredCampaigns.filter((item) => String(item.status || '').toLowerCase() === 'active').length,
+    () => filteredCampaigns.filter((item) => {
+      const normalizedStatus = String(item.status || '').toLowerCase();
+      return normalizedStatus === 'active' || Boolean(item.is_active);
+    }).length,
     [filteredCampaigns],
   );
   const pausedCampaigns = useMemo(
@@ -822,7 +830,7 @@ export default function ContentPlansWorkspacePage({ initialTab = 'plans' }) {
         onChange={setActiveTab}
         options={segmentedOptions}
       />
-      <WorkspaceSummaryStrip items={summaryItems} />
+      <WorkspaceSummaryStrip items={summaryItems} compact />
 
       {activeTab === 'plans' ? (
         <EntityListToolbar

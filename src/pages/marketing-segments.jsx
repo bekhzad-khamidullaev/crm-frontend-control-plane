@@ -73,7 +73,7 @@ export default function MarketingSegmentsPage({ embedded = false }) {
   const loadSegments = async () => {
     setLoading(true);
     try {
-      const response = await getSegments({ page_size: 500, ordering: '-update_date' });
+      const response = await getSegments({ page_size: 500, ordering: '-updated_at' });
       const results = Array.isArray(response?.results) ? response.results : response || [];
       setSegments(Array.isArray(results) ? results : []);
     } catch (error) {
