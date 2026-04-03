@@ -47,6 +47,7 @@ import {
     setWsReconnecting,
     subscribe,
 } from './lib/store/index.js';
+import { useTheme } from './lib/hooks/useTheme.js';
 import { navigate, onRouteChange, parseHash } from './router.js';
 const LicenseRestrictedResult = lazy(() => import('./components/LicenseRestrictedResult.jsx'));
 
@@ -1262,6 +1263,7 @@ function App() {
 
 // Wrapper component that provides theme to App
 function AppWithTheme() {
+  const { theme } = useTheme();
   const [activeLocale, setActiveLocale] = useState(() => normalizeLocale(localStorage.getItem('enterprise_crm_locale') || 'ru'));
   useEffect(() => {
     const onLocaleChanged = (event) => {
@@ -1294,7 +1296,47 @@ function AppWithTheme() {
   const antdLocale = activeLocale === 'en' ? enUS : activeLocale === 'uz' ? uzUZ : ruRU;
   const emptyDescription =
     activeLocale === 'en' ? 'No data' : activeLocale === 'uz' ? "Ma'lumot yo'q" : 'Нет данных';
-  const configProps = { theme: { algorithm: antdTheme.defaultAlgorithm } };
+  const isDark = theme === 'dark';
+  const configProps = {
+    theme: {
+      algorithm: isDark ? antdTheme.darkAlgorithm : antdTheme.defaultAlgorithm,
+      token: isDark
+        ? {
+            colorPrimary: '#6366f1',
+            colorBgBase: '#11151b',
+            colorBgLayout: '#11151b',
+            colorBgContainer: '#171c24',
+            colorBgElevated: '#1d2430',
+            colorBorder: 'rgba(148, 163, 184, 0.2)',
+            colorText: '#e8edf5',
+            colorTextSecondary: '#a9b4c5',
+            colorFillAlter: 'rgba(148, 163, 184, 0.14)',
+          }
+        : {
+            colorPrimary: '#2563eb',
+            colorBgBase: '#f4f6fb',
+            colorBgLayout: '#f4f6fb',
+            colorBgContainer: '#ffffff',
+            colorBgElevated: '#ffffff',
+            colorBorder: '#dbe3ef',
+            colorText: '#0f172a',
+            colorTextSecondary: '#475569',
+            colorFillAlter: '#eef2f8',
+          },
+      components: {
+        Layout: {
+          headerBg: isDark ? '#171c24' : '#ffffff',
+          siderBg: isDark ? '#171c24' : '#ffffff',
+          bodyBg: isDark ? '#11151b' : '#f4f6fb',
+        },
+        Menu: {
+          itemBg: 'transparent',
+          darkItemBg: 'transparent',
+          darkSubMenuItemBg: 'transparent',
+        },
+      },
+    },
+  };
 
   return (
     <ConfigProvider {...configProps} locale={antdLocale} renderEmpty={() => <Empty description={emptyDescription} />}>

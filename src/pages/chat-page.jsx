@@ -745,7 +745,7 @@ function ChatPage({ initialWorkspaceTab = null, initialDispatchTab = 'omnichanne
           width={isMobile ? '100%' : 360}
           breakpoint="lg"
           collapsedWidth={0}
-          theme="light"
+          theme={theme === 'dark' ? 'dark' : 'light'}
           style={{
             background: bg,
             borderRight: isMobile ? 'none' : `1px solid ${border}`,
@@ -1019,7 +1019,7 @@ function ChatPage({ initialWorkspaceTab = null, initialDispatchTab = 'omnichanne
 
                 <Sider
                   width={isMobile ? '100%' : 300}
-                  theme="light"
+                  theme={theme === 'dark' ? 'dark' : 'light'}
                   style={{ background: 'transparent', marginTop: isMobile ? 16 : 0 }}
                 >
                   <Card variant="borderless" style={{ background: bg }}>

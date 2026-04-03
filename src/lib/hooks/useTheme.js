@@ -4,13 +4,13 @@ const STORAGE_KEY = 'enterprise_crm-theme';
 const EVENT_KEY = 'enterprise_crm-theme-change';
 const THEME_VARIABLES = {
   light: {
-    '--crm-app-body-bg': '#f0f2f5',
-    '--crm-app-body-bg-alt': '#e8edf4',
+    '--crm-app-body-bg': '#f4f6fb',
+    '--crm-app-body-bg-alt': '#e9edf5',
     '--crm-app-surface': 'rgba(255, 255, 255, 0.94)',
     '--crm-app-surface-solid': '#ffffff',
     '--crm-app-surface-elevated': '#ffffff',
-    '--crm-app-border': '#e2e8f0',
-    '--crm-app-border-strong': '#b9c6d8',
+    '--crm-app-border': '#dbe3ef',
+    '--crm-app-border-strong': '#bcc8dc',
     '--crm-app-border-soft': 'rgba(100, 116, 139, 0.22)',
     '--crm-app-text': '#0f172a',
     '--crm-app-text-muted': '#475569',
@@ -23,24 +23,24 @@ const THEME_VARIABLES = {
     '--crm-app-selection': 'rgba(37, 99, 235, 0.18)',
   },
   dark: {
-    '--crm-app-body-bg': '#08111f',
-    '--crm-app-body-bg-alt': '#0f172a',
-    '--crm-app-surface': 'rgba(12, 19, 32, 0.94)',
-    '--crm-app-surface-solid': '#0c1523',
-    '--crm-app-surface-elevated': '#18263b',
-    '--crm-app-border': 'rgba(148, 163, 184, 0.28)',
-    '--crm-app-border-strong': 'rgba(226, 232, 240, 0.46)',
-    '--crm-app-border-soft': 'rgba(148, 163, 184, 0.26)',
-    '--crm-app-text': '#f8fbff',
-    '--crm-app-text-muted': '#cad6e2',
+    '--crm-app-body-bg': '#101318',
+    '--crm-app-body-bg-alt': '#141922',
+    '--crm-app-surface': 'rgba(22, 27, 35, 0.94)',
+    '--crm-app-surface-solid': '#171b23',
+    '--crm-app-surface-elevated': '#1d2430',
+    '--crm-app-border': 'rgba(148, 163, 184, 0.2)',
+    '--crm-app-border-strong': 'rgba(203, 213, 225, 0.32)',
+    '--crm-app-border-soft': 'rgba(148, 163, 184, 0.18)',
+    '--crm-app-text': '#e8edf5',
+    '--crm-app-text-muted': '#a9b4c5',
     '--crm-app-menu-selected':
-      'linear-gradient(135deg, rgba(125, 211, 252, 0.3), rgba(96, 165, 250, 0.18))',
-    '--crm-app-menu-hover': 'rgba(148, 163, 184, 0.14)',
-    '--crm-app-shadow': '0 18px 40px rgba(2, 6, 23, 0.42)',
-    '--crm-app-shadow-strong': '0 24px 52px rgba(2, 6, 23, 0.58)',
-    '--crm-app-accent-glow': 'rgba(56, 189, 248, 0.16)',
-    '--crm-app-surface-glow': 'rgba(255, 255, 255, 0.11)',
-    '--crm-app-selection': 'rgba(125, 211, 252, 0.36)',
+      'linear-gradient(135deg, rgba(99, 102, 241, 0.24), rgba(59, 130, 246, 0.16))',
+    '--crm-app-menu-hover': 'rgba(148, 163, 184, 0.12)',
+    '--crm-app-shadow': '0 18px 40px rgba(0, 0, 0, 0.42)',
+    '--crm-app-shadow-strong': '0 24px 56px rgba(0, 0, 0, 0.58)',
+    '--crm-app-accent-glow': 'rgba(99, 102, 241, 0.12)',
+    '--crm-app-surface-glow': 'rgba(255, 255, 255, 0.07)',
+    '--crm-app-selection': 'rgba(99, 102, 241, 0.3)',
   },
 };
 
@@ -54,6 +54,17 @@ function applyThemeVariables(theme) {
   });
 
   root.style.colorScheme = theme === 'dark' ? 'dark' : 'light';
+}
+
+function applyThemeRootState(theme) {
+  if (typeof window === 'undefined') return;
+  const root = document.documentElement;
+  root.setAttribute('data-theme', theme === 'dark' ? 'dark' : 'light');
+  if (theme === 'dark') {
+    root.classList.add('dark');
+  } else {
+    root.classList.remove('dark');
+  }
 }
 
 const getInitialTheme = () => {
@@ -70,12 +81,7 @@ export function useTheme() {
 
   useEffect(() => {
     // Apply initial classes once on mount
-    const root = document.documentElement;
-    if (globalTheme === 'dark') {
-      root.classList.add('dark');
-    } else {
-      root.classList.remove('dark');
-    }
+    applyThemeRootState(globalTheme);
     applyThemeVariables(globalTheme);
 
     const handleThemeChange = (e) => {
@@ -91,12 +97,7 @@ export function useTheme() {
       const nextTheme = typeof newThemeOrFn === 'function' ? newThemeOrFn(prev) : newThemeOrFn;
       if (nextTheme !== prev) {
         globalTheme = nextTheme;
-        const root = document.documentElement;
-        if (nextTheme === 'dark') {
-          root.classList.add('dark');
-        } else {
-          root.classList.remove('dark');
-        }
+        applyThemeRootState(nextTheme);
         applyThemeVariables(nextTheme);
         window.localStorage.setItem(STORAGE_KEY, nextTheme);
         window.dispatchEvent(new window.CustomEvent(EVENT_KEY, { detail: nextTheme }));

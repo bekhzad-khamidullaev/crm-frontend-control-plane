@@ -1,4 +1,4 @@
-import { App, Button, Card, Col, Collapse, Form, Input, Row, Space, Statistic, Tag, Typography } from 'antd';
+import { App, Button, Card, Col, Collapse, Form, Input, Row, Space, Tag, Typography, theme as antdTheme } from 'antd';
 import { useMemo, useState } from 'react';
 import { useTheme } from '../lib/hooks/useTheme.js';
 import { KpiStatCard } from '../shared/ui';
@@ -125,25 +125,29 @@ const FAQ_ITEMS = [
 export default function CrmSalesLandingPage() {
   const { message } = App.useApp();
   const { theme } = useTheme();
+  const { token } = antdTheme.useToken();
   const isDark = theme === 'dark';
   const [submitting, setSubmitting] = useState(false);
 
   const ui = useMemo(
     () => ({
       pageBg: isDark
-        ? 'radial-gradient(circle at 10% 5%, #1e293b 0%, #0f172a 35%, #0b1220 100%)'
+        ? 'radial-gradient(circle at 12% 8%, #1d2430 0%, #141922 36%, #101318 100%)'
         : 'radial-gradient(circle at 5% 5%, #dbeafe 0%, #eef6ff 36%, #f8fbff 100%)',
       heroBg: isDark
-        ? 'linear-gradient(135deg, #0b1220 0%, #0f2748 48%, #0a4d86 100%)'
+        ? 'linear-gradient(135deg, #171b23 0%, #1d2430 52%, #243041 100%)'
         : 'linear-gradient(135deg, #0b1e3b 0%, #0f3d77 48%, #0ea5e9 100%)',
-      cardBg: isDark ? '#111a2c' : '#ffffff',
-      cardBorder: isDark ? '#26334d' : '#dbe7ff',
-      textMain: isDark ? '#e2e8f0' : '#0f172a',
-      textMuted: isDark ? '#b8c2d9' : '#475569',
-      softGlass: isDark ? 'rgba(17, 26, 44, 0.55)' : 'rgba(255, 255, 255, 0.62)',
-      sectionShadow: isDark ? '0 14px 34px rgba(0,0,0,0.35)' : '0 14px 34px rgba(15, 23, 42, 0.08)',
+      cardBg: isDark ? '#171b23' : '#ffffff',
+      cardBorder: isDark ? 'rgba(148, 163, 184, 0.2)' : '#dbe7ff',
+      textMain: isDark ? '#e8edf5' : '#0f172a',
+      textMuted: isDark ? '#a9b4c5' : '#475569',
+      softGlass: isDark ? 'rgba(23, 27, 35, 0.58)' : 'rgba(255, 255, 255, 0.62)',
+      sectionShadow: isDark ? '0 14px 34px rgba(0,0,0,0.38)' : '0 14px 34px rgba(15, 23, 42, 0.08)',
+      primary: token.colorPrimary,
+      heroButtonBg: isDark ? '#0f172a' : '#0f172a',
+      heroButtonText: '#ffffff',
     }),
-    [isDark],
+    [isDark, token.colorPrimary],
   );
 
   const onSubmit = async (values) => {
@@ -198,7 +202,12 @@ export default function CrmSalesLandingPage() {
               Получайте больше сделок без увеличения штата и ручной рутины.
             </Paragraph>
             <Space wrap>
-              <Button size="large" type="primary" style={{ background: '#0f172a', borderColor: '#0f172a' }} href="#crm-contact">
+              <Button
+                size="large"
+                type="primary"
+                style={{ background: ui.heroButtonBg, borderColor: ui.heroButtonBg, color: ui.heroButtonText }}
+                href="#crm-contact"
+              >
                 Получить персональное демо
               </Button>
               <Button size="large" ghost href="#crm-pricing">
@@ -324,8 +333,8 @@ export default function CrmSalesLandingPage() {
                   style={{
                     borderRadius: 12,
                     minHeight: 286,
-                    borderColor: item.recommended ? '#0ea5e9' : ui.cardBorder,
-                    boxShadow: item.recommended ? '0 10px 26px rgba(14,165,233,0.22)' : 'none',
+                    borderColor: item.recommended ? ui.primary : ui.cardBorder,
+                    boxShadow: item.recommended ? `0 10px 26px ${isDark ? 'rgba(99,102,241,0.28)' : 'rgba(14,165,233,0.22)'}` : 'none',
                   }}
                 >
                   <Space direction="vertical" size={8} style={{ width: '100%' }}>
