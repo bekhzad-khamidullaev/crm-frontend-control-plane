@@ -128,6 +128,10 @@ export async function getLicenseOperationsSummary(params = {}) {
   return api.get('/api/license/operations-summary/', { params });
 }
 
+export async function getLicenseCoverageSummary() {
+  return api.get('/api/license/coverage-summary/');
+}
+
 export async function approveCpRuntimeRequest(requestId, payload) {
   return api.post(`/api/cp/runtime-license-requests/${requestId}/approve/`, { body: payload });
 }

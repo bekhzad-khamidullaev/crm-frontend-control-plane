@@ -14,12 +14,14 @@ import {
 import { ReloadOutlined } from '@ant-design/icons';
 import {
   getCpOverview,
+  getLicenseCoverageSummary,
   getLicenseMe,
   getLicenseOperationsSummary,
 } from '../../lib/api/licenseControl.js';
 import parseLicenseRestriction from '../../lib/api/licenseError.ts';
 import LicenseRestrictedResult from '../../components/LicenseRestrictedResult.jsx';
 import { LicenseOperationsPanel } from '../../components/license-operations-panel';
+import { LicenseCoveragePanel } from '../../components/license-coverage-panel';
 import CustomersSection from './sections/CustomersSection.jsx';
 import DeploymentsSection from './sections/DeploymentsSection.jsx';
 import SubscriptionsSection from './sections/SubscriptionsSection.jsx';
@@ -34,9 +36,11 @@ export default function ControlPlaneAdminPage() {
   const [overview, setOverview] = useState(null);
   const [licenseMe, setLicenseMe] = useState(null);
   const [operationsSummary, setOperationsSummary] = useState(null);
+  const [coverageSummary, setCoverageSummary] = useState(null);
   const [overviewError, setOverviewError] = useState(null);
   const [licenseError, setLicenseError] = useState(null);
   const [operationsError, setOperationsError] = useState(null);
+  const [coverageError, setCoverageError] = useState(null);
   const [pageRestriction, setPageRestriction] = useState(null);
   const [loading, setLoading] = useState(false);
   const [refreshKey, setRefreshKey] = useState(0);
@@ -45,10 +49,11 @@ export default function ControlPlaneAdminPage() {
 
   const loadOverview = async () => {
     setLoading(true);
-    const [overviewResult, licenseResult, operationsResult] = await Promise.allSettled([
+    const [overviewResult, licenseResult, operationsResult, coverageResult] = await Promise.allSettled([
       getCpOverview(),
       getLicenseMe(),
       getLicenseOperationsSummary(),
+      getLicenseCoverageSummary(),
     ]);
     const overviewRestriction =
       overviewResult.status === 'rejected' ? parseLicenseRestriction(overviewResult.reason) : null;
@@ -87,6 +92,14 @@ export default function ControlPlaneAdminPage() {
       setOperationsError(
         operationsResult.reason || new Error('Failed to load runtime operations summary')
       );
+    }
+
+    if (coverageResult.status === 'fulfilled') {
+      setCoverageSummary(coverageResult.value || null);
+      setCoverageError(null);
+    } else {
+      setCoverageSummary(null);
+      setCoverageError(coverageResult.reason || new Error('Failed to load runtime coverage summary'));
     }
 
     setLoading(false);
@@ -329,6 +342,11 @@ export default function ControlPlaneAdminPage() {
         loading={loading && !operationsSummary && !operationsError}
         error={operationsError}
         onOpenAudit={openAuditFromOperations}
+      />
+      <LicenseCoveragePanel
+        summary={coverageSummary}
+        loading={loading && !coverageSummary && !coverageError}
+        error={coverageError}
       />
 
       <Card>

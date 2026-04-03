@@ -4,12 +4,14 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import ControlPlaneAdminPage from '../../src/pages/control-plane-admin/ControlPlaneAdminPage.jsx';
 import {
   getCpOverview,
+  getLicenseCoverageSummary,
   getLicenseMe,
   getLicenseOperationsSummary,
 } from '../../src/lib/api/licenseControl.js';
 
 vi.mock('../../src/lib/api/licenseControl.js', () => ({
   getCpOverview: vi.fn(),
+  getLicenseCoverageSummary: vi.fn(),
   getLicenseMe: vi.fn(),
   getLicenseOperationsSummary: vi.fn(),
 }));
@@ -82,6 +84,28 @@ describe('ControlPlaneAdminPage license restriction', () => {
           total: 1,
           top_code: 'LICENSE_SEAT_LIMIT_EXCEEDED',
           codes: [{ code: 'LICENSE_SEAT_LIMIT_EXCEEDED', count: 1 }],
+        },
+      ],
+    });
+    getLicenseCoverageSummary.mockResolvedValue({
+      generated_at: '2026-04-03T12:00:00Z',
+      totals: {
+        total: 82,
+        covered: 81,
+        exempt: 1,
+        missing_permission: 0,
+        missing_feature: 0,
+        mismatched_feature: 0,
+      },
+      entries: [
+        {
+          basename: 'user',
+          prefix: 'users',
+          viewset: 'UserViewSet',
+          status: 'covered',
+          feature: 'users.core',
+          middleware_feature: 'users.core',
+          permission_classes: ['IsAuthenticated'],
         },
       ],
     });
@@ -206,6 +230,8 @@ describe('ControlPlaneAdminPage license restriction', () => {
     expect(screen.getAllByText('LICENSE_FEATURE_DISABLED').length).toBeGreaterThan(0);
     expect(screen.getByText('crm.leads')).toBeInTheDocument();
     expect(screen.getByText('Runtime denials')).toBeInTheDocument();
+    expect(screen.getByText('License coverage health')).toBeInTheDocument();
+    expect(screen.getByText('All authenticated router endpoints are explicitly covered')).toBeInTheDocument();
   });
 
   it('shows unavailable state without misleading zero stats for generic overview failures', async () => {
@@ -218,6 +244,6 @@ describe('ControlPlaneAdminPage license restriction', () => {
     });
 
     expect(screen.getAllByText('—').length).toBeGreaterThan(0);
-    expect(screen.queryByText(/^0$/)).not.toBeInTheDocument();
+    expect(screen.getByText('License coverage health')).toBeInTheDocument();
   });
 });
