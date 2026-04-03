@@ -189,6 +189,13 @@ export default function QueueSection({ onMutated }) {
   const [artifactTarget, setArtifactTarget] = useState(null);
   const [artifactData, setArtifactData] = useState(null);
   const [artifactLoading, setArtifactLoading] = useState(false);
+  const [wizardOpen, setWizardOpen] = useState(false);
+  const [wizardMode, setWizardMode] = useState("runtime_request");
+  const [wizardRow, setWizardRow] = useState(null);
+  const [wizardDeploymentId, setWizardDeploymentId] = useState(undefined);
+  const [wizardSubscriptionId, setWizardSubscriptionId] = useState(undefined);
+  const [wizardSubmitting, setWizardSubmitting] = useState(false);
+  const [wizardResult, setWizardResult] = useState(null);
 
   const [allDeployments, setAllDeployments] = useState([]);
   const [allSubscriptions, setAllSubscriptions] = useState([]);
@@ -507,19 +514,89 @@ export default function QueueSection({ onMutated }) {
     }
   };
 
+  const openAssignWizard = (mode, row) => {
+    setWizardMode(mode);
+    setWizardRow(row || null);
+    setWizardResult(null);
+    if (mode === "runtime_request") {
+      const bindings = resolveApproveBindings(
+        row,
+        requestDeploymentMap,
+        requestSubscriptionMap
+      );
+      setWizardDeploymentId(bindings.deploymentId || undefined);
+      setWizardSubscriptionId(bindings.subscriptionId || undefined);
+    } else {
+      setWizardDeploymentId(row?.id);
+      setWizardSubscriptionId(rowSubscriptionMap[row?.id] || undefined);
+    }
+    setWizardOpen(true);
+  };
+
+  const closeAssignWizard = () => {
+    setWizardOpen(false);
+    setWizardRow(null);
+    setWizardResult(null);
+    setWizardSubmitting(false);
+  };
+
+  const runAssignWizard = async () => {
+    if (!wizardDeploymentId || !wizardSubscriptionId || !wizardRow) {
+      message.warning("Select deployment and tariff plan first");
+      return;
+    }
+    setWizardSubmitting(true);
+    try {
+      if (wizardMode === "runtime_request") {
+        const response = await approveCpRuntimeRequest(wizardRow.id, {
+          deployment_id: wizardDeploymentId,
+          subscription_id: wizardSubscriptionId,
+          review_note: "Approved from assignment wizard",
+        });
+        setWizardResult({
+          mode: "runtime_request",
+          status: response?.status || "approved",
+          requestId: response?.request_id || wizardRow.id,
+        });
+      } else {
+        const response = await assignCpDeploymentLicense(wizardDeploymentId, wizardSubscriptionId);
+        setWizardResult({
+          mode: "deployment",
+          status: response?.status || "issued",
+          licenseId: response?.license_id || null,
+          planCode: response?.plan_code || null,
+        });
+      }
+      await loadUnlicensed();
+      await loadRuntime();
+      await loadIssued();
+      onMutated?.();
+      message.success("License flow completed from wizard");
+    } catch (error) {
+      message.error(formatBackendError(error, "Failed to complete assignment wizard"));
+    } finally {
+      setWizardSubmitting(false);
+    }
+  };
+
   const onDownloadArtifact = () => {
     if (!artifactData) return;
     try {
-      const blob = new Blob([artifactObjectText], { type: "application/json;charset=utf-8" });
+      const bundleText = JSON.stringify(
+        artifactData?.bundle || {},
+        null,
+        2
+      );
+      const blob = new Blob([bundleText], { type: "application/octet-stream" });
       const href = URL.createObjectURL(blob);
       const anchor = document.createElement("a");
       anchor.href = href;
-      anchor.download = artifactData?.download_filename || `license-artifact-${artifactData?.license_id || "unknown"}.json`;
+      anchor.download = artifactData?.download_filename || `license-bundle-${artifactData?.license_id || "unknown"}.licb`;
       document.body.appendChild(anchor);
       anchor.click();
       document.body.removeChild(anchor);
       URL.revokeObjectURL(href);
-      message.success("Artifact file downloaded");
+      message.success("Bundle file downloaded");
     } catch {
       message.error("Download failed");
     }
@@ -552,6 +629,7 @@ export default function QueueSection({ onMutated }) {
   };
 
   const artifactPayloadText = JSON.stringify(artifactData?.payload || {}, null, 2);
+  const artifactBundleText = JSON.stringify(artifactData?.bundle || {}, null, 2);
   const artifactObjectText = JSON.stringify(
     artifactData?.artifact || {
       payload: artifactData?.payload || {},

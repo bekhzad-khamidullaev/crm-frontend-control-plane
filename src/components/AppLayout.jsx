@@ -183,9 +183,7 @@ export function AppLayout({
         { key: 'ai-chat', label: tr('nav.aiChat', 'AI чат CRM'), icon: <RobotOutlined />, path: '/ai-chat' },
         { key: 'calls', label: tr('nav.calls', 'Звонки'), icon: <ChannelBrandIcon channel="calls" />, path: '/calls' },
         { key: 'reminders', label: tr('nav.reminders', 'Напоминания'), icon: <ClockCircleOutlined />, path: '/reminders' },
-        { key: 'crm-emails', label: tr('nav.crmEmails', 'CRM Email'), icon: <ChannelBrandIcon channel="crm-email" />, path: '/crm-emails' },
         { key: 'massmail', label: tr('nav.massmail', 'Массовые рассылки'), icon: <ChannelBrandIcon channel="massmail" />, path: '/massmail' },
-        { key: 'sms-center', label: tr('nav.smsCenter', 'SMS'), icon: <ChannelBrandIcon channel="sms" />, path: '/sms' },
         { key: 'memos', label: tr('nav.memos', 'Заметки'), icon: <FileTextOutlined />, path: '/memos' },
       ],
     },
@@ -276,7 +274,15 @@ export function AppLayout({
     ? baseNav
       .map((item) => {
         const children = Array.isArray(item.children)
-          ? item.children.filter((child) => allowedNavKeys.includes(child.key))
+          ? item.children.filter((child) => {
+              if (allowedNavKeys.includes(child.key)) return true;
+              if (child.key !== 'massmail') return false;
+              return (
+                allowedNavKeys.includes('crm-emails')
+                || allowedNavKeys.includes('massmail')
+                || allowedNavKeys.includes('sms-center')
+              );
+            })
           : [];
         return children.length ? { ...item, children } : null;
       })
@@ -309,6 +315,7 @@ export function AppLayout({
     if (normalized.startsWith('calls')) return 'calls';
     if (normalized.startsWith('payments')) return 'payments';
     if (normalized.startsWith('reminders')) return 'reminders';
+    if (normalized === 'crm-emails' || normalized === 'sms-center') return 'massmail';
     if (normalized.startsWith('campaigns')) return 'marketing-workspace';
     if (normalized === 'marketing-segments') return 'marketing-workspace';
     if (normalized === 'marketing-templates') return 'marketing-workspace';
@@ -344,7 +351,7 @@ export function AppLayout({
     if (section === 'backlog') return 'backlog';
     if (section === 'sites') return 'sites-workspace';
     if (section === 'functional') return 'functional';
-    if (section === 'sms') return 'sms-center';
+    if (section === 'sms' || section === 'crm-emails' || section === 'massmail') return 'massmail';
     if (section === 'help') return 'help-center';
     if (section === 'settings' || section === 'integrations' || section === 'onboarding' || section === 'setup') {
       return SETTINGS_WORKSPACE_NAV_KEY;

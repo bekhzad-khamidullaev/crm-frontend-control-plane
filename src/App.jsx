@@ -1047,7 +1047,7 @@ function App() {
       case 'projects-detail':
         return <ProjectDetail id={route.params.id} />;
       case 'calls-list':
-        return <ChatPage initialWorkspaceTab="dispatch" />;
+        return <CallsList />;
       case 'calls-dashboard':
         return <CallsDashboard />;
       case 'payments-list':
@@ -1059,7 +1059,7 @@ function App() {
       case 'payments-detail':
         return <PaymentDetail id={route.params.id} />;
       case 'reminders-list':
-        return <ChatPage initialWorkspaceTab="dispatch" />;
+        return <RemindersList />;
       case 'reminders-new':
         return <ReminderForm />;
       case 'reminders-edit':
@@ -1095,9 +1095,9 @@ function App() {
       case 'marketing-templates':
         return <ContentPlansWorkspacePage initialTab="templates" />;
       case 'crm-emails':
-        return <ChatPage initialWorkspaceTab="dispatch" />;
+        return <ChatPage initialWorkspaceTab="dispatch" initialDispatchTab="crm-emails" />;
       case 'massmail':
-        return <ChatPage initialWorkspaceTab="dispatch" />;
+        return <ChatPage initialWorkspaceTab="dispatch" initialDispatchTab="massmail" />;
       case 'operations':
         return <OperationsPage />;
       case 'clients-workspace':
@@ -1125,7 +1125,7 @@ function App() {
       case 'help-center':
         return <HelpCenterPage />;
       case 'sms-center':
-        return <ChatPage initialWorkspaceTab="dispatch" />;
+        return <ChatPage initialWorkspaceTab="dispatch" initialDispatchTab="omnichannel" />;
       case 'telephony':
         return <TelephonyPage />;
       case 'users':

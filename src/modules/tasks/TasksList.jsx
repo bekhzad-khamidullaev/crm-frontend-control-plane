@@ -197,6 +197,7 @@ function TaskKanbanColumn({
     <div
       ref={setNodeRef}
       style={{
+        flex: '0 0 320px',
         minWidth: 300,
         width: 320,
         borderRadius: token.borderRadiusLG,
@@ -834,34 +835,37 @@ function TasksList() {
             <DndContext sensors={sensors} onDragEnd={handleKanbanDragEnd}>
               <div
                 style={{
-                  display: 'flex',
-                  gap: 12,
+                  width: '100%',
+                  maxWidth: '100%',
                   overflowX: 'auto',
+                  overflowY: 'hidden',
                   paddingBottom: 8,
                 }}
               >
-                {kanbanColumns.map((column) => (
-                  <TaskKanbanColumn
-                    key={column.droppableId}
-                    column={column}
-                    tasks={groupedKanbanTasks[column.droppableId] || []}
-                    loading={kanbanLoading}
-                    readOnly={!canManage}
-                    onCreate={openQuickCreate}
-                    renderTask={(task) => (
-                      <TaskKanbanCard
-                        key={task.id}
-                        task={task}
-                        readOnly={!canManage}
-                        stage={stagesById[task.stage]}
-                        doneStageId={doneStage?.id}
-                        dateLocale={dateLocale}
-                        onToggleComplete={handleToggleComplete}
-                        onEdit={(id) => navigate(`/tasks/${id}/edit`)}
-                      />
-                    )}
-                  />
-                ))}
+                <Space align="start" size={12} wrap={false}>
+                  {kanbanColumns.map((column) => (
+                    <TaskKanbanColumn
+                      key={column.droppableId}
+                      column={column}
+                      tasks={groupedKanbanTasks[column.droppableId] || []}
+                      loading={kanbanLoading}
+                      readOnly={!canManage}
+                      onCreate={openQuickCreate}
+                      renderTask={(task) => (
+                        <TaskKanbanCard
+                          key={task.id}
+                          task={task}
+                          readOnly={!canManage}
+                          stage={stagesById[task.stage]}
+                          doneStageId={doneStage?.id}
+                          dateLocale={dateLocale}
+                          onToggleComplete={handleToggleComplete}
+                          onEdit={(id) => navigate(`/tasks/${id}/edit`)}
+                        />
+                      )}
+                    />
+                  ))}
+                </Space>
               </div>
               {!kanbanLoading && !kanbanTasks.length && !kanbanError ? (
                 <Empty

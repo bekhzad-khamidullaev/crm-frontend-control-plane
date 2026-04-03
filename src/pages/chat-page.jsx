@@ -81,6 +81,8 @@ const SEGMENT_LABELS = {
   team: 'Команда',
 };
 
+const DISPATCH_TABS = ['omnichannel', 'crm-emails', 'massmail'];
+
 const META_24H_CHANNELS = new Set(['whatsapp', 'instagram', 'facebook']);
 
 function channelMeta(channelType) {
@@ -396,7 +398,11 @@ const QUICK_ACTIONS = [
   { action: 'start_call', label: 'Start call' },
 ];
 
-function ChatPage({ initialWorkspaceTab = null }) {
+function resolveDispatchTab(value) {
+  return DISPATCH_TABS.includes(value) ? value : 'omnichannel';
+}
+
+function ChatPage({ initialWorkspaceTab = null, initialDispatchTab = 'omnichannel' }) {
   const { message } = App.useApp();
   const { theme } = useTheme();
   const screens = Grid.useBreakpoint();
@@ -429,6 +435,7 @@ function ChatPage({ initialWorkspaceTab = null }) {
   const [ownerUserId, setOwnerUserId] = useState(null);
   const [linkSubjectContentType, setLinkSubjectContentType] = useState(null);
   const [linkSubjectObjectId, setLinkSubjectObjectId] = useState(null);
+  const defaultDispatchTab = resolveDispatchTab(initialDispatchTab);
   const licenseFeatures = readStoredLicenseFeatures();
   const storedLicenseState = readStoredLicenseState();
   const enforceLicenseFeatures = shouldEnforceLicenseFeatures(storedLicenseState);
@@ -1218,7 +1225,7 @@ function ChatPage({ initialWorkspaceTab = null }) {
       onChange={setActiveWorkspaceTab}
       items={[
         { key: 'inbox', label: 'Omnichannel Inbox', children: inboxLayout },
-        { key: 'dispatch', label: 'Outbound / Broadcast', children: <CommunicationsHub defaultTab="omnichannel" /> },
+        { key: 'dispatch', label: 'Outbound / Broadcast', children: <CommunicationsHub defaultTab={defaultDispatchTab} /> },
       ]}
     />
   );
