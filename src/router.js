@@ -176,7 +176,6 @@ const ADMIN_PERMISSIONS = ['auth.view_user', 'settings.view_systemsettings'];
   'settings',
   'integrations',
   'onboarding',
-  'control-plane',
 ].forEach((route) => {
   if (routeMeta[route]) routeMeta[route].roles = ADMIN_ROLES;
 });
@@ -245,7 +244,6 @@ const ADMIN_PERMISSIONS = ['auth.view_user', 'settings.view_systemsettings'];
   ['calls-list', 'voip.view_calllog'],
   ['calls-dashboard', 'voip.view_calllog'],
   ['telephony', 'voip.view_connection'],
-  ['control-plane', 'settings.view_systemsettings'],
   ['massmail', 'massmail.view_mailingout'],
   ['landing-builder', 'landings.view_landingpage'],
 ].forEach(([route, permission]) => {
@@ -257,7 +255,6 @@ const ADMIN_PERMISSIONS = ['auth.view_user', 'settings.view_systemsettings'];
   'settings',
   'integrations',
   'onboarding',
-  'control-plane',
   'reference-data',
   'operations',
 ].forEach((route) => {

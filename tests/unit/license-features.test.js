@@ -157,12 +157,16 @@ describe('license feature storage and route gating', () => {
   });
 
   it('keeps control-plane route accessible when license is missing in strict mode', () => {
+    sessionStorage.setItem('enterprise_crm_roles', JSON.stringify([]));
+    sessionStorage.setItem('enterprise_crm_permissions', JSON.stringify([]));
     persistLicenseState({ installed: false, status: 'missing', enforcement_mode: 'strict', features: [] });
 
     expect(canAccessRoute('control-plane')).toBe(true);
     expect(getRouteAccessState('control-plane')).toMatchObject({
       allowed: true,
       reason: null,
+      permissions: [],
+      roles: [],
     });
   });
 });
