@@ -297,7 +297,6 @@ const ADMIN_PERMISSIONS = ['auth.view_user', 'settings.view_systemsettings'];
   ['settings', 'settings.core'],
   ['integrations', 'integrations.core'],
   ['onboarding', ['onboarding.wizard', 'settings.core', 'integrations.core']],
-  ['control-plane', 'settings.core'],
   ['reference-data', 'reference.core'],
   ['landing-builder', 'landing.builder'],
   ['users', 'users.core'],

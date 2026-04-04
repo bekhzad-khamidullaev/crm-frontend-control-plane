@@ -155,4 +155,14 @@ describe('license feature storage and route gating', () => {
 
     expect(canAccessRoute('dashboard')).toBe(true);
   });
+
+  it('keeps control-plane route accessible when license is missing in strict mode', () => {
+    persistLicenseState({ installed: false, status: 'missing', enforcement_mode: 'strict', features: [] });
+
+    expect(canAccessRoute('control-plane')).toBe(true);
+    expect(getRouteAccessState('control-plane')).toMatchObject({
+      allowed: true,
+      reason: null,
+    });
+  });
 });
