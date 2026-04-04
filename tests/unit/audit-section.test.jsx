@@ -27,15 +27,9 @@ vi.mock('antd', () => {
     />
   );
 
-  const Select = ({ value, options = [], onChange, style }) => (
+  const Select = ({ value, options = [], onChange, style, 'aria-label': ariaLabel }) => (
     <select
-      aria-label={
-        style?.width === 180
-          ? 'Action Filter'
-          : style?.width === 260
-            ? 'Code Filter'
-            : 'Method Filter'
-      }
+      aria-label={ariaLabel || (style?.width === 180 ? 'Action Filter' : style?.width === 260 ? 'Code Filter' : 'Method Filter')}
       value={value}
       onChange={(event) => onChange?.(event.target.value)}
     >
@@ -71,7 +65,7 @@ describe('AuditSection filters', () => {
     getCpLicenseAudit.mockResolvedValue({ count: 0, results: [] });
   });
 
-  it('passes action, code, and correlation id filters to the audit api', async () => {
+  it('passes action, code, correlation id, and surface filters to the audit api', async () => {
     render(<AuditSection />);
 
     await waitFor(() => {
@@ -112,6 +106,37 @@ describe('AuditSection filters', () => {
         }),
       );
     });
+
+    fireEvent.change(screen.getByLabelText('Surface Type Filter'), {
+      target: { value: 'task' },
+    });
+
+    await waitFor(() => {
+      expect(getCpLicenseAudit).toHaveBeenLastCalledWith(
+        expect.objectContaining({
+          action: 'deny',
+          code: 'LICENSE_FEATURE_DISABLED',
+          correlation_id: 'corr-audit-1',
+          surface_type: 'task',
+        }),
+      );
+    });
+
+    const surfaceNameSearch = screen.getByPlaceholderText('Surface name');
+    fireEvent.change(surfaceNameSearch, { target: { value: 'send_sms_task' } });
+    fireEvent.keyDown(surfaceNameSearch, { key: 'Enter', code: 'Enter', charCode: 13 });
+
+    await waitFor(() => {
+      expect(getCpLicenseAudit).toHaveBeenLastCalledWith(
+        expect.objectContaining({
+          action: 'deny',
+          code: 'LICENSE_FEATURE_DISABLED',
+          correlation_id: 'corr-audit-1',
+          surface_type: 'task',
+          surface_name: 'send_sms_task',
+        }),
+      );
+    });
   });
 
   it('applies preset drill-down filters from operations panel', async () => {
@@ -130,6 +155,8 @@ describe('AuditSection filters', () => {
           feature: 'crm.leads',
           path: '/api/leads/',
           method: 'GET',
+          surfaceType: 'http',
+          surfaceName: '/api/leads/',
           token: 1,
         }}
       />
@@ -144,6 +171,8 @@ describe('AuditSection filters', () => {
           feature: 'crm.leads',
           path: '/api/leads/',
           method: 'GET',
+          surface_type: 'http',
+          surface_name: '/api/leads/',
         }),
       );
     });

@@ -12,6 +12,18 @@ export function getSettingsWorkspacePath(canAccessRoute) {
   return '/settings';
 }
 
+export function getSettingsWorkspaceTabPath(canAccessRoute, preferredTab = 'system') {
+  const normalizedTab = String(preferredTab || 'system').trim().toLowerCase();
+
+  if (normalizedTab === 'integrations') {
+    if (typeof canAccessRoute !== 'function') return '/integrations';
+    if (canAccessRoute('integrations')) return '/integrations';
+    return getSettingsWorkspacePath(canAccessRoute);
+  }
+
+  return getSettingsWorkspacePath(canAccessRoute);
+}
+
 export function normalizeSettingsWorkspaceSelectedKey(routeName) {
   if (routeName === 'settings' || routeName === 'integrations' || routeName === 'onboarding') {
     return SETTINGS_WORKSPACE_NAV_KEY;

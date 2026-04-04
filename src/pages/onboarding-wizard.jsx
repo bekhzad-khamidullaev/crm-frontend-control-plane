@@ -41,6 +41,8 @@ import { getWhatsAppAccounts } from '../lib/api/integrations/whatsapp.js';
 import { getStages } from '../lib/api/reference.js';
 import { getVoIPConnections } from '../lib/api/telephony.js';
 import { getProfiles, getUsers } from '../lib/api/user.js';
+import { canAccessRoute } from '../lib/rbac.js';
+import { getSettingsWorkspaceTabPath } from '../lib/settingsWorkspaceNavigation.js';
 import { useTheme } from '../lib/hooks/useTheme.js';
 import { navigate } from '../router.js';
 import ChannelBrandIcon from '../components/channel/ChannelBrandIcon.jsx';
@@ -195,7 +197,7 @@ function mergeUserRecords(usersResponse, profilesResponse) {
   return merged;
 }
 
-function channelSummaryRows(channelState) {
+function channelSummaryRows(channelState, integrationsPath) {
   return [
     {
       key: 'whatsapp',
@@ -203,7 +205,7 @@ function channelSummaryRows(channelState) {
       color: 'green',
       count: channelState.whatsapp?.count || 0,
       connected: Boolean(channelState.whatsapp?.count),
-      path: '/integrations',
+      path: integrationsPath,
     },
     {
       key: 'instagram',
@@ -211,7 +213,7 @@ function channelSummaryRows(channelState) {
       color: 'magenta',
       count: channelState.instagram?.count || 0,
       connected: Boolean(channelState.instagram?.count),
-      path: '/integrations',
+      path: integrationsPath,
     },
     {
       key: 'facebook',
@@ -219,7 +221,7 @@ function channelSummaryRows(channelState) {
       color: 'geekblue',
       count: channelState.facebook?.count || 0,
       connected: Boolean(channelState.facebook?.count),
-      path: '/integrations',
+      path: integrationsPath,
     },
     {
       key: 'telegram',
@@ -227,7 +229,7 @@ function channelSummaryRows(channelState) {
       color: 'blue',
       count: channelState.telegram?.count || 0,
       connected: Boolean(channelState.telegram?.count),
-      path: '/integrations',
+      path: integrationsPath,
     },
   ];
 }
@@ -257,6 +259,7 @@ export default function OnboardingWizardPage() {
   const [bootstrappingTemplate, setBootstrappingTemplate] = useState(false);
   const [diagnosticsSummary, setDiagnosticsSummary] = useState(null);
   const [diagnosticsLoading, setDiagnosticsLoading] = useState(false);
+  const integrationsWorkspacePath = getSettingsWorkspaceTabPath(canAccessRoute, 'integrations');
 
   const bg = theme === 'dark' ? '#0f172a' : '#ffffff';
   const bgMuted = theme === 'dark' ? '#111827' : '#f8fafc';
@@ -386,7 +389,10 @@ export default function OnboardingWizardPage() {
     });
   }, [form, generalSettings, progressState.companyDraft]);
 
-  const channelRows = useMemo(() => channelSummaryRows(channelState), [channelState]);
+  const channelRows = useMemo(
+    () => channelSummaryRows(channelState, integrationsWorkspacePath),
+    [channelState, integrationsWorkspacePath]
+  );
   const connectedChannelsCount = useMemo(
     () => channelRows.filter((row) => row.connected).length,
     [channelRows],
@@ -914,7 +920,7 @@ export default function OnboardingWizardPage() {
               ))}
             </Row>
             <Space>
-              <Button type="primary" icon={<ChannelBrandIcon channel="omnichannel" size={16} />} onClick={() => navigate('/integrations')}>
+              <Button type="primary" icon={<ChannelBrandIcon channel="omnichannel" size={16} />} onClick={() => navigate(integrationsWorkspacePath)}>
                 Открыть интеграции
               </Button>
               <Button onClick={() => goToStep(Math.max(5, safeNextIndex))}>Следующий шаг</Button>

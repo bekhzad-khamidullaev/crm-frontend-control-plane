@@ -47,6 +47,8 @@ import { getTasks } from '../lib/api/tasks.js';
 import { getUserFromToken } from '../lib/api/auth.js';
 import { formatCurrency, formatDate, formatNumber } from '../lib/utils/format.js';
 import { t } from '../lib/i18n/index.js';
+import { canAccessRoute } from '../lib/rbac.js';
+import { getSettingsWorkspaceTabPath } from '../lib/settingsWorkspaceNavigation.js';
 import { navigate } from '../router.js';
 
 const { Title, Text } = Typography;
@@ -375,6 +377,7 @@ function freshnessBadge(timestamp) {
 function Dashboard() {
   const { token } = theme.useToken();
   const { message } = App.useApp();
+  const integrationsWorkspacePath = getSettingsWorkspaceTabPath(canAccessRoute, 'integrations');
 
   const initialHash = getHashParams();
   const [period, setPeriod] = useState(initialHash.period);
@@ -1048,9 +1051,9 @@ function Dashboard() {
       key: 'integrations',
       title: tr('dashboardPage.extraDashboards.integrationsTitle', 'Интеграции'),
       description: tr('dashboardPage.extraDashboards.integrationsDesc', 'Meta/каналы коммуникаций и состояние подключений.'),
-      path: '/integrations',
+      path: integrationsWorkspacePath,
     },
-  ]), []);
+  ]), [integrationsWorkspacePath]);
 
   const predictionChartData = useMemo(() => {
     if (predictionSeries?.predictedData?.length) {

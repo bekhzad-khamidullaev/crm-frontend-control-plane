@@ -16,6 +16,19 @@ export interface LicenseOperationsEndpointStat {
   top_code?: string;
 }
 
+export interface LicenseOperationsSurfaceStat {
+  surface_type?: string;
+  count: number;
+  top_code?: string;
+}
+
+export interface LicenseOperationsRuntimeSurfaceStat {
+  surface_type?: string;
+  surface_name?: string;
+  count: number;
+  top_code?: string;
+}
+
 export interface LicenseOperationsTrendBucket {
   bucket_start: string;
   total: number;
@@ -33,6 +46,8 @@ export interface LicenseOperationsAlert {
   related_code?: string;
   path?: string;
   method?: string;
+  surface_type?: string;
+  surface_name?: string;
 }
 
 export interface LicenseAuditDrilldown {
@@ -42,6 +57,8 @@ export interface LicenseAuditDrilldown {
   feature?: string;
   path?: string;
   method?: string;
+  surfaceType?: string;
+  surfaceName?: string;
 }
 
 export interface LicenseOperationsSummary {
@@ -57,6 +74,8 @@ export interface LicenseOperationsSummary {
   by_code?: LicenseOperationsCodeStat[];
   by_feature?: LicenseOperationsFeatureStat[];
   by_endpoint?: LicenseOperationsEndpointStat[];
+  by_surface?: LicenseOperationsSurfaceStat[];
+  by_runtime_surface?: LicenseOperationsRuntimeSurfaceStat[];
   trend?: LicenseOperationsTrendBucket[];
   alerts?: LicenseOperationsAlert[];
 }

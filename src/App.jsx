@@ -207,7 +207,11 @@ function normalizeUser(raw, fallback = {}) {
 
   const pick = (...values) => values.map(toStr).find(Boolean) || '';
   const rawUser = raw?.user && typeof raw.user === 'object' ? raw.user : {};
+  const rawProfile = raw?.profile && typeof raw.profile === 'object' ? raw.profile : {};
+  const rawUserProfile = raw?.userprofile && typeof raw.userprofile === 'object' ? raw.userprofile : {};
   const fallbackUser = fallback?.user && typeof fallback.user === 'object' ? fallback.user : {};
+  const fallbackProfile = fallback?.profile && typeof fallback.profile === 'object' ? fallback.profile : {};
+  const fallbackUserProfile = fallback?.userprofile && typeof fallback.userprofile === 'object' ? fallback.userprofile : {};
 
   const firstName = pick(
     raw?.first_name,
@@ -215,10 +219,18 @@ function normalizeUser(raw, fallback = {}) {
     raw?.given_name,
     rawUser?.first_name,
     rawUser?.firstName,
+    rawProfile?.first_name,
+    rawProfile?.firstName,
+    rawUserProfile?.first_name,
+    rawUserProfile?.firstName,
     fallback?.first_name,
     fallback?.firstName,
     fallbackUser?.first_name,
     fallbackUser?.firstName,
+    fallbackProfile?.first_name,
+    fallbackProfile?.firstName,
+    fallbackUserProfile?.first_name,
+    fallbackUserProfile?.firstName,
   );
 
   const lastName = pick(
@@ -227,10 +239,18 @@ function normalizeUser(raw, fallback = {}) {
     raw?.family_name,
     rawUser?.last_name,
     rawUser?.lastName,
+    rawProfile?.last_name,
+    rawProfile?.lastName,
+    rawUserProfile?.last_name,
+    rawUserProfile?.lastName,
     fallback?.last_name,
     fallback?.lastName,
     fallbackUser?.last_name,
     fallbackUser?.lastName,
+    fallbackProfile?.last_name,
+    fallbackProfile?.lastName,
+    fallbackUserProfile?.last_name,
+    fallbackUserProfile?.lastName,
   );
 
   const fullName = pick(
@@ -243,11 +263,27 @@ function normalizeUser(raw, fallback = {}) {
     rawUser?.fullName,
     rawUser?.name,
     rawUser?.display_name,
+    rawProfile?.full_name,
+    rawProfile?.fullName,
+    rawProfile?.name,
+    rawProfile?.display_name,
+    rawUserProfile?.full_name,
+    rawUserProfile?.fullName,
+    rawUserProfile?.name,
+    rawUserProfile?.display_name,
     [firstName, lastName].filter(Boolean).join(' '),
     fallback?.full_name,
     fallback?.fullName,
     fallback?.name,
     fallback?.display_name,
+    fallbackProfile?.full_name,
+    fallbackProfile?.fullName,
+    fallbackProfile?.name,
+    fallbackProfile?.display_name,
+    fallbackUserProfile?.full_name,
+    fallbackUserProfile?.fullName,
+    fallbackUserProfile?.name,
+    fallbackUserProfile?.display_name,
   );
 
   const username = pick(
@@ -255,15 +291,23 @@ function normalizeUser(raw, fallback = {}) {
     raw?.login,
     rawUser?.username,
     rawUser?.login,
+    rawProfile?.username,
+    rawUserProfile?.username,
     fallback?.username,
     fallbackUser?.username,
+    fallbackProfile?.username,
+    fallbackUserProfile?.username,
   );
 
   const email = pick(
     raw?.email,
     rawUser?.email,
+    rawProfile?.email,
+    rawUserProfile?.email,
     fallback?.email,
     fallbackUser?.email,
+    fallbackProfile?.email,
+    fallbackUserProfile?.email,
   );
 
   const firstAndLastName = [firstName, lastName].filter(Boolean).join(' ');
@@ -293,6 +337,9 @@ function normalizeUser(raw, fallback = {}) {
         : (fallback?.system_version && typeof fallback.system_version === 'object'
             ? fallback.system_version
             : null),
+    profile: rawProfile,
+    userprofile: rawUserProfile,
+    user: rawUser,
   };
 }
 

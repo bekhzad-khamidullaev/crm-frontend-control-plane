@@ -4,7 +4,7 @@
  */
 
 import React, { useEffect, useState } from 'react';
-import { Card, Space, Button, Modal, App, Table, Tag, Form, Input, InputNumber, Select, Switch, Popconfirm, Alert, Typography, Descriptions, theme as antdTheme } from 'antd';
+import { Card, Space, Button, Modal, App, Table, Tag, Form, Input, InputNumber, Select, Switch, Popconfirm, Alert, Collapse, Typography, Descriptions, theme as antdTheme } from 'antd';
 import {
   ApiOutlined,
   ReloadOutlined,
@@ -149,6 +149,34 @@ const renderChannelIdentity = (label, channelHint) => (
 const formatDiagnosticsTimestamp = (value) => {
   if (!value) return '';
   return dayjs(value).isValid() ? dayjs(value).fromNow() : '';
+};
+
+const normalizeCollapseKeys = (keys) => {
+  if (Array.isArray(keys)) return keys;
+  return keys ? [keys] : [];
+};
+
+const getCatalogPrimaryAction = (record, tr) => {
+  const normalized = String(record?.status || 'disconnected');
+
+  if (normalized === 'disconnected') {
+    return {
+      label: tr('integrationsPage.actions.connect', 'Подключить'),
+      onClick: record?.onConnect,
+    };
+  }
+
+  if (normalized === 'error') {
+    return {
+      label: tr('integrationsPage.actions.retry', 'Повторить'),
+      onClick: record?.onRetry || record?.onCheck,
+    };
+  }
+
+  return {
+    label: tr('integrationsPage.actions.checkHealth', 'Проверить'),
+    onClick: record?.onCheck,
+  };
 };
 
 const buildDiagnosticsExplanation = (record, tr) => {
@@ -404,6 +432,9 @@ export default function IntegrationsPage({ embedded = false, compact = false } =
     error: '',
   });
   const [diagnosticsFilters, setDiagnosticsFilters] = useState(getDiagnosticsFiltersFromHash);
+  const [diagnosticsPanelKeys, setDiagnosticsPanelKeys] = useState(() =>
+    isEmbeddedCompact ? [] : ['summary']
+  );
   const [licenseRestriction, setLicenseRestriction] = useState(null);
 
   const getErrorText = (error, fallback) => {
@@ -415,6 +446,10 @@ export default function IntegrationsPage({ embedded = false, compact = false } =
     if (typeof error?.message === 'string' && !error.message.startsWith('HTTP ')) return error.message;
     return fallback;
   };
+
+  useEffect(() => {
+    setDiagnosticsPanelKeys(isEmbeddedCompact ? [] : ['summary']);
+  }, [isEmbeddedCompact]);
 
   useEffect(() => {
     loadAllStatuses();
@@ -1444,6 +1479,7 @@ export default function IntegrationsPage({ embedded = false, compact = false } =
     },
   };
   const openDiagnosticsCenter = () => {
+    setDiagnosticsPanelKeys(['summary', 'events']);
     const node = document.getElementById('integrations-diagnostics');
     if (node?.scrollIntoView) {
       node.scrollIntoView({ behavior: 'smooth', block: 'start' });
@@ -1631,38 +1667,38 @@ export default function IntegrationsPage({ embedded = false, compact = false } =
                     title: tr('integrationsPage.table.actions', 'Действия'),
                     key: 'actions',
                     width: 360,
-                    render: (_, record) => (
-                      <Space size={[6, 6]} wrap>
-                        {record.status === 'disconnected' ? (
-                          <Button size="small" type="primary" onClick={record.onConnect} disabled={integrationsRestricted}>
-                            {tr('integrationsPage.actions.connect', 'Подключить')}
+                    render: (_, record) => {
+                      const normalized = String(record.status || 'disconnected');
+                      const primaryAction = getCatalogPrimaryAction(record, tr);
+                      const canDisconnect = Boolean(record.onDisconnect && normalized !== 'disconnected');
+
+                      return (
+                        <Space size={[6, 6]} wrap>
+                          <Button
+                            size="small"
+                            type="primary"
+                            onClick={primaryAction.onClick}
+                            disabled={integrationsRestricted || typeof primaryAction.onClick !== 'function'}
+                          >
+                            {primaryAction.label}
                           </Button>
-                        ) : record.status === 'error' ? (
-                          <Button size="small" onClick={record.onRetry} disabled={integrationsRestricted}>
-                            {tr('integrationsPage.actions.retry', 'Повторить')}
+                          {canDisconnect ? (
+                            <Button
+                              size="small"
+                              type="text"
+                              danger
+                              onClick={record.onDisconnect}
+                              disabled={integrationsRestricted}
+                            >
+                              {tr('integrationsPage.actions.disconnect', 'Отключить')}
+                            </Button>
+                          ) : null}
+                          <Button size="small" type="link" onClick={openDiagnosticsCenter}>
+                            {tr('integrationsPage.actions.openDiagnostics', 'Diagnostics')}
                           </Button>
-                        ) : (
-                          <Button size="small" onClick={record.onCheck} disabled={integrationsRestricted}>
-                            {tr('integrationsPage.actions.test', 'Проверить')}
-                          </Button>
-                        )}
-                        <Button size="small" onClick={record.onCheck} disabled={integrationsRestricted}>
-                          {tr('integrationsPage.actions.checkHealth', 'Проверить')}
-                        </Button>
-                        {record.onDisconnect ? (
-                          <Button size="small" danger onClick={record.onDisconnect} disabled={integrationsRestricted}>
-                            {tr('integrationsPage.actions.disconnect', 'Отключить')}
-                          </Button>
-                        ) : (
-                          <Button size="small" danger disabled>
-                            {tr('integrationsPage.actions.disconnect', 'Отключить')}
-                          </Button>
-                        )}
-                        <Button size="small" type="link" onClick={openDiagnosticsCenter}>
-                          {tr('integrationsPage.actions.openDiagnostics', 'Diagnostics')}
-                        </Button>
-                      </Space>
-                    ),
+                        </Space>
+                      );
+                    },
                   },
                 ]}
               />
@@ -1702,162 +1738,180 @@ export default function IntegrationsPage({ embedded = false, compact = false } =
                   'Карточки ниже помогают быстро увидеть, где нужен manual replay, разбор SLA или восстановление канала.'
                 )}
               />
-              <div
-                style={{
-                  display: 'grid',
-                  gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))',
-                  gap: 12,
-                }}
-              >
-                {diagnosticsHighlights.map((item) => {
-                  const tone = diagnosticsToneStyles[item.tone] || diagnosticsToneStyles.default;
-                  return (
-                    <div
-                      key={item.key}
-                      style={{
-                        borderRadius: token.borderRadiusLG,
-                        border: `1px solid ${tone.border}`,
-                        background: tone.background,
-                        padding: 14,
-                        minHeight: 92,
-                        boxShadow: isDark ? '0 8px 20px rgba(2, 6, 23, 0.18)' : '0 8px 18px rgba(15, 23, 42, 0.06)',
-                      }}
-                    >
-                      <div style={{ fontSize: 12, fontWeight: 700, color: tone.label, marginBottom: 8 }}>
-                        {item.label}
-                      </div>
-                      <div style={{ fontSize: 28, lineHeight: 1, fontWeight: 800, color: tone.value }}>
-                        {item.value}
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
-              <Space wrap size={[8, 8]}>
-                <Tag color={diagnosticsSummary.transport_health === 'degraded' ? 'error' : 'success'}>
-                  {tr('integrationsPage.diagnostics.transport', 'Transport')}: {diagnosticsSummary.transport_health || 'unknown'}
-                </Tag>
-                <Tag color={diagnosticsSummary.business_health === 'degraded' ? 'warning' : 'success'}>
-                  {tr('integrationsPage.diagnostics.business', 'Business')}: {diagnosticsSummary.business_health || 'unknown'}
-                </Tag>
-                <Tag>{tr('integrationsPage.diagnostics.failed', 'Ошибок')}: {diagnosticsSummary.failed_events || 0}</Tag>
-                <Tag>{tr('integrationsPage.diagnostics.replayable', 'Replay-ready')}: {diagnosticsSummary.replayable_events || 0}</Tag>
-                <Tag>{tr('integrationsPage.diagnostics.archived', 'Archived')}: {diagnosticsSummary.archived_events || 0}</Tag>
-                <Tag>{tr('integrationsPage.diagnostics.signatureRejected', 'Signature rejected')}: {diagnosticsSummary.signature_rejected_events || 0}</Tag>
-                <Tag>{tr('integrationsPage.diagnostics.unassigned', 'Без привязки')}: {diagnosticsSummary.unassigned_events || 0}</Tag>
-                <Tag>{tr('integrationsPage.diagnostics.breached', 'SLA breach')}: {diagnosticsSummary.breached_sla || 0}</Tag>
-                <Tag color={Number(diagnosticsSummary.outbound_retry_scheduled || 0) > 0 ? 'warning' : 'default'}>
-                  {tr('integrationsPage.diagnostics.outboundRetry', 'Outbound retry')}: {diagnosticsSummary.outbound_retry_scheduled || 0}
-                </Tag>
-                <Tag color={Number(diagnosticsSummary.outbound_dead_letters || 0) > 0 ? 'error' : 'default'}>
-                  {tr('integrationsPage.diagnostics.outboundDeadLetters', 'Outbound dead-letter')}: {diagnosticsSummary.outbound_dead_letters || 0}
-                </Tag>
-              </Space>
-              <Space wrap size={[8, 8]} style={{ width: '100%', justifyContent: 'space-between' }}>
-                <Space wrap size={[8, 8]}>
-                  <Input.Search
-                    allowClear
-                    size="small"
-                    placeholder={tr('integrationsPage.filters.searchDiagnostics', 'Поиск по external ID, message ID или тексту')}
-                    value={diagnosticsFilters.query}
-                    onChange={(event) => setDiagnosticsFilters((prev) => ({ ...prev, query: event.target.value }))}
-                    style={{ width: 280, maxWidth: '100%' }}
-                  />
-                  <Select
-                    size="small"
-                    value={diagnosticsFilters.scope}
-                    style={{ width: 190 }}
-                    onChange={(value) => setDiagnosticsFilters((prev) => ({ ...prev, scope: value }))}
-                    options={[
-                      { value: 'all', label: tr('integrationsPage.filters.scopeAll', 'Все события') },
-                      { value: 'failures', label: tr('integrationsPage.filters.scopeFailures', 'Только ошибки') },
-                      { value: 'replayable', label: tr('integrationsPage.filters.scopeReplayable', 'Replay-ready') },
-                      { value: 'archived', label: tr('integrationsPage.filters.scopeArchived', 'Archived sample') },
-                      { value: 'outbound', label: tr('integrationsPage.filters.scopeOutbound', 'Outbound queue') },
-                    ]}
-                  />
-                  <Select
-                    size="small"
-                    value={diagnosticsFilters.channel}
-                    style={{ width: 170 }}
-                    onChange={(value) => setDiagnosticsFilters((prev) => ({ ...prev, channel: value }))}
-                    options={diagnosticsChannelOptions}
-                    optionRender={(option) => renderDiagnosticsChannelOption(option?.data)}
-                    labelRender={(props) => renderDiagnosticsChannelOption(props)}
-                  />
-                  <Switch
-                    size="small"
-                    checked={diagnosticsFilters.onlyNeedsAction}
-                    onChange={(checked) => setDiagnosticsFilters((prev) => ({ ...prev, onlyNeedsAction: checked }))}
-                  />
-                  <Text type="secondary" style={{ fontSize: 12 }}>
-                    {tr('integrationsPage.filters.onlyNeedsAction', 'Только требует действия')}
-                  </Text>
-                </Space>
-                <Text type="secondary" style={{ fontSize: 12 }}>
-                  {tr('integrationsPage.diagnostics.filteredCount', 'Показано {count} событий', { count: omnichannelDiagnostics.filtered_count || diagnosticsRows.length })}
-                </Text>
-              </Space>
-              {omnichannelDiagnostics.channels?.length > 0 && (
-                <div
-                  style={{
-                    display: 'grid',
-                    gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))',
-                    gap: 12,
-                  }}
-                >
-                  {omnichannelDiagnostics.channels.map((channel) => (
-                    <div
-                      key={channel.channel}
-                      style={{
-                        borderRadius: token.borderRadiusLG,
-                        border: `1px solid ${
-                          channel.health === 'degraded'
-                            ? isDark
-                              ? 'rgba(248, 113, 113, 0.32)'
-                              : 'rgba(239, 68, 68, 0.2)'
-                            : isDark
-                              ? 'rgba(74, 222, 128, 0.24)'
-                              : 'rgba(34, 197, 94, 0.18)'
-                        }`,
-                        background: isDark ? 'rgba(15, 23, 42, 0.74)' : token.colorBgContainer,
-                        padding: 14,
-                      }}
-                    >
-                      <Space direction="vertical" size={10} style={{ width: '100%' }}>
-                        <Space align="center" wrap>
-                          <ChannelBrandIcon channel={normalizeChannelIconKey(channel.channel)} size={16} />
-                          <Text strong>{getChannelDisplayLabel(channel.channel)}</Text>
-                          <Tag color={channel.health === 'degraded' ? 'error' : 'success'} style={{ marginInlineEnd: 0 }}>
-                            {channel.health === 'degraded'
-                              ? tr('integrationsPage.diagnostics.degraded', 'Degraded')
-                              : tr('integrationsPage.diagnostics.healthy', 'Healthy')}
-                          </Tag>
-                        </Space>
-                        <Space wrap size={[6, 6]}>
-                          <Tag style={{ marginInlineEnd: 0 }}>{tr('integrationsPage.diagnostics.total', 'Всего')}: {channel.total || 0}</Tag>
-                          <Tag style={{ marginInlineEnd: 0 }}>{tr('integrationsPage.diagnostics.archived', 'Archived')}: {channel.archived_events || 0}</Tag>
-                          <Tag color={(channel.failed || 0) > 0 ? 'error' : 'default'} style={{ marginInlineEnd: 0 }}>
-                            {tr('integrationsPage.diagnostics.failed', 'Ошибок')}: {channel.failed || 0}
-                          </Tag>
-                          <Tag color={(channel.replayable || 0) > 0 ? 'processing' : 'default'} style={{ marginInlineEnd: 0 }}>
-                            {tr('integrationsPage.diagnostics.replayable', 'Replay-ready')}: {channel.replayable || 0}
-                          </Tag>
-                        </Space>
-                      </Space>
-                    </div>
-                  ))}
-                </div>
-              )}
-              <Table
+              <Collapse
                 size="small"
-                pagination={false}
-                rowKey={(record) => record.id}
-                dataSource={diagnosticsRows}
-                locale={{
-                  emptyText: tr('integrationsPage.diagnostics.empty', 'Ошибок и replay-ready событий пока нет'),
-                }}
-                columns={[
+                activeKey={diagnosticsPanelKeys}
+                onChange={(keys) => setDiagnosticsPanelKeys(normalizeCollapseKeys(keys))}
+                items={[
+                  {
+                    key: 'summary',
+                    label: tr('integrationsPage.diagnostics.sections.summary', 'Сводка и health по каналам'),
+                    children: (
+                      <Space direction="vertical" size="middle" style={{ width: '100%' }}>
+                        <div
+                          style={{
+                            display: 'grid',
+                            gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))',
+                            gap: 12,
+                          }}
+                        >
+                          {diagnosticsHighlights.map((item) => {
+                            const tone = diagnosticsToneStyles[item.tone] || diagnosticsToneStyles.default;
+                            return (
+                              <div
+                                key={item.key}
+                                style={{
+                                  borderRadius: token.borderRadiusLG,
+                                  border: `1px solid ${tone.border}`,
+                                  background: tone.background,
+                                  padding: 14,
+                                  minHeight: 92,
+                                  boxShadow: isDark ? '0 8px 20px rgba(2, 6, 23, 0.18)' : '0 8px 18px rgba(15, 23, 42, 0.06)',
+                                }}
+                              >
+                                <div style={{ fontSize: 12, fontWeight: 700, color: tone.label, marginBottom: 8 }}>
+                                  {item.label}
+                                </div>
+                                <div style={{ fontSize: 28, lineHeight: 1, fontWeight: 800, color: tone.value }}>
+                                  {item.value}
+                                </div>
+                              </div>
+                            );
+                          })}
+                        </div>
+                        <Space wrap size={[8, 8]}>
+                          <Tag color={diagnosticsSummary.transport_health === 'degraded' ? 'error' : 'success'}>
+                            {tr('integrationsPage.diagnostics.transport', 'Transport')}: {diagnosticsSummary.transport_health || 'unknown'}
+                          </Tag>
+                          <Tag color={diagnosticsSummary.business_health === 'degraded' ? 'warning' : 'success'}>
+                            {tr('integrationsPage.diagnostics.business', 'Business')}: {diagnosticsSummary.business_health || 'unknown'}
+                          </Tag>
+                          <Tag>{tr('integrationsPage.diagnostics.failed', 'Ошибок')}: {diagnosticsSummary.failed_events || 0}</Tag>
+                          <Tag>{tr('integrationsPage.diagnostics.replayable', 'Replay-ready')}: {diagnosticsSummary.replayable_events || 0}</Tag>
+                          <Tag>{tr('integrationsPage.diagnostics.archived', 'Archived')}: {diagnosticsSummary.archived_events || 0}</Tag>
+                          <Tag>{tr('integrationsPage.diagnostics.signatureRejected', 'Signature rejected')}: {diagnosticsSummary.signature_rejected_events || 0}</Tag>
+                          <Tag>{tr('integrationsPage.diagnostics.unassigned', 'Без привязки')}: {diagnosticsSummary.unassigned_events || 0}</Tag>
+                          <Tag>{tr('integrationsPage.diagnostics.breached', 'SLA breach')}: {diagnosticsSummary.breached_sla || 0}</Tag>
+                          <Tag color={Number(diagnosticsSummary.outbound_retry_scheduled || 0) > 0 ? 'warning' : 'default'}>
+                            {tr('integrationsPage.diagnostics.outboundRetry', 'Outbound retry')}: {diagnosticsSummary.outbound_retry_scheduled || 0}
+                          </Tag>
+                          <Tag color={Number(diagnosticsSummary.outbound_dead_letters || 0) > 0 ? 'error' : 'default'}>
+                            {tr('integrationsPage.diagnostics.outboundDeadLetters', 'Outbound dead-letter')}: {diagnosticsSummary.outbound_dead_letters || 0}
+                          </Tag>
+                        </Space>
+                        {omnichannelDiagnostics.channels?.length > 0 && (
+                          <div
+                            style={{
+                              display: 'grid',
+                              gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))',
+                              gap: 12,
+                            }}
+                          >
+                            {omnichannelDiagnostics.channels.map((channel) => (
+                              <div
+                                key={channel.channel}
+                                style={{
+                                  borderRadius: token.borderRadiusLG,
+                                  border: `1px solid ${
+                                    channel.health === 'degraded'
+                                      ? isDark
+                                        ? 'rgba(248, 113, 113, 0.32)'
+                                        : 'rgba(239, 68, 68, 0.2)'
+                                      : isDark
+                                        ? 'rgba(74, 222, 128, 0.24)'
+                                        : 'rgba(34, 197, 94, 0.18)'
+                                  }`,
+                                  background: isDark ? 'rgba(15, 23, 42, 0.74)' : token.colorBgContainer,
+                                  padding: 14,
+                                }}
+                              >
+                                <Space direction="vertical" size={10} style={{ width: '100%' }}>
+                                  <Space align="center" wrap>
+                                    <ChannelBrandIcon channel={normalizeChannelIconKey(channel.channel)} size={16} />
+                                    <Text strong>{getChannelDisplayLabel(channel.channel)}</Text>
+                                    <Tag color={channel.health === 'degraded' ? 'error' : 'success'} style={{ marginInlineEnd: 0 }}>
+                                      {channel.health === 'degraded'
+                                        ? tr('integrationsPage.diagnostics.degraded', 'Degraded')
+                                        : tr('integrationsPage.diagnostics.healthy', 'Healthy')}
+                                    </Tag>
+                                  </Space>
+                                  <Space wrap size={[6, 6]}>
+                                    <Tag style={{ marginInlineEnd: 0 }}>{tr('integrationsPage.diagnostics.total', 'Всего')}: {channel.total || 0}</Tag>
+                                    <Tag style={{ marginInlineEnd: 0 }}>{tr('integrationsPage.diagnostics.archived', 'Archived')}: {channel.archived_events || 0}</Tag>
+                                    <Tag color={(channel.failed || 0) > 0 ? 'error' : 'default'} style={{ marginInlineEnd: 0 }}>
+                                      {tr('integrationsPage.diagnostics.failed', 'Ошибок')}: {channel.failed || 0}
+                                    </Tag>
+                                    <Tag color={(channel.replayable || 0) > 0 ? 'processing' : 'default'} style={{ marginInlineEnd: 0 }}>
+                                      {tr('integrationsPage.diagnostics.replayable', 'Replay-ready')}: {channel.replayable || 0}
+                                    </Tag>
+                                  </Space>
+                                </Space>
+                              </div>
+                            ))}
+                          </div>
+                        )}
+                      </Space>
+                    ),
+                  },
+                  {
+                    key: 'events',
+                    label: tr('integrationsPage.diagnostics.sections.events', 'Фильтры, очередь и журнал событий'),
+                    children: (
+                      <Space direction="vertical" size="middle" style={{ width: '100%' }}>
+                        <Space wrap size={[8, 8]} style={{ width: '100%', justifyContent: 'space-between' }}>
+                          <Space wrap size={[8, 8]}>
+                            <Input.Search
+                              allowClear
+                              size="small"
+                              placeholder={tr('integrationsPage.filters.searchDiagnostics', 'Поиск по external ID, message ID или тексту')}
+                              value={diagnosticsFilters.query}
+                              onChange={(event) => setDiagnosticsFilters((prev) => ({ ...prev, query: event.target.value }))}
+                              style={{ width: 280, maxWidth: '100%' }}
+                            />
+                            <Select
+                              size="small"
+                              value={diagnosticsFilters.scope}
+                              style={{ width: 190 }}
+                              onChange={(value) => setDiagnosticsFilters((prev) => ({ ...prev, scope: value }))}
+                              options={[
+                                { value: 'all', label: tr('integrationsPage.filters.scopeAll', 'Все события') },
+                                { value: 'failures', label: tr('integrationsPage.filters.scopeFailures', 'Только ошибки') },
+                                { value: 'replayable', label: tr('integrationsPage.filters.scopeReplayable', 'Replay-ready') },
+                                { value: 'archived', label: tr('integrationsPage.filters.scopeArchived', 'Archived sample') },
+                                { value: 'outbound', label: tr('integrationsPage.filters.scopeOutbound', 'Outbound queue') },
+                              ]}
+                            />
+                            <Select
+                              size="small"
+                              value={diagnosticsFilters.channel}
+                              style={{ width: 170 }}
+                              onChange={(value) => setDiagnosticsFilters((prev) => ({ ...prev, channel: value }))}
+                              options={diagnosticsChannelOptions}
+                              optionRender={(option) => renderDiagnosticsChannelOption(option?.data)}
+                              labelRender={(props) => renderDiagnosticsChannelOption(props)}
+                            />
+                            <Switch
+                              size="small"
+                              checked={diagnosticsFilters.onlyNeedsAction}
+                              onChange={(checked) => setDiagnosticsFilters((prev) => ({ ...prev, onlyNeedsAction: checked }))}
+                            />
+                            <Text type="secondary" style={{ fontSize: 12 }}>
+                              {tr('integrationsPage.filters.onlyNeedsAction', 'Только требует действия')}
+                            </Text>
+                          </Space>
+                          <Text type="secondary" style={{ fontSize: 12 }}>
+                            {tr('integrationsPage.diagnostics.filteredCount', 'Показано {count} событий', { count: omnichannelDiagnostics.filtered_count || diagnosticsRows.length })}
+                          </Text>
+                        </Space>
+                        <Table
+                          size="small"
+                          pagination={false}
+                          rowKey={(record) => record.id}
+                          dataSource={diagnosticsRows}
+                          locale={{
+                            emptyText: tr('integrationsPage.diagnostics.empty', 'Ошибок и replay-ready событий пока нет'),
+                          }}
+                          columns={[
                   {
                     title: tr('integrationsPage.table.channel', 'Канал'),
                     dataIndex: 'channel_type',
@@ -1975,8 +2029,13 @@ export default function IntegrationsPage({ embedded = false, compact = false } =
                           )}
                         </LicenseRestrictedAction>
                       </Space>
-                      );
+                      )
                     },
+                  },
+                          ]}
+                        />
+                      </Space>
+                    ),
                   },
                 ]}
               />

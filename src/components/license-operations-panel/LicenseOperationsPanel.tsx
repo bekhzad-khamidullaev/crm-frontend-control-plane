@@ -1,4 +1,5 @@
-import { Alert, Button, Card, Col, Empty, Progress, Row, Space, Table, Tag, Typography } from 'antd';
+import { useState } from 'react';
+import { Alert, Button, Card, Col, Empty, Progress, Row, Segmented, Space, Table, Tag, Typography } from 'antd';
 import dayjs from 'dayjs';
 
 import { KpiStatCard } from '../../shared/ui';
@@ -9,6 +10,8 @@ import type {
   LicenseOperationsEndpointStat,
   LicenseOperationsFeatureStat,
   LicenseOperationsPanelProps,
+  LicenseOperationsRuntimeSurfaceStat,
+  LicenseOperationsSurfaceStat,
   LicenseOperationsTrendBucket,
 } from './interface';
 
@@ -33,8 +36,11 @@ export default function LicenseOperationsPanel({
   const byCode = toArray(summary?.by_code);
   const byFeature = toArray(summary?.by_feature);
   const byEndpoint = toArray(summary?.by_endpoint);
+  const bySurface = toArray(summary?.by_surface);
+  const byRuntimeSurface = toArray(summary?.by_runtime_surface);
   const trend = toArray(summary?.trend);
   const alerts = toArray(summary?.alerts);
+  const [breakdownMode, setBreakdownMode] = useState<'endpoint' | 'runtime_surface'>('endpoint');
 
   const totalDenials = Number(totals.total_denials || 0);
   const uniqueCodes = Number(totals.unique_codes || 0);
@@ -206,6 +212,78 @@ export default function LicenseOperationsPanel({
               code: row?.top_code,
               path: row?.path,
               method: row?.method,
+              surfaceType: 'http',
+              surfaceName: row?.path,
+            })
+          }
+        >
+          Audit
+        </Button>
+      ),
+    },
+  ];
+
+  const surfaceColumns = [
+    {
+      title: 'Surface type',
+      dataIndex: 'surface_type',
+      key: 'surface_type',
+      render: (value: string) => <Tag color="purple">{String(value || 'unknown')}</Tag>,
+    },
+    {
+      title: 'Denials',
+      dataIndex: 'count',
+      key: 'count',
+      width: 96,
+      render: (value: number) => <Text strong>{Number(value || 0)}</Text>,
+    },
+    {
+      title: 'Top code',
+      dataIndex: 'top_code',
+      key: 'top_code',
+      render: (value: string) => (value ? <Tag color="processing">{String(value)}</Tag> : '-'),
+    },
+  ];
+
+  const runtimeSurfaceColumns = [
+    {
+      title: 'Surface type',
+      dataIndex: 'surface_type',
+      key: 'surface_type',
+      width: 140,
+      render: (value: string) => <Tag color="purple">{String(value || 'unknown')}</Tag>,
+    },
+    {
+      title: 'Surface name',
+      dataIndex: 'surface_name',
+      key: 'surface_name',
+      render: (value: string) => <Text code>{String(value || '-')}</Text>,
+    },
+    {
+      title: 'Denials',
+      dataIndex: 'count',
+      key: 'count',
+      width: 96,
+      render: (value: number) => <Text strong>{Number(value || 0)}</Text>,
+    },
+    {
+      title: 'Top code',
+      dataIndex: 'top_code',
+      key: 'top_code',
+      render: (value: string) => (value ? <Tag color="gold">{String(value)}</Tag> : '-'),
+    },
+    {
+      title: 'Investigate',
+      key: 'investigate',
+      width: 110,
+      render: (_: unknown, row: LicenseOperationsRuntimeSurfaceStat) => (
+        <Button
+          size="small"
+          onClick={() =>
+            openAudit({
+              code: row?.top_code,
+              surfaceType: row?.surface_type,
+              surfaceName: row?.surface_name,
             })
           }
         >
@@ -309,6 +387,8 @@ export default function LicenseOperationsPanel({
                             feature: row?.feature,
                             path: row?.path,
                             method: row?.method,
+                            surfaceType: row?.surface_type,
+                            surfaceName: row?.surface_name,
                           })
                         }
                       >
@@ -360,18 +440,54 @@ export default function LicenseOperationsPanel({
         </Col>
       </Row>
 
-      <Card title="Endpoint breakdown" loading={loading}>
-        {byEndpoint.length ? (
-          <Table
-            rowKey={(row) => `${row.method || '-'}-${row.path || '-'}`}
-            size="small"
-            pagination={false}
-            dataSource={byEndpoint}
-            columns={endpointColumns}
+      <Card
+        title="Runtime surface breakdown"
+        extra={
+          <Segmented
+            value={breakdownMode}
+            onChange={(value) => setBreakdownMode(value as 'endpoint' | 'runtime_surface')}
+            options={[
+              { label: 'HTTP endpoints', value: 'endpoint' },
+              { label: 'Tasks & commands', value: 'runtime_surface' },
+            ]}
           />
-        ) : (
-          <Empty image={Empty.PRESENTED_IMAGE_SIMPLE} description="No endpoint hotspots recorded" />
-        )}
+        }
+        loading={loading}
+      >
+        <Space direction="vertical" size="middle" style={{ width: '100%' }}>
+          {bySurface.length ? (
+            <Table
+              rowKey={(row: LicenseOperationsSurfaceStat) => `${row.surface_type || '-'}`}
+              size="small"
+              pagination={false}
+              dataSource={bySurface}
+              columns={surfaceColumns}
+            />
+          ) : null}
+          {breakdownMode === 'endpoint' ? (
+            byEndpoint.length ? (
+              <Table
+                rowKey={(row) => `${row.method || '-'}-${row.path || '-'}`}
+                size="small"
+                pagination={false}
+                dataSource={byEndpoint}
+                columns={endpointColumns}
+              />
+            ) : (
+              <Empty image={Empty.PRESENTED_IMAGE_SIMPLE} description="No endpoint hotspots recorded" />
+            )
+          ) : byRuntimeSurface.length ? (
+            <Table
+              rowKey={(row) => `${row.surface_type || '-'}-${row.surface_name || '-'}`}
+              size="small"
+              pagination={false}
+              dataSource={byRuntimeSurface}
+              columns={runtimeSurfaceColumns}
+            />
+          ) : (
+            <Empty image={Empty.PRESENTED_IMAGE_SIMPLE} description="No task or command hotspots recorded" />
+          )}
+        </Space>
       </Card>
 
       <Card title="Top denial codes" loading={loading}>

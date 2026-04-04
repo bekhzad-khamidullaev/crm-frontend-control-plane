@@ -27,6 +27,15 @@ vi.mock('antd', () => {
   Empty.PRESENTED_IMAGE_SIMPLE = null;
   const Progress = ({ percent }) => <div>{percent}</div>;
   const Row = ({ children }) => <div>{children}</div>;
+  const Segmented = ({ options = [], value, onChange }) => (
+    <select aria-label="Breakdown Mode" value={value} onChange={(event) => onChange?.(event.target.value)}>
+      {options.map((option) => (
+        <option key={option.value} value={option.value}>
+          {option.label}
+        </option>
+      ))}
+    </select>
+  );
   const Space = ({ children }) => <div>{children}</div>;
   const Table = ({ dataSource = [], columns = [], rowKey }) => (
     <div>
@@ -48,7 +57,7 @@ vi.mock('antd', () => {
     Text: ({ children }) => <span>{children}</span>,
   };
 
-  return { Alert, Button, Card, Col, Empty, Progress, Row, Space, Table, Tag, Typography };
+  return { Alert, Button, Card, Col, Empty, Progress, Row, Segmented, Space, Table, Tag, Typography };
 });
 
 vi.mock('../../src/shared/ui', () => ({
@@ -100,6 +109,18 @@ describe('LicenseOperationsPanel', () => {
               top_code: 'LICENSE_FEATURE_DISABLED',
             },
           ],
+          by_surface: [
+            { surface_type: 'http', count: 4, top_code: 'LICENSE_FEATURE_DISABLED' },
+            { surface_type: 'task', count: 2, top_code: 'LICENSE_FEATURE_DISABLED' },
+          ],
+          by_runtime_surface: [
+            {
+              surface_type: 'task',
+              surface_name: 'send_sms_task',
+              count: 2,
+              top_code: 'LICENSE_FEATURE_DISABLED',
+            },
+          ],
           trend: [
             {
               bucket_start: '2026-04-03T11:00:00Z',
@@ -128,6 +149,21 @@ describe('LicenseOperationsPanel', () => {
         code: 'LICENSE_FEATURE_DISABLED',
         path: '/api/leads/',
         method: 'GET',
+        surfaceType: 'http',
+        surfaceName: '/api/leads/',
+      })
+    );
+
+    fireEvent.change(screen.getByLabelText('Breakdown Mode'), {
+      target: { value: 'runtime_surface' },
+    });
+    fireEvent.click(screen.getAllByText('Audit').at(-1));
+    expect(onOpenAudit).toHaveBeenLastCalledWith(
+      expect.objectContaining({
+        action: 'deny',
+        code: 'LICENSE_FEATURE_DISABLED',
+        surfaceType: 'task',
+        surfaceName: 'send_sms_task',
       })
     );
   });

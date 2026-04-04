@@ -128,6 +128,14 @@ export async function getLicenseOperationsSummary(params = {}) {
   return api.get('/api/license/operations-summary/', { params });
 }
 
+export async function getLicenseIncidents(params = {}) {
+  return api.get('/api/license/incidents/', { params });
+}
+
+export async function getLicenseObservabilityExport(params = {}, responseType = 'json') {
+  return api.get('/api/license/observability-export/', { params, responseType });
+}
+
 export async function getLicenseCoverageSummary() {
   return api.get('/api/license/coverage-summary/');
 }

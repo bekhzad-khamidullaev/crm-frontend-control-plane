@@ -1,4 +1,5 @@
 export interface LicenseCoverageEntry {
+  surface?: string;
   basename: string;
   prefix: string;
   viewset: string;

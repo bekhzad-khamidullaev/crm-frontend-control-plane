@@ -28,6 +28,7 @@ import SubscriptionsSection from './sections/SubscriptionsSection.jsx';
 import PlansFeaturesSection from './sections/PlansFeaturesSection.jsx';
 import QueueSection from './sections/QueueSection.jsx';
 import AuditSection from './sections/AuditSection.jsx';
+import RuntimeIncidentsSection from './sections/RuntimeIncidentsSection.jsx';
 import { KpiStatCard } from '../../shared/ui';
 
 const { Text } = Typography;
@@ -46,6 +47,7 @@ export default function ControlPlaneAdminPage() {
   const [refreshKey, setRefreshKey] = useState(0);
   const [activeTab, setActiveTab] = useState('customers');
   const [auditPresetFilters, setAuditPresetFilters] = useState(null);
+  const [incidentPresetFilters, setIncidentPresetFilters] = useState(null);
 
   const loadOverview = async () => {
     setLoading(true);
@@ -110,12 +112,13 @@ export default function ControlPlaneAdminPage() {
   }, [refreshKey]);
 
   const refreshAll = () => setRefreshKey((v) => v + 1);
-  const openAuditFromOperations = (filters = {}) => {
-    setAuditPresetFilters({
+  const openIncidentsFromOperations = (filters = {}) => {
+    setIncidentPresetFilters({
       ...filters,
+      windowHours: Number(operationsSummary?.window_hours || 24),
       token: Date.now(),
     });
-    setActiveTab('audit');
+    setActiveTab('runtime-incidents');
   };
 
   const licenseStatus = String(licenseMe?.status || '').trim();
@@ -341,7 +344,7 @@ export default function ControlPlaneAdminPage() {
         summary={operationsSummary}
         loading={loading && !operationsSummary && !operationsError}
         error={operationsError}
-        onOpenAudit={openAuditFromOperations}
+        onOpenAudit={openIncidentsFromOperations}
       />
       <LicenseCoveragePanel
         summary={coverageSummary}
@@ -375,6 +378,11 @@ export default function ControlPlaneAdminPage() {
               children: <PlansFeaturesSection onMutated={refreshAll} />,
             },
             { key: 'queue', label: 'Queue', children: <QueueSection onMutated={refreshAll} /> },
+            {
+              key: 'runtime-incidents',
+              label: 'Runtime incidents',
+              children: <RuntimeIncidentsSection presetFilters={incidentPresetFilters} />,
+            },
             { key: 'audit', label: 'Audit', children: <AuditSection presetFilters={auditPresetFilters} /> },
           ]}
         />

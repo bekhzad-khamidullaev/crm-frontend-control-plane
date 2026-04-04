@@ -69,6 +69,7 @@ describe('LicenseCoveragePanel', () => {
           },
           entries: [
             {
+              surface: 'router',
               basename: 'user',
               prefix: 'users',
               viewset: 'UserViewSet',
@@ -82,8 +83,8 @@ describe('LicenseCoveragePanel', () => {
     );
 
     expect(screen.getByText('License coverage health')).toBeInTheDocument();
-    expect(screen.getByText('All authenticated router endpoints are explicitly covered')).toBeInTheDocument();
-    expect(screen.getByText('Router endpoints')).toBeInTheDocument();
+    expect(screen.getByText('All audited runtime surfaces are explicitly covered')).toBeInTheDocument();
+    expect(screen.getByText('Runtime surfaces')).toBeInTheDocument();
     expect(screen.getByText('82')).toBeInTheDocument();
   });
 
@@ -101,6 +102,7 @@ describe('LicenseCoveragePanel', () => {
           },
           entries: [
             {
+              surface: 'task',
               basename: 'api-keys',
               prefix: 'settings/api-keys',
               viewset: 'APIKeyViewSet',
@@ -114,9 +116,39 @@ describe('LicenseCoveragePanel', () => {
       />
     );
 
-    expect(screen.getByText('Router license coverage drift detected')).toBeInTheDocument();
+    expect(screen.getByText('License coverage drift detected')).toBeInTheDocument();
     expect(screen.getByText('api-keys')).toBeInTheDocument();
     expect(screen.getByText('missing_permission')).toBeInTheDocument();
     expect(screen.getAllByText('integrations.core').length).toBeGreaterThan(0);
+    expect(screen.getByText('Task')).toBeInTheDocument();
+  });
+
+  it('renders management command surface labels', () => {
+    render(
+      <LicenseCoveragePanel
+        summary={{
+          totals: {
+            total: 1,
+            covered: 0,
+            exempt: 0,
+            missing_permission: 0,
+            missing_feature: 1,
+            mismatched_feature: 0,
+          },
+          entries: [
+            {
+              surface: 'management_command',
+              basename: 'generate_demo',
+              prefix: 'common/management/commands/generate_demo.py',
+              viewset: 'Command',
+              status: 'missing_feature',
+              reason: 'Management command is not classified in the command licensing registry.',
+            },
+          ],
+        }}
+      />
+    );
+
+    expect(screen.getByText('Management command')).toBeInTheDocument();
   });
 });

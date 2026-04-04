@@ -1,7 +1,6 @@
-import { DealsKanbanBoard } from '@/widgets/deals-kanban';
 import { DealsRejectionsView } from '@/widgets/deals-rejections';
 import { DealsTable } from '@/widgets/deals-table';
-import { AppstoreOutlined, PlusOutlined, StopOutlined, UnorderedListOutlined } from '@ant-design/icons';
+import { PlusOutlined, StopOutlined, UnorderedListOutlined } from '@ant-design/icons';
 import { Button, Card, Grid, Segmented, Space, Typography } from 'antd';
 import React, { useEffect, useState } from 'react';
 // @ts-ignore
@@ -13,9 +12,9 @@ const { Title } = Typography;
 export const DealsListPage: React.FC = () => {
   const screens = Grid.useBreakpoint();
   const isMobile = !screens.md;
-  const [viewMode, setViewMode] = useState<'table' | 'kanban' | 'rejections'>(() => {
+  const [viewMode, setViewMode] = useState<'table' | 'rejections'>(() => {
     const stored = localStorage.getItem('deals:view-mode');
-    if (stored === 'kanban' || stored === 'rejections') return stored;
+    if (stored === 'rejections') return stored;
     return 'table';
   });
 
@@ -33,10 +32,9 @@ export const DealsListPage: React.FC = () => {
             value={viewMode}
             options={[
               { label: 'Таблица', value: 'table', icon: <UnorderedListOutlined /> },
-              { label: 'Канбан', value: 'kanban', icon: <AppstoreOutlined /> },
               { label: 'Отказы', value: 'rejections', icon: <StopOutlined /> },
             ]}
-            onChange={(value) => setViewMode(value as 'table' | 'kanban' | 'rejections')}
+            onChange={(value) => setViewMode(value as 'table' | 'rejections')}
           />
           {canManage ? (
             <Button
@@ -53,7 +51,6 @@ export const DealsListPage: React.FC = () => {
       </Space>
       <Card>
         {viewMode === 'table' ? <DealsTable /> : null}
-        {viewMode === 'kanban' ? <DealsKanbanBoard readOnly={!canManage} /> : null}
         {viewMode === 'rejections' ? <DealsRejectionsView readOnly={!canManage} /> : null}
       </Card>
     </>

@@ -496,7 +496,43 @@ export function AppLayout({
       || tr('nav.user', 'Пользователь')
     );
   })();
-  const avatarLetter = displayName.charAt(0).toUpperCase() || 'U';
+  const headerDisplayName = (() => {
+    const toStr = (value) => (value === null || value === undefined ? '' : String(value).trim());
+    const pick = (...values) => values.map(toStr).find(Boolean) || '';
+    const profile = user?.profile && typeof user.profile === 'object' ? user.profile : {};
+    const userProfile = user?.userprofile && typeof user.userprofile === 'object' ? user.userprofile : {};
+    const nestedUser = user?.user && typeof user.user === 'object' ? user.user : {};
+    const genericNames = new Set(['user', 'пользователь', 'foydalanuvchi']);
+
+    const firstName = pick(user?.first_name, profile?.first_name, userProfile?.first_name, nestedUser?.first_name);
+    const lastName = pick(user?.last_name, profile?.last_name, userProfile?.last_name, nestedUser?.last_name);
+    const middleName = pick(user?.middle_name, profile?.middle_name, userProfile?.middle_name, nestedUser?.middle_name);
+    const fullName = pick(
+      user?.full_name,
+      user?.fullName,
+      profile?.full_name,
+      profile?.fullName,
+      userProfile?.full_name,
+      userProfile?.fullName,
+      nestedUser?.full_name,
+      nestedUser?.fullName,
+    );
+    const fioName = [lastName, firstName, middleName].filter(Boolean).join(' ');
+    const firstAndLastName = [firstName, middleName, lastName].filter(Boolean).join(' ');
+    const username = pick(user?.username, profile?.username, userProfile?.username, nestedUser?.username);
+    const email = pick(user?.email, profile?.email, userProfile?.email, nestedUser?.email);
+
+    const candidates = [fioName, firstAndLastName, fullName, username, email];
+    for (const value of candidates) {
+      const normalized = String(value || '').trim();
+      if (!normalized) continue;
+      if (genericNames.has(normalized.toLowerCase())) continue;
+      return normalized;
+    }
+
+    return displayName;
+  })();
+  const avatarLetter = headerDisplayName.charAt(0).toUpperCase() || 'U';
   const userSecondaryLabel = String(user?.email || user?.username || '').trim();
   const userRoles = Array.isArray(user?.roles) ? user.roles : [];
   const userIsAdmin = Boolean(
@@ -718,7 +754,7 @@ export function AppLayout({
         width: '100%',
       }}
     >
-      <span style={{ fontWeight: 600, color: shell.text }}>{displayName}</span>
+      <span style={{ fontWeight: 600, color: shell.text }}>{headerDisplayName}</span>
       {userSecondaryLabel ? (
         <span style={{ fontSize: 12, color: shell.textMuted, lineHeight: 1.35 }}>
           {userSecondaryLabel}
@@ -1046,7 +1082,7 @@ export function AppLayout({
                 >
                   {avatarLetter}
                 </Avatar>
-                {!isMobile && <Text style={{ color: shell.text, fontWeight: 500 }}>{displayName}</Text>}
+                {!isMobile && <Text style={{ color: shell.text, fontWeight: 500 }}>{headerDisplayName}</Text>}
                 <DownOutlined style={{ color: shell.textMuted, fontSize: 12 }} aria-hidden />
               </Space>
               </Dropdown>

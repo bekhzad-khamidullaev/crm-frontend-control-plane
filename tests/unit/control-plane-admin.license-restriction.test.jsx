@@ -43,6 +43,9 @@ vi.mock('../../src/pages/control-plane-admin/sections/QueueSection.jsx', () => (
 vi.mock('../../src/pages/control-plane-admin/sections/AuditSection.jsx', () => ({
   default: () => <div data-testid="audit-section" />,
 }));
+vi.mock('../../src/pages/control-plane-admin/sections/RuntimeIncidentsSection.jsx', () => ({
+  default: () => <div data-testid="runtime-incidents-section" />,
+}));
 
 describe('ControlPlaneAdminPage license restriction', () => {
   beforeEach(() => {
@@ -231,7 +234,7 @@ describe('ControlPlaneAdminPage license restriction', () => {
     expect(screen.getByText('crm.leads')).toBeInTheDocument();
     expect(screen.getByText('Runtime denials')).toBeInTheDocument();
     expect(screen.getByText('License coverage health')).toBeInTheDocument();
-    expect(screen.getByText('All authenticated router endpoints are explicitly covered')).toBeInTheDocument();
+    expect(screen.getByText('All audited runtime surfaces are explicitly covered')).toBeInTheDocument();
   });
 
   it('shows unavailable state without misleading zero stats for generic overview failures', async () => {

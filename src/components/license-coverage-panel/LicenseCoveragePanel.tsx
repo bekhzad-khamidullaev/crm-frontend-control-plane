@@ -20,6 +20,14 @@ function statusTagColor(status: string) {
   return 'error';
 }
 
+function surfaceLabel(surface: string) {
+  if (surface === 'router') return 'Router';
+  if (surface === 'named_endpoint') return 'Named endpoint';
+  if (surface === 'task') return 'Task';
+  if (surface === 'management_command') return 'Management command';
+  return 'Unknown';
+}
+
 export default function LicenseCoveragePanel({
   summary,
   loading = false,
@@ -31,6 +39,13 @@ export default function LicenseCoveragePanel({
   const generatedAt = summary?.generated_at ? dayjs(summary.generated_at).format('DD MMM YYYY HH:mm') : '';
 
   const columns = [
+    {
+      title: 'Surface',
+      dataIndex: 'surface',
+      key: 'surface',
+      width: 150,
+      render: (value: string) => <Tag>{surfaceLabel(String(value || ''))}</Tag>,
+    },
     {
       title: 'Basename',
       dataIndex: 'basename',
@@ -74,7 +89,7 @@ export default function LicenseCoveragePanel({
     <Space direction="vertical" size="middle" style={{ width: '100%' }}>
       <Row gutter={[16, 16]}>
         <Col xs={24} md={6}>
-          <KpiStatCard title="Router endpoints" value={normalizeCount(totals.total)} loading={loading} />
+          <KpiStatCard title="Runtime surfaces" value={normalizeCount(totals.total)} loading={loading} />
         </Col>
         <Col xs={24} md={6}>
           <KpiStatCard title="Covered" value={normalizeCount(totals.covered)} loading={loading} />
@@ -111,8 +126,8 @@ export default function LicenseCoveragePanel({
             <Alert
               type="error"
               showIcon
-              message="Router license coverage drift detected"
-              description="At least one authenticated router endpoint is missing an explicit license contract or disagrees with middleware mapping."
+              message="License coverage drift detected"
+              description="At least one runtime surface is missing an explicit license contract or disagrees with the coverage registry."
             />
             <Table<LicenseCoverageEntry>
               pagination={false}
@@ -126,13 +141,13 @@ export default function LicenseCoveragePanel({
           <Alert
             type="success"
             showIcon
-            message="All authenticated router endpoints are explicitly covered"
-            description="Viewset-level license contracts and middleware prefix mapping are aligned."
+            message="All audited runtime surfaces are explicitly covered"
+            description="HTTP routes and background tasks currently tracked by the licensing audit have an explicit feature contract."
           />
         ) : (
           <Empty
             image={Empty.PRESENTED_IMAGE_SIMPLE}
-            description="Coverage summary returned no router entries."
+            description="Coverage summary returned no audited runtime surfaces."
           />
         )}
       </Card>

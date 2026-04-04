@@ -30,6 +30,12 @@ const METHOD_OPTIONS = [
   { label: "PUT", value: "PUT" },
   { label: "DELETE", value: "DELETE" },
 ];
+const SURFACE_TYPE_OPTIONS = [
+  { label: "All surfaces", value: "" },
+  { label: "HTTP", value: "http" },
+  { label: "Task", value: "task" },
+  { label: "Management command", value: "management_command" },
+];
 
 export default function AuditSection({ presetFilters = null }) {
   const [rows, setRows] = useState([]);
@@ -44,6 +50,8 @@ export default function AuditSection({ presetFilters = null }) {
   const [feature, setFeature] = useState("");
   const [path, setPath] = useState("");
   const [method, setMethod] = useState("");
+  const [surfaceType, setSurfaceType] = useState("");
+  const [surfaceName, setSurfaceName] = useState("");
 
   const load = async (override = {}) => {
     const nextPage = override.page ?? page;
@@ -55,6 +63,8 @@ export default function AuditSection({ presetFilters = null }) {
     const nextFeature = override.feature ?? feature;
     const nextPath = override.path ?? path;
     const nextMethod = override.method ?? method;
+    const nextSurfaceType = override.surfaceType ?? surfaceType;
+    const nextSurfaceName = override.surfaceName ?? surfaceName;
     setLoading(true);
     try {
       const response = await getCpLicenseAudit({
@@ -67,6 +77,8 @@ export default function AuditSection({ presetFilters = null }) {
         feature: nextFeature || undefined,
         path: nextPath || undefined,
         method: nextMethod || undefined,
+        surface_type: nextSurfaceType || undefined,
+        surface_name: nextSurfaceName || undefined,
       });
       setRows(normalizeCollection(response));
       setTotal(normalizeCount(response));
@@ -79,6 +91,8 @@ export default function AuditSection({ presetFilters = null }) {
       setFeature(nextFeature);
       setPath(nextPath);
       setMethod(nextMethod);
+      setSurfaceType(nextSurfaceType);
+      setSurfaceName(nextSurfaceName);
     } catch {
       message.error("Failed to load license audit");
     } finally {
@@ -100,6 +114,8 @@ export default function AuditSection({ presetFilters = null }) {
       feature: String(presetFilters.feature || ""),
       path: String(presetFilters.path || ""),
       method: String(presetFilters.method || ""),
+      surfaceType: String(presetFilters.surfaceType || ""),
+      surfaceName: String(presetFilters.surfaceName || ""),
     });
   }, [presetFilters?.token]);
 
@@ -117,12 +133,14 @@ export default function AuditSection({ presetFilters = null }) {
           />
           <Select
             value={action}
+            aria-label="Action Filter"
             options={ACTION_OPTIONS}
             onChange={(value) => load({ page: 1, action: String(value || "") })}
             style={{ width: 180 }}
           />
           <Select
             value={code}
+            aria-label="Code Filter"
             options={CODE_OPTIONS}
             onChange={(value) => load({ page: 1, code: String(value || "") })}
             style={{ width: 260 }}
@@ -131,9 +149,17 @@ export default function AuditSection({ presetFilters = null }) {
           />
           <Select
             value={method}
+            aria-label="Method Filter"
             options={METHOD_OPTIONS}
             onChange={(value) => load({ page: 1, method: String(value || "") })}
             style={{ width: 160 }}
+          />
+          <Select
+            value={surfaceType}
+            aria-label="Surface Type Filter"
+            options={SURFACE_TYPE_OPTIONS}
+            onChange={(value) => load({ page: 1, surfaceType: String(value || "") })}
+            style={{ width: 190 }}
           />
           <Input.Search
             allowClear
@@ -157,6 +183,14 @@ export default function AuditSection({ presetFilters = null }) {
             value={path}
             onChange={(event) => setPath(String(event?.target?.value || ""))}
             onSearch={(value) => load({ page: 1, path: String(value || "").trim() })}
+            style={{ width: 260 }}
+          />
+          <Input.Search
+            allowClear
+            placeholder="Surface name"
+            value={surfaceName}
+            onChange={(event) => setSurfaceName(String(event?.target?.value || ""))}
+            onSearch={(value) => load({ page: 1, surfaceName: String(value || "").trim() })}
             style={{ width: 260 }}
           />
         </Space>
@@ -193,6 +227,22 @@ export default function AuditSection({ presetFilters = null }) {
             render: (_, row) => {
               const featureValue = row?.details?.feature;
               return featureValue ? <Text code>{String(featureValue)}</Text> : "-";
+            },
+          },
+          {
+            title: "Surface",
+            key: "surface_type",
+            render: (_, row) => {
+              const surfaceValue = row?.details?.surface_type;
+              return surfaceValue ? <Tag color="purple">{String(surfaceValue)}</Tag> : "-";
+            },
+          },
+          {
+            title: "Surface name",
+            key: "surface_name",
+            render: (_, row) => {
+              const surfaceNameValue = row?.details?.surface_name;
+              return surfaceNameValue ? <Text code>{String(surfaceNameValue)}</Text> : "-";
             },
           },
           {
