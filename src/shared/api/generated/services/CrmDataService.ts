@@ -11,10 +11,20 @@ export class CrmDataService {
      * @returns binary
      * @throws ApiError
      */
-    public static crmDataExportXlsx(): CancelablePromise<Blob> {
+    public static crmDataExportXlsx({
+        scope,
+    }: {
+        /**
+         * Export scope: "full" (default) or "reference".
+         */
+        scope?: string,
+    }): CancelablePromise<Blob> {
         return __request(OpenAPI, {
             method: 'GET',
             url: '/api/crm-data/export/',
+            query: {
+                'scope': scope,
+            },
         });
     }
     /**
@@ -24,12 +34,17 @@ export class CrmDataService {
      */
     public static crmDataImportXlsx({
         file,
+        scope,
         formData,
     }: {
         /**
          * Upload XLSX file in multipart/form-data field "file".
          */
         file?: Blob,
+        /**
+         * Import scope: "full" (default) or "reference".
+         */
+        scope?: string,
         formData?: Record<string, any>,
     }): CancelablePromise<Record<string, any>> {
         return __request(OpenAPI, {
@@ -37,6 +52,7 @@ export class CrmDataService {
             url: '/api/crm-data/import/',
             query: {
                 'file': file,
+                'scope': scope,
             },
             formData: formData,
             mediaType: 'multipart/form-data',

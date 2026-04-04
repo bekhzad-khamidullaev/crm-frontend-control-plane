@@ -1,3 +1,5 @@
+import { t } from '@/lib/i18n';
+
 const REJECTED_STAGE_MATCH = /(отказ|проиг|потер|неусп|lost|reject|cancel|closed\s*lost|declined)/i;
 const REJECTED_STATUS_MATCH = /(lost|rejected|cancelled|canceled|closed_lost|declined)/i;
 
@@ -10,6 +12,8 @@ type DealLike = {
   closing_date?: unknown;
   win_closing_date?: unknown;
 };
+
+type TranslateFn = (key: string) => string;
 
 export const toNumberSafe = (value: unknown) => {
   const numeric = Number(value);
@@ -27,12 +31,13 @@ export const isDealRejected = (deal: DealLike) => {
   return hasClosingReason || REJECTED_STAGE_MATCH.test(stageName) || REJECTED_STATUS_MATCH.test(status) || inactiveClosed;
 };
 
-export const getRejectedReason = (deal: DealLike) => {
+export const getRejectedReason = (deal: DealLike, tr?: TranslateFn) => {
+  const translate = tr ?? t;
   const stageName = String(deal?.stage_name || '');
   const status = String(deal?.status || '');
 
   if (deal?.closing_reason) {
-    return `Причина #${deal.closing_reason}`;
+    return `${translate('dealsRejections.reasonPrefix')} #${deal.closing_reason}`;
   }
   if (REJECTED_STAGE_MATCH.test(stageName)) {
     return stageName;
@@ -40,5 +45,5 @@ export const getRejectedReason = (deal: DealLike) => {
   if (REJECTED_STATUS_MATCH.test(status)) {
     return status;
   }
-  return 'Не указана';
+  return translate('dealsRejections.reasonNotSpecified');
 };

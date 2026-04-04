@@ -36,9 +36,10 @@ import {
   updateShipment,
   deleteShipment,
 } from '../lib/api/shipments.js';
-import { getCompanies, getCompany, getContacts, getContact, getLeads, getLead, getDeals, getDeal, getUsers, getUser } from '../lib/api/client.js';
+import { getCompanies, getCompany, getContacts, getContact, getLeads, getLead, getDeals, getDeal } from '../lib/api/client.js';
 import { getProducts, getProduct } from '../lib/api/products.js';
 import { createDealServiceTicket, getDealOpsChain } from '../lib/api/deals.js';
+import { getCompanyDisplayName } from '../lib/utils/company-display.js';
 
 const { Search } = Input;
 const { Text } = Typography;
@@ -247,21 +248,12 @@ export function OpsChainPanel() {
 
 export default function OperationsPage() {
   const requestFields = [
+    { name: 'request_for', label: t('operationsPage.fields.requestFor'), type: 'text', required: true },
     { name: 'description', label: t('operationsPage.fields.description'), type: 'textarea', rows: 4 },
-    { name: 'first_name', label: t('operationsPage.fields.firstName'), type: 'text', required: true },
-    { name: 'middle_name', label: t('operationsPage.fields.middleName'), type: 'text' },
+    { name: 'first_name', label: t('operationsPage.fields.firstName'), type: 'text' },
     { name: 'last_name', label: t('operationsPage.fields.lastName'), type: 'text' },
     { name: 'email', label: 'Email', type: 'text' },
     { name: 'phone', label: t('operationsPage.fields.phone'), type: 'text' },
-    { name: 'country', label: t('operationsPage.fields.country'), type: 'reference', referenceType: 'countries' },
-    { name: 'city', label: t('operationsPage.fields.city'), type: 'reference', referenceType: 'cities' },
-    {
-      name: 'owner',
-      label: t('operationsPage.fields.owner'),
-      type: 'entity',
-      fetchList: getUsers,
-      fetchById: getUser,
-    },
     {
       name: 'company',
       label: t('operationsPage.fields.company'),
@@ -331,17 +323,28 @@ export default function OperationsPage() {
           api={{
             list: getRequests,
             retrieve: getRequest,
-            create: createRequest,
+            create: (payload) =>
+              createRequest({
+                ...payload,
+                request_for: String(payload?.request_for || payload?.description || '').trim() || 'New request',
+                first_name: String(payload?.first_name || '').trim() || 'Client',
+              }),
             update: updateRequest,
             remove: deleteRequest,
           }}
           columns={[
             { title: t('operationsPage.columns.ticket'), dataIndex: 'ticket', key: 'ticket', width: 120 },
+            { title: t('operationsPage.columns.requestFor'), dataIndex: 'request_for', key: 'request_for' },
             { title: t('operationsPage.columns.firstName'), dataIndex: 'first_name', key: 'first_name' },
             { title: t('operationsPage.columns.lastName'), dataIndex: 'last_name', key: 'last_name' },
             { title: 'Email', dataIndex: 'email', key: 'email' },
             { title: t('operationsPage.columns.phone'), dataIndex: 'phone', key: 'phone' },
-            { title: t('operationsPage.columns.company'), dataIndex: 'company_name', key: 'company_name' },
+            {
+              title: t('operationsPage.columns.company'),
+              dataIndex: 'company_name',
+              key: 'company_name',
+              render: (_value, record) => getCompanyDisplayName(record) || '-',
+            },
             { title: t('operationsPage.columns.contact'), dataIndex: 'contact_name', key: 'contact_name' },
             { title: t('operationsPage.columns.lead'), dataIndex: 'lead_name', key: 'lead_name' },
           ]}

@@ -21,6 +21,7 @@ COPY . .
 # Build the application for production
 ARG BUILD_MODE=production
 ENV NODE_ENV=production
+ENV NODE_OPTIONS=--max-old-space-size=4096
 
 # Build with the specified mode
 RUN npm run build:${BUILD_MODE}
@@ -47,6 +48,14 @@ RUN echo '#!/bin/sh' > /docker-entrypoint.d/99-inject-config.sh && \
     echo '  apiBaseUrl: "${API_BASE_URL:-https://crm.windevs.uz}",' >> /docker-entrypoint.d/99-inject-config.sh && \
     echo '  apiPrefix: "${API_PREFIX:-/api}",' >> /docker-entrypoint.d/99-inject-config.sh && \
     echo '  pbxServer: "${PBX_SERVER:-wss://pbx.windevs.uz:5061}",' >> /docker-entrypoint.d/99-inject-config.sh && \
+    echo '  WS_URL: "${WS_URL:-${VITE_WS_URL}}",' >> /docker-entrypoint.d/99-inject-config.sh && \
+    echo '  CHAT_WS_URL: "${CHAT_WS_URL:-${VITE_CHAT_WS_URL}}",' >> /docker-entrypoint.d/99-inject-config.sh && \
+    echo '  SIP_SERVER: "${SIP_SERVER:-${VITE_SIP_SERVER}}",' >> /docker-entrypoint.d/99-inject-config.sh && \
+    echo '  STUN_SERVER: "${STUN_SERVER:-${VITE_STUN_SERVER}}",' >> /docker-entrypoint.d/99-inject-config.sh && \
+    echo '  SIP_REALM: "${SIP_REALM:-${VITE_SIP_REALM}}",' >> /docker-entrypoint.d/99-inject-config.sh && \
+    echo '  SIP_USERNAME: "${SIP_USERNAME:-${VITE_SIP_USERNAME}}",' >> /docker-entrypoint.d/99-inject-config.sh && \
+    echo '  SIP_PASSWORD: "${SIP_PASSWORD:-${VITE_SIP_PASSWORD}}",' >> /docker-entrypoint.d/99-inject-config.sh && \
+    echo '  SIP_DISPLAY_NAME: "${SIP_DISPLAY_NAME:-${VITE_SIP_DISPLAY_NAME}}",' >> /docker-entrypoint.d/99-inject-config.sh && \
     echo '};' >> /docker-entrypoint.d/99-inject-config.sh && \
     echo 'EOF' >> /docker-entrypoint.d/99-inject-config.sh && \
     chmod +x /docker-entrypoint.d/99-inject-config.sh

@@ -2,35 +2,33 @@
 /* istanbul ignore file */
 /* tslint:disable */
 /* eslint-disable */
-import type { BlankEnum } from './BlankEnum';
 import type { TelephonyProviderEnum } from './TelephonyProviderEnum';
 import type { TelephonyRouteModeEnum } from './TelephonyRouteModeEnum';
-import type { UtcTimezoneEnum } from './UtcTimezoneEnum';
 /**
  * Serializer for UserProfile model
  */
 export type UserProfile = {
     readonly user: number;
     readonly username: string;
-    readonly email: string;
-    readonly full_name: string;
+    email?: string;
+    full_name?: string;
     /**
      * User profile picture (max 5MB)
      */
     readonly avatar: string | null;
     readonly avatar_url: string;
     pbx_number?: string;
-    utc_timezone?: (UtcTimezoneEnum | BlankEnum);
+    utc_timezone?: string;
     activate_timezone?: boolean;
     language_code?: string;
     /**
      * Example: wss://sip.example.com:7443
      */
-    readonly jssip_ws_uri: string;
+    jssip_ws_uri?: string;
     /**
      * Example: sip:1001@sip.example.com
      */
-    readonly jssip_sip_uri: string;
+    jssip_sip_uri?: string;
     /**
      * Will be used by the web client
      */

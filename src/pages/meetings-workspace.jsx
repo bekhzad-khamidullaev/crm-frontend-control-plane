@@ -1,10 +1,12 @@
-import { Alert, Card, Space, Table, Tabs, Tag } from 'antd';
+import { Alert, App, Space, Table, Tabs, Tag } from 'antd';
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import EditableCell from '@/components/editable-cell';
 import { getCallLogs } from '../lib/api/calls.js';
-import { getUpcomingReminders } from '../lib/api/reminders.js';
-import { getTasks } from '../lib/api/tasks.js';
+import { getUpcomingReminders, patchReminder } from '../lib/api/reminders.js';
+import { getTasks, patchTask } from '../lib/api/tasks.js';
 import { EntityListToolbar } from '../shared/ui/EntityListToolbar';
 import { PageHeader } from '../shared/ui/PageHeader';
+import { WorkspaceSummaryStrip, WorkspaceTabsShell } from '../shared/ui/WorkspaceRhythm';
 import { containsText, formatDateSafe, toResults } from './workspace-utils.js';
 
 const reminderStatusTag = (item) => {
@@ -21,6 +23,7 @@ const callDirectionTag = (direction) => {
 };
 
 export default function MeetingsWorkspacePage() {
+  const { message } = App.useApp();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [search, setSearch] = useState('');
@@ -83,9 +86,85 @@ export default function MeetingsWorkspacePage() {
   const activeFilters = search
     ? [{ key: 'search', label: 'Поиск', value: search, onClear: () => setSearch('') }]
     : [];
+  const overdueFollowUps = useMemo(
+    () =>
+      taskMeetings.filter((item) => {
+        if (!item?.due_date) return false;
+        const due = new Date(item.due_date);
+        if (Number.isNaN(due.getTime())) return false;
+        return due.getTime() < Date.now();
+      }).length,
+    [taskMeetings],
+  );
+  const summaryItems = useMemo(
+    () => [
+      { key: 'today', label: 'Встречи сегодня', value: todayMeetings },
+      { key: 'calls', label: 'Звонки в работе', value: filteredCalls.length },
+      { key: 'followUp', label: 'Follow-up задачи', value: taskMeetings.length },
+      { key: 'overdue', label: 'Просроченные follow-up', value: overdueFollowUps },
+    ],
+    [todayMeetings, filteredCalls.length, taskMeetings.length, overdueFollowUps],
+  );
+
+  const reminderStatusOptions = useMemo(
+    () => [
+      { value: true, label: 'Запланировано' },
+      { value: false, label: 'Закрыто' },
+    ],
+    [],
+  );
+
+  const taskStatusOptions = useMemo(
+    () => [
+      { value: 'new', label: 'Не начато' },
+      { value: 'in_progress', label: 'В работе' },
+      { value: 'on_review', label: 'На проверке' },
+      { value: 'completed', label: 'Завершено' },
+      { value: 'cancelled', label: 'Отменено' },
+    ],
+    [],
+  );
+
+  const renderTaskStatus = (value) => {
+    const normalized = String(value || '').toLowerCase();
+    if (normalized === 'completed') return <Tag color="success">Завершено</Tag>;
+    if (normalized === 'cancelled') return <Tag color="error">Отменено</Tag>;
+    if (normalized === 'in_progress') return <Tag color="processing">В работе</Tag>;
+    if (normalized === 'on_review') return <Tag color="warning">На проверке</Tag>;
+    return <Tag>{value || 'Не начато'}</Tag>;
+  };
+
+  const handleInlineSave = async (entity, record, dataIndex, value) => {
+    const prevReminders = reminders;
+    const prevTasks = tasks;
+
+    let normalizedValue = value;
+    if ((dataIndex === 'reminder_date' || dataIndex === 'due_date' || dataIndex === 'next_step_date') && value?.format) {
+      normalizedValue = value.format('YYYY-MM-DD');
+    }
+
+    const patch = { [dataIndex]: normalizedValue };
+    if (entity === 'reminder') {
+      setReminders((prev) => prev.map((row) => (row.id === record.id ? { ...row, ...patch } : row)));
+    }
+    if (entity === 'task') {
+      setTasks((prev) => prev.map((row) => (row.id === record.id ? { ...row, ...patch } : row)));
+    }
+
+    try {
+      if (entity === 'reminder') await patchReminder(record.id, patch);
+      if (entity === 'task') await patchTask(record.id, patch);
+      message.success('Изменения сохранены');
+    } catch (saveError) {
+      setReminders(prevReminders);
+      setTasks(prevTasks);
+      message.error('Не удалось сохранить изменения');
+      throw saveError;
+    }
+  };
 
   return (
-    <Space direction="vertical" size={16} style={{ width: '100%' }}>
+    <Space direction="vertical" size={10} style={{ width: '100%' }}>
       <PageHeader
         title="Встречи"
         subtitle="Планирование встреч, звонков и follow-up задач в одном окне."
@@ -101,8 +180,9 @@ export default function MeetingsWorkspacePage() {
         resultSummary={`Напоминания: ${filteredReminders.length} | Звонки: ${filteredCalls.length} | Follow-up: ${taskMeetings.length}`}
       />
       {error ? <Alert type="warning" showIcon message={error} /> : null}
+      <WorkspaceSummaryStrip items={summaryItems} />
 
-      <Card>
+      <WorkspaceTabsShell>
         <Tabs
           items={[
             {
@@ -115,10 +195,54 @@ export default function MeetingsWorkspacePage() {
                   dataSource={filteredReminders}
                   pagination={{ pageSize: 10, hideOnSinglePage: true }}
                   columns={[
-                    { title: 'Тема', dataIndex: 'subject', key: 'subject', render: (value) => value || '-' },
+                    {
+                      title: 'Тема',
+                      dataIndex: 'subject',
+                      key: 'subject',
+                      render: (value, record) => (
+                        <EditableCell
+                          value={value}
+                          record={record}
+                          dataIndex="subject"
+                          onSave={(r, key, nextValue) => handleInlineSave('reminder', r, key, nextValue)}
+                          placeholder="Тема напоминания"
+                        />
+                      ),
+                    },
                     { title: 'Описание', dataIndex: 'description', key: 'description', render: (value) => value || '-' },
-                    { title: 'Дата и время', dataIndex: 'reminder_date', key: 'reminder_date', render: (value) => formatDateSafe(value) },
-                    { title: 'Статус', key: 'status', render: (_, record) => reminderStatusTag(record) },
+                    {
+                      title: 'Дата и время',
+                      dataIndex: 'reminder_date',
+                      key: 'reminder_date',
+                      render: (value, record) => (
+                        <EditableCell
+                          value={value}
+                          record={record}
+                          dataIndex="reminder_date"
+                          type="date"
+                          onSave={(r, key, nextValue) => handleInlineSave('reminder', r, key, nextValue)}
+                          renderView={(viewDate) => formatDateSafe(viewDate)}
+                          style={{ paddingInline: 0 }}
+                        />
+                      ),
+                    },
+                    {
+                      title: 'Статус',
+                      key: 'status',
+                      render: (_, record) => (
+                        <EditableCell
+                          value={record.active !== false}
+                          record={record}
+                          dataIndex="active"
+                          type="select"
+                          options={reminderStatusOptions}
+                          saveOnBlur={false}
+                          onSave={(r, key, nextValue) => handleInlineSave('reminder', r, key, nextValue)}
+                          renderView={(val) => reminderStatusTag({ active: val })}
+                          style={{ paddingInline: 0 }}
+                        />
+                      ),
+                    },
                   ]}
                 />
               ),
@@ -153,18 +277,74 @@ export default function MeetingsWorkspacePage() {
                   pagination={{ pageSize: 10, hideOnSinglePage: true }}
                   columns={[
                     { title: 'Задача', dataIndex: 'name', key: 'name', render: (value) => value || '-' },
-                    { title: 'Следующий шаг', dataIndex: 'next_step', key: 'next_step', render: (value) => value || '-' },
-                    { title: 'Дата шага', dataIndex: 'next_step_date', key: 'next_step_date', render: (value) => formatDateSafe(value) },
+                    {
+                      title: 'Следующий шаг',
+                      dataIndex: 'next_step',
+                      key: 'next_step',
+                      render: (value, record) => (
+                        <EditableCell
+                          value={value}
+                          record={record}
+                          dataIndex="next_step"
+                          onSave={(r, key, nextValue) => handleInlineSave('task', r, key, nextValue)}
+                          placeholder="Следующий шаг"
+                        />
+                      ),
+                    },
+                    {
+                      title: 'Дата шага',
+                      dataIndex: 'next_step_date',
+                      key: 'next_step_date',
+                      render: (value, record) => (
+                        <EditableCell
+                          value={value}
+                          record={record}
+                          dataIndex="next_step_date"
+                          type="date"
+                          onSave={(r, key, nextValue) => handleInlineSave('task', r, key, nextValue)}
+                          renderView={(viewDate) => formatDateSafe(viewDate)}
+                          style={{ paddingInline: 0 }}
+                        />
+                      ),
+                    },
+                    {
+                      title: 'Статус',
+                      dataIndex: 'status',
+                      key: 'status',
+                      render: (value, record) => (
+                        <EditableCell
+                          value={value}
+                          record={record}
+                          dataIndex="status"
+                          type="select"
+                          options={taskStatusOptions}
+                          saveOnBlur={false}
+                          onSave={(r, key, nextValue) => handleInlineSave('task', r, key, nextValue)}
+                          renderView={(val) => renderTaskStatus(val)}
+                          style={{ paddingInline: 0 }}
+                        />
+                      ),
+                    },
                     {
                       title: 'Дедлайн',
                       dataIndex: 'due_date',
                       key: 'due_date',
-                      render: (value) => {
-                        if (!value) return '-';
-                        const due = new Date(value);
-                        if (Number.isNaN(due.getTime())) return value;
-                        return <Tag color={due.getTime() < Date.now() ? 'error' : 'processing'}>{formatDateSafe(value)}</Tag>;
-                      },
+                      render: (value, record) => (
+                        <EditableCell
+                          value={value}
+                          record={record}
+                          dataIndex="due_date"
+                          type="date"
+                          onSave={(r, key, nextValue) => handleInlineSave('task', r, key, nextValue)}
+                          renderView={(viewDate) => {
+                            if (!viewDate) return '-';
+                            const due = new Date(viewDate);
+                            if (Number.isNaN(due.getTime())) return viewDate;
+                            return <Tag color={due.getTime() < Date.now() ? 'error' : 'processing'}>{formatDateSafe(viewDate)}</Tag>;
+                          }}
+                          style={{ paddingInline: 0 }}
+                        />
+                      ),
                     },
                   ]}
                 />
@@ -172,7 +352,7 @@ export default function MeetingsWorkspacePage() {
             },
           ]}
         />
-      </Card>
+      </WorkspaceTabsShell>
     </Space>
   );
 }

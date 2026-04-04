@@ -10,6 +10,9 @@ import React, { useState, useEffect } from 'react';
 import { Select } from 'antd';
 import { api } from '../lib/api/client';
 import * as referenceApi from '../lib/api/reference';
+import { getLocale, t } from '../lib/i18n';
+import { getClientTypeLabel } from '../features/reference/lib/clientTypeLabel';
+import { getLeadSourceLabel } from '../features/reference/lib/leadSourceLabel';
 
 const { Option } = Select;
 
@@ -48,6 +51,13 @@ const byIdLoaders = {
 };
 
 const toItems = (response) => (Array.isArray(response) ? response : (response?.results || []));
+const applyTemplateVars = (template, vars = {}) => {
+  let result = String(template || '');
+  Object.entries(vars).forEach(([name, value]) => {
+    result = result.replaceAll(`{${name}}`, String(value ?? ''));
+  });
+  return result;
+};
 
 const ReferenceSelect = ({
   type,
@@ -69,6 +79,12 @@ const ReferenceSelect = ({
   const [data, setData] = useState([]);
   const [loading, setLoading] = useState(false);
   const [loadError, setLoadError] = useState('');
+  const locale = getLocale();
+  const tr = (key, fallback, vars = {}) => {
+    const translated = t(key, vars);
+    if (translated !== key) return translated;
+    return applyTemplateVars(fallback, vars);
+  };
 
   useEffect(() => {
     loadData();
@@ -91,7 +107,7 @@ const ReferenceSelect = ({
         const loadList = listLoaders[type];
         if (!loadList) {
           console.warn(`Unknown reference type: ${type}`);
-          setLoadError('Справочник недоступен');
+          setLoadError(tr('referenceSelect.errors.unavailable', 'Reference is unavailable'));
           return;
         }
         response = await loadList(params);
@@ -99,7 +115,7 @@ const ReferenceSelect = ({
 
       setData(toItems(response));
     } catch (error) {
-      setLoadError(`Не удалось загрузить ${getTypeName(type)}`);
+      setLoadError(tr('referenceSelect.errors.loadFailed', 'Failed to load {type}', { type: getTypeName(type) }));
       console.error(`Error loading ${type}:`, error);
     } finally {
       setLoading(false);
@@ -145,7 +161,7 @@ const ReferenceSelect = ({
         return next;
       });
     } catch (error) {
-      setLoadError(`Не удалось загрузить выбранное значение для ${getTypeName(type)}`);
+      setLoadError(tr('referenceSelect.errors.loadSelectedFailed', 'Failed to load selected value for {type}', { type: getTypeName(type) }));
       console.error(`Error loading selected ${type} values:`, error);
     }
   };
@@ -159,12 +175,19 @@ const ReferenceSelect = ({
     ? value.map((itemValue) => normalizeSingleValue(itemValue))
     : normalizeSingleValue(value);
   const mergedStyle = { width: '100%', ...(style || {}) };
+  const resolveLabel = (item) => {
+    const rawLabel = item?.[labelKey] ?? item?.name ?? item?.title ?? item?.slug;
+    if (!rawLabel) return tr('referenceSelect.unnamed', 'Unnamed');
+    if (type === 'lead-sources') return getLeadSourceLabel(rawLabel, locale);
+    if (type === 'client-types') return getClientTypeLabel(rawLabel, locale);
+    return rawLabel;
+  };
 
   return (
     <Select
       value={selectValue}
       onChange={onChange}
-      placeholder={placeholder || `Выберите ${getTypeName(type)}`}
+      placeholder={placeholder || tr('referenceSelect.placeholders.selectType', 'Select {type}', { type: getTypeName(type) })}
       allowClear={allowClear}
       showSearch={showSearch}
       disabled={disabled}
@@ -180,32 +203,33 @@ const ReferenceSelect = ({
     >
       {data.map((item) => (
         <Option key={item[valueKey]} value={item[valueKey]}>
-          {item[labelKey] ?? item.name ?? item.title ?? item.slug ?? 'Без названия'}
+          {resolveLabel(item)}
         </Option>
       ))}
     </Select>
   );
 };
 
-// Вспомогательная функция для получения русского названия типа
 function getTypeName(type) {
-  const names = {
-    'stages': 'этап',
-    'task-stages': 'этап задачи',
-    'project-stages': 'этап проекта',
-    'lead-sources': 'источник',
-    'industries': 'отрасль',
-    'countries': 'страну',
-    'cities': 'город',
-    'currencies': 'валюту',
-    'client-types': 'тип клиента',
-    'closing-reasons': 'причину закрытия',
-    'resolutions': 'резолюцию',
-    'departments': 'отдел',
-    'crm-tags': 'тег',
-    'task-tags': 'тег задачи',
+  const keyByType = {
+    stages: 'stage',
+    'task-stages': 'taskStage',
+    'project-stages': 'projectStage',
+    'lead-sources': 'source',
+    industries: 'industry',
+    countries: 'country',
+    cities: 'city',
+    currencies: 'currency',
+    'client-types': 'clientType',
+    'closing-reasons': 'closingReason',
+    resolutions: 'resolution',
+    departments: 'department',
+    'crm-tags': 'crmTag',
+    'task-tags': 'taskTag',
   };
-  return names[type] || type;
+  const key = keyByType[type];
+  if (!key) return type;
+  return t(`referenceSelect.types.${key}`, key);
 }
 
 export default ReferenceSelect;

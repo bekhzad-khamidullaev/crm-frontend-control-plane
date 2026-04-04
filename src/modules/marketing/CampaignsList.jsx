@@ -6,9 +6,9 @@ import { activateCampaign, cloneCampaign, completeCampaign, deleteCampaign, getC
 import { canWrite } from '../../lib/rbac.js';
 import QuickActions from '../../components/QuickActions.jsx';
 import { EntityListToolbar } from '../../shared/ui/EntityListToolbar';
-import { LIST_HEADER_STYLE, LIST_STACK_STYLE, LIST_TITLE_STYLE } from '../../shared/ui/listLayout';
+import { PageHeader } from '../../shared/ui/PageHeader';
 
-const { Text, Title } = Typography;
+const { Text } = Typography;
 
 function CampaignsList({ embedded = false }) {
   const { message } = App.useApp();
@@ -189,88 +189,83 @@ function CampaignsList({ embedded = false }) {
   ];
 
   const content = (
-    <Space direction="vertical" size={16} style={LIST_STACK_STYLE}>
-      <Space wrap style={LIST_HEADER_STYLE}>
-        <div>
-          {embedded ? (
-            <Text strong>Кампании</Text>
-          ) : (
-            <>
-              <Title level={3} style={LIST_TITLE_STYLE}>Кампании</Title>
-              <Text type="secondary">Список маркетинговых кампаний</Text>
-            </>
-          )}
-        </div>
-        {canManage ? (
-          <Button type="primary" icon={<PlusOutlined />} onClick={() => navigate('/campaigns/new')}>Создать кампанию</Button>
-        ) : null}
-      </Space>
+    <Space direction="vertical" size={16} style={{ width: '100%' }}>
+      {embedded ? (
+        <Space style={{ width: '100%', justifyContent: 'space-between' }}>
+          <Text strong>Кампании</Text>
+          {canManage ? (
+            <Button type="primary" icon={<PlusOutlined />} onClick={() => navigate('/campaigns/new')}>
+              Создать кампанию
+            </Button>
+          ) : null}
+        </Space>
+      ) : null}
 
-        <EntityListToolbar
-          searchValue={searchText}
-          searchPlaceholder="Поиск по названию..."
-          onSearchChange={handleSearch}
-          filters={(
-            <Space wrap>
-              <Select
-                value={statusFilter}
-                onChange={(value) => {
-                  setStatusFilter(value);
-                }}
-                style={{ width: 170 }}
-                options={[
-                  { value: 'all', label: 'Все статусы' },
-                  { value: 'draft', label: 'Черновик' },
-                  { value: 'active', label: 'Активна' },
-                  { value: 'paused', label: 'Пауза' },
-                  { value: 'completed', label: 'Завершена' },
-                ]}
-              />
-              <DatePicker.RangePicker
-                value={startRange}
-                onChange={(range) => {
-                  setStartRange(range || null);
-                }}
-                format="DD.MM.YYYY"
-              />
+      <EntityListToolbar
+        searchValue={searchText}
+        searchPlaceholder="Поиск по названию..."
+        onSearchChange={handleSearch}
+        filters={(
+          <Space wrap>
+            <Select
+              value={statusFilter}
+              onChange={(value) => {
+                setStatusFilter(value);
+              }}
+              style={{ width: 170 }}
+              options={[
+                { value: 'all', label: 'Все статусы' },
+                { value: 'draft', label: 'Черновик' },
+                { value: 'active', label: 'Активна' },
+                { value: 'paused', label: 'Пауза' },
+                { value: 'completed', label: 'Завершена' },
+              ]}
+            />
+            <DatePicker.RangePicker
+              value={startRange}
+              onChange={(range) => {
+                setStartRange(range || null);
+              }}
+              format="DD.MM.YYYY"
+            />
+          </Space>
+        )}
+        onRefresh={() => fetchCampaigns(pagination.current, searchText)}
+        onReset={handleResetFilters}
+        loading={loading}
+        resultSummary={`Всего: ${pagination.total}`}
+        activeFilters={[
+          ...(searchText ? [{ key: 'search', label: 'Поиск', value: searchText, onClear: () => setSearchText('') }] : []),
+          ...(statusFilter !== 'all' ? [{ key: 'status', label: 'Статус', value: statusFilter, onClear: () => setStatusFilter('all') }] : []),
+        ]}
+      />
+
+      {error ? <Text type="danger">{error}</Text> : null}
+
+      <Table
+        columns={columns}
+        dataSource={campaigns}
+        loading={loading}
+        rowKey="id"
+        pagination={{ ...pagination, showSizeChanger: true, showTotal: (total) => `Всего: ${total}` }}
+        onChange={handleTableChange}
+        scroll={{ x: 1000 }}
+        locale={{ emptyText: 'Нет кампаний' }}
+        expandable={{
+          expandedRowRender: (record) => (
+            <Space size={8} wrap>
+              <Button size="small" onClick={() => handleClone(record)}>Клонировать</Button>
+              <Button size="small" onClick={() => handleStatusTransition(record, 'active')}>Запустить</Button>
+              <Button size="small" onClick={() => handleStatusTransition(record, 'paused')}>Пауза</Button>
+              <Button size="small" onClick={() => handleStatusTransition(record, 'completed')}>Завершить</Button>
+              <Button size="small" onClick={() => handleToggleActive(record)}>
+                {record.is_active ? 'Отключить флаг active' : 'Включить флаг active'}
+              </Button>
             </Space>
-          )}
-          onRefresh={() => fetchCampaigns(pagination.current, searchText)}
-          onReset={handleResetFilters}
-          loading={loading}
-          resultSummary={`Всего: ${pagination.total}`}
-          activeFilters={[
-            ...(searchText ? [{ key: 'search', label: 'Поиск', value: searchText, onClear: () => setSearchText('') }] : []),
-            ...(statusFilter !== 'all' ? [{ key: 'status', label: 'Статус', value: statusFilter, onClear: () => setStatusFilter('all') }] : []),
-          ]}
-        />
-
-        {error ? <Text type="danger">{error}</Text> : null}
-
-        <Table
-          columns={columns}
-          dataSource={campaigns}
-          loading={loading}
-          rowKey="id"
-          pagination={{ ...pagination, showSizeChanger: true, showTotal: (total) => `Всего: ${total}` }}
-          onChange={handleTableChange}
-          scroll={{ x: 1000 }}
-          locale={{ emptyText: 'Нет кампаний' }}
-          expandable={{
-            expandedRowRender: (record) => (
-              <Space size={8} wrap>
-                <Button size="small" onClick={() => handleClone(record)}>Клонировать</Button>
-                <Button size="small" onClick={() => handleStatusTransition(record, 'active')}>Запустить</Button>
-                <Button size="small" onClick={() => handleStatusTransition(record, 'paused')}>Пауза</Button>
-                <Button size="small" onClick={() => handleStatusTransition(record, 'completed')}>Завершить</Button>
-                <Button size="small" onClick={() => handleToggleActive(record)}>
-                  {record.is_active ? 'Отключить флаг active' : 'Включить флаг active'}
-                </Button>
-              </Space>
-            ),
-            rowExpandable: () => true,
-          }}
-        />
+          ),
+          rowExpandable: () => true,
+        }}
+      />
     </Space>
   );
 
@@ -279,9 +274,20 @@ function CampaignsList({ embedded = false }) {
   }
 
   return (
-    <Card>
-      {content}
-    </Card>
+    <>
+      <PageHeader
+        title="Кампании"
+        subtitle="Список маркетинговых кампаний"
+        extra={
+          canManage ? (
+            <Button type="primary" icon={<PlusOutlined />} onClick={() => navigate('/campaigns/new')}>Создать кампанию</Button>
+          ) : null
+        }
+      />
+      <Card>
+        {content}
+      </Card>
+    </>
   );
 }
 

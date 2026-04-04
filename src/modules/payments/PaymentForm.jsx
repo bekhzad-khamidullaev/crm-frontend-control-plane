@@ -101,6 +101,30 @@ function PaymentForm({ id }) {
     }
   }, [id]);
 
+  useEffect(() => {
+    const dealId = dealValue;
+    if (!dealId) return;
+
+    let cancelled = false;
+    const syncCurrencyFromDeal = async () => {
+      try {
+        const deal = await getDeal(dealId);
+        const dealCurrency = deal?.currency;
+        if (cancelled || !dealCurrency) return;
+        if (String(currencyValue || '') !== String(dealCurrency)) {
+          setValue('currency', dealCurrency, { shouldDirty: true, shouldValidate: true });
+        }
+      } catch {
+        // Keep current value if deal currency cannot be loaded.
+      }
+    };
+
+    syncCurrencyFromDeal();
+    return () => {
+      cancelled = true;
+    };
+  }, [dealValue, currencyValue, setValue]);
+
   const loadPayment = async () => {
     setLoading(true);
     setLoadError(false);

@@ -240,3 +240,181 @@ export async function revokeAllSessions() {
 export async function get2FAStatus() {
   return api.get('/api/users/me/2fa/status/');
 }
+
+export async function update2FAStatus(data) {
+  return api.patch('/api/users/me/2fa/status/', { body: data });
+}
+
+const USER_BASE_CANDIDATES = ['/api/users/', '/api/auth/users/'];
+
+function isUnsupportedEndpoint(error) {
+  return [404, 405, 501].includes(Number(error?.status || 0));
+}
+
+function normalizeMultiValueList(items) {
+  if (!Array.isArray(items)) return [];
+  return Array.from(
+    new Set(
+      items
+        .map((item) => String(item || '').trim())
+        .filter(Boolean)
+    )
+  );
+}
+
+async function requestUserWriteWithFallback(makeRequest) {
+  let lastError = null;
+  for (const basePath of USER_BASE_CANDIDATES) {
+    try {
+      return await makeRequest(basePath);
+    } catch (error) {
+      lastError = error;
+      if (!isUnsupportedEndpoint(error)) {
+        throw error;
+      }
+    }
+  }
+  throw lastError || new Error('No writable users endpoint is available');
+}
+
+export async function detectUserWriteCapability() {
+  for (const basePath of USER_BASE_CANDIDATES) {
+    try {
+      const response = await api.options(basePath);
+      const allowRaw =
+        response?.allow ||
+        response?.ALLOW ||
+        response?.headers?.allow ||
+        response?.detail?.allow ||
+        '';
+      const allow = String(allowRaw || '')
+        .split(',')
+        .map((item) => item.trim().toUpperCase())
+        .filter(Boolean);
+      const supportsPost = allow.includes('POST');
+      const supportsActionsPost = Boolean(response?.actions?.POST);
+      if (supportsPost || supportsActionsPost) {
+        return 'writable';
+      }
+    } catch (error) {
+      if (!isUnsupportedEndpoint(error)) {
+        return 'readonly';
+      }
+    }
+  }
+  return 'readonly';
+}
+
+/**
+ * Create CRM user account
+ * Tries /api/users/ first, then /api/auth/users/ for compatibility.
+ */
+export async function createUser(payload) {
+  return requestUserWriteWithFallback((basePath) => api.post(basePath, { body: payload }));
+}
+
+/**
+ * Update CRM user account by ID
+ * @param {number|string} userId
+ * @param {Object} payload
+ * @param {Object} [options]
+ * @param {boolean} [options.partial=true]
+ */
+export async function updateUser(userId, payload, { partial = true } = {}) {
+  return requestUserWriteWithFallback((basePath) =>
+    partial
+      ? api.patch(`${basePath}${userId}/`, { body: payload })
+      : api.put(`${basePath}${userId}/`, { body: payload })
+  );
+}
+
+/**
+ * Delete CRM user account by ID
+ * @param {number|string} userId
+ */
+export async function deleteUser(userId) {
+  return requestUserWriteWithFallback((basePath) => api.delete(`${basePath}${userId}/`));
+}
+
+/**
+ * Fetch departments/groups for user assignment forms.
+ */
+export async function getDepartmentsAsGroups(params = {}) {
+  return api.get('/api/departments/', {
+    params: {
+      page_size: 200,
+      ...params,
+    },
+  });
+}
+
+/**
+ * Update user access (roles/groups/permissions).
+ * Tries direct user PATCH first, then specialized endpoints when available.
+ *
+ * @param {number|string} userId
+ * @param {Object} access
+ * @param {string[]} [access.roles]
+ * @param {string[]} [access.groups]
+ * @param {string[]} [access.permissions]
+ * @param {boolean} [access.is_staff]
+ * @param {boolean} [access.is_superuser]
+ */
+export async function updateUserAccess(userId, access = {}) {
+  const roles = normalizeMultiValueList(access.roles);
+  const groups = normalizeMultiValueList(access.groups);
+  const permissions = normalizeMultiValueList(access.permissions);
+  const isSuperuser = Boolean(access.is_superuser) || roles.includes('admin');
+  const isStaff = Boolean(access.is_staff) || isSuperuser || roles.includes('manager');
+
+  const primaryPayload = {
+    is_staff: isStaff,
+    is_superuser: isSuperuser,
+    groups,
+    permissions,
+  };
+
+  try {
+    return await updateUser(userId, primaryPayload, { partial: true });
+  } catch (error) {
+    if (!isUnsupportedEndpoint(error)) {
+      throw error;
+    }
+  }
+
+  let groupsUpdated = false;
+  if (groups.length || roles.length) {
+    const groupPayload = { groups };
+    try {
+      await requestUserWriteWithFallback((basePath) =>
+        api.put(`${basePath}${userId}/groups/`, { body: groupPayload })
+      );
+      groupsUpdated = true;
+    } catch (error) {
+      if (!isUnsupportedEndpoint(error)) {
+        throw error;
+      }
+    }
+  }
+
+  let permissionsUpdated = false;
+  if (permissions.length) {
+    const permissionPayload = { permissions };
+    try {
+      await requestUserWriteWithFallback((basePath) =>
+        api.put(`${basePath}${userId}/permissions/`, { body: permissionPayload })
+      );
+      permissionsUpdated = true;
+    } catch (error) {
+      if (!isUnsupportedEndpoint(error)) {
+        throw error;
+      }
+    }
+  }
+
+  if (!groupsUpdated && !permissionsUpdated) {
+    throw new Error('User access update endpoint is unavailable');
+  }
+
+  return { groupsUpdated, permissionsUpdated };
+}

@@ -1,4 +1,5 @@
 import {
+    BellOutlined,
     ApiOutlined,
     AppstoreOutlined,
     BankOutlined,
@@ -16,27 +17,57 @@ import {
     MenuFoldOutlined,
     MenuUnfoldOutlined,
     MoonOutlined,
+    PlusOutlined,
     QuestionCircleOutlined,
     RobotOutlined,
-    SendOutlined,
+    SearchOutlined,
+    LoadingOutlined,
     SettingOutlined,
     SunOutlined,
     ThunderboltOutlined,
     TeamOutlined,
     UserOutlined,
 } from '@ant-design/icons';
-import { Alert, Avatar, Badge, Button, ConfigProvider, Drawer, Dropdown, Grid, Layout, Menu, Space, Tooltip, Typography } from 'antd';
-import { useEffect, useState } from 'react';
+import {
+  Alert,
+  Avatar,
+  AutoComplete,
+  Badge,
+  Button,
+  ConfigProvider,
+  Drawer,
+  Dropdown,
+  Grid,
+  Input,
+  Layout,
+  Menu,
+  Select,
+  Space,
+  Tooltip,
+  Typography,
+} from 'antd';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import brandMark from '../assets/brand/favicon.svg';
 import brandLogo from '../assets/brand/logo.svg';
 import brandLogoDark from '../assets/brand/logo-dark.svg';
 import ChannelBrandIcon from './channel/ChannelBrandIcon.jsx';
+import { getLeads } from '../lib/api/leads.js';
+import { getContacts } from '../lib/api/contacts.js';
+import { getCompanies } from '../lib/api/companies.js';
+import { getDeals } from '../lib/api/deals.js';
+import { getTasks } from '../lib/api/tasks.js';
+import { getProjects } from '../lib/api/projects.js';
+import { getProducts } from '../lib/api/products.js';
+import { getPayments } from '../lib/api/payments.js';
+import { getMemos } from '../lib/api/memos.js';
+import { getReminders } from '../lib/api/reminders.js';
 import { LICENSE_RESTRICTION_EVENT } from '../lib/api/licenseRestrictionBus.js';
 import {
   getLicenseRestrictionMessage,
   readStoredLicenseRestriction,
   storeLicenseRestriction,
 } from '../lib/api/licenseRestrictionState.js';
+import { getRouteAccessState } from '../lib/rbac.js';
 import { useTheme } from '../lib/hooks/useTheme.js';
 import { getLocale, t } from '../lib/i18n/index.js';
 import { SETTINGS_WORKSPACE_NAV_KEY } from '../lib/settingsWorkspaceNavigation.js';
@@ -69,9 +100,13 @@ export function AppLayout({
   const screens = Grid.useBreakpoint();
   const isMobile = !screens.lg;
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [globalSearchValue, setGlobalSearchValue] = useState('');
+  const [globalSearchOptions, setGlobalSearchOptions] = useState([]);
+  const [globalSearchLoading, setGlobalSearchLoading] = useState(false);
   const [licenseRestriction, setLicenseRestriction] = useState(() => readStoredLicenseRestriction());
+  const globalSearchRequestRef = useRef(0);
   const siderWidth = 256;
-  const desktopTopBarHeight = 64;
+  const desktopTopBarHeight = 68;
   const mobileTopBarHeight = 56;
   const drawerWidth = screens.sm ? 300 : '86vw';
   const shell = theme === 'dark'
@@ -88,6 +123,8 @@ export function AppLayout({
         menuSelected: 'var(--crm-app-menu-selected, linear-gradient(135deg, rgba(125, 211, 252, 0.3), rgba(96, 165, 250, 0.18)))',
         menuHover: 'var(--crm-app-menu-hover, rgba(148, 163, 184, 0.14))',
         accentBorder: 'var(--crm-app-accent-border, rgba(226, 232, 240, 0.34))',
+        accentSoft: 'rgba(125, 211, 252, 0.16)',
+        topStrip: 'linear-gradient(90deg, rgba(56, 189, 248, 0.24) 0%, rgba(96, 165, 250, 0.08) 60%, transparent 100%)',
       }
     : {
         pageBg: 'var(--crm-app-body-bg, #f8fafc)',
@@ -102,6 +139,8 @@ export function AppLayout({
         menuSelected: 'var(--crm-app-menu-selected, #eef6ff)',
         menuHover: 'var(--crm-app-menu-hover, #f8fafc)',
         accentBorder: 'var(--crm-app-accent-border, #dbeafe)',
+        accentSoft: 'rgba(37, 99, 235, 0.08)',
+        topStrip: 'linear-gradient(90deg, rgba(59, 130, 246, 0.16) 0%, rgba(59, 130, 246, 0.04) 58%, transparent 100%)',
       };
   const licenseShell = theme === 'dark'
     ? {
@@ -152,10 +191,12 @@ export function AppLayout({
   const activeLocale = i18nLocale === 'ru' || i18nLocale === 'en' || i18nLocale === 'uz'
     ? i18nLocale
     : locale;
-  const allowedNavSet = new Set(Array.isArray(allowedNavKeys) ? allowedNavKeys : []);
-  const canOpenControlPlane = allowedNavSet.has('control-plane');
+  const hasNavRestrictions = Array.isArray(allowedNavKeys);
+  const allowedNavSet = new Set(hasNavRestrictions ? allowedNavKeys : []);
+  const canOpenControlPlane = !hasNavRestrictions || allowedNavSet.has('control-plane');
   const canOpenSettingsWorkspace = (
-    allowedNavSet.has(SETTINGS_WORKSPACE_NAV_KEY)
+    !hasNavRestrictions
+    || allowedNavSet.has(SETTINGS_WORKSPACE_NAV_KEY)
     || allowedNavSet.has('settings')
     || allowedNavSet.has('integrations')
   );
@@ -199,7 +240,6 @@ export function AppLayout({
       label: tr('nav.operationsGroup', 'Операции'),
       children: [
         { key: 'payments', label: tr('nav.payments', 'Платежи'), icon: <DollarOutlined />, path: '/payments' },
-        { key: 'telephony', label: tr('nav.telephony', 'Телефония'), icon: <ChannelBrandIcon channel="telephony" />, path: '/telephony' },
         { key: 'operations', label: tr('nav.operations', 'Операции'), icon: <SettingOutlined />, path: '/operations' },
         {
           key: 'clients-workspace',
@@ -261,7 +301,7 @@ export function AppLayout({
           icon: <SettingOutlined />,
           path: settingsWorkspacePath,
         },
-        { key: 'control-plane', label: tr('nav.controlPlane', 'Control Plane'), icon: <ApiOutlined />, path: '/control-plane' },
+        { key: 'control-plane', label: tr('nav.licenseWorkspace', 'License Workspace'), icon: <ApiOutlined />, path: '/license-workspace' },
         { key: 'reference-data', label: tr('nav.referenceData', 'Справочники'), icon: <AppstoreOutlined />, path: '/reference-data' },
         { key: 'landing-builder', label: tr('nav.landingBuilder', 'Конструктор лендингов'), icon: <AppstoreOutlined />, path: '/landing-builder' },
         { key: 'sites-workspace', label: tr('nav.sitesWorkspace', 'Сайты'), icon: <GlobalOutlined />, path: '/sites' },
@@ -270,7 +310,7 @@ export function AppLayout({
       ],
     },
   ];
-  const visibleNav = Array.isArray(allowedNavKeys) && allowedNavKeys.length
+  const visibleNav = hasNavRestrictions
     ? baseNav
       .map((item) => {
         const children = Array.isArray(item.children)
@@ -288,17 +328,7 @@ export function AppLayout({
       })
       .filter(Boolean)
     : baseNav;
-
-  const findNavLabel = (items, key) => {
-    for (const item of items) {
-      if (item.key === key) return item.label;
-      if (Array.isArray(item.children)) {
-        const childLabel = findNavLabel(item.children, key);
-        if (childLabel) return childLabel;
-      }
-    }
-    return null;
-  };
+  const isNavKeyAllowed = (key) => !hasNavRestrictions || allowedNavSet.has(key);
 
   const resolveNavKeyFromRouteName = (name) => {
     const normalized = String(name || '').trim();
@@ -321,15 +351,19 @@ export function AppLayout({
     if (normalized === 'marketing-templates') return 'marketing-workspace';
     if (normalized === 'content-plans') return 'marketing-workspace';
     if (normalized.startsWith('memos')) return 'memos';
-    if (normalized === 'warehouse-workspace') return 'warehouse';
+    if (normalized.startsWith('warehouse')) return 'warehouse';
+    if (normalized.startsWith('finance-planning')) return 'finance-planning';
+    if (normalized.startsWith('meetings')) return 'meetings';
     if (normalized === 'documents-workspace') return 'documents-workspace';
     if (normalized === 'backlog') return 'backlog';
     if (normalized === 'sites-workspace') return 'sites-workspace';
     if (normalized === 'functional') return 'functional';
+    if (normalized === 'telephony') return 'calls';
+    if (normalized === 'license-workspace') return 'control-plane';
     if (normalized === 'settings' || normalized === 'integrations' || normalized === 'onboarding') {
       return SETTINGS_WORKSPACE_NAV_KEY;
     }
-    return normalized;
+    return null;
   };
 
   const resolveNavKeyFromHash = () => {
@@ -387,7 +421,6 @@ export function AppLayout({
       'sites',
       'functional',
       'reference-data',
-      'dashboard',
       'telephony',
       'users',
       'landing-builder',
@@ -397,14 +430,250 @@ export function AppLayout({
     return directSections.has(section) ? section : null;
   };
 
-  const [hashDerivedKey, setHashDerivedKey] = useState(() => resolveNavKeyFromHash());
-
   const routeDerivedKey = resolveNavKeyFromRouteName(routeName);
-  const effectiveSelectedKey = hashDerivedKey || routeDerivedKey || selectedKey;
-  const selectedNavLabel =
-    findNavLabel(baseNav, effectiveSelectedKey) ||
-    findNavLabel(baseNav, selectedKey) ||
-    tr('nav.dashboard', 'Дашборд');
+  const hashDerivedKey = resolveNavKeyFromHash();
+  const effectiveSelectedKey = selectedKey || routeDerivedKey || hashDerivedKey;
+  const flatNavEntries = visibleNav.flatMap((group) => (
+    Array.isArray(group.children)
+      ? group.children.map((child) => ({
+          ...child,
+          groupKey: group.key,
+          groupLabel: group.label,
+        }))
+      : []
+  ));
+  const activeNavEntry = flatNavEntries.find((entry) => entry.key === effectiveSelectedKey)
+    || flatNavEntries.find((entry) => entry.key === selectedKey)
+    || null;
+  const workspaceCandidates = [
+    {
+      value: 'sales',
+      label: tr('appLayout.workspace.sales', 'Продажи'),
+      path: '/dashboard',
+      routeKeys: ['dashboard', 'leads', 'contacts', 'companies', 'deals', 'tasks', 'projects', 'products'],
+    },
+    {
+      value: 'communications',
+      label: tr('appLayout.workspace.communications', 'Коммуникации'),
+      path: '/chat',
+      routeKeys: ['chat', 'ai-chat', 'calls', 'reminders', 'crm-emails', 'massmail', 'sms-center', 'memos'],
+    },
+    {
+      value: 'marketing',
+      label: tr('appLayout.workspace.marketing', 'Маркетинг'),
+      path: '/content-plans',
+      routeKeys: ['marketing-workspace'],
+    },
+    {
+      value: 'operations',
+      label: tr('appLayout.workspace.operations', 'Операции'),
+      path: '/payments',
+      routeKeys: [
+        'payments',
+        'operations',
+        'clients-workspace',
+        'warehouse',
+        'finance-planning',
+        'business-processes',
+        'meetings',
+      ],
+    },
+    {
+      value: 'system',
+      label: tr('appLayout.workspace.system', 'Система'),
+      path: settingsWorkspacePath,
+      routeKeys: [
+        SETTINGS_WORKSPACE_NAV_KEY,
+        'control-plane',
+        'reference-data',
+        'landing-builder',
+        'sites-workspace',
+        'users',
+        'help-center',
+      ],
+    },
+  ];
+  const workspaceOptions = workspaceCandidates
+    .map((workspace) => ({
+      ...workspace,
+      routeKeys: workspace.routeKeys.filter((key) => isNavKeyAllowed(key)),
+    }))
+    .filter((workspace) => workspace.routeKeys.length > 0);
+  const workspaceKey = selectedKey || activeNavEntry?.key || '';
+  const activeWorkspace = workspaceOptions.find((workspace) => (
+    workspace.routeKeys.includes(workspaceKey)
+  )) || workspaceOptions[0] || null;
+  const quickCreateActions = [
+    { key: 'lead', navKey: 'leads', icon: <TeamOutlined />, label: tr('nav.newLead', 'Новый лид'), path: '/leads/new' },
+    { key: 'contact', navKey: 'contacts', icon: <UserOutlined />, label: tr('nav.newContact', 'Новый контакт'), path: '/contacts/new' },
+    { key: 'company', navKey: 'companies', icon: <BankOutlined />, label: tr('nav.newCompany', 'Новая компания'), path: '/companies/new' },
+    { key: 'deal', navKey: 'deals', icon: <DollarOutlined />, label: tr('nav.newDeal', 'Новая сделка'), path: '/deals/new' },
+    { key: 'task', navKey: 'tasks', icon: <CheckSquareOutlined />, label: tr('nav.newTask', 'Новая задача'), path: '/tasks/new' },
+    { key: 'campaign', navKey: 'campaigns', icon: <CustomerServiceOutlined />, label: tr('nav.newCampaign', 'Новая кампания'), path: '/campaigns/new' },
+  ].filter((action) => isNavKeyAllowed(action.navKey));
+  const quickCreateMenuItems = quickCreateActions.map((action) => ({
+    key: action.key,
+    icon: action.icon,
+    label: action.label,
+    onClick: () => navigate(action.path),
+  }));
+  const quickCreateLabel = tr('appLayout.quickCreate', tr('actions.create', 'Создать'));
+  const globalSearchPlaceholder = tr('actions.search', 'Поиск');
+  const normalizeListResponse = (response) => {
+    if (Array.isArray(response)) return response;
+    if (Array.isArray(response?.results)) return response.results;
+    return [];
+  };
+  const toIdentityLabel = (value) => {
+    if (value === null || value === undefined) return '';
+    return String(value).trim();
+  };
+  const searchableProviders = useMemo(() => {
+    const mk = (item) => ({
+      ...item,
+      enabled: isNavKeyAllowed(item.navKey) && getRouteAccessState(item.routeName).allowed,
+    });
+    return [
+      mk({
+        key: 'leads',
+        navKey: 'leads',
+        routeName: 'leads-list',
+        label: tr('nav.leads', 'Лиды'),
+        listPath: '/leads',
+        fetcher: getLeads,
+        mapItem: (item) => ({
+          title: toIdentityLabel(item?.name) || `${tr('nav.leads', 'Лиды')} #${item?.id ?? ''}`,
+          subtitle: [toIdentityLabel(item?.phone), toIdentityLabel(item?.email)].filter(Boolean).join(' • '),
+          path: `/leads/${item?.id}`,
+        }),
+      }),
+      mk({
+        key: 'contacts',
+        navKey: 'contacts',
+        routeName: 'contacts-list',
+        label: tr('nav.contacts', 'Контакты'),
+        listPath: '/contacts',
+        fetcher: getContacts,
+        mapItem: (item) => ({
+          title: toIdentityLabel(item?.name)
+            || [toIdentityLabel(item?.first_name), toIdentityLabel(item?.last_name)].filter(Boolean).join(' ')
+            || `${tr('nav.contacts', 'Контакты')} #${item?.id ?? ''}`,
+          subtitle: [toIdentityLabel(item?.phone), toIdentityLabel(item?.email)].filter(Boolean).join(' • '),
+          path: `/contacts/${item?.id}`,
+        }),
+      }),
+      mk({
+        key: 'companies',
+        navKey: 'companies',
+        routeName: 'companies-list',
+        label: tr('nav.companies', 'Компании'),
+        listPath: '/companies',
+        fetcher: getCompanies,
+        mapItem: (item) => ({
+          title: toIdentityLabel(item?.name) || `${tr('nav.companies', 'Компании')} #${item?.id ?? ''}`,
+          subtitle: [toIdentityLabel(item?.phone), toIdentityLabel(item?.email)].filter(Boolean).join(' • '),
+          path: `/companies/${item?.id}`,
+        }),
+      }),
+      mk({
+        key: 'deals',
+        navKey: 'deals',
+        routeName: 'deals-list',
+        label: tr('nav.deals', 'Сделки'),
+        listPath: '/deals',
+        fetcher: getDeals,
+        mapItem: (item) => ({
+          title: toIdentityLabel(item?.name) || `${tr('nav.deals', 'Сделки')} #${item?.id ?? ''}`,
+          subtitle: [toIdentityLabel(item?.company_name), toIdentityLabel(item?.status)].filter(Boolean).join(' • '),
+          path: `/deals/${item?.id}`,
+        }),
+      }),
+      mk({
+        key: 'tasks',
+        navKey: 'tasks',
+        routeName: 'tasks-list',
+        label: tr('nav.tasks', 'Задачи'),
+        listPath: '/tasks',
+        fetcher: getTasks,
+        mapItem: (item) => ({
+          title: toIdentityLabel(item?.title) || `${tr('nav.tasks', 'Задачи')} #${item?.id ?? ''}`,
+          subtitle: [toIdentityLabel(item?.status), toIdentityLabel(item?.priority)].filter(Boolean).join(' • '),
+          path: `/tasks/${item?.id}`,
+        }),
+      }),
+      mk({
+        key: 'projects',
+        navKey: 'projects',
+        routeName: 'projects-list',
+        label: tr('nav.projects', 'Проекты'),
+        listPath: '/projects',
+        fetcher: getProjects,
+        mapItem: (item) => ({
+          title: toIdentityLabel(item?.name) || `${tr('nav.projects', 'Проекты')} #${item?.id ?? ''}`,
+          subtitle: [toIdentityLabel(item?.status), toIdentityLabel(item?.owner_name)].filter(Boolean).join(' • '),
+          path: `/projects/${item?.id}`,
+        }),
+      }),
+      mk({
+        key: 'products',
+        navKey: 'products',
+        routeName: 'products-list',
+        label: tr('nav.products', 'Продукты'),
+        listPath: '/products',
+        fetcher: getProducts,
+        mapItem: (item) => ({
+          title: toIdentityLabel(item?.name) || `${tr('nav.products', 'Продукты')} #${item?.id ?? ''}`,
+          subtitle: [toIdentityLabel(item?.sku), toIdentityLabel(item?.price)].filter(Boolean).join(' • '),
+          path: `/products/${item?.id}`,
+        }),
+      }),
+      mk({
+        key: 'payments',
+        navKey: 'payments',
+        routeName: 'payments-list',
+        label: tr('nav.payments', 'Платежи'),
+        listPath: '/payments',
+        fetcher: getPayments,
+        mapItem: (item) => ({
+          title: `${tr('nav.payments', 'Платежи')} #${item?.id ?? ''}`,
+          subtitle: [toIdentityLabel(item?.amount), toIdentityLabel(item?.status)].filter(Boolean).join(' • '),
+          path: `/payments/${item?.id}`,
+        }),
+      }),
+      mk({
+        key: 'memos',
+        navKey: 'memos',
+        routeName: 'memos-list',
+        label: tr('nav.memos', 'Заметки'),
+        listPath: '/memos',
+        fetcher: getMemos,
+        mapItem: (item) => ({
+          title: toIdentityLabel(item?.subject) || toIdentityLabel(item?.title) || `${tr('nav.memos', 'Заметки')} #${item?.id ?? ''}`,
+          subtitle: toIdentityLabel(item?.stage),
+          path: `/memos/${item?.id}`,
+        }),
+      }),
+      mk({
+        key: 'reminders',
+        navKey: 'reminders',
+        routeName: 'reminders-list',
+        label: tr('nav.reminders', 'Напоминания'),
+        listPath: '/reminders',
+        fetcher: getReminders,
+        mapItem: (item) => ({
+          title: toIdentityLabel(item?.subject) || `${tr('nav.reminders', 'Напоминания')} #${item?.id ?? ''}`,
+          subtitle: toIdentityLabel(item?.reminder_date),
+          path: `/reminders/${item?.id}`,
+        }),
+      }),
+    ];
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [allowedNavKeys, routeName, selectedKey, locale]);
+  const fallbackGlobalSearchPath = (
+    searchableProviders.find((provider) => provider.enabled && provider.navKey === (activeNavEntry?.key || ''))?.listPath
+    || searchableProviders.find((provider) => provider.enabled)?.listPath
+    || '/dashboard'
+  );
   const integrationLabelMap = {
     sms: activeLocale === 'ru' ? 'SMS' : 'SMS',
     telephony: activeLocale === 'ru' ? 'Телефония' : activeLocale === 'uz' ? 'Telefoniya' : 'Telephony',
@@ -429,6 +698,7 @@ export function AppLayout({
     const toStr = (value) => (value === null || value === undefined ? '' : String(value).trim());
     const pick = (...values) => values.map(toStr).find(Boolean) || '';
     const profile = user?.profile && typeof user.profile === 'object' ? user.profile : {};
+    const userProfile = user?.userprofile && typeof user.userprofile === 'object' ? user.userprofile : {};
     const nestedUser = user?.user && typeof user.user === 'object' ? user.user : {};
     const firstName = pick(
       user?.first_name,
@@ -465,11 +735,20 @@ export function AppLayout({
       user?.fullName,
       profile?.full_name,
       profile?.fullName,
+      userProfile?.full_name,
+      userProfile?.fullName,
       nestedUser?.full_name,
       nestedUser?.fullName
     );
-    const username = pick(user?.username, user?.login, profile?.username, nestedUser?.username, nestedUser?.login);
-    const email = pick(user?.email, profile?.email, nestedUser?.email);
+    const username = pick(
+      user?.username,
+      user?.login,
+      profile?.username,
+      userProfile?.username,
+      nestedUser?.username,
+      nestedUser?.login
+    );
+    const email = pick(user?.email, profile?.email, userProfile?.email, nestedUser?.email);
     const normalizedName = pick(
       user?.name,
       user?.display_name,
@@ -485,13 +764,13 @@ export function AppLayout({
     const normalizedFullNameIsGeneric = genericNames.has(fullName.toLowerCase());
     const preferredFullName = normalizedFullNameIsGeneric ? '' : fullName;
     const preferredUsername = normalizedUsernameIsGeneric ? '' : username;
+    const safeIdentityLabel = pick(email, preferredUsername);
 
     return (
       fioName
       || firstAndLastName
       || preferredFullName
-      || email
-      || preferredUsername
+      || safeIdentityLabel
       || (!normalizedNameIsGeneric ? normalizedName : '')
       || tr('nav.user', 'Пользователь')
     );
@@ -597,15 +876,6 @@ export function AppLayout({
   }, [effectiveSelectedKey, isMobile]);
 
   useEffect(() => {
-    const syncFromHash = () => {
-      setHashDerivedKey(resolveNavKeyFromHash());
-    };
-    syncFromHash();
-    window.addEventListener('hashchange', syncFromHash);
-    return () => window.removeEventListener('hashchange', syncFromHash);
-  }, []);
-
-  useEffect(() => {
     if (!isMobile) {
       return undefined;
     }
@@ -617,6 +887,94 @@ export function AppLayout({
       document.body.style.overflow = previousOverflow;
     };
   }, [isMobile, mobileMenuOpen]);
+
+  const handleWorkspaceChange = (nextWorkspace) => {
+    const selectedWorkspace = workspaceOptions.find((workspace) => workspace.value === nextWorkspace);
+    if (selectedWorkspace?.path) {
+      navigate(selectedWorkspace.path);
+    }
+  };
+
+  const clearGlobalSearch = () => {
+    setGlobalSearchValue('');
+    setGlobalSearchOptions([]);
+    setGlobalSearchLoading(false);
+  };
+
+  const handleGlobalSearch = (rawValue) => {
+    const value = String(rawValue || '').trim();
+    if (!value) return;
+    const firstOption = globalSearchOptions[0];
+    if (firstOption?.path) {
+      navigate(String(firstOption.path));
+      clearGlobalSearch();
+      return;
+    }
+    const separator = fallbackGlobalSearchPath.includes('?') ? '&' : '?';
+    navigate(`${fallbackGlobalSearchPath}${separator}search=${encodeURIComponent(value)}`);
+    clearGlobalSearch();
+  };
+  const handleGlobalSearchSelect = (_value, option) => {
+    const path = option?.path;
+    if (!path) return;
+    navigate(String(path));
+    clearGlobalSearch();
+  };
+
+  useEffect(() => {
+    const query = String(globalSearchValue || '').trim();
+    if (query.length < 2 || isMobile) {
+      setGlobalSearchOptions([]);
+      setGlobalSearchLoading(false);
+      return;
+    }
+
+    const requestId = globalSearchRequestRef.current + 1;
+    globalSearchRequestRef.current = requestId;
+    setGlobalSearchLoading(true);
+
+    const timeoutId = window.setTimeout(async () => {
+      const enabledProviders = searchableProviders.filter((provider) => provider.enabled);
+      if (enabledProviders.length === 0) {
+        if (globalSearchRequestRef.current === requestId) {
+          setGlobalSearchOptions([]);
+          setGlobalSearchLoading(false);
+        }
+        return;
+      }
+
+      const results = await Promise.all(enabledProviders.map(async (provider) => {
+        try {
+          const response = await provider.fetcher({ search: query, page_size: 3 });
+          const list = normalizeListResponse(response);
+          return list
+            .slice(0, 3)
+            .map((item) => provider.mapItem(item))
+            .filter((item) => item?.path && item?.title)
+            .map((item) => ({
+              value: item.title,
+              path: item.path,
+              label: (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+                  <Text strong style={{ lineHeight: 1.2 }}>{item.title}</Text>
+                  <Text type="secondary" style={{ fontSize: 12, lineHeight: 1.2 }}>
+                    {provider.label}{item.subtitle ? ` • ${item.subtitle}` : ''}
+                  </Text>
+                </div>
+              ),
+            }));
+        } catch {
+          return [];
+        }
+      }));
+
+      if (globalSearchRequestRef.current !== requestId) return;
+      setGlobalSearchOptions(results.flat());
+      setGlobalSearchLoading(false);
+    }, 280);
+
+    return () => window.clearTimeout(timeoutId);
+  }, [globalSearchValue, isMobile, searchableProviders]);
 
   // Convert baseNav to Ant Design Menu items (with nested groups)
   const menuItems = visibleNav.map((item) => {
@@ -776,7 +1134,7 @@ export function AppLayout({
       label: tr('nav.profile', 'Профиль'),
       onClick: () => navigate('/profile'),
     },
-    ...(Array.isArray(allowedNavKeys) && allowedNavKeys.includes(SETTINGS_WORKSPACE_NAV_KEY)
+    ...(canOpenSettingsWorkspace
       ? [{
           key: SETTINGS_WORKSPACE_NAV_KEY,
           icon: <SettingOutlined />,
@@ -816,7 +1174,6 @@ export function AppLayout({
       onClick: onLogout,
     },
   ];
-
   return (
     <Layout style={{ minHeight: '100dvh', background: 'transparent' }}>
       {!isMobile && (
@@ -828,7 +1185,7 @@ export function AppLayout({
           width={256}
           theme={theme === 'dark' ? 'dark' : 'light'}
           style={{
-            overflow: 'auto',
+            overflow: 'hidden',
             height: '100vh',
             boxSizing: 'border-box',
             position: 'fixed',
@@ -838,70 +1195,123 @@ export function AppLayout({
             borderRight: `1px solid ${shell.border}`,
             background: theme === 'dark' ? shell.surfaceSolid : shell.surface,
             boxShadow: shell.shadowStrong,
-            backdropFilter: 'none',
-            WebkitBackdropFilter: 'none',
           }}
         >
-        <div
-          style={{
-            height: desktopTopBarHeight,
-            boxSizing: 'border-box',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: collapsed ? 'center' : 'space-between',
-            padding: collapsed ? '0' : '0 16px',
-            borderBottom: `1px solid ${shell.border}`,
-            background: theme === 'dark' ? shell.surfaceSolid : shell.surface,
-          }}
-        >
-          <Space>
-            {collapsed ? (
-              <Avatar
+          <div
+            style={{
+              position: 'relative',
+              height: desktopTopBarHeight,
+              boxSizing: 'border-box',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: collapsed ? 'center' : 'space-between',
+              padding: collapsed ? 0 : '0 16px',
+              borderBottom: `1px solid ${shell.border}`,
+              background: theme === 'dark' ? shell.surfaceSolid : shell.surface,
+            }}
+          >
+            <div
+              style={{
+                position: 'absolute',
+                insetInline: 0,
+                top: 0,
+                height: 3,
+                background: shell.topStrip,
+              }}
+            />
+            <Space>
+              <button
+                type="button"
+                onClick={() => navigate('/dashboard')}
+                aria-label={tr('nav.dashboard', 'Дашборд')}
                 style={{
-                  backgroundColor: shell.surfaceElevated,
-                  color: shell.text,
-                  border: `1px solid ${shell.border}`,
-                  verticalAlign: 'middle',
-                  boxShadow: theme === 'dark' ? '0 8px 18px rgba(2, 6, 23, 0.28)' : 'none',
+                  border: 'none',
+                  padding: 0,
+                  background: 'transparent',
+                  cursor: 'pointer',
+                  display: 'inline-flex',
+                  alignItems: 'center',
                 }}
-                size="large"
-                src={brandMark}
               >
-                E
-              </Avatar>
-            ) : (
-              <img
-                src={theme === 'dark' ? brandLogoDark : brandLogo}
-                alt="Enterprise CRM"
-                style={{ width: 168, height: 'auto' }}
+                {collapsed ? (
+                  <Avatar
+                    style={{
+                      backgroundColor: shell.surfaceElevated,
+                      color: shell.text,
+                      border: `1px solid ${shell.border}`,
+                      verticalAlign: 'middle',
+                      boxShadow: theme === 'dark' ? '0 8px 18px rgba(2, 6, 23, 0.28)' : 'none',
+                    }}
+                    size="large"
+                    src={brandMark}
+                  >
+                    E
+                  </Avatar>
+                ) : (
+                  <img
+                    src={theme === 'dark' ? brandLogoDark : brandLogo}
+                    alt="Enterprise CRM"
+                    style={{ width: 168, height: 'auto' }}
+                  />
+                )}
+              </button>
+            </Space>
+            {!collapsed && (
+              <Button
+                type="text"
+                icon={<MenuFoldOutlined style={{ color: shell.text }} />}
+                onClick={onToggleCollapsed}
               />
             )}
-          </Space>
-          {!collapsed && (
-            <Button
-              type="text"
-              icon={<MenuFoldOutlined style={{ color: shell.text }} />}
-              onClick={onToggleCollapsed}
-            />
-          )}
-        </div>
+          </div>
 
-        <ConfigProvider theme={menuTheme}>
-          <Menu
-            theme={theme === 'dark' ? 'dark' : 'light'}
-            mode="inline"
-            selectedKeys={[effectiveSelectedKey]}
-            items={menuItems}
+          <div
             style={{
-              borderRight: 0,
               height: `calc(100vh - ${desktopTopBarHeight}px)`,
-              overflowY: 'auto',
-              padding: '12px 10px 18px',
-              background: 'transparent',
+              display: 'flex',
+              flexDirection: 'column',
             }}
-          />
-        </ConfigProvider>
-      </Sider>
+          >
+            <ConfigProvider theme={menuTheme}>
+              <Menu
+                theme={theme === 'dark' ? 'dark' : 'light'}
+                mode="inline"
+                selectedKeys={[effectiveSelectedKey]}
+                items={menuItems}
+                style={{
+                  borderRight: 0,
+                  flex: 1,
+                  overflowY: 'auto',
+                  padding: '12px 10px 10px',
+                  background: 'transparent',
+                }}
+              />
+            </ConfigProvider>
+
+            {quickCreateMenuItems.length > 0 ? (
+              <div
+                style={{
+                  padding: collapsed ? 10 : 12,
+                  borderTop: `1px solid ${shell.border}`,
+                  background: theme === 'dark' ? shell.surface : shell.surfaceSolid,
+                }}
+              >
+                <ConfigProvider theme={menuTheme}>
+                  <Dropdown menu={{ items: quickCreateMenuItems }} trigger={['click']} placement="topRight">
+                    <Button
+                      type="primary"
+                      icon={<PlusOutlined />}
+                      block={!collapsed}
+                      style={{ borderRadius: 12 }}
+                    >
+                      {collapsed ? null : quickCreateLabel}
+                    </Button>
+                  </Dropdown>
+                </ConfigProvider>
+              </div>
+            ) : null}
+          </div>
+        </Sider>
       )}
 
       <Drawer
@@ -913,6 +1323,36 @@ export function AppLayout({
         keyboard
         destroyOnClose
         zIndex={1400}
+        title={(
+          <button
+            type="button"
+            onClick={() => {
+              navigate('/dashboard');
+              setMobileMenuOpen(false);
+            }}
+            aria-label={tr('nav.dashboard', 'Дашборд')}
+            style={{
+              border: 'none',
+              padding: 0,
+              background: 'transparent',
+              cursor: 'pointer',
+              display: 'inline-flex',
+              alignItems: 'center',
+            }}
+          >
+            <Space align="center" size={10}>
+              <Avatar
+                style={{
+                  backgroundColor: shell.surfaceElevated,
+                  color: shell.text,
+                  border: `1px solid ${shell.border}`,
+                }}
+                src={brandMark}
+              />
+              <Text strong style={{ color: shell.text }}>Enterprise CRM</Text>
+            </Space>
+          </button>
+        )}
         styles={{
           header: {
             background: shell.surfaceSolid,
@@ -926,21 +1366,34 @@ export function AppLayout({
           },
         }}
       >
-        <ConfigProvider theme={menuTheme}>
-          <Menu
-            theme={theme === 'dark' ? 'dark' : 'light'}
-            mode="inline"
-            selectedKeys={[effectiveSelectedKey]}
-            items={menuItems}
-            style={{
-              borderRight: 0,
-              height: '100%',
-              overflowY: 'auto',
-              padding: '12px 10px 18px',
-              background: 'transparent',
-            }}
-          />
-        </ConfigProvider>
+        <div style={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
+          <ConfigProvider theme={menuTheme}>
+            <Menu
+              theme={theme === 'dark' ? 'dark' : 'light'}
+              mode="inline"
+              selectedKeys={[effectiveSelectedKey]}
+              items={menuItems}
+              style={{
+                borderRight: 0,
+                flex: 1,
+                overflowY: 'auto',
+                padding: '12px 10px 12px',
+                background: 'transparent',
+              }}
+            />
+          </ConfigProvider>
+          {quickCreateMenuItems.length > 0 ? (
+            <div style={{ padding: 12, borderTop: `1px solid ${shell.border}` }}>
+              <ConfigProvider theme={menuTheme}>
+                <Dropdown menu={{ items: quickCreateMenuItems }} trigger={['click']} placement="topCenter">
+                  <Button type="primary" icon={<PlusOutlined />} block>
+                    {quickCreateLabel}
+                  </Button>
+                </Dropdown>
+              </ConfigProvider>
+            </div>
+          ) : null}
+        </div>
       </Drawer>
 
       <Layout
@@ -954,145 +1407,203 @@ export function AppLayout({
           style={{
             padding: isMobile
               ? '0 calc(12px + env(safe-area-inset-right)) 0 calc(12px + env(safe-area-inset-left))'
-              : '0 24px',
+              : '0 18px',
             height: isMobile ? mobileTopBarHeight : desktopTopBarHeight,
             boxSizing: 'border-box',
             lineHeight: 'normal',
             background: theme === 'dark' ? shell.surfaceSolid : shell.surface,
             borderBottom: `1px solid ${shell.border}`,
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'space-between',
             position: 'sticky',
             top: 0,
             zIndex: 1100,
             boxShadow: shell.shadow,
-            backdropFilter: 'none',
-            WebkitBackdropFilter: 'none',
+            display: 'flex',
+            flexDirection: 'column',
+            justifyContent: 'center',
+            gap: 0,
           }}
         >
-          <Space align="center">
-            {isMobile && (
-              <Button type="text" icon={<MenuUnfoldOutlined />} onClick={() => setMobileMenuOpen(true)} />
-            )}
-            {!isMobile && collapsed && (
-              <Button
-                type="text"
-                icon={<MenuUnfoldOutlined />}
-                onClick={onToggleCollapsed}
-              />
-            )}
-            <Text
-              ellipsis
-              style={{
-                maxWidth: isMobile ? 160 : 'none',
-                lineHeight: 1.2,
-                color: shell.textMuted,
-                fontWeight: 500,
-                letterSpacing: '-0.01em',
-              }}
-            >
-              {selectedNavLabel}
-            </Text>
-          </Space>
+          <div
+            style={{
+              position: 'absolute',
+              insetInline: 0,
+              top: 0,
+              height: 3,
+              background: shell.topStrip,
+            }}
+          />
 
-          <Space size={isMobile ? 'small' : 'middle'} wrap={false} align="center">
-            {/* User Menu */}
-            {hasActiveTelephony && (
-              <Button
-                size={isMobile ? 'small' : 'middle'}
-                icon={<ChannelBrandIcon channel="telephony" size={16} />}
-                onClick={onOpenDialer}
-              />
-            )}
+          <div style={{ display: 'flex', alignItems: 'center', gap: 12, minWidth: 0, width: '100%' }}>
+            <Space align="center" size={8} style={{ minWidth: 0 }}>
+              {isMobile && (
+                <Button
+                  type="text"
+                  icon={<MenuUnfoldOutlined />}
+                  onClick={() => setMobileMenuOpen(true)}
+                />
+              )}
+              {!isMobile && collapsed && (
+                <Button
+                  type="text"
+                  icon={<MenuUnfoldOutlined />}
+                  onClick={onToggleCollapsed}
+                />
+              )}
 
-            <ConfigProvider theme={menuTheme}>
-              <Dropdown
-                menu={{ items: userMenuItems }}
-                placement="bottomRight"
-                trigger={['click']}
-                arrow={{ pointAtCenter: true }}
-                overlayStyle={{ minWidth: 280 }}
-              >
-              <Space
-                align="center"
+            </Space>
+
+            {!isMobile && (
+              <AutoComplete
+                value={globalSearchValue}
+                options={globalSearchOptions}
+                onSelect={handleGlobalSearchSelect}
+                onChange={setGlobalSearchValue}
+                open={String(globalSearchValue || '').trim().length >= 2 && (globalSearchLoading || globalSearchOptions.length > 0)}
+                notFoundContent={globalSearchLoading ? <LoadingOutlined /> : null}
                 style={{
-                  cursor: 'pointer',
-                  padding: '8px 12px',
-                  borderRadius: 999,
-                  border: `1px solid ${theme === 'dark' ? shell.accentBorder : shell.border}`,
-                  background: theme === 'dark' ? shell.surfaceSolid : shell.surface,
-                  boxShadow: shell.shadow,
-                  backdropFilter: 'none',
-                  WebkitBackdropFilter: 'none',
+                  flex: 1,
+                  maxWidth: 390,
+                  marginInlineStart: 8,
                 }}
               >
-                <Space size={6} align="center">
-                  <Tooltip
-                    title={wsIndicatorStatus === 'error'
-                      ? tr('appLayout.status.controlPlaneOffline', 'Control Plane недоступен')
-                      : tr('appLayout.status.controlPlaneOnline', 'Control Plane синхронизирован')}
-                  >
-                    <Space size={4} align="center">
-                      <ThunderboltOutlined style={{ color: wsIndicatorColor }} />
-                      <Badge status={wsIndicatorStatus} />
-                    </Space>
-                  </Tooltip>
-                </Space>
-                {Array.isArray(activeIntegrations) && activeIntegrations.length > 0 && (
-                  <Space size={8} align="center">
-                    {activeIntegrations.map((integration) => {
-                      const iconKey = integrationIconMap[integration.key];
-                      if (!iconKey) return null;
-                      return (
-                        <Tooltip
-                          key={integration.key}
-                          title={integrationLabelMap[integration.key] || integration.key}
-                        >
-                          <Space size={4} align="center">
-                            {iconKey === 'ai' ? (
-                              <RobotOutlined style={{ color: shell.textMuted }} />
-                            ) : (
-                              <ChannelBrandIcon channel={iconKey} size={14} />
-                            )}
-                            <Badge status={integration.status || 'success'} />
-                          </Space>
-                        </Tooltip>
-                      );
-                    })}
-                  </Space>
-                )}
-                {incomingCallsCount > 0 && (
-                  <Badge count={incomingCallsCount}>
-                    <ChannelBrandIcon channel="telephony" size={14} />
-                  </Badge>
-                )}
-                {unreadCount > 0 && (
-                  <Badge count={unreadCount}>
-                    <ChannelBrandIcon channel="omnichannel" size={14} />
-                  </Badge>
-                )}
-                <Avatar
-                  size="small"
+                <Input
+                  allowClear
+                  value={globalSearchValue}
+                  onChange={(event) => setGlobalSearchValue(event.target.value)}
+                  onPressEnter={(event) => handleGlobalSearch(event.target.value)}
+                  prefix={globalSearchLoading ? <LoadingOutlined style={{ color: shell.textMuted }} /> : <SearchOutlined style={{ color: shell.textMuted }} />}
+                  placeholder={globalSearchPlaceholder}
                   style={{
-                    backgroundColor: shell.surfaceElevated,
-                    color: shell.text,
-                    border: `1px solid ${shell.border}`,
+                    borderRadius: 999,
                   }}
+                />
+              </AutoComplete>
+            )}
+
+            <Space size={isMobile ? 6 : 8} align="center" style={{ marginInlineStart: 'auto' }}>
+              {!isMobile && activeWorkspace ? (
+                <Select
+                  value={activeWorkspace.value}
+                  onChange={handleWorkspaceChange}
+                  popupMatchSelectWidth={false}
+                  className="workspace-switcher"
+                  popupClassName="workspace-switcher-dropdown"
+                  options={workspaceOptions.map((workspace) => ({
+                    value: workspace.value,
+                    label: workspace.label,
+                  }))}
+                  style={{ minWidth: 160 }}
+                />
+              ) : null}
+
+              {quickCreateMenuItems.length > 0 ? (
+                <ConfigProvider theme={menuTheme}>
+                  <Dropdown menu={{ items: quickCreateMenuItems }} trigger={['click']} placement="bottomRight">
+                    <Button
+                      type="primary"
+                      icon={<PlusOutlined />}
+                      size={isMobile ? 'small' : 'middle'}
+                    >
+                      {isMobile ? null : quickCreateLabel}
+                    </Button>
+                  </Dropdown>
+                </ConfigProvider>
+              ) : null}
+
+              {hasActiveTelephony && (
+                <Badge count={incomingCallsCount} size="small">
+                  <Button
+                    size={isMobile ? 'small' : 'middle'}
+                    icon={<ChannelBrandIcon channel="telephony" size={16} />}
+                    aria-label={tr('appLayout.actions.openDialer', 'Открыть набор номера')}
+                    onClick={onOpenDialer}
+                  />
+                </Badge>
+              )}
+
+              <Badge count={unreadCount} size="small">
+                <Button
+                  size={isMobile ? 'small' : 'middle'}
+                  icon={<BellOutlined />}
+                  aria-label={tr('appLayout.actions.notifications', 'Уведомления')}
+                />
+              </Badge>
+
+              <ConfigProvider theme={menuTheme}>
+                <Dropdown
+                  menu={{ items: userMenuItems }}
+                  placement="bottom"
+                  trigger={['click']}
+                  arrow={{ pointAtCenter: true }}
+                  overlayStyle={{ minWidth: 280 }}
                 >
-                  {avatarLetter}
-                </Avatar>
-                {!isMobile && <Text style={{ color: shell.text, fontWeight: 500 }}>{headerDisplayName}</Text>}
-                <DownOutlined style={{ color: shell.textMuted, fontSize: 12 }} aria-hidden />
-              </Space>
-              </Dropdown>
-            </ConfigProvider>
-          </Space>
+                  <Space
+                    align="center"
+                    style={{
+                      cursor: 'pointer',
+                      padding: isMobile ? '6px 8px' : '8px 12px',
+                      borderRadius: 999,
+                      border: `1px solid ${theme === 'dark' ? shell.accentBorder : shell.border}`,
+                      background: theme === 'dark' ? shell.surfaceSolid : shell.surface,
+                      boxShadow: shell.shadow,
+                    }}
+                  >
+                    <Tooltip
+                      title={wsIndicatorStatus === 'error'
+                        ? tr('appLayout.status.controlPlaneOffline', 'Control Plane недоступен')
+                        : tr('appLayout.status.controlPlaneOnline', 'Control Plane синхронизирован')}
+                    >
+                      <Space size={4} align="center">
+                        <ThunderboltOutlined style={{ color: wsIndicatorColor }} />
+                        <Badge status={wsIndicatorStatus} />
+                      </Space>
+                    </Tooltip>
+
+                    {!isMobile && Array.isArray(activeIntegrations) && activeIntegrations.length > 0 && (
+                      <Space size={8} align="center">
+                        {activeIntegrations.map((integration) => {
+                          const iconKey = integrationIconMap[integration.key];
+                          if (!iconKey) return null;
+                          return (
+                            <Tooltip
+                              key={integration.key}
+                              title={integrationLabelMap[integration.key] || integration.key}
+                            >
+                              <Space size={4} align="center">
+                                {iconKey === 'ai' ? (
+                                  <RobotOutlined style={{ color: shell.textMuted }} />
+                                ) : (
+                                  <ChannelBrandIcon channel={iconKey} size={14} />
+                                )}
+                                <Badge status={integration.status || 'success'} />
+                              </Space>
+                            </Tooltip>
+                          );
+                        })}
+                      </Space>
+                    )}
+                    <Avatar
+                      size="small"
+                      style={{
+                        backgroundColor: shell.surfaceElevated,
+                        color: shell.text,
+                        border: `1px solid ${shell.border}`,
+                      }}
+                    >
+                      {avatarLetter}
+                    </Avatar>
+                    {!isMobile && <Text style={{ color: shell.text, fontWeight: 500 }}>{headerDisplayName}</Text>}
+                    <DownOutlined style={{ color: shell.textMuted, fontSize: 12 }} aria-hidden />
+                  </Space>
+                </Dropdown>
+              </ConfigProvider>
+            </Space>
+          </div>
         </Header>
 
         <Content
           style={{
-            margin: isMobile ? '12px clamp(10px, 3vw, 14px) calc(12px + env(safe-area-inset-bottom))' : '24px',
+            margin: isMobile ? '12px clamp(10px, 3vw, 14px) calc(12px + env(safe-area-inset-bottom))' : '20px',
             minHeight: 280,
             overflowX: 'hidden',
             maxWidth: '100%',
@@ -1116,11 +1627,11 @@ export function AppLayout({
                 showIcon
                 closable
                 onClose={handleCloseLicenseRestriction}
-                message={
+                message={(
                   <Text strong style={{ color: licenseShell.title }}>
                     {licenseRestrictionCopy.message}
                   </Text>
-                }
+                )}
                 description={(
                   <Space direction="vertical" size={2} style={{ width: '100%' }}>
                     <Text style={{ color: licenseShell.text, lineHeight: 1.55 }}>
@@ -1137,8 +1648,8 @@ export function AppLayout({
                 action={(
                   <Space wrap>
                     {canOpenControlPlane ? (
-                      <Button size="small" type="primary" onClick={() => navigate('/control-plane')}>
-                        {t('license.banner.openControlPlane', 'Open Control Plane')}
+                      <Button size="small" type="primary" onClick={() => navigate('/license-workspace')}>
+                        {t('license.banner.openLicenseWorkspace', 'Open License Workspace')}
                       </Button>
                     ) : null}
                     {canOpenSettingsWorkspace ? (

@@ -6,14 +6,11 @@ import {
   Card,
   Col,
   Descriptions,
-  Divider,
   Empty,
   Form,
-  Grid,
   Input,
   InputNumber,
   Row,
-  Skeleton,
   Select,
   Space,
   Statistic,
@@ -32,12 +29,16 @@ import {
   DownloadOutlined,
   GlobalOutlined,
   ReloadOutlined,
+  SafetyCertificateOutlined,
   SettingOutlined,
   UploadOutlined,
 } from '@ant-design/icons';
 import settingsApi from '../lib/api/settings.js';
 import ChannelBrandIcon from '../components/channel/ChannelBrandIcon.jsx';
 import { useTheme } from '../lib/hooks/useTheme.js';
+import {
+  useLicenseRequestFlow,
+} from '../lib/hooks/useLicenseRequestFlow.js';
 import { exportCrmDataExcel, importCrmDataExcel } from '../lib/api/crmData.js';
 import {
   executeDsrRequest,
@@ -46,8 +47,15 @@ import {
   getRetentionPolicies,
   runRetentionPolicies,
 } from '../lib/api/compliance.js';
+import {
+  getLicenseEntitlements,
+  requestLicenseFromControlPlane,
+} from '../lib/api/license.js';
+import { persistLicenseState } from '../lib/api/licenseState.js';
+import { persistLicenseFeatures } from '../lib/api/licenseFeatures.js';
 import { formatValueForUi, isPlainObject as isPlainObjectValue } from '../lib/utils/value-display.js';
 import { t } from '../lib/i18n/index.js';
+import { navigate } from '../router.js';
 import { KpiStatCard } from '../shared/ui';
 
 const { Text } = Typography;
@@ -120,13 +128,49 @@ function inferFieldType(key, value) {
   return 'text';
 }
 
+function formatLicenseDate(value) {
+  if (!value) return '—';
+  const parsed = dayjs(value);
+  if (!parsed.isValid()) return '—';
+  return parsed.format('DD.MM.YYYY HH:mm');
+}
+
+function getLicenseStatusMeta(status, tr) {
+  const normalized = String(status || '').toLowerCase();
+  if (normalized === 'active') return { color: 'success', text: tr('settingsPage.license.status.active', 'Активна') };
+  if (normalized === 'grace') return { color: 'warning', text: tr('settingsPage.license.status.grace', 'Льготный период') };
+  if (normalized === 'expired') return { color: 'error', text: tr('settingsPage.license.status.expired', 'Истекла') };
+  if (normalized === 'revoked') return { color: 'error', text: tr('settingsPage.license.status.revoked', 'Отозвана') };
+  if (normalized === 'invalid') return { color: 'error', text: tr('settingsPage.license.status.invalid', 'Недействительна') };
+  if (normalized === 'missing') return { color: 'default', text: tr('settingsPage.license.status.missing', 'Не установлена') };
+  return { color: 'default', text: normalized || tr('settingsPage.license.status.unknown', 'Неизвестно') };
+}
+
+function readLicenseApiError(error, fallback) {
+  const details = error?.details || error?.response?.data || error?.body || {};
+  return (
+    details?.message
+    || details?.detail
+    || details?.error
+    || error?.message
+    || fallback
+  );
+}
+
+function translateWithFallback(key, fallback, vars = {}) {
+  const localized = t(key, vars);
+  if (localized !== key) return localized;
+  let result = String(fallback || '');
+  for (const [name, value] of Object.entries(vars || {})) {
+    result = result.replaceAll(`{${name}}`, String(value));
+  }
+  return result;
+}
+
 function SettingField({ fieldKey, path, value, isDark = false }) {
   const type = inferFieldType(fieldKey, value);
   const label = prettifyKey(fieldKey);
-  const tr = (key, fallback, vars = {}) => {
-    const localized = t(key, vars);
-    return localized === key ? fallback : localized;
-  };
+  const tr = (key, fallback, vars = {}) => translateWithFallback(key, fallback, vars);
 
   if (type === 'group') {
     return (
@@ -230,39 +274,14 @@ function SettingsConfigurator({
   saving,
   isDark = false,
 }) {
-  const tr = (key, fallback, vars = {}) => {
-    const localized = t(key, vars);
-    return localized === key ? fallback : localized;
-  };
+  const tr = (key, fallback, vars = {}) => translateWithFallback(key, fallback, vars);
   const [form] = Form.useForm();
-  const screens = Grid.useBreakpoint();
-  const normalizedData = useMemo(() => normalizeForForm(data || {}), [data]);
-  const formValues = Form.useWatch([], form);
 
   useEffect(() => {
-    form.setFieldsValue(normalizedData);
-  }, [normalizedData, form]);
+    form.setFieldsValue(normalizeForForm(data || {}));
+  }, [data, form]);
 
   const fieldEntries = useMemo(() => Object.entries(data || {}), [data]);
-  const hasUnsavedChanges = useMemo(() => {
-    if (!formValues) return false;
-
-    try {
-      const initialPayload = serializeForSubmit(normalizedData);
-      const currentPayload = serializeForSubmit(formValues);
-      return JSON.stringify(initialPayload) !== JSON.stringify(currentPayload);
-    } catch (error) {
-      return false;
-    }
-  }, [formValues, normalizedData]);
-
-  if (loading) {
-    return (
-      <Card>
-        <Skeleton active paragraph={{ rows: 6 }} />
-      </Card>
-    );
-  }
 
   return (
     <Card>
@@ -295,29 +314,13 @@ function SettingsConfigurator({
             ))}
           </Row>
 
-          <Divider style={{ margin: '12px 0 16px' }} />
-
-          <Space direction={screens.xs ? 'vertical' : 'horizontal'} size={12} style={{ width: '100%', justifyContent: 'space-between' }}>
-            <Text type={hasUnsavedChanges ? 'warning' : 'secondary'}>
-              {hasUnsavedChanges
-                ? tr('settingsPage.field.unsavedChanges', 'Есть несохраненные изменения')
-                : tr('settingsPage.field.allChangesSaved', 'Изменения сохранены')}
-            </Text>
-            <Space direction={screens.xs ? 'vertical' : 'horizontal'} style={{ width: screens.xs ? '100%' : 'auto' }}>
-              <Button
-                onClick={() => form.setFieldsValue(normalizedData)}
-                disabled={!hasUnsavedChanges || saving}
-                block={!!screens.xs}
-              >
-                {tr('actions.reset', 'Сбросить')}
-              </Button>
-              <Button icon={<ReloadOutlined />} onClick={onReload} loading={loading} block={!!screens.xs}>
-                {tr('actions.refresh', 'Обновить')}
-              </Button>
-              <Button type="primary" htmlType="submit" loading={saving} disabled={!hasUnsavedChanges} block={!!screens.xs}>
-                {tr('actions.save', 'Сохранить')}
-              </Button>
-            </Space>
+          <Space>
+            <Button type="primary" htmlType="submit" loading={saving}>
+              {tr('actions.save', 'Сохранить')}
+            </Button>
+            <Button icon={<ReloadOutlined />} onClick={onReload} loading={loading}>
+              {tr('actions.refresh', 'Обновить')}
+            </Button>
           </Space>
         </Form>
       )}
@@ -326,10 +329,7 @@ function SettingsConfigurator({
 }
 
 function ComplianceSummary({ report }) {
-  const tr = (key, fallback, vars = {}) => {
-    const localized = t(key, vars);
-    return localized === key ? fallback : localized;
-  };
+  const tr = (key, fallback, vars = {}) => translateWithFallback(key, fallback, vars);
   if (!report || !Object.keys(report).length) {
     return <Empty description={tr('settingsPage.empty.complianceReport', 'Нет данных по compliance-отчёту')} />;
   }
@@ -383,10 +383,7 @@ function ComplianceSummary({ report }) {
 }
 
 function SettingsPage() {
-  const tr = (key, fallback, vars = {}) => {
-    const localized = t(key, vars);
-    return localized === key ? fallback : localized;
-  };
+  const tr = (key, fallback, vars = {}) => translateWithFallback(key, fallback, vars);
   const { theme } = useTheme();
   const isDark = theme === 'dark';
   const [massmailSettings, setMassmailSettings] = useState({});
@@ -398,8 +395,9 @@ function SettingsPage() {
   const [dataExchangeLoading, setDataExchangeLoading] = useState(false);
   const [importFile, setImportFile] = useState(null);
   const [importResult, setImportResult] = useState(null);
+  const [licenseInfo, setLicenseInfo] = useState(null);
+  const [licenseLoading, setLicenseLoading] = useState(false);
   const [complianceLoading, setComplianceLoading] = useState(false);
-  const [globalRefreshing, setGlobalRefreshing] = useState(false);
   const [complianceReport, setComplianceReport] = useState(null);
   const [dsrItems, setDsrItems] = useState([]);
   const [retentionItems, setRetentionItems] = useState([]);
@@ -408,6 +406,7 @@ function SettingsPage() {
     loadMassmailSettings();
     loadReminderSettings();
     loadPublicDomains();
+    loadLicenseInfo();
     loadComplianceData();
   }, []);
 
@@ -457,6 +456,34 @@ function SettingsPage() {
       setDomains([]);
     } finally {
       setDomainsLoading(false);
+    }
+  };
+
+  const syncLicenseClientState = (licensePayload) => {
+    persistLicenseState(licensePayload || {});
+    persistLicenseFeatures(licensePayload?.features || []);
+  };
+
+  const loadLicenseInfo = async ({ silent = false } = {}) => {
+    if (!silent) {
+      setLicenseLoading(true);
+    }
+    try {
+      const data = await getLicenseEntitlements();
+      setLicenseInfo(data || null);
+      syncLicenseClientState(data || {});
+      return data || null;
+    } catch (error) {
+      console.error('Error loading license info:', error);
+      if (!silent) {
+        message.error(tr('settingsPage.messages.licenseLoadError', 'Не удалось загрузить информацию о лицензии'));
+        setLicenseInfo(null);
+      }
+      return null;
+    } finally {
+      if (!silent) {
+        setLicenseLoading(false);
+      }
     }
   };
 
@@ -523,25 +550,111 @@ function SettingsPage() {
     }
   };
 
-  const handleRefreshAll = async () => {
-    setGlobalRefreshing(true);
-    try {
-      await Promise.all([
-        loadMassmailSettings(),
-        loadReminderSettings(),
-        loadPublicDomains(),
-        loadComplianceData(),
-      ]);
-      message.success(tr('settingsPage.messages.refreshed', 'Данные обновлены'));
-    } catch (error) {
-      message.error(tr('settingsPage.messages.refreshError', 'Не удалось обновить часть данных'));
-    } finally {
-      setGlobalRefreshing(false);
+  const {
+    pendingRequest: licenseRequestPending,
+    rejectedRequest: licenseRequestRejected,
+    requestLoading: licenseRequesting,
+    polling: licensePendingPolling,
+    pollAttempts: licensePendingPollAttempts,
+    maxPollAttempts: licensePendingPollMaxAttempts,
+    requestOnline,
+    pollNow,
+    resumePolling,
+    pausePolling,
+    clearRequestState: clearLicenseRequestState,
+  } = useLicenseRequestFlow({
+    requestLicense: requestLicenseFromControlPlane,
+    reloadEntitlements: () => loadLicenseInfo({ silent: true }),
+    isInstalled: Boolean(licenseInfo?.installed),
+    onPollingLimitReached: () => {
+      message.warning(
+        tr(
+          'settingsPage.messages.licensePollingStopped',
+          'Автопроверка статуса остановлена. Продолжите проверку вручную.',
+        ),
+      );
+    },
+  });
+
+  const showLicenseRequestRejected = (rejectedState) => {
+    const rejectionReason = String(rejectedState?.message || '').trim();
+    message.error(
+      rejectionReason
+      || tr(
+        'settingsPage.messages.licenseRequestRejected',
+        'Запрос лицензии отклонен в control-plane. Исправьте параметры и отправьте повторно.',
+      ),
+    );
+  };
+
+  const pollPendingLicenseRequest = async ({ manual = false } = {}) => {
+    const result = await pollNow({ manual });
+    if (result.type === 'installed') {
+      message.success(tr('settingsPage.messages.licenseRequestDone', 'Лицензия успешно обновлена'));
+      return result;
+    }
+    if (result.type === 'pending' && manual) {
+      message.info(tr('settingsPage.messages.licenseRequestPending', 'Запрос лицензии отправлен и ожидает одобрения'));
+      return result;
+    }
+    if (result.type === 'rejected') {
+      showLicenseRequestRejected(result.state);
+      return result;
+    }
+    if (result.type === 'error' && manual) {
+      message.error(
+        readLicenseApiError(
+          result.error,
+          tr('settingsPage.messages.licenseRequestError', 'Не удалось запросить лицензию'),
+        ),
+      );
+    }
+    return result;
+  };
+
+  const startLicensePendingPolling = (seedPending = null) => {
+    if (seedPending) {
+      resumePolling(seedPending);
+      return;
+    }
+    if (!resumePolling()) {
+      message.info(tr('settingsPage.messages.licenseRequestPending', 'Запрос лицензии отправлен и ожидает одобрения'));
     }
   };
 
-  const pendingDsrCount = dsrItems.filter((item) => item?.status && !['completed', 'failed'].includes(item.status)).length;
-  const activeRetentionCount = retentionItems.filter((item) => Boolean(item?.is_active)).length;
+  const stopLicensePendingPolling = ({ keepPending = true } = {}) => {
+    if (keepPending) {
+      pausePolling();
+      return;
+    }
+    clearLicenseRequestState();
+  };
+
+  const handleRequestLicense = async () => {
+    const result = await requestOnline();
+    if (result.type === 'installed') {
+      message.success(tr('settingsPage.messages.licenseRequestDone', 'Лицензия успешно обновлена'));
+      return;
+    }
+    if (result.type === 'pending') {
+      message.warning(tr('settingsPage.messages.licenseRequestPending', 'Запрос лицензии отправлен и ожидает одобрения'));
+      return;
+    }
+    if (result.type === 'rejected') {
+      showLicenseRequestRejected(result.state);
+      return;
+    }
+    if (result.type === 'error') {
+      message.error(
+        readLicenseApiError(
+          result.error,
+          tr('settingsPage.messages.licenseRequestError', 'Не удалось запросить лицензию'),
+        ),
+      );
+      return;
+    }
+    message.success(tr('settingsPage.messages.licenseRequestDone', 'Лицензия успешно обновлена'));
+  };
 
   const domainColumns = [
     {
@@ -894,49 +1007,143 @@ function SettingsPage() {
     },
   ];
 
+  const licenseStatus = getLicenseStatusMeta(licenseInfo?.status, tr);
+
   return (
     <div style={{ padding: 24 }}>
       <Space direction="vertical" size={16} style={{ width: '100%' }}>
-        <Card>
-          <Space direction="vertical" size={12} style={{ width: '100%' }}>
-            <Space wrap style={{ justifyContent: 'space-between', width: '100%' }}>
-              <Space>
-                <SettingOutlined />
-                <Typography.Title level={4} style={{ margin: 0 }}>
-                  {tr('settingsPage.title', 'Настройки системы')}
-                </Typography.Title>
-              </Space>
-              <Button icon={<ReloadOutlined />} onClick={handleRefreshAll} loading={globalRefreshing}>
-                {tr('actions.refreshAll', 'Обновить все')}
+        <Card
+          title={<><SafetyCertificateOutlined /> {tr('settingsPage.license.title', 'Текущая лицензия')}</>}
+          extra={
+            <Space>
+              <Button icon={<ReloadOutlined />} onClick={() => loadLicenseInfo()} loading={licenseLoading}>
+                {tr('actions.refresh', 'Обновить')}
+              </Button>
+              <Button type="primary" onClick={handleRequestLicense} loading={licenseRequesting}>
+                {tr('settingsPage.license.requestAction', 'Запросить лицензию')}
+              </Button>
+              <Button onClick={() => navigate('/license')}>
+                {tr('settingsPage.license.openWorkspaceAction', 'Открыть License Workspace')}
               </Button>
             </Space>
-            <Typography.Text type="secondary">
-              {tr(
-                'settingsPage.subtitle',
-                'Управляйте параметрами массовых рассылок, напоминаний, доменов и compliance в одном месте.'
+          }
+        >
+          <Descriptions bordered size="small" column={{ xs: 1, md: 2 }}>
+            <Descriptions.Item label={tr('settingsPage.license.statusLabel', 'Статус')}>
+              <Tag color={licenseStatus.color}>{licenseStatus.text}</Tag>
+            </Descriptions.Item>
+            <Descriptions.Item label={tr('settingsPage.license.planLabel', 'План')}>
+              {licenseInfo?.plan_code || '—'}
+            </Descriptions.Item>
+            <Descriptions.Item label={tr('settingsPage.license.startDateLabel', 'Дата старта')}>
+              {formatLicenseDate(licenseInfo?.valid_from)}
+            </Descriptions.Item>
+            <Descriptions.Item label={tr('settingsPage.license.endDateLabel', 'Дата окончания')}>
+              {formatLicenseDate(licenseInfo?.valid_to)}
+            </Descriptions.Item>
+          </Descriptions>
+          {licenseRequestPending ? (
+            <Alert
+              style={{ marginTop: 12 }}
+              type="warning"
+              showIcon
+              message={tr('settingsPage.license.pendingTitle', 'Запрос лицензии ожидает согласования')}
+              description={(
+                <Space direction="vertical" size={2} style={{ width: '100%' }}>
+                  <Text>
+                    {tr(
+                      'settingsPage.license.pendingStatus',
+                      'Статус: {status}',
+                      { status: licenseRequestPending.requestStatus || 'pending_review' },
+                    )}
+                  </Text>
+                  <Text>
+                    {tr(
+                      'settingsPage.license.pendingRequestId',
+                      'Request ID: {id}',
+                      { id: licenseRequestPending.requestId || '—' },
+                    )}
+                  </Text>
+                  <Text>
+                    {tr(
+                      'settingsPage.license.pendingPollingMeta',
+                      'Автопроверка: {state}, попыток {attempts}/{max}',
+                      {
+                        state: licensePendingPolling
+                          ? tr('settingsPage.license.pendingPollingOn', 'включена')
+                          : tr('settingsPage.license.pendingPollingOff', 'пауза'),
+                        attempts: licensePendingPollAttempts,
+                        max: licensePendingPollMaxAttempts,
+                      },
+                    )}
+                  </Text>
+                  {licenseRequestPending?.message ? (
+                    <Text type="secondary">{licenseRequestPending.message}</Text>
+                  ) : null}
+                </Space>
               )}
-            </Typography.Text>
-            <Row gutter={[12, 12]}>
-              <Col xs={24} md={8}>
-                <Card size="small">
-                  <Statistic title={tr('settingsPage.kpi.publicDomains', 'Публичные домены')} value={domains.length} />
-                </Card>
-              </Col>
-              <Col xs={24} md={8}>
-                <Card size="small">
-                  <Statistic title={tr('settingsPage.kpi.pendingDsr', 'DSR в работе')} value={pendingDsrCount} />
-                </Card>
-              </Col>
-              <Col xs={24} md={8}>
-                <Card size="small">
-                  <Statistic title={tr('settingsPage.kpi.activeRetention', 'Активные retention')} value={activeRetentionCount} />
-                </Card>
-              </Col>
-            </Row>
-          </Space>
+              action={(
+                <Space wrap>
+                  <Button size="small" onClick={() => pollPendingLicenseRequest({ manual: true })}>
+                    {tr('settingsPage.license.pendingCheckNow', 'Проверить сейчас')}
+                  </Button>
+                  {licensePendingPolling ? (
+                    <Button size="small" onClick={() => stopLicensePendingPolling({ keepPending: true })}>
+                      {tr('settingsPage.license.pendingPause', 'Пауза')}
+                    </Button>
+                  ) : (
+                    <Button size="small" onClick={() => startLicensePendingPolling(licenseRequestPending)}>
+                      {tr('settingsPage.license.pendingResume', 'Возобновить')}
+                    </Button>
+                  )}
+                  <Button size="small" type="primary" onClick={() => navigate('/license')}>
+                    {tr('settingsPage.license.openWorkspaceAction', 'Открыть License Workspace')}
+                  </Button>
+                </Space>
+              )}
+            />
+          ) : null}
+          {licenseRequestRejected ? (
+            <Alert
+              style={{ marginTop: 12 }}
+              type="error"
+              showIcon
+              message={tr('settingsPage.license.rejectedTitle', 'Запрос лицензии отклонен')}
+              description={(
+                <Space direction="vertical" size={2} style={{ width: '100%' }}>
+                  <Text>
+                    {tr(
+                      'settingsPage.license.pendingRequestId',
+                      'Request ID: {id}',
+                      { id: licenseRequestRejected.requestId || '—' },
+                    )}
+                  </Text>
+                  <Text type="secondary">
+                    {licenseRequestRejected.message || tr(
+                      'settingsPage.license.rejectedHint',
+                      'Control-plane отклонил заявку. Проверьте привязку/домен и отправьте запрос повторно.',
+                    )}
+                  </Text>
+                </Space>
+              )}
+              action={(
+                <Space wrap>
+                  <Button size="small" type="primary" onClick={handleRequestLicense} loading={licenseRequesting}>
+                    {tr('settingsPage.license.resubmit', 'Отправить повторно')}
+                  </Button>
+                  <Button size="small" onClick={() => navigate('/license')}>
+                    {tr('settingsPage.license.openWorkspaceAction', 'Открыть License Workspace')}
+                  </Button>
+                  <Button size="small" onClick={() => clearLicenseRequestState()}>
+                    {tr('actions.dismiss', 'Скрыть')}
+                  </Button>
+                </Space>
+              )}
+            />
+          ) : null}
         </Card>
 
-        <Card>
+        <Card title={<><SettingOutlined /> {tr('settingsPage.title', 'Настройки системы')}</>}>
           <Tabs defaultActiveKey="massmail" items={tabItems} />
         </Card>
       </Space>

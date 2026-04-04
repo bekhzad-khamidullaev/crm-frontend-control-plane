@@ -13,6 +13,7 @@ export { PageHeader } from './PageHeader.tsx';
 export { PhoneInput } from './PhoneInput.tsx';
 export { KpiStatCard } from './KpiStatCard.tsx';
 export { StatusTag } from './StatusTag.tsx';
+export { WorkspaceSummaryStrip, WorkspaceTabsShell } from './WorkspaceRhythm.tsx';
 export { compactFilterChips } from './filterChips.ts';
 
 const sharedUi = {};

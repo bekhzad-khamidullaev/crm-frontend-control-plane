@@ -38,7 +38,10 @@ import {
 import React, { useEffect, useMemo, useState } from 'react';
 // @ts-ignore
 import { formatCurrency } from '@/lib/utils/format.js';
+import { getCompanyDisplayName } from '@/lib/utils/company-display.js';
 import { DealsTableFilters } from '@/widgets/deals-table/ui/DealsTableFilters';
+import { t } from '@/lib/i18n';
+import { getStageDisplayName } from '@/widgets/deals-table/model/i18n';
 import {
   buildDealKanbanColumns,
   parseDealCardId,
@@ -80,6 +83,7 @@ const DealCard: React.FC<{ deal: Deal; readOnly?: boolean }> = ({ deal, readOnly
     deal.amount && deal.amount !== '0'
       ? formatCurrency(deal.amount, (deal as any).currency_code || (deal as any).currency_name)
       : null;
+  const companyName = getCompanyDisplayName(deal as any);
 
   return (
     <Card
@@ -95,9 +99,9 @@ const DealCard: React.FC<{ deal: Deal; readOnly?: boolean }> = ({ deal, readOnly
         <Text strong>{deal.name}</Text>
 
         {displayAmount ? <Text>{displayAmount}</Text> : null}
-        {deal.company_name ? (
+        {companyName ? (
           <Text type="secondary" ellipsis>
-            {deal.company_name}
+            {companyName}
           </Text>
         ) : null}
         {deal.owner_name ? (
@@ -150,7 +154,7 @@ const KanbanColumn: React.FC<{
               icon={<PlusOutlined />}
               onClick={() => onCreateDeal?.(column.stageId)}
             >
-              Добавить
+              {t('dealsKanban.actions.add')}
             </Button>
           ) : null}
         </Space>
@@ -158,7 +162,7 @@ const KanbanColumn: React.FC<{
 
       <Space direction="vertical" size={10} style={{ width: '100%' }}>
         {loading && deals.length === 0 ? <Skeleton active paragraph={{ rows: 2 }} /> : null}
-        {!loading && deals.length === 0 ? <Empty description="Пусто" image={Empty.PRESENTED_IMAGE_SIMPLE} /> : null}
+        {!loading && deals.length === 0 ? <Empty description={t('dealsKanban.empty.column')} image={Empty.PRESENTED_IMAGE_SIMPLE} /> : null}
         {deals.map((deal) => (
           <DealCard key={deal.id} deal={deal} readOnly={readOnly} />
         ))}
@@ -212,7 +216,14 @@ export const DealsKanbanBoard: React.FC<{ readOnly?: boolean }> = ({ readOnly = 
   }, [data]);
 
   const columns = useMemo(
-    () => buildDealKanbanColumns((stagesResponse?.results as DealStageLike[] | undefined) ?? []),
+    () =>
+      buildDealKanbanColumns(
+        ((stagesResponse?.results as DealStageLike[] | undefined) ?? []).map((stage) => ({
+          ...stage,
+          name: getStageDisplayName(stage) || stage.name,
+        })),
+        t('dealsCommon.defaults.noStage')
+      ),
     [stagesResponse?.results]
   );
 
@@ -272,7 +283,7 @@ export const DealsKanbanBoard: React.FC<{ readOnly?: boolean }> = ({ readOnly = 
         relevant: true,
         is_new: true,
       });
-      message.success('Сделка создана');
+      message.success(t('dealsKanban.messages.created'));
       closeQuickCreate();
       refetch();
     } catch (createError: any) {
@@ -294,10 +305,10 @@ export const DealsKanbanBoard: React.FC<{ readOnly?: boolean }> = ({ readOnly = 
 
       const statusCode = getErrorStatus(createError);
       if (statusCode === 403) {
-        message.error('Недостаточно прав или лицензии для создания сделки');
+        message.error(t('dealsKanban.messages.createForbidden'));
         return;
       }
-      message.error('Не удалось создать сделку');
+      message.error(t('dealsKanban.messages.createError'));
     }
   };
 
@@ -316,15 +327,19 @@ export const DealsKanbanBoard: React.FC<{ readOnly?: boolean }> = ({ readOnly = 
 
     try {
       await patchDeal.mutateAsync({ id: dealId, data: { stage: toStage } });
-      message.success(`Сделка перемещена: ${stageTitleById[toStageDroppableId(toStage)] || 'Без стадии'}`);
+      message.success(
+        t('dealsKanban.messages.moved', {
+          stage: stageTitleById[toStageDroppableId(toStage)] || t('dealsCommon.defaults.noStage'),
+        })
+      );
     } catch (patchError: any) {
       setBoardDeals(previousDeals);
       const statusCode = getErrorStatus(patchError);
       if (statusCode === 403) {
-        message.error('Недостаточно прав или лицензии для изменения стадии сделки');
+        message.error(t('dealsKanban.messages.moveForbidden'));
         return;
       }
-      message.error('Не удалось изменить стадию сделки');
+      message.error(t('dealsKanban.messages.moveError'));
     } finally {
       setUpdatingDealId(null);
       refetch();
@@ -347,7 +362,8 @@ export const DealsKanbanBoard: React.FC<{ readOnly?: boolean }> = ({ readOnly = 
     refetchStages();
   };
 
-  const quickCreateStageLabel = stageTitleById[toStageDroppableId(quickCreateStage)] || 'Без стадии';
+  const quickCreateStageLabel =
+    stageTitleById[toStageDroppableId(quickCreateStage)] || t('dealsCommon.defaults.noStage');
 
   return (
     <Space direction="vertical" size={16} style={{ width: '100%' }}>
@@ -362,10 +378,10 @@ export const DealsKanbanBoard: React.FC<{ readOnly?: boolean }> = ({ readOnly = 
         <Alert
           type="error"
           showIcon
-          message="Не удалось загрузить сделки"
+          message={t('dealsKanban.messages.loadError')}
           action={
             <Button size="small" onClick={() => refetch()}>
-              Повторить
+              {t('actions.retry')}
             </Button>
           }
         />
@@ -375,10 +391,10 @@ export const DealsKanbanBoard: React.FC<{ readOnly?: boolean }> = ({ readOnly = 
         <Alert
           type="warning"
           showIcon
-          message="Справочник стадий недоступен, показан только столбец «Без стадии»."
+          message={t('dealsKanban.messages.stagesUnavailable')}
           action={
             <Button size="small" onClick={() => refetchStages()}>
-              Повторить
+              {t('actions.retry')}
             </Button>
           }
         />
@@ -389,7 +405,7 @@ export const DealsKanbanBoard: React.FC<{ readOnly?: boolean }> = ({ readOnly = 
           <Alert
             type="info"
             showIcon
-            message={`Показаны первые ${boardDeals.length} из ${total} сделок. Уточните фильтр для полной выборки.`}
+            message={t('dealsKanban.messages.truncated', { loaded: boardDeals.length, total })}
           />
         ) : null}
 
@@ -410,15 +426,15 @@ export const DealsKanbanBoard: React.FC<{ readOnly?: boolean }> = ({ readOnly = 
       </DndContext>
 
       <Drawer
-        title={`Быстрое создание сделки (${quickCreateStageLabel})`}
+        title={t('dealsKanban.quickCreate.title', { stage: quickCreateStageLabel })}
         open={quickCreateOpen}
         onClose={closeQuickCreate}
         width={480}
         extra={
           <Space>
-            <Button onClick={closeQuickCreate}>Отмена</Button>
+            <Button onClick={closeQuickCreate}>{t('actions.cancel')}</Button>
             <Button type="primary" onClick={() => quickCreateForm.submit()} loading={createDeal.isPending}>
-              Создать
+              {t('dealsKanban.quickCreate.actions.create')}
             </Button>
           </Space>
         }
@@ -426,33 +442,33 @@ export const DealsKanbanBoard: React.FC<{ readOnly?: boolean }> = ({ readOnly = 
         <Form<DealQuickCreateValues> form={quickCreateForm} layout="vertical" onFinish={handleQuickCreate}>
           <Form.Item
             name="name"
-            label="Название сделки"
-            rules={[{ required: true, message: 'Введите название сделки' }]}
+            label={t('dealsKanban.quickCreate.fields.name')}
+            rules={[{ required: true, message: t('dealsKanban.quickCreate.validation.nameRequired') }]}
           >
-            <Input placeholder="Например: Годовой контракт на сервис" />
+            <Input placeholder={t('dealsKanban.quickCreate.placeholders.name')} />
           </Form.Item>
 
           <Form.Item
             name="next_step"
-            label="Следующий шаг"
-            rules={[{ required: true, message: 'Укажите следующий шаг' }]}
+            label={t('dealsKanban.quickCreate.fields.nextStep')}
+            rules={[{ required: true, message: t('dealsKanban.quickCreate.validation.nextStepRequired') }]}
           >
-            <Input placeholder="Например: Согласовать КП с клиентом" />
+            <Input placeholder={t('dealsKanban.quickCreate.placeholders.nextStep')} />
           </Form.Item>
 
-          <Form.Item name="stage" label="Стадия">
+          <Form.Item name="stage" label={t('dealsCommon.fields.stage')}>
             <StageSelect />
           </Form.Item>
 
-          <Form.Item name="company" label="Компания">
+          <Form.Item name="company" label={t('dealsCommon.fields.company')}>
             <CompanySelect />
           </Form.Item>
 
-          <Form.Item name="amount" label="Сумма">
-            <InputNumber min={0} style={{ width: '100%' }} placeholder="0.00" />
+          <Form.Item name="amount" label={t('dealsCommon.fields.amount')}>
+            <InputNumber min={0} style={{ width: '100%' }} placeholder={t('dealsKanban.quickCreate.placeholders.amount')} />
           </Form.Item>
 
-          <Form.Item name="closing_date" label="Плановая дата закрытия">
+          <Form.Item name="closing_date" label={t('dealsKanban.quickCreate.fields.closingDate')}>
             <DatePicker style={{ width: '100%' }} format="DD.MM.YYYY" />
           </Form.Item>
         </Form>

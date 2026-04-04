@@ -22,6 +22,13 @@ export const companySchema = z.object({
   department: z.number().optional(),
   lead_source: z.number().optional(),
   description: z.string().optional(),
+  legal_stir: z.string().optional(),
+  legal_mfo: z.string().optional(),
+  legal_account: z.string().optional(),
+  legal_bank_name: z.string().optional(),
+  legal_signer_name: z.string().optional(),
+  legal_signer_position: z.string().optional(),
+  legal_signing_basis: z.string().optional(),
 });
 
 export type CompanyFormData = z.infer<typeof companySchema>;

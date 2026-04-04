@@ -227,4 +227,34 @@ export class UserProfilesService {
             url: '/api/profiles/me/avatar/',
         });
     }
+    /**
+     * Single-source-of-truth user telephony credentials endpoint.
+     * User can access only own credentials; runtime PBX/WSS settings stay in VoIP system settings.
+     * @returns UserProfile
+     * @throws ApiError
+     */
+    public static profilesMeTelephonyCredentialsRetrieve(): CancelablePromise<UserProfile> {
+        return __request(OpenAPI, {
+            method: 'GET',
+            url: '/api/profiles/me/telephony-credentials/',
+        });
+    }
+    /**
+     * Single-source-of-truth user telephony credentials endpoint.
+     * User can access only own credentials; runtime PBX/WSS settings stay in VoIP system settings.
+     * @returns UserProfile
+     * @throws ApiError
+     */
+    public static profilesMeTelephonyCredentialsPartialUpdate({
+        requestBody,
+    }: {
+        requestBody?: PatchedUserProfile,
+    }): CancelablePromise<UserProfile> {
+        return __request(OpenAPI, {
+            method: 'PATCH',
+            url: '/api/profiles/me/telephony-credentials/',
+            body: requestBody,
+            mediaType: 'application/json',
+        });
+    }
 }

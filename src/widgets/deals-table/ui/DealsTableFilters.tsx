@@ -4,6 +4,7 @@ import { Button, Card, Col, Flex, Input, Row, Space, Tag, theme } from 'antd';
 import { StageSelect, UserSelect, CompanySelect } from '@/features/reference';
 import { DealListParams } from '@/entities/deal';
 import { ReloadOutlined, SearchOutlined } from '@ant-design/icons';
+import { t } from '@/lib/i18n';
 
 interface DealsTableFiltersProps {
   filters: DealListParams;
@@ -76,7 +77,7 @@ export const DealsTableFilters: React.FC<DealsTableFiltersProps> = ({
         <Row gutter={[8, 8]} align="middle">
           <Col xs={24} sm={12} lg={6}>
             <Input
-              placeholder="Поиск по названию..."
+              placeholder={t('dealsTable.filters.searchPlaceholder')}
               value={search}
               onChange={(event) => setSearch(event.target.value)}
               allowClear
@@ -85,7 +86,7 @@ export const DealsTableFilters: React.FC<DealsTableFiltersProps> = ({
           </Col>
           <Col xs={24} sm={12} lg={5}>
             <StageSelect
-              placeholder="Стадия"
+              placeholder={t('dealsCommon.fields.stage')}
               value={filters.stage}
               onChange={(val) => handleChange('stage', val)}
               style={{ width: '100%' }}
@@ -94,7 +95,7 @@ export const DealsTableFilters: React.FC<DealsTableFiltersProps> = ({
           </Col>
           <Col xs={24} sm={12} lg={5}>
             <UserSelect
-              placeholder="Ответственный"
+              placeholder={t('dealsCommon.fields.owner')}
               value={filters.owner}
               onChange={(val) => handleChange('owner', val)}
               style={{ width: '100%' }}
@@ -103,7 +104,7 @@ export const DealsTableFilters: React.FC<DealsTableFiltersProps> = ({
           </Col>
           <Col xs={24} sm={12} lg={6}>
             <CompanySelect
-              placeholder="Компания"
+              placeholder={t('dealsCommon.fields.company')}
               value={filters.company}
               onChange={(val) => handleChange('company', val)}
               style={{ width: '100%' }}
@@ -117,7 +118,7 @@ export const DealsTableFilters: React.FC<DealsTableFiltersProps> = ({
               onClick={onRefresh}
               loading={loading}
               size="small"
-              aria-label="Обновить список"
+              aria-label={t('dealsTable.filters.refreshListAria')}
             />
           </Col>
         </Row>
@@ -132,22 +133,22 @@ export const DealsTableFilters: React.FC<DealsTableFiltersProps> = ({
                 onChange({ ...filters, search: undefined, page: 1 });
               }}
             >
-              Поиск: {String(filters.search)}
+              {t('dealsTable.filters.searchTag')}: {String(filters.search)}
             </Tag>
           ) : null}
           {filters.stage ? (
             <Tag closable style={chipStyle} onClose={() => handleChange('stage', undefined)}>
-              Стадия
+              {t('dealsCommon.fields.stage')}
             </Tag>
           ) : null}
           {filters.owner ? (
             <Tag closable style={chipStyle} onClose={() => handleChange('owner', undefined)}>
-              Ответственный
+              {t('dealsCommon.fields.owner')}
             </Tag>
           ) : null}
           {filters.company ? (
             <Tag closable style={chipStyle} onClose={() => handleChange('company', undefined)}>
-              Компания
+              {t('dealsCommon.fields.company')}
             </Tag>
           ) : null}
           {hasActiveFilters ? (
@@ -164,7 +165,7 @@ export const DealsTableFilters: React.FC<DealsTableFiltersProps> = ({
                 });
               }}
             >
-              Сбросить
+              {t('actions.reset')}
             </Button>
           ) : null}
         </Space>

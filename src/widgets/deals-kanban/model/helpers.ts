@@ -43,7 +43,10 @@ export const parseStageFromDroppable = (value: string | number): number | null |
   return Number.isFinite(parsed) ? parsed : undefined;
 };
 
-export const buildDealKanbanColumns = (stages: DealStageLike[] = []): DealKanbanColumn[] => {
+export const buildDealKanbanColumns = (
+  stages: DealStageLike[] = [],
+  noStageLabel = ''
+): DealKanbanColumn[] => {
   const seenStageIds = new Set<number>();
   const stageColumns = stages
     .filter((stage) => stage && Number.isFinite(stage.id) && !seenStageIds.has(stage.id))
@@ -54,7 +57,7 @@ export const buildDealKanbanColumns = (stages: DealStageLike[] = []): DealKanban
     .sort((left, right) => {
       const leftOrder = left.index_number ?? Number.MAX_SAFE_INTEGER;
       const rightOrder = right.index_number ?? Number.MAX_SAFE_INTEGER;
-      if (leftOrder === rightOrder) return left.name.localeCompare(right.name, 'ru');
+      if (leftOrder === rightOrder) return left.name.localeCompare(right.name);
       return leftOrder - rightOrder;
     })
     .map((stage, index) => ({
@@ -68,7 +71,7 @@ export const buildDealKanbanColumns = (stages: DealStageLike[] = []): DealKanban
     ...stageColumns,
     {
       stageId: null,
-      title: 'Без стадии',
+      title: noStageLabel,
       droppableId: NO_STAGE_DROPPABLE_ID,
       order: Number.MAX_SAFE_INTEGER,
     },

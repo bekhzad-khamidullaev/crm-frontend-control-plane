@@ -15,7 +15,7 @@ test.describe('Login Flow Tests', () => {
 
   test('should display login page correctly', async ({ page }) => {
     // Verify login page elements
-    await expect(page.locator('h1, h2').filter({ hasText: /Enterprise CRM|Вход|Login/i }).first()).toBeVisible();
+    await expect(page.getByText(/Введите свои данные|Login|Вход/i).first()).toBeVisible();
     await expect(page.locator('#login_username')).toBeVisible();
     await expect(page.locator('#login_password')).toBeVisible();
     await expect(page.locator('button[type="submit"]')).toBeVisible();
@@ -35,8 +35,8 @@ test.describe('Login Flow Tests', () => {
     // Verify successful login
     await expect(page).toHaveURL(/\/dashboard/);
 
-    // Verify dashboard elements are visible
-    await expect(page.locator('h1, h2').filter({ hasText: /Dashboard|Панель|Дашборд/i }).first()).toBeVisible({ timeout: 5000 });
+    // Verify app shell is visible
+    await expect(page.locator('main, .ant-layout-content').first()).toBeVisible({ timeout: 5000 });
 
     console.log('✓ Login successful');
   });

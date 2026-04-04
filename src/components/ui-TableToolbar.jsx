@@ -129,6 +129,7 @@ export default function TableToolbar({
             <Tooltip title="Обновить">
               <Button
                 icon={<ReloadOutlined />}
+                aria-label="Обновить таблицу"
                 onClick={onRefresh}
                 loading={loading}
               />
@@ -145,7 +146,7 @@ export default function TableToolbar({
                    ]
                  }}
               >
-                <Button icon={<DownloadOutlined />} />
+                <Button icon={<DownloadOutlined />} aria-label="Экспорт данных" />
               </Dropdown>
             </Tooltip>
           )}
@@ -154,6 +155,7 @@ export default function TableToolbar({
             <Tooltip title="Настройки">
               <Button
                 icon={<SettingOutlined />}
+                aria-label="Открыть настройки таблицы"
                 onClick={onSettingsClick}
               />
             </Tooltip>

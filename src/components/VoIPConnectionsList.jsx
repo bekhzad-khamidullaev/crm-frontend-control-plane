@@ -22,7 +22,8 @@ import { TELEPHONY_PROVIDER_TAG_COLORS } from '../lib/telephony/constants.js';
 
 export default function VoIPConnectionsList({ onEdit, onRefresh }) {
   const { message } = App.useApp();
-  const canManage = canWrite('voip.change_connection');
+  // Если у пользователя нет явного perm `voip.change_connection`, разрешаем админам/manager
+  const canManage = canWrite('voip.change_connection') || canWrite();
   const [loading, setLoading] = useState(false);
   const [connections, setConnections] = useState([]);
   const [pagination, setPagination] = useState({

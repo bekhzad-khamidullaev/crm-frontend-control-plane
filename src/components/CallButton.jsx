@@ -8,6 +8,7 @@ import sipClient from '../lib/telephony/SIPClient.js';
 import { loadTelephonyRuntimeConfig } from '../lib/telephony/runtimeConfig.js';
 import { DEFAULT_TELEPHONY_ROUTE_MODE } from '../lib/telephony/constants.js';
 import { TELEPHONY_MODAL_PROPS } from '../shared/ui/telephonyModal.js';
+import { t } from '../lib/i18n/index.js';
 import ChannelBrandIcon from './channel/ChannelBrandIcon.jsx';
 
 const { Text, Title } = Typography;
@@ -82,7 +83,7 @@ function CallButton({ phone, name, entityType, entityId, size = 'middle', type =
       provider: provider || undefined,
     });
 
-    message.success(`Звонок отправлен через сервер телефонии${provider ? ` (${provider})` : ''}`);
+    message.success(t('callButton.messages.serverRouted', { providerSuffix: provider ? ` (${provider})` : '' }));
     closeModal();
     return true;
   };
@@ -138,7 +139,9 @@ function CallButton({ phone, name, entityType, entityId, size = 'middle', type =
         setCallStatus('idle');
         message.error({
           key: `call-error-${currentCallTokenRef.current || 'unknown'}`,
-          content: `Звонок не установлен${reason ? `: ${reason}` : ''}`,
+          content: t('callButton.messages.notEstablished', {
+            reasonSuffix: reason ? `: ${reason}` : '',
+          }),
         });
         return;
       }
@@ -161,7 +164,7 @@ function CallButton({ phone, name, entityType, entityId, size = 'middle', type =
 
   const handleCall = () => {
     if (!phone) {
-      message.error('Номер телефона не указан');
+      message.error(t('callButton.messages.phoneMissing'));
       return;
     }
     fallbackAttemptedRef.current = false;
@@ -210,21 +213,21 @@ function CallButton({ phone, name, entityType, entityId, size = 'middle', type =
         const routeMode = String(runtime?.sipConfig?.routeMode || DEFAULT_TELEPHONY_ROUTE_MODE).toLowerCase();
         if (routeMode === 'bridge') {
           const started = await startServerOriginateCall(runtime);
-          if (!started) throw new Error('Не удалось отправить звонок через сервер');
+          if (!started) throw new Error(t('callButton.messages.serverRouteFailed'));
           return;
         }
 
         const dialNumber = normalizeDialForSip(phone);
         if (!dialNumber) {
-          throw new Error('Неверный формат номера');
+          throw new Error(t('callButton.messages.invalidNumber'));
         }
         if (!sipClient.isRegistered) {
           const registered = await ensureSipReady();
           if (!registered) {
             if (typeof window !== 'undefined' && !window.SIPml) {
-              message.error('SIP библиотека не загружена');
+              message.error(t('callButton.messages.sipLibraryMissing'));
             } else {
-              message.error('SIP клиент не настроен для пользователя');
+              message.error(t('callButton.messages.sipNotConfigured'));
             }
             setCallStatus('idle');
             return;
@@ -252,7 +255,7 @@ function CallButton({ phone, name, entityType, entityId, size = 'middle', type =
         }
         message.error({
           key: `call-error-${currentCallTokenRef.current || 'unknown'}`,
-          content: 'Ошибка при звонке: ' + reason,
+          content: t('callButton.messages.callError', { reason }),
         });
         setCallStatus('idle');
         currentCallTokenRef.current = null;
@@ -321,13 +324,16 @@ function CallButton({ phone, name, entityType, entityId, size = 'middle', type =
 
   const renderModalContent = () => {
     const entityTypeLabel = entityType === 'lead'
-      ? 'Лид'
+      ? t('callButton.entityType.lead')
       : entityType === 'company'
-        ? 'Компания'
+        ? t('callButton.entityType.company')
         : entityType === 'contact'
-          ? 'Контакт'
-          : 'Клиент';
-    const callDirectionLabel = connectedCallData?.direction === 'outbound' ? 'Исходящий' : 'Входящий';
+          ? t('callButton.entityType.contact')
+          : t('callButton.entityType.client');
+    const callDirectionLabel =
+      connectedCallData?.direction === 'outbound'
+        ? t('callButton.direction.outbound')
+        : t('callButton.direction.inbound');
 
     const handleOpenEntityCard = () => {
       if (!entityType || !entityId) return;
@@ -356,11 +362,11 @@ function CallButton({ phone, name, entityType, entityId, size = 'middle', type =
               type="primary"
               size="large"
               block
-              icon={<ChannelBrandIcon channel="telephony" size={16} />}
+              icon={<ChannelBrandIcon channel="telephony" size={16} style={{ color: 'currentColor' }} />}
               onClick={startCall}
               style={{ height: 48 }}
             >
-              Позвонить
+              {t('callButton.actions.call')}
             </Button>
           </Space>
         );
@@ -374,7 +380,7 @@ function CallButton({ phone, name, entityType, entityId, size = 'middle', type =
             />
             <div>
               <Title level={4}>{name}</Title>
-              <Text type="secondary">Соединение...</Text>
+              <Text type="secondary">{t('callButton.status.connecting')}</Text>
             </div>
           </Space>
         );
@@ -403,18 +409,18 @@ function CallButton({ phone, name, entityType, entityId, size = 'middle', type =
             <Divider style={{ margin: '4px 0' }} />
 
             <Descriptions bordered size="small" column={1}>
-              <Descriptions.Item label="Статус звонка">
-                <Tag color="green">Разговор</Tag>
+              <Descriptions.Item label={t('callButton.labels.callStatus')}>
+                <Tag color="green">{t('callButton.status.connected')}</Tag>
               </Descriptions.Item>
-              <Descriptions.Item label="Направление">{callDirectionLabel}</Descriptions.Item>
-              <Descriptions.Item label="Тип сущности">{entityTypeLabel}</Descriptions.Item>
-              <Descriptions.Item label="ID сущности">{entityId || '-'}</Descriptions.Item>
-              <Descriptions.Item label="Номер">{connectedCallData?.phoneNumber || phone || '-'}</Descriptions.Item>
+              <Descriptions.Item label={t('callButton.labels.direction')}>{callDirectionLabel}</Descriptions.Item>
+              <Descriptions.Item label={t('callButton.labels.entityType')}>{entityTypeLabel}</Descriptions.Item>
+              <Descriptions.Item label={t('callButton.labels.entityId')}>{entityId || '-'}</Descriptions.Item>
+              <Descriptions.Item label={t('callButton.labels.phone')}>{connectedCallData?.phoneNumber || phone || '-'}</Descriptions.Item>
             </Descriptions>
 
             {entityId ? (
               <Button size="large" block onClick={handleOpenEntityCard}>
-                Открыть карточку клиента
+                {t('callButton.actions.openEntity')}
               </Button>
             ) : null}
 
@@ -426,7 +432,7 @@ function CallButton({ phone, name, entityType, entityId, size = 'middle', type =
               onClick={endCall}
               style={{ height: 52, fontWeight: 600 }}
             >
-              Завершить звонок
+              {t('callButton.actions.endCall')}
             </Button>
           </Space>
         );
@@ -436,13 +442,13 @@ function CallButton({ phone, name, entityType, entityId, size = 'middle', type =
           <Space direction="vertical" size="large" style={{ width: '100%', textAlign: 'center' }}>
             <CheckCircleOutlined style={{ fontSize: 64, color: '#52c41a' }} />
             <div>
-              <Title level={4}>Звонок завершен</Title>
+              <Title level={4}>{t('callButton.status.completed')}</Title>
               <Text type="secondary">
-                Длительность: {formatDuration(callDuration)}
+                {t('callButton.labels.duration')}: {formatDuration(callDuration)}
               </Text>
             </div>
             <Button type="primary" block onClick={closeModal}>
-              Закрыть
+              {t('callButton.actions.close')}
             </Button>
           </Space>
         );
@@ -455,15 +461,15 @@ function CallButton({ phone, name, entityType, entityId, size = 'middle', type =
   const getModalTitle = () => {
     switch (callStatus) {
       case 'idle':
-        return 'Исходящий звонок';
+        return t('callButton.modal.outgoingTitle');
       case 'calling':
-        return 'Соединение...';
+        return t('callButton.modal.connectingTitle');
       case 'connected':
-        return 'Идет разговор';
+        return t('callButton.modal.connectedTitle');
       case 'completed':
-        return 'Звонок завершен';
+        return t('callButton.modal.completedTitle');
       default:
-        return 'Звонок';
+        return t('callButton.modal.defaultTitle');
     }
   };
 
@@ -472,10 +478,12 @@ function CallButton({ phone, name, entityType, entityId, size = 'middle', type =
       <Button
         type={type}
         size={size}
-        icon={icon ? <ChannelBrandIcon channel="telephony" size={14} /> : null}
+        icon={
+          icon ? <ChannelBrandIcon channel="telephony" size={14} style={{ color: 'currentColor' }} /> : null
+        }
         onClick={handleCall}
       >
-        {icon ? 'Позвонить' : phone}
+        {icon ? t('callButton.actions.call') : phone}
       </Button>
 
       <Modal

@@ -165,7 +165,11 @@ function ProfilePage() {
     setLoading(true);
     try {
       const profilePayload = {
+        full_name: String(values.full_name || '').trim(),
+        email: String(values.email || '').trim(),
         jssip_display_name: values.jssip_display_name,
+        jssip_ws_uri: String(values.telephony_ws_uri || '').trim(),
+        jssip_sip_uri: String(values.telephony_sip_uri || '').trim(),
       };
       await updateProfile(profilePayload);
       const nextExtension = String(values.telephony_extension || '').trim();
@@ -359,8 +363,11 @@ function ProfilePage() {
                   <Form.Item
                     label={tr('profilePage.fields.fullName', 'Full name')}
                     name="full_name"
+                    rules={[
+                      { required: true, message: tr('profilePage.validation.enterFullName', 'Enter full name') },
+                    ]}
                   >
-                    <Input prefix={<UserOutlined />} disabled />
+                    <Input prefix={<UserOutlined />} />
                   </Form.Item>
                 </Col>
                 <Col span={12}>
@@ -381,7 +388,7 @@ function ProfilePage() {
                   { type: 'email', message: tr('profilePage.validation.validEmail', 'Enter valid email') },
                 ]}
               >
-                <Input prefix={<MailOutlined />} disabled />
+                <Input prefix={<MailOutlined />} />
               </Form.Item>
 
               <Divider>{tr('profilePage.telephony.title', 'Telephony settings')}</Divider>
@@ -391,9 +398,8 @@ function ProfilePage() {
                 showIcon
                 style={{ marginBottom: 16 }}
                 message={tr('profilePage.telephony.agentSettingsTitle', 'Personal agent settings')}
-                description={tr('profilePage.telephony.agentSettingsDescription', 'Only personal call settings are configured here. System SIP/WebRTC and routing are managed by admin in Integrations -> Telephony.')}
+                description={tr('profilePage.telephony.agentSettingsDescription', 'Here you can use your internal number, SIP login and SIP password. All trunk/queue/routing/WebRTC settings are managed centrally by CRM admin in Integrations -> Telephony.')}
               />
-
               {!telephonyCredentials && (
                 <Alert
                   type="warning"
@@ -471,13 +477,32 @@ function ProfilePage() {
                 <Input.Password prefix={<LockOutlined />} />
               </Form.Item>
 
+              <Form.Item 
+                label={tr('profilePage.telephony.displayName', 'Display name')} 
+                name="jssip_display_name"
+                tooltip={tr('profilePage.telephony.displayNameTooltip', 'Name shown to call recipient')}
+                extra={tr('profilePage.telephony.displayNameExtra', 'Optional. If empty, profile name is used.')}
+              >
+                <Input placeholder={tr('profilePage.placeholders.displayName', 'John Doe')} />
+              </Form.Item>
+
               <Form.Item
                 label={tr('profilePage.telephony.wsUri', 'SIP WebSocket URI (WSS)')}
                 name="telephony_ws_uri"
                 tooltip={tr('profilePage.telephony.wsUriTooltip', 'Used by CRM softphone transport')}
                 extra={tr('profilePage.telephony.wsUriExtra', 'System-level setting managed in Integrations -> Telephony')}
+                rules={[
+                  {
+                    validator: (_, value) => {
+                      const raw = String(value || '').trim().toLowerCase();
+                      if (!raw) return Promise.resolve();
+                      if (raw.startsWith('ws://') || raw.startsWith('wss://')) return Promise.resolve();
+                      return Promise.reject(new Error(tr('profilePage.validation.validWsUri', 'Enter a valid WebSocket URI (ws:// or wss://)')));
+                    },
+                  },
+                ]}
               >
-                <Input disabled />
+                <Input />
               </Form.Item>
 
               <Form.Item
@@ -485,17 +510,18 @@ function ProfilePage() {
                 name="telephony_sip_uri"
                 tooltip={tr('profilePage.telephony.sipUriTooltip', 'SIP identity used for registration')}
                 extra={tr('profilePage.telephony.sipUriExtra', 'Provisioned from your internal extension in Telephony integration')}
+                rules={[
+                  {
+                    validator: (_, value) => {
+                      const raw = String(value || '').trim().toLowerCase();
+                      if (!raw) return Promise.resolve();
+                      if (raw.startsWith('sip:') || raw.startsWith('sips:')) return Promise.resolve();
+                      return Promise.reject(new Error(tr('profilePage.validation.validSipUri', 'Enter a valid SIP URI (sip: or sips:)')));
+                    },
+                  },
+                ]}
               >
-                <Input disabled />
-              </Form.Item>
-
-              <Form.Item 
-                label={tr('profilePage.telephony.displayName', 'Display name')} 
-                name="jssip_display_name"
-                tooltip={tr('profilePage.telephony.displayNameTooltip', 'Name shown to call recipient')}
-                extra={tr('profilePage.telephony.displayNameExtra', 'If empty, profile name is used.')}
-              >
-                <Input placeholder={tr('profilePage.placeholders.displayName', 'John Doe')} />
+                <Input />
               </Form.Item>
 
               <Form.Item>

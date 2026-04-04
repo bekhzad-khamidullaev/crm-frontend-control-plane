@@ -1,6 +1,17 @@
 const LICENSE_STATE_STORAGE_KEY = 'enterprise_crm_license_state';
 const ENFORCEMENT_MODES = new Set(['warn', 'strict']);
 
+function normalizeFeatures(rawFeatures = []) {
+  if (!Array.isArray(rawFeatures)) return [];
+  const normalized = new Set();
+  rawFeatures.forEach((feature) => {
+    const value = String(feature || '').trim().toLowerCase();
+    if (!value) return;
+    normalized.add(value);
+  });
+  return Array.from(normalized);
+}
+
 function normalizeStatus(rawStatus = '') {
   return String(rawStatus || '').trim().toLowerCase();
 }
@@ -11,11 +22,6 @@ function normalizeEnforcementMode(rawMode = '') {
 }
 
 export function normalizeLicenseState(rawState = {}) {
-  const features = Array.isArray(rawState?.features)
-    ? rawState.features
-        .map((feature) => String(feature || '').trim().toLowerCase())
-        .filter(Boolean)
-    : [];
   const status = normalizeStatus(
     rawState?.status || (rawState?.installed === false ? 'missing' : '')
   );
@@ -23,7 +29,7 @@ export function normalizeLicenseState(rawState = {}) {
     installed: rawState?.installed === undefined ? status !== 'missing' : Boolean(rawState.installed),
     status: status || 'unknown',
     over_limit: Boolean(rawState?.over_limit ?? rawState?.seat_usage?.over_limit),
-    features: Array.from(new Set(features)),
+    features: normalizeFeatures(rawState?.features || []),
     source: String(rawState?.source || '').trim().toLowerCase(),
     enforcement_mode: normalizeEnforcementMode(rawState?.enforcement_mode),
   };

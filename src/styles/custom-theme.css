@@ -363,6 +363,37 @@ html[data-theme='dark'] .ant-menu-inline .ant-menu-submenu-title:hover {
   box-shadow: inset 0 0 0 1px rgba(148, 163, 184, 0.18);
 }
 
+/* Workspace switcher (header select) */
+.workspace-switcher .ant-select-selector {
+  border-radius: 10px !important;
+  min-height: 34px;
+}
+
+.workspace-switcher-dropdown .ant-select-item {
+  border-radius: 8px;
+  margin: 2px 6px;
+  padding-inline: 10px !important;
+}
+
+.workspace-switcher-dropdown .ant-select-item-option-active:not(.ant-select-item-option-disabled) {
+  background: rgba(59, 130, 246, 0.1) !important;
+}
+
+.workspace-switcher-dropdown .ant-select-item-option-selected:not(.ant-select-item-option-disabled) {
+  background: rgba(59, 130, 246, 0.16) !important;
+  color: var(--crm-app-text, #09090b) !important;
+  font-weight: 600;
+}
+
+html[data-theme='dark'] .workspace-switcher-dropdown .ant-select-item-option-active:not(.ant-select-item-option-disabled) {
+  background: rgba(125, 211, 252, 0.14) !important;
+}
+
+html[data-theme='dark'] .workspace-switcher-dropdown .ant-select-item-option-selected:not(.ant-select-item-option-disabled) {
+  background: rgba(125, 211, 252, 0.2) !important;
+  color: #f8fafc !important;
+}
+
 html[data-theme='dark'] .ant-layout-sider .ant-menu-inline .ant-menu-item-selected {
   background: linear-gradient(
     135deg,

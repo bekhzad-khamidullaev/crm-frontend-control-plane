@@ -52,7 +52,13 @@
     "settingsWorkspace": "Settings & Integrations",
     "controlPlane": "Control Plane",
     "licenseWorkspace": "License Workspace",
-    "version": "CRM Version"
+    "version": "CRM Version",
+    "newLead": "New Lead",
+    "newContact": "New Contact",
+    "newCompany": "New Company",
+    "newDeal": "New Deal",
+    "newTask": "New Task",
+    "newCampaign": "New Campaign"
   },
   "actions": {
     "edit": "Edit",
@@ -67,6 +73,215 @@
     "saveChanges": "Save changes",
     "reset": "Reset",
     "update": "Update"
+  },
+  "dealsCommon": {
+    "fields": {
+      "stage": "Stage",
+      "owner": "Owner",
+      "company": "Company",
+      "amount": "Amount"
+    },
+    "defaults": {
+      "user": "User",
+      "noStage": "No stage"
+    },
+    "stages": {
+      "request": "Request",
+      "analysisOfRequest": "Analysis of request",
+      "clarificationOfRequirements": "Clarification of the requirements",
+      "priceOffer": "Price offer",
+      "commercialProposal": "Commercial proposal",
+      "commercialOffer": "Commercial offer",
+      "agreement": "Agreement",
+      "invoice": "Invoice",
+      "receivingFirstPayment": "Receiving the first payment",
+      "shipment": "Shipment",
+      "closedSuccessful": "Closed (successful)",
+      "inProgress": "In progress",
+      "won": "Won",
+      "lost": "Lost",
+      "rejected": "Rejected",
+      "declined": "Declined",
+      "cancelled": "Cancelled",
+      "completed": "Completed"
+    }
+  },
+  "dealsListPage": {
+    "title": "Deals",
+    "view": {
+      "table": "Table",
+      "kanban": "Kanban",
+      "rejections": "Rejections"
+    },
+    "actions": {
+      "createShort": "Create",
+      "createDeal": "Create deal"
+    }
+  },
+  "dealsTable": {
+    "columns": {
+      "name": "Name",
+      "amount": "Amount",
+      "stage": "Stage",
+      "probability": "Probability",
+      "company": "Company",
+      "contacts": "Contacts",
+      "owner": "Owner",
+      "closingDate": "Closing date",
+      "actions": "Actions"
+    },
+    "actions": {
+      "view": "View",
+      "viewAria": "View deal",
+      "edit": "Edit",
+      "editAria": "Edit deal",
+      "deleteAria": "Delete deal",
+      "deleteConfirm": "Delete deal?",
+      "noPermissions": "Insufficient permissions"
+    },
+    "messages": {
+      "loadError": "Failed to load deals list"
+    },
+    "filters": {
+      "searchPlaceholder": "Search by name...",
+      "refreshListAria": "Refresh list",
+      "searchTag": "Search"
+    }
+  },
+  "dealsKanban": {
+    "actions": {
+      "add": "Add"
+    },
+    "empty": {
+      "column": "Empty"
+    },
+    "messages": {
+      "created": "Deal created",
+      "createForbidden": "Insufficient permissions or license to create a deal",
+      "createError": "Failed to create deal",
+      "moved": "Deal moved: {stage}",
+      "moveForbidden": "Insufficient permissions or license to change deal stage",
+      "moveError": "Failed to change deal stage",
+      "loadError": "Failed to load deals",
+      "stagesUnavailable": "Stages dictionary is unavailable; only the “No stage” column is shown.",
+      "truncated": "Showing first {loaded} of {total} deals. Refine filters for full dataset."
+    },
+    "quickCreate": {
+      "title": "Quick create deal ({stage})",
+      "actions": {
+        "create": "Create"
+      },
+      "fields": {
+        "name": "Deal name",
+        "nextStep": "Next step",
+        "closingDate": "Planned closing date"
+      },
+      "validation": {
+        "nameRequired": "Enter deal name",
+        "nextStepRequired": "Specify next step"
+      },
+      "placeholders": {
+        "name": "For example: Annual service contract",
+        "nextStep": "For example: Approve proposal with client",
+        "amount": "0.00"
+      }
+    }
+  },
+  "dealsRejections": {
+    "reasonPrefix": "Reason",
+    "reasonNotSpecified": "Not specified",
+    "columns": {
+      "deal": "Deal",
+      "stageStatus": "Stage / status",
+      "reason": "Reason",
+      "amount": "Amount",
+      "owner": "Owner",
+      "closingDate": "Closing date",
+      "actions": "Actions"
+    },
+    "stats": {
+      "rejectionsInSample": "Rejections (in sample)",
+      "rejectionsAmount": "Rejected amount",
+      "topReason": "Top reason"
+    },
+    "actions": {
+      "open": "Open",
+      "edit": "Edit",
+      "noPermissions": "Insufficient permissions"
+    },
+    "messages": {
+      "loadError": "Failed to load deals list",
+      "truncated": "Showing first {loaded} of {total} deals. Refine filters for full rejection analysis.",
+      "empty": "No rejected deals found in current selection"
+    }
+  },
+  "dealDetailPage": {
+    "notFound": {
+      "title": "Deal not found",
+      "back": "Back to deals"
+    },
+    "breadcrumb": {
+      "deals": "Deals"
+    },
+    "status": {
+      "active": "Active",
+      "inactive": "Inactive"
+    },
+    "actions": {
+      "remind": "Remind",
+      "askAi": "Ask AI",
+      "edit": "Edit"
+    },
+    "createdAt": "Created",
+    "cards": {
+      "amount": "Amount",
+      "probability": "Probability",
+      "nextStep": "Next step",
+      "notAssigned": "Not assigned"
+    },
+    "tabs": {
+      "details": "Details",
+      "activity": "Activity",
+      "calls": "Calls"
+    },
+    "fields": {
+      "name": "Name",
+      "amount": "Amount",
+      "stage": "Stage",
+      "probability": "Probability",
+      "company": "Company",
+      "contact": "Contact",
+      "owner": "Owner",
+      "department": "Department",
+      "nextStep": "Next step",
+      "date": "Date",
+      "closingDate": "Closing date",
+      "closingReason": "Closing reason",
+      "tags": "Tags",
+      "description": "Description"
+    },
+    "defaults": {
+      "company": "Company"
+    },
+    "placeholders": {
+      "activity": "Activity history (in development)",
+      "calls": "Call history (in development)"
+    }
+  },
+  "appLayout": {
+    "quickCreate": "Create",
+    "searchPlaceholder": "Search in section: {section}",
+    "workspace": {
+      "sales": "Sales",
+      "communications": "Communications",
+      "marketing": "Marketing",
+      "operations": "Operations",
+      "system": "System"
+    },
+    "status": {
+      "controlPlaneOffline": "Control Plane is unavailable",
+      "controlPlaneOnline": "Control Plane is synchronized"
+    }
   },
   "helpCenterPage": {
     "alertTitle": "Help Center",
@@ -435,7 +650,12 @@
     "settingsCore": "Settings",
     "usersCore": "Users",
     "helpCenter": "Help Center",
-    "landingBuilder": "Landing Builder"
+    "landingBuilder": "Landing Builder",
+    "businessProcesses": "Business Processes",
+    "businessProcessesBase": "Business Processes Base",
+    "businessProcessesTransitions": "Business Process Transitions",
+    "businessProcessesSla": "Business Process SLA",
+    "businessProcessesAnalytics": "Business Process Analytics"
   },
   "loginPage": {
     "subtitle": "Enter your credentials to sign in",
@@ -499,8 +719,12 @@
       "refresh": "Refresh",
       "loading": "Loading...",
       "channel": "Channel",
+      "channelId": "Channel (ID)",
       "yes": "Yes",
-      "no": "No"
+      "no": "No",
+      "clear": "Clear",
+      "activeChannelHint": "Active channel detected automatically: #{id}",
+      "noChannelDetected": "No active channel found. Add an SMS channel in Integrations."
     },
     "providers": {
       "title": "SMS Providers",
@@ -511,6 +735,7 @@
     "history": {
       "title": "SMS History",
       "columns": {
+        "channelId": "Channel ID",
         "recipient": "Recipient",
         "text": "Text",
         "status": "Status",
@@ -524,19 +749,30 @@
     },
     "send": {
       "title": "Send SMS",
+      "subtitle": "Simple flow: pick mode, enter channel, send message.",
       "bulkTitle": "Send SMS (Bulk)",
       "submit": "Send",
+      "modes": {
+        "single": "Single number",
+        "bulk": "Number list"
+      },
       "fields": {
+        "channelId": "Channel (ID)",
+        "mode": "Send mode",
         "phone": "Phone",
         "phones": "Phones (one per line)",
         "text": "Text",
         "async": "Send asynchronously"
       },
       "placeholders": {
-        "selectChannel": "Select channel"
+        "selectChannel": "Select channel",
+        "channelId": "Example: 12",
+        "phone": "+998901234567",
+        "phones": "+998901234567\\n+998901234568",
+        "text": "Enter SMS text"
       },
       "validation": {
-        "channelRequired": "Select a channel",
+        "channelRequired": "Enter channel ID",
         "numbersRequired": "Enter phone numbers",
         "phoneRequired": "Enter phone number",
         "textRequired": "Enter text"
@@ -768,7 +1004,8 @@
       "plannedShippingDate": "Planned Date",
       "actualShippingDate": "Actual Date",
       "shipped": "Shipped",
-      "serialNumber": "Serial Number"
+      "serialNumber": "Serial Number",
+      "requestFor": "Request topic"
     },
     "columns": {
       "ticket": "Ticket",
@@ -783,7 +1020,8 @@
       "quantity": "Quantity",
       "amount": "Amount",
       "currency": "Currency",
-      "shipped": "Shipped"
+      "shipped": "Shipped",
+      "requestFor": "Topic"
     }
   },
   "referenceDataPage": {
@@ -960,7 +1198,13 @@
       "edit": "Edit",
       "delete": "Delete",
       "create": "Create task",
-      "refresh": "Refresh"
+      "refresh": "Refresh",
+      "createShort": "Add",
+      "createShortFallback": "Add",
+      "reopen": "Reopen",
+      "reopenFallback": "Reopen",
+      "complete": "Complete",
+      "completeFallback": "Complete"
     },
     "messages": {
       "stagesLoadWarning": "Failed to load task stages",
@@ -989,7 +1233,45 @@
     "pagination": {
       "total": "Total: {total}"
     },
-    "empty": "No tasks"
+    "empty": "No tasks",
+    "kanban": {
+      "emptyColumn": "No tasks",
+      "noStage": "No stage",
+      "loadErrorTitle": "Kanban unavailable",
+      "loadError": "Failed to load kanban tasks",
+      "summary": "Shown {visible} of {total}",
+      "truncatedTitle": "Not all tasks are shown",
+      "truncatedDescription": "Kanban loaded {loaded} of {total} tasks. Refine search or filters.",
+      "moved": "Task moved to {stage}",
+      "rbacError": "Insufficient permissions or license to change task stage",
+      "moveError": "Failed to change task stage",
+      "responsibleShort": "{count} assignees"
+    },
+    "view": {
+      "table": "Table",
+      "kanban": "Kanban",
+      "gantt": "Gantt"
+    },
+    "gantt": {
+      "taskColumn": "Task"
+    },
+    "quickCreate": {
+      "title": "Quick task creation",
+      "name": "Title",
+      "nextStep": "Next step",
+      "nextStepDate": "Next step date",
+      "dueDate": "Deadline",
+      "responsible": "Assignees",
+      "defaultNextStep": "Initial contact",
+      "created": "Task created",
+      "error": "Failed to create task",
+      "validation": {
+        "name": "Enter title",
+        "nextStep": "Specify next step",
+        "nextStepDate": "Specify date",
+        "nextStepDateFuture": "Date cannot be in the past"
+      }
+    }
   },
   "projectsListPage": {
     "columns": {
@@ -1571,7 +1853,8 @@
     "important": "Important",
     "yes": "Yes",
     "no": "No",
-    "loading": "Loading..."
+    "loading": "Loading...",
+    "user": "User"
   },
   "smsSettings": {
     "header": {
@@ -2154,8 +2437,11 @@
       "time": "Time"
     },
     "validation": {
+      "enterFullName": "Enter full name",
       "enterEmail": "Enter email",
       "validEmail": "Enter valid email",
+      "validWsUri": "Enter a valid WebSocket URI (ws:// or wss://)",
+      "validSipUri": "Enter a valid SIP URI (sip: or sips:)",
       "enterCurrentPassword": "Enter current password",
       "enterNewPassword": "Enter new password",
       "passwordMin": "Password must be at least 8 characters",
@@ -2316,6 +2602,350 @@
       "topEndpoints": "Top endpoints",
       "dailyBreakdown": "Daily breakdown",
       "failedAttempts": "Failed attempts"
+    }
+  },
+  "communicationsHub": {
+    "header": {
+      "title": "Communications",
+      "subtitle": "CRM Email, bulk mailing and omnichannel sending."
+    },
+    "actions": {
+      "refresh": "Refresh",
+      "clear": "Clear"
+    },
+    "tabs": {
+      "omnichannel": "Omnichannel",
+      "crmEmails": "CRM Email",
+      "massmail": "Bulk mailing"
+    },
+    "omnichannel": {
+      "title": "Omnichannel send",
+      "subtitle": "Send messages across channels with a simple form.",
+      "fields": {
+        "channel": "Channel",
+        "channelId": "Channel Account",
+        "contact": "CRM Contact",
+        "contactDetails": "Contact fields",
+        "target": "Channel target",
+        "recipient": "Recipient",
+        "text": "Message"
+      },
+      "placeholders": {
+        "channelId": "Select a connected channel account",
+        "contact": "Select contact",
+        "targetWhatsApp": "WhatsApp number (for example +998901234567)",
+        "targetSms": "Phone number (for example +998901234567)",
+        "targetTelegram": "@username or chat_id",
+        "targetInstagram": "@username or recipient_id",
+        "targetFacebook": "PSID / recipient_id",
+        "recipient": "Phone, chat_id or recipient_id",
+        "text": "Enter message text"
+      },
+      "validation": {
+        "channelRequired": "Select channel",
+        "channelIdRequired": "Select channel account",
+        "contactRequired": "Select contact",
+        "targetRequired": "Enter channel target",
+        "contactChannelTargetRequired": "Selected contact has no data for this channel. Fill phone or username in the contact card.",
+        "recipientRequired": "Enter recipient",
+        "textRequired": "Enter message text"
+      },
+      "hints": {
+        "targetAutoFilled": "Channel target is auto-filled from contact details.",
+        "targetMissingInContact": "Fill channel data in the contact card before sending.",
+        "targetEditable": "You can edit channel target manually for this channel."
+      },
+      "contact": {
+        "empty": "No channel fields are filled for this contact yet",
+        "fields": {
+          "phone": "Phone",
+          "phoneE164": "Phone E.164",
+          "mobile": "Mobile",
+          "mobileE164": "Mobile E.164",
+          "otherPhone": "Other phone",
+          "email": "Email",
+          "telegram": "Telegram",
+          "telegramChatId": "Telegram chat_id",
+          "instagram": "Instagram",
+          "instagramRecipientId": "Instagram recipient_id",
+          "facebookPsid": "Facebook PSID"
+        }
+      },
+      "actions": {
+        "send": "Send"
+      }
+    },
+    "crmEmails": {
+      "create": {
+        "title": "Quick email to client",
+        "subtitle": "Only key fields: recipient, subject and message. One-step send.",
+        "fields": {
+          "to": "To (email)",
+          "subject": "Subject",
+          "from": "From (optional)",
+          "content": "Message text",
+          "template": "Message template"
+        },
+        "placeholders": {
+          "to": "client@example.com",
+          "subject": "Email subject",
+          "from": "sales@your-company.com",
+          "content": "Type your message",
+          "template": "Select a saved template (optional)"
+        },
+        "validation": {
+          "toRequired": "Enter recipient email",
+          "toInvalid": "Enter a valid email",
+          "subjectRequired": "Enter subject",
+          "contentRequired": "Enter message text"
+        },
+        "actions": {
+          "send": "Send email"
+        },
+        "template": {
+          "defaultTitle": "Template #{id}",
+          "empty": "No templates available"
+        }
+      },
+      "stats": {
+        "total": "Total: {count}",
+        "sent": "Sent: {count}",
+        "drafts": "Drafts: {count}"
+      },
+      "table": {
+        "title": "Recent CRM Emails",
+        "columns": {
+          "subject": "Subject",
+          "from": "From",
+          "to": "To",
+          "status": "Status",
+          "createdAt": "Created"
+        },
+        "status": {
+          "sent": "Sent",
+          "draft": "Draft"
+        }
+      }
+    },
+    "massmail": {
+      "create": {
+        "title": "Create mailing message",
+        "subtitle": "Prepare a template with subject and content, then use it in campaigns.",
+        "fields": {
+          "subject": "Mailing subject",
+          "content": "Mailing content"
+        },
+        "placeholders": {
+          "subject": "Spring promotion for clients",
+          "content": "Type bulk mailing content"
+        },
+        "validation": {
+          "subjectRequired": "Enter mailing subject",
+          "contentRequired": "Enter mailing content"
+        },
+        "actions": {
+          "create": "Create message"
+        }
+      },
+      "stats": {
+        "total": "Messages: {count}",
+        "sent": "Sent: {count}",
+        "drafts": "Drafts: {count}",
+        "failed": "Failed: {count}"
+      },
+      "table": {
+        "title": "Mailing monitor",
+        "modes": {
+          "messages": "Messages",
+          "mailings": "Mailings"
+        },
+        "mailings": {
+          "columns": {
+            "name": "Mailing",
+            "status": "Status",
+            "sendingDate": "Send date",
+            "recipients": "Recipients"
+          }
+        },
+        "messages": {
+          "columns": {
+            "subject": "Subject",
+            "content": "Content",
+            "status": "Status",
+            "updatedAt": "Updated",
+            "actions": "Actions"
+          },
+          "actions": {
+            "view": "View",
+            "send": "Send",
+            "duplicate": "Duplicate",
+            "copySuffix": "copy",
+            "copyDefaultTitle": "Message copy"
+          },
+          "preview": {
+            "title": "Draft preview",
+            "subject": "Subject",
+            "status": "Status",
+            "updatedAt": "Updated",
+            "content": "Content",
+            "close": "Close"
+          },
+          "status": {
+            "draft": "Draft"
+          }
+        }
+      },
+      "sendNow": {
+        "title": "Send mailing now",
+        "subtitle": "Choose a template, add recipients, and send emails immediately.",
+        "emptyTemplates": "Create at least one message template first",
+        "emptyContacts": "No contacts with email found",
+        "fields": {
+          "template": "Template",
+          "subject": "Send subject",
+          "from": "From (optional)",
+          "recipients": "Recipients (email)",
+          "preview": "Template message preview"
+        },
+        "placeholders": {
+          "template": "Select template",
+          "subject": "Mailing email subject",
+          "from": "sales@your-company.com",
+          "recipients": "Select contacts or type emails manually",
+          "preview": "Select template to preview content"
+        },
+        "validation": {
+          "templateRequired": "Select a template",
+          "templateNotFound": "Selected template was not found",
+          "subjectRequired": "Enter send subject",
+          "recipientsRequired": "Add at least one recipient email"
+        },
+        "actions": {
+          "send": "Send mailing"
+        }
+      }
+    },
+    "messages": {
+      "loadError": "Failed to load communications",
+      "omnichannelSent": "Message sent",
+      "omnichannelSendError": "Failed to send message",
+      "crmEmailCreated": "CRM Email sent",
+      "crmEmailCreateError": "Failed to send CRM Email",
+      "massmailMessageCreated": "Mailing message created",
+      "massmailMessageCreateError": "Failed to create mailing message",
+      "emptyTabs": "No communication sections available",
+      "crmTemplateApplied": "Template applied to subject and message",
+      "massmailDispatched": "Mailing sent: {count} emails",
+      "massmailDispatchPartial": "Not sent: {count} emails",
+      "massmailDispatchError": "Failed to send mailing",
+      "massmailDraftReadyForSend": "Draft loaded into send form",
+      "massmailDraftDuplicated": "Draft duplicated into create form"
+    }
+  },
+  "leadsListPage": {
+    "title": "Leads",
+    "view": {
+      "table": "Table",
+      "kanban": "Kanban"
+    },
+    "actions": {
+      "createShort": "Create",
+      "createLead": "Create lead"
+    }
+  },
+  "callButton": {
+    "actions": {
+      "call": "Call",
+      "openEntity": "Open customer card",
+      "endCall": "End call",
+      "close": "Close"
+    },
+    "status": {
+      "connecting": "Connecting...",
+      "connected": "In call",
+      "completed": "Call ended"
+    },
+    "labels": {
+      "callStatus": "Call status",
+      "direction": "Direction",
+      "entityType": "Entity type",
+      "entityId": "Entity ID",
+      "phone": "Phone",
+      "duration": "Duration"
+    },
+    "direction": {
+      "outbound": "Outbound",
+      "inbound": "Inbound"
+    },
+    "entityType": {
+      "lead": "Lead",
+      "company": "Company",
+      "contact": "Contact",
+      "client": "Client"
+    },
+    "modal": {
+      "outgoingTitle": "Outgoing call",
+      "connectingTitle": "Connecting...",
+      "connectedTitle": "In call",
+      "completedTitle": "Call ended",
+      "defaultTitle": "Call"
+    },
+    "messages": {
+      "serverRouted": "Call sent via telephony server{providerSuffix}",
+      "notEstablished": "Call was not established{reasonSuffix}",
+      "phoneMissing": "Phone number is not specified",
+      "serverRouteFailed": "Failed to route call via server",
+      "invalidNumber": "Invalid phone number format",
+      "sipLibraryMissing": "SIP library is not loaded",
+      "sipNotConfigured": "SIP client is not configured for user",
+      "callError": "Call error: {reason}"
+    }
+  },
+  "referenceSelect": {
+    "placeholders": {
+      "selectType": "Select {type}"
+    },
+    "errors": {
+      "unavailable": "Reference is unavailable",
+      "loadFailed": "Failed to load {type}",
+      "loadSelectedFailed": "Failed to load selected value for {type}"
+    },
+    "unnamed": "Unnamed",
+    "types": {
+      "stage": "stage",
+      "taskStage": "task stage",
+      "projectStage": "project stage",
+      "source": "source",
+      "industry": "industry",
+      "country": "country",
+      "city": "city",
+      "currency": "currency",
+      "clientType": "client type",
+      "closingReason": "closing reason",
+      "resolution": "resolution",
+      "department": "department",
+      "crmTag": "CRM tag",
+      "taskTag": "task tag"
+    }
+  },
+  "leadSourceSelect": {
+    "placeholder": "Select source"
+  },
+  "incomingCallModal": {
+    "fields": {
+      "leadSource": "Lead source",
+      "leadSourcePlaceholder": "Source",
+      "leadSourceFallback": "Source"
+    }
+  },
+  "leadsTable": {
+    "sourceColumn": "Source",
+    "sourcePlaceholder": "Source",
+    "sourceFallback": "Source",
+    "noSource": "No source",
+    "filters": {
+      "reset": "Reset",
+      "refreshList": "Refresh list"
     }
   }
 }

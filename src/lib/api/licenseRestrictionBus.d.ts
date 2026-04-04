@@ -2,8 +2,7 @@ export const LICENSE_RESTRICTION_EVENT: string;
 
 export type LicenseRestrictionPayload = {
   code: string;
-  feature?: string;
-  message?: string;
+  feature: string;
 };
 
 export function parseLicenseRestrictionPayload(payload: unknown): LicenseRestrictionPayload | null;

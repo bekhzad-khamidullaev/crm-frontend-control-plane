@@ -16,6 +16,10 @@ interface Window {
   __APP_CONFIG__?: {
     apiBaseUrl?: string;
     BASE_URL?: string;
+    controlPlaneBaseUrl?: string;
+    controlPlaneUrl?: string;
+    CONTROL_PLANE_BASE_URL?: string;
+    CONTROL_PLANE_URL?: string;
     apiPrefix?: string;
     apiTimeout?: number | string;
     authMode?: string;

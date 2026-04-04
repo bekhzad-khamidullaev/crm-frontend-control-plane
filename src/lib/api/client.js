@@ -404,7 +404,20 @@ async function loginWithFallback(credentials) {
 }
 
 export const authApi = {
-  login: ({ username, password }) => loginWithFallback({ username, password }),
+  login: ({ identifier, username, password }) =>
+    loginWithFallback({
+      identifier: identifier || username,
+      username,
+      password,
+    }),
+  verify2FA: ({ challenge_token, code }) =>
+    api.post('/api/auth/2fa/verify/', { body: { challenge_token, code }, skipAuth: true }),
+  resend2FA: ({ challenge_token }) =>
+    api.post('/api/auth/2fa/resend/', { body: { challenge_token }, skipAuth: true }),
+  requestPasswordReset: ({ identifier, channel }) =>
+    api.post('/api/auth/password-reset/request/', { body: { identifier, channel }, skipAuth: true }),
+  confirmPasswordReset: ({ challenge_token, code, new_password }) =>
+    api.post('/api/auth/password-reset/confirm/', { body: { challenge_token, code, new_password }, skipAuth: true }),
   refresh: ({ refresh }) => api.post('/api/token/refresh/', { body: { refresh }, skipAuth: true }),
   verify: ({ token }) => api.post('/api/token/verify/', { body: { token }, skipAuth: true }),
   authToken: ({ username, password }) => api.post('/api/auth/token/', { body: { username, password }, skipAuth: true }),
@@ -442,6 +455,11 @@ export const landingsApi = {
   commonDepartments: () => api.get('/api/common/departments/'),
   usersByDepartment: (department) => api.get('/api/users/', { params: { department } }),
   publicSchema: (slug) => api.get(`/api/public/landings/${slug}/`, { skipAuth: true }),
+  publicSchemaByDomain: (domain, params = {}) =>
+    api.get('/api/public/landings/by-domain/', {
+      skipAuth: true,
+      params: { ...(params || {}), ...(domain ? { domain } : {}) },
+    }),
   publicPreview: (slug, token) =>
     api.get(`/api/public/landings/${slug}/preview/`, { skipAuth: true, params: { token } }),
   trackEvent: (payload) => api.post('/api/public/funnel-events/', { body: payload, skipAuth: true }),

@@ -13,7 +13,7 @@ describe('licenseRestrictionState', () => {
 
   it('formats feature-disabled restriction with resolved feature name', () => {
     const message = getLicenseRestrictionMessage(
-      { code: 'LICENSE_FEATURE_DISABLED', feature: 'settings.core', message: '' },
+      { code: 'LICENSE_FEATURE_DISABLED', feature: 'ai.assist', message: '' },
       (key, vars) => {
         if (key === 'dashboardPage.errors.licenseFeatureDisabled') return 'Feature unavailable';
         if (key === 'dashboardPage.errors.licenseFeatureDisabledDescription') {
@@ -24,7 +24,7 @@ describe('licenseRestrictionState', () => {
     );
 
     expect(message.message).toBe('Feature unavailable');
-    expect(message.description).toContain('Settings');
+    expect(message.description).toContain('AI Chat');
   });
 
   it('ignores malformed stored restriction payload', () => {
@@ -47,7 +47,7 @@ describe('licenseRestrictionState', () => {
   it('formats invalid-signature restriction with explicit remediation copy', () => {
     const message = getLicenseRestrictionMessage({
       code: 'LICENSE_INVALID_SIGNATURE',
-      feature: 'settings.core',
+      feature: 'ai.assist',
       message: '',
     });
 
@@ -58,7 +58,7 @@ describe('licenseRestrictionState', () => {
   it('formats binding-mismatch restriction with explicit remediation copy', () => {
     const message = getLicenseRestrictionMessage({
       code: 'LICENSE_BINDING_MISMATCH',
-      feature: 'settings.core',
+      feature: 'ai.assist',
       message: '',
     });
 

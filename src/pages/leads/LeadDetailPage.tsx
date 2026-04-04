@@ -1,4 +1,4 @@
-import { BankOutlined, BellOutlined, CheckCircleOutlined, ClockCircleOutlined, EditOutlined, LinkOutlined, MailOutlined, PhoneOutlined, ReloadOutlined, RobotOutlined, UserOutlined } from '@ant-design/icons';
+import { BankOutlined, BellOutlined, CheckCircleOutlined, ClockCircleOutlined, EditOutlined, LinkOutlined, MailOutlined, PhoneOutlined, PlayCircleOutlined, ReloadOutlined, RobotOutlined, UserOutlined } from '@ant-design/icons';
 import { Alert, App, Avatar, Button, Card, Descriptions, Empty, List, Modal, Result, Space, Spin, Steps, Tag, Tabs, Timeline, Typography } from 'antd';
 import dayjs from 'dayjs';
 import React from 'react';
@@ -12,6 +12,7 @@ import ChatWidget from '@/modules/chat/ChatWidget.jsx';
 import ActivityLog from '@/components/ActivityLog.jsx';
 import QuickReminderModal from '@/components/reminders/QuickReminderModal.jsx';
 import ChannelBrandIcon from '@/components/channel/ChannelBrandIcon.jsx';
+import { getCompanyDisplayName } from '@/lib/utils/company-display.js';
 import { buildAiChatUrl } from '@/lib/utils/ai-chat-context.js';
 // @ts-ignore
 import { canWrite, hasAnyFeature } from '@/lib/rbac.js';
@@ -40,6 +41,7 @@ export const LeadDetailPage: React.FC<LeadDetailPageProps> = ({ id }) => {
   const [quickReminderOpen, setQuickReminderOpen] = React.useState(false);
   const canManage = canWrite();
   const canUseAiAssist = hasAnyFeature('ai.assist');
+  const canUseBusinessProcesses = hasAnyFeature(['business_processes', 'business_processes.base']);
   const openAiChat = () =>
     navigate(
       buildAiChatUrl({
@@ -48,6 +50,7 @@ export const LeadDetailPage: React.FC<LeadDetailPageProps> = ({ id }) => {
         entityName: lead?.full_name || (lead as any)?.name,
       }),
     );
+  const openBusinessProcesses = () => navigate(`/business-processes?context_type=lead&context_id=${id}`);
 
   const isConverted = Boolean(lead?.contact || lead?.company || lead?.was_in_touch);
   const leadDeal = leadDealsResponse?.results?.[0];
@@ -173,6 +176,7 @@ export const LeadDetailPage: React.FC<LeadDetailPageProps> = ({ id }) => {
     })()
     || resolvedOwnerName
     || 'Не назначен';
+  const companyName = getCompanyDisplayName(lead as any);
 
   const leadStatusFunnel = Array.isArray(insights?.funnel?.lead_status) ? insights.funnel.lead_status : [];
   const currentLeadStatusStep = Math.max(0, leadStatusFunnel.findIndex((stage: any) => stage.is_current));
@@ -208,6 +212,7 @@ export const LeadDetailPage: React.FC<LeadDetailPageProps> = ({ id }) => {
           <Button icon={<ChannelBrandIcon channel="omnichannel" size={14} />} onClick={() => setActiveTab('messages')}>Сообщения</Button>
           <Button icon={<BellOutlined />} onClick={() => setQuickReminderOpen(true)}>Напомнить</Button>
           {canUseAiAssist ? <Button icon={<RobotOutlined />} onClick={openAiChat}>Спросить AI</Button> : null}
+          {canUseBusinessProcesses ? <Button icon={<PlayCircleOutlined />} onClick={openBusinessProcesses}>Запустить процесс</Button> : null}
           {canManage ? <Button type="primary" icon={<EditOutlined />} onClick={() => navigate(`/leads/${id}/edit`)}>Редактировать</Button> : null}
           {canManage ? <Button onClick={handleConvertToDeal} loading={isConverting} disabled={isConverted}>{isConverted ? 'Уже конвертирован' : 'Конвертировать в сделку'}</Button> : null}
           {leadDeal ? <Button icon={<LinkOutlined />} onClick={() => navigate(`/deals/${leadDeal.id}`)}>Открыть сделку</Button> : null}
@@ -237,7 +242,7 @@ export const LeadDetailPage: React.FC<LeadDetailPageProps> = ({ id }) => {
                 <Descriptions bordered column={{ xs: 1, sm: 1, md: 2 }}>
                   <Descriptions.Item label="ФИО" span={2}><Space><Avatar icon={<UserOutlined />} style={{ backgroundColor: '#1890ff' }} /><Text strong>{lead.full_name}</Text>{lead.disqualified ? <Tag color="red">Дисквалифицирован</Tag> : null}</Space></Descriptions.Item>
                   <Descriptions.Item label="Должность">{lead.title || '-'}</Descriptions.Item>
-                  <Descriptions.Item label="Компания">{lead.company_name ? <Space><BankOutlined /> {lead.company_name}</Space> : '-'}</Descriptions.Item>
+                  <Descriptions.Item label="Компания">{companyName ? <Space><BankOutlined /> {companyName}</Space> : '-'}</Descriptions.Item>
                   <Descriptions.Item label="Email">{lead.email ? <a href={`mailto:${lead.email}`}><MailOutlined /> {lead.email}</a> : '-'}</Descriptions.Item>
                   <Descriptions.Item label="Телефон">{lead.phone ? <a href={`tel:${lead.phone}`}><PhoneOutlined /> {lead.phone}</a> : '-'}</Descriptions.Item>
                   <Descriptions.Item label="Адрес" span={2}>{lead.address || '-'}</Descriptions.Item>

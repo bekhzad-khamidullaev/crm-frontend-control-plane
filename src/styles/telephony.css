@@ -3,11 +3,58 @@
  * Styles for call widget, controls, and telephony components
  */
 
+:root {
+  --tele-color-white: #fff;
+  --tele-color-border: #e0e0e0;
+  --tele-color-surface: #f5f5f5;
+  --tele-color-text-main: #424242;
+  --tele-color-text-muted: #616161;
+  --tele-color-text-secondary: #757575;
+  --tele-color-primary: #1976d2;
+  --tele-color-primary-soft: #e3f2fd;
+  --tele-color-success: #4caf50;
+  --tele-color-success-hover: #43a047;
+  --tele-color-success-dark: #2e7d32;
+  --tele-color-danger: #f44336;
+  --tele-color-danger-hover: #d32f2f;
+  --tele-color-danger-dark: #c62828;
+  --tele-color-info: #2196f3;
+  --tele-color-warning: #ff9800;
+  --tele-color-warning-bg: #fff3e0;
+  --tele-color-warning-dark: #e65100;
+  --tele-color-critical-bg: #fce4ec;
+  --tele-color-critical-dark: #880e4f;
+  --tele-color-missed-bg: #ffebee;
+  --tele-color-completed-bg: #e8f5e9;
+  --tele-color-gradient-start: #667eea;
+  --tele-color-gradient-end: #764ba2;
+  --tele-color-success-gradient-end: #45a049;
+  --tele-color-status-idle: #9e9e9e;
+  --tele-shadow-subtle: rgba(0, 0, 0, 0.1);
+  --tele-shadow-soft: rgba(0, 0, 0, 0.15);
+  --tele-shadow-medium: rgba(0, 0, 0, 0.2);
+  --tele-shadow-strong: rgba(0, 0, 0, 0.3);
+  --tele-shadow-overlay: rgba(0, 0, 0, 0.5);
+}
+
+.dark {
+  --tele-color-white: #161b22;
+  --tele-color-border: #2d3343;
+  --tele-color-surface: #1e232e;
+  --tele-color-text-main: #f1f5f9;
+  --tele-color-text-muted: #cbd5e1;
+  --tele-color-text-secondary: #a1a1aa;
+  --tele-shadow-subtle: rgba(0, 0, 0, 0.35);
+  --tele-shadow-soft: rgba(0, 0, 0, 0.4);
+  --tele-shadow-medium: rgba(0, 0, 0, 0.5);
+  --tele-shadow-strong: rgba(0, 0, 0, 0.55);
+}
+
 /* Call Widget */
 .call-widget {
-  background: #fff;
+  background: var(--tele-color-white);
   border-radius: 8px;
-  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.15);
+  box-shadow: 0 2px 12px var(--tele-shadow-soft);
   overflow: hidden;
   width: 320px;
 }
@@ -24,8 +71,8 @@
   justify-content: space-between;
   align-items: center;
   padding: 16px;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-  color: #fff;
+  background: linear-gradient(135deg, var(--tele-color-gradient-start) 0%, var(--tele-color-gradient-end) 100%);
+  color: var(--tele-color-white);
 }
 
 .call-widget__title {
@@ -46,25 +93,25 @@
   width: 8px;
   height: 8px;
   border-radius: 50%;
-  background: #9e9e9e;
+  background: var(--tele-color-status-idle);
 }
 
 .call-widget__status-dot--connecting {
-  background: #ff9800;
+  background: var(--tele-color-warning);
   animation: pulse 1.5s infinite;
 }
 
 .call-widget__status-dot--connected {
-  background: #4caf50;
+  background: var(--tele-color-success);
 }
 
 .call-widget__status-dot--active {
-  background: #2196f3;
+  background: var(--tele-color-info);
   animation: pulse 1.5s infinite;
 }
 
 .call-widget__status-dot--error {
-  background: #f44336;
+  background: var(--tele-color-danger);
 }
 
 .telephony-window-controls {
@@ -79,7 +126,7 @@
   height: 24px;
   border-radius: 6px;
   padding: 0;
-  color: #424242;
+  color: var(--tele-color-text-main);
   transition:
     background-color 0.15s ease,
     color 0.15s ease;
@@ -91,7 +138,7 @@
 
 .telephony-window-control-btn.ant-btn:hover {
   background: rgba(0, 0, 0, 0.08);
-  color: #424242;
+  color: var(--tele-color-text-main);
 }
 
 .telephony-window-control-btn.ant-btn:active {
@@ -118,7 +165,7 @@
 .call-widget__dialer-input {
   width: 100%;
   padding: 12px;
-  border: 1px solid #e0e0e0;
+  border: 1px solid var(--tele-color-border);
   border-radius: 8px;
   font-size: 18px;
   text-align: center;
@@ -134,16 +181,18 @@
 .call-widget__keypad-btn {
   aspect-ratio: 1;
   border: none;
-  background: #f5f5f5;
+  background: var(--tele-color-surface);
   font-size: 20px;
   font-weight: 500;
   border-radius: 50%;
   cursor: pointer;
-  transition: all 0.2s;
+  transition:
+    background-color 0.2s,
+    transform 0.2s;
 }
 
 .call-widget__keypad-btn:hover {
-  background: #e0e0e0;
+  background: var(--tele-color-border);
   transform: scale(1.05);
 }
 
@@ -154,8 +203,8 @@
 .call-widget__call-btn {
   width: 100%;
   padding: 12px;
-  background: #4caf50;
-  color: #fff;
+  background: var(--tele-color-success);
+  color: var(--tele-color-white);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -163,7 +212,7 @@
 }
 
 .call-widget__call-btn:hover {
-  background: #43a047;
+  background: var(--tele-color-success-hover);
 }
 
 /* Active Call */
@@ -184,8 +233,8 @@
 
 .call-widget__call-icon {
   font-size: 48px;
-  color: #1976d2;
-  background: #e3f2fd;
+  color: var(--tele-color-primary);
+  background: var(--tele-color-primary-soft);
   padding: 12px;
   border-radius: 50%;
 }
@@ -197,7 +246,7 @@
 
 .call-widget__call-status {
   font-size: 14px;
-  color: #757575;
+  color: var(--tele-color-text-secondary);
 }
 
 .call-widget__timer-container {
@@ -224,55 +273,57 @@
   align-items: center;
   gap: 4px;
   padding: 12px;
-  background: #f5f5f5;
+  background: var(--tele-color-surface);
   border: none;
   border-radius: 12px;
   cursor: pointer;
-  transition: all 0.2s;
+  transition:
+    background-color 0.2s,
+    transform 0.2s;
   min-width: 60px;
 }
 
 .call-controls__btn:hover {
-  background: #e0e0e0;
+  background: var(--tele-color-border);
   transform: translateY(-2px);
 }
 
 .call-controls__btn i {
   font-size: 24px;
-  color: #424242;
+  color: var(--tele-color-text-main);
 }
 
 .call-controls__btn-label {
   font-size: 11px;
-  color: #616161;
+  color: var(--tele-color-text-muted);
 }
 
 .call-controls__btn--active {
-  background: #e3f2fd;
-  border: 2px solid #1976d2;
+  background: var(--tele-color-primary-soft);
+  border: 2px solid var(--tele-color-primary);
 }
 
 .call-controls__btn--active i {
-  color: #1976d2;
+  color: var(--tele-color-primary);
 }
 
 .call-controls__btn--danger {
-  background: #f44336;
+  background: var(--tele-color-danger);
 }
 
 .call-controls__btn--danger:hover {
-  background: #d32f2f;
+  background: var(--tele-color-danger-hover);
 }
 
 .call-controls__btn--danger i,
 .call-controls__btn--danger .call-controls__btn-label {
-  color: #fff;
+  color: var(--tele-color-white);
 }
 
 /* DTMF Keypad */
 .call-controls__dtmf-pad {
   padding: 16px;
-  background: #f5f5f5;
+  background: var(--tele-color-surface);
   border-radius: 8px;
 }
 
@@ -285,23 +336,26 @@
 .call-controls__dtmf-btn {
   aspect-ratio: 1;
   border: none;
-  background: #fff;
+  background: var(--tele-color-white);
   font-size: 18px;
   font-weight: 500;
   border-radius: 8px;
   cursor: pointer;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-  transition: all 0.2s;
+  box-shadow: 0 2px 4px var(--tele-shadow-subtle);
+  transition:
+    background-color 0.2s,
+    box-shadow 0.2s,
+    transform 0.2s;
 }
 
 .call-controls__dtmf-btn:hover {
-  background: #e3f2fd;
+  background: var(--tele-color-primary-soft);
   transform: scale(1.05);
 }
 
 .call-controls__dtmf-btn--pressed {
-  background: #1976d2;
-  color: #fff;
+  background: var(--tele-color-primary);
+  color: var(--tele-color-white);
   transform: scale(0.95);
 }
 
@@ -312,7 +366,7 @@
   left: 0;
   right: 0;
   bottom: 0;
-  background: rgba(0, 0, 0, 0.5);
+  background: var(--tele-shadow-overlay);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -320,10 +374,10 @@
 }
 
 .call-controls__transfer-content {
-  background: #fff;
+  background: var(--tele-color-white);
   padding: 24px;
   border-radius: 8px;
-  box-shadow: 0 8px 16px rgba(0, 0, 0, 0.2);
+  box-shadow: 0 8px 16px var(--tele-shadow-medium);
   max-width: 400px;
   width: 90%;
 }
@@ -335,7 +389,7 @@
 .call-controls__transfer-input {
   width: 100%;
   padding: 12px;
-  border: 1px solid #e0e0e0;
+  border: 1px solid var(--tele-color-border);
   border-radius: 4px;
   font-size: 16px;
   margin-bottom: 16px;
@@ -356,7 +410,7 @@
   font-size: 18px;
   font-weight: 500;
   font-variant-numeric: tabular-nums;
-  color: #424242;
+  color: var(--tele-color-text-main);
 }
 
 /* Incoming Call Modal */
@@ -389,10 +443,10 @@
 
 .incoming-call-modal__content {
   position: relative;
-  background: #fff;
+  background: var(--tele-color-white);
   padding: 32px;
   border-radius: 16px;
-  box-shadow: 0 16px 32px rgba(0, 0, 0, 0.3);
+  box-shadow: 0 16px 32px var(--tele-shadow-strong);
   max-width: 400px;
   width: 90%;
   text-align: center;
@@ -411,7 +465,7 @@
   transform: translateX(-50%);
   width: 120px;
   height: 120px;
-  border: 3px solid #4caf50;
+  border: 3px solid var(--tele-color-success);
   border-radius: 50%;
   animation: ringPulse 1.5s infinite;
 }
@@ -420,12 +474,12 @@
   width: 120px;
   height: 120px;
   margin: 0 auto 24px;
-  background: linear-gradient(135deg, #4caf50 0%, #45a049 100%);
+  background: linear-gradient(135deg, var(--tele-color-success) 0%, var(--tele-color-success-gradient-end) 100%);
   border-radius: 50%;
   display: flex;
   align-items: center;
   justify-content: center;
-  color: #fff;
+  color: var(--tele-color-white);
   animation: iconBounce 1.5s infinite;
 }
 
@@ -451,7 +505,7 @@
 
 .incoming-call-modal__number {
   font-size: 16px;
-  color: #757575;
+  color: var(--tele-color-text-secondary);
 }
 
 .incoming-call-modal__actions {
@@ -469,7 +523,9 @@
   border: none;
   border-radius: 12px;
   cursor: pointer;
-  transition: all 0.2s;
+  transition:
+    background-color 0.2s,
+    transform 0.2s;
   font-size: 14px;
   font-weight: 500;
 }
@@ -479,22 +535,22 @@
 }
 
 .incoming-call-modal__btn--accept {
-  background: #4caf50;
-  color: #fff;
+  background: var(--tele-color-success);
+  color: var(--tele-color-white);
 }
 
 .incoming-call-modal__btn--accept:hover {
-  background: #43a047;
+  background: var(--tele-color-success-hover);
   transform: scale(1.05);
 }
 
 .incoming-call-modal__btn--reject {
-  background: #f44336;
-  color: #fff;
+  background: var(--tele-color-danger);
+  color: var(--tele-color-white);
 }
 
 .incoming-call-modal__btn--reject:hover {
-  background: #d32f2f;
+  background: var(--tele-color-danger-hover);
   transform: scale(1.05);
 }
 
@@ -525,27 +581,27 @@
   align-items: center;
   gap: 12px;
   padding: 16px;
-  background: #fff;
+  background: var(--tele-color-white);
   border-radius: 8px;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  box-shadow: 0 2px 4px var(--tele-shadow-subtle);
 }
 
 .calls-list__stat i {
   font-size: 32px;
-  color: #1976d2;
+  color: var(--tele-color-primary);
 }
 
 .calls-list__stat-value {
   display: block;
   font-size: 24px;
   font-weight: 500;
-  color: #424242;
+  color: var(--tele-color-text-main);
 }
 
 .calls-list__stat-label {
   display: block;
   font-size: 12px;
-  color: #757575;
+  color: var(--tele-color-text-secondary);
 }
 
 .calls-list__filters {
@@ -557,7 +613,7 @@
 .calls-list__filter,
 .calls-list__search {
   padding: 8px 12px;
-  border: 1px solid #e0e0e0;
+  border: 1px solid var(--tele-color-border);
   border-radius: 4px;
   font-size: 14px;
 }
@@ -569,25 +625,25 @@
 .calls-list__table-element {
   width: 100%;
   border-collapse: collapse;
-  background: #fff;
+  background: var(--tele-color-white);
   border-radius: 8px;
   overflow: hidden;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  box-shadow: 0 2px 4px var(--tele-shadow-subtle);
 }
 
 .calls-list__table-element th {
-  background: #f5f5f5;
+  background: var(--tele-color-surface);
   padding: 12px;
   text-align: left;
   font-weight: 500;
   font-size: 13px;
-  color: #616161;
-  border-bottom: 1px solid #e0e0e0;
+  color: var(--tele-color-text-muted);
+  border-bottom: 1px solid var(--tele-color-border);
 }
 
 .calls-list__table-element td {
   padding: 12px;
-  border-bottom: 1px solid #f5f5f5;
+  border-bottom: 1px solid var(--tele-color-surface);
   font-size: 14px;
 }
 
@@ -597,7 +653,7 @@
 }
 
 .calls-list__row:hover {
-  background: #f5f5f5;
+  background: var(--tele-color-surface);
 }
 
 .calls-list__status {
@@ -609,23 +665,23 @@
 }
 
 .calls-list__status--completed {
-  background: #e8f5e9;
-  color: #2e7d32;
+  background: var(--tele-color-completed-bg);
+  color: var(--tele-color-success-dark);
 }
 
 .calls-list__status--missed {
-  background: #ffebee;
-  color: #c62828;
+  background: var(--tele-color-missed-bg);
+  color: var(--tele-color-danger-dark);
 }
 
 .calls-list__status--busy {
-  background: #fff3e0;
-  color: #e65100;
+  background: var(--tele-color-warning-bg);
+  color: var(--tele-color-warning-dark);
 }
 
 .calls-list__status--failed {
-  background: #fce4ec;
-  color: #880e4f;
+  background: var(--tele-color-critical-bg);
+  color: var(--tele-color-critical-dark);
 }
 
 .calls-list__empty,
@@ -636,7 +692,7 @@
   justify-content: center;
   padding: 48px;
   text-align: center;
-  color: #757575;
+  color: var(--tele-color-text-secondary);
 }
 
 .calls-list__empty i,

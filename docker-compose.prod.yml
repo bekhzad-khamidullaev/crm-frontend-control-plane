@@ -1,4 +1,4 @@
-name: crm-frontend-control-plane-prod
+name: crm-frontend-prod
 
 services:
   frontend:
@@ -11,15 +11,15 @@ services:
     env_file:
       - .env.production
     environment:
-      API_BASE_URL: ${API_BASE_URL:-https://api.console.crm.windevs.uz}
+      API_BASE_URL: ${API_BASE_URL:-https://api.crm.windevs.uz}
       API_PREFIX: ${API_PREFIX:-/api}
-      PBX_SERVER: ${PBX_SERVER:-wss://api.console.crm.windevs.uz/asterisk/ws}
+      PBX_SERVER: ${PBX_SERVER:-wss://crm.windevs.uz/asterisk/ws}
     ports:
-      - "127.0.0.1:${CRM_CONTROL_PLANE_FRONTEND_PORT:-8082}:80"
+      - "127.0.0.1:${CRM_FRONTEND_PORT:-8080}:80"
     volumes:
       - ./logs/nginx:/var/log/nginx
     networks:
-      - crm_frontend_control_plane_network
+      - crm_frontend_network
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost/health"]
       interval: 30s
@@ -28,5 +28,5 @@ services:
       start_period: 10s
 
 networks:
-  crm_frontend_control_plane_network:
+  crm_frontend_network:
     driver: bridge

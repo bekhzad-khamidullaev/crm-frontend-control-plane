@@ -1,6 +1,7 @@
 import { useCompany } from '@/entities/company/api/queries';
 import { useContact } from '@/entities/contact/api/queries';
 import { UsersService } from '@/shared/api/generated/services/UsersService';
+import { getCompanyDisplayName } from '@/lib/utils/company-display.js';
 import { buildAiChatUrl } from '@/lib/utils/ai-chat-context.js';
 import { navigate } from '@/router.js';
 import { BankOutlined, BellOutlined, EditOutlined, MailOutlined, PhoneOutlined, RobotOutlined, UserOutlined } from '@ant-design/icons';
@@ -63,7 +64,15 @@ export const ContactDetailPage: React.FC<ContactDetailPageProps> = ({ id }) => {
     return <Result status="404" title="Контакт не найден" extra={<Button onClick={() => navigate('/contacts')}>К контактам</Button>} />;
   }
 
-  const ownerName = resolvedOwnerName || (contact as any).owner_name || 'Не назначен';
+  const contactView = contact as any;
+  const companyName = getCompanyDisplayName(company as any) || 'Компания';
+
+  const ownerName = resolvedOwnerName || contactView.owner_name || 'Не назначен';
+  const telegramUsername = String(contactView.telegram_username || '').trim().replace(/^@/, '');
+  const telegramChatId = String(contactView.telegram_chat_id || '').trim();
+  const instagramUsername = String(contactView.instagram_username || '').trim().replace(/^@/, '');
+  const instagramRecipientId = String(contactView.instagram_recipient_id || '').trim();
+  const facebookPsid = String(contactView.facebook_psid || '').trim();
 
   return (
     <Space direction="vertical" size={16} style={{ width: '100%' }}>
@@ -95,7 +104,7 @@ export const ContactDetailPage: React.FC<ContactDetailPageProps> = ({ id }) => {
       </Card>
 
       <Space wrap>
-        <Card size="small" title="Компания">{company?.full_name || 'Не указана'}</Card>
+        <Card size="small" title="Компания">{company ? companyName : 'Не указана'}</Card>
         <Card size="small" title="Ответственный">{ownerName}</Card>
         <Card size="small" title="Создан">{contact.creation_date ? dayjs(contact.creation_date).format('DD.MM.YYYY') : '-'}</Card>
       </Space>
@@ -113,9 +122,16 @@ export const ContactDetailPage: React.FC<ContactDetailPageProps> = ({ id }) => {
                     <Space><Avatar icon={<UserOutlined />} style={{ backgroundColor: '#1890ff' }} /><Text strong>{contact.full_name}</Text></Space>
                   </Descriptions.Item>
                   <Descriptions.Item label="Должность">{contact.title || '-'}</Descriptions.Item>
-                  <Descriptions.Item label="Компания">{company ? <Space><BankOutlined /> {company.full_name || 'Компания'}</Space> : '-'}</Descriptions.Item>
+                  <Descriptions.Item label="Компания">{company ? <Space><BankOutlined /> {companyName}</Space> : '-'}</Descriptions.Item>
                   <Descriptions.Item label="Email">{contact.email ? <a href={`mailto:${contact.email}`}><MailOutlined /> {contact.email}</a> : '-'}</Descriptions.Item>
                   <Descriptions.Item label="Телефон">{contact.phone ? <a href={`tel:${contact.phone}`}><PhoneOutlined /> {contact.phone}</a> : '-'}</Descriptions.Item>
+                  <Descriptions.Item label="Мобильный">{contactView.mobile ? <a href={`tel:${contactView.mobile}`}><PhoneOutlined /> {contactView.mobile}</a> : '-'}</Descriptions.Item>
+                  <Descriptions.Item label="Доп. телефон">{contactView.other_phone ? <a href={`tel:${contactView.other_phone}`}><PhoneOutlined /> {contactView.other_phone}</a> : '-'}</Descriptions.Item>
+                  <Descriptions.Item label="Telegram">{telegramUsername ? `@${telegramUsername}` : '-'}</Descriptions.Item>
+                  <Descriptions.Item label="Telegram chat_id">{telegramChatId || '-'}</Descriptions.Item>
+                  <Descriptions.Item label="Instagram">{instagramUsername ? `@${instagramUsername}` : '-'}</Descriptions.Item>
+                  <Descriptions.Item label="Instagram recipient_id">{instagramRecipientId || '-'}</Descriptions.Item>
+                  <Descriptions.Item label="Facebook PSID">{facebookPsid || '-'}</Descriptions.Item>
                   <Descriptions.Item label="Адрес" span={2}>{contact.address || '-'}</Descriptions.Item>
                   <Descriptions.Item label="Ответственный">{ownerName}</Descriptions.Item>
                   <Descriptions.Item label="Дата создания">{contact.creation_date ? dayjs(contact.creation_date).format('DD.MM.YYYY HH:mm') : '-'}</Descriptions.Item>

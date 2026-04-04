@@ -3,13 +3,39 @@
  * Manage SMS, telephony, and social integrations backed by CRM API
  */
 
-import React, { useEffect, useState } from 'react';
-import { Card, Space, Button, Modal, App, Table, Tag, Form, Input, InputNumber, Select, Switch, Popconfirm, Alert, Collapse, Typography, Descriptions, theme as antdTheme } from 'antd';
+import React, { useEffect, useRef, useState } from 'react';
+import {
+  Card,
+  Space,
+  Button,
+  Modal,
+  App,
+  Table,
+  Tag,
+  Form,
+  Input,
+  InputNumber,
+  Select,
+  Switch,
+  Popconfirm,
+  Alert,
+  Collapse,
+  Typography,
+  Descriptions,
+  Grid,
+  Progress,
+  theme as antdTheme,
+} from 'antd';
 import {
   ApiOutlined,
   ReloadOutlined,
   RobotOutlined,
   CopyOutlined,
+  DashboardOutlined,
+  ThunderboltOutlined,
+  InboxOutlined,
+  ExclamationCircleOutlined,
+  CheckCircleOutlined,
 } from '@ant-design/icons';
 import dayjs from 'dayjs';
 import relativeTime from 'dayjs/plugin/relativeTime';
@@ -22,6 +48,7 @@ import FacebookConnect from '../components/FacebookConnect.jsx';
 import InstagramConnect from '../components/InstagramConnect.jsx';
 import TelegramConnect from '../components/TelegramConnect.jsx';
 import WhatsAppConnect from '../components/WhatsAppConnect.jsx';
+import ChannelSetupWizard from '../components/integrations/ChannelSetupWizard.jsx';
 import smsApi from '../lib/api/sms.js';
 import { getTelephonyStats, getVoIPConnections } from '../lib/api/telephony';
 import { useTheme } from '../lib/hooks/useTheme.js';
@@ -65,9 +92,9 @@ import {
   replayOmnichannelEvent,
   retryOmnichannelOutboundEvent,
 } from '../lib/api/compliance.js';
-import { LICENSE_RESTRICTION_EVENT } from '../lib/api/licenseRestrictionBus.js';
-import { getFeatureRestrictionReason } from '../lib/api/licenseRestrictionState.js';
+import { getIntegrationCatalog } from '../lib/api/integrationHub.js';
 import { t } from '../lib/i18n';
+import { navigate } from '../router.js';
 
 const formatDateTime = (value) => {
   if (!value) return '-';
@@ -76,7 +103,7 @@ const formatDateTime = (value) => {
 
 dayjs.extend(relativeTime);
 
-const { Text } = Typography;
+const { Text, Title } = Typography;
 
 const CHANNEL_ICON_ALIASES = {
   whatsapp: 'whatsapp',
@@ -174,7 +201,7 @@ const getCatalogPrimaryAction = (record, tr) => {
   }
 
   return {
-    label: tr('integrationsPage.actions.checkHealth', 'Проверить'),
+    label: tr('integrationsPage.actions.checkHealth', 'Check health'),
     onClick: record?.onCheck,
   };
 };
@@ -189,15 +216,30 @@ const buildDiagnosticsExplanation = (record, tr) => {
     '';
 
   if (record.signature_valid === false) {
-    lines.push(tr('integrationsPage.diagnostics.explanations.signature', 'Подпись webhook не прошла проверку.'));
+    lines.push(
+      tr(
+        'integrationsPage.diagnostics.explanations.signature',
+        'Подпись webhook не прошла проверку.'
+      )
+    );
   }
   if (record.sla_status === 'breached') {
     lines.push(tr('integrationsPage.diagnostics.explanations.sla', 'Диалог уже попал в SLA risk.'));
   }
   if (record.replay_status === 'failed') {
-    lines.push(tr('integrationsPage.diagnostics.explanations.replayFailed', 'Последний replay завершился ошибкой.'));
+    lines.push(
+      tr(
+        'integrationsPage.diagnostics.explanations.replayFailed',
+        'Последний replay завершился ошибкой.'
+      )
+    );
   } else if (record.replayable) {
-    lines.push(tr('integrationsPage.diagnostics.explanations.replayReady', 'Событие можно безопасно отправить на replay.'));
+    lines.push(
+      tr(
+        'integrationsPage.diagnostics.explanations.replayReady',
+        'Событие можно безопасно отправить на replay.'
+      )
+    );
   }
   if (record.processed_at) {
     lines.push(
@@ -263,7 +305,12 @@ const AI_PROVIDER_MODELS = {
 };
 
 const DIAGNOSTICS_SCOPE_VALUES = ['all', 'failures', 'replayable', 'archived', 'outbound'];
-const OUTBOUND_RETRYABLE_STATUSES = new Set(['retry_scheduled', 'failed', 'dead_letter', 'in_progress']);
+const OUTBOUND_RETRYABLE_STATUSES = new Set([
+  'retry_scheduled',
+  'failed',
+  'dead_letter',
+  'in_progress',
+]);
 const DEFAULT_DIAGNOSTICS_FILTERS = {
   scope: 'all',
   channel: 'all',
@@ -272,21 +319,28 @@ const DEFAULT_DIAGNOSTICS_FILTERS = {
 };
 
 const getDiagnosticsRecordStatus = (record) =>
-  String(record?.queue_state || record?.status || '').trim().toLowerCase();
+  String(record?.queue_state || record?.status || '')
+    .trim()
+    .toLowerCase();
 
 const isOutboundDiagnosticsRecord = (record) =>
   Boolean(
-    record
-      && (
-        record.attempt_count != null
-        || record.max_attempts != null
-        || String(record.source || '').includes('omnichannel.send')
-        || OUTBOUND_RETRYABLE_STATUSES.has(getDiagnosticsRecordStatus(record))
-      )
+    record &&
+    (record.attempt_count != null ||
+      record.max_attempts != null ||
+      String(record.source || '').includes('omnichannel.send') ||
+      OUTBOUND_RETRYABLE_STATUSES.has(getDiagnosticsRecordStatus(record)))
   );
 
 const canRetryOutboundRecord = (record) =>
-  isOutboundDiagnosticsRecord(record) && OUTBOUND_RETRYABLE_STATUSES.has(getDiagnosticsRecordStatus(record));
+  isOutboundDiagnosticsRecord(record) &&
+  OUTBOUND_RETRYABLE_STATUSES.has(getDiagnosticsRecordStatus(record));
+
+const INTEGRATION_STATUS_META = {
+  connected: { label: 'Подключено', color: 'success' },
+  error: { label: 'Ошибка', color: 'error' },
+  disconnected: { label: 'Не подключено', color: 'default' },
+};
 
 function readHashState() {
   if (typeof window === 'undefined') {
@@ -305,7 +359,9 @@ function normalizeDiagnosticsFilters(value) {
   const scope = DIAGNOSTICS_SCOPE_VALUES.includes(String(value?.scope || ''))
     ? String(value.scope)
     : DEFAULT_DIAGNOSTICS_FILTERS.scope;
-  const channelRaw = String(value?.channel || '').trim().toLowerCase();
+  const channelRaw = String(value?.channel || '')
+    .trim()
+    .toLowerCase();
   const channel = channelRaw || DEFAULT_DIAGNOSTICS_FILTERS.channel;
   const query = String(value?.query || '').trim();
   const onlyNeedsAction = Boolean(value?.onlyNeedsAction);
@@ -324,7 +380,9 @@ function getDiagnosticsFiltersFromHash() {
     scope: params.get('diag_scope') || DEFAULT_DIAGNOSTICS_FILTERS.scope,
     channel: params.get('diag_channel') || DEFAULT_DIAGNOSTICS_FILTERS.channel,
     query: params.get('diag_q') || '',
-    onlyNeedsAction: ['1', 'true', 'yes', 'on'].includes(String(params.get('diag_needs_action') || '').toLowerCase()),
+    onlyNeedsAction: ['1', 'true', 'yes', 'on'].includes(
+      String(params.get('diag_needs_action') || '').toLowerCase()
+    ),
   });
 }
 
@@ -367,7 +425,9 @@ export default function IntegrationsPage({ embedded = false, compact = false } =
   const { token } = antdTheme.useToken();
   const { message } = App.useApp();
   const { theme: currentTheme } = useTheme();
+  const screens = Grid.useBreakpoint();
   const isDark = currentTheme === 'dark';
+  const isCompact = !screens.xl;
   const isEmbeddedCompact = embedded && compact;
   const tr = (key, fallback, vars = {}) => {
     const localized = t(key, vars);
@@ -405,10 +465,19 @@ export default function IntegrationsPage({ embedded = false, compact = false } =
   const [webhookModal, setWebhookModal] = useState({ open: false, bot: null });
   const [webhookSaving, setWebhookSaving] = useState(false);
   const [webhookForm] = Form.useForm();
-  const [integrationEditModal, setIntegrationEditModal] = useState({ open: false, type: null, record: null });
+  const [integrationEditModal, setIntegrationEditModal] = useState({
+    open: false,
+    type: null,
+    record: null,
+  });
   const [integrationEditSaving, setIntegrationEditSaving] = useState(false);
   const [integrationEditForm] = Form.useForm();
-  const [omnichannelSummary, setOmnichannelSummary] = useState({ count: 0, queue: 0, active: 0, resolved: 0 });
+  const [omnichannelSummary, setOmnichannelSummary] = useState({
+    count: 0,
+    queue: 0,
+    active: 0,
+    resolved: 0,
+  });
   const [omnichannelDiagnostics, setOmnichannelDiagnostics] = useState({
     summary: {},
     channels: [],
@@ -435,7 +504,26 @@ export default function IntegrationsPage({ embedded = false, compact = false } =
   const [diagnosticsPanelKeys, setDiagnosticsPanelKeys] = useState(() =>
     isEmbeddedCompact ? [] : ['summary']
   );
-  const [licenseRestriction, setLicenseRestriction] = useState(null);
+  const [integrationCatalog, setIntegrationCatalog] = useState([]);
+  const [integrationCatalogLoading, setIntegrationCatalogLoading] = useState(false);
+  const [telephonyHasUnsavedChanges, setTelephonyHasUnsavedChanges] = useState(false);
+  const [integrationUnsavedMap, setIntegrationUnsavedMap] = useState({
+    sms: false,
+    telephony: false,
+    whatsapp: false,
+    facebook: false,
+    instagram: false,
+    telegram: false,
+  });
+  const [integrationSavedMap, setIntegrationSavedMap] = useState({
+    sms: false,
+    telephony: false,
+    whatsapp: false,
+    facebook: false,
+    instagram: false,
+    telegram: false,
+  });
+  const savedBadgeTimersRef = useRef({});
 
   const getErrorText = (error, fallback) => {
     const details = error?.details || {};
@@ -443,7 +531,8 @@ export default function IntegrationsPage({ embedded = false, compact = false } =
     if (typeof details?.message === 'string') return details.message;
     if (typeof details?.error === 'string') return details.error;
     if (typeof details?.detail === 'string') return details.detail;
-    if (typeof error?.message === 'string' && !error.message.startsWith('HTTP ')) return error.message;
+    if (typeof error?.message === 'string' && !error.message.startsWith('HTTP '))
+      return error.message;
     return fallback;
   };
 
@@ -469,8 +558,14 @@ export default function IntegrationsPage({ embedded = false, compact = false } =
 
   useEffect(() => {
     replaceHashQuery({
-      diag_scope: diagnosticsFilters.scope !== DEFAULT_DIAGNOSTICS_FILTERS.scope ? diagnosticsFilters.scope : null,
-      diag_channel: diagnosticsFilters.channel !== DEFAULT_DIAGNOSTICS_FILTERS.channel ? diagnosticsFilters.channel : null,
+      diag_scope:
+        diagnosticsFilters.scope !== DEFAULT_DIAGNOSTICS_FILTERS.scope
+          ? diagnosticsFilters.scope
+          : null,
+      diag_channel:
+        diagnosticsFilters.channel !== DEFAULT_DIAGNOSTICS_FILTERS.channel
+          ? diagnosticsFilters.channel
+          : null,
       diag_q: diagnosticsFilters.query || null,
       diag_needs_action: diagnosticsFilters.onlyNeedsAction ? '1' : null,
     });
@@ -502,23 +597,6 @@ export default function IntegrationsPage({ embedded = false, compact = false } =
     return () => window.removeEventListener('hashchange', onHashChange);
   }, []);
 
-  useEffect(() => {
-    const onLicenseRestriction = (event) => {
-      const detail = event?.detail || {};
-      const feature = String(detail.feature || '');
-      if (feature && !feature.startsWith('integrations.') && feature !== 'unknown.feature') return;
-      setLicenseRestriction({
-        code: String(detail.code || 'LICENSE_FEATURE_DISABLED'),
-        feature: feature || 'integrations.core',
-        message: String(detail.message || ''),
-      });
-      message.warning(detail.message || tr('integrationsPage.messages.restricted', 'Лицензия ограничивает доступ к интеграциям'));
-    };
-
-    window.addEventListener(LICENSE_RESTRICTION_EVENT, onLicenseRestriction);
-    return () => window.removeEventListener(LICENSE_RESTRICTION_EVENT, onLicenseRestriction);
-  }, [message]);
-
   const loadAllStatuses = async () => {
     await Promise.all([
       loadSMSStatus(),
@@ -530,7 +608,21 @@ export default function IntegrationsPage({ embedded = false, compact = false } =
       loadAIStatus(),
       loadOmnichannelSummary(),
       loadOmnichannelDiagnostics(diagnosticsFilters),
+      loadIntegrationCatalog(),
     ]);
+  };
+
+  const loadIntegrationCatalog = async () => {
+    setIntegrationCatalogLoading(true);
+    try {
+      const response = await getIntegrationCatalog();
+      const rows = Array.isArray(response?.results) ? response.results : [];
+      setIntegrationCatalog(rows);
+    } catch {
+      setIntegrationCatalog([]);
+    } finally {
+      setIntegrationCatalogLoading(false);
+    }
   };
 
   const loadOmnichannelSummary = async () => {
@@ -565,10 +657,16 @@ export default function IntegrationsPage({ embedded = false, compact = false } =
         summary: response?.summary || {},
         channels: Array.isArray(response?.channels) ? response.channels : [],
         recent_failures: Array.isArray(response?.recent_failures) ? response.recent_failures : [],
-        replay_candidates: Array.isArray(response?.replay_candidates) ? response.replay_candidates : [],
+        replay_candidates: Array.isArray(response?.replay_candidates)
+          ? response.replay_candidates
+          : [],
         recent_archived: Array.isArray(response?.recent_archived) ? response.recent_archived : [],
-        outbound_dead_letters: Array.isArray(response?.outbound_dead_letters) ? response.outbound_dead_letters : [],
-        outbound_retry_queue: Array.isArray(response?.outbound_retry_queue) ? response.outbound_retry_queue : [],
+        outbound_dead_letters: Array.isArray(response?.outbound_dead_letters)
+          ? response.outbound_dead_letters
+          : [],
+        outbound_retry_queue: Array.isArray(response?.outbound_retry_queue)
+          ? response.outbound_retry_queue
+          : [],
         filtered_events: Array.isArray(response?.filtered_events) ? response.filtered_events : [],
         filtered_count: Number(response?.filtered_count || 0),
         filtered_scope: String(response?.filtered_scope || 'all'),
@@ -611,11 +709,21 @@ export default function IntegrationsPage({ embedded = false, compact = false } =
       if (result?.success) {
         message.success(tr('integrationsPage.messages.replayOk', 'Событие повторно обработано'));
       } else {
-        message.warning(getErrorText(result, tr('integrationsPage.messages.replayPartial', 'Replay завершился с предупреждением')));
+        message.warning(
+          getErrorText(
+            result,
+            tr('integrationsPage.messages.replayPartial', 'Replay завершился с предупреждением')
+          )
+        );
       }
       await Promise.all([loadOmnichannelSummary(), loadOmnichannelDiagnostics(diagnosticsFilters)]);
     } catch (error) {
-      message.error(getErrorText(error, tr('integrationsPage.messages.replayError', 'Не удалось выполнить replay события')));
+      message.error(
+        getErrorText(
+          error,
+          tr('integrationsPage.messages.replayError', 'Не удалось выполнить replay события')
+        )
+      );
     } finally {
       setOmnichannelReplayId(null);
     }
@@ -641,11 +749,24 @@ export default function IntegrationsPage({ embedded = false, compact = false } =
       if (result?.success) {
         message.success(tr('integrationsPage.messages.outboundRetryOk', 'Outbound retry выполнен'));
       } else {
-        message.warning(getErrorText(result, tr('integrationsPage.messages.outboundRetryPartial', 'Outbound retry завершен с предупреждением')));
+        message.warning(
+          getErrorText(
+            result,
+            tr(
+              'integrationsPage.messages.outboundRetryPartial',
+              'Outbound retry завершен с предупреждением'
+            )
+          )
+        );
       }
       await Promise.all([loadOmnichannelSummary(), loadOmnichannelDiagnostics(diagnosticsFilters)]);
     } catch (error) {
-      message.error(getErrorText(error, tr('integrationsPage.messages.outboundRetryError', 'Не удалось выполнить outbound retry')));
+      message.error(
+        getErrorText(
+          error,
+          tr('integrationsPage.messages.outboundRetryError', 'Не удалось выполнить outbound retry')
+        )
+      );
     } finally {
       setOmnichannelOutboundRetryId(null);
     }
@@ -694,7 +815,10 @@ export default function IntegrationsPage({ embedded = false, compact = false } =
         loading: false,
         record,
         payload: null,
-        error: getErrorText(error, tr('integrationsPage.messages.payloadError', 'Не удалось загрузить payload события')),
+        error: getErrorText(
+          error,
+          tr('integrationsPage.messages.payloadError', 'Не удалось загрузить payload события')
+        ),
       });
     }
   };
@@ -721,7 +845,8 @@ export default function IntegrationsPage({ embedded = false, compact = false } =
           status: connected ? 'connected' : 'disconnected',
           stats: {
             [tr('integrationsPage.stats.channels', 'Каналов')]: list.length,
-            [tr('integrationsPage.stats.configuredChannels', 'Настроенных каналов')]: configuredCount,
+            [tr('integrationsPage.stats.configuredChannels', 'Настроенных каналов')]:
+              configuredCount,
             [tr('integrationsPage.stats.successfulSends', 'Успешных отправок')]: successfulSends,
             ...stats,
           },
@@ -751,9 +876,12 @@ export default function IntegrationsPage({ embedded = false, compact = false } =
           status: active ? 'connected' : 'disconnected',
           stats: {
             [tr('integrationsPage.stats.connections', 'Подключений')]: list.length,
-            [tr('integrationsPage.stats.activeProvider', 'Активный провайдер')]: active?.provider || '-',
-            [tr('integrationsPage.stats.callsToday', 'Звонков сегодня')]: stats?.calls_today || stats?.total || 0,
-            [tr('integrationsPage.stats.missed', 'Пропущенных')]: stats?.missed || stats?.missed_calls || 0,
+            [tr('integrationsPage.stats.activeProvider', 'Активный провайдер')]:
+              active?.provider || '-',
+            [tr('integrationsPage.stats.callsToday', 'Звонков сегодня')]:
+              stats?.calls_today || stats?.total || 0,
+            [tr('integrationsPage.stats.missed', 'Пропущенных')]:
+              stats?.missed || stats?.missed_calls || 0,
           },
         },
       }));
@@ -777,8 +905,14 @@ export default function IntegrationsPage({ embedded = false, compact = false } =
 
       const stats = {
         [tr('integrationsPage.stats.pages', 'Страниц')]: list.length,
-        [tr('integrationsPage.stats.messages', 'Сообщений')]: list.reduce((sum, item) => sum + (item.messages_synced || 0), 0),
-        [tr('integrationsPage.stats.followers', 'Подписчиков')]: list.reduce((sum, item) => sum + (item.followers_count || 0), 0),
+        [tr('integrationsPage.stats.messages', 'Сообщений')]: list.reduce(
+          (sum, item) => sum + (item.messages_synced || 0),
+          0
+        ),
+        [tr('integrationsPage.stats.followers', 'Подписчиков')]: list.reduce(
+          (sum, item) => sum + (item.followers_count || 0),
+          0
+        ),
       };
 
       setStatuses((prev) => ({
@@ -806,8 +940,14 @@ export default function IntegrationsPage({ embedded = false, compact = false } =
 
       const stats = {
         [tr('integrationsPage.stats.accounts', 'Аккаунтов')]: list.length,
-        [tr('integrationsPage.stats.messagesReceived', 'Сообщений получено')]: list.reduce((sum, item) => sum + (item.messages_received || 0), 0),
-        [tr('integrationsPage.stats.messagesSent', 'Сообщений отправлено')]: list.reduce((sum, item) => sum + (item.messages_sent || 0), 0),
+        [tr('integrationsPage.stats.messagesReceived', 'Сообщений получено')]: list.reduce(
+          (sum, item) => sum + (item.messages_received || 0),
+          0
+        ),
+        [tr('integrationsPage.stats.messagesSent', 'Сообщений отправлено')]: list.reduce(
+          (sum, item) => sum + (item.messages_sent || 0),
+          0
+        ),
       };
 
       setStatuses((prev) => ({
@@ -835,9 +975,18 @@ export default function IntegrationsPage({ embedded = false, compact = false } =
 
       const stats = {
         [tr('integrationsPage.stats.accounts', 'Аккаунтов')]: list.length,
-        [tr('integrationsPage.stats.messages', 'Сообщений')]: list.reduce((sum, item) => sum + (item.messages_synced || 0), 0),
-        [tr('integrationsPage.stats.comments', 'Комментариев')]: list.reduce((sum, item) => sum + (item.comments_synced || 0), 0),
-        [tr('integrationsPage.stats.followers', 'Подписчиков')]: list.reduce((sum, item) => sum + (item.followers_count || 0), 0),
+        [tr('integrationsPage.stats.messages', 'Сообщений')]: list.reduce(
+          (sum, item) => sum + (item.messages_synced || 0),
+          0
+        ),
+        [tr('integrationsPage.stats.comments', 'Комментариев')]: list.reduce(
+          (sum, item) => sum + (item.comments_synced || 0),
+          0
+        ),
+        [tr('integrationsPage.stats.followers', 'Подписчиков')]: list.reduce(
+          (sum, item) => sum + (item.followers_count || 0),
+          0
+        ),
       };
 
       setStatuses((prev) => ({
@@ -865,9 +1014,18 @@ export default function IntegrationsPage({ embedded = false, compact = false } =
 
       const stats = {
         [tr('integrationsPage.stats.bots', 'Ботов')]: list.length,
-        [tr('integrationsPage.stats.messagesReceived', 'Сообщений получено')]: list.reduce((sum, item) => sum + (item.messages_received || 0), 0),
-        [tr('integrationsPage.stats.messagesSent', 'Сообщений отправлено')]: list.reduce((sum, item) => sum + (item.messages_sent || 0), 0),
-        [tr('integrationsPage.stats.activeChats', 'Активных чатов')]: list.reduce((sum, item) => sum + (item.active_chats || 0), 0),
+        [tr('integrationsPage.stats.messagesReceived', 'Сообщений получено')]: list.reduce(
+          (sum, item) => sum + (item.messages_received || 0),
+          0
+        ),
+        [tr('integrationsPage.stats.messagesSent', 'Сообщений отправлено')]: list.reduce(
+          (sum, item) => sum + (item.messages_sent || 0),
+          0
+        ),
+        [tr('integrationsPage.stats.activeChats', 'Активных чатов')]: list.reduce(
+          (sum, item) => sum + (item.active_chats || 0),
+          0
+        ),
       };
 
       setStatuses((prev) => ({
@@ -917,15 +1075,8 @@ export default function IntegrationsPage({ embedded = false, compact = false } =
     }
   };
 
-  const integrationsRestricted = !!(
-    licenseRestriction
-    && (
-      String(licenseRestriction.feature || '').startsWith('integrations.')
-      || String(licenseRestriction.feature || '') === 'unknown.feature'
-    )
-  );
-  const integrationsRestrictionMessage =
-    licenseRestriction?.message || getFeatureRestrictionReason('integrations.core', t);
+  const integrationsRestricted = false;
+  const integrationsRestrictionMessage = '';
   const restrictionShell = {
     border: isDark ? 'rgba(245, 158, 11, 0.38)' : 'rgba(217, 119, 6, 0.28)',
     background: isDark
@@ -938,9 +1089,7 @@ export default function IntegrationsPage({ embedded = false, compact = false } =
   };
 
   const ensureIntegrationsAccess = () => {
-    if (!integrationsRestricted) return true;
-    message.warning(integrationsRestrictionMessage);
-    return false;
+    return true;
   };
 
   const openModal = (type) => {
@@ -1007,6 +1156,86 @@ export default function IntegrationsPage({ embedded = false, compact = false } =
     aiForm.resetFields();
   };
 
+  const closeTelephonyModal = () => {
+    if (!telephonyHasUnsavedChanges) {
+      closeModal('telephony');
+      return;
+    }
+
+    Modal.confirm({
+      title: tr('integrationsPage.modals.unsavedTelephonyTitle', 'Есть несохраненные изменения'),
+      content: tr(
+        'integrationsPage.modals.unsavedTelephonyContent',
+        'В настройках телефонии есть несохраненные изменения. Закрыть без сохранения?'
+      ),
+      okText: tr('integrationsPage.actions.closeWithoutSaving', 'Закрыть без сохранения'),
+      cancelText: tr('actions.cancel', 'Отмена'),
+      okButtonProps: { danger: true },
+      onOk: () => {
+        setTelephonyHasUnsavedChanges(false);
+        setIntegrationUnsaved('telephony', false);
+        closeModal('telephony');
+      },
+    });
+  };
+
+  const setIntegrationUnsaved = (type, value) => {
+    setIntegrationUnsavedMap((prev) => ({ ...prev, [type]: !!value }));
+    if (value) {
+      setIntegrationSavedMap((prev) => ({ ...prev, [type]: false }));
+    }
+  };
+
+  const markIntegrationSaved = (type) => {
+    setIntegrationSavedMap((prev) => ({ ...prev, [type]: true }));
+    if (savedBadgeTimersRef.current[type]) {
+      clearTimeout(savedBadgeTimersRef.current[type]);
+    }
+    savedBadgeTimersRef.current[type] = setTimeout(() => {
+      setIntegrationSavedMap((prev) => ({ ...prev, [type]: false }));
+      savedBadgeTimersRef.current[type] = null;
+    }, 3000);
+  };
+
+  const closeIntegrationModalWithGuard = (type, title, content) => {
+    if (!integrationUnsavedMap[type]) {
+      closeModal(type);
+      return;
+    }
+    Modal.confirm({
+      title,
+      content,
+      okText: tr('integrationsPage.actions.closeWithoutSaving', 'Закрыть без сохранения'),
+      cancelText: tr('actions.cancel', 'Отмена'),
+      okButtonProps: { danger: true },
+      onOk: () => {
+        setIntegrationUnsaved(type, false);
+        closeModal(type);
+      },
+    });
+  };
+
+  useEffect(
+    () => () => {
+      Object.values(savedBadgeTimersRef.current).forEach((timerId) => {
+        if (timerId) clearTimeout(timerId);
+      });
+    },
+    []
+  );
+
+  const renderIntegrationModalTitle = (title, hasUnsaved, hasSaved) => (
+    <Space size={8}>
+      <span>{title}</span>
+      {hasUnsaved ? (
+        <Tag color="warning">{tr('integrationsPage.modals.unsavedTag', 'Не сохранено')}</Tag>
+      ) : null}
+      {!hasUnsaved && hasSaved ? (
+        <Tag color="success">{tr('integrationsPage.modals.savedTag', 'Сохранено')}</Tag>
+      ) : null}
+    </Space>
+  );
+
   const handleAISave = async () => {
     try {
       const values = await aiForm.validateFields();
@@ -1029,7 +1258,12 @@ export default function IntegrationsPage({ embedded = false, compact = false } =
       loadAIStatus();
     } catch (error) {
       if (error?.errorFields) return;
-      message.error(getErrorText(error, tr('integrationsPage.messages.aiProviderSaveError', 'Не удалось сохранить AI провайдера')));
+      message.error(
+        getErrorText(
+          error,
+          tr('integrationsPage.messages.aiProviderSaveError', 'Не удалось сохранить AI провайдера')
+        )
+      );
     } finally {
       setAISaving(false);
     }
@@ -1040,10 +1274,21 @@ export default function IntegrationsPage({ embedded = false, compact = false } =
     setAITestingId(record.id);
     try {
       const result = await testAIProviderConnection(record.id);
-      message.success(result?.output_text ? tr('integrationsPage.messages.testOkOutput', 'Тест OK: {output}', { output: result.output_text }) : tr('integrationsPage.messages.connectionChecked', 'Подключение проверено'));
+      message.success(
+        result?.output_text
+          ? tr('integrationsPage.messages.testOkOutput', 'Тест OK: {output}', {
+              output: result.output_text,
+            })
+          : tr('integrationsPage.messages.connectionChecked', 'Подключение проверено')
+      );
       loadAIStatus();
     } catch (error) {
-      message.error(getErrorText(error, tr('integrationsPage.messages.aiProviderTestError', 'Не удалось проверить AI провайдера')));
+      message.error(
+        getErrorText(
+          error,
+          tr('integrationsPage.messages.aiProviderTestError', 'Не удалось проверить AI провайдера')
+        )
+      );
     } finally {
       setAITestingId(null);
     }
@@ -1056,7 +1301,12 @@ export default function IntegrationsPage({ embedded = false, compact = false } =
       message.success(tr('integrationsPage.messages.aiProviderDeleted', 'AI провайдер удален'));
       loadAIStatus();
     } catch (error) {
-      message.error(getErrorText(error, tr('integrationsPage.messages.aiProviderDeleteError', 'Не удалось удалить AI провайдера')));
+      message.error(
+        getErrorText(
+          error,
+          tr('integrationsPage.messages.aiProviderDeleteError', 'Не удалось удалить AI провайдера')
+        )
+      );
     }
   };
 
@@ -1066,10 +1316,24 @@ export default function IntegrationsPage({ embedded = false, compact = false } =
     setAIDefaultingId(record.id);
     try {
       await updateAIProvider(record.id, { is_default: true, is_active: true });
-      message.success(tr('integrationsPage.messages.aiProviderDefaultSet', 'Провайдер "{name}" установлен по умолчанию', { name: record.name }));
+      message.success(
+        tr(
+          'integrationsPage.messages.aiProviderDefaultSet',
+          'Провайдер "{name}" установлен по умолчанию',
+          { name: record.name }
+        )
+      );
       loadAIStatus();
     } catch (error) {
-      message.error(getErrorText(error, tr('integrationsPage.messages.aiProviderDefaultSetError', 'Не удалось установить провайдера по умолчанию')));
+      message.error(
+        getErrorText(
+          error,
+          tr(
+            'integrationsPage.messages.aiProviderDefaultSetError',
+            'Не удалось установить провайдера по умолчанию'
+          )
+        )
+      );
     } finally {
       setAIDefaultingId(null);
     }
@@ -1078,80 +1342,139 @@ export default function IntegrationsPage({ embedded = false, compact = false } =
   const handleFacebookTest = async (record) => {
     try {
       await testFacebookPage(record.id);
-      message.success(tr('integrationsPage.messages.facebookTestOk', 'Facebook подключение проверено'));
+      message.success(
+        tr('integrationsPage.messages.facebookTestOk', 'Facebook подключение проверено')
+      );
       loadFacebookStatus();
     } catch (error) {
-      message.error(tr('integrationsPage.messages.facebookTestError', 'Не удалось проверить Facebook подключение'));
+      message.error(
+        tr(
+          'integrationsPage.messages.facebookTestError',
+          'Не удалось проверить Facebook подключение'
+        )
+      );
     }
   };
 
   const handleFacebookDisconnect = async (record) => {
     try {
       await disconnectFacebook(record.id);
-      message.success(tr('integrationsPage.messages.facebookDisconnected', 'Facebook страница отключена'));
+      message.success(
+        tr('integrationsPage.messages.facebookDisconnected', 'Facebook страница отключена')
+      );
       loadFacebookStatus();
     } catch (error) {
-      message.error(tr('integrationsPage.messages.facebookDisconnectError', 'Не удалось отключить Facebook страницу'));
+      message.error(
+        tr(
+          'integrationsPage.messages.facebookDisconnectError',
+          'Не удалось отключить Facebook страницу'
+        )
+      );
     }
   };
 
   const handleInstagramTest = async (record) => {
     try {
       await testInstagramAccount(record.id);
-      message.success(tr('integrationsPage.messages.instagramTestOk', 'Instagram подключение проверено'));
+      message.success(
+        tr('integrationsPage.messages.instagramTestOk', 'Instagram подключение проверено')
+      );
       loadInstagramStatus();
     } catch (error) {
-      message.error(tr('integrationsPage.messages.instagramTestError', 'Не удалось проверить Instagram подключение'));
+      message.error(
+        tr(
+          'integrationsPage.messages.instagramTestError',
+          'Не удалось проверить Instagram подключение'
+        )
+      );
     }
   };
 
   const handleInstagramDisconnect = async (record) => {
     try {
       await disconnectInstagram(record.id);
-      message.success(tr('integrationsPage.messages.instagramDisconnected', 'Instagram аккаунт отключен'));
+      message.success(
+        tr('integrationsPage.messages.instagramDisconnected', 'Instagram аккаунт отключен')
+      );
       loadInstagramStatus();
     } catch (error) {
-      message.error(tr('integrationsPage.messages.instagramDisconnectError', 'Не удалось отключить Instagram аккаунт'));
+      message.error(
+        tr(
+          'integrationsPage.messages.instagramDisconnectError',
+          'Не удалось отключить Instagram аккаунт'
+        )
+      );
     }
   };
 
   const handleTelegramTest = async (record) => {
     try {
       await testTelegramBot(record.id);
-      message.success(tr('integrationsPage.messages.telegramTestOk', 'Telegram подключение проверено'));
+      message.success(
+        tr('integrationsPage.messages.telegramTestOk', 'Telegram подключение проверено')
+      );
       loadTelegramStatus();
     } catch (error) {
-      message.error(tr('integrationsPage.messages.telegramTestError', 'Не удалось проверить Telegram подключение'));
+      message.error(
+        tr(
+          'integrationsPage.messages.telegramTestError',
+          'Не удалось проверить Telegram подключение'
+        )
+      );
     }
   };
 
   const handleTelegramDisconnect = async (record) => {
     try {
       await disconnectTelegramBot(record.id);
-      message.success(tr('integrationsPage.messages.telegramDisconnected', 'Telegram бот отключен'));
+      message.success(
+        tr('integrationsPage.messages.telegramDisconnected', 'Telegram бот отключен')
+      );
       loadTelegramStatus();
     } catch (error) {
-      message.error(tr('integrationsPage.messages.telegramDisconnectError', 'Не удалось отключить Telegram бот'));
+      message.error(
+        tr('integrationsPage.messages.telegramDisconnectError', 'Не удалось отключить Telegram бот')
+      );
     }
   };
 
   const handleWhatsAppTest = async (record) => {
     try {
       await testWhatsAppAccount(record.id);
-      message.success(tr('integrationsPage.messages.whatsappTestOk', 'WhatsApp подключение проверено'));
+      message.success(
+        tr('integrationsPage.messages.whatsappTestOk', 'WhatsApp подключение проверено')
+      );
       loadWhatsAppStatus();
     } catch (error) {
-      message.error(getErrorText(error, tr('integrationsPage.messages.whatsappTestError', 'Не удалось проверить WhatsApp подключение')));
+      message.error(
+        getErrorText(
+          error,
+          tr(
+            'integrationsPage.messages.whatsappTestError',
+            'Не удалось проверить WhatsApp подключение'
+          )
+        )
+      );
     }
   };
 
   const handleWhatsAppDisconnect = async (record) => {
     try {
       await disconnectWhatsAppAccount(record.id);
-      message.success(tr('integrationsPage.messages.whatsappDisconnected', 'WhatsApp аккаунт отключен'));
+      message.success(
+        tr('integrationsPage.messages.whatsappDisconnected', 'WhatsApp аккаунт отключен')
+      );
       loadWhatsAppStatus();
     } catch (error) {
-      message.error(getErrorText(error, tr('integrationsPage.messages.whatsappDisconnectError', 'Не удалось отключить WhatsApp аккаунт')));
+      message.error(
+        getErrorText(
+          error,
+          tr(
+            'integrationsPage.messages.whatsappDisconnectError',
+            'Не удалось отключить WhatsApp аккаунт'
+          )
+        )
+      );
     }
   };
 
@@ -1258,7 +1581,12 @@ export default function IntegrationsPage({ embedded = false, compact = false } =
       closeIntegrationEditModal();
     } catch (error) {
       if (error?.errorFields) return;
-      message.error(getErrorText(error, tr('integrationsPage.messages.saveError', 'Не удалось сохранить настройки')));
+      message.error(
+        getErrorText(
+          error,
+          tr('integrationsPage.messages.saveError', 'Не удалось сохранить настройки')
+        )
+      );
     } finally {
       setIntegrationEditSaving(false);
     }
@@ -1288,7 +1616,12 @@ export default function IntegrationsPage({ embedded = false, compact = false } =
       loadTelegramStatus();
     } catch (error) {
       if (error?.errorFields) return;
-      message.error(getErrorText(error, tr('integrationsPage.messages.webhookUpdateError', 'Не удалось обновить webhook')));
+      message.error(
+        getErrorText(
+          error,
+          tr('integrationsPage.messages.webhookUpdateError', 'Не удалось обновить webhook')
+        )
+      );
     } finally {
       setWebhookSaving(false);
     }
@@ -1344,10 +1677,14 @@ export default function IntegrationsPage({ embedded = false, compact = false } =
         document.execCommand('copy');
         document.body.removeChild(textarea);
       }
-      message.success(successMessage || tr('integrationsPage.messages.copyOk', 'Скопировано в буфер обмена'));
+      message.success(
+        successMessage || tr('integrationsPage.messages.copyOk', 'Скопировано в буфер обмена')
+      );
       return true;
     } catch (error) {
-      message.error(errorMessage || tr('integrationsPage.messages.copyError', 'Не удалось скопировать данные'));
+      message.error(
+        errorMessage || tr('integrationsPage.messages.copyError', 'Не удалось скопировать данные')
+      );
       return false;
     }
   };
@@ -1366,12 +1703,25 @@ export default function IntegrationsPage({ embedded = false, compact = false } =
   const diagnosticsMergedRows = Array.from(
     new Map(
       [
-        ...(Array.isArray(omnichannelDiagnostics.recent_failures) ? omnichannelDiagnostics.recent_failures : []),
-        ...(Array.isArray(omnichannelDiagnostics.replay_candidates) ? omnichannelDiagnostics.replay_candidates : []),
-        ...(Array.isArray(omnichannelDiagnostics.recent_archived) ? omnichannelDiagnostics.recent_archived : []),
-        ...(Array.isArray(omnichannelDiagnostics.outbound_dead_letters) ? omnichannelDiagnostics.outbound_dead_letters : []),
-        ...(Array.isArray(omnichannelDiagnostics.outbound_retry_queue) ? omnichannelDiagnostics.outbound_retry_queue : []),
-      ].map((record) => [String(record?.id || `${record?.external_id || ''}:${record?.message_id || ''}`), record])
+        ...(Array.isArray(omnichannelDiagnostics.recent_failures)
+          ? omnichannelDiagnostics.recent_failures
+          : []),
+        ...(Array.isArray(omnichannelDiagnostics.replay_candidates)
+          ? omnichannelDiagnostics.replay_candidates
+          : []),
+        ...(Array.isArray(omnichannelDiagnostics.recent_archived)
+          ? omnichannelDiagnostics.recent_archived
+          : []),
+        ...(Array.isArray(omnichannelDiagnostics.outbound_dead_letters)
+          ? omnichannelDiagnostics.outbound_dead_letters
+          : []),
+        ...(Array.isArray(omnichannelDiagnostics.outbound_retry_queue)
+          ? omnichannelDiagnostics.outbound_retry_queue
+          : []),
+      ].map((record) => [
+        String(record?.id || `${record?.external_id || ''}:${record?.message_id || ''}`),
+        record,
+      ])
     ).values()
   );
   const diagnosticsRows = Array.isArray(omnichannelDiagnostics.filtered_events)
@@ -1379,7 +1729,11 @@ export default function IntegrationsPage({ embedded = false, compact = false } =
     : diagnosticsMergedRows;
   const diagnosticsChannelValues = new Set(
     diagnosticsMergedRows
-      .map((record) => String(record?.channel_type || '').trim().toLowerCase())
+      .map((record) =>
+        String(record?.channel_type || '')
+          .trim()
+          .toLowerCase()
+      )
       .filter(Boolean)
   );
   if (diagnosticsFilters.channel && diagnosticsFilters.channel !== 'all') {
@@ -1392,7 +1746,9 @@ export default function IntegrationsPage({ embedded = false, compact = false } =
       : getChannelDisplayLabel(value);
   const renderDiagnosticsChannelOption = (option) => {
     const value = String(option?.value || '').trim();
-    const label = diagnosticsChannelLabel(option?.label || value);
+    const label = value
+      ? diagnosticsChannelLabel(value)
+      : diagnosticsChannelLabel(option?.label || value);
     if (!value || value.toLowerCase() === 'all') {
       return <span>{label}</span>;
     }
@@ -1485,13 +1841,51 @@ export default function IntegrationsPage({ embedded = false, compact = false } =
       node.scrollIntoView({ behavior: 'smooth', block: 'start' });
     }
   };
+
+  const openConnectModalByChannel = (channel) => {
+    const normalized = String(channel || '')
+      .trim()
+      .toLowerCase();
+    if (normalized === 'whatsapp') return openModal('whatsapp');
+    if (normalized === 'facebook') return openModal('facebook');
+    if (normalized === 'instagram') return openModal('instagram');
+    if (normalized === 'telegram' || normalized === 'telegram_user') return openModal('telegram');
+    if (normalized === 'eskiz' || normalized === 'playmobile') return openModal('sms');
+    if (normalized === 'telephony') return openModal('telephony');
+  };
+
+  const runChannelCheck = async (channel) => {
+    const normalized = String(channel || '')
+      .trim()
+      .toLowerCase();
+    if (normalized === 'whatsapp') {
+      const active = whatsAppAccounts.find((item) => item.is_active) || whatsAppAccounts[0];
+      return active ? handleWhatsAppTest(active) : loadWhatsAppStatus();
+    }
+    if (normalized === 'facebook') {
+      const active = facebookPages.find((item) => item.is_active) || facebookPages[0];
+      return active ? handleFacebookTest(active) : loadFacebookStatus();
+    }
+    if (normalized === 'instagram') {
+      const active = instagramAccounts.find((item) => item.is_active) || instagramAccounts[0];
+      return active ? handleInstagramTest(active) : loadInstagramStatus();
+    }
+    if (normalized === 'telegram' || normalized === 'telegram_user') {
+      const active = telegramBots.find((item) => item.is_active) || telegramBots[0];
+      return active ? handleTelegramTest(active) : loadTelegramStatus();
+    }
+    if (normalized === 'eskiz' || normalized === 'playmobile') return loadSMSStatus();
+    return loadAllStatuses();
+  };
   const catalogRows = [
     {
       key: 'sms',
       channel: 'SMS',
       channelKey: 'sms',
       status: statuses.sms.status,
-      reason: statuses.sms.error || tr('integrationsPage.catalog.smsReason', 'Провайдеры и SMS delivery health'),
+      reason:
+        statuses.sms.error ||
+        tr('integrationsPage.catalog.smsReason', 'Провайдеры и SMS delivery health'),
       onConnect: () => openModal('sms'),
       onCheck: loadSMSStatus,
       onDisconnect: null,
@@ -1502,7 +1896,9 @@ export default function IntegrationsPage({ embedded = false, compact = false } =
       channel: tr('integrationsPage.cards.telephony.title', 'Телефония'),
       channelKey: 'telephony',
       status: statuses.telephony.status,
-      reason: statuses.telephony.error || tr('integrationsPage.catalog.telephonyReason', 'VoIP/SIP health и active connection'),
+      reason:
+        statuses.telephony.error ||
+        tr('integrationsPage.catalog.telephonyReason', 'VoIP/SIP health и active connection'),
       onConnect: () => openModal('telephony'),
       onCheck: loadTelephonyStatus,
       onDisconnect: null,
@@ -1513,7 +1909,9 @@ export default function IntegrationsPage({ embedded = false, compact = false } =
       channel: 'WhatsApp Business',
       channelKey: 'whatsapp',
       status: statuses.whatsapp.status,
-      reason: statuses.whatsapp.error || tr('integrationsPage.catalog.whatsappReason', 'Cloud API аккаунты и webhook доставки'),
+      reason:
+        statuses.whatsapp.error ||
+        tr('integrationsPage.catalog.whatsappReason', 'Cloud API аккаунты и webhook доставки'),
       onConnect: () => openModal('whatsapp'),
       onCheck: () => {
         const active = whatsAppAccounts.find((item) => item.is_active) || whatsAppAccounts[0];
@@ -1532,7 +1930,9 @@ export default function IntegrationsPage({ embedded = false, compact = false } =
       channel: 'Facebook Messenger',
       channelKey: 'facebook',
       status: statuses.facebook.status,
-      reason: statuses.facebook.error || tr('integrationsPage.catalog.facebookReason', 'Meta webhook и token состояние страниц'),
+      reason:
+        statuses.facebook.error ||
+        tr('integrationsPage.catalog.facebookReason', 'Meta webhook и token состояние страниц'),
       onConnect: () => openModal('facebook'),
       onCheck: () => {
         const active = facebookPages.find((item) => item.is_active) || facebookPages[0];
@@ -1551,7 +1951,9 @@ export default function IntegrationsPage({ embedded = false, compact = false } =
       channel: tr('integrationsPage.cards.instagram.title', 'Instagram'),
       channelKey: 'instagram',
       status: statuses.instagram.status,
-      reason: statuses.instagram.error || tr('integrationsPage.catalog.instagramReason', 'Meta IG token, webhook и comments sync'),
+      reason:
+        statuses.instagram.error ||
+        tr('integrationsPage.catalog.instagramReason', 'Meta IG token, webhook и comments sync'),
       onConnect: () => openModal('instagram'),
       onCheck: () => {
         const active = instagramAccounts.find((item) => item.is_active) || instagramAccounts[0];
@@ -1570,7 +1972,9 @@ export default function IntegrationsPage({ embedded = false, compact = false } =
       channel: tr('integrationsPage.cards.telegram.title', 'Telegram'),
       channelKey: 'telegram',
       status: statuses.telegram.status,
-      reason: statuses.telegram.error || tr('integrationsPage.catalog.telegramReason', 'Bot token, webhook URL и activity sync'),
+      reason:
+        statuses.telegram.error ||
+        tr('integrationsPage.catalog.telegramReason', 'Bot token, webhook URL и activity sync'),
       onConnect: () => openModal('telegram'),
       onCheck: () => {
         const active = telegramBots.find((item) => item.is_active) || telegramBots[0];
@@ -1589,13 +1993,76 @@ export default function IntegrationsPage({ embedded = false, compact = false } =
       channel: tr('integrationsPage.cards.ai.title', 'AI'),
       channelKey: 'ai',
       status: statuses.ai.status,
-      reason: statuses.ai.error || tr('integrationsPage.catalog.aiReason', 'Провайдеры моделей и connection test'),
+      reason:
+        statuses.ai.error ||
+        tr('integrationsPage.catalog.aiReason', 'Провайдеры моделей и connection test'),
       onConnect: () => openAIModal(),
       onCheck: loadAIStatus,
       onDisconnect: null,
       onRetry: loadAIStatus,
     },
   ];
+  const totalChannels = catalogRows.length;
+  const connectedChannels = catalogRows.filter((row) => row.status === 'connected').length;
+  const disconnectedChannels = catalogRows.filter((row) => row.status === 'disconnected').length;
+  const errorChannels = catalogRows.filter((row) => row.status === 'error').length;
+  const channelsHealthPercent =
+    totalChannels > 0 ? Math.round((connectedChannels / totalChannels) * 100) : 0;
+  const criticalQueueCount =
+    Number(diagnosticsSummary.failed_events || 0) + Number(diagnosticsSummary.breached_sla || 0);
+  const connectionAttentionRows = catalogRows
+    .filter((row) => row.status !== 'connected')
+    .slice(0, 3);
+  const overviewCards = [
+    {
+      key: 'coverage',
+      title: tr('integrationsPage.overview.coverage', 'Покрытие интеграций'),
+      value: `${connectedChannels}/${totalChannels}`,
+      hint: tr('integrationsPage.overview.coverageHint', 'Каналов подключено и доступно для inbox'),
+      status: channelsHealthPercent >= 80 ? 'ok' : channelsHealthPercent >= 50 ? 'warn' : 'danger',
+    },
+    {
+      key: 'issues',
+      title: tr('integrationsPage.overview.issues', 'Нуждаютcя во внимании'),
+      value: errorChannels + disconnectedChannels,
+      hint: tr('integrationsPage.overview.issuesHint', 'Каналы с ошибкой или без подключения'),
+      status: errorChannels > 0 ? 'danger' : disconnectedChannels > 0 ? 'warn' : 'ok',
+    },
+    {
+      key: 'omnichannel',
+      title: tr('integrationsPage.overview.omnichannel', 'Omnichannel в очереди'),
+      value: omnichannelSummary.queue || 0,
+      hint: tr('integrationsPage.overview.omnichannelHint', 'Диалогов ожидают ответа операторов'),
+      status: Number(omnichannelSummary.queue || 0) > 0 ? 'warn' : 'ok',
+    },
+    {
+      key: 'sla',
+      title: tr('integrationsPage.overview.sla', 'SLA / Delivery риск'),
+      value: criticalQueueCount,
+      hint: tr('integrationsPage.overview.slaHint', 'Breach SLA и delivery ошибки transport слоя'),
+      status: criticalQueueCount > 0 ? 'danger' : 'ok',
+    },
+  ];
+  const overviewTone = {
+    ok: {
+      border: isDark ? 'rgba(74, 222, 128, 0.28)' : 'rgba(34, 197, 94, 0.2)',
+      background: isDark ? 'rgba(13, 36, 27, 0.62)' : 'rgba(240, 253, 244, 0.95)',
+      value: isDark ? '#bbf7d0' : '#166534',
+      hint: isDark ? '#86efac' : '#15803d',
+    },
+    warn: {
+      border: isDark ? 'rgba(251, 191, 36, 0.32)' : 'rgba(245, 158, 11, 0.25)',
+      background: isDark ? 'rgba(69, 39, 10, 0.68)' : 'rgba(255, 251, 235, 0.95)',
+      value: isDark ? '#fde68a' : '#92400e',
+      hint: isDark ? '#fcd34d' : '#b45309',
+    },
+    danger: {
+      border: isDark ? 'rgba(248, 113, 113, 0.34)' : 'rgba(239, 68, 68, 0.25)',
+      background: isDark ? 'rgba(67, 16, 16, 0.72)' : 'rgba(254, 242, 242, 0.95)',
+      value: isDark ? '#fecaca' : '#991b1b',
+      hint: isDark ? '#fca5a5' : '#b91c1c',
+    },
+  };
 
   return (
     <div style={{ padding: embedded ? 0 : 24 }}>
@@ -1606,30 +2073,221 @@ export default function IntegrationsPage({ embedded = false, compact = false } =
           background: token.colorBgElevated,
           boxShadow: embedded ? 'none' : token.boxShadowTertiary,
         }}
-        title={embedded ? null : (
-          <Space>
-            <ApiOutlined />
-            <span>{t('integrationsPage.title')}</span>
-          </Space>
-        )}
-        extra={embedded ? null : (
-          <Button icon={<ReloadOutlined />} onClick={loadAllStatuses} disabled={integrationsRestricted}>
-            {t('integrationsPage.actions.refreshAll')}
-          </Button>
-        )}
+        title={
+          embedded ? null : (
+            <Space>
+              <ApiOutlined />
+              <span>{t('integrationsPage.title')}</span>
+            </Space>
+          )
+        }
+        extra={
+          embedded ? null : (
+            <Button
+              icon={<ReloadOutlined />}
+              onClick={loadAllStatuses}
+              disabled={integrationsRestricted}
+            >
+              {t('integrationsPage.actions.refreshAll')}
+            </Button>
+          )
+        }
       >
         <Space direction="vertical" style={{ width: '100%' }} size="large">
+          {!isEmbeddedCompact ? (
+            <Card
+              size="small"
+              style={{
+                borderRadius: token.borderRadiusLG,
+                border: `1px solid ${isDark ? 'rgba(96, 165, 250, 0.3)' : 'rgba(59, 130, 246, 0.2)'}`,
+                background: isDark
+                  ? 'linear-gradient(135deg, rgba(15, 23, 42, 0.95) 0%, rgba(17, 37, 75, 0.92) 100%)'
+                  : 'linear-gradient(135deg, rgba(239, 246, 255, 0.98) 0%, rgba(249, 250, 255, 0.98) 100%)',
+                boxShadow: isDark
+                  ? '0 14px 32px rgba(2, 6, 23, 0.32)'
+                  : '0 10px 26px rgba(37, 99, 235, 0.1)',
+              }}
+            >
+              <Space direction="vertical" size={14} style={{ width: '100%' }}>
+                <Space
+                  align={isCompact ? 'start' : 'center'}
+                  direction={isCompact ? 'vertical' : 'horizontal'}
+                  style={{ width: '100%', justifyContent: 'space-between' }}
+                >
+                  <Space direction="vertical" size={4}>
+                    <Space align="center" size={8}>
+                      <DashboardOutlined style={{ color: token.colorPrimary }} />
+                      <Title level={4} style={{ margin: 0 }}>
+                        {tr('integrationsPage.overview.title', 'Центр интеграций и каналов')}
+                      </Title>
+                    </Space>
+                    <Text type="secondary" style={{ maxWidth: 820 }}>
+                      {tr(
+                        'integrationsPage.overview.subtitle',
+                        'Подключайте каналы через мастер, отслеживайте здоровье доставки и управляйте inbox без перехода в технические настройки.'
+                      )}
+                    </Text>
+                  </Space>
+                  <Space wrap>
+                    <Button
+                      type="primary"
+                      icon={<ThunderboltOutlined />}
+                      onClick={() =>
+                        openConnectModalByChannel(integrationCatalog?.[0]?.channel || 'whatsapp')
+                      }
+                      disabled={integrationsRestricted}
+                    >
+                      {tr('integrationsPage.actions.connectChannel', 'Подключить канал')}
+                    </Button>
+                    <Button icon={<InboxOutlined />} onClick={() => navigate('/chat')}>
+                      {tr('integrationsPage.actions.openInbox', 'Открыть inbox')}
+                    </Button>
+                    <Button
+                      icon={<ReloadOutlined />}
+                      onClick={loadAllStatuses}
+                      disabled={integrationsRestricted}
+                    >
+                      {tr('integrationsPage.actions.refreshAll', 'Обновить всё')}
+                    </Button>
+                  </Space>
+                </Space>
+                <Space align="center" size={8} wrap>
+                  <Text type="secondary">
+                    {tr('integrationsPage.overview.health', 'Интеграционный health score')}
+                  </Text>
+                  <Progress
+                    percent={channelsHealthPercent}
+                    size="small"
+                    style={{ width: isCompact ? '100%' : 240 }}
+                    status={
+                      channelsHealthPercent < 50
+                        ? 'exception'
+                        : channelsHealthPercent < 80
+                          ? 'active'
+                          : 'success'
+                    }
+                  />
+                  <Tag
+                    color={
+                      channelsHealthPercent < 50
+                        ? 'error'
+                        : channelsHealthPercent < 80
+                          ? 'warning'
+                          : 'success'
+                    }
+                  >
+                    {channelsHealthPercent}%
+                  </Tag>
+                </Space>
+              </Space>
+            </Card>
+          ) : null}
+
+          {!isEmbeddedCompact ? (
+            <div
+              style={{
+                display: 'grid',
+                gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))',
+                gap: 12,
+              }}
+            >
+              {overviewCards.map((item) => {
+                const tone = overviewTone[item.status] || overviewTone.ok;
+                return (
+                  <div
+                    key={item.key}
+                    style={{
+                      borderRadius: token.borderRadiusLG,
+                      border: `1px solid ${tone.border}`,
+                      background: tone.background,
+                      padding: 14,
+                      minHeight: 104,
+                    }}
+                  >
+                    <Space direction="vertical" size={6} style={{ width: '100%' }}>
+                      <Text style={{ fontSize: 12, color: tone.hint, fontWeight: 600 }}>
+                        {item.title}
+                      </Text>
+                      <Text
+                        style={{ fontSize: 30, lineHeight: 1, color: tone.value, fontWeight: 800 }}
+                      >
+                        {item.value}
+                      </Text>
+                      <Text type="secondary" style={{ fontSize: 12, lineHeight: 1.45 }}>
+                        {item.hint}
+                      </Text>
+                    </Space>
+                  </div>
+                );
+              })}
+            </div>
+          ) : null}
+
+          {!isEmbeddedCompact && connectionAttentionRows.length > 0 && (
+            <Alert
+              type={errorChannels > 0 ? 'warning' : 'info'}
+              showIcon
+              message={tr('integrationsPage.overview.attentionTitle', 'Каналы, требующие действий')}
+              description={
+                <Space direction="vertical" size={6} style={{ width: '100%' }}>
+                  <Space wrap size={[8, 8]}>
+                    {connectionAttentionRows.map((row) => (
+                      <Tag
+                        key={row.key}
+                        color={row.status === 'error' ? 'error' : 'default'}
+                        icon={
+                          row.status === 'connected' ? (
+                            <CheckCircleOutlined />
+                          ) : (
+                            <ExclamationCircleOutlined />
+                          )
+                        }
+                      >
+                        {row.channel}: {INTEGRATION_STATUS_META[row.status]?.label || row.status}
+                      </Tag>
+                    ))}
+                  </Space>
+                  <Text type="secondary">
+                    {tr(
+                      'integrationsPage.overview.attentionHint',
+                      'Используйте мастер подключения или диагностику для восстановления каналов, прежде чем увеличивать нагрузку операторов inbox.'
+                    )}
+                  </Text>
+                </Space>
+              }
+              action={
+                <Button size="small" onClick={openDiagnosticsCenter}>
+                  {tr('integrationsPage.actions.openDiagnostics', 'Diagnostics')}
+                </Button>
+              }
+            />
+          )}
+
+          <ChannelSetupWizard
+            catalog={integrationCatalog}
+            loading={integrationCatalogLoading}
+            onOpenConnectModal={openConnectModalByChannel}
+            onRunCheck={runChannelCheck}
+            onOpenDiagnostics={openDiagnosticsCenter}
+          />
           {!isEmbeddedCompact ? (
             <Alert
               type="info"
               showIcon
-              message={tr('integrationsPage.messages.omnichannelSummary', 'Omnichannel: всего {count}, в очереди {queue}, в работе {active}, закрыто {resolved}', omnichannelSummary)}
+              message={tr(
+                'integrationsPage.messages.omnichannelSummary',
+                'Omnichannel: всего {count}, в очереди {queue}, в работе {active}, закрыто {resolved}',
+                omnichannelSummary
+              )}
             />
           ) : null}
           {!isEmbeddedCompact ? (
             <Card
               size="small"
-              title={tr('integrationsPage.catalog.title', 'Каталог интеграций: канал -> состояние -> действие')}
+              title={tr(
+                'integrationsPage.catalog.title',
+                'Каталог интеграций: канал -> состояние -> действие'
+              )}
             >
               <Table
                 size="small"
@@ -1637,24 +2295,48 @@ export default function IntegrationsPage({ embedded = false, compact = false } =
                 rowKey={(record) => record.key}
                 dataSource={catalogRows}
                 locale={{
-                  emptyText: tr('integrationsPage.catalog.empty', 'Интеграции пока не инициализированы'),
+                  emptyText: tr(
+                    'integrationsPage.catalog.empty',
+                    'Интеграции пока не инициализированы'
+                  ),
                 }}
                 columns={[
-                  {
-                    title: tr('integrationsPage.table.channel', 'Канал'),
-                    dataIndex: 'channel',
-                    key: 'channel',
-                    render: (value, record) => renderChannelIdentity(value, record.channelKey || record.key),
-                  },
+                    {
+                      title: tr('integrationsPage.table.channel', 'Канал'),
+                      dataIndex: 'channel',
+                      key: 'channel',
+                      render: (value, record) =>
+                        renderChannelIdentity(value, record.channelKey || record.key),
+                    },
                   {
                     title: tr('integrationsPage.table.status', 'Состояние'),
                     dataIndex: 'status',
                     key: 'status',
                     width: 160,
                     render: (value) => {
-                      if (value === 'connected') return <Tag color="success">{tr('integrationsPage.status.connected', 'Подключено')}</Tag>;
-                      if (value === 'error') return <Tag color="error">{tr('integrationsPage.status.error', 'Ошибка')}</Tag>;
-                      return <Tag>{tr('integrationsPage.status.disconnected', 'Не подключено')}</Tag>;
+                      const normalized = String(value || 'disconnected');
+                      const meta =
+                        INTEGRATION_STATUS_META[normalized] || INTEGRATION_STATUS_META.disconnected;
+                      return (
+                        <Tag
+                          color={meta.color}
+                          bordered={false}
+                          style={{
+                            borderRadius: 999,
+                            paddingInline: 10,
+                            fontWeight: 600,
+                            border: `1px solid ${
+                              meta.color === 'success'
+                                ? 'rgba(82, 196, 26, 0.32)'
+                                : meta.color === 'error'
+                                  ? 'rgba(255, 77, 79, 0.3)'
+                                  : 'rgba(148, 163, 184, 0.24)'
+                            }`,
+                          }}
+                        >
+                          {meta.label}
+                        </Tag>
+                      );
                     },
                   },
                   {
@@ -1670,7 +2352,9 @@ export default function IntegrationsPage({ embedded = false, compact = false } =
                     render: (_, record) => {
                       const normalized = String(record.status || 'disconnected');
                       const primaryAction = getCatalogPrimaryAction(record, tr);
-                      const canDisconnect = Boolean(record.onDisconnect && normalized !== 'disconnected');
+                      const canDisconnect = Boolean(
+                        record.onDisconnect && normalized !== 'disconnected'
+                      );
 
                       return (
                         <Space size={[6, 6]} wrap>
@@ -1707,8 +2391,11 @@ export default function IntegrationsPage({ embedded = false, compact = false } =
           <Card
             id="integrations-diagnostics"
             size="small"
-            title={tr('integrationsPage.cards.omnichannelDiagnostics.title', 'Meta and Inbox Diagnostics')}
-            extra={(
+            title={tr(
+              'integrationsPage.cards.omnichannelDiagnostics.title',
+              'Meta and Inbox Diagnostics'
+            )}
+            extra={
               <Button
                 icon={<ReloadOutlined />}
                 onClick={() => loadOmnichannelDiagnostics(diagnosticsFilters)}
@@ -1717,7 +2404,7 @@ export default function IntegrationsPage({ embedded = false, compact = false } =
               >
                 {tr('integrationsPage.actions.refreshDiagnostics', 'Обновить диагностику')}
               </Button>
-            )}
+            }
           >
             <Space direction="vertical" size="middle" style={{ width: '100%' }}>
               <Alert
@@ -1745,7 +2432,10 @@ export default function IntegrationsPage({ embedded = false, compact = false } =
                 items={[
                   {
                     key: 'summary',
-                    label: tr('integrationsPage.diagnostics.sections.summary', 'Сводка и health по каналам'),
+                    label: tr(
+                      'integrationsPage.diagnostics.sections.summary',
+                      'Сводка и health по каналам'
+                    ),
                     children: (
                       <Space direction="vertical" size="middle" style={{ width: '100%' }}>
                         <div
@@ -1756,7 +2446,8 @@ export default function IntegrationsPage({ embedded = false, compact = false } =
                           }}
                         >
                           {diagnosticsHighlights.map((item) => {
-                            const tone = diagnosticsToneStyles[item.tone] || diagnosticsToneStyles.default;
+                            const tone =
+                              diagnosticsToneStyles[item.tone] || diagnosticsToneStyles.default;
                             return (
                               <div
                                 key={item.key}
@@ -1766,13 +2457,29 @@ export default function IntegrationsPage({ embedded = false, compact = false } =
                                   background: tone.background,
                                   padding: 14,
                                   minHeight: 92,
-                                  boxShadow: isDark ? '0 8px 20px rgba(2, 6, 23, 0.18)' : '0 8px 18px rgba(15, 23, 42, 0.06)',
+                                  boxShadow: isDark
+                                    ? '0 8px 20px rgba(2, 6, 23, 0.18)'
+                                    : '0 8px 18px rgba(15, 23, 42, 0.06)',
                                 }}
                               >
-                                <div style={{ fontSize: 12, fontWeight: 700, color: tone.label, marginBottom: 8 }}>
+                                <div
+                                  style={{
+                                    fontSize: 12,
+                                    fontWeight: 700,
+                                    color: tone.label,
+                                    marginBottom: 8,
+                                  }}
+                                >
                                   {item.label}
                                 </div>
-                                <div style={{ fontSize: 28, lineHeight: 1, fontWeight: 800, color: tone.value }}>
+                                <div
+                                  style={{
+                                    fontSize: 28,
+                                    lineHeight: 1,
+                                    fontWeight: 800,
+                                    color: tone.value,
+                                  }}
+                                >
                                   {item.value}
                                 </div>
                               </div>
@@ -1780,23 +2487,75 @@ export default function IntegrationsPage({ embedded = false, compact = false } =
                           })}
                         </div>
                         <Space wrap size={[8, 8]}>
-                          <Tag color={diagnosticsSummary.transport_health === 'degraded' ? 'error' : 'success'}>
-                            {tr('integrationsPage.diagnostics.transport', 'Transport')}: {diagnosticsSummary.transport_health || 'unknown'}
+                          <Tag
+                            color={
+                              diagnosticsSummary.transport_health === 'degraded'
+                                ? 'error'
+                                : 'success'
+                            }
+                          >
+                            {tr('integrationsPage.diagnostics.transport', 'Transport')}:{' '}
+                            {diagnosticsSummary.transport_health || 'unknown'}
                           </Tag>
-                          <Tag color={diagnosticsSummary.business_health === 'degraded' ? 'warning' : 'success'}>
-                            {tr('integrationsPage.diagnostics.business', 'Business')}: {diagnosticsSummary.business_health || 'unknown'}
+                          <Tag
+                            color={
+                              diagnosticsSummary.business_health === 'degraded'
+                                ? 'warning'
+                                : 'success'
+                            }
+                          >
+                            {tr('integrationsPage.diagnostics.business', 'Business')}:{' '}
+                            {diagnosticsSummary.business_health || 'unknown'}
                           </Tag>
-                          <Tag>{tr('integrationsPage.diagnostics.failed', 'Ошибок')}: {diagnosticsSummary.failed_events || 0}</Tag>
-                          <Tag>{tr('integrationsPage.diagnostics.replayable', 'Replay-ready')}: {diagnosticsSummary.replayable_events || 0}</Tag>
-                          <Tag>{tr('integrationsPage.diagnostics.archived', 'Archived')}: {diagnosticsSummary.archived_events || 0}</Tag>
-                          <Tag>{tr('integrationsPage.diagnostics.signatureRejected', 'Signature rejected')}: {diagnosticsSummary.signature_rejected_events || 0}</Tag>
-                          <Tag>{tr('integrationsPage.diagnostics.unassigned', 'Без привязки')}: {diagnosticsSummary.unassigned_events || 0}</Tag>
-                          <Tag>{tr('integrationsPage.diagnostics.breached', 'SLA breach')}: {diagnosticsSummary.breached_sla || 0}</Tag>
-                          <Tag color={Number(diagnosticsSummary.outbound_retry_scheduled || 0) > 0 ? 'warning' : 'default'}>
-                            {tr('integrationsPage.diagnostics.outboundRetry', 'Outbound retry')}: {diagnosticsSummary.outbound_retry_scheduled || 0}
+                          <Tag>
+                            {tr('integrationsPage.diagnostics.failed', 'Ошибок')}:{' '}
+                            {diagnosticsSummary.failed_events || 0}
                           </Tag>
-                          <Tag color={Number(diagnosticsSummary.outbound_dead_letters || 0) > 0 ? 'error' : 'default'}>
-                            {tr('integrationsPage.diagnostics.outboundDeadLetters', 'Outbound dead-letter')}: {diagnosticsSummary.outbound_dead_letters || 0}
+                          <Tag>
+                            {tr('integrationsPage.diagnostics.replayable', 'Replay-ready')}:{' '}
+                            {diagnosticsSummary.replayable_events || 0}
+                          </Tag>
+                          <Tag>
+                            {tr('integrationsPage.diagnostics.archived', 'Archived')}:{' '}
+                            {diagnosticsSummary.archived_events || 0}
+                          </Tag>
+                          <Tag>
+                            {tr(
+                              'integrationsPage.diagnostics.signatureRejected',
+                              'Signature rejected'
+                            )}
+                            : {diagnosticsSummary.signature_rejected_events || 0}
+                          </Tag>
+                          <Tag>
+                            {tr('integrationsPage.diagnostics.unassigned', 'Без привязки')}:{' '}
+                            {diagnosticsSummary.unassigned_events || 0}
+                          </Tag>
+                          <Tag>
+                            {tr('integrationsPage.diagnostics.breached', 'SLA breach')}:{' '}
+                            {diagnosticsSummary.breached_sla || 0}
+                          </Tag>
+                          <Tag
+                            color={
+                              Number(diagnosticsSummary.outbound_retry_scheduled || 0) > 0
+                                ? 'warning'
+                                : 'default'
+                            }
+                          >
+                            {tr('integrationsPage.diagnostics.outboundRetry', 'Outbound retry')}:{' '}
+                            {diagnosticsSummary.outbound_retry_scheduled || 0}
+                          </Tag>
+                          <Tag
+                            color={
+                              Number(diagnosticsSummary.outbound_dead_letters || 0) > 0
+                                ? 'error'
+                                : 'default'
+                            }
+                          >
+                            {tr(
+                              'integrationsPage.diagnostics.outboundDeadLetters',
+                              'Outbound dead-letter'
+                            )}
+                            : {diagnosticsSummary.outbound_dead_letters || 0}
                           </Tag>
                         </Space>
                         {omnichannelDiagnostics.channels?.length > 0 && (
@@ -1821,28 +2580,57 @@ export default function IntegrationsPage({ embedded = false, compact = false } =
                                         ? 'rgba(74, 222, 128, 0.24)'
                                         : 'rgba(34, 197, 94, 0.18)'
                                   }`,
-                                  background: isDark ? 'rgba(15, 23, 42, 0.74)' : token.colorBgContainer,
+                                  background: isDark
+                                    ? 'rgba(15, 23, 42, 0.74)'
+                                    : token.colorBgContainer,
                                   padding: 14,
                                 }}
                               >
                                 <Space direction="vertical" size={10} style={{ width: '100%' }}>
                                   <Space align="center" wrap>
-                                    <ChannelBrandIcon channel={normalizeChannelIconKey(channel.channel)} size={16} />
+                                    <ChannelBrandIcon
+                                      channel={normalizeChannelIconKey(channel.channel)}
+                                      size={16}
+                                    />
                                     <Text strong>{getChannelDisplayLabel(channel.channel)}</Text>
-                                    <Tag color={channel.health === 'degraded' ? 'error' : 'success'} style={{ marginInlineEnd: 0 }}>
+                                    <Tag
+                                      color={
+                                        channel.health === 'degraded' ? 'error' : 'success'
+                                      }
+                                      style={{ marginInlineEnd: 0 }}
+                                    >
                                       {channel.health === 'degraded'
                                         ? tr('integrationsPage.diagnostics.degraded', 'Degraded')
                                         : tr('integrationsPage.diagnostics.healthy', 'Healthy')}
                                     </Tag>
                                   </Space>
                                   <Space wrap size={[6, 6]}>
-                                    <Tag style={{ marginInlineEnd: 0 }}>{tr('integrationsPage.diagnostics.total', 'Всего')}: {channel.total || 0}</Tag>
-                                    <Tag style={{ marginInlineEnd: 0 }}>{tr('integrationsPage.diagnostics.archived', 'Archived')}: {channel.archived_events || 0}</Tag>
-                                    <Tag color={(channel.failed || 0) > 0 ? 'error' : 'default'} style={{ marginInlineEnd: 0 }}>
-                                      {tr('integrationsPage.diagnostics.failed', 'Ошибок')}: {channel.failed || 0}
+                                    <Tag style={{ marginInlineEnd: 0 }}>
+                                      {tr('integrationsPage.diagnostics.total', 'Всего')}:{' '}
+                                      {channel.total || 0}
                                     </Tag>
-                                    <Tag color={(channel.replayable || 0) > 0 ? 'processing' : 'default'} style={{ marginInlineEnd: 0 }}>
-                                      {tr('integrationsPage.diagnostics.replayable', 'Replay-ready')}: {channel.replayable || 0}
+                                    <Tag style={{ marginInlineEnd: 0 }}>
+                                      {tr('integrationsPage.diagnostics.archived', 'Archived')}:{' '}
+                                      {channel.archived_events || 0}
+                                    </Tag>
+                                    <Tag
+                                      color={(channel.failed || 0) > 0 ? 'error' : 'default'}
+                                      style={{ marginInlineEnd: 0 }}
+                                    >
+                                      {tr('integrationsPage.diagnostics.failed', 'Ошибок')}:{' '}
+                                      {channel.failed || 0}
+                                    </Tag>
+                                    <Tag
+                                      color={
+                                        (channel.replayable || 0) > 0 ? 'processing' : 'default'
+                                      }
+                                      style={{ marginInlineEnd: 0 }}
+                                    >
+                                      {tr(
+                                        'integrationsPage.diagnostics.replayable',
+                                        'Replay-ready'
+                                      )}
+                                      : {channel.replayable || 0}
                                     </Tag>
                                   </Space>
                                 </Space>
@@ -1855,52 +2643,116 @@ export default function IntegrationsPage({ embedded = false, compact = false } =
                   },
                   {
                     key: 'events',
-                    label: tr('integrationsPage.diagnostics.sections.events', 'Фильтры, очередь и журнал событий'),
+                    label: tr(
+                      'integrationsPage.diagnostics.sections.events',
+                      'Фильтры, очередь и журнал событий'
+                    ),
                     children: (
                       <Space direction="vertical" size="middle" style={{ width: '100%' }}>
-                        <Space wrap size={[8, 8]} style={{ width: '100%', justifyContent: 'space-between' }}>
+                        <Space
+                          wrap
+                          size={[8, 8]}
+                          style={{ width: '100%', justifyContent: 'space-between' }}
+                        >
                           <Space wrap size={[8, 8]}>
                             <Input.Search
                               allowClear
                               size="small"
-                              placeholder={tr('integrationsPage.filters.searchDiagnostics', 'Поиск по external ID, message ID или тексту')}
+                              placeholder={tr(
+                                'integrationsPage.filters.searchDiagnostics',
+                                'Поиск по external ID, message ID или тексту'
+                              )}
                               value={diagnosticsFilters.query}
-                              onChange={(event) => setDiagnosticsFilters((prev) => ({ ...prev, query: event.target.value }))}
+                              onChange={(event) =>
+                                setDiagnosticsFilters((prev) => ({
+                                  ...prev,
+                                  query: event.target.value,
+                                }))
+                              }
                               style={{ width: 280, maxWidth: '100%' }}
                             />
                             <Select
                               size="small"
                               value={diagnosticsFilters.scope}
                               style={{ width: 190 }}
-                              onChange={(value) => setDiagnosticsFilters((prev) => ({ ...prev, scope: value }))}
+                              onChange={(value) =>
+                                setDiagnosticsFilters((prev) => ({ ...prev, scope: value }))
+                              }
                               options={[
-                                { value: 'all', label: tr('integrationsPage.filters.scopeAll', 'Все события') },
-                                { value: 'failures', label: tr('integrationsPage.filters.scopeFailures', 'Только ошибки') },
-                                { value: 'replayable', label: tr('integrationsPage.filters.scopeReplayable', 'Replay-ready') },
-                                { value: 'archived', label: tr('integrationsPage.filters.scopeArchived', 'Archived sample') },
-                                { value: 'outbound', label: tr('integrationsPage.filters.scopeOutbound', 'Outbound queue') },
+                                {
+                                  value: 'all',
+                                  label: tr('integrationsPage.filters.scopeAll', 'Все события'),
+                                },
+                                {
+                                  value: 'failures',
+                                  label: tr(
+                                    'integrationsPage.filters.scopeFailures',
+                                    'Только ошибки'
+                                  ),
+                                },
+                                {
+                                  value: 'replayable',
+                                  label: tr(
+                                    'integrationsPage.filters.scopeReplayable',
+                                    'Replay-ready'
+                                  ),
+                                },
+                                {
+                                  value: 'archived',
+                                  label: tr(
+                                    'integrationsPage.filters.scopeArchived',
+                                    'Archived sample'
+                                  ),
+                                },
+                                {
+                                  value: 'outbound',
+                                  label: tr(
+                                    'integrationsPage.filters.scopeOutbound',
+                                    'Outbound queue'
+                                  ),
+                                },
                               ]}
                             />
                             <Select
                               size="small"
                               value={diagnosticsFilters.channel}
                               style={{ width: 170 }}
-                              onChange={(value) => setDiagnosticsFilters((prev) => ({ ...prev, channel: value }))}
+                              onChange={(value) =>
+                                setDiagnosticsFilters((prev) => ({ ...prev, channel: value }))
+                              }
                               options={diagnosticsChannelOptions}
-                              optionRender={(option) => renderDiagnosticsChannelOption(option?.data)}
+                              optionLabelProp="label"
+                              optionRender={(option) =>
+                                renderDiagnosticsChannelOption(option?.data)
+                              }
                               labelRender={(props) => renderDiagnosticsChannelOption(props)}
                             />
                             <Switch
                               size="small"
                               checked={diagnosticsFilters.onlyNeedsAction}
-                              onChange={(checked) => setDiagnosticsFilters((prev) => ({ ...prev, onlyNeedsAction: checked }))}
+                              onChange={(checked) =>
+                                setDiagnosticsFilters((prev) => ({
+                                  ...prev,
+                                  onlyNeedsAction: checked,
+                                }))
+                              }
                             />
                             <Text type="secondary" style={{ fontSize: 12 }}>
-                              {tr('integrationsPage.filters.onlyNeedsAction', 'Только требует действия')}
+                              {tr(
+                                'integrationsPage.filters.onlyNeedsAction',
+                                'Только требует действия'
+                              )}
                             </Text>
                           </Space>
                           <Text type="secondary" style={{ fontSize: 12 }}>
-                            {tr('integrationsPage.diagnostics.filteredCount', 'Показано {count} событий', { count: omnichannelDiagnostics.filtered_count || diagnosticsRows.length })}
+                            {tr(
+                              'integrationsPage.diagnostics.filteredCount',
+                              'Показано {count} событий',
+                              {
+                                count:
+                                  omnichannelDiagnostics.filtered_count || diagnosticsRows.length,
+                              }
+                            )}
                           </Text>
                         </Space>
                         <Table
@@ -1909,7 +2761,10 @@ export default function IntegrationsPage({ embedded = false, compact = false } =
                           rowKey={(record) => record.id}
                           dataSource={diagnosticsRows}
                           locale={{
-                            emptyText: tr('integrationsPage.diagnostics.empty', 'Ошибок и replay-ready событий пока нет'),
+                            emptyText: tr(
+                              'integrationsPage.diagnostics.empty',
+                              'Ошибок и replay-ready событий пока нет'
+                            ),
                           }}
                           columns={[
                   {
@@ -1930,7 +2785,15 @@ export default function IntegrationsPage({ embedded = false, compact = false } =
                     key: 'status',
                     render: (_, record) => (
                       <Space size={4} wrap>
-                        <Tag color={['failed', 'error', 'dead_letter'].includes(getDiagnosticsRecordStatus(record)) ? 'error' : 'default'}>
+                        <Tag
+                          color={
+                            ['failed', 'error', 'dead_letter'].includes(
+                              getDiagnosticsRecordStatus(record)
+                            )
+                              ? 'error'
+                              : 'default'
+                          }
+                        >
                           {record.queue_state || record.status || '-'}
                         </Tag>
                         {record.sla_status === 'breached' && <Tag color="warning">SLA risk</Tag>}
@@ -1987,49 +2850,54 @@ export default function IntegrationsPage({ embedded = false, compact = false } =
                       const outboundRetryEnabled = canRetryOutboundRecord(record);
                       return (
                         <Space size={8} wrap>
-                        <Button
-                          size="small"
-                          onClick={() => handleOpenOmnichannelEvent(record)}
-                        >
-                          {tr('integrationsPage.actions.details', 'Детали')}
-                        </Button>
-                        <Button
-                          size="small"
-                          icon={<CopyOutlined />}
-                          title={tr('integrationsPage.actions.copyEventId', 'Скопировать ID')}
-                          onClick={() => copyTextToClipboard(
-                            record.external_id || record.message_id || record.text,
-                            tr('integrationsPage.messages.eventIdCopied', 'Идентификатор события скопирован'),
-                            tr('integrationsPage.messages.eventIdCopyError', 'Не удалось скопировать идентификатор события')
-                          )}
-                        />
-                        <LicenseRestrictedAction
-                          restricted={integrationsRestricted}
-                          reason={integrationsRestrictionMessage}
-                          feature="integrations.core"
-                        >
-                          {outboundRecord ? (
-                            <Button
-                              size="small"
-                              onClick={() => handleOmnichannelOutboundRetry(record)}
-                              loading={omnichannelOutboundRetryId === record.id}
-                              disabled={!outboundRetryEnabled || integrationsRestricted}
-                            >
-                              {tr('integrationsPage.actions.retryOutbound', 'Retry outbound')}
-                            </Button>
-                          ) : (
-                            <Button
-                              size="small"
-                              onClick={() => handleOmnichannelReplay(record)}
-                              loading={omnichannelReplayId === record.id}
-                              disabled={!record.replayable || integrationsRestricted}
-                            >
-                              {tr('integrationsPage.actions.replay', 'Replay')}
-                            </Button>
-                          )}
-                        </LicenseRestrictedAction>
-                      </Space>
-                      )
+                          <Button size="small" onClick={() => handleOpenOmnichannelEvent(record)}>
+                            {tr('integrationsPage.actions.details', 'Детали')}
+                          </Button>
+                          <Button
+                            size="small"
+                            icon={<CopyOutlined />}
+                            title={tr('integrationsPage.actions.copyEventId', 'Скопировать ID')}
+                            onClick={() =>
+                              copyTextToClipboard(
+                                record.external_id || record.message_id || record.text,
+                                tr(
+                                  'integrationsPage.messages.eventIdCopied',
+                                  'Идентификатор события скопирован'
+                                ),
+                                tr(
+                                  'integrationsPage.messages.eventIdCopyError',
+                                  'Не удалось скопировать идентификатор события'
+                                )
+                              )
+                            }
+                          />
+                          <LicenseRestrictedAction
+                            restricted={integrationsRestricted}
+                            reason={integrationsRestrictionMessage}
+                            feature="integrations.core"
+                          >
+                            {outboundRecord ? (
+                              <Button
+                                size="small"
+                                onClick={() => handleOmnichannelOutboundRetry(record)}
+                                loading={omnichannelOutboundRetryId === record.id}
+                                disabled={!outboundRetryEnabled || integrationsRestricted}
+                              >
+                                {tr('integrationsPage.actions.retryOutbound', 'Retry outbound')}
+                              </Button>
+                            ) : (
+                              <Button
+                                size="small"
+                                onClick={() => handleOmnichannelReplay(record)}
+                                loading={omnichannelReplayId === record.id}
+                                disabled={!record.replayable || integrationsRestricted}
+                              >
+                                {tr('integrationsPage.actions.replay', 'Replay')}
+                              </Button>
+                            )}
+                          </LicenseRestrictedAction>
+                        </Space>
+                      );
                     },
                   },
                           ]}
@@ -2054,12 +2922,15 @@ export default function IntegrationsPage({ embedded = false, compact = false } =
               <Alert
                 type="warning"
                 showIcon
-                message={(
+                message={
                   <span style={{ color: restrictionShell.title, fontWeight: 700 }}>
-                    {tr('integrationsPage.messages.restricted', 'Лицензия ограничивает доступ к интеграциям')}
+                    {tr(
+                      'integrationsPage.messages.restricted',
+                      'Лицензия ограничивает доступ к интеграциям'
+                    )}
                   </span>
-                )}
-                description={(
+                }
+                description={
                   <Space direction="vertical" size={2} style={{ width: '100%' }}>
                     <span style={{ color: restrictionShell.text, lineHeight: 1.55 }}>
                       {integrationsRestrictionMessage}
@@ -2067,18 +2938,21 @@ export default function IntegrationsPage({ embedded = false, compact = false } =
                     <span style={{ color: restrictionShell.meta, fontSize: 12, lineHeight: 1.45 }}>
                       {tr(
                         'integrationsPage.messages.restrictedHint',
-                        'Connect, test, and edit controls stay disabled until the license is refreshed.',
+                        'Connect, test, and edit controls stay disabled until the license is refreshed.'
                       )}
                     </span>
                   </Space>
-                )}
+                }
                 style={{ background: 'transparent', border: 'none' }}
               />
             </div>
           )}
           <IntegrationCard
             title="SMS"
-            description={tr('integrationsPage.cards.sms.description', 'Провайдеры и статус отправки SMS')}
+            description={tr(
+              'integrationsPage.cards.sms.description',
+              'Провайдеры и статус отправки SMS'
+            )}
             icon={<ChannelBrandIcon channel="sms" size={24} />}
             type="sms"
             status={statuses.sms.status}
@@ -2094,7 +2968,10 @@ export default function IntegrationsPage({ embedded = false, compact = false } =
 
           <IntegrationCard
             title={tr('integrationsPage.cards.telephony.title', 'Телефония')}
-            description={tr('integrationsPage.cards.telephony.description', 'Подключения VoIP/SIP для звонков из CRM')}
+            description={tr(
+              'integrationsPage.cards.telephony.description',
+              'Подключения VoIP/SIP для звонков из CRM'
+            )}
             icon={<ChannelBrandIcon channel="telephony" size={24} />}
             type="telephony"
             status={statuses.telephony.status}
@@ -2110,7 +2987,10 @@ export default function IntegrationsPage({ embedded = false, compact = false } =
 
           <IntegrationCard
             title="WhatsApp Business"
-            description={tr('integrationsPage.cards.whatsapp.description', 'Cloud API аккаунты для омниканала поддержки и продаж')}
+            description={tr(
+              'integrationsPage.cards.whatsapp.description',
+              'Cloud API аккаунты для омниканала поддержки и продаж'
+            )}
             icon={<ChannelBrandIcon channel="whatsapp" size={24} />}
             type="whatsapp"
             status={statuses.whatsapp.status}
@@ -2128,9 +3008,21 @@ export default function IntegrationsPage({ embedded = false, compact = false } =
                 size="small"
                 rowKey={(record) => record.id || record.phone_number_id}
                 columns={[
-                  { title: tr('integrationsPage.table.account', 'Аккаунт'), dataIndex: 'business_name', key: 'business_name' },
-                  { title: tr('integrationsPage.table.number', 'Номер'), dataIndex: 'phone_number', key: 'phone_number' },
-                  { title: tr('integrationsPage.table.phoneId', 'Phone ID'), dataIndex: 'phone_number_id', key: 'phone_number_id' },
+                  {
+                    title: tr('integrationsPage.table.account', 'Аккаунт'),
+                    dataIndex: 'business_name',
+                    key: 'business_name',
+                  },
+                  {
+                    title: tr('integrationsPage.table.number', 'Номер'),
+                    dataIndex: 'phone_number',
+                    key: 'phone_number',
+                  },
+                  {
+                    title: tr('integrationsPage.table.phoneId', 'Phone ID'),
+                    dataIndex: 'phone_number_id',
+                    key: 'phone_number_id',
+                  },
                   {
                     title: tr('integrationsPage.table.status', 'Статус'),
                     dataIndex: 'is_active',
@@ -2146,7 +3038,9 @@ export default function IntegrationsPage({ embedded = false, compact = false } =
                           border: `1px solid ${value ? 'rgba(82, 196, 26, 0.32)' : 'rgba(148, 163, 184, 0.24)'}`,
                         }}
                       >
-                        {value ? tr('integrationsPage.status.active', 'Активен') : tr('integrationsPage.status.paused', 'Пауза')}
+                        {value
+                          ? tr('integrationsPage.status.active', 'Активен')
+                          : tr('integrationsPage.status.paused', 'Пауза')}
                       </Tag>
                     ),
                   },
@@ -2161,18 +3055,43 @@ export default function IntegrationsPage({ embedded = false, compact = false } =
                     key: 'actions',
                     render: (_, record) => (
                       <Space>
-                        <LicenseRestrictedAction restricted={integrationsRestricted} reason={integrationsRestrictionMessage} feature="integrations.core">
-                          <Button type="link" disabled={integrationsRestricted} onClick={() => openIntegrationEditModal('whatsapp', record)}>
+                        <LicenseRestrictedAction
+                          restricted={integrationsRestricted}
+                          reason={integrationsRestrictionMessage}
+                          feature="integrations.core"
+                        >
+                          <Button
+                            type="link"
+                            disabled={integrationsRestricted}
+                            onClick={() => openIntegrationEditModal('whatsapp', record)}
+                          >
                             {tr('integrationsPage.actions.edit', 'Редактировать')}
                           </Button>
                         </LicenseRestrictedAction>
-                        <LicenseRestrictedAction restricted={integrationsRestricted} reason={integrationsRestrictionMessage} feature="integrations.core">
-                          <Button type="link" disabled={integrationsRestricted} onClick={() => handleWhatsAppTest(record)}>
+                        <LicenseRestrictedAction
+                          restricted={integrationsRestricted}
+                          reason={integrationsRestrictionMessage}
+                          feature="integrations.core"
+                        >
+                          <Button
+                            type="link"
+                            disabled={integrationsRestricted}
+                            onClick={() => handleWhatsAppTest(record)}
+                          >
                             {tr('integrationsPage.actions.test', 'Тест')}
                           </Button>
                         </LicenseRestrictedAction>
-                        <LicenseRestrictedAction restricted={integrationsRestricted} reason={integrationsRestrictionMessage} feature="integrations.core">
-                          <Button type="link" danger disabled={integrationsRestricted} onClick={() => handleWhatsAppDisconnect(record)}>
+                        <LicenseRestrictedAction
+                          restricted={integrationsRestricted}
+                          reason={integrationsRestrictionMessage}
+                          feature="integrations.core"
+                        >
+                          <Button
+                            type="link"
+                            danger
+                            disabled={integrationsRestricted}
+                            onClick={() => handleWhatsAppDisconnect(record)}
+                          >
                             {tr('integrationsPage.actions.disconnect', 'Отключить')}
                           </Button>
                         </LicenseRestrictedAction>
@@ -2188,7 +3107,10 @@ export default function IntegrationsPage({ embedded = false, compact = false } =
 
           <IntegrationCard
             title="Facebook Messenger"
-            description={tr('integrationsPage.cards.facebook.description', 'Подключенные страницы для обработки сообщений')}
+            description={tr(
+              'integrationsPage.cards.facebook.description',
+              'Подключенные страницы для обработки сообщений'
+            )}
             icon={<ChannelBrandIcon channel="facebook" size={24} />}
             type="facebook"
             status={statuses.facebook.status}
@@ -2206,7 +3128,11 @@ export default function IntegrationsPage({ embedded = false, compact = false } =
                 size="small"
                 rowKey={(record) => record.id || record.facebook_page_id}
                 columns={[
-                  { title: tr('integrationsPage.table.page', 'Страница'), dataIndex: 'page_name', key: 'page_name' },
+                  {
+                    title: tr('integrationsPage.table.page', 'Страница'),
+                    dataIndex: 'page_name',
+                    key: 'page_name',
+                  },
                   {
                     title: tr('integrationsPage.table.status', 'Статус'),
                     dataIndex: 'is_active',
@@ -2222,7 +3148,9 @@ export default function IntegrationsPage({ embedded = false, compact = false } =
                           border: `1px solid ${value ? 'rgba(82, 196, 26, 0.32)' : 'rgba(148, 163, 184, 0.24)'}`,
                         }}
                       >
-                        {value ? tr('integrationsPage.status.activeFeminine', 'Активна') : tr('integrationsPage.status.paused', 'Пауза')}
+                        {value
+                          ? tr('integrationsPage.status.activeFeminine', 'Активна')
+                          : tr('integrationsPage.status.paused', 'Пауза')}
                       </Tag>
                     ),
                   },
@@ -2237,18 +3165,43 @@ export default function IntegrationsPage({ embedded = false, compact = false } =
                     key: 'actions',
                     render: (_, record) => (
                       <Space>
-                        <LicenseRestrictedAction restricted={integrationsRestricted} reason={integrationsRestrictionMessage} feature="integrations.core">
-                          <Button type="link" disabled={integrationsRestricted} onClick={() => openIntegrationEditModal('facebook', record)}>
+                        <LicenseRestrictedAction
+                          restricted={integrationsRestricted}
+                          reason={integrationsRestrictionMessage}
+                          feature="integrations.core"
+                        >
+                          <Button
+                            type="link"
+                            disabled={integrationsRestricted}
+                            onClick={() => openIntegrationEditModal('facebook', record)}
+                          >
                             {tr('integrationsPage.actions.edit', 'Редактировать')}
                           </Button>
                         </LicenseRestrictedAction>
-                        <LicenseRestrictedAction restricted={integrationsRestricted} reason={integrationsRestrictionMessage} feature="integrations.core">
-                          <Button type="link" disabled={integrationsRestricted} onClick={() => handleFacebookTest(record)}>
+                        <LicenseRestrictedAction
+                          restricted={integrationsRestricted}
+                          reason={integrationsRestrictionMessage}
+                          feature="integrations.core"
+                        >
+                          <Button
+                            type="link"
+                            disabled={integrationsRestricted}
+                            onClick={() => handleFacebookTest(record)}
+                          >
                             {tr('integrationsPage.actions.test', 'Тест')}
                           </Button>
                         </LicenseRestrictedAction>
-                        <LicenseRestrictedAction restricted={integrationsRestricted} reason={integrationsRestrictionMessage} feature="integrations.core">
-                          <Button type="link" danger disabled={integrationsRestricted} onClick={() => handleFacebookDisconnect(record)}>
+                        <LicenseRestrictedAction
+                          restricted={integrationsRestricted}
+                          reason={integrationsRestrictionMessage}
+                          feature="integrations.core"
+                        >
+                          <Button
+                            type="link"
+                            danger
+                            disabled={integrationsRestricted}
+                            onClick={() => handleFacebookDisconnect(record)}
+                          >
                             {tr('integrationsPage.actions.disconnect', 'Отключить')}
                           </Button>
                         </LicenseRestrictedAction>
@@ -2298,7 +3251,9 @@ export default function IntegrationsPage({ embedded = false, compact = false } =
                           border: `1px solid ${value ? 'rgba(82, 196, 26, 0.32)' : 'rgba(148, 163, 184, 0.24)'}`,
                         }}
                       >
-                        {value ? tr('integrationsPage.status.active', 'Активен') : tr('integrationsPage.status.paused', 'Пауза')}
+                        {value
+                          ? tr('integrationsPage.status.active', 'Активен')
+                          : tr('integrationsPage.status.paused', 'Пауза')}
                       </Tag>
                     ),
                   },
@@ -2313,18 +3268,43 @@ export default function IntegrationsPage({ embedded = false, compact = false } =
                     key: 'actions',
                     render: (_, record) => (
                       <Space>
-                        <LicenseRestrictedAction restricted={integrationsRestricted} reason={integrationsRestrictionMessage} feature="integrations.core">
-                          <Button type="link" disabled={integrationsRestricted} onClick={() => openIntegrationEditModal('instagram', record)}>
+                        <LicenseRestrictedAction
+                          restricted={integrationsRestricted}
+                          reason={integrationsRestrictionMessage}
+                          feature="integrations.core"
+                        >
+                          <Button
+                            type="link"
+                            disabled={integrationsRestricted}
+                            onClick={() => openIntegrationEditModal('instagram', record)}
+                          >
                             {tr('integrationsPage.actions.edit', 'Редактировать')}
                           </Button>
                         </LicenseRestrictedAction>
-                        <LicenseRestrictedAction restricted={integrationsRestricted} reason={integrationsRestrictionMessage} feature="integrations.core">
-                          <Button type="link" disabled={integrationsRestricted} onClick={() => handleInstagramTest(record)}>
+                        <LicenseRestrictedAction
+                          restricted={integrationsRestricted}
+                          reason={integrationsRestrictionMessage}
+                          feature="integrations.core"
+                        >
+                          <Button
+                            type="link"
+                            disabled={integrationsRestricted}
+                            onClick={() => handleInstagramTest(record)}
+                          >
                             {tr('integrationsPage.actions.test', 'Тест')}
                           </Button>
                         </LicenseRestrictedAction>
-                        <LicenseRestrictedAction restricted={integrationsRestricted} reason={integrationsRestrictionMessage} feature="integrations.core">
-                          <Button type="link" danger disabled={integrationsRestricted} onClick={() => handleInstagramDisconnect(record)}>
+                        <LicenseRestrictedAction
+                          restricted={integrationsRestricted}
+                          reason={integrationsRestrictionMessage}
+                          feature="integrations.core"
+                        >
+                          <Button
+                            type="link"
+                            danger
+                            disabled={integrationsRestricted}
+                            onClick={() => handleInstagramDisconnect(record)}
+                          >
                             {tr('integrationsPage.actions.disconnect', 'Отключить')}
                           </Button>
                         </LicenseRestrictedAction>
@@ -2358,8 +3338,16 @@ export default function IntegrationsPage({ embedded = false, compact = false } =
                 size="small"
                 rowKey={(record) => record.id || record.bot_username}
                 columns={[
-                  { title: tr('integrationsPage.table.bot', 'Бот'), dataIndex: 'bot_name', key: 'bot_name' },
-                  { title: tr('integrationsPage.table.username', 'Username'), dataIndex: 'bot_username', key: 'bot_username' },
+                  {
+                    title: tr('integrationsPage.table.bot', 'Бот'),
+                    dataIndex: 'bot_name',
+                    key: 'bot_name',
+                  },
+                  {
+                    title: tr('integrationsPage.table.username', 'Username'),
+                    dataIndex: 'bot_username',
+                    key: 'bot_username',
+                  },
                   {
                     title: tr('integrationsPage.table.status', 'Статус'),
                     dataIndex: 'is_active',
@@ -2375,7 +3363,9 @@ export default function IntegrationsPage({ embedded = false, compact = false } =
                           border: `1px solid ${value ? 'rgba(82, 196, 26, 0.32)' : 'rgba(148, 163, 184, 0.24)'}`,
                         }}
                       >
-                        {value ? tr('integrationsPage.status.active', 'Активен') : tr('integrationsPage.status.paused', 'Пауза')}
+                        {value
+                          ? tr('integrationsPage.status.active', 'Активен')
+                          : tr('integrationsPage.status.paused', 'Пауза')}
                       </Tag>
                     ),
                   },
@@ -2390,23 +3380,56 @@ export default function IntegrationsPage({ embedded = false, compact = false } =
                     key: 'actions',
                     render: (_, record) => (
                       <Space>
-                        <LicenseRestrictedAction restricted={integrationsRestricted} reason={integrationsRestrictionMessage} feature="integrations.core">
-                          <Button type="link" disabled={integrationsRestricted} onClick={() => openIntegrationEditModal('telegram', record)}>
+                        <LicenseRestrictedAction
+                          restricted={integrationsRestricted}
+                          reason={integrationsRestrictionMessage}
+                          feature="integrations.core"
+                        >
+                          <Button
+                            type="link"
+                            disabled={integrationsRestricted}
+                            onClick={() => openIntegrationEditModal('telegram', record)}
+                          >
                             {tr('integrationsPage.actions.edit', 'Редактировать')}
                           </Button>
                         </LicenseRestrictedAction>
-                        <LicenseRestrictedAction restricted={integrationsRestricted} reason={integrationsRestrictionMessage} feature="integrations.core">
-                          <Button type="link" disabled={integrationsRestricted} onClick={() => handleTelegramTest(record)}>
+                        <LicenseRestrictedAction
+                          restricted={integrationsRestricted}
+                          reason={integrationsRestrictionMessage}
+                          feature="integrations.core"
+                        >
+                          <Button
+                            type="link"
+                            disabled={integrationsRestricted}
+                            onClick={() => handleTelegramTest(record)}
+                          >
                             {tr('integrationsPage.actions.test', 'Тест')}
                           </Button>
                         </LicenseRestrictedAction>
-                        <LicenseRestrictedAction restricted={integrationsRestricted} reason={integrationsRestrictionMessage} feature="integrations.core">
-                          <Button type="link" disabled={integrationsRestricted} onClick={() => openWebhookModal(record)}>
+                        <LicenseRestrictedAction
+                          restricted={integrationsRestricted}
+                          reason={integrationsRestrictionMessage}
+                          feature="integrations.core"
+                        >
+                          <Button
+                            type="link"
+                            disabled={integrationsRestricted}
+                            onClick={() => openWebhookModal(record)}
+                          >
                             {tr('integrationsPage.actions.webhook', 'Webhook')}
                           </Button>
                         </LicenseRestrictedAction>
-                        <LicenseRestrictedAction restricted={integrationsRestricted} reason={integrationsRestrictionMessage} feature="integrations.core">
-                          <Button type="link" danger disabled={integrationsRestricted} onClick={() => handleTelegramDisconnect(record)}>
+                        <LicenseRestrictedAction
+                          restricted={integrationsRestricted}
+                          reason={integrationsRestrictionMessage}
+                          feature="integrations.core"
+                        >
+                          <Button
+                            type="link"
+                            danger
+                            disabled={integrationsRestricted}
+                            onClick={() => handleTelegramDisconnect(record)}
+                          >
                             {tr('integrationsPage.actions.disconnect', 'Отключить')}
                           </Button>
                         </LicenseRestrictedAction>
@@ -2440,9 +3463,22 @@ export default function IntegrationsPage({ embedded = false, compact = false } =
                 size="small"
                 rowKey={(record) => record.id}
                 columns={[
-                  { title: tr('integrationsPage.table.name', 'Название'), dataIndex: 'name', key: 'name' },
-                  { title: tr('integrationsPage.table.provider', 'Провайдер'), dataIndex: 'provider', key: 'provider' },
-                  { title: tr('integrationsPage.table.model', 'Модель'), dataIndex: 'model', key: 'model', render: (value) => value || '-' },
+                  {
+                    title: tr('integrationsPage.table.name', 'Название'),
+                    dataIndex: 'name',
+                    key: 'name',
+                  },
+                  {
+                    title: tr('integrationsPage.table.provider', 'Провайдер'),
+                    dataIndex: 'provider',
+                    key: 'provider',
+                  },
+                  {
+                    title: tr('integrationsPage.table.model', 'Модель'),
+                    dataIndex: 'model',
+                    key: 'model',
+                    render: (value) => value || '-',
+                  },
                   {
                     title: tr('integrationsPage.table.status', 'Статус'),
                     key: 'status',
@@ -2458,7 +3494,9 @@ export default function IntegrationsPage({ embedded = false, compact = false } =
                             border: `1px solid ${record.is_active ? 'rgba(82, 196, 26, 0.32)' : 'rgba(148, 163, 184, 0.24)'}`,
                           }}
                         >
-                          {record.is_active ? tr('integrationsPage.status.active', 'Активен') : tr('integrationsPage.status.paused', 'Пауза')}
+                          {record.is_active
+                            ? tr('integrationsPage.status.active', 'Активен')
+                            : tr('integrationsPage.status.paused', 'Пауза')}
                         </Tag>
                         {record.is_default && (
                           <Tag
@@ -2496,7 +3534,11 @@ export default function IntegrationsPage({ embedded = false, compact = false } =
                         >
                           {tr('integrationsPage.actions.test', 'Тест')}
                         </Button>
-                        <Button type="link" disabled={integrationsRestricted} onClick={() => openAIModal(record)}>
+                        <Button
+                          type="link"
+                          disabled={integrationsRestricted}
+                          onClick={() => openAIModal(record)}
+                        >
                           {tr('integrationsPage.actions.edit', 'Редактировать')}
                         </Button>
                         {!record.is_default && (
@@ -2510,7 +3552,10 @@ export default function IntegrationsPage({ embedded = false, compact = false } =
                           </Button>
                         )}
                         <Popconfirm
-                          title={tr('integrationsPage.actions.deleteProviderConfirm', 'Удалить AI провайдера?')}
+                          title={tr(
+                            'integrationsPage.actions.deleteProviderConfirm',
+                            'Удалить AI провайдера?'
+                          )}
                           onConfirm={() => handleAIDelete(record)}
                           okText={tr('actions.delete', 'Удалить')}
                           cancelText={tr('actions.cancel', 'Отмена')}
@@ -2547,25 +3592,36 @@ export default function IntegrationsPage({ embedded = false, compact = false } =
             <Button
               type="primary"
               loading={
-                isOutboundDiagnosticsRecord(omnichannelEventModal.payload || omnichannelEventModal.record)
+                isOutboundDiagnosticsRecord(
+                  omnichannelEventModal.payload || omnichannelEventModal.record
+                )
                   ? omnichannelOutboundRetryId === omnichannelEventModal.record?.id
                   : omnichannelReplayId === omnichannelEventModal.record?.id
               }
               disabled={
-                integrationsRestricted
-                || (
-                  isOutboundDiagnosticsRecord(omnichannelEventModal.payload || omnichannelEventModal.record)
-                    ? !canRetryOutboundRecord(omnichannelEventModal.payload || omnichannelEventModal.record)
-                    : !(omnichannelEventModal.payload?.replayable || omnichannelEventModal.record?.replayable)
+                integrationsRestricted ||
+                (isOutboundDiagnosticsRecord(
+                  omnichannelEventModal.payload || omnichannelEventModal.record
                 )
+                  ? !canRetryOutboundRecord(
+                      omnichannelEventModal.payload || omnichannelEventModal.record
+                    )
+                  : !(
+                      omnichannelEventModal.payload?.replayable ||
+                      omnichannelEventModal.record?.replayable
+                    ))
               }
-              onClick={() => (
-                isOutboundDiagnosticsRecord(omnichannelEventModal.payload || omnichannelEventModal.record)
+              onClick={() =>
+                isOutboundDiagnosticsRecord(
+                  omnichannelEventModal.payload || omnichannelEventModal.record
+                )
                   ? handleOmnichannelOutboundRetry(omnichannelEventModal.record)
                   : handleOmnichannelReplay(omnichannelEventModal.record)
-              )}
+              }
             >
-              {isOutboundDiagnosticsRecord(omnichannelEventModal.payload || omnichannelEventModal.record)
+              {isOutboundDiagnosticsRecord(
+                omnichannelEventModal.payload || omnichannelEventModal.record
+              )
                 ? tr('integrationsPage.actions.retryOutbound', 'Retry outbound')
                 : tr('integrationsPage.actions.replay', 'Replay')}
             </Button>
@@ -2601,68 +3657,95 @@ export default function IntegrationsPage({ embedded = false, compact = false } =
               <Descriptions.Item label={tr('integrationsPage.table.status', 'Статус')}>
                 <Space size={[4, 4]} wrap>
                   <Tag>
-                    {omnichannelEventModal.payload?.queue_state
-                      || omnichannelEventModal.record?.queue_state
-                      || omnichannelEventModal.payload?.status
-                      || omnichannelEventModal.record?.status
-                      || '-'}
+                    {omnichannelEventModal.payload?.queue_state ||
+                      omnichannelEventModal.record?.queue_state ||
+                      omnichannelEventModal.payload?.status ||
+                      omnichannelEventModal.record?.status ||
+                      '-'}
                   </Tag>
-                  {(
-                    omnichannelEventModal.payload?.sla_status ||
-                    omnichannelEventModal.record?.sla_status
-                  ) === 'breached' && <Tag color="warning">SLA risk</Tag>}
-                  {(omnichannelEventModal.payload?.replayable || omnichannelEventModal.record?.replayable) && (
+                  {(omnichannelEventModal.payload?.sla_status ||
+                    omnichannelEventModal.record?.sla_status) === 'breached' && (
+                    <Tag color="warning">SLA risk</Tag>
+                  )}
+                  {(omnichannelEventModal.payload?.replayable ||
+                    omnichannelEventModal.record?.replayable) && (
                     <Tag color="processing">Replay-ready</Tag>
                   )}
-                  {isOutboundDiagnosticsRecord(omnichannelEventModal.payload || omnichannelEventModal.record) && (
-                    <Tag color="cyan">Outbound</Tag>
+                  {isOutboundDiagnosticsRecord(
+                    omnichannelEventModal.payload || omnichannelEventModal.record
+                  ) && <Tag color="cyan">Outbound</Tag>}
+                  {(omnichannelEventModal.payload?.signature_valid ??
+                    omnichannelEventModal.record?.signature_valid) === false && (
+                    <Tag color="volcano">Signature</Tag>
                   )}
-                  {(
-                    omnichannelEventModal.payload?.signature_valid ??
-                    omnichannelEventModal.record?.signature_valid
-                  ) === false && <Tag color="volcano">Signature</Tag>}
                 </Space>
               </Descriptions.Item>
               <Descriptions.Item label="External ID">
                 <Space size={8} wrap>
-                  <span>{omnichannelEventModal.payload?.external_id || omnichannelEventModal.record?.external_id || '-'}</span>
-                  {(omnichannelEventModal.payload?.external_id || omnichannelEventModal.record?.external_id) && (
+                  <span>
+                    {omnichannelEventModal.payload?.external_id ||
+                      omnichannelEventModal.record?.external_id ||
+                      '-'}
+                  </span>
+                  {(omnichannelEventModal.payload?.external_id ||
+                    omnichannelEventModal.record?.external_id) && (
                     <Button
                       type="text"
                       size="small"
                       icon={<CopyOutlined />}
-                      title={tr('integrationsPage.actions.copyExternalId', 'Скопировать External ID')}
-                      onClick={() => copyTextToClipboard(
-                        omnichannelEventModal.payload?.external_id || omnichannelEventModal.record?.external_id,
-                        tr('integrationsPage.messages.externalIdCopied', 'External ID скопирован'),
-                        tr('integrationsPage.messages.externalIdCopyError', 'Не удалось скопировать External ID')
+                      title={tr(
+                        'integrationsPage.actions.copyExternalId',
+                        'Скопировать External ID'
                       )}
+                      onClick={() =>
+                        copyTextToClipboard(
+                          omnichannelEventModal.payload?.external_id ||
+                            omnichannelEventModal.record?.external_id,
+                          tr(
+                            'integrationsPage.messages.externalIdCopied',
+                            'External ID скопирован'
+                          ),
+                          tr(
+                            'integrationsPage.messages.externalIdCopyError',
+                            'Не удалось скопировать External ID'
+                          )
+                        )
+                      }
                     />
                   )}
                 </Space>
               </Descriptions.Item>
               <Descriptions.Item label="Message ID">
                 <Space size={8} wrap>
-                  <span>{omnichannelEventModal.payload?.message_id || omnichannelEventModal.record?.message_id || '-'}</span>
-                  {(omnichannelEventModal.payload?.message_id || omnichannelEventModal.record?.message_id) && (
+                  <span>
+                    {omnichannelEventModal.payload?.message_id ||
+                      omnichannelEventModal.record?.message_id ||
+                      '-'}
+                  </span>
+                  {(omnichannelEventModal.payload?.message_id ||
+                    omnichannelEventModal.record?.message_id) && (
                     <Button
                       type="text"
                       size="small"
                       icon={<CopyOutlined />}
                       title={tr('integrationsPage.actions.copyMessageId', 'Скопировать Message ID')}
-                      onClick={() => copyTextToClipboard(
-                        omnichannelEventModal.payload?.message_id || omnichannelEventModal.record?.message_id,
-                        tr('integrationsPage.messages.messageIdCopied', 'Message ID скопирован'),
-                        tr('integrationsPage.messages.messageIdCopyError', 'Не удалось скопировать Message ID')
-                      )}
+                      onClick={() =>
+                        copyTextToClipboard(
+                          omnichannelEventModal.payload?.message_id ||
+                            omnichannelEventModal.record?.message_id,
+                          tr('integrationsPage.messages.messageIdCopied', 'Message ID скопирован'),
+                          tr(
+                            'integrationsPage.messages.messageIdCopyError',
+                            'Не удалось скопировать Message ID'
+                          )
+                        )
+                      }
                     />
                   )}
                 </Space>
               </Descriptions.Item>
               <Descriptions.Item label={tr('integrationsPage.table.message', 'Сообщение')} span={2}>
-                {omnichannelEventModal.payload?.text ||
-                  omnichannelEventModal.record?.text ||
-                  '-'}
+                {omnichannelEventModal.payload?.text || omnichannelEventModal.record?.text || '-'}
               </Descriptions.Item>
             </Descriptions>
           </Card>
@@ -2674,21 +3757,34 @@ export default function IntegrationsPage({ embedded = false, compact = false } =
           >
             <Descriptions size="small" column={2} bordered>
               <Descriptions.Item label="Sender">
-                {omnichannelEventModal.payload?.sender_id || omnichannelEventModal.record?.sender_id || '-'}
+                {omnichannelEventModal.payload?.sender_id ||
+                  omnichannelEventModal.record?.sender_id ||
+                  '-'}
               </Descriptions.Item>
               <Descriptions.Item label="Recipient">
-                {omnichannelEventModal.payload?.recipient_id || omnichannelEventModal.record?.recipient_id || '-'}
+                {omnichannelEventModal.payload?.recipient_id ||
+                  omnichannelEventModal.record?.recipient_id ||
+                  '-'}
               </Descriptions.Item>
               <Descriptions.Item label="Direction">
-                {omnichannelEventModal.payload?.direction || omnichannelEventModal.record?.direction || '-'}
+                {omnichannelEventModal.payload?.direction ||
+                  omnichannelEventModal.record?.direction ||
+                  '-'}
               </Descriptions.Item>
               <Descriptions.Item label={tr('integrationsPage.table.created', 'Создано')}>
-                {formatDateTime(omnichannelEventModal.payload?.created_at || omnichannelEventModal.record?.created_at)}
+                {formatDateTime(
+                  omnichannelEventModal.payload?.created_at ||
+                    omnichannelEventModal.record?.created_at
+                )}
               </Descriptions.Item>
-              <Descriptions.Item label={tr('integrationsPage.diagnostics.processedAt', 'Обработано')}>
+              <Descriptions.Item
+                label={tr('integrationsPage.diagnostics.processedAt', 'Обработано')}
+              >
                 {formatDateTime(omnichannelEventModal.payload?.processed_at)}
               </Descriptions.Item>
-              <Descriptions.Item label={tr('integrationsPage.diagnostics.replayedAt', 'Replay запуск')}>
+              <Descriptions.Item
+                label={tr('integrationsPage.diagnostics.replayedAt', 'Replay запуск')}
+              >
                 {formatDateTime(omnichannelEventModal.payload?.replayed_at)}
               </Descriptions.Item>
             </Descriptions>
@@ -2701,22 +3797,34 @@ export default function IntegrationsPage({ embedded = false, compact = false } =
           >
             <Descriptions size="small" column={1} bordered>
               <Descriptions.Item label="Processing status">
-                {omnichannelEventModal.payload?.processing_status || omnichannelEventModal.record?.processing_status || '-'}
+                {omnichannelEventModal.payload?.processing_status ||
+                  omnichannelEventModal.record?.processing_status ||
+                  '-'}
               </Descriptions.Item>
               <Descriptions.Item label="Replay status">
-                {omnichannelEventModal.payload?.replay_status || omnichannelEventModal.record?.replay_status || '-'}
+                {omnichannelEventModal.payload?.replay_status ||
+                  omnichannelEventModal.record?.replay_status ||
+                  '-'}
               </Descriptions.Item>
               <Descriptions.Item label="Replay count">
-                {omnichannelEventModal.payload?.replay_count ?? omnichannelEventModal.record?.replay_count ?? 0}
+                {omnichannelEventModal.payload?.replay_count ??
+                  omnichannelEventModal.record?.replay_count ??
+                  0}
               </Descriptions.Item>
               <Descriptions.Item label="Verification error">
-                {omnichannelEventModal.payload?.verification_error || omnichannelEventModal.record?.verification_error || '-'}
+                {omnichannelEventModal.payload?.verification_error ||
+                  omnichannelEventModal.record?.verification_error ||
+                  '-'}
               </Descriptions.Item>
               <Descriptions.Item label="Processing error">
-                {omnichannelEventModal.payload?.processing_error || omnichannelEventModal.record?.processing_error || '-'}
+                {omnichannelEventModal.payload?.processing_error ||
+                  omnichannelEventModal.record?.processing_error ||
+                  '-'}
               </Descriptions.Item>
               <Descriptions.Item label="Replay error">
-                {omnichannelEventModal.payload?.replay_error || omnichannelEventModal.record?.replay_error || '-'}
+                {omnichannelEventModal.payload?.replay_error ||
+                  omnichannelEventModal.record?.replay_error ||
+                  '-'}
               </Descriptions.Item>
             </Descriptions>
           </Card>
@@ -2740,7 +3848,10 @@ export default function IntegrationsPage({ embedded = false, compact = false } =
                 tr
               ).length && (
                 <Text type="secondary">
-                  {tr('integrationsPage.diagnostics.noSummary', 'Для этого события пока нет дополнительной операторской сводки.')}
+                  {tr(
+                    'integrationsPage.diagnostics.noSummary',
+                    'Для этого события пока нет дополнительной операторской сводки.'
+                  )}
                 </Text>
               )}
             </Space>
@@ -2752,11 +3863,13 @@ export default function IntegrationsPage({ embedded = false, compact = false } =
             loading={omnichannelEventModal.loading}
           >
             {getRawPreviewEntries(
-              omnichannelEventModal.payload?.raw_preview || omnichannelEventModal.record?.raw_preview
+              omnichannelEventModal.payload?.raw_preview ||
+                omnichannelEventModal.record?.raw_preview
             ).length ? (
               <Descriptions size="small" column={1} bordered>
                 {getRawPreviewEntries(
-                  omnichannelEventModal.payload?.raw_preview || omnichannelEventModal.record?.raw_preview
+                  omnichannelEventModal.payload?.raw_preview ||
+                    omnichannelEventModal.record?.raw_preview
                 ).map(([key, value]) => (
                   <Descriptions.Item key={key} label={key}>
                     <Text code>{String(value)}</Text>
@@ -2765,7 +3878,10 @@ export default function IntegrationsPage({ embedded = false, compact = false } =
               </Descriptions>
             ) : (
               <Text type="secondary">
-                {tr('integrationsPage.diagnostics.noPayloadPreview', 'Короткий preview payload недоступен.')}
+                {tr(
+                  'integrationsPage.diagnostics.noPayloadPreview',
+                  'Короткий preview payload недоступен.'
+                )}
               </Text>
             )}
           </Card>
@@ -2773,22 +3889,27 @@ export default function IntegrationsPage({ embedded = false, compact = false } =
           <Card
             size="small"
             title={tr('integrationsPage.diagnostics.rawArchive', 'Raw archive')}
-            extra={(
+            extra={
               <Button
                 type="text"
                 size="small"
                 icon={<CopyOutlined />}
                 title={tr('integrationsPage.actions.copyRawArchive', 'Скопировать Raw archive')}
                 disabled={!Object.keys(omnichannelEventModal.payload?.raw || {}).length}
-                onClick={() => copyTextToClipboard(
-                  JSON.stringify(omnichannelEventModal.payload?.raw || {}, null, 2),
-                  tr('integrationsPage.messages.rawCopied', 'Raw archive скопирован'),
-                  tr('integrationsPage.messages.rawCopyError', 'Не удалось скопировать Raw archive')
-                )}
+                onClick={() =>
+                  copyTextToClipboard(
+                    JSON.stringify(omnichannelEventModal.payload?.raw || {}, null, 2),
+                    tr('integrationsPage.messages.rawCopied', 'Raw archive скопирован'),
+                    tr(
+                      'integrationsPage.messages.rawCopyError',
+                      'Не удалось скопировать Raw archive'
+                    )
+                  )
+                }
               >
                 {tr('integrationsPage.actions.copy', 'Скопировать')}
               </Button>
-            )}
+            }
             loading={omnichannelEventModal.loading}
           >
             <Input.TextArea
@@ -2801,65 +3922,250 @@ export default function IntegrationsPage({ embedded = false, compact = false } =
       </Modal>
 
       <Modal
-        title={tr('integrationsPage.modals.smsSettings', 'Настройка SMS')}
+        title={renderIntegrationModalTitle(
+          tr('integrationsPage.modals.smsSettings', 'Настройка SMS'),
+          integrationUnsavedMap.sms,
+          integrationSavedMap.sms
+        )}
         open={modalVisible.sms}
-        onCancel={() => closeModal('sms')}
-        footer={null}
-        width={800}
-        style={{ top: 20 }}
-      >
-        <SMSSettings onSuccess={() => handleIntegrationSuccess('sms')} />
-      </Modal>
-
-      <Modal
-        title={tr('integrationsPage.modals.telephonySettings', 'Настройка телефонии')}
-        open={modalVisible.telephony}
-        onCancel={() => closeModal('telephony')}
+        onCancel={() =>
+          closeIntegrationModalWithGuard(
+            'sms',
+            tr('integrationsPage.modals.unsavedSmsTitle', 'Есть несохраненные изменения'),
+            tr(
+              'integrationsPage.modals.unsavedSmsContent',
+              'В настройках SMS есть несохраненные изменения. Закрыть без сохранения?'
+            )
+          )
+        }
         footer={null}
         width={980}
         style={{ top: 20 }}
+        destroyOnClose
+        afterOpenChange={(open) => {
+          if (!open) setIntegrationUnsaved('sms', false);
+        }}
+        styles={{ body: { maxHeight: '78vh', overflowY: 'auto', paddingRight: 8 } }}
       >
-        <TelephonySettings onSuccess={() => handleIntegrationSuccess('telephony')} />
+        <SMSSettings
+          onSuccess={() => {
+            setIntegrationUnsaved('sms', false);
+            markIntegrationSaved('sms');
+            handleIntegrationSuccess('sms');
+          }}
+          onDirtyChange={(value) => setIntegrationUnsaved('sms', value)}
+        />
       </Modal>
 
       <Modal
-        title={tr('integrationsPage.modals.connectWhatsapp', 'Подключение WhatsApp Business')}
+        title={renderIntegrationModalTitle(
+          tr('integrationsPage.modals.telephonySettings', 'Настройка телефонии'),
+          telephonyHasUnsavedChanges,
+          integrationSavedMap.telephony
+        )}
+        open={modalVisible.telephony}
+        onCancel={closeTelephonyModal}
+        footer={null}
+        width={1120}
+        style={{ top: 20 }}
+        destroyOnClose
+        afterOpenChange={(open) => {
+          if (!open) setTelephonyHasUnsavedChanges(false);
+        }}
+        styles={{ body: { maxHeight: '78vh', overflowY: 'auto', paddingRight: 8 } }}
+      >
+        <TelephonySettings
+          onSuccess={() => {
+            setTelephonyHasUnsavedChanges(false);
+            setIntegrationUnsaved('telephony', false);
+            markIntegrationSaved('telephony');
+            handleIntegrationSuccess('telephony');
+          }}
+          onDirtyChange={(value) => {
+            setTelephonyHasUnsavedChanges(!!value);
+            setIntegrationUnsaved('telephony', !!value);
+          }}
+        />
+      </Modal>
+
+      <Modal
+        title={renderIntegrationModalTitle(
+          tr('integrationsPage.modals.connectWhatsapp', 'Подключение WhatsApp Business'),
+          integrationUnsavedMap.whatsapp,
+          integrationSavedMap.whatsapp
+        )}
         open={modalVisible.whatsapp}
-        onCancel={() => closeModal('whatsapp')}
+        onCancel={() =>
+          closeIntegrationModalWithGuard(
+            'whatsapp',
+            tr('integrationsPage.modals.unsavedWhatsAppTitle', 'Есть несохраненные изменения'),
+            tr(
+              'integrationsPage.modals.unsavedWhatsAppContent',
+              'В форме подключения WhatsApp есть несохраненные изменения. Закрыть без сохранения?'
+            )
+          )
+        }
         footer={null}
-        width={720}
+        width={860}
+        destroyOnClose
+        afterOpenChange={(open) => {
+          if (!open) setIntegrationUnsaved('whatsapp', false);
+        }}
+        styles={{ body: { maxHeight: '78vh', overflowY: 'auto', paddingRight: 8 } }}
       >
-        <WhatsAppConnect onSuccess={() => handleIntegrationSuccess('whatsapp')} onCancel={() => closeModal('whatsapp')} />
+        <WhatsAppConnect
+          onSuccess={() => {
+            setIntegrationUnsaved('whatsapp', false);
+            markIntegrationSaved('whatsapp');
+            handleIntegrationSuccess('whatsapp');
+          }}
+          onCancel={() =>
+            closeIntegrationModalWithGuard(
+              'whatsapp',
+              tr('integrationsPage.modals.unsavedWhatsAppTitle', 'Есть несохраненные изменения'),
+              tr(
+                'integrationsPage.modals.unsavedWhatsAppContent',
+                'В форме подключения WhatsApp есть несохраненные изменения. Закрыть без сохранения?'
+              )
+            )
+          }
+          onDirtyChange={(value) => setIntegrationUnsaved('whatsapp', value)}
+        />
       </Modal>
 
       <Modal
-        title={tr('integrationsPage.modals.connectFacebook', 'Подключение Facebook')}
+        title={renderIntegrationModalTitle(
+          tr('integrationsPage.modals.connectFacebook', 'Подключение Facebook'),
+          integrationUnsavedMap.facebook,
+          integrationSavedMap.facebook
+        )}
         open={modalVisible.facebook}
-        onCancel={() => closeModal('facebook')}
+        onCancel={() =>
+          closeIntegrationModalWithGuard(
+            'facebook',
+            tr('integrationsPage.modals.unsavedFacebookTitle', 'Есть несохраненные изменения'),
+            tr(
+              'integrationsPage.modals.unsavedFacebookContent',
+              'В форме подключения Facebook есть несохраненные изменения. Закрыть без сохранения?'
+            )
+          )
+        }
         footer={null}
-        width={720}
+        width={900}
+        destroyOnClose
+        afterOpenChange={(open) => {
+          if (!open) setIntegrationUnsaved('facebook', false);
+        }}
+        styles={{ body: { maxHeight: '78vh', overflowY: 'auto', paddingRight: 8 } }}
       >
-        <FacebookConnect onSuccess={() => handleIntegrationSuccess('facebook')} onCancel={() => closeModal('facebook')} />
+        <FacebookConnect
+          onSuccess={() => {
+            setIntegrationUnsaved('facebook', false);
+            markIntegrationSaved('facebook');
+            handleIntegrationSuccess('facebook');
+          }}
+          onCancel={() =>
+            closeIntegrationModalWithGuard(
+              'facebook',
+              tr('integrationsPage.modals.unsavedFacebookTitle', 'Есть несохраненные изменения'),
+              tr(
+                'integrationsPage.modals.unsavedFacebookContent',
+                'В форме подключения Facebook есть несохраненные изменения. Закрыть без сохранения?'
+              )
+            )
+          }
+          onDirtyChange={(value) => setIntegrationUnsaved('facebook', value)}
+        />
       </Modal>
 
       <Modal
-        title={tr('integrationsPage.modals.connectInstagram', 'Подключение Instagram')}
+        title={renderIntegrationModalTitle(
+          tr('integrationsPage.modals.connectInstagram', 'Подключение Instagram'),
+          integrationUnsavedMap.instagram,
+          integrationSavedMap.instagram
+        )}
         open={modalVisible.instagram}
-        onCancel={() => closeModal('instagram')}
+        onCancel={() =>
+          closeIntegrationModalWithGuard(
+            'instagram',
+            tr('integrationsPage.modals.unsavedInstagramTitle', 'Есть несохраненные изменения'),
+            tr(
+              'integrationsPage.modals.unsavedInstagramContent',
+              'В форме подключения Instagram есть несохраненные изменения. Закрыть без сохранения?'
+            )
+          )
+        }
         footer={null}
-        width={720}
+        width={900}
+        destroyOnClose
+        afterOpenChange={(open) => {
+          if (!open) setIntegrationUnsaved('instagram', false);
+        }}
+        styles={{ body: { maxHeight: '78vh', overflowY: 'auto', paddingRight: 8 } }}
       >
-        <InstagramConnect onSuccess={() => handleIntegrationSuccess('instagram')} onCancel={() => closeModal('instagram')} />
+        <InstagramConnect
+          onSuccess={() => {
+            setIntegrationUnsaved('instagram', false);
+            markIntegrationSaved('instagram');
+            handleIntegrationSuccess('instagram');
+          }}
+          onCancel={() =>
+            closeIntegrationModalWithGuard(
+              'instagram',
+              tr('integrationsPage.modals.unsavedInstagramTitle', 'Есть несохраненные изменения'),
+              tr(
+                'integrationsPage.modals.unsavedInstagramContent',
+                'В форме подключения Instagram есть несохраненные изменения. Закрыть без сохранения?'
+              )
+            )
+          }
+          onDirtyChange={(value) => setIntegrationUnsaved('instagram', value)}
+        />
       </Modal>
 
       <Modal
-        title={tr('integrationsPage.modals.connectTelegram', 'Подключение Telegram')}
+        title={renderIntegrationModalTitle(
+          tr('integrationsPage.modals.connectTelegram', 'Подключение Telegram'),
+          integrationUnsavedMap.telegram,
+          integrationSavedMap.telegram
+        )}
         open={modalVisible.telegram}
-        onCancel={() => closeModal('telegram')}
+        onCancel={() =>
+          closeIntegrationModalWithGuard(
+            'telegram',
+            tr('integrationsPage.modals.unsavedTelegramTitle', 'Есть несохраненные изменения'),
+            tr(
+              'integrationsPage.modals.unsavedTelegramContent',
+              'В форме подключения Telegram есть несохраненные изменения. Закрыть без сохранения?'
+            )
+          )
+        }
         footer={null}
-        width={720}
+        width={900}
+        destroyOnClose
+        afterOpenChange={(open) => {
+          if (!open) setIntegrationUnsaved('telegram', false);
+        }}
+        styles={{ body: { maxHeight: '78vh', overflowY: 'auto', paddingRight: 8 } }}
       >
-        <TelegramConnect onSuccess={() => handleIntegrationSuccess('telegram')} onCancel={() => closeModal('telegram')} />
+        <TelegramConnect
+          onSuccess={() => {
+            setIntegrationUnsaved('telegram', false);
+            markIntegrationSaved('telegram');
+            handleIntegrationSuccess('telegram');
+          }}
+          onCancel={() =>
+            closeIntegrationModalWithGuard(
+              'telegram',
+              tr('integrationsPage.modals.unsavedTelegramTitle', 'Есть несохраненные изменения'),
+              tr(
+                'integrationsPage.modals.unsavedTelegramContent',
+                'В форме подключения Telegram есть несохраненные изменения. Закрыть без сохранения?'
+              )
+            )
+          }
+          onDirtyChange={(value) => setIntegrationUnsaved('telegram', value)}
+        />
       </Modal>
 
       <Modal
@@ -2875,12 +4181,25 @@ export default function IntegrationsPage({ embedded = false, compact = false } =
           <Form.Item
             label="Webhook URL"
             name="webhook_url"
-            rules={[{ type: 'url', message: tr('integrationsPage.validation.url', 'Укажите корректный URL') }]}
+            rules={[
+              {
+                type: 'url',
+                message: tr('integrationsPage.validation.url', 'Укажите корректный URL'),
+              },
+            ]}
           >
             <Input
-              placeholder={tr('integrationsPage.placeholders.webhookUrl', 'Оставьте пустым для автогенерации URL')}
+              placeholder={tr(
+                'integrationsPage.placeholders.webhookUrl',
+                'Оставьте пустым для автогенерации URL'
+              )}
               addonAfter={
-                <Button type="text" size="small" icon={<CopyOutlined />} onClick={handleCopyWebhookUrl}>
+                <Button
+                  type="text"
+                  size="small"
+                  icon={<CopyOutlined />}
+                  onClick={handleCopyWebhookUrl}
+                >
                   {tr('integrationsPage.actions.copy', 'Скопировать')}
                 </Button>
               }
@@ -2890,7 +4209,11 @@ export default function IntegrationsPage({ embedded = false, compact = false } =
       </Modal>
 
       <Modal
-        title={aiModal.record ? tr('integrationsPage.modals.editAiProvider', 'Редактирование AI провайдера') : tr('integrationsPage.modals.addAiProvider', 'Добавление AI провайдера')}
+        title={
+          aiModal.record
+            ? tr('integrationsPage.modals.editAiProvider', 'Редактирование AI провайдера')
+            : tr('integrationsPage.modals.addAiProvider', 'Добавление AI провайдера')
+        }
         open={aiModal.open}
         forceRender
         onCancel={closeAIModal}
@@ -2903,7 +4226,15 @@ export default function IntegrationsPage({ embedded = false, compact = false } =
           <Form.Item
             label={tr('integrationsPage.form.name', 'Название')}
             name="name"
-            rules={[{ required: true, message: tr('integrationsPage.validation.providerName', 'Введите название провайдера') }]}
+            rules={[
+              {
+                required: true,
+                message: tr(
+                  'integrationsPage.validation.providerName',
+                  'Введите название провайдера'
+                ),
+              },
+            ]}
           >
             <Input placeholder="OpenAI Prod" />
           </Form.Item>
@@ -2911,12 +4242,22 @@ export default function IntegrationsPage({ embedded = false, compact = false } =
           <Form.Item
             label={tr('integrationsPage.form.provider', 'Провайдер')}
             name="provider"
-            rules={[{ required: true, message: tr('integrationsPage.validation.providerSelect', 'Выберите провайдера') }]}
+            rules={[
+              {
+                required: true,
+                message: tr('integrationsPage.validation.providerSelect', 'Выберите провайдера'),
+              },
+            ]}
           >
             <Select options={AI_PROVIDER_OPTIONS} onChange={handleAIProviderChange} />
           </Form.Item>
 
-          <Form.Item noStyle shouldUpdate={(prev, next) => prev.provider !== next.provider || prev.model !== next.model}>
+          <Form.Item
+            noStyle
+            shouldUpdate={(prev, next) =>
+              prev.provider !== next.provider || prev.model !== next.model
+            }
+          >
             {({ getFieldValue }) => {
               const provider = getFieldValue('provider');
               const model = getFieldValue('model');
@@ -2927,15 +4268,31 @@ export default function IntegrationsPage({ embedded = false, compact = false } =
                 <Form.Item
                   label={tr('integrationsPage.form.model', 'Модель')}
                   name="model"
-                  rules={[{ required: true, message: tr('integrationsPage.validation.modelSelect', 'Выберите или укажите модель') }]}
+                  rules={[
+                    {
+                      required: true,
+                      message: tr(
+                        'integrationsPage.validation.modelSelect',
+                        'Выберите или укажите модель'
+                      ),
+                    },
+                  ]}
                 >
                   {isCustomModel ? (
-                    <Input placeholder={tr('integrationsPage.placeholders.customModel', 'Введите модель, поддерживаемую вашим провайдером')} />
+                    <Input
+                      placeholder={tr(
+                        'integrationsPage.placeholders.customModel',
+                        'Введите модель, поддерживаемую вашим провайдером'
+                      )}
+                    />
                   ) : (
                     <Select
                       showSearch
                       options={providerModelOptions}
-                      placeholder={tr('integrationsPage.placeholders.modelSelect', 'Выберите модель')}
+                      placeholder={tr(
+                        'integrationsPage.placeholders.modelSelect',
+                        'Выберите модель'
+                      )}
                       optionFilterProp="label"
                     />
                   )}
@@ -2948,7 +4305,12 @@ export default function IntegrationsPage({ embedded = false, compact = false } =
             <Input
               placeholder="https://api.openai.com"
               addonAfter={
-                <Button type="text" size="small" icon={<CopyOutlined />} onClick={handleCopyAiBaseUrl}>
+                <Button
+                  type="text"
+                  size="small"
+                  icon={<CopyOutlined />}
+                  onClick={handleCopyAiBaseUrl}
+                >
                   Скопировать
                 </Button>
               }
@@ -2956,9 +4318,25 @@ export default function IntegrationsPage({ embedded = false, compact = false } =
           </Form.Item>
 
           <Form.Item
-            label={aiModal.record ? tr('integrationsPage.form.apiKeyOptional', 'API Key (оставьте пустым, чтобы не менять)') : tr('integrationsPage.form.apiKey', 'API Key')}
+            label={
+              aiModal.record
+                ? tr(
+                    'integrationsPage.form.apiKeyOptional',
+                    'API Key (оставьте пустым, чтобы не менять)'
+                  )
+                : tr('integrationsPage.form.apiKey', 'API Key')
+            }
             name="api_key"
-            rules={aiModal.record ? [] : [{ required: true, message: tr('integrationsPage.validation.apiKey', 'Введите API ключ') }]}
+            rules={
+              aiModal.record
+                ? []
+                : [
+                    {
+                      required: true,
+                      message: tr('integrationsPage.validation.apiKey', 'Введите API ключ'),
+                    },
+                  ]
+            }
           >
             <Input.Password placeholder="sk-..." />
           </Form.Item>
@@ -2976,10 +4354,18 @@ export default function IntegrationsPage({ embedded = false, compact = false } =
           </Space>
 
           <Space style={{ width: '100%' }} size="large">
-            <Form.Item label={tr('integrationsPage.form.active', 'Активен')} name="is_active" valuePropName="checked">
+            <Form.Item
+              label={tr('integrationsPage.form.active', 'Активен')}
+              name="is_active"
+              valuePropName="checked"
+            >
               <Switch />
             </Form.Item>
-            <Form.Item label={tr('integrationsPage.form.default', 'По умолчанию')} name="is_default" valuePropName="checked">
+            <Form.Item
+              label={tr('integrationsPage.form.default', 'По умолчанию')}
+              name="is_default"
+              valuePropName="checked"
+            >
               <Switch />
             </Form.Item>
           </Space>
@@ -2998,75 +4384,228 @@ export default function IntegrationsPage({ embedded = false, compact = false } =
         <Form form={integrationEditForm} layout="vertical">
           {integrationEditModal.type === 'whatsapp' && (
             <>
-              <Form.Item label={tr('integrationsPage.form.accountName', 'Название аккаунта')} name="business_name" rules={[{ required: true, message: tr('integrationsPage.validation.accountName', 'Введите название аккаунта') }]}>
+              <Form.Item
+                label={tr('integrationsPage.form.accountName', 'Название аккаунта')}
+                name="business_name"
+                rules={[
+                  {
+                    required: true,
+                    message: tr(
+                      'integrationsPage.validation.accountName',
+                      'Введите название аккаунта'
+                    ),
+                  },
+                ]}
+              >
                 <Input />
               </Form.Item>
               <Form.Item label={tr('integrationsPage.form.phone', 'Номер')} name="phone_number">
                 <Input />
               </Form.Item>
-              <Form.Item label="Webhook URL" name="webhook_url" rules={[{ type: 'url', message: tr('integrationsPage.validation.url', 'Укажите корректный URL') }]}>
+              <Form.Item
+                label="Webhook URL"
+                name="webhook_url"
+                rules={[
+                  {
+                    type: 'url',
+                    message: tr('integrationsPage.validation.url', 'Укажите корректный URL'),
+                  },
+                ]}
+              >
                 <Input placeholder="https://crm.example.com/integrations/whatsapp/webhook/" />
               </Form.Item>
               <Space size="large">
-                <Form.Item label={tr('integrationsPage.form.active', 'Активен')} name="is_active" valuePropName="checked"><Switch /></Form.Item>
-                <Form.Item label={tr('integrationsPage.form.autoSync', 'Автосинк')} name="auto_sync_messages" valuePropName="checked"><Switch /></Form.Item>
-                <Form.Item label={tr('integrationsPage.form.autoLeads', 'Авто-лиды')} name="auto_create_leads" valuePropName="checked"><Switch /></Form.Item>
+                <Form.Item
+                  label={tr('integrationsPage.form.active', 'Активен')}
+                  name="is_active"
+                  valuePropName="checked"
+                >
+                  <Switch />
+                </Form.Item>
+                <Form.Item
+                  label={tr('integrationsPage.form.autoSync', 'Автосинк')}
+                  name="auto_sync_messages"
+                  valuePropName="checked"
+                >
+                  <Switch />
+                </Form.Item>
+                <Form.Item
+                  label={tr('integrationsPage.form.autoLeads', 'Авто-лиды')}
+                  name="auto_create_leads"
+                  valuePropName="checked"
+                >
+                  <Switch />
+                </Form.Item>
               </Space>
             </>
           )}
 
           {integrationEditModal.type === 'facebook' && (
             <>
-              <Form.Item label={tr('integrationsPage.form.pageName', 'Название страницы')} name="page_name" rules={[{ required: true, message: tr('integrationsPage.validation.pageName', 'Введите название страницы') }]}>
+              <Form.Item
+                label={tr('integrationsPage.form.pageName', 'Название страницы')}
+                name="page_name"
+                rules={[
+                  {
+                    required: true,
+                    message: tr(
+                      'integrationsPage.validation.pageName',
+                      'Введите название страницы'
+                    ),
+                  },
+                ]}
+              >
                 <Input />
               </Form.Item>
-              <Form.Item label="Webhook URL" name="webhook_url" rules={[{ type: 'url', message: tr('integrationsPage.validation.url', 'Укажите корректный URL') }]}>
+              <Form.Item
+                label="Webhook URL"
+                name="webhook_url"
+                rules={[
+                  {
+                    type: 'url',
+                    message: tr('integrationsPage.validation.url', 'Укажите корректный URL'),
+                  },
+                ]}
+              >
                 <Input placeholder="https://crm.example.com/integrations/facebook/webhook/" />
               </Form.Item>
               <Space size="large">
-                <Form.Item label={tr('integrationsPage.form.active', 'Активна')} name="is_active" valuePropName="checked"><Switch /></Form.Item>
-                <Form.Item label={tr('integrationsPage.form.autoMessages', 'Автосинк сообщений')} name="auto_sync_messages" valuePropName="checked"><Switch /></Form.Item>
-                <Form.Item label={tr('integrationsPage.form.autoComments', 'Автосинк комментариев')} name="auto_sync_comments" valuePropName="checked"><Switch /></Form.Item>
-                <Form.Item label={tr('integrationsPage.form.autoPosts', 'Автосинк постов')} name="auto_sync_posts" valuePropName="checked"><Switch /></Form.Item>
+                <Form.Item
+                  label={tr('integrationsPage.form.active', 'Активна')}
+                  name="is_active"
+                  valuePropName="checked"
+                >
+                  <Switch />
+                </Form.Item>
+                <Form.Item
+                  label={tr('integrationsPage.form.autoMessages', 'Автосинк сообщений')}
+                  name="auto_sync_messages"
+                  valuePropName="checked"
+                >
+                  <Switch />
+                </Form.Item>
+                <Form.Item
+                  label={tr('integrationsPage.form.autoComments', 'Автосинк комментариев')}
+                  name="auto_sync_comments"
+                  valuePropName="checked"
+                >
+                  <Switch />
+                </Form.Item>
+                <Form.Item
+                  label={tr('integrationsPage.form.autoPosts', 'Автосинк постов')}
+                  name="auto_sync_posts"
+                  valuePropName="checked"
+                >
+                  <Switch />
+                </Form.Item>
               </Space>
             </>
           )}
 
           {integrationEditModal.type === 'instagram' && (
             <>
-              <Form.Item label="Username" name="username" rules={[{ required: true, message: tr('integrationsPage.validation.username', 'Введите username') }]}>
+              <Form.Item
+                label="Username"
+                name="username"
+                rules={[
+                  {
+                    required: true,
+                    message: tr('integrationsPage.validation.username', 'Введите username'),
+                  },
+                ]}
+              >
                 <Input />
               </Form.Item>
-              <Form.Item label="Webhook URL" name="webhook_url" rules={[{ type: 'url', message: tr('integrationsPage.validation.url', 'Укажите корректный URL') }]}>
+              <Form.Item
+                label="Webhook URL"
+                name="webhook_url"
+                rules={[
+                  {
+                    type: 'url',
+                    message: tr('integrationsPage.validation.url', 'Укажите корректный URL'),
+                  },
+                ]}
+              >
                 <Input placeholder="https://crm.example.com/integrations/instagram/webhook/" />
               </Form.Item>
               <Space size="large">
-                <Form.Item label={tr('integrationsPage.form.active', 'Активен')} name="is_active" valuePropName="checked"><Switch /></Form.Item>
-                <Form.Item label={tr('integrationsPage.form.autoMessages', 'Автосинк сообщений')} name="auto_sync_messages" valuePropName="checked"><Switch /></Form.Item>
-                <Form.Item label={tr('integrationsPage.form.autoComments', 'Автосинк комментариев')} name="auto_sync_comments" valuePropName="checked"><Switch /></Form.Item>
+                <Form.Item
+                  label={tr('integrationsPage.form.active', 'Активен')}
+                  name="is_active"
+                  valuePropName="checked"
+                >
+                  <Switch />
+                </Form.Item>
+                <Form.Item
+                  label={tr('integrationsPage.form.autoMessages', 'Автосинк сообщений')}
+                  name="auto_sync_messages"
+                  valuePropName="checked"
+                >
+                  <Switch />
+                </Form.Item>
+                <Form.Item
+                  label={tr('integrationsPage.form.autoComments', 'Автосинк комментариев')}
+                  name="auto_sync_comments"
+                  valuePropName="checked"
+                >
+                  <Switch />
+                </Form.Item>
               </Space>
             </>
           )}
 
           {integrationEditModal.type === 'telegram' && (
             <>
-              <Form.Item label="Webhook URL" name="webhook_url" rules={[{ type: 'url', message: tr('integrationsPage.validation.url', 'Укажите корректный URL') }]}>
+              <Form.Item
+                label="Webhook URL"
+                name="webhook_url"
+                rules={[
+                  {
+                    type: 'url',
+                    message: tr('integrationsPage.validation.url', 'Укажите корректный URL'),
+                  },
+                ]}
+              >
                 <Input placeholder={getDefaultTelegramWebhookUrl()} />
               </Form.Item>
-              <Form.Item label={tr('integrationsPage.form.welcomeMessage', 'Приветственное сообщение')} name="welcome_message">
+              <Form.Item
+                label={tr('integrationsPage.form.welcomeMessage', 'Приветственное сообщение')}
+                name="welcome_message"
+              >
                 <Input.TextArea rows={3} />
               </Form.Item>
               <Form.Item
                 label={tr('integrationsPage.form.allowedChatIds', 'Разрешённые chat_id')}
                 name="allowed_chat_ids_text"
-                extra={tr('integrationsPage.form.allowedChatIdsHint', 'По одному ID чата на строку. Пусто = разрешены все чаты.')}
+                extra={tr(
+                  'integrationsPage.form.allowedChatIdsHint',
+                  'По одному ID чата на строку. Пусто = разрешены все чаты.'
+                )}
               >
                 <Input.TextArea rows={4} placeholder={'123456789\n-1001234567890'} />
               </Form.Item>
               <Space size="large">
-                <Form.Item label={tr('integrationsPage.form.active', 'Активен')} name="is_active" valuePropName="checked"><Switch /></Form.Item>
-                <Form.Item label={tr('integrationsPage.form.autoReply', 'Автоответ')} name="auto_reply" valuePropName="checked"><Switch /></Form.Item>
-                <Form.Item label={tr('integrationsPage.form.useWebhook', 'Использовать webhook')} name="use_webhook" valuePropName="checked"><Switch /></Form.Item>
+                <Form.Item
+                  label={tr('integrationsPage.form.active', 'Активен')}
+                  name="is_active"
+                  valuePropName="checked"
+                >
+                  <Switch />
+                </Form.Item>
+                <Form.Item
+                  label={tr('integrationsPage.form.autoReply', 'Автоответ')}
+                  name="auto_reply"
+                  valuePropName="checked"
+                >
+                  <Switch />
+                </Form.Item>
+                <Form.Item
+                  label={tr('integrationsPage.form.useWebhook', 'Использовать webhook')}
+                  name="use_webhook"
+                  valuePropName="checked"
+                >
+                  <Switch />
+                </Form.Item>
               </Space>
             </>
           )}

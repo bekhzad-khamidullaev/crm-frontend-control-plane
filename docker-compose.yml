@@ -1,4 +1,4 @@
-version: "3.8"
+name: crm-frontend
 
 services:
   frontend:
@@ -7,14 +7,15 @@ services:
       dockerfile: Dockerfile
       args:
         BUILD_MODE: production
-    container_name: crm-frontend-production
     restart: unless-stopped
     ports:
       - "127.0.0.1:8080:80"
+    env_file:
+      - .env.production
     environment:
-      - API_BASE_URL=https://api.crm.windevs.uz
-      - API_PREFIX=/api
-      - PBX_SERVER=wss://crm.windevs.uz/asterisk/ws
+      API_BASE_URL: ${API_BASE_URL:-https://api.crm.windevs.uz}
+      API_PREFIX: ${API_PREFIX:-/api}
+      PBX_SERVER: ${PBX_SERVER:-wss://crm.windevs.uz/asterisk/ws}
     volumes:
       - ./logs/nginx:/var/log/nginx
     healthcheck:
@@ -23,20 +24,3 @@ services:
       timeout: 3s
       retries: 3
       start_period: 10s
-
-  frontend-staging:
-    build:
-      context: .
-      dockerfile: Dockerfile
-      args:
-        BUILD_MODE: staging
-    container_name: crm-frontend-staging
-    restart: unless-stopped
-    ports:
-      - "127.0.0.1:8081:80"
-    environment:
-      - API_BASE_URL=https://api.crm.windevs.uz
-      - API_PREFIX=/api
-      - PBX_SERVER=wss://crm.windevs.uz/asterisk/ws
-    profiles:
-      - staging

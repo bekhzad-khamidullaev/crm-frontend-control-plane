@@ -1,5 +1,5 @@
 import dayjs from 'dayjs';
-import { formatCurrency, formatNumber } from './format';
+import { formatCurrencyForRecord, formatNumber } from './format';
 
 /**
  * Export utilities for CSV, Excel, and PDF formats
@@ -216,10 +216,7 @@ function getNestedValue(obj, path) {
 export const formatters = {
   date: (value) => value ? dayjs(value).format('DD/MM/YYYY') : '-',
   datetime: (value) => value ? dayjs(value).format('DD/MM/YYYY HH:mm') : '-',
-  currency: (value, row) => {
-    const currencyCode = row.currency_code;
-    return value && currencyCode ? formatCurrency(value, currencyCode) : '-';
-  },
+  currency: (value, row) => formatCurrencyForRecord(value, row),
   boolean: (value) => value ? 'Yes' : 'No',
   array: (value) => Array.isArray(value) ? value.join(', ') : '-',
   number: (value) => value !== null && value !== undefined ? formatNumber(value) : '-',

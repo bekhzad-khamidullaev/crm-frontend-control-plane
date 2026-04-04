@@ -8,7 +8,7 @@ import {
     PhoneOutlined,
     UserOutlined
 } from '@ant-design/icons';
-import { Alert, Avatar, Button, Grid, Popconfirm, Space, Table, Tooltip } from 'antd';
+import { Alert, Avatar, Button, Grid, Popconfirm, Space, Table, Tooltip, theme } from 'antd';
 import React, { useMemo } from 'react';
 // @ts-ignore
 import EditableCell from '@/components/editable-cell';
@@ -17,6 +17,8 @@ import { contactKeys } from '@/entities/contact/api/keys';
 import { useDeleteContact, usePatchContact } from '@/entities/contact/api/mutations';
 import type { Contact } from '@/entities/contact/model/types';
 import { useCompanies } from '@/entities/company/api/queries';
+import { useUsers } from '@/features/reference';
+import { getCompanyDisplayName } from '@/lib/utils/company-display.js';
 import { ContactsService } from '@/shared/api/generated/services/ContactsService';
 import type { ColumnsType } from 'antd/es/table';
 import { ContactsTableFilters } from './ui/ContactsTableFilters';
@@ -28,17 +30,37 @@ import { navigate } from '@/router.js';
 import { canWrite } from '@/lib/rbac.js';
 
 export const ContactsTable: React.FC = () => {
+  const { token } = theme.useToken();
   const screens = Grid.useBreakpoint();
   const isMobile = !screens.md;
   const canManage = canWrite();
   const { data: companiesResponse } = useCompanies({ page: 1, pageSize: 1000 });
+  const { data: usersData } = useUsers();
   const companyNameById = useMemo(() => {
     const map: Record<number, string> = {};
     for (const company of companiesResponse?.results ?? []) {
-      map[company.id] = company.full_name || '-';
+      map[company.id] = getCompanyDisplayName(company) || '-';
     }
     return map;
   }, [companiesResponse?.results]);
+
+  const companyOptions = useMemo(
+    () =>
+      (companiesResponse?.results || []).map((company) => ({
+        value: company.id,
+        label: getCompanyDisplayName(company) || 'Компания',
+      })),
+    [companiesResponse?.results],
+  );
+
+  const userOptions = useMemo(
+    () =>
+      (usersData?.results || []).map((user) => ({
+        value: user.id,
+        label: `${user.first_name || ''} ${user.last_name || ''}`.trim() || user.username || user.email || 'Пользователь',
+      })),
+    [usersData?.results],
+  );
 
   const {
     data,
@@ -81,13 +103,22 @@ export const ContactsTable: React.FC = () => {
 
   const handleInlineSave = async (record: Contact, dataIndex: string, value: any) => {
     if (!canManage) return;
+    if (dataIndex === 'company' && (value === null || value === undefined || value === '')) {
+      return;
+    }
     const normalizedValue =
       dataIndex === 'company' || dataIndex === 'owner'
         ? normalizeForeignKeyValue(value)
         : value;
+    const payload = {
+      // Backend ContactSerializer currently validates first_name/last_name for PATCH as required.
+      first_name: record.first_name || '',
+      last_name: record.last_name || '',
+      [dataIndex]: normalizedValue,
+    };
     await patchMutation.mutateAsync({
       id: record.id,
-      data: { [dataIndex]: normalizedValue } as any,
+      data: payload as any,
     });
     await refetch();
   };
@@ -116,7 +147,7 @@ export const ContactsTable: React.FC = () => {
             >
               {record.full_name}
             </div>
-            <div style={{ fontSize: 12, color: '#999' }}>
+            <div style={{ fontSize: 12, color: token.colorTextSecondary }}>
               <EditableCell
                 value={record.title}
                 record={record}
@@ -139,7 +170,7 @@ export const ContactsTable: React.FC = () => {
       render: (_, record) => (
         <Space direction="vertical" size="small" style={{ width: '100%' }}>
           <Space size="small" style={{ width: '100%' }}>
-            <MailOutlined style={{ color: '#999' }} />
+            <MailOutlined style={{ color: token.colorTextSecondary }} />
             <EditableCell
               value={record.email}
               record={record}
@@ -151,7 +182,7 @@ export const ContactsTable: React.FC = () => {
             />
           </Space>
           <Space size="small" style={{ width: '100%' }}>
-            <PhoneOutlined style={{ color: '#999' }} />
+            <PhoneOutlined style={{ color: token.colorTextSecondary }} />
             <EditableCell
               value={record.phone}
               record={record}
@@ -171,20 +202,68 @@ export const ContactsTable: React.FC = () => {
       key: 'company',
       responsive: ['sm'],
       width: 160,
-      render: (companyId: number) => companyId ? (
-        <Button
-          type="link"
-          size="small"
-          icon={<BankOutlined />}
-          onClick={() => navigate(`/companies/${companyId}`)}
-          style={{ maxWidth: 150 }}
-          title={companyNameById[companyId] || 'Компания'}
-        >
-          <span style={{ ...singleLineEllipsis, maxWidth: 120 }}>
-            {companyNameById[companyId] || 'Компания'}
-          </span>
-        </Button>
-      ) : '-',
+      render: (companyId: number | null | undefined, record: Contact) => (
+        <EditableCell
+          value={companyId}
+          record={record}
+          dataIndex="company"
+          editable={canManage}
+          type="select"
+          options={companyOptions}
+          onSave={handleInlineSave}
+          saveOnBlur={false}
+          placeholder="Компания"
+          inputProps={{ allowClear: false }}
+          renderView={(val: number | null | undefined) => {
+            if (!val) return '-';
+            const fallbackFromRecord = getCompanyDisplayName(record as any);
+            const label = companyNameById[val] || fallbackFromRecord || 'Компания';
+            return (
+              <Button
+                type="link"
+                size="small"
+                icon={<BankOutlined />}
+                onClick={() => navigate(`/companies/${val}`)}
+                style={{ maxWidth: 150, paddingInline: 0 }}
+                title={label}
+              >
+                <span style={{ ...singleLineEllipsis, maxWidth: 120 }}>{label}</span>
+              </Button>
+            );
+          }}
+          style={{ paddingInline: 0 }}
+        />
+      ),
+    },
+    {
+      title: 'Ответственный',
+      dataIndex: 'owner',
+      key: 'owner',
+      responsive: ['xl'],
+      width: 180,
+      render: (ownerId: number | null | undefined, record: any) => (
+        <EditableCell
+          value={ownerId}
+          record={record}
+          dataIndex="owner"
+          editable={canManage}
+          type="select"
+          options={userOptions}
+          onSave={handleInlineSave}
+          saveOnBlur={false}
+          placeholder="Ответственный"
+          renderView={(val: number | null | undefined) => {
+            const option = userOptions.find((item) => String(item.value) === String(val));
+            const label = option?.label || record.owner_name || 'Не назначен';
+            return (
+              <span style={{ ...singleLineEllipsis, maxWidth: 150 }} title={label}>
+                {label}
+              </span>
+            );
+          }}
+          style={{ paddingInline: 0 }}
+        />
+      ),
     },
     {
       title: 'Дата создания',
@@ -213,18 +292,20 @@ export const ContactsTable: React.FC = () => {
             type="link"
             size="small"
             icon={<EyeOutlined />}
+            aria-label="Просмотреть контакт"
             onClick={() => navigate(`/contacts/${record.id}`)}
           />
           {canManage ? (
-            <Button
-              type="link"
-              size="small"
-              icon={<EditOutlined />}
-              onClick={() => navigate(`/contacts/${record.id}/edit`)}
-            />
+              <Button
+                type="link"
+                size="small"
+                icon={<EditOutlined />}
+                aria-label="Редактировать контакт"
+                onClick={() => navigate(`/contacts/${record.id}/edit`)}
+              />
           ) : (
             <Tooltip title="Недостаточно прав">
-              <Button type="link" size="small" icon={<EditOutlined />} disabled />
+              <Button type="link" size="small" icon={<EditOutlined />} aria-label="Редактировать контакт" disabled />
             </Tooltip>
           )}
           {canManage ? (
@@ -234,11 +315,18 @@ export const ContactsTable: React.FC = () => {
               okText="Да"
               cancelText="Нет"
             >
-              <Button type="link" size="small" danger icon={<DeleteOutlined />} loading={deleteMutation.isPending} />
+              <Button
+                type="link"
+                size="small"
+                danger
+                icon={<DeleteOutlined />}
+                aria-label="Удалить контакт"
+                loading={deleteMutation.isPending}
+              />
             </Popconfirm>
           ) : (
             <Tooltip title="Недостаточно прав">
-              <Button type="link" size="small" danger icon={<DeleteOutlined />} disabled />
+              <Button type="link" size="small" danger icon={<DeleteOutlined />} aria-label="Удалить контакт" disabled />
             </Tooltip>
           )}
         </Space>

@@ -1,11 +1,11 @@
-# CRM Frontend Control Plane
+# CRM Frontend
 
-Frontend application for CRM license/control-plane.
+Frontend application for client CRM.
 
 ## Instance boundary
-- `crm-frontend-control-plane` serves licensing, sales, edition and partner/control-plane workflows.
-- `crm-frontend` serves client operational CRM workflows.
-- These are separate frontend instances and should remain decoupled.
+- `crm-frontend` is the client-facing CRM instance.
+- `crm-frontend-control-plane` is a separate instance for license/commercial/control-plane workflows.
+- These two frontends are developed in parallel as separate products and must not be merged into a single runtime app.
 
 ## Production
 - Compose file: `docker-compose.prod.yml`

@@ -1,4 +1,4 @@
-import { Button, Card, Empty } from 'antd';
+import { Button, Card, Empty, Space, Typography } from 'antd';
 import React from 'react';
 
 interface LegacyStatePanelProps {
@@ -17,23 +17,17 @@ export function LegacyStatePanel({
   children,
 }: LegacyStatePanelProps) {
   return (
-    <Card style={{ padding: 24 }}>
-      <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-        <div>
-          <div style={{ fontSize: 18, fontWeight: 600 }}>{title}</div>
-          {description ? (
-            <div style={{ marginTop: 4, fontSize: 14, color: 'rgba(0, 0, 0, 0.45)' }}>{description}</div>
-          ) : null}
-        </div>
+    <Card styles={{ body: { padding: 24 } }}>
+      <Space direction="vertical" size={16} style={{ width: '100%' }}>
+        <Space direction="vertical" size={4}>
+          <Typography.Title level={4} style={{ margin: 0 }}>
+            {title}
+          </Typography.Title>
+          {description ? <Typography.Text type="secondary">{description}</Typography.Text> : null}
+        </Space>
         {children}
-        {actionLabel && onAction ? (
-          <div>
-            <Button onClick={onAction}>
-              {actionLabel}
-            </Button>
-          </div>
-        ) : null}
-      </div>
+        {actionLabel && onAction ? <Button onClick={onAction}>{actionLabel}</Button> : null}
+      </Space>
     </Card>
   );
 }

@@ -33,6 +33,8 @@ class ChatWebSocket {
    * Connect to WebSocket server
    */
   connect(token) {
+    this.shouldReconnect = true;
+
     if (this.ws && this.ws.readyState === WebSocket.OPEN) {
       console.warn('[ChatWebSocket] Already connected');
       return;
@@ -48,10 +50,10 @@ class ChatWebSocket {
     }
 
     try {
-      const baseUrl = resolveWebSocketUrl(
-        import.meta.env.VITE_CHAT_WS_URL || import.meta.env.VITE_WS_URL,
-        '/ws/chat/'
-      );
+      const appConfig = (typeof window !== 'undefined' && window.__APP_CONFIG__) || {};
+      const chatWsUrl = appConfig.CHAT_WS_URL || appConfig.WS_URL || import.meta.env.VITE_CHAT_WS_URL || import.meta.env.VITE_WS_URL || '';
+      
+      const baseUrl = resolveWebSocketUrl(chatWsUrl, '/ws/chat/');
       if (!baseUrl) {
         console.warn('[ChatWebSocket] WebSocket URL not configured. Skipping connection.');
         return;
@@ -167,15 +169,11 @@ class ChatWebSocket {
     this.typingTimers.clear();
     this.emit('disconnected', { code: event.code, reason: event.reason });
 
-    // Don't reconnect if server is unavailable (code 1006 = abnormal closure)
-    if (event.code === 1006 && this.reconnectAttempts === 0) {
-      console.warn('[ChatWebSocket] Server unavailable, disabling auto-reconnect');
-      this.shouldReconnect = false;
+    if (event.code === 1006) {
       this.emit('error', {
         type: 'server_unavailable',
-        message: 'WebSocket server is not available. Real-time chat updates disabled.'
+        message: 'WebSocket server is temporarily unavailable. Reconnecting...',
       });
-      return;
     }
 
     if (this.shouldReconnect) {

@@ -220,6 +220,8 @@ export function useServerTable<T extends { id: number | string }>({
     isLoading,
     isFetching,
     error,
+    errorMessage: undefined,
+    errorDescription: undefined,
     pagination,
     params,
     handleTableChange,

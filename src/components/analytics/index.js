@@ -7,3 +7,4 @@ export { default as AnalyticsWrapper } from './AnalyticsWrapper.jsx';
 export { default as AnimatedChart } from './AnimatedChart.jsx';
 export { default as DrillDownModal } from './DrillDownModal.jsx';
 export { default as RealTimeIndicator } from './RealTimeIndicator.jsx';
+export { PredictionModelStatus } from './prediction-model-status';

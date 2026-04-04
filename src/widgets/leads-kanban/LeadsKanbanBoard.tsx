@@ -18,6 +18,7 @@ import {
 import { DndContext, type DragEndEvent, PointerSensor, useDraggable, useDroppable, useSensor, useSensors } from '@dnd-kit/core';
 import { Alert, Avatar, Badge, Button, Card, Empty, Flex, Input, message, Skeleton, Space, Typography, theme } from 'antd';
 import React, { useEffect, useMemo, useState } from 'react';
+import { getCompanyDisplayName } from '@/lib/utils/company-display.js';
 
 const { Text } = Typography;
 const CARD_ID_PREFIX = 'lead-';
@@ -78,6 +79,7 @@ const LeadCard: React.FC<{ lead: Lead; readOnly?: boolean }> = ({ lead, readOnly
     border: `1px solid ${isDragging ? token.colorPrimaryBorder : token.colorBorderSecondary}`,
     boxShadow: isDragging ? token.boxShadowSecondary : undefined,
   };
+  const companyName = getCompanyDisplayName(lead as any);
 
   return (
     <Card
@@ -97,9 +99,9 @@ const LeadCard: React.FC<{ lead: Lead; readOnly?: boolean }> = ({ lead, readOnly
           </Space>
         </Flex>
 
-        {lead.company_name && (
+        {companyName && (
           <Text type="secondary">
-            <BankOutlined /> {lead.company_name}
+            <BankOutlined /> {companyName}
           </Text>
         )}
         {lead.email && (

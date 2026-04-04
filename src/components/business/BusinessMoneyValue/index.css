@@ -1,0 +1,8 @@
+.component_BusinessMoneyValue_root {
+  font-variant-numeric: tabular-nums;
+}
+
+.component_BusinessMoneyValue_negative {
+  color: #cf1322;
+}
+

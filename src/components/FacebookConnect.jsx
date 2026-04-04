@@ -3,7 +3,7 @@
  * Component for connecting Facebook Messenger
  */
 
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Form, Input, Button, Space, Alert, Typography, Card, App, Select, theme as antdTheme } from 'antd';
 import { ReloadOutlined } from '@ant-design/icons';
 import { connectFacebook, discoverFacebookPages } from '../lib/api/integrations/facebook';
@@ -13,7 +13,7 @@ import ChannelBrandIcon from './channel/ChannelBrandIcon.jsx';
 
 const { Link, Paragraph } = Typography;
 
-export default function FacebookConnect({ onSuccess, onCancel }) {
+export default function FacebookConnect({ onSuccess, onCancel, onDirtyChange }) {
   const { message } = App.useApp();
   const { token } = antdTheme.useToken();
   const { theme } = useTheme();
@@ -26,6 +26,7 @@ export default function FacebookConnect({ onSuccess, onCancel }) {
   const [loading, setLoading] = useState(false);
   const [discovering, setDiscovering] = useState(false);
   const [pages, setPages] = useState([]);
+  const [dirty, setDirty] = useState(false);
   const surfaceCardStyle = {
     marginBottom: 24,
     borderRadius: 18,
@@ -49,6 +50,17 @@ export default function FacebookConnect({ onSuccess, onCancel }) {
     try {
       const result = await connectFacebook(values);
       message.success(tr('facebookConnect.messages.connected', 'Facebook Messenger подключен'));
+      setDirty(false);
+      if (result?.webhook_verify_token) {
+        message.info(
+          tr(
+            'facebookConnect.messages.verifyToken',
+            'Webhook verify token: {token}',
+            { token: result.webhook_verify_token },
+          ),
+          8,
+        );
+      }
       onSuccess?.(result);
     } catch (error) {
       console.error('Error connecting Facebook:', error);
@@ -94,6 +106,12 @@ export default function FacebookConnect({ onSuccess, onCancel }) {
     pageName: page.page_name,
     accessToken: page.access_token,
   }));
+
+  useEffect(() => {
+    onDirtyChange?.(dirty);
+  }, [dirty, onDirtyChange]);
+
+  useEffect(() => () => onDirtyChange?.(false), [onDirtyChange]);
 
   return (
     <div style={{ color: token.colorText }}>
@@ -165,6 +183,7 @@ export default function FacebookConnect({ onSuccess, onCancel }) {
         <Form
           form={form}
           layout="vertical"
+          onValuesChange={() => setDirty(true)}
           onFinish={handleConnect}
         >
         <Form.Item
@@ -253,7 +272,17 @@ export default function FacebookConnect({ onSuccess, onCancel }) {
           }}
         />
 
-          <Form.Item style={{ marginBottom: 0 }}>
+          <Form.Item
+            style={{
+              position: 'sticky',
+              bottom: 0,
+              marginBottom: 0,
+              paddingTop: 12,
+              background: isDark ? 'rgba(12, 19, 32, 0.94)' : token.colorBgContainer,
+              borderTop: `1px solid ${isDark ? 'rgba(148, 163, 184, 0.18)' : token.colorBorderSecondary}`,
+              zIndex: 5,
+            }}
+          >
             <Space wrap>
               <Button
                 type="primary"

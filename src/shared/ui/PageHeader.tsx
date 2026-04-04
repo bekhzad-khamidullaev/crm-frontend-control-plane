@@ -38,8 +38,8 @@ export const PageHeader: React.FC<PageHeaderProps> = ({
     <div
       className="page-header"
       style={{
-        marginBottom: 24,
-        padding: isMobile ? 16 : 20,
+        marginBottom: 10,
+        padding: isMobile ? 10 : 12,
         borderRadius: token.borderRadiusLG,
         border: `1px solid ${token.colorBorderSecondary}`,
         background: token.colorBgElevated,
@@ -53,25 +53,30 @@ export const PageHeader: React.FC<PageHeaderProps> = ({
           position: 'absolute',
           insetInline: 0,
           top: 0,
-          height: 3,
+          height: 2,
           background: `linear-gradient(90deg, ${token.colorPrimary} 0%, ${token.colorInfo} 100%)`,
         }}
       />
-      <Flex vertical gap={16}>
+      <Flex vertical gap={10}>
         {breadcrumbs?.length ? (
-          <Breadcrumb items={breadcrumbItems} style={{ color: token.colorTextSecondary, fontWeight: 500 }} />
+          <div>
+            <Breadcrumb
+              items={breadcrumbItems}
+              style={{ color: token.colorTextSecondary, fontWeight: 500, fontSize: 12 }}
+            />
+          </div>
         ) : null}
 
         <Flex
           justify="space-between"
           align={isMobile ? 'flex-start' : 'center'}
-          gap={16}
+          gap={10}
           vertical={isMobile}
         >
           <div style={{ minWidth: 0, flex: 1 }}>
             <Title
-              level={isMobile ? 3 : 2}
-              style={{ margin: 0, color: token.colorTextBase }}
+              level={isMobile ? 4 : 3}
+              style={{ margin: 0, letterSpacing: '-0.02em', color: token.colorTextBase }}
             >
               {title}
             </Title>
@@ -79,11 +84,11 @@ export const PageHeader: React.FC<PageHeaderProps> = ({
               <Paragraph
                 type="secondary"
                 style={{
-                  marginTop: 8,
+                  marginTop: 4,
                   marginBottom: 0,
                   maxWidth: 920,
-                  fontSize: isMobile ? 14 : 15,
-                  lineHeight: 1.6,
+                  fontSize: isMobile ? 12 : 13,
+                  lineHeight: 1.4,
                   color: token.colorTextSecondary,
                 }}
               >
@@ -97,7 +102,7 @@ export const PageHeader: React.FC<PageHeaderProps> = ({
               style={{
                 width: isMobile ? '100%' : 'auto',
                 flexShrink: 0,
-                padding: isMobile ? 0 : 4,
+                padding: isMobile ? 0 : 2,
                 borderRadius: token.borderRadiusLG,
                 background: isMobile ? 'transparent' : token.colorBgContainer,
                 border: isMobile ? 'none' : `1px solid ${token.colorBorderSecondary}`,
@@ -111,8 +116,7 @@ export const PageHeader: React.FC<PageHeaderProps> = ({
         {children ? (
           <div
             style={{
-              marginTop: 4,
-              paddingTop: 8,
+              paddingTop: 6,
               borderTop: `1px solid ${token.colorBorderSecondary}`,
             }}
           >

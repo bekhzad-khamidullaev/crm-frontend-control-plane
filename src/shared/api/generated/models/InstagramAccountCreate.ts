@@ -11,6 +11,7 @@ export type InstagramAccountCreate = {
     username: string;
     access_token: string;
     app_secret?: string;
+    readonly webhook_verify_token: string;
     token_expires_at?: string | null;
     facebook_page_id?: string;
     facebook_page_name?: string;

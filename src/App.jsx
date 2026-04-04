@@ -1,4 +1,12 @@
-import { App as AntApp, Button, ConfigProvider, Empty, Result, Skeleton, theme as antdTheme } from 'antd';
+import {
+  App as AntApp,
+  Button,
+  ConfigProvider,
+  Empty,
+  Result,
+  Skeleton,
+  theme as antdTheme,
+} from 'antd';
 import enUS from 'antd/locale/en_US';
 import ruRU from 'antd/locale/ru_RU';
 import uzUZ from 'antd/locale/uz_UZ';
@@ -10,18 +18,21 @@ import { getFacebookPages } from './lib/api/integrations/facebook.js';
 import { getInstagramAccounts } from './lib/api/integrations/instagram.js';
 import { getTelegramBots } from './lib/api/integrations/telegram.js';
 import { getWhatsAppAccounts } from './lib/api/integrations/whatsapp.js';
-import { clearStoredLicenseFeatures, persistLicenseFeatures } from './lib/api/licenseFeatures.js';
-import { getLicenseMe } from './lib/api/licenseControl.js';
-import { clearStoredLicenseState, persistLicenseState } from './lib/api/licenseState.js';
-import { canAccessRoute as canAccessRouteByPolicy, getRouteAccessState } from './lib/rbac.js';
-import {
-  canAccessSettingsWorkspace,
-  getSettingsWorkspacePath,
-  normalizeSettingsWorkspaceSelectedKey,
-  SETTINGS_WORKSPACE_NAV_KEY,
-} from './lib/settingsWorkspaceNavigation.js';
+import { canAccessRoute, getRouteAccessState } from './lib/rbac.js';
 import smsApi from './lib/api/sms.js';
-import { getVoIPConnections } from './lib/api/telephony.js';
+import { getActiveCalls, getVoIPConnections } from './lib/api/telephony.js';
+import { getLicenseEntitlements } from './lib/api/license.js';
+import {
+  clearStoredLicenseState,
+  getLicenseStateRestriction,
+  persistLicenseState,
+  readStoredLicenseState,
+} from './lib/api/licenseState.js';
+import {
+  clearStoredLicenseFeatures,
+  persistLicenseFeatures,
+  readStoredLicenseFeatures,
+} from './lib/api/licenseFeatures.js';
 import { getProfile } from './lib/api/user.js';
 import { mergeRoles, rolesFromProfile, rolesFromTokenPayload } from './lib/roles.js';
 import { getFrontendVersionInfo } from './shared/version.js';
@@ -39,13 +50,22 @@ import {
   storeRouteLicenseRestriction,
 } from './lib/licensePageRestriction.js';
 import {
-    addIncomingCall,
-    removeIncomingCall,
-    setChatWsConnected,
-    setChatWsReconnecting,
-    setWsConnected,
-    setWsReconnecting,
-    subscribe,
+  canSeeNavRoute,
+  isBannerLicensePolicy,
+  shouldRedirectForbidden,
+} from './lib/licenseUiPolicy.js';
+import { getSettingsWorkspacePath } from './lib/settingsWorkspaceNavigation.js';
+import {
+  addIncomingCall,
+  removeActiveCall,
+  removeIncomingCall,
+  setActiveCalls,
+  setChatWsConnected,
+  setChatWsReconnecting,
+  upsertActiveCall,
+  setWsConnected,
+  setWsReconnecting,
+  subscribe,
 } from './lib/store/index.js';
 import { useTheme } from './lib/hooks/useTheme.js';
 import { navigate, onRouteChange, parseHash } from './router.js';
@@ -100,16 +120,19 @@ const CallsDashboard = lazy(() => import('./pages/calls-dashboard.jsx'));
 // Chat module
 const ChatPage = lazy(() => import('./pages/chat-page.jsx'));
 const AIChatPage = lazy(() => import('./pages/ai-chat-page.jsx'));
+const LegacyFreezeNotice = lazy(() => import('./components/LegacyFreezeNotice.jsx'));
 
 // Other pages
 const ProfilePage = lazy(() => import('./pages/profile.jsx'));
-const SettingsIntegrationsWorkspacePage = lazy(() => import('./pages/settings-integrations-workspace.jsx'));
-const OnboardingWizardPage = lazy(() => import('./pages/onboarding-wizard.jsx'));
+const LicenseWorkspacePage = lazy(() => import('./pages/license-workspace.jsx'));
+const SettingsIntegrationsWorkspacePage = lazy(() =>
+  import('./pages/settings-integrations-workspace.jsx')
+);
 const LandingBuilderPage = lazy(() => import('./pages/landing-builder.jsx'));
 const PublicLandingPage = lazy(() => import('./pages/public-landing.jsx'));
 const CrmSalesLandingPage = lazy(() => import('./pages/crm-sales-landing.jsx'));
 
-const PUBLIC_ROUTE_NAMES = new Set(['landing-public', 'landing-preview', 'crm-landing']);
+const PUBLIC_ROUTE_NAMES = new Set(['landing-public', 'landing-public-domain', 'landing-preview', 'crm-landing']);
 
 // Lazy load sub-modules
 const PaymentsList = lazy(() =>
@@ -153,6 +176,33 @@ const MemoForm = lazy(() =>
 const ProductsList = lazy(() => import('./modules/products/ProductsList.jsx'));
 const ProductDetail = lazy(() => import('./modules/products/ProductDetail.jsx'));
 const ProductForm = lazy(() => import('./modules/products/ProductForm.jsx'));
+const WarehouseList = lazy(() =>
+  import('./modules/warehouse/index.js').then((m) => ({ default: m.WarehouseList }))
+);
+const WarehouseForm = lazy(() =>
+  import('./modules/warehouse/index.js').then((m) => ({ default: m.WarehouseForm }))
+);
+const WarehouseDetail = lazy(() =>
+  import('./modules/warehouse/index.js').then((m) => ({ default: m.WarehouseDetail }))
+);
+const FinancePlansList = lazy(() =>
+  import('./modules/finance-plans/index.js').then((m) => ({ default: m.FinancePlansList }))
+);
+const FinancePlanForm = lazy(() =>
+  import('./modules/finance-plans/index.js').then((m) => ({ default: m.FinancePlanForm }))
+);
+const FinancePlanDetail = lazy(() =>
+  import('./modules/finance-plans/index.js').then((m) => ({ default: m.FinancePlanDetail }))
+);
+const MeetingsList = lazy(() =>
+  import('./modules/meetings/index.js').then((m) => ({ default: m.MeetingsList }))
+);
+const MeetingForm = lazy(() =>
+  import('./modules/meetings/index.js').then((m) => ({ default: m.MeetingForm }))
+);
+const MeetingDetail = lazy(() =>
+  import('./modules/meetings/index.js').then((m) => ({ default: m.MeetingDetail }))
+);
 
 // Admin/system pages
 const EnterpriseCRMEmailsPage = lazy(() => import('./pages/crm-emails.jsx'));
@@ -163,19 +213,17 @@ const WarehouseWorkspacePage = lazy(() => import('./pages/warehouse-workspace.js
 const FinancePlanningWorkspacePage = lazy(() => import('./pages/finance-planning-workspace.jsx'));
 const BusinessProcessesWorkspacePage = lazy(() => import('./pages/business-processes-workspace.jsx'));
 const MeetingsWorkspacePage = lazy(() => import('./pages/meetings-workspace.jsx'));
-const DocumentsWorkspacePage = lazy(() => import('./pages/documents-workspace.jsx'));
 const ContentPlansWorkspacePage = lazy(() => import('./pages/content-plans-workspace.jsx'));
-const BacklogWorkspacePage = lazy(() => import('./pages/backlog-workspace.jsx'));
-const SitesWorkspacePage = lazy(() => import('./pages/sites-workspace.jsx'));
 const ReferenceDataPage = lazy(() => import('./pages/reference-data.jsx'));
 const HelpCenterPage = lazy(() => import('./pages/help-center.jsx'));
 const SmsCenterPage = lazy(() => import('./pages/sms-center.jsx'));
 const TelephonyPage = lazy(() => import('./pages/telephony.jsx'));
 const UsersPage = lazy(() => import('./pages/users.jsx'));
-const ControlPlaneAdminPage = lazy(() => import('./pages/control-plane-admin.jsx'));
 
 function normalizeLocale(raw) {
-  const value = String(raw || '').toLowerCase().trim();
+  const value = String(raw || '')
+    .toLowerCase()
+    .trim();
   if (value.startsWith('en')) return 'en';
   if (value.startsWith('uz')) return 'uz';
   return 'ru';
@@ -183,12 +231,12 @@ function normalizeLocale(raw) {
 
 function getProfileLocale(profile) {
   const raw =
-    profile?.language_code
-    || profile?.language
-    || profile?.locale
-    || profile?.ui_language
-    || profile?.preferred_language
-    || null;
+    profile?.language_code ||
+    profile?.language ||
+    profile?.locale ||
+    profile?.ui_language ||
+    profile?.preferred_language ||
+    null;
   if (!raw) return null;
   return normalizeLocale(raw);
 }
@@ -230,7 +278,7 @@ function normalizeUser(raw, fallback = {}) {
     fallbackProfile?.first_name,
     fallbackProfile?.firstName,
     fallbackUserProfile?.first_name,
-    fallbackUserProfile?.firstName,
+    fallbackUserProfile?.firstName
   );
 
   const lastName = pick(
@@ -250,7 +298,7 @@ function normalizeUser(raw, fallback = {}) {
     fallbackProfile?.last_name,
     fallbackProfile?.lastName,
     fallbackUserProfile?.last_name,
-    fallbackUserProfile?.lastName,
+    fallbackUserProfile?.lastName
   );
 
   const fullName = pick(
@@ -283,7 +331,7 @@ function normalizeUser(raw, fallback = {}) {
     fallbackUserProfile?.full_name,
     fallbackUserProfile?.fullName,
     fallbackUserProfile?.name,
-    fallbackUserProfile?.display_name,
+    fallbackUserProfile?.display_name
   );
 
   const username = pick(
@@ -296,7 +344,7 @@ function normalizeUser(raw, fallback = {}) {
     fallback?.username,
     fallbackUser?.username,
     fallbackProfile?.username,
-    fallbackUserProfile?.username,
+    fallbackUserProfile?.username
   );
 
   const email = pick(
@@ -307,16 +355,23 @@ function normalizeUser(raw, fallback = {}) {
     fallback?.email,
     fallbackUser?.email,
     fallbackProfile?.email,
-    fallbackUserProfile?.email,
+    fallbackUserProfile?.email
   );
 
   const firstAndLastName = [firstName, lastName].filter(Boolean).join(' ');
   const preferredFullName = isGenericDisplayName(fullName) ? '' : fullName;
-  const name = pick(preferredFullName, firstAndLastName, username, email.split('@')[0], 'User');
+  const name = pick(
+    preferredFullName,
+    firstAndLastName,
+    username,
+    email.split('@')[0],
+    fallback?.name,
+    fallbackUser?.name
+  );
 
   return {
     id: raw?.id ?? raw?.user_id ?? rawUser?.id ?? fallback?.id ?? fallbackUser?.id ?? null,
-    username: username || name,
+    username: username || email.split('@')[0] || name,
     name,
     first_name: firstName || '',
     last_name: lastName || '',
@@ -324,19 +379,26 @@ function normalizeUser(raw, fallback = {}) {
     email,
     roles: Array.isArray(raw?.roles)
       ? raw.roles
-      : (Array.isArray(rawUser?.roles) ? rawUser.roles : (Array.isArray(fallback?.roles) ? fallback.roles : [])),
+      : Array.isArray(rawUser?.roles)
+        ? rawUser.roles
+        : Array.isArray(fallback?.roles)
+          ? fallback.roles
+          : [],
     is_staff: Boolean(
-      raw?.is_staff ?? rawUser?.is_staff ?? fallback?.is_staff ?? fallbackUser?.is_staff,
+      raw?.is_staff ?? rawUser?.is_staff ?? fallback?.is_staff ?? fallbackUser?.is_staff
     ),
     is_superuser: Boolean(
-      raw?.is_superuser ?? rawUser?.is_superuser ?? fallback?.is_superuser ?? fallbackUser?.is_superuser,
+      raw?.is_superuser ??
+      rawUser?.is_superuser ??
+      fallback?.is_superuser ??
+      fallbackUser?.is_superuser
     ),
     system_version:
       raw?.system_version && typeof raw.system_version === 'object'
         ? raw.system_version
-        : (fallback?.system_version && typeof fallback.system_version === 'object'
-            ? fallback.system_version
-            : null),
+        : fallback?.system_version && typeof fallback.system_version === 'object'
+          ? fallback.system_version
+          : null,
     profile: rawProfile,
     userprofile: rawUserProfile,
     user: rawUser,
@@ -360,7 +422,9 @@ function normalizePermissions(rawPermissions = []) {
   if (!Array.isArray(rawPermissions)) return [];
   const normalized = new Set();
   rawPermissions.forEach((permission) => {
-    const value = String(permission || '').trim().toLowerCase();
+    const value = String(permission || '')
+      .trim()
+      .toLowerCase();
     if (!value) return;
     normalized.add(value);
   });
@@ -379,6 +443,27 @@ function normalizeList(response) {
   return Array.isArray(response?.results) ? response.results : [];
 }
 
+function normalizeRealtimeCall(call = {}) {
+  const sessionId =
+    call.sessionId ??
+    call.session_id ??
+    call.call_session_id ??
+    call.callId ??
+    call.call_id ??
+    null;
+
+  return {
+    ...call,
+    callId: call.callId ?? call.call_id ?? sessionId ?? call.id ?? null,
+    sessionId,
+    phoneNumber: call.phoneNumber ?? call.phone_number ?? call.number ?? call.caller_id ?? null,
+    callerName:
+      call.callerName ?? call.caller_name ?? call.client_name ?? call.contact_name ?? null,
+    status: call.status ?? call.state ?? call.call_status ?? null,
+    duration: call.duration ?? call.billsec ?? 0,
+  };
+}
+
 function App() {
   const [collapsed, setCollapsed] = useState(false);
   const [route, setRoute] = useState(parseHash());
@@ -392,7 +477,7 @@ function App() {
   const [activeIntegrations, setActiveIntegrations] = useState([]);
   const [locale, setLocaleState] = useState('ru');
   const [localeInitialized, setLocaleInitialized] = useState(false);
-  const [licenseReady, setLicenseReady] = useState(false);
+  const [accessContextReady, setAccessContextReady] = useState(() => !isAuthenticated());
   const [dialerVisible, setDialerVisible] = useState(false);
   const [dialerInitialNumber, setDialerInitialNumber] = useState('');
   const [dialerAutoCallRequestId, setDialerAutoCallRequestId] = useState('');
@@ -405,6 +490,7 @@ function App() {
     chatWebSocket: null,
   });
   const telephonyBootstrappedRef = useRef(false);
+  const hadCallsWsConnectionRef = useRef(false);
 
   useEffect(() => {
     const onOpenDialer = (event) => {
@@ -478,6 +564,7 @@ function App() {
     runtime.chatWebSocket?.disconnect?.();
     runtime.sipClient?.stop?.();
     telephonyBootstrappedRef.current = false;
+    hadCallsWsConnectionRef.current = false;
   };
 
   const bootstrapTelephonyRuntime = async (token) => {
@@ -496,6 +583,16 @@ function App() {
   };
 
   const loadActiveIntegrations = async () => {
+    const licensedFeatures = readStoredLicenseFeatures();
+    const storedLicenseState = readStoredLicenseState();
+    const normalizedLicenseStatus = String(storedLicenseState?.status || '').trim().toLowerCase();
+    const hardBlockedLicenseStatus = new Set(['expired', 'revoked', 'invalid', 'missing', 'suspended']);
+    const licenseRestricted =
+      Boolean(getLicenseStateRestriction(storedLicenseState))
+      || hardBlockedLicenseStatus.has(normalizedLicenseStatus)
+      || storedLicenseState?.installed === false;
+    const canUseAiAssist =
+      !licenseRestricted && Array.isArray(licensedFeatures) && licensedFeatures.includes('ai.assist');
     const [
       smsResult,
       telephonyResult,
@@ -511,7 +608,7 @@ function App() {
       getFacebookPages({ page_size: 100 }),
       getInstagramAccounts({ page_size: 100 }),
       getTelegramBots({ page_size: 100 }),
-      getAIProviders({ page_size: 100 }),
+      canUseAiAssist ? getAIProviders({ page_size: 100 }) : Promise.resolve([]),
     ]);
 
     const next = [];
@@ -569,8 +666,11 @@ function App() {
   };
 
   useEffect(() => {
+    let cancelled = false;
+
     // Initialize locale on mount
-    const persistedLocaleRaw = localStorage.getItem('enterprise_crm_locale') || localStorage.getItem('locale');
+    const persistedLocaleRaw =
+      localStorage.getItem('enterprise_crm_locale') || localStorage.getItem('locale');
     const hasPersistedLocale = Boolean(persistedLocaleRaw);
     const savedLocale = normalizeLocale(persistedLocaleRaw || 'ru');
     handleLocaleChange(savedLocale).finally(() => setLocaleInitialized(true));
@@ -579,6 +679,7 @@ function App() {
     const authenticated = isAuthenticated();
 
     if (authenticated) {
+      setAccessContextReady(false);
       const token = getToken();
       const tokenUser = normalizeUser(getUserFromToken() || {});
       setUser(tokenUser);
@@ -595,7 +696,7 @@ function App() {
           const roles = mergeRoles(
             readStoredRoles(),
             rolesFromProfile(me),
-            rolesFromTokenPayload(getUserFromToken() || {}),
+            rolesFromTokenPayload(getUserFromToken() || {})
           );
           if (roles.length > 0) {
             const serializedRoles = JSON.stringify(roles);
@@ -603,7 +704,9 @@ function App() {
             localStorage.removeItem('enterprise_crm_roles');
           }
           persistPermissions(me?.permissions || []);
-          setUser((prev) => normalizeUser(me || {}, prev || tokenUser));
+          if (!cancelled) {
+            setUser((prev) => normalizeUser(me || {}, prev || tokenUser));
+          }
         } catch (e) {
           console.warn('Failed to preload user profile/roles:', e);
         }
@@ -611,7 +714,7 @@ function App() {
 
       const licensePreloadPromise = (async () => {
         try {
-          const license = await getLicenseMe();
+          const license = await getLicenseEntitlements();
           persistLicenseState(license);
           persistLicenseFeatures(license?.features || []);
         } catch (e) {
@@ -622,7 +725,7 @@ function App() {
       })();
 
       Promise.allSettled([profilePreloadPromise, licensePreloadPromise]).finally(() => {
-        setLicenseReady(true);
+        if (!cancelled) setAccessContextReady(true);
       });
 
       // Initialize WebSocket connections if we have a token
@@ -631,7 +734,7 @@ function App() {
         bootstrapTelephonyRuntime(token);
       }
     } else {
-      setLicenseReady(true);
+      setAccessContextReady(true);
       // Not authenticated, redirect to login if not already there
       if (route.name !== 'login' && !PUBLIC_ROUTE_NAMES.has(route.name)) {
         navigate('/login');
@@ -674,6 +777,7 @@ function App() {
     });
 
     return () => {
+      cancelled = true;
       unsubscribeRoute();
       unsubscribeStore();
       disconnectTelephony();
@@ -728,8 +832,8 @@ function App() {
   }, []);
 
   useEffect(() => {
-    if (!licenseReady) return;
     if (!isAuthenticated()) return;
+    if (!accessContextReady) return;
     if (PUBLIC_ROUTE_NAMES.has(route.name)) return;
     if (route.name === 'login' || route.name === 'forbidden' || route.name === 'not-found') return;
     const accessState = getRouteAccessState(route.name);
@@ -740,15 +844,19 @@ function App() {
       } else {
         clearStoredRouteLicenseRestriction();
       }
-      navigate('/forbidden');
+      if (shouldRedirectForbidden(accessState)) {
+        navigate('/forbidden');
+      }
       return;
     }
     clearStoredRouteLicenseRestriction();
-  }, [route.name, licenseReady]);
+  }, [route.name, accessContextReady]);
 
   const initializeSipClient = async (sipClient, loadTelephonyRuntimeConfig) => {
     try {
-      const runtime = await loadTelephonyRuntimeConfig({ includeSystemSettings: false }).catch(() => null);
+      const runtime = await loadTelephonyRuntimeConfig({ includeSystemSettings: false }).catch(
+        () => null
+      );
       const sip = runtime?.sipConfig;
       if (!sip?.username || !sip?.realm || !sip?.password || !sip?.websocketProxyUrl) {
         console.warn('[App] SIP config incomplete. Skipping SIP registration.');
@@ -775,7 +883,7 @@ function App() {
   };
 
   const shouldDismissIncomingOnUpdate = (data) => {
-    if (!data?.callId) return false;
+    if (!data?.callId && !data?.sessionId) return false;
     const status = String(data.status || '').toLowerCase();
     if (['busy', 'no_answer', 'failed', 'abandoned', 'ended', 'rejected'].includes(status)) {
       return true;
@@ -787,11 +895,34 @@ function App() {
     return false;
   };
 
+  const resyncActiveCalls = async () => {
+    try {
+      const response = await getActiveCalls();
+      const rawCalls = Array.isArray(response)
+        ? response
+        : response?.results || response?.active_calls || response?.items || [];
+      const calls = rawCalls.map((call) => normalizeRealtimeCall(call));
+      setActiveCalls(calls);
+      calls.forEach((call) => {
+        const status = String(call.status || '').toLowerCase();
+        if (['ringing', 'incoming'].includes(status)) {
+          addIncomingCall(call);
+        }
+      });
+    } catch (error) {
+      console.warn('[App] Active calls resync failed:', error);
+    }
+  };
+
   const initializeWebSocket = (callsWebSocket, token) => {
     // Setup event listeners
     callsWebSocket.on('connected', () => {
       console.log('[App] WebSocket connected');
       setWsConnected(true);
+      if (hadCallsWsConnectionRef.current) {
+        void resyncActiveCalls();
+      }
+      hadCallsWsConnectionRef.current = true;
     });
 
     callsWebSocket.on('disconnected', () => {
@@ -805,20 +936,29 @@ function App() {
     });
 
     callsWebSocket.on('incomingCall', (callData) => {
-      console.log('[App] Incoming call:', callData);
-      addIncomingCall(callData);
+      const normalizedCall = normalizeRealtimeCall(callData);
+      console.log('[App] Incoming call:', normalizedCall);
+      addIncomingCall(normalizedCall);
+      upsertActiveCall(normalizedCall);
     });
 
     callsWebSocket.on('callUpdated', (data) => {
-      console.log('[App] Call updated:', data);
-      if (shouldDismissIncomingOnUpdate(data)) {
-        removeIncomingCall(data.callId);
+      const normalizedCall = normalizeRealtimeCall(data);
+      console.log('[App] Call updated:', normalizedCall);
+      upsertActiveCall(normalizedCall);
+      if (shouldDismissIncomingOnUpdate(normalizedCall)) {
+        const identifier = normalizedCall.callId || normalizedCall.sessionId;
+        removeIncomingCall(identifier);
+        removeActiveCall(identifier);
       }
     });
 
     callsWebSocket.on('callEnded', (data) => {
-      console.log('[App] Call ended:', data);
-      removeIncomingCall(data.callId);
+      const normalizedCall = normalizeRealtimeCall(data);
+      console.log('[App] Call ended:', normalizedCall);
+      const identifier = normalizedCall.callId || normalizedCall.sessionId;
+      removeIncomingCall(identifier);
+      removeActiveCall(identifier);
     });
 
     // Connect to WebSocket
@@ -872,29 +1012,31 @@ function App() {
 
   const handleAnswerCall = (callData) => {
     console.log('[App] Answering call:', callData);
-    removeIncomingCall(callData.callId);
+    const identifier = callData?.callId || callData?.sessionId;
+    if (identifier) {
+      removeIncomingCall(identifier);
+    }
     setCurrentIncomingCall(null);
     // Additional answer logic would be handled by SIPClient
   };
 
   const handleRejectCall = (callData) => {
     console.log('[App] Rejecting call:', callData);
-    removeIncomingCall(callData.callId);
+    const identifier = callData?.callId || callData?.sessionId;
+    if (identifier) {
+      removeIncomingCall(identifier);
+    }
     setCurrentIncomingCall(null);
   };
 
   const handleDismissIncomingCall = (callData) => {
-    if (!callData?.callId) {
+    const identifier = callData?.callId || callData?.sessionId;
+    if (!identifier) {
       setCurrentIncomingCall(null);
       return;
     }
-    removeIncomingCall(callData.callId);
+    removeIncomingCall(identifier);
     setCurrentIncomingCall(null);
-  };
-
-  const canAccessRoute = (routeName) => {
-    if (!licenseReady) return true;
-    return canAccessRouteByPolicy(routeName);
   };
 
   const navAccessMap = {
@@ -925,38 +1067,32 @@ function App() {
     'finance-planning': 'finance-planning',
     'business-processes': 'business-processes',
     meetings: 'meetings',
-    'documents-workspace': 'documents-workspace',
     'content-plans': 'content-plans',
-    backlog: 'backlog',
-    'sites-workspace': 'sites-workspace',
-    functional: 'functional',
     'reference-data': 'reference-data',
     'help-center': 'help-center',
     telephony: 'telephony',
     users: 'users',
-    'control-plane': 'control-plane',
+    settings: 'settings',
+    'license-workspace': 'license-workspace',
+    integrations: 'integrations',
     'landing-builder': 'landing-builder',
   };
 
-  const settingsWorkspaceAllowed = canAccessSettingsWorkspace(canAccessRoute);
-  const settingsWorkspacePath = getSettingsWorkspacePath(canAccessRoute);
-
   const allowedNavKeys = Object.entries(navAccessMap)
-    .filter(([, routeName]) => canAccessRoute(routeName))
+    .filter(([, routeName]) => canSeeNavRoute(getRouteAccessState(routeName)))
     .map(([key]) => key);
+  const canOpenSettingsRoute = canAccessRoute('settings');
+  const canOpenIntegrationsRoute = canAccessRoute('integrations');
+  const settingsWorkspacePath = getSettingsWorkspacePath(canAccessRoute);
 
   const marketingWorkspaceAllowed = [
     'campaigns-list',
     'content-plans',
     'marketing-segments',
     'marketing-templates',
-  ].some((routeName) => canAccessRoute(routeName));
+  ].some((routeName) => canSeeNavRoute(getRouteAccessState(routeName)));
   if (marketingWorkspaceAllowed && !allowedNavKeys.includes('marketing-workspace')) {
     allowedNavKeys.push('marketing-workspace');
-  }
-
-  if (settingsWorkspaceAllowed) {
-    allowedNavKeys.push(SETTINGS_WORKSPACE_NAV_KEY);
   }
 
   const getSelectedKey = () => {
@@ -977,28 +1113,34 @@ function App() {
     if (name === 'marketing-segments') return 'marketing-workspace';
     if (name === 'marketing-templates') return 'marketing-workspace';
     if (name.startsWith('memos')) return 'memos';
-    if (name === 'crm-emails' || name === 'massmail' || name === 'sms-center') return name;
+    if (name === 'crm-emails') return 'crm-emails';
+    if (name === 'massmail' || name === 'sms-center') return name;
     if (name === 'operations') return 'operations';
     if (name === 'clients-workspace') return 'clients-workspace';
-    if (name === 'warehouse-workspace') return 'warehouse';
-    if (name === 'finance-planning') return 'finance-planning';
+    if (name.startsWith('warehouse')) return 'warehouse';
+    if (name.startsWith('finance-planning')) return 'finance-planning';
     if (name === 'business-processes') return 'business-processes';
-    if (name === 'meetings') return 'meetings';
-    if (name === 'documents-workspace') return 'documents-workspace';
+    if (name.startsWith('meetings')) return 'meetings';
     if (name === 'content-plans') return 'marketing-workspace';
-    if (name === 'backlog') return 'backlog';
-    if (name === 'sites-workspace') return 'sites-workspace';
-    if (name === 'functional') return 'functional';
     if (name === 'reference-data') return 'reference-data';
     if (name === 'help-center') return 'help-center';
-    if (name === 'telephony') return 'telephony';
+    if (name === 'telephony') return 'calls';
     if (name === 'users') return 'users';
-    if (name === 'control-plane') return 'control-plane';
+    if (name === 'license-workspace') return 'license-workspace';
     if (name === 'landing-builder') return 'landing-builder';
-    return normalizeSettingsWorkspaceSelectedKey(name);
+    return name;
   };
 
   const renderContent = () => {
+    if (
+      route.name !== 'legacy-freeze'
+      && isAuthenticated()
+      && !PUBLIC_ROUTE_NAMES.has(route.name)
+      && !accessContextReady
+    ) {
+      return <Skeleton active paragraph={{ rows: 8 }} />;
+    }
+
     if (route.name === 'forbidden') {
       const routeLicenseRestriction = readStoredRouteLicenseRestriction();
       if (routeLicenseRestriction) {
@@ -1036,11 +1178,30 @@ function App() {
               Go to Dashboard
             </Button>
           }
-        />
+          />
       );
     }
-    if (!PUBLIC_ROUTE_NAMES.has(route.name) && !canAccessRoute(route.name)) {
-      return null;
+    if (route.name === 'legacy-freeze') {
+      return <LegacyFreezeNotice freezeType={route.params.freezeType} />;
+    }
+    if (!PUBLIC_ROUTE_NAMES.has(route.name)) {
+      const accessState = getRouteAccessState(route.name);
+      if (!accessState.allowed) {
+        if (accessState.reason === 'license' && isBannerLicensePolicy()) {
+          const routeLicenseRestriction =
+            readStoredRouteLicenseRestriction() || buildRouteLicenseRestriction(route.name, accessState);
+          return (
+            <LicenseRestrictedResult
+              restriction={routeLicenseRestriction}
+              onBack={() => {
+                clearStoredRouteLicenseRestriction();
+                navigate('/dashboard');
+              }}
+            />
+          );
+        }
+        return null;
+      }
     }
 
     switch (route.name) {
@@ -1151,23 +1312,33 @@ function App() {
       case 'clients-workspace':
         return <ClientsWorkspacePage />;
       case 'warehouse-workspace':
-        return <WarehouseWorkspacePage />;
+        return <WarehouseList />;
+      case 'warehouse-new':
+        return <WarehouseForm />;
+      case 'warehouse-edit':
+        return <WarehouseForm id={route.params.id} />;
+      case 'warehouse-detail':
+        return <WarehouseDetail id={route.params.id} />;
       case 'finance-planning':
-        return <FinancePlanningWorkspacePage />;
+        return <FinancePlansList />;
+      case 'finance-planning-new':
+        return <FinancePlanForm />;
+      case 'finance-planning-edit':
+        return <FinancePlanForm id={route.params.id} />;
+      case 'finance-planning-detail':
+        return <FinancePlanDetail id={route.params.id} />;
       case 'business-processes':
         return <BusinessProcessesWorkspacePage />;
       case 'meetings':
-        return <MeetingsWorkspacePage />;
-      case 'documents-workspace':
-        return <DocumentsWorkspacePage />;
+        return <MeetingsList />;
+      case 'meetings-new':
+        return <MeetingForm />;
+      case 'meetings-edit':
+        return <MeetingForm id={route.params.id} />;
+      case 'meetings-detail':
+        return <MeetingDetail id={route.params.id} />;
       case 'content-plans':
         return <ContentPlansWorkspacePage initialTab="plans" />;
-      case 'backlog':
-        return <BacklogWorkspacePage />;
-      case 'sites-workspace':
-        return <SitesWorkspacePage />;
-      case 'functional':
-        return <OperationsPage />;
       case 'reference-data':
         return <ReferenceDataPage />;
       case 'help-center':
@@ -1178,26 +1349,38 @@ function App() {
         return <TelephonyPage />;
       case 'users':
         return <UsersPage />;
-      case 'licensing':
-        return <ControlPlaneAdminPage />;
-      case 'control-plane':
-        return <ControlPlaneAdminPage />;
       case 'chat':
       case 'chat-list':
+      case 'chat-thread':
         return <ChatPage />;
       case 'ai-chat':
         return <AIChatPage />;
+      case 'legacy-freeze':
+        return <LegacyFreezeNotice freezeType={route.params.freezeType} />;
       case 'profile':
         return <ProfilePage />;
       case 'settings':
-        return <SettingsIntegrationsWorkspacePage defaultTab="system" />;
+        return (
+          <SettingsIntegrationsWorkspacePage
+            defaultTab="system"
+            canAccessSystemTabs={canOpenSettingsRoute}
+            canAccessIntegrationsTab={canOpenIntegrationsRoute}
+          />
+        );
+      case 'license-workspace':
+        return <LicenseWorkspacePage />;
       case 'integrations':
-        return <SettingsIntegrationsWorkspacePage defaultTab="integrations" />;
-      case 'onboarding':
-        return <OnboardingWizardPage />;
+        return (
+          <SettingsIntegrationsWorkspacePage
+            defaultTab="integrations"
+            canAccessSystemTabs={canOpenSettingsRoute}
+            canAccessIntegrationsTab={canOpenIntegrationsRoute}
+          />
+        );
       case 'landing-builder':
         return <LandingBuilderPage />;
       case 'landing-public':
+      case 'landing-public-domain':
       case 'landing-preview':
         return <PublicLandingPage />;
       case 'crm-landing':
@@ -1311,7 +1494,9 @@ function App() {
 // Wrapper component that provides theme to App
 function AppWithTheme() {
   const { theme } = useTheme();
-  const [activeLocale, setActiveLocale] = useState(() => normalizeLocale(localStorage.getItem('enterprise_crm_locale') || 'ru'));
+  const [activeLocale, setActiveLocale] = useState(() =>
+    normalizeLocale(localStorage.getItem('enterprise_crm_locale') || 'ru')
+  );
   useEffect(() => {
     const onLocaleChanged = (event) => {
       setActiveLocale(normalizeLocale(event?.detail));

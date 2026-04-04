@@ -20,7 +20,6 @@ import { ArrowLeftOutlined, SaveOutlined } from '@ant-design/icons';
 import dayjs from 'dayjs';
 import { useCreateLead, useUpdateLead } from '@/entities/lead/api/mutations';
 import { useLead as useLeadQuery } from '@/entities/lead/api/queries';
-import { trackCrmEvent } from '@/lib/analytics/events.js';
 // @ts-ignore
 import { navigate } from '@/router.js';
 
@@ -73,48 +72,6 @@ export const LeadForm: React.FC<LeadFormProps> = ({ id }) => {
   }, [lead, form]);
 
   const onFinish = async (values: any) => {
-    const validationErrors: Array<{ name: string; errors: string[] }> = [];
-    const hasName = Boolean(String(values.first_name || '').trim() || String(values.company_name || '').trim());
-    const hasContactChannel = Boolean(
-      String(values.email || '').trim()
-      || String(values.phone || '').trim()
-      || String(values.mobile || '').trim()
-    );
-
-    if (!hasName) {
-      validationErrors.push({
-        name: 'first_name',
-        errors: ['Укажите имя или название компании'],
-      });
-    }
-
-    if (!hasContactChannel) {
-      validationErrors.push({
-        name: 'phone',
-        errors: ['Укажите хотя бы один канал связи: email, телефон или мобильный'],
-      });
-    }
-
-    if (!values.lead_source) {
-      validationErrors.push({
-        name: 'lead_source',
-        errors: ['Источник обязателен'],
-      });
-    }
-
-    if (!values.owner) {
-      validationErrors.push({
-        name: 'owner',
-        errors: ['Ответственный обязателен'],
-      });
-    }
-
-    if (validationErrors.length) {
-      form.setFields(validationErrors);
-      message.error('Заполните обязательные поля');
-      return;
-    }
-
     try {
       const payload: any = {
         ...values,
@@ -124,18 +81,11 @@ export const LeadForm: React.FC<LeadFormProps> = ({ id }) => {
       };
 
       if (isEdit) {
-        const updated = await updateMutation.mutateAsync({ id: id!, data: payload });
+        await updateMutation.mutateAsync({ id: id!, data: payload });
         message.success('Лид обновлен');
-        if (updated?.was_in_touch) {
-          void trackCrmEvent('first_contact_done', { lead_id: updated.id });
-        }
       } else {
-        const created = await createMutation.mutateAsync(payload);
+        await createMutation.mutateAsync(payload);
         message.success('Лид создан');
-        void trackCrmEvent('lead_created', {
-          lead_id: created?.id,
-          source: created?.lead_source || payload?.lead_source || null,
-        });
       }
       navigate('/leads');
     } catch (error: any) {
@@ -401,11 +351,7 @@ export const LeadForm: React.FC<LeadFormProps> = ({ id }) => {
 
           <Row gutter={16}>
             <Col xs={24} md={8}>
-              <Form.Item
-                label="Источник"
-                name="lead_source"
-                rules={[{ required: true, message: 'Источник обязателен' }]}
-              >
+              <Form.Item label="Источник" name="lead_source">
                 <LeadSourceSelect placeholder="Выберите источник" allowClear />
               </Form.Item>
             </Col>
@@ -418,11 +364,7 @@ export const LeadForm: React.FC<LeadFormProps> = ({ id }) => {
 
           <Row gutter={16}>
             <Col xs={24} md={12}>
-              <Form.Item
-                label="Ответственный"
-                name="owner"
-                rules={[{ required: true, message: 'Ответственный обязателен' }]}
-              >
+              <Form.Item label="Ответственный" name="owner">
                 <UserSelect placeholder="Выберите пользователя" allowClear />
               </Form.Item>
             </Col>

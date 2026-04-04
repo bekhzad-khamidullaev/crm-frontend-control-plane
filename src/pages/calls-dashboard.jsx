@@ -1,9 +1,9 @@
 /**
- * Calls Dashboard Page
- * Shows telephony statistics and analytics
+ * Communications Dashboard Page
+ * Shows unified channel analytics (telephony + omnichannel)
  */
 
-import React, { useState, useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   Card,
   Row,
@@ -19,6 +19,7 @@ import {
   Select,
   Table,
   Tag,
+  Alert,
   Empty,
   message,
 } from 'antd';
@@ -28,6 +29,9 @@ import {
   PhoneTwoTone,
   CheckCircleOutlined,
   CloseCircleOutlined,
+  ArrowDownOutlined,
+  ArrowUpOutlined,
+  MinusOutlined,
 } from '@ant-design/icons';
 import {
   getCallStatistics,
@@ -46,6 +50,7 @@ import {
 import {
   CallsActivityChart,
   CallsDistributionChart,
+  CallsDailyTrendChart,
   CallsStatusChart,
   CallsDurationChart,
 } from '../components/CallsCharts.jsx';
@@ -57,6 +62,181 @@ import { t } from '../lib/i18n/index.js';
 const { Title, Text } = Typography;
 const { RangePicker } = DatePicker;
 const { Option } = Select;
+
+const PERCENT_DISPLAY_THRESHOLD = 1;
+const COMMUNICATION_CHANNEL_ALIASES = {
+  call: 'telephony',
+  calls: 'telephony',
+  phone: 'telephony',
+  voip: 'telephony',
+  fb: 'facebook',
+  messenger: 'facebook',
+  facebook_messenger: 'facebook',
+  ig: 'instagram',
+  insta: 'instagram',
+  crm_email: 'crm-email',
+  email: 'crm-email',
+  crm_emails: 'crm-email',
+  crm_chat: 'chat',
+  webchat: 'chat',
+};
+const COMMUNICATION_CHANNEL_LABELS = {
+  telephony: 'Телефония',
+  whatsapp: 'WhatsApp',
+  facebook: 'Facebook Messenger',
+  instagram: 'Instagram',
+  telegram: 'Telegram',
+  sms: 'SMS',
+  'crm-email': 'CRM Email',
+  massmail: 'Массовые рассылки',
+  chat: 'CRM Chat',
+  omnichannel: 'Omnichannel',
+};
+const COMMUNICATION_CHANNEL_ICON_KEYS = {
+  telephony: 'telephony',
+  whatsapp: 'whatsapp',
+  facebook: 'facebook',
+  instagram: 'instagram',
+  telegram: 'telegram',
+  sms: 'sms',
+  'crm-email': 'crm-email',
+  massmail: 'massmail',
+  chat: 'chat',
+  omnichannel: 'omnichannel',
+};
+
+function toNumber(value) {
+  if (value === null || value === undefined || value === '') return null;
+  const parsed = Number(value);
+  return Number.isFinite(parsed) ? parsed : null;
+}
+
+function toDisplayPercent(value) {
+  const parsed = toNumber(value);
+  if (parsed === null) return null;
+  if (Math.abs(parsed) > 0 && Math.abs(parsed) <= PERCENT_DISPLAY_THRESHOLD) {
+    return parsed * 100;
+  }
+  return parsed;
+}
+
+function formatShortDuration(seconds) {
+  const parsed = toNumber(seconds);
+  if (parsed === null || parsed === 0) return '0:00';
+  const totalSeconds = Math.abs(Math.round(parsed));
+  const mins = Math.floor(totalSeconds / 60);
+  const secs = totalSeconds % 60;
+  return `${mins}:${secs.toString().padStart(2, '0')}`;
+}
+
+function formatPercentValue(value, digits = 1) {
+  const parsed = toDisplayPercent(value);
+  if (parsed === null) return '-';
+  return `${parsed.toFixed(digits)}%`;
+}
+
+function formatSignedPercentDelta(current, previous, digits = 1) {
+  const currentValue = toDisplayPercent(current);
+  const previousValue = toDisplayPercent(previous);
+  if (currentValue === null || previousValue === null) return null;
+  const delta = currentValue - previousValue;
+  const sign = delta > 0 ? '+' : '';
+  return `${sign}${delta.toFixed(digits)} pp`;
+}
+
+function formatSignedSecondsDelta(current, previous) {
+  const currentValue = toNumber(current);
+  const previousValue = toNumber(previous);
+  if (currentValue === null || previousValue === null) return null;
+  const delta = Math.round(currentValue - previousValue);
+  const sign = delta > 0 ? '+' : delta < 0 ? '-' : '';
+  return `${sign}${formatShortDuration(Math.abs(delta))}`;
+}
+
+function normalizeListPayload(value) {
+  if (Array.isArray(value)) return value;
+  if (value && Array.isArray(value.results)) return value.results;
+  return [];
+}
+
+function normalizeBreakdownPayload(value) {
+  if (Array.isArray(value)) return value;
+  if (value && Array.isArray(value.results)) return value.results;
+  if (!value || typeof value !== 'object') return [];
+
+  return Object.entries(value).map(([label, item]) => {
+    if (item && typeof item === 'object' && !Array.isArray(item)) {
+      return {
+        key: item.key ?? item.id ?? item.code ?? label,
+        label: item.label ?? item.name ?? item.reason ?? item.status ?? label,
+        ...item,
+      };
+    }
+
+    return {
+      key: label,
+      label,
+      count: item,
+    };
+  });
+}
+
+function normalizeChannelPayload(value) {
+  if (Array.isArray(value)) return value;
+  if (value && Array.isArray(value.results)) return value.results;
+  if (!value || typeof value !== 'object') return [];
+
+  return Object.entries(value).map(([label, item]) => {
+    if (item && typeof item === 'object' && !Array.isArray(item)) {
+      return {
+        key: item.key ?? item.id ?? item.code ?? label,
+        label: item.label ?? item.name ?? item.title ?? label,
+        ...item,
+      };
+    }
+
+    return {
+      key: label,
+      label,
+      count: item,
+    };
+  });
+}
+
+function getFirstDefined(...values) {
+  for (const value of values) {
+    if (value !== undefined && value !== null) return value;
+  }
+  return null;
+}
+
+function getDeltaTone(delta, higherIsBetter = true) {
+  if (delta === null || delta === undefined || Number.isNaN(delta)) return 'default';
+  if (delta === 0) return 'default';
+  const improved = higherIsBetter ? delta > 0 : delta < 0;
+  return improved ? 'success' : 'error';
+}
+
+function formatBreakdownCount(value) {
+  const parsed = toNumber(value);
+  return parsed === null ? '-' : parsed.toLocaleString('en-US');
+}
+
+function normalizeCommunicationChannelKey(value) {
+  const normalized = String(value || '')
+    .trim()
+    .toLowerCase()
+    .replace(/\s+/g, '_');
+  return COMMUNICATION_CHANNEL_ALIASES[normalized] || normalized || 'omnichannel';
+}
+
+function resolveCommunicationChannelLabel(channelKey, fallbackLabel = 'Канал') {
+  return COMMUNICATION_CHANNEL_LABELS[channelKey] || fallbackLabel || channelKey || 'Канал';
+}
+
+function resolveCommunicationChannelIcon(channelKey) {
+  return COMMUNICATION_CHANNEL_ICON_KEYS[channelKey] || channelKey || 'omnichannel';
+}
 
 function CallsDashboard() {
   const [loading, setLoading] = useState(false);
@@ -74,18 +254,16 @@ function CallsDashboard() {
   const [qaModalVisible, setQaModalVisible] = useState(false);
   const [selectedQaCall, setSelectedQaCall] = useState(null);
   const [chartData, setChartData] = useState(null);
-  const [dateRange, setDateRange] = useState([
-    dayjs().subtract(7, 'days'),
-    dayjs(),
-  ]);
+  const [dateRange, setDateRange] = useState([dayjs().subtract(7, 'days'), dayjs()]);
   const [period, setPeriod] = useState('week'); // week, month, year
-  const [qaForm] = Form.useForm();
+  const [selectedCommunicationChannel, setSelectedCommunicationChannel] = useState('all');
   const fixedStatCardProps = {
     width: '100%',
     height: 112,
     bodyPadding: '12px',
     titleMinHeight: 40,
   };
+  const [qaForm] = Form.useForm();
 
   useEffect(() => {
     loadData();
@@ -102,7 +280,16 @@ function CallsDashboard() {
       }
 
       const stats = await getCallStatistics(params);
-      const [kpiResponse, drilldownResponse, qaSummaryResponse, qaScoresResponse, reportsResponse, automationHealthResponse, callsResponse, allCallsResponse] = await Promise.all([
+      const [
+        kpiResponse,
+        drilldownResponse,
+        qaSummaryResponse,
+        qaScoresResponse,
+        reportsResponse,
+        automationHealthResponse,
+        callsResponse,
+        allCallsResponse,
+      ] = await Promise.all([
         getContactCenterKpi({ ...params, period }),
         getContactCenterDrilldown({ ...params, period }),
         getCallQaSummary({ ...params, period }),
@@ -122,7 +309,7 @@ function CallsDashboard() {
 
       const recent = callsResponse?.results || callsResponse || [];
       setRecentCalls(recent);
-      
+
       // Process data for charts
       const allCalls = allCallsResponse?.results || allCallsResponse || [];
       processChartData(allCalls);
@@ -178,7 +365,10 @@ function CallsDashboard() {
   const formatTotalDuration = (seconds) => {
     const hours = Math.floor(seconds / 3600);
     const mins = Math.floor((seconds % 3600) / 60);
-    return t('callsDashboardPage.duration.hoursMinutes', { hours: String(hours), minutes: String(mins) });
+    return t('callsDashboardPage.duration.hoursMinutes', {
+      hours: String(hours),
+      minutes: String(mins),
+    });
   };
 
   const formatSeconds = (seconds) => {
@@ -196,7 +386,7 @@ function CallsDashboard() {
   const processChartData = (calls) => {
     // Group by date
     const dateGroups = {};
-    calls.forEach(call => {
+    calls.forEach((call) => {
       const date = dayjs(call.started_at || call.timestamp).format('DD.MM');
       if (!dateGroups[date]) {
         dateGroups[date] = { inbound: 0, outbound: 0, durations: [] };
@@ -219,13 +409,13 @@ function CallsDashboard() {
 
     const activityData = {
       labels,
-      inbound: labels.map(date => dateGroups[date].inbound),
-      outbound: labels.map(date => dateGroups[date].outbound),
+      inbound: labels.map((date) => dateGroups[date].inbound),
+      outbound: labels.map((date) => dateGroups[date].outbound),
     };
 
     const durationData = {
       labels,
-      averageDuration: labels.map(date => {
+      averageDuration: labels.map((date) => {
         const durations = dateGroups[date].durations;
         if (durations.length === 0) return 0;
         const avg = durations.reduce((a, b) => a + b, 0) / durations.length;
@@ -248,7 +438,9 @@ function CallsDashboard() {
       render: (direction) => (
         <Space>
           <PhoneTwoTone twoToneColor={direction === 'inbound' ? '#52c41a' : '#1890ff'} />
-          {direction === 'inbound' ? t('callsDashboardPage.direction.inbound') : t('callsDashboardPage.direction.outbound')}
+          {direction === 'inbound'
+            ? t('callsDashboardPage.direction.inbound')
+            : t('callsDashboardPage.direction.outbound')}
         </Space>
       ),
     },
@@ -264,12 +456,36 @@ function CallsDashboard() {
       key: 'status',
       render: (status) => {
         const config = {
-          completed: { color: 'success', text: t('callsDashboardPage.status.completed'), icon: <CheckCircleOutlined /> },
-          answered: { color: 'success', text: t('callsDashboardPage.status.answered'), icon: <CheckCircleOutlined /> },
-          missed: { color: 'error', text: t('callsDashboardPage.status.missed'), icon: <CloseCircleOutlined /> },
-          no_answer: { color: 'error', text: t('callsDashboardPage.status.noAnswer'), icon: <CloseCircleOutlined /> },
-          busy: { color: 'warning', text: t('callsDashboardPage.status.busy'), icon: <CloseCircleOutlined /> },
-          failed: { color: 'error', text: t('callsDashboardPage.status.failed'), icon: <CloseCircleOutlined /> },
+          completed: {
+            color: 'success',
+            text: t('callsDashboardPage.status.completed'),
+            icon: <CheckCircleOutlined />,
+          },
+          answered: {
+            color: 'success',
+            text: t('callsDashboardPage.status.answered'),
+            icon: <CheckCircleOutlined />,
+          },
+          missed: {
+            color: 'error',
+            text: t('callsDashboardPage.status.missed'),
+            icon: <CloseCircleOutlined />,
+          },
+          no_answer: {
+            color: 'error',
+            text: t('callsDashboardPage.status.noAnswer'),
+            icon: <CloseCircleOutlined />,
+          },
+          busy: {
+            color: 'warning',
+            text: t('callsDashboardPage.status.busy'),
+            icon: <CloseCircleOutlined />,
+          },
+          failed: {
+            color: 'error',
+            text: t('callsDashboardPage.status.failed'),
+            icon: <CloseCircleOutlined />,
+          },
         };
         const style = config[status] || config.completed;
         return (
@@ -296,10 +512,7 @@ function CallsDashboard() {
       key: 'qa_action',
       width: 120,
       render: (_, record) => (
-        <Button
-          size="small"
-          onClick={() => openQaModal(record)}
-        >
+        <Button size="small" onClick={() => openQaModal(record)}>
           {t('callsDashboardPage.columns.rate')}
         </Button>
       ),
@@ -308,31 +521,488 @@ function CallsDashboard() {
 
   const teamColumns = [
     { title: t('callsDashboardPage.columns.team'), dataIndex: 'group_name', key: 'group_name' },
-    { title: t('callsDashboardPage.columns.total'), dataIndex: 'total_calls', key: 'total_calls', width: 90 },
-    { title: 'Answer rate', dataIndex: 'answer_rate', key: 'answer_rate', width: 110, render: (v) => `${v}%` },
-    { title: 'Abandon rate', dataIndex: 'abandon_rate', key: 'abandon_rate', width: 120, render: (v) => `${v}%` },
-    { title: 'AHT', dataIndex: 'aht_seconds', key: 'aht_seconds', width: 100, render: formatSeconds },
-    { title: 'ASA', dataIndex: 'asa_seconds', key: 'asa_seconds', width: 100, render: formatSeconds },
-    { title: 'SLA breach', dataIndex: 'sla_breach_rate', key: 'sla_breach_rate', width: 120, render: (v) => `${v}%` },
+    {
+      title: t('callsDashboardPage.columns.total'),
+      dataIndex: 'total_calls',
+      key: 'total_calls',
+      width: 90,
+    },
+    {
+      title: 'Answer rate',
+      dataIndex: 'answer_rate',
+      key: 'answer_rate',
+      width: 110,
+      render: (v) => `${v}%`,
+    },
+    {
+      title: 'Abandon rate',
+      dataIndex: 'abandon_rate',
+      key: 'abandon_rate',
+      width: 120,
+      render: (v) => `${v}%`,
+    },
+    {
+      title: 'AHT',
+      dataIndex: 'aht_seconds',
+      key: 'aht_seconds',
+      width: 100,
+      render: formatSeconds,
+    },
+    {
+      title: 'ASA',
+      dataIndex: 'asa_seconds',
+      key: 'asa_seconds',
+      width: 100,
+      render: formatSeconds,
+    },
+    {
+      title: 'SLA breach',
+      dataIndex: 'sla_breach_rate',
+      key: 'sla_breach_rate',
+      width: 120,
+      render: (v) => `${v}%`,
+    },
   ];
 
   const agentColumns = [
     { title: t('callsDashboardPage.columns.agent'), dataIndex: 'agent_name', key: 'agent_name' },
     { title: 'Ext', dataIndex: 'extension', key: 'extension', width: 100 },
-    { title: t('callsDashboardPage.columns.total'), dataIndex: 'total_calls', key: 'total_calls', width: 90 },
-    { title: 'Answer rate', dataIndex: 'answer_rate', key: 'answer_rate', width: 110, render: (v) => `${v}%` },
-    { title: 'Abandon rate', dataIndex: 'abandon_rate', key: 'abandon_rate', width: 120, render: (v) => `${v}%` },
-    { title: 'AHT', dataIndex: 'aht_seconds', key: 'aht_seconds', width: 100, render: formatSeconds },
-    { title: 'ASA', dataIndex: 'asa_seconds', key: 'asa_seconds', width: 100, render: formatSeconds },
-    { title: 'SLA breach', dataIndex: 'sla_breach_rate', key: 'sla_breach_rate', width: 120, render: (v) => `${v}%` },
+    {
+      title: t('callsDashboardPage.columns.total'),
+      dataIndex: 'total_calls',
+      key: 'total_calls',
+      width: 90,
+    },
+    {
+      title: 'Answer rate',
+      dataIndex: 'answer_rate',
+      key: 'answer_rate',
+      width: 110,
+      render: (v) => `${v}%`,
+    },
+    {
+      title: 'Abandon rate',
+      dataIndex: 'abandon_rate',
+      key: 'abandon_rate',
+      width: 120,
+      render: (v) => `${v}%`,
+    },
+    {
+      title: 'AHT',
+      dataIndex: 'aht_seconds',
+      key: 'aht_seconds',
+      width: 100,
+      render: formatSeconds,
+    },
+    {
+      title: 'ASA',
+      dataIndex: 'asa_seconds',
+      key: 'asa_seconds',
+      width: 100,
+      render: formatSeconds,
+    },
+    {
+      title: 'SLA breach',
+      dataIndex: 'sla_breach_rate',
+      key: 'sla_breach_rate',
+      width: 120,
+      render: (v) => `${v}%`,
+    },
   ];
 
   const currentKpi = contactCenterKpi?.current || null;
   const previousKpi = contactCenterKpi?.previous || null;
+  const omnichannelKpi = getFirstDefined(
+    contactCenterKpi?.omnichannel,
+    contactCenterKpi?.omniChannel,
+    currentKpi?.omnichannel,
+    currentKpi?.omniChannel,
+    previousKpi?.omnichannel,
+    previousKpi?.omniChannel
+  );
   const currentQaSummary = qaSummary?.summary || null;
-  const answerRateDelta = currentKpi && previousKpi
-    ? (currentKpi.answer_rate - previousKpi.answer_rate).toFixed(2)
-    : null;
+  const dailyTrendData = getFirstDefined(
+    contactCenterKpi?.daily_trend,
+    contactCenterKpi?.dailyTrend,
+    currentKpi?.daily_trend,
+    currentKpi?.dailyTrend
+  );
+  const previousDailyTrendData = getFirstDefined(
+    contactCenterKpi?.previous_daily_trend,
+    contactCenterKpi?.previousDailyTrend,
+    previousKpi?.daily_trend,
+    previousKpi?.dailyTrend
+  );
+  const answerRateDelta =
+    currentKpi && previousKpi
+      ? formatSignedPercentDelta(currentKpi.answer_rate, previousKpi.answer_rate)
+      : null;
+
+  const analyticsHourlyDistribution = normalizeListPayload(
+    getFirstDefined(
+      statistics?.hourly_distribution,
+      statistics?.hourlyDistribution,
+      contactCenterKpi?.hourly_distribution,
+      contactCenterKpi?.hourlyDistribution,
+      currentKpi?.hourly_distribution,
+      currentKpi?.hourlyDistribution
+    )
+  ).map((row, index) => ({
+    key: row.id ?? row.key ?? row.hour ?? row.label ?? row.time_slot ?? index,
+    hour:
+      row.hour ??
+      row.label ??
+      row.time_slot ??
+      row.bucket ??
+      row.slot ??
+      row.period ??
+      `#${index + 1}`,
+    total: toNumber(
+      row.total ?? row.calls_total ?? row.calls ?? row.count ?? row.value ?? row.total_calls
+    ),
+    answered: toNumber(
+      row.answered ?? row.completed ?? row.connected ?? row.successful_calls ?? row.answer_count
+    ),
+    missed: toNumber(row.missed ?? row.no_answer ?? row.no_answered ?? row.missed_calls),
+    abandoned: toNumber(row.abandoned ?? row.abandon ?? row.abandoned_calls),
+    answerRate: toDisplayPercent(row.answer_rate ?? row.answerRate),
+    ahtSeconds: toNumber(row.aht_seconds ?? row.avg_aht_seconds ?? row.aht),
+    asaSeconds: toNumber(row.asa_seconds ?? row.avg_asa_seconds ?? row.asa),
+    slaBreachRate: toDisplayPercent(row.sla_breach_rate ?? row.sla_breach ?? row.slaBreachRate),
+  }));
+
+  const normalizeBreakdownRows = (source) => {
+    const rows = normalizeBreakdownPayload(source).map((row, index) => {
+      const count =
+        toNumber(row.count ?? row.total ?? row.calls ?? row.value ?? row.items ?? row.records) ?? 0;
+      const rate = getFirstDefined(
+        row.rate,
+        row.percent,
+        row.percentage,
+        row.share,
+        row.ratio,
+        row.share_rate
+      );
+      return {
+        key: row.key ?? row.id ?? row.code ?? row.label ?? `row-${index}`,
+        label: row.label ?? row.name ?? row.reason ?? row.status ?? row.code ?? `Item ${index + 1}`,
+        count,
+        rate: rate !== null && rate !== undefined ? toDisplayPercent(rate) : null,
+      };
+    });
+
+    const total = rows.reduce((sum, row) => sum + (row.count || 0), 0);
+    return rows
+      .map((row) => ({
+        ...row,
+        rate: row.rate ?? (total > 0 ? (row.count / total) * 100 : null),
+      }))
+      .sort((a, b) => (b.count || 0) - (a.count || 0));
+  };
+
+  const analyticsStatusBreakdown = normalizeBreakdownRows(
+    getFirstDefined(
+      statistics?.status_breakdown,
+      statistics?.statusBreakdown,
+      contactCenterKpi?.status_breakdown,
+      contactCenterKpi?.statusBreakdown,
+      currentKpi?.status_breakdown,
+      currentKpi?.statusBreakdown
+    )
+  );
+
+  const analyticsCauseBreakdown = normalizeBreakdownRows(
+    getFirstDefined(
+      statistics?.cause_breakdown,
+      statistics?.causeBreakdown,
+      contactCenterKpi?.cause_breakdown,
+      contactCenterKpi?.causeBreakdown,
+      currentKpi?.cause_breakdown,
+      currentKpi?.causeBreakdown
+    )
+  );
+
+  const omnichannelChannelRows = normalizeChannelPayload(
+    getFirstDefined(
+      omnichannelKpi?.channels,
+      omnichannelKpi?.channel_breakdown,
+      omnichannelKpi?.channelBreakdown,
+      omnichannelKpi?.breakdown
+    )
+  ).map((row, index) => ({
+    key: row.key ?? row.id ?? row.code ?? row.channel ?? row.label ?? `channel-${index}`,
+    label: row.label ?? row.name ?? row.title ?? row.channel ?? `Channel ${index + 1}`,
+    count: toNumber(
+      row.count ??
+        row.total ??
+        row.total_count ??
+        row.totalCalls ??
+        row.total_calls ??
+        row.messages_total ??
+        row.messagesTotal ??
+        row.value
+    ),
+    inbound: toNumber(
+      row.inbound ??
+        row.total_social_inbound ??
+        row.totalSocialInbound ??
+        row.social_inbound ??
+        row.socialInbound ??
+        row.inbound_count
+    ),
+    outbound: toNumber(
+      row.outbound ??
+        row.total_social_outbound ??
+        row.totalSocialOutbound ??
+        row.social_outbound ??
+        row.socialOutbound ??
+        row.outbound_count
+    ),
+    activeConversations: toNumber(
+      row.active_conversations ??
+        row.activeConversations ??
+        row.open_conversations ??
+        row.openConversations ??
+        row.active
+    ),
+    responseRate: toDisplayPercent(
+      row.response_rate ?? row.responseRate ?? row.reply_rate ?? row.replyRate
+    ),
+  }));
+
+  const omnichannelRestricted = Boolean(omnichannelKpi?.license_restricted);
+  const telephonyTotal =
+    toNumber(statistics?.total ?? statistics?.total_calls ?? statistics?.calls_total) ?? 0;
+  const telephonyInbound =
+    toNumber(statistics?.inbound ?? statistics?.incoming ?? statistics?.incoming_calls) ?? 0;
+  const telephonyOutbound =
+    toNumber(statistics?.outbound ?? statistics?.outgoing ?? statistics?.outgoing_calls) ?? 0;
+  const telephonyCompleted =
+    toNumber(statistics?.completed ?? statistics?.answered ?? statistics?.connected) ?? 0;
+  const telephonyMissed =
+    toNumber(statistics?.missed ?? statistics?.missed_calls ?? statistics?.no_answer) ?? 0;
+  const telephonySuccessRate = telephonyTotal > 0 ? (telephonyCompleted / telephonyTotal) * 100 : null;
+
+  const communicationChannelsMap = new Map();
+  const pushCommunicationRow = (row) => {
+    const key = normalizeCommunicationChannelKey(row?.key || row?.label);
+    if (!key) return;
+    const normalizedRow = {
+      key,
+      label: resolveCommunicationChannelLabel(key, row?.label || key),
+      iconChannel: resolveCommunicationChannelIcon(key),
+      total: toNumber(row?.total) ?? 0,
+      inbound: toNumber(row?.inbound),
+      outbound: toNumber(row?.outbound),
+      missed: toNumber(row?.missed),
+      activeConversations: toNumber(row?.activeConversations),
+      rate: toDisplayPercent(row?.rate),
+      rateLabel: row?.rateLabel || 'Response rate',
+      source: row?.source || 'omnichannel',
+    };
+
+    const existing = communicationChannelsMap.get(key);
+    if (!existing) {
+      communicationChannelsMap.set(key, normalizedRow);
+      return;
+    }
+
+    const mergeMetric = (left, right) => {
+      if (left === null || left === undefined) return right;
+      if (right === null || right === undefined) return left;
+      return left + right;
+    };
+    communicationChannelsMap.set(key, {
+      ...existing,
+      total: mergeMetric(existing.total, normalizedRow.total),
+      inbound: mergeMetric(existing.inbound, normalizedRow.inbound),
+      outbound: mergeMetric(existing.outbound, normalizedRow.outbound),
+      missed: mergeMetric(existing.missed, normalizedRow.missed),
+      activeConversations: mergeMetric(
+        existing.activeConversations,
+        normalizedRow.activeConversations
+      ),
+      rate: normalizedRow.rate ?? existing.rate,
+      rateLabel: normalizedRow.rateLabel || existing.rateLabel,
+      source: key === 'telephony' ? 'telephony' : 'omnichannel',
+    });
+  };
+
+  pushCommunicationRow({
+    key: 'telephony',
+    label: 'Телефония',
+    total: telephonyTotal,
+    inbound: telephonyInbound,
+    outbound: telephonyOutbound,
+    missed: telephonyMissed,
+    rate: telephonySuccessRate,
+    rateLabel: 'Success rate',
+    source: 'telephony',
+  });
+
+  omnichannelChannelRows.forEach((row) => {
+    const total =
+      toNumber(row.count) ??
+      ((toNumber(row.inbound) ?? 0) + (toNumber(row.outbound) ?? 0)) ??
+      0;
+    pushCommunicationRow({
+      key: row.key ?? row.label,
+      label: row.label,
+      total,
+      inbound: row.inbound,
+      outbound: row.outbound,
+      activeConversations: row.activeConversations,
+      rate: row.responseRate,
+      rateLabel: 'Response rate',
+      source: 'omnichannel',
+    });
+  });
+
+  const communicationChannelRows = Array.from(communicationChannelsMap.values()).sort((a, b) => {
+    if (a.key === 'telephony') return -1;
+    if (b.key === 'telephony') return 1;
+    return (b.total ?? 0) - (a.total ?? 0);
+  });
+
+  const communicationChannelOptions = [
+    { value: 'all', label: 'Все каналы' },
+    ...communicationChannelRows.map((row) => ({
+      value: row.key,
+      label: row.label,
+    })),
+  ];
+
+  useEffect(() => {
+    if (selectedCommunicationChannel === 'all') return;
+    const exists = communicationChannelRows.some(
+      (row) => row.key === selectedCommunicationChannel
+    );
+    if (!exists) {
+      setSelectedCommunicationChannel('all');
+    }
+  }, [communicationChannelRows, selectedCommunicationChannel]);
+
+  const selectedCommunicationRow =
+    selectedCommunicationChannel === 'all'
+      ? null
+      : communicationChannelRows.find((row) => row.key === selectedCommunicationChannel) || null;
+
+  const visibleCommunicationRows = selectedCommunicationRow
+    ? [selectedCommunicationRow]
+    : communicationChannelRows;
+
+  const aggregatedCommunicationSummary = visibleCommunicationRows.reduce(
+    (acc, row) => {
+      acc.total += row.total ?? 0;
+      acc.inbound += row.inbound ?? 0;
+      acc.outbound += row.outbound ?? 0;
+      acc.missed += row.missed ?? 0;
+      acc.activeConversations += row.activeConversations ?? 0;
+      if (row.rate !== null && row.rate !== undefined) {
+        const weight = row.total && row.total > 0 ? row.total : 1;
+        acc.rateSum += row.rate * weight;
+        acc.rateWeight += weight;
+      }
+      return acc;
+    },
+    {
+      total: 0,
+      inbound: 0,
+      outbound: 0,
+      missed: 0,
+      activeConversations: 0,
+      rateSum: 0,
+      rateWeight: 0,
+    }
+  );
+
+  const communicationSummary = selectedCommunicationRow
+    ? {
+        ...selectedCommunicationRow,
+        total: selectedCommunicationRow.total ?? 0,
+        inbound: selectedCommunicationRow.inbound ?? 0,
+        outbound: selectedCommunicationRow.outbound ?? 0,
+        missed: selectedCommunicationRow.missed ?? 0,
+        activeConversations: selectedCommunicationRow.activeConversations ?? 0,
+        rate: selectedCommunicationRow.rate ?? null,
+      }
+    : {
+        key: 'all',
+        label: 'Все каналы',
+        iconChannel: 'omnichannel',
+        total: aggregatedCommunicationSummary.total,
+        inbound: aggregatedCommunicationSummary.inbound,
+        outbound: aggregatedCommunicationSummary.outbound,
+        missed: aggregatedCommunicationSummary.missed,
+        activeConversations: aggregatedCommunicationSummary.activeConversations,
+        rate:
+          aggregatedCommunicationSummary.rateWeight > 0
+            ? aggregatedCommunicationSummary.rateSum / aggregatedCommunicationSummary.rateWeight
+            : null,
+        rateLabel: 'Response / Success rate',
+      };
+
+  const renderKpiCard = ({
+    title,
+    currentValue,
+    previousValue,
+    formatValue = (value) => value,
+    scale = 'raw',
+    higherIsBetter = true,
+    accentColor,
+    icon,
+  }) => {
+    const currentNum = toNumber(currentValue);
+    const previousNum = toNumber(previousValue);
+    const currentDisplay = scale === 'percent' ? toDisplayPercent(currentNum) : currentNum;
+    const previousDisplay = scale === 'percent' ? toDisplayPercent(previousNum) : previousNum;
+    const deltaValue =
+      currentDisplay !== null && previousDisplay !== null ? currentDisplay - previousDisplay : null;
+    const deltaColor = getDeltaTone(deltaValue, higherIsBetter);
+    const deltaLabel =
+      scale === 'percent'
+        ? formatSignedPercentDelta(currentDisplay, previousDisplay)
+        : formatSignedSecondsDelta(currentNum, previousNum);
+
+    return (
+      <Card loading={loading} style={{ height: '100%' }}>
+        <Space direction="vertical" size={6} style={{ width: '100%' }}>
+          <Text type="secondary">{title}</Text>
+          <Space align="baseline" size={8} wrap>
+            {icon}
+            <Text style={{ fontSize: 28, fontWeight: 600, lineHeight: 1, color: accentColor }}>
+              {formatValue(scale === 'percent' ? currentDisplay : currentNum)}
+            </Text>
+            {previousDisplay !== null && (
+              <Text type="secondary" style={{ fontSize: 12 }}>
+                Prev: {formatValue(scale === 'percent' ? previousDisplay : previousNum)}
+              </Text>
+            )}
+          </Space>
+          <Space direction="vertical" size={2}>
+            {deltaValue !== null ? (
+              <Tag color={deltaColor}>
+                <Space size={4}>
+                  {deltaValue > 0 ? (
+                    <ArrowUpOutlined />
+                  ) : deltaValue < 0 ? (
+                    <ArrowDownOutlined />
+                  ) : (
+                    <MinusOutlined />
+                  )}
+                  <span>{deltaLabel}</span>
+                </Space>
+              </Tag>
+            ) : (
+              <Text type="secondary" style={{ fontSize: 12 }}>
+                No previous period
+              </Text>
+            )}
+          </Space>
+        </Space>
+      </Card>
+    );
+  };
 
   const outcomeLabelMap = {
     converted: 'Converted',
@@ -375,9 +1045,7 @@ function CallsDashboard() {
       key: 'qa_passed',
       width: 120,
       render: (value) => (
-        <Tag color={value ? 'success' : 'error'}>
-          {value ? 'Passed' : 'Failed'}
-        </Tag>
+        <Tag color={value ? 'success' : 'error'}>{value ? 'Passed' : 'Failed'}</Tag>
       ),
     },
     {
@@ -544,11 +1212,7 @@ function CallsDashboard() {
       dataIndex: 'status',
       key: 'status',
       width: 110,
-      render: (value) => (
-        <Tag color={value === 'success' ? 'success' : 'error'}>
-          {value}
-        </Tag>
-      ),
+      render: (value) => <Tag color={value === 'success' ? 'success' : 'error'}>{value}</Tag>,
     },
     {
       title: 'Created',
@@ -580,27 +1244,34 @@ function CallsDashboard() {
 
   return (
     <div>
-      <div style={{ marginBottom: 24, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-        <Title level={2} style={{ margin: 0 }}>{t('callsDashboardPage.title')}</Title>
+      <div
+        style={{
+          marginBottom: 24,
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'center',
+        }}
+      >
+        <Title level={2} style={{ margin: 0 }}>
+          {t('callsDashboardPage.communicationTitle', 'Коммуникационный дашборд')}
+        </Title>
         <Space>
           <Button type="primary" loading={reportGenerating} onClick={handleGenerateWeeklyReport}>
             Weekly Report
           </Button>
           <Select
-            value={period}
-            onChange={handlePeriodChange}
-            style={{ width: 150 }}
-          >
+            value={selectedCommunicationChannel}
+            onChange={setSelectedCommunicationChannel}
+            style={{ width: 210 }}
+            options={communicationChannelOptions}
+          />
+          <Select value={period} onChange={handlePeriodChange} style={{ width: 150 }}>
             <Option value="today">{t('callsDashboardPage.period.today')}</Option>
             <Option value="week">{t('callsDashboardPage.period.week')}</Option>
             <Option value="month">{t('callsDashboardPage.period.month')}</Option>
             <Option value="year">{t('callsDashboardPage.period.year')}</Option>
           </Select>
-          <RangePicker
-            value={dateRange}
-            onChange={setDateRange}
-            format="DD.MM.YYYY"
-          />
+          <RangePicker value={dateRange} onChange={setDateRange} format="DD.MM.YYYY" />
           <Button icon={<ReloadOutlined />} onClick={loadData}>
             {t('callsDashboardPage.common.refresh')}
           </Button>
@@ -692,75 +1363,283 @@ function CallsDashboard() {
 
       {/* Contact Center KPI Economics */}
       <Row gutter={[16, 16]} style={{ marginBottom: 24 }}>
-        <Col xs={24} sm={12} lg={6}>
-          <KpiStatCard
-            loading={loading}
-            {...fixedStatCardProps}
-            title="AHT"
-            value={formatSeconds(currentKpi?.aht_seconds || 0)}
-            prefix={<ClockCircleOutlined />}
-          />
+        <Col xs={24} sm={12} lg={8}>
+          {renderKpiCard({
+            title: 'AHT',
+            currentValue: currentKpi?.aht_seconds,
+            previousValue: previousKpi?.aht_seconds,
+            formatValue: (value) =>
+              value === null || value === undefined ? '-' : formatSeconds(value),
+            scale: 'raw',
+            higherIsBetter: false,
+            accentColor: '#1677ff',
+            icon: <ClockCircleOutlined />,
+          })}
         </Col>
-        <Col xs={24} sm={12} lg={6}>
-          <KpiStatCard
-            loading={loading}
-            {...fixedStatCardProps}
-            title="ASA"
-            value={formatSeconds(currentKpi?.asa_seconds || 0)}
-            prefix={<ClockCircleOutlined />}
-          />
+        <Col xs={24} sm={12} lg={8}>
+          {renderKpiCard({
+            title: 'ASA',
+            currentValue: currentKpi?.asa_seconds,
+            previousValue: previousKpi?.asa_seconds,
+            formatValue: (value) =>
+              value === null || value === undefined ? '-' : formatSeconds(value),
+            scale: 'raw',
+            higherIsBetter: false,
+            accentColor: '#1890ff',
+            icon: <ClockCircleOutlined />,
+          })}
         </Col>
-        <Col xs={24} sm={12} lg={6}>
-          <KpiStatCard
-            loading={loading}
-            {...fixedStatCardProps}
-            title="FCR"
-            value={currentKpi?.fcr_rate || 0}
-            suffix="%"
-            prefix={<CheckCircleOutlined />}
-            valueStyle={{ color: '#52c41a' }}
-          />
-        </Col>
-        <Col xs={24} sm={12} lg={6}>
-          <KpiStatCard
-            loading={loading}
-            {...fixedStatCardProps}
-            title="Abandon Rate"
-            value={currentKpi?.abandon_rate || 0}
-            suffix="%"
-            prefix={<CloseCircleOutlined />}
-            valueStyle={{ color: '#ff4d4f' }}
-          />
+        <Col xs={24} sm={12} lg={8}>
+          {renderKpiCard({
+            title: 'FCR',
+            currentValue: currentKpi?.fcr_rate,
+            previousValue: previousKpi?.fcr_rate,
+            formatValue: (value) =>
+              value === null || value === undefined ? '-' : formatPercentValue(value),
+            scale: 'percent',
+            higherIsBetter: true,
+            accentColor: '#52c41a',
+            icon: <CheckCircleOutlined />,
+          })}
         </Col>
       </Row>
 
       <Row gutter={[16, 16]} style={{ marginBottom: 24 }}>
         <Col xs={24} sm={12} lg={8}>
-          <KpiStatCard
-            loading={loading}
-            {...fixedStatCardProps}
-            title="SLA Breach Rate"
-            value={currentKpi?.sla_breach_rate || 0}
-            suffix="%"
-            valueStyle={{ color: '#fa8c16' }}
-          />
+          {renderKpiCard({
+            title: 'SLA Breach',
+            currentValue: currentKpi?.sla_breach_rate,
+            previousValue: previousKpi?.sla_breach_rate,
+            formatValue: (value) =>
+              value === null || value === undefined ? '-' : formatPercentValue(value),
+            scale: 'percent',
+            higherIsBetter: false,
+            accentColor: '#fa8c16',
+            icon: <CloseCircleOutlined />,
+          })}
         </Col>
         <Col xs={24} sm={12} lg={8}>
-          <KpiStatCard
+          {renderKpiCard({
+            title: 'Abandon Rate',
+            currentValue: currentKpi?.abandon_rate,
+            previousValue: previousKpi?.abandon_rate,
+            formatValue: (value) =>
+              value === null || value === undefined ? '-' : formatPercentValue(value),
+            scale: 'percent',
+            higherIsBetter: false,
+            accentColor: '#ff4d4f',
+            icon: <CloseCircleOutlined />,
+          })}
+        </Col>
+        <Col xs={24} sm={12} lg={8}>
+          {renderKpiCard({
+            title: 'Answer Rate',
+            currentValue: currentKpi?.answer_rate,
+            previousValue: previousKpi?.answer_rate,
+            formatValue: (value) =>
+              value === null || value === undefined ? '-' : formatPercentValue(value),
+            scale: 'percent',
+            higherIsBetter: true,
+            accentColor: '#13c2c2',
+            icon: <CheckCircleOutlined />,
+          })}
+        </Col>
+      </Row>
+
+      <Row gutter={[16, 16]} style={{ marginBottom: 24 }}>
+        <Col xs={24}>
+          <CallsDailyTrendChart
+            data={dailyTrendData}
+            previousData={previousDailyTrendData}
             loading={loading}
-            {...fixedStatCardProps}
-            title="Answer Rate Delta vs Previous"
-            value={answerRateDelta ?? 0}
-            suffix="%"
-            valueStyle={{ color: Number(answerRateDelta || 0) >= 0 ? '#52c41a' : '#ff4d4f' }}
           />
         </Col>
-        <Col xs={24} sm={24} lg={8}>
+      </Row>
+
+      <Row gutter={[16, 16]} style={{ marginBottom: 24 }}>
+        <Col xs={24} sm={24} lg={12}>
           <Card loading={loading} title="Conversion by Direction">
             <Space direction="vertical" style={{ width: '100%' }}>
-              <Text>Inbound: {contactCenterKpi?.conversion_by_direction?.inbound?.conversion_rate || 0}%</Text>
-              <Text>Outbound: {contactCenterKpi?.conversion_by_direction?.outbound?.conversion_rate || 0}%</Text>
-              <Text>Internal: {contactCenterKpi?.conversion_by_direction?.internal?.conversion_rate || 0}%</Text>
+              <Text>
+                Inbound:{' '}
+                {contactCenterKpi?.conversion_by_direction?.inbound?.conversion_rate ===
+                  undefined ||
+                contactCenterKpi?.conversion_by_direction?.inbound?.conversion_rate === null
+                  ? '-'
+                  : formatPercentValue(
+                      contactCenterKpi?.conversion_by_direction?.inbound?.conversion_rate
+                    )}
+              </Text>
+              <Text>
+                Outbound:{' '}
+                {contactCenterKpi?.conversion_by_direction?.outbound?.conversion_rate ===
+                  undefined ||
+                contactCenterKpi?.conversion_by_direction?.outbound?.conversion_rate === null
+                  ? '-'
+                  : formatPercentValue(
+                      contactCenterKpi?.conversion_by_direction?.outbound?.conversion_rate
+                    )}
+              </Text>
+              <Text>
+                Internal:{' '}
+                {contactCenterKpi?.conversion_by_direction?.internal?.conversion_rate ===
+                  undefined ||
+                contactCenterKpi?.conversion_by_direction?.internal?.conversion_rate === null
+                  ? '-'
+                  : formatPercentValue(
+                      contactCenterKpi?.conversion_by_direction?.internal?.conversion_rate
+                    )}
+              </Text>
+            </Space>
+          </Card>
+        </Col>
+        <Col xs={24} sm={24} lg={12}>
+          <Card loading={loading} title="Answer Rate Delta vs Previous">
+            <Space align="baseline" size={8} wrap>
+              <Text style={{ fontSize: 28, fontWeight: 600, lineHeight: 1 }}>
+                {answerRateDelta ?? 'No data'}
+              </Text>
+            </Space>
+            <Text type="secondary">
+              Current:{' '}
+              {currentKpi?.answer_rate === undefined || currentKpi?.answer_rate === null
+                ? '-'
+                : formatPercentValue(currentKpi?.answer_rate)}{' '}
+              | Previous:{' '}
+              {previousKpi?.answer_rate === undefined || previousKpi?.answer_rate === null
+                ? '-'
+                : formatPercentValue(previousKpi?.answer_rate)}
+            </Text>
+          </Card>
+        </Col>
+      </Row>
+
+      <Row gutter={[16, 16]} style={{ marginBottom: 24 }}>
+        <Col xs={24}>
+          <Card loading={loading} title="Коммуникации по каналам">
+            <Space direction="vertical" style={{ width: '100%' }} size={16}>
+              {omnichannelRestricted && (
+                <Alert
+                  type="warning"
+                  showIcon
+                  message="Часть digital-каналов ограничена текущей лицензией."
+                  description="Телефония доступна полностью; данные по Meta/omnichannel могут быть частично скрыты."
+                />
+              )}
+
+              <Row gutter={[16, 16]}>
+                <Col xs={24} sm={12} lg={6}>
+                  <KpiStatCard
+                    {...fixedStatCardProps}
+                    title="Всего коммуникаций"
+                    value={communicationSummary.total}
+                    prefix={<ChannelBrandIcon channel={communicationSummary.iconChannel} size={16} />}
+                    valueStyle={{ color: '#1677ff' }}
+                  />
+                </Col>
+                <Col xs={24} sm={12} lg={6}>
+                  <KpiStatCard
+                    {...fixedStatCardProps}
+                    title="Inbound"
+                    value={communicationSummary.inbound}
+                    prefix={<ArrowDownOutlined />}
+                    valueStyle={{ color: '#13c2c2' }}
+                  />
+                </Col>
+                <Col xs={24} sm={12} lg={6}>
+                  <KpiStatCard
+                    {...fixedStatCardProps}
+                    title="Outbound"
+                    value={communicationSummary.outbound}
+                    prefix={<ArrowUpOutlined />}
+                    valueStyle={{ color: '#1677ff' }}
+                  />
+                </Col>
+                <Col xs={24} sm={12} lg={6}>
+                  <KpiStatCard
+                    {...fixedStatCardProps}
+                    title={communicationSummary.rateLabel || 'Response / Success rate'}
+                    value={
+                      communicationSummary.rate === null || communicationSummary.rate === undefined
+                        ? '-'
+                        : Number(communicationSummary.rate.toFixed(1))
+                    }
+                    suffix={communicationSummary.rate === null || communicationSummary.rate === undefined ? '' : '%'}
+                    valueStyle={{ color: '#52c41a' }}
+                  />
+                </Col>
+              </Row>
+
+              <Table
+                dataSource={visibleCommunicationRows}
+                rowKey="key"
+                pagination={false}
+                size="small"
+                locale={{
+                  emptyText: (
+                    <Empty
+                      description="Нет данных по каналам за выбранный период."
+                      image={Empty.PRESENTED_IMAGE_SIMPLE}
+                    />
+                  ),
+                }}
+                columns={[
+                  {
+                    title: 'Канал',
+                    dataIndex: 'label',
+                    key: 'label',
+                    render: (label, record) => (
+                      <Space size={8} align="center">
+                        <ChannelBrandIcon channel={record.iconChannel} size={14} />
+                        <span>{label}</span>
+                      </Space>
+                    ),
+                  },
+                  {
+                    title: 'Всего',
+                    dataIndex: 'total',
+                    key: 'total',
+                    width: 120,
+                    render: (value) => formatBreakdownCount(value),
+                  },
+                  {
+                    title: 'Inbound',
+                    dataIndex: 'inbound',
+                    key: 'inbound',
+                    width: 120,
+                    render: (value) => formatBreakdownCount(value),
+                  },
+                  {
+                    title: 'Outbound',
+                    dataIndex: 'outbound',
+                    key: 'outbound',
+                    width: 120,
+                    render: (value) => formatBreakdownCount(value),
+                  },
+                  {
+                    title: 'Missed',
+                    dataIndex: 'missed',
+                    key: 'missed',
+                    width: 120,
+                    render: (value) => (value === null || value === undefined ? '-' : formatBreakdownCount(value)),
+                  },
+                  {
+                    title: 'Активные диалоги',
+                    dataIndex: 'activeConversations',
+                    key: 'activeConversations',
+                    width: 150,
+                    render: (value) => (value === null || value === undefined ? '-' : formatBreakdownCount(value)),
+                  },
+                  {
+                    title: selectedCommunicationRow?.rateLabel || 'Response / Success rate',
+                    dataIndex: 'rate',
+                    key: 'rate',
+                    width: 170,
+                    render: (value) =>
+                      value === null || value === undefined ? '-' : formatPercentValue(value),
+                  },
+                ]}
+              />
             </Space>
           </Card>
         </Col>
@@ -846,6 +1725,163 @@ function CallsDashboard() {
           <CallsDurationChart data={chartData?.duration} loading={loading} />
         </Col>
       </Row>
+
+      {(analyticsHourlyDistribution.length > 0 ||
+        analyticsStatusBreakdown.length > 0 ||
+        analyticsCauseBreakdown.length > 0) && (
+        <Row gutter={[16, 16]} style={{ marginBottom: 24 }}>
+          {analyticsHourlyDistribution.length > 0 && (
+            <Col xs={24} lg={12}>
+              <Card title="Hourly distribution" loading={loading}>
+                <Table
+                  dataSource={analyticsHourlyDistribution}
+                  rowKey="key"
+                  pagination={false}
+                  size="small"
+                  scroll={{ x: 900 }}
+                  columns={[
+                    { title: 'Hour', dataIndex: 'hour', key: 'hour', width: 90 },
+                    {
+                      title: 'Total',
+                      dataIndex: 'total',
+                      key: 'total',
+                      width: 90,
+                      render: formatBreakdownCount,
+                    },
+                    {
+                      title: 'Answered',
+                      dataIndex: 'answered',
+                      key: 'answered',
+                      width: 100,
+                      render: formatBreakdownCount,
+                    },
+                    {
+                      title: 'Missed',
+                      dataIndex: 'missed',
+                      key: 'missed',
+                      width: 90,
+                      render: formatBreakdownCount,
+                    },
+                    {
+                      title: 'Abandoned',
+                      dataIndex: 'abandoned',
+                      key: 'abandoned',
+                      width: 100,
+                      render: formatBreakdownCount,
+                    },
+                    {
+                      title: 'Answer rate',
+                      dataIndex: 'answerRate',
+                      key: 'answerRate',
+                      width: 110,
+                      render: (value) =>
+                        value === null || value === undefined ? '-' : formatPercentValue(value),
+                    },
+                    {
+                      title: 'AHT',
+                      dataIndex: 'ahtSeconds',
+                      key: 'ahtSeconds',
+                      width: 100,
+                      render: (value) =>
+                        value === null || value === undefined ? '-' : formatSeconds(value),
+                    },
+                    {
+                      title: 'ASA',
+                      dataIndex: 'asaSeconds',
+                      key: 'asaSeconds',
+                      width: 100,
+                      render: (value) =>
+                        value === null || value === undefined ? '-' : formatSeconds(value),
+                    },
+                    {
+                      title: 'SLA breach',
+                      dataIndex: 'slaBreachRate',
+                      key: 'slaBreachRate',
+                      width: 120,
+                      render: (value) =>
+                        value === null || value === undefined ? '-' : formatPercentValue(value),
+                    },
+                  ]}
+                />
+              </Card>
+            </Col>
+          )}
+          {(analyticsStatusBreakdown.length > 0 || analyticsCauseBreakdown.length > 0) && (
+            <Col xs={24} lg={analyticsHourlyDistribution.length > 0 ? 12 : 24}>
+              <Card title="Status mix and failure reasons" loading={loading}>
+                <Space direction="vertical" size={16} style={{ width: '100%' }}>
+                  {analyticsStatusBreakdown.length > 0 && (
+                    <div>
+                      <Title level={5} style={{ marginTop: 0, marginBottom: 12 }}>
+                        Status mix
+                      </Title>
+                      <Table
+                        dataSource={analyticsStatusBreakdown.slice(0, 8)}
+                        rowKey="key"
+                        pagination={false}
+                        size="small"
+                        columns={[
+                          { title: 'Status', dataIndex: 'label', key: 'label' },
+                          {
+                            title: 'Count',
+                            dataIndex: 'count',
+                            key: 'count',
+                            width: 90,
+                            render: formatBreakdownCount,
+                          },
+                          {
+                            title: 'Share',
+                            dataIndex: 'rate',
+                            key: 'rate',
+                            width: 100,
+                            render: (value) =>
+                              value === null || value === undefined
+                                ? '-'
+                                : formatPercentValue(value),
+                          },
+                        ]}
+                      />
+                    </div>
+                  )}
+                  {analyticsCauseBreakdown.length > 0 && (
+                    <div>
+                      <Title level={5} style={{ marginTop: 0, marginBottom: 12 }}>
+                        Top failure reasons
+                      </Title>
+                      <Table
+                        dataSource={analyticsCauseBreakdown.slice(0, 8)}
+                        rowKey="key"
+                        pagination={false}
+                        size="small"
+                        columns={[
+                          { title: 'Reason', dataIndex: 'label', key: 'label' },
+                          {
+                            title: 'Count',
+                            dataIndex: 'count',
+                            key: 'count',
+                            width: 90,
+                            render: formatBreakdownCount,
+                          },
+                          {
+                            title: 'Share',
+                            dataIndex: 'rate',
+                            key: 'rate',
+                            width: 100,
+                            render: (value) =>
+                              value === null || value === undefined
+                                ? '-'
+                                : formatPercentValue(value),
+                          },
+                        ]}
+                      />
+                    </div>
+                  )}
+                </Space>
+              </Card>
+            </Col>
+          )}
+        </Row>
+      )}
 
       {/* Recent Calls */}
       <Card title={t('callsDashboardPage.recent.title')} loading={loading}>
@@ -992,7 +2028,9 @@ function CallsDashboard() {
           <Form.Item
             name="communication_score"
             label="Communication (0-100)"
-            rules={[{ required: true, message: t('callsDashboardPage.qa.validation.communication') }]}
+            rules={[
+              { required: true, message: t('callsDashboardPage.qa.validation.communication') },
+            ]}
           >
             <InputNumber min={0} max={100} style={{ width: '100%' }} />
           </Form.Item>

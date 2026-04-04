@@ -9,6 +9,7 @@ import {
 import { LeadListParams } from '@/entities/lead';
 import { Button, Card, Col, Flex, Input, Row, Space, Tag, theme } from 'antd';
 import { ReloadOutlined, SearchOutlined } from '@ant-design/icons';
+import { t } from '@/lib/i18n';
 
 interface LeadsTableFiltersProps {
   filters: LeadListParams;
@@ -87,7 +88,7 @@ export const LeadsTableFilters: React.FC<LeadsTableFiltersProps> = ({
           </Col>
           <Col xs={24} md={7} lg={4}>
             <LeadSourceSelect
-              placeholder="Источник"
+              placeholder={t('leadsTable.sourcePlaceholder', 'Источник')}
               value={filters.leadSource}
               onChange={(val) => handleFilterChange('leadSource', val)}
               allowClear
@@ -128,7 +129,7 @@ export const LeadsTableFilters: React.FC<LeadsTableFiltersProps> = ({
               onClick={onRefresh}
               loading={loading}
               size="small"
-              aria-label="Обновить список"
+              aria-label={t('leadsTable.filters.refreshList', 'Обновить список')}
             />
           </Col>
         </Row>
@@ -149,7 +150,7 @@ export const LeadsTableFilters: React.FC<LeadsTableFiltersProps> = ({
               style={chipStyle}
               onClose={() => handleFilterChange('leadSource', undefined)}
             >
-              Источник
+              {t('leadsTable.sourceColumn', 'Источник')}
             </Tag>
           ) : null}
           {filters.owner ? (
@@ -193,7 +194,7 @@ export const LeadsTableFilters: React.FC<LeadsTableFiltersProps> = ({
                 })
               }
             >
-              Сбросить
+              {t('leadsTable.filters.reset', 'Сбросить')}
             </Button>
           ) : null}
         </Space>

@@ -4,6 +4,61 @@
 const listeners = new Set();
 const persistedKeys = new Set(['auth']);
 
+function normalizeCallIdentity(value) {
+  if (value === null || value === undefined) return null;
+  const normalized = String(value).trim();
+  return normalized.length > 0 ? normalized : null;
+}
+
+function getCallIdentifiers(call = {}) {
+  const sessionId = normalizeCallIdentity(
+    call.sessionId
+    ?? call.session_id
+    ?? call.call_session_id
+    ?? call.callId
+    ?? call.call_id
+    ?? null
+  );
+  const callId = normalizeCallIdentity(call.callId ?? call.call_id ?? call.id ?? sessionId);
+  return { callId, sessionId };
+}
+
+function getCallDedupKey(call = {}) {
+  const { callId, sessionId } = getCallIdentifiers(call);
+  if (sessionId) return `session:${sessionId}`;
+  if (callId) return `call:${callId}`;
+  return null;
+}
+
+function mergeCallCollection(collection = [], call, mergeExisting = true) {
+  const dedupKey = getCallDedupKey(call);
+  if (!dedupKey) {
+    return [...collection, call];
+  }
+
+  const index = collection.findIndex((item) => getCallDedupKey(item) === dedupKey);
+  if (index === -1) {
+    return [...collection, call];
+  }
+
+  const next = [...collection];
+  next[index] = mergeExisting ? { ...next[index], ...call } : call;
+  return next;
+}
+
+function dedupeCallCollection(collection = []) {
+  return collection.reduce((acc, call) => mergeCallCollection(acc, call, true), []);
+}
+
+function dropCallFromCollection(collection = [], identifier) {
+  const value = normalizeCallIdentity(identifier);
+  if (!value) return collection;
+  return collection.filter((call) => {
+    const { callId, sessionId } = getCallIdentifiers(call);
+    return callId !== value && sessionId !== value;
+  });
+}
+
 function normalizeLocale(raw) {
   const value = String(raw || '').toLowerCase();
   if (value.startsWith('uz')) return 'uz';
@@ -40,6 +95,7 @@ const initialState = {
   telephony: {
     isRegistered: false,
     activeCall: null,
+    activeCalls: [],
     callHistory: [],
     sipConfig: {
       realm: null,
@@ -146,11 +202,15 @@ export function setSipRegistered(isRegistered) {
 }
 
 export function setActiveCall(call) {
+  const activeCalls = call
+    ? mergeCallCollection(state.telephony.activeCalls, call, true)
+    : state.telephony.activeCalls;
   state = {
     ...state,
     telephony: {
       ...state.telephony,
       activeCall: call,
+      activeCalls,
     }
   };
   notify();
@@ -214,6 +274,65 @@ export function clearActiveCall() {
   notify();
 }
 
+export function setActiveCalls(calls = []) {
+  state = {
+    ...state,
+    telephony: {
+      ...state.telephony,
+      activeCalls: dedupeCallCollection(Array.isArray(calls) ? calls : []),
+    }
+  };
+  notify();
+}
+
+export function upsertActiveCall(call) {
+  if (!call || typeof call !== 'object') return;
+  const activeCalls = mergeCallCollection(state.telephony.activeCalls, call, true);
+
+  state = {
+    ...state,
+    telephony: {
+      ...state.telephony,
+      activeCall: { ...(state.telephony.activeCall || {}), ...call },
+      activeCalls,
+    }
+  };
+  notify();
+}
+
+export function removeActiveCall(identifier) {
+  const activeCalls = dropCallFromCollection(state.telephony.activeCalls, identifier);
+  const activeCall = (() => {
+    const value = normalizeCallIdentity(identifier);
+    if (!value || !state.telephony.activeCall) return state.telephony.activeCall;
+    const ids = getCallIdentifiers(state.telephony.activeCall);
+    if (ids.callId === value || ids.sessionId === value) return null;
+    return state.telephony.activeCall;
+  })();
+
+  state = {
+    ...state,
+    telephony: {
+      ...state.telephony,
+      activeCall,
+      activeCalls,
+    }
+  };
+  notify();
+}
+
+export function clearActiveCalls() {
+  state = {
+    ...state,
+    telephony: {
+      ...state.telephony,
+      activeCalls: [],
+      activeCall: null,
+    }
+  };
+  notify();
+}
+
 // Telephony selectors
 export function getTelephonyState() {
   return state.telephony;
@@ -221,6 +340,10 @@ export function getTelephonyState() {
 
 export function getActiveCall() {
   return state.telephony.activeCall;
+}
+
+export function getActiveCalls() {
+  return state.telephony.activeCalls;
 }
 
 export function getCallHistory() {
@@ -256,22 +379,23 @@ export function setWsReconnecting(reconnecting) {
 }
 
 export function addIncomingCall(call) {
+  if (!call || typeof call !== 'object') return;
   state = {
     ...state,
     telephony: {
       ...state.telephony,
-      incomingCalls: [...state.telephony.incomingCalls, call],
+      incomingCalls: mergeCallCollection(state.telephony.incomingCalls, call, true),
     }
   };
   notify();
 }
 
-export function removeIncomingCall(callId) {
+export function removeIncomingCall(identifier) {
   state = {
     ...state,
     telephony: {
       ...state.telephony,
-      incomingCalls: state.telephony.incomingCalls.filter(call => call.callId !== callId),
+      incomingCalls: dropCallFromCollection(state.telephony.incomingCalls, identifier),
     }
   };
   notify();
@@ -474,7 +598,9 @@ export default {
   // Telephony
   setSipRegistered, setActiveCall, addCallToHistory,
   updateCallInHistory, setSipConfig, setTelephonyStatus,
-  clearActiveCall, getTelephonyState, getActiveCall,
+  clearActiveCall, setActiveCalls, upsertActiveCall,
+  removeActiveCall, clearActiveCalls, getTelephonyState, getActiveCall,
+  getActiveCalls,
   getCallHistory, isSipRegistered,
   // WebSocket
   setWsConnected, setWsReconnecting, addIncomingCall,

@@ -4,7 +4,7 @@
  */
 
 import React, { useEffect, useState } from 'react';
-import { Form, Modal, Button, Card, Space, Input, InputNumber, Switch, DatePicker, Select, App, Descriptions, Tag, Table, Empty } from 'antd';
+import { Form, Modal, Button, Card, Space, Input, InputNumber, Switch, DatePicker, Select, App, Descriptions, Tag, Table, Empty, theme } from 'antd';
 import { PlusOutlined, EditOutlined, DeleteOutlined, EyeOutlined, InboxOutlined } from '@ant-design/icons';
 import dayjs from 'dayjs';
 import EntitySelect from './EntitySelect.jsx';
@@ -30,6 +30,7 @@ export default function CrudPage({
   pageSize = 20,
 }) {
   const { message, modal } = App.useApp();
+  const { token } = theme.useToken();
   const [form] = Form.useForm();
   
   const [data, setData] = useState([]);
@@ -191,6 +192,7 @@ export default function CrudPage({
                 type="link"
                 size="small"
                 icon={<EyeOutlined />}
+                aria-label="Просмотреть запись"
                 onClick={() => openView(record)}
               />
             )}
@@ -199,6 +201,7 @@ export default function CrudPage({
                 type="link"
                 size="small"
                 icon={<EditOutlined />}
+                aria-label="Редактировать запись"
                 onClick={() => openEdit(record)}
               />
             )}
@@ -208,6 +211,7 @@ export default function CrudPage({
                 size="small"
                 danger
                 icon={<DeleteOutlined />}
+                aria-label="Удалить запись"
                 onClick={() => handleDelete(record)}
               />
             )}
@@ -226,11 +230,11 @@ export default function CrudPage({
   const tableLocale = {
     emptyText: (
       <Empty
-        image={<InboxOutlined style={{ fontSize: 48, color: '#bfbfbf' }} />}
+        image={<InboxOutlined style={{ fontSize: 48, color: token.colorTextTertiary }} />}
         description={
           <div style={{ padding: '8px 0' }}>
-            <div style={{ marginBottom: 6, fontWeight: 600, fontSize: 15, color: '#18181b' }}>Нет данных</div>
-            <div style={{ fontSize: 13, lineHeight: 1.5, color: '#71717a' }}>Создайте первую запись</div>
+            <div style={{ marginBottom: 6, fontWeight: 600, fontSize: 15, color: token.colorText }}>Нет данных</div>
+            <div style={{ fontSize: 13, lineHeight: 1.5, color: token.colorTextSecondary }}>Создайте первую запись</div>
           </div>
         }
       />

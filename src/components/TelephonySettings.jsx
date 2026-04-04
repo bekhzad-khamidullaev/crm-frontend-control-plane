@@ -22,6 +22,8 @@ import {
   InputNumber,
   Typography,
   Empty,
+  Tabs,
+  Badge,
 } from 'antd';
 import {
   PlusOutlined,
@@ -29,7 +31,10 @@ import {
   DeleteOutlined,
   PlusCircleOutlined,
   SaveOutlined,
+  ReloadOutlined,
 } from '@ant-design/icons';
+import InternalNumbersAdminTable from './telephony/InternalNumbersAdminTable.jsx';
+import TelephonyRealtimeSettingsCard from './telephony/TelephonyRealtimeSettingsCard.jsx';
 import { 
   getVoIPConnections, 
   createVoIPConnection, 
@@ -51,11 +56,14 @@ import {
   CONNECTION_TYPE_OPTIONS,
   DEFAULT_STUN_SERVERS,
   DEFAULT_TELEPHONY_PROVIDER,
-  DEFAULT_TELEPHONY_ROUTE_MODE,
   TELEPHONY_PROVIDER_OPTIONS,
   TELEPHONY_PROVIDER_TAG_COLORS,
   TELEPHONY_ROUTE_MODE_OPTIONS,
 } from '../lib/telephony/constants.js';
+
+const FREEPBX_MAIN_QUEUE_NUMBER = '0553636';
+const FREEPBX_AGENT_EXTENSION_REGEX = /^2(?:0\d|1\d)$/;
+const BRIDGE_ROUTE_MODE = 'bridge';
 
 const ROUTING_ACTION_OPTIONS = [
   { value: 'route_to_number', label: 'route_to_number' },
@@ -68,6 +76,8 @@ const ROUTING_ACTION_OPTIONS = [
 ];
 
 const CALLED_PATTERN_PRESETS = [
+  { value: '^2(?:0\\d|1\\d)$', label: 'Операторы FreePBX (200-219)' },
+  { value: `^${FREEPBX_MAIN_QUEUE_NUMBER}$`, label: `Основная очередь ${FREEPBX_MAIN_QUEUE_NUMBER}` },
   { value: '^\\d{3}$', label: 'Внутренний номер (3 цифры)' },
   { value: '^\\d{4}$', label: 'Внутренний номер (4 цифры)' },
   { value: '^\\+998\\d{9}$', label: 'UZ внешний номер (+998...)' },
@@ -84,19 +94,86 @@ const CALLER_PATTERN_PRESETS = [
 
 const buildEmptyRoutingRule = () => ({
   id: undefined,
-  name: '',
-  description: '',
-  called_number_pattern: '',
+  name: `Queue ${FREEPBX_MAIN_QUEUE_NUMBER}`,
+  description: 'Основной inbound маршрут FreePBX Bridge',
+  called_number_pattern: `^${FREEPBX_MAIN_QUEUE_NUMBER}$`,
   caller_id_pattern: '',
   time_condition: '',
-  action: 'route_to_number',
+  action: 'route_to_queue',
   target_number: undefined,
   target_group: undefined,
   target_external: '',
   announcement_text: '',
-  priority: 100,
+  priority: 10,
   active: true,
 });
+
+const BRIDGE_ROUTE_MODE_OPTIONS = TELEPHONY_ROUTE_MODE_OPTIONS.filter(
+  (option) => String(option?.value || '').toLowerCase() === BRIDGE_ROUTE_MODE
+);
+
+function isPreferredFreePbxExtension(value) {
+  return FREEPBX_AGENT_EXTENSION_REGEX.test(String(value || '').trim());
+}
+
+function getBridgeProviderOptions(currentProvider) {
+  const primaryProvider = String(DEFAULT_TELEPHONY_PROVIDER || '').trim();
+  const baseOptions = TELEPHONY_PROVIDER_OPTIONS.filter(
+    (option) => String(option?.value || '').trim() === primaryProvider
+  );
+
+  if (!currentProvider || currentProvider === primaryProvider) return baseOptions;
+
+  return [
+    {
+      value: currentProvider,
+      label: `${currentProvider} (legacy)`,
+      disabled: true,
+    },
+    ...baseOptions,
+  ];
+}
+
+function getBridgeTypeOptions(currentType) {
+  const bridgeOption = CONNECTION_TYPE_OPTIONS.find((option) => option.value === 'sip');
+  const baseOptions = bridgeOption
+    ? [{ ...bridgeOption, label: 'PBX Bridge (FreePBX external)' }]
+    : [{ value: 'sip', label: 'PBX Bridge (FreePBX external)' }];
+
+  if (currentType === 'pbx') {
+    baseOptions.unshift({
+      value: 'pbx',
+      label: 'Embedded Asterisk (legacy, migrate to bridge)',
+      disabled: true,
+    });
+  }
+
+  return baseOptions;
+}
+
+function getPreferredInternalNumbers(numbers = []) {
+  const preferred = numbers.filter((item) => isPreferredFreePbxExtension(item?.number));
+  return preferred.length > 0 ? preferred : numbers;
+}
+
+function getPrioritizedNumberGroups(groups = []) {
+  return [...groups].sort((left, right) => {
+    const leftScore = String(left?.name || '').includes(FREEPBX_MAIN_QUEUE_NUMBER) ? 1 : 0;
+    const rightScore = String(right?.name || '').includes(FREEPBX_MAIN_QUEUE_NUMBER) ? 1 : 0;
+    return rightScore - leftScore;
+  });
+}
+
+function validateCallerId(_, value) {
+  const normalized = String(value || '').trim();
+  if (!normalized) return Promise.resolve();
+  if (/^(?:\+?[0-9]{7,15}|0[0-9]{6,15})$/.test(normalized)) return Promise.resolve();
+  return Promise.reject(
+    new Error(
+      `Укажите Caller ID в цифровом формате. Для текущего FreePBX допускается, например, ${FREEPBX_MAIN_QUEUE_NUMBER} или номер в E.164.`
+    )
+  );
+}
 
 const regexValidator = (label) => (_, value) => {
   if (!value) return Promise.resolve();
@@ -110,20 +187,14 @@ const regexValidator = (label) => (_, value) => {
   }
 };
 
-const normalizeRouteMode = (value) => {
-  const mode = String(value || '').trim().toLowerCase();
-  if (mode === 'bridge' || mode === 'external' || mode === 'provider') return 'bridge';
-  if (mode === 'embedded' || mode === 'auto' || mode === 'internal' || mode === 'asterisk') return 'embedded';
-  return DEFAULT_TELEPHONY_ROUTE_MODE;
-};
-
-export default function TelephonySettings({ onSuccess }) {
+export default function TelephonySettings({ onSuccess, onDirtyChange }) {
   const { message } = App.useApp();
   const tr = (key, fallback, vars = {}) => {
     const localized = t(key, vars);
     return localized === key ? fallback : localized;
   };
-  const canManage = canWrite('voip.change_connection');
+  // Разрешаем управление, если есть явный пермишн ИЛИ базовые права записи (admin/manager)
+  const canManage = canWrite('voip.change_connection') || canWrite();
   const [form] = Form.useForm();
   const [settingsForm] = Form.useForm();
   const [routingForm] = Form.useForm();
@@ -138,6 +209,13 @@ export default function TelephonySettings({ onSuccess }) {
   const [initialRoutingRuleIds, setInitialRoutingRuleIds] = useState([]);
   const [internalNumbers, setInternalNumbers] = useState([]);
   const [numberGroups, setNumberGroups] = useState([]);
+  const [activeTab, setActiveTab] = useState('base');
+  const [settingsDirty, setSettingsDirty] = useState(false);
+  const [routingDirty, setRoutingDirty] = useState(false);
+  const bridgeProviderOptions = getBridgeProviderOptions(editingConnection?.provider);
+  const bridgeTypeOptions = getBridgeTypeOptions(editingConnection?.type);
+  const preferredInternalNumbers = getPreferredInternalNumbers(internalNumbers);
+  const prioritizedNumberGroups = getPrioritizedNumberGroups(numberGroups);
 
   useEffect(() => {
     loadProfileSettings();
@@ -146,32 +224,32 @@ export default function TelephonySettings({ onSuccess }) {
     loadRoutingTargets();
   }, []);
 
+  useEffect(() => {
+    onDirtyChange?.(settingsDirty || routingDirty);
+  }, [settingsDirty, routingDirty, onDirtyChange]);
+
+  useEffect(() => {
+    return () => {
+      onDirtyChange?.(false);
+    };
+  }, [onDirtyChange]);
+
   const loadProfileSettings = async () => {
     setSettingsLoading(true);
     try {
       const profile = await getVoipSystemSettings();
       settingsForm.setFieldsValue({
-        ami_host: profile.ami_host || '127.0.0.1',
-        ami_port: Number(profile.ami_port || 5038),
-        ami_username: profile.ami_username || '',
-        ami_secret: profile.ami_secret || '',
-        ami_use_ssl: !!profile.ami_use_ssl,
-        ami_connect_timeout: Number(profile.ami_connect_timeout || 5),
-        ami_reconnect_delay: Number(profile.ami_reconnect_delay || 5),
         incoming_enabled: profile.incoming_enabled !== false,
         incoming_poll_interval_ms: Number(profile.incoming_poll_interval_ms || 4000),
         incoming_popup_ttl_ms: Number(profile.incoming_popup_ttl_ms || 20000),
-        telephony_route_mode: normalizeRouteMode(profile.telephony_route_mode),
-        telephony_provider: DEFAULT_TELEPHONY_PROVIDER,
+        telephony_route_mode: profile.telephony_route_mode || BRIDGE_ROUTE_MODE,
+        telephony_provider: profile.telephony_provider || DEFAULT_TELEPHONY_PROVIDER,
         webrtc_stun_servers: profile.webrtc_stun_servers || DEFAULT_STUN_SERVERS,
-        webrtc_turn_enabled: !!profile.webrtc_turn_enabled,
-        webrtc_turn_server: profile.webrtc_turn_server || '',
-        webrtc_turn_username: profile.webrtc_turn_username || '',
-        webrtc_turn_password: profile.webrtc_turn_password || '',
         forward_unknown_calls: !!profile.forward_unknown_calls,
         forward_url: profile.forward_url || '',
         forwarding_allowed_ip: profile.forwarding_allowed_ip || '',
       });
+      setSettingsDirty(false);
     } catch (error) {
       console.error('Error loading telephony profile settings:', error);
       message.error(tr('telephonySettings.messages.loadSettingsError', 'Ошибка загрузки настроек телефонии'));
@@ -187,6 +265,7 @@ export default function TelephonySettings({ onSuccess }) {
       const list = Array.isArray(response?.results) ? response.results : Array.isArray(response) ? response : [];
       routingForm.setFieldsValue({ routing_rules: list });
       setInitialRoutingRuleIds(list.map((rule) => rule.id).filter(Boolean));
+      setRoutingDirty(false);
     } catch (error) {
       console.error('Error loading routing rules:', error);
       message.error(tr('telephonySettings.messages.routingLoadError', 'Не удалось загрузить правила маршрутизации'));
@@ -243,7 +322,7 @@ export default function TelephonySettings({ onSuccess }) {
     setLoading(true);
     try {
       const connectionData = {
-        provider: DEFAULT_TELEPHONY_PROVIDER,
+        provider: values.provider,
         type: values.type,
         number: values.number,
         sip_server: values.type === 'sip' ? String(values.sip_server || '').trim() : '',
@@ -276,10 +355,7 @@ export default function TelephonySettings({ onSuccess }) {
 
   const handleEdit = (connection) => {
     setEditingConnection(connection);
-    form.setFieldsValue({
-      ...connection,
-      provider: DEFAULT_TELEPHONY_PROVIDER,
-    });
+    form.setFieldsValue(connection);
     setModalVisible(true);
   };
 
@@ -309,28 +385,18 @@ export default function TelephonySettings({ onSuccess }) {
     setSettingsLoading(true);
     try {
       await updateVoipSystemSettings({
-        ami_host: String(values.ami_host || '').trim(),
-        ami_port: Number(values.ami_port || 5038),
-        ami_username: String(values.ami_username || '').trim(),
-        ami_secret: String(values.ami_secret || '').trim(),
-        ami_use_ssl: !!values.ami_use_ssl,
-        ami_connect_timeout: Number(values.ami_connect_timeout || 5),
-        ami_reconnect_delay: Number(values.ami_reconnect_delay || 5),
         incoming_enabled: !!values.incoming_enabled,
         incoming_poll_interval_ms: Number(values.incoming_poll_interval_ms || 4000),
         incoming_popup_ttl_ms: Number(values.incoming_popup_ttl_ms || 20000),
-        telephony_route_mode: normalizeRouteMode(values.telephony_route_mode),
-        telephony_provider: DEFAULT_TELEPHONY_PROVIDER,
+        telephony_route_mode: BRIDGE_ROUTE_MODE,
+        telephony_provider: values.telephony_provider || DEFAULT_TELEPHONY_PROVIDER,
         webrtc_stun_servers: values.webrtc_stun_servers || '',
-        webrtc_turn_enabled: !!values.webrtc_turn_enabled,
-        webrtc_turn_server: values.webrtc_turn_enabled ? (values.webrtc_turn_server || '') : '',
-        webrtc_turn_username: values.webrtc_turn_enabled ? (values.webrtc_turn_username || '') : '',
-        webrtc_turn_password: values.webrtc_turn_enabled ? (values.webrtc_turn_password || '') : '',
         forward_unknown_calls: !!values.forward_unknown_calls,
         forward_url: values.forward_unknown_calls ? String(values.forward_url || '').trim() : '',
         forwarding_allowed_ip: String(values.forwarding_allowed_ip || '').trim(),
       });
       message.success(tr('telephonySettings.messages.settingsSaved', 'Настройки телефонии сохранены'));
+      setSettingsDirty(false);
       onSuccess?.();
     } catch (error) {
       console.error('Error saving telephony profile settings:', error);
@@ -386,6 +452,7 @@ export default function TelephonySettings({ onSuccess }) {
 
       await loadRoutingSettings();
       message.success(tr('telephonySettings.messages.routingSaved', 'Правила маршрутизации сохранены'));
+      setRoutingDirty(false);
       onSuccess?.();
     } catch (error) {
       console.error('Error saving routing rules:', error);
@@ -395,49 +462,97 @@ export default function TelephonySettings({ onSuccess }) {
     }
   };
 
+  const openCreateConnectionModal = () => {
+    setEditingConnection(null);
+    form.resetFields();
+    setModalVisible(true);
+  };
+
+  const addRoutingRuleFromFooter = () => {
+    const current = routingForm.getFieldValue('routing_rules') || [];
+    routingForm.setFieldValue('routing_rules', [...current, buildEmptyRoutingRule()]);
+    setRoutingDirty(true);
+  };
+
 
   const columns = [
     {
       title: tr('telephonySettings.table.provider', 'Провайдер'),
       dataIndex: 'provider',
       key: 'provider',
+      width: 140,
       render: (provider) => <Tag color={TELEPHONY_PROVIDER_TAG_COLORS[provider] || 'default'}>{provider}</Tag>,
     },
     {
       title: tr('telephonySettings.table.type', 'Тип'),
       dataIndex: 'type',
       key: 'type',
+      width: 90,
       render: (type) => {
-        const colors = { pbx: 'green', sip: 'orange', voip: 'purple' };
-        return <Tag color={colors[type]}>{type?.toUpperCase()}</Tag>;
+        const colors = { pbx: 'gold', sip: 'blue' };
+        const labels = {
+          pbx: tr('telephonySettings.types.embeddedLegacy', 'Embedded legacy'),
+          sip: tr('telephonySettings.types.bridge', 'PBX Bridge'),
+        };
+        return <Tag color={colors[type] || 'default'}>{labels[type] || String(type || '').toUpperCase()}</Tag>;
       },
     },
     {
       title: tr('telephonySettings.table.number', 'Номер'),
       dataIndex: 'number',
       key: 'number',
+      width: 140,
+      render: (value, record) => {
+        const normalized = String(value || '').trim();
+        if (!normalized) return '—';
+        if (record?.type === 'sip') {
+          return (
+            <Space wrap size={[6, 4]}>
+              <span>{normalized}</span>
+              <Tag color={isPreferredFreePbxExtension(normalized) ? 'success' : 'warning'}>
+                {isPreferredFreePbxExtension(normalized) ? '200-219' : 'check range'}
+              </Tag>
+            </Space>
+          );
+        }
+        return normalized;
+      },
     },
     {
       title: tr('telephonySettings.table.sipServer', 'SIP сервер'),
       dataIndex: 'sip_server',
       key: 'sip_server',
+      width: 160,
       render: (value, record) => (record.type === 'sip' ? value || '—' : '—'),
     },
     {
       title: tr('telephonySettings.table.callerId', 'Номер отображения'),
       dataIndex: 'callerid',
       key: 'callerid',
+      width: 180,
+      render: (value) => {
+        const normalized = String(value || '').trim();
+        if (!normalized) return '—';
+        return (
+          <Space wrap size={[6, 4]}>
+            <span>{normalized}</span>
+            {normalized === FREEPBX_MAIN_QUEUE_NUMBER ? <Tag color="processing">queue DID</Tag> : null}
+          </Space>
+        );
+      },
     },
     {
       title: tr('telephonySettings.table.owner', 'Владелец'),
       dataIndex: 'owner_name',
       key: 'owner_name',
+      width: 140,
       render: (name) => name || '-',
     },
     {
       title: tr('telephonySettings.table.status', 'Статус'),
       dataIndex: 'active',
       key: 'active',
+      width: 120,
       render: (active) => (
         <Tag color={active ? 'success' : 'default'}>
           {active ? tr('telephonySettings.status.active', 'Активно') : tr('telephonySettings.status.inactive', 'Неактивно')}
@@ -447,8 +562,9 @@ export default function TelephonySettings({ onSuccess }) {
     {
       title: tr('telephonySettings.table.actions', 'Действия'),
       key: 'actions',
+      width: 320,
       render: (_, record) => (
-        <Space>
+        <Space wrap size={[6, 4]}>
           {canManage ? (
             <>
               <Button
@@ -484,529 +600,588 @@ export default function TelephonySettings({ onSuccess }) {
   ];
 
   const routeModeDescription = {
-    embedded: tr('telephonySettings.routeModes.embedded', 'CRM routes calls through the embedded Asterisk instance it manages.'),
-    bridge: tr('telephonySettings.routeModes.bridge', 'CRM routes calls through an external Asterisk PBX bridge.'),
+    embedded: tr('telephonySettings.routeModes.embedded', 'Legacy embedded Asterisk mode. Keep only for migration; new FreePBX deployments should use PBX Bridge.'),
+    bridge: tr('telephonySettings.routeModes.bridge', 'FreePBX is connected through PBX Bridge. Browser UI manages only safe routing/runtime flags; PBX secrets stay server-side.'),
   };
+
+  const tabsItems = [
+    {
+      key: 'base',
+      label: (
+        <Space size={6}>
+          <span>{tr('telephonySettings.tabs.base', 'Базовые настройки')}</span>
+          {settingsDirty ? <Badge status="warning" text={tr('telephonySettings.tabs.unsaved', 'Не сохранено')} /> : null}
+        </Space>
+      ),
+      children: (
+        <>
+          <Alert
+            style={{ marginBottom: 16 }}
+            type="info"
+            showIcon
+            message={tr('telephonySettings.tabs.baseTitle', 'Шаг 1: Базовые параметры интеграции')}
+            description={tr('telephonySettings.tabs.baseDescription', 'Укажите режим bridge, параметры входящего popup и правила переадресации неизвестных звонков.')}
+          />
+
+          <Form
+            form={settingsForm}
+            layout="vertical"
+            onFinish={handleSaveSettings}
+            onValuesChange={() => setSettingsDirty(true)}
+            style={{ marginBottom: 8 }}
+          >
+            <Form.Item
+              label={tr('telephonySettings.fields.routeMode', 'Call routing mode')}
+              name="telephony_route_mode"
+              rules={[{ required: true, message: tr('telephonySettings.validation.selectMode', 'Select mode') }]}
+              extra={tr('telephonySettings.fields.routeModeExtra', 'Для этого deployment режим фиксирован: CRM разговаривает с FreePBX через bridge/backend connector.')}
+            >
+              <Select options={BRIDGE_ROUTE_MODE_OPTIONS} disabled />
+            </Form.Item>
+
+            <Form.Item noStyle dependencies={['telephony_route_mode']}>
+              {({ getFieldValue }) => {
+                const mode = getFieldValue('telephony_route_mode') || BRIDGE_ROUTE_MODE;
+                return (
+                  <Alert
+                    style={{ marginBottom: 16 }}
+                    type="success"
+                    showIcon
+                    message={tr('telephonySettings.mode.current', 'Current mode: {{mode}}', { mode })}
+                    description={routeModeDescription[mode]}
+                  />
+                );
+              }}
+            </Form.Item>
+
+            <Form.Item
+              label={tr('telephonySettings.fields.preferredProvider', 'Preferred provider')}
+              name="telephony_provider"
+              rules={[{ required: true, message: tr('telephonySettings.validation.selectProvider', 'Select provider') }]}
+              extra={tr('telephonySettings.fields.preferredProviderExtra', 'Provider фиксирован на Asterisk/FreePBX. Секреты bridge connector хранятся только на сервере.' )}
+            >
+              <Select options={bridgeProviderOptions} disabled />
+            </Form.Item>
+
+            <Alert
+              style={{ marginBottom: 16 }}
+              type="warning"
+              showIcon
+              message={tr('telephonySettings.bridgeSecrets.title', 'PBX secret fields intentionally hidden')}
+              description={tr('telephonySettings.bridgeSecrets.description', 'AMI host/user/secret, FreePBX bridge auth, WSS/TURN credentials and other sensitive runtime secrets must be managed on the bridge/backend host. Browser admins should not see or rotate them from this screen.')}
+            />
+
+            <Divider orientation="left">{tr('telephonySettings.sections.incomingRealtime', 'Incoming popup и safe realtime settings')}</Divider>
+
+            <Form.Item
+              label={tr('telephonySettings.fields.incomingEnabled', 'Enable incoming call popup')}
+              name="incoming_enabled"
+              valuePropName="checked"
+              extra={tr('telephonySettings.fields.incomingEnabledExtra', 'Используйте для операторов 200-219, которым CRM должен показывать realtime popup по bridge-событиям.')}
+            >
+              <Switch />
+            </Form.Item>
+
+            <Form.Item
+              label={tr('telephonySettings.fields.incomingPollInterval', 'Incoming polling interval (ms)')}
+              name="incoming_poll_interval_ms"
+              rules={[{ required: true, message: tr('telephonySettings.validation.enterIncomingPollInterval', 'Enter polling interval') }]}
+            >
+              <InputNumber min={500} max={60000} step={100} style={{ width: '100%' }} />
+            </Form.Item>
+
+            <Form.Item
+              label={tr('telephonySettings.fields.incomingPopupTtl', 'Incoming popup lifetime (ms)')}
+              name="incoming_popup_ttl_ms"
+              rules={[{ required: true, message: tr('telephonySettings.validation.enterIncomingPopupTtl', 'Enter popup lifetime') }]}
+            >
+              <InputNumber min={1000} max={120000} step={1000} style={{ width: '100%' }} />
+            </Form.Item>
+
+            <Form.Item
+              label={tr('telephonySettings.fields.stunServers', 'STUN servers')}
+              name="webrtc_stun_servers"
+              tooltip={tr('telephonySettings.fields.stunTooltip', 'One per line or comma-separated. Example: stun:stun.l.google.com:19302')}
+              extra={tr('telephonySettings.fields.stunExtra', 'Нужны только browser-safe STUN адреса. TURN/WSS credentials остаются server-side вместе с bridge deployment.')}
+            >
+              <Input.TextArea
+                rows={3}
+                placeholder={'stun:stun.l.google.com:19302\nstun:global.stun.twilio.com:3478'}
+              />
+            </Form.Item>
+
+            <Divider orientation="left">{tr('telephonySettings.sections.forwarding', 'Unknown caller forwarding')}</Divider>
+
+            <Form.Item
+              label={tr('telephonySettings.fields.forwardUnknownCalls', 'Forward unknown callers')}
+              name="forward_unknown_calls"
+              valuePropName="checked"
+              extra={tr('telephonySettings.fields.forwardUnknownCallsExtra', 'Send webhook payload when CRM cannot match caller to lead/contact/client.')}
+            >
+              <Switch />
+            </Form.Item>
+
+            <Form.Item noStyle dependencies={['forward_unknown_calls']}>
+              {({ getFieldValue }) => (
+                <>
+                  {getFieldValue('forward_unknown_calls') ? (
+                    <Form.Item
+                      label={tr('telephonySettings.fields.forwardUrl', 'Forward webhook URL')}
+                      name="forward_url"
+                      rules={[
+                        { required: true, message: tr('telephonySettings.validation.enterForwardUrl', 'Enter webhook URL') },
+                        { type: 'url', message: tr('telephonySettings.validation.invalidForwardUrl', 'Enter valid URL (https://...)') },
+                      ]}
+                    >
+                      <Input placeholder={tr('telephonySettings.placeholders.forwardUrl', 'https://hooks.example.com/telephony/unknown-call')} />
+                    </Form.Item>
+                  ) : null}
+                </>
+              )}
+            </Form.Item>
+
+            <Form.Item
+              label={tr('telephonySettings.fields.forwardingAllowedIp', 'Allowed source IP/CIDR (optional)')}
+              name="forwarding_allowed_ip"
+            >
+              <Input placeholder={tr('telephonySettings.placeholders.forwardingAllowedIp', '10.0.0.5 or 10.0.0.0/24')} />
+            </Form.Item>
+
+          </Form>
+        </>
+      ),
+    },
+    {
+      key: 'realtime',
+      label: tr('telephonySettings.tabs.realtime', 'Realtime и номера'),
+      children: (
+        <Space direction="vertical" size={16} style={{ width: '100%' }}>
+          <Alert
+            type="info"
+            showIcon
+            message={tr('telephonySettings.tabs.realtimeTitle', 'Шаг 2: Realtime и внутренние номера')}
+            description={tr('telephonySettings.tabs.realtimeDescription', 'Проверьте WebSocket-настройки и назначьте операторам корректные внутренние номера (200-219).')}
+          />
+          <Divider orientation="left">WebSocket и realtime</Divider>
+          <TelephonyRealtimeSettingsCard canManage={canManage} onSuccess={onSuccess} />
+          <Divider orientation="left">Внутренние номера пользователей</Divider>
+          <InternalNumbersAdminTable canManage={canManage} onSuccess={onSuccess} />
+        </Space>
+      ),
+    },
+    {
+      key: 'routing',
+      label: (
+        <Space size={6}>
+          <span>{tr('telephonySettings.tabs.routing', 'Маршрутизация')}</span>
+          {routingDirty ? <Badge status="warning" text={tr('telephonySettings.tabs.unsaved', 'Не сохранено')} /> : null}
+        </Space>
+      ),
+      children: (
+        <Card
+          size="small"
+          style={{ marginBottom: 8 }}
+          bodyStyle={{ paddingBottom: 8 }}
+        >
+          <Space direction="vertical" size={12} style={{ width: '100%' }}>
+            <Alert
+              type="info"
+              showIcon
+              message={tr('telephonySettings.routing.infoTitle', 'Правила работают по приоритету: чем меньше число, тем раньше правило проверяется.')}
+              description={tr('telephonySettings.routing.infoDescription', `Для этого deployment основной inbound DID/queue — ${FREEPBX_MAIN_QUEUE_NUMBER}. Прямые agent routes должны вести только на extensions 200-219.`)}
+            />
+
+            <Typography.Text type="secondary">
+              {tr('telephonySettings.routing.targetsHint', 'Цели маршрутизации берутся из CRM-справочников внутренних номеров и групп. При наличии 200-219 они будут предложены первыми.')}
+            </Typography.Text>
+
+            <Form
+              form={routingForm}
+              layout="vertical"
+              onFinish={handleSaveRoutingRules}
+              onValuesChange={() => setRoutingDirty(true)}
+            >
+              <Form.List name="routing_rules">
+                {(fields, { add, remove }) => (
+                  <Space direction="vertical" size={12} style={{ width: '100%' }}>
+                    {routingTableLoading ? (
+                      <Alert
+                        type="info"
+                        showIcon
+                        message={tr('telephonySettings.routing.loading', 'Загрузка правил маршрутизации...')}
+                      />
+                    ) : null}
+
+                    {fields.length === 0 ? (
+                      <Empty
+                        image={Empty.PRESENTED_IMAGE_SIMPLE}
+                        description={tr('telephonySettings.routing.empty', 'Пока нет паттернов. Добавьте первое правило.')}
+                      />
+                    ) : null}
+
+                    {fields.map((field) => (
+                      <Card
+                        key={field.key}
+                        type="inner"
+                        title={tr('telephonySettings.routing.ruleTitle', 'Rule #{{number}}', { number: field.name + 1 })}
+                        extra={
+                          <Button danger type="link" icon={<DeleteOutlined />} onClick={() => remove(field.name)}>
+                            {tr('actions.delete', 'Delete')}
+                          </Button>
+                        }
+                      >
+                        <Space direction="vertical" size={8} style={{ width: '100%' }}>
+                          <Form.Item name={[field.name, 'id']} hidden>
+                            <Input />
+                          </Form.Item>
+
+                          <Form.Item
+                            label={tr('telephonySettings.routing.fields.ruleName', 'Rule name')}
+                            name={[field.name, 'name']}
+                            rules={[{ required: true, message: tr('telephonySettings.validation.enterRuleName', 'Specify rule name') }]}
+                          >
+                            <Input placeholder={tr('telephonySettings.routing.placeholders.ruleName', `Например: Очередь ${FREEPBX_MAIN_QUEUE_NUMBER} -> группа поддержки`)} />
+                          </Form.Item>
+
+                          <Form.Item
+                            label={tr('telephonySettings.routing.fields.description', 'Description (optional)')}
+                            name={[field.name, 'description']}
+                          >
+                            <Input placeholder={tr('telephonySettings.routing.placeholders.description', 'Кратко опишите бизнес-цель правила')} />
+                          </Form.Item>
+
+                          <Form.Item
+                            label={tr('telephonySettings.routing.fields.calledPattern', 'Called number pattern (required)')}
+                            name={[field.name, 'called_number_pattern']}
+                            rules={[
+                              { required: true, message: tr('telephonySettings.validation.enterCalledPattern', 'Enter called number pattern') },
+                              { validator: regexValidator(tr('telephonySettings.routing.fields.calledPatternLabel', 'Called number pattern')) },
+                            ]}
+                            extra={(
+                              <Space direction="vertical" size={6} style={{ width: '100%' }}>
+                                <Typography.Text type="secondary">
+                                  {tr('telephonySettings.routing.helpers.calledPatternPreset', 'Шаблон: выберите тип номера, чтобы не вводить RegExp вручную')}
+                                </Typography.Text>
+                                <Select
+                                  allowClear
+                                  placeholder={tr('telephonySettings.routing.helpers.selectCalledPreset', 'Выбрать шаблон called pattern')}
+                                  options={CALLED_PATTERN_PRESETS}
+                                  onChange={(value) => {
+                                    if (value) routingForm.setFieldValue(['routing_rules', field.name, 'called_number_pattern'], value);
+                                  }}
+                                />
+                              </Space>
+                            )}
+                          >
+                            <Input placeholder={tr('telephonySettings.routing.placeholders.calledPattern', 'Пример: ^1\\d{2}$ или ^\\+?\\d{10,15}$')} />
+                          </Form.Item>
+
+                          <Form.Item
+                            label={tr('telephonySettings.routing.fields.callerPattern', 'Caller number pattern (optional)')}
+                            name={[field.name, 'caller_id_pattern']}
+                            rules={[{ validator: regexValidator(tr('telephonySettings.routing.fields.callerPatternLabel', 'Caller number pattern')) }]}
+                            extra={(
+                              <Space direction="vertical" size={6} style={{ width: '100%' }}>
+                                <Typography.Text type="secondary">
+                                  {tr('telephonySettings.routing.helpers.callerPatternPreset', 'Шаблон caller id для быстрых сценариев фильтрации')}
+                                </Typography.Text>
+                                <Select
+                                  allowClear
+                                  placeholder={tr('telephonySettings.routing.helpers.selectCallerPreset', 'Выбрать шаблон caller pattern')}
+                                  options={CALLER_PATTERN_PRESETS}
+                                  onChange={(value) => {
+                                    routingForm.setFieldValue(['routing_rules', field.name, 'caller_id_pattern'], value || '');
+                                  }}
+                                />
+                              </Space>
+                            )}
+                          >
+                            <Input placeholder={tr('telephonySettings.routing.placeholders.callerPattern', 'Пример: ^\\+998 или ^8800')} />
+                          </Form.Item>
+
+                          <Form.Item
+                            label={tr('telephonySettings.routing.fields.action', 'Routing action')}
+                            name={[field.name, 'action']}
+                            rules={[{ required: true, message: tr('telephonySettings.validation.selectAction', 'Select action') }]}
+                          >
+                            <Select options={ROUTING_ACTION_OPTIONS.map((item) => ({ ...item, label: tr(`telephonySettings.routing.actions.${item.value}`, item.value) }))} />
+                          </Form.Item>
+
+                          <Form.Item noStyle dependencies={[[field.name, 'action']]}>
+                            {({ getFieldValue }) => {
+                              const action = getFieldValue(['routing_rules', field.name, 'action']);
+                              if (action === 'route_to_number') {
+                                return (
+                                  <Form.Item
+                                    label={tr('telephonySettings.routing.fields.targetInternalNumber', 'Target internal number')}
+                                    name={[field.name, 'target_number']}
+                                    rules={[{ required: true, message: tr('telephonySettings.validation.selectInternalNumber', 'Select internal number') }]}
+                                  >
+                                    <Select
+                                      showSearch
+                                      optionFilterProp="label"
+                                      options={preferredInternalNumbers.map((item) => ({
+                                        value: item.id,
+                                        label: `${item.number}${item.display_name ? ` - ${item.display_name}` : ''}${isPreferredFreePbxExtension(item.number) ? ' (200-219)' : ''}`,
+                                      }))}
+                                      placeholder={tr('telephonySettings.placeholders.selectInternalNumber', 'Select internal number (200-219 preferred)')}
+                                    />
+                                  </Form.Item>
+                                );
+                              }
+                              return null;
+                            }}
+                          </Form.Item>
+
+                          <Form.Item noStyle dependencies={[[field.name, 'action']]}>
+                            {({ getFieldValue }) => {
+                              const action = getFieldValue(['routing_rules', field.name, 'action']);
+                              if (action === 'route_to_group' || action === 'route_to_queue') {
+                                return (
+                                  <Form.Item
+                                    label={action === 'route_to_queue' ? tr('telephonySettings.routing.fields.targetQueueGroup', 'Target queue group') : tr('telephonySettings.routing.fields.targetGroup', 'Target group')}
+                                    name={[field.name, 'target_group']}
+                                    rules={[{ required: true, message: tr('telephonySettings.validation.selectGroup', 'Select group') }]}
+                                  >
+                                    <Select
+                                      showSearch
+                                      optionFilterProp="label"
+                                      options={prioritizedNumberGroups.map((item) => ({
+                                        value: item.id,
+                                        label: `${item.name}${item.member_count ? ` (${item.member_count})` : ''}${String(item.name || '').includes(FREEPBX_MAIN_QUEUE_NUMBER) ? ` - ${FREEPBX_MAIN_QUEUE_NUMBER}` : ''}`,
+                                      }))}
+                                      placeholder={tr('telephonySettings.placeholders.selectGroup', `Select group (queue ${FREEPBX_MAIN_QUEUE_NUMBER} first)`)}
+                                    />
+                                  </Form.Item>
+                                );
+                              }
+                              if (action === 'forward_external') {
+                                return (
+                                  <Form.Item
+                                    label={tr('telephonySettings.routing.fields.externalNumber', 'External number')}
+                                    name={[field.name, 'target_external']}
+                                    rules={[
+                                      { required: true, message: tr('telephonySettings.validation.enterExternalNumber', 'Enter external number') },
+                                      {
+                                        pattern: /^\+?[0-9]{7,15}$/,
+                                        message: tr('telephonySettings.validation.externalNumberFormat', 'Use international format, for example +998901234567'),
+                                      },
+                                    ]}
+                                  >
+                                    <Input placeholder={tr('telephonySettings.placeholders.externalNumber', '+998901234567')} />
+                                  </Form.Item>
+                                );
+                              }
+                              if (action === 'play_announcement') {
+                                return (
+                                  <Form.Item
+                                    label={tr('telephonySettings.routing.fields.announcementText', 'Announcement text')}
+                                    name={[field.name, 'announcement_text']}
+                                    rules={[{ required: true, message: tr('telephonySettings.validation.enterAnnouncementText', 'Enter announcement text') }]}
+                                  >
+                                    <Input.TextArea rows={3} placeholder={tr('telephonySettings.placeholders.announcementText', 'Text that caller will hear')} />
+                                  </Form.Item>
+                                );
+                              }
+                              return null;
+                            }}
+                          </Form.Item>
+
+                          <Form.Item
+                            label={tr('telephonySettings.routing.fields.timeCondition', 'Time condition (optional)')}
+                            name={[field.name, 'time_condition']}
+                            extra={tr('telephonySettings.routing.fields.timeConditionExtra', 'For example: weekdays 09:00-18:00')}
+                          >
+                            <Input placeholder={tr('telephonySettings.placeholders.timeCondition', 'weekdays 09:00-18:00')} />
+                          </Form.Item>
+
+                          <Form.Item
+                            label={tr('telephonySettings.routing.fields.priority', 'Priority (lower = higher)')}
+                            name={[field.name, 'priority']}
+                            initialValue={100}
+                          >
+                            <InputNumber min={1} max={10000} style={{ width: '100%' }} />
+                          </Form.Item>
+
+                          <Form.Item
+                            label={tr('telephonySettings.fields.active', 'Active')}
+                            name={[field.name, 'active']}
+                            valuePropName="checked"
+                            initialValue={true}
+                          >
+                            <Switch />
+                          </Form.Item>
+                        </Space>
+                      </Card>
+                    ))}
+
+                    <Space wrap>
+                      <Button
+                        icon={<PlusCircleOutlined />}
+                        onClick={() => add(buildEmptyRoutingRule())}
+                      >
+                        {tr('telephonySettings.routing.actions.addRule', 'Add rule')}
+                      </Button>
+                    </Space>
+                  </Space>
+                )}
+              </Form.List>
+            </Form>
+          </Space>
+        </Card>
+      ),
+    },
+    {
+      key: 'connections',
+      label: tr('telephonySettings.tabs.connections', 'VoIP подключения'),
+      children: (
+        <>
+          <Alert
+            style={{ marginBottom: 16 }}
+            type="info"
+            showIcon
+            message={tr('telephonySettings.tabs.connectionsTitle', 'Шаг 4: Подключения операторов')}
+            description={tr('telephonySettings.tabs.connectionsDescription', 'Добавляйте подключения только в режиме PBX Bridge и используйте реальные extension для операторов.')}
+          />
+          <div style={{ marginBottom: 16 }}>
+            {canManage ? (
+              <Button
+                type="primary"
+                icon={<PlusOutlined />}
+                onClick={openCreateConnectionModal}
+              >
+                {tr('telephonySettings.actions.addConnection', 'Добавить подключение')}
+              </Button>
+            ) : null}
+          </div>
+
+          <div style={{ width: '100%', overflowX: 'auto' }}>
+            <Table
+              columns={columns}
+              dataSource={connections}
+              rowKey="id"
+              loading={tableLoading}
+              pagination={{ pageSize: 10 }}
+              scroll={{ x: 1290 }}
+            />
+          </div>
+        </>
+      ),
+    },
+  ];
 
   return (
     <div>
       <Alert
-        message={tr('telephonySettings.header.title', 'Телефония: настройка подключений и правил маршрутизации')}
-        description={tr('telephonySettings.header.description', 'Заполните поля по шагам: 1) базовая маршрутизация и WebRTC, 2) паттерны маршрутизации, 3) подключения операторов/номеров.')}
+        message={tr('telephonySettings.header.title', 'FreePBX Bridge: безопасная browser-конфигурация')}
+        description={tr('telephonySettings.header.description', 'Этот экран рассчитан на bridge-first deployment: основные inbound маршруты идут через очередь 0553636, а рабочие agent extensions находятся в диапазоне 200-219. PBX/AMI/WSS секреты из браузера скрыты.')}
         type="info"
         showIcon
-        style={{ marginBottom: 24 }}
+        style={{ marginBottom: 16 }}
       />
 
-      <Divider orientation="left">{tr('telephonySettings.sections.base', '1. Базовая маршрутизация и WebRTC (STUN/TURN)')}</Divider>
-      <Form
-        form={settingsForm}
-        layout="vertical"
-        onFinish={handleSaveSettings}
-        style={{ marginBottom: 24 }}
-      >
-        <Form.Item
-          label={tr('telephonySettings.fields.routeMode', 'Call routing mode')}
-          name="telephony_route_mode"
-          rules={[{ required: true, message: tr('telephonySettings.validation.selectMode', 'Select mode') }]}
-          extra={tr('telephonySettings.fields.routeModeExtra', 'Choose whether CRM should route calls through embedded Asterisk or an external bridge.')}
-        >
-          <Select options={TELEPHONY_ROUTE_MODE_OPTIONS} />
-        </Form.Item>
+      <Tabs
+        activeKey={activeTab}
+        onChange={setActiveTab}
+        items={tabsItems}
+        size="large"
+        destroyInactiveTabPane={false}
+      />
 
-        <Form.Item noStyle dependencies={['telephony_route_mode']}>
-          {({ getFieldValue }) => {
-            const mode = getFieldValue('telephony_route_mode') || DEFAULT_TELEPHONY_ROUTE_MODE;
-            return (
-              <Alert
-                style={{ marginBottom: 16 }}
-                type="warning"
-                showIcon
-                message={tr('telephonySettings.mode.current', 'Current mode: {{mode}}', { mode })}
-                description={routeModeDescription[mode] || routeModeDescription[DEFAULT_TELEPHONY_ROUTE_MODE]}
-              />
-            );
-          }}
-        </Form.Item>
-
-        <Form.Item
-          label={tr('telephonySettings.fields.preferredProvider', 'Preferred provider')}
-          name="telephony_provider"
-          rules={[{ required: true, message: tr('telephonySettings.validation.selectProvider', 'Select provider') }]}
-          extra={tr('telephonySettings.fields.preferredProviderExtra', 'Asterisk is the only supported provider.')}
-        >
-          <Select options={TELEPHONY_PROVIDER_OPTIONS} />
-        </Form.Item>
-
-        <Divider orientation="left">{tr('telephonySettings.sections.ami', 'Asterisk AMI connection')}</Divider>
-
-        <Form.Item
-          label={tr('telephonySettings.fields.amiHost', 'AMI host')}
-          name="ami_host"
-          rules={[{ required: true, message: tr('telephonySettings.validation.enterAmiHost', 'Enter AMI host') }]}
-        >
-          <Input placeholder={tr('telephonySettings.placeholders.amiHost', '127.0.0.1 or pbx.company.local')} />
-        </Form.Item>
-
-        <Form.Item
-          label={tr('telephonySettings.fields.amiPort', 'AMI port')}
-          name="ami_port"
-          rules={[{ required: true, message: tr('telephonySettings.validation.enterAmiPort', 'Enter AMI port') }]}
-        >
-          <InputNumber min={1} max={65535} style={{ width: '100%' }} />
-        </Form.Item>
-
-        <Form.Item
-          label={tr('telephonySettings.fields.amiUsername', 'AMI username')}
-          name="ami_username"
-          rules={[{ required: true, message: tr('telephonySettings.validation.enterAmiUsername', 'Enter AMI username') }]}
-        >
-          <Input placeholder={tr('telephonySettings.placeholders.amiUsername', 'crm_ami')} />
-        </Form.Item>
-
-        <Form.Item
-          label={tr('telephonySettings.fields.amiSecret', 'AMI secret')}
-          name="ami_secret"
-          rules={[{ required: true, message: tr('telephonySettings.validation.enterAmiSecret', 'Enter AMI secret') }]}
-        >
-          <Input.Password placeholder={tr('telephonySettings.placeholders.amiSecret', '********')} />
-        </Form.Item>
-
-        <Form.Item
-          label={tr('telephonySettings.fields.amiUseSsl', 'Use SSL/TLS for AMI')}
-          name="ami_use_ssl"
-          valuePropName="checked"
-        >
-          <Switch />
-        </Form.Item>
-
-        <Form.Item
-          label={tr('telephonySettings.fields.amiConnectTimeout', 'AMI connect timeout (sec)')}
-          name="ami_connect_timeout"
-          rules={[{ required: true, message: tr('telephonySettings.validation.enterAmiConnectTimeout', 'Enter connect timeout') }]}
-        >
-          <InputNumber min={1} max={120} style={{ width: '100%' }} />
-        </Form.Item>
-
-        <Form.Item
-          label={tr('telephonySettings.fields.amiReconnectDelay', 'AMI reconnect delay (sec)')}
-          name="ami_reconnect_delay"
-          rules={[{ required: true, message: tr('telephonySettings.validation.enterAmiReconnectDelay', 'Enter reconnect delay') }]}
-        >
-          <InputNumber min={1} max={300} style={{ width: '100%' }} />
-        </Form.Item>
-
-        <Divider orientation="left">{tr('telephonySettings.sections.incomingRealtime', 'Incoming call popup/realtime')}</Divider>
-
-        <Form.Item
-          label={tr('telephonySettings.fields.incomingEnabled', 'Enable incoming call popup')}
-          name="incoming_enabled"
-          valuePropName="checked"
-        >
-          <Switch />
-        </Form.Item>
-
-        <Form.Item
-          label={tr('telephonySettings.fields.incomingPollInterval', 'Incoming polling interval (ms)')}
-          name="incoming_poll_interval_ms"
-          rules={[{ required: true, message: tr('telephonySettings.validation.enterIncomingPollInterval', 'Enter polling interval') }]}
-        >
-          <InputNumber min={500} max={60000} step={100} style={{ width: '100%' }} />
-        </Form.Item>
-
-        <Form.Item
-          label={tr('telephonySettings.fields.incomingPopupTtl', 'Incoming popup lifetime (ms)')}
-          name="incoming_popup_ttl_ms"
-          rules={[{ required: true, message: tr('telephonySettings.validation.enterIncomingPopupTtl', 'Enter popup lifetime') }]}
-        >
-          <InputNumber min={1000} max={120000} step={1000} style={{ width: '100%' }} />
-        </Form.Item>
-
-        <Form.Item
-          label={tr('telephonySettings.fields.stunServers', 'STUN servers')}
-          name="webrtc_stun_servers"
-          tooltip={tr('telephonySettings.fields.stunTooltip', 'One per line or comma-separated. Example: stun:stun.l.google.com:19302')}
-          extra={tr('telephonySettings.fields.stunExtra', 'Needed to determine WebRTC client network route.')}
-        >
-          <Input.TextArea
-            rows={3}
-            placeholder={'stun:stun.l.google.com:19302\nstun:global.stun.twilio.com:3478'}
-          />
-        </Form.Item>
-
-        <Form.Item
-          label={tr('telephonySettings.fields.enableTurnRelay', 'Enable TURN relay')}
-          name="webrtc_turn_enabled"
-          valuePropName="checked"
-          extra={tr('telephonySettings.fields.turnRelayExtra', 'Recommended for users behind NAT/CGNAT and corporate networks.')}
-        >
-          <Switch />
-        </Form.Item>
-
-        <Form.Item noStyle dependencies={['webrtc_turn_enabled']}>
-          {({ getFieldValue }) => (
-            <>
-              {getFieldValue('webrtc_turn_enabled') ? (
-                <>
-                  <Form.Item
-                    label={tr('telephonySettings.fields.turnServer', 'TURN server')}
-                    name="webrtc_turn_server"
-                    rules={[{ required: true, message: tr('telephonySettings.validation.enterTurnServer', 'Enter TURN server') }]}
-                    extra={tr('telephonySettings.fields.turnServerExtra', 'turn: and turns: (TLS) schemes are supported.')}
-                  >
-                  <Input placeholder={tr('telephonySettings.placeholders.turnServer', 'turn:turn.company.com:3478?transport=udp')} />
-                  </Form.Item>
-                  <Form.Item
-                    label={tr('telephonySettings.fields.turnUsername', 'TURN username')}
-                    name="webrtc_turn_username"
-                    rules={[{ required: true, message: tr('telephonySettings.validation.enterTurnUsername', 'Enter TURN username') }]}
-                  >
-                    <Input placeholder={tr('telephonySettings.placeholders.turnUsername', 'crm_turn_user')} />
-                  </Form.Item>
-                  <Form.Item
-                    label={tr('telephonySettings.fields.turnPassword', 'TURN password')}
-                    name="webrtc_turn_password"
-                    rules={[{ required: true, message: tr('telephonySettings.validation.enterTurnPassword', 'Enter TURN password') }]}
-                  >
-                    <Input.Password placeholder={tr('telephonySettings.placeholders.turnPassword', '********')} />
-                  </Form.Item>
-                </>
-              ) : null}
-            </>
-          )}
-        </Form.Item>
-
-        <Divider orientation="left">{tr('telephonySettings.sections.forwarding', 'Unknown caller forwarding')}</Divider>
-
-        <Form.Item
-          label={tr('telephonySettings.fields.forwardUnknownCalls', 'Forward unknown callers')}
-          name="forward_unknown_calls"
-          valuePropName="checked"
-          extra={tr('telephonySettings.fields.forwardUnknownCallsExtra', 'Send webhook payload when CRM cannot match caller to lead/contact/client.')}
-        >
-          <Switch />
-        </Form.Item>
-
-        <Form.Item noStyle dependencies={['forward_unknown_calls']}>
-          {({ getFieldValue }) => (
-            <>
-              {getFieldValue('forward_unknown_calls') ? (
-                <Form.Item
-                  label={tr('telephonySettings.fields.forwardUrl', 'Forward webhook URL')}
-                  name="forward_url"
-                  rules={[
-                    { required: true, message: tr('telephonySettings.validation.enterForwardUrl', 'Enter webhook URL') },
-                    { type: 'url', message: tr('telephonySettings.validation.invalidForwardUrl', 'Enter valid URL (https://...)') },
-                  ]}
-                >
-                  <Input placeholder={tr('telephonySettings.placeholders.forwardUrl', 'https://hooks.example.com/telephony/unknown-call')} />
-                </Form.Item>
-              ) : null}
-            </>
-          )}
-        </Form.Item>
-
-        <Form.Item
-          label={tr('telephonySettings.fields.forwardingAllowedIp', 'Allowed source IP/CIDR (optional)')}
-          name="forwarding_allowed_ip"
-        >
-          <Input placeholder={tr('telephonySettings.placeholders.forwardingAllowedIp', '10.0.0.5 or 10.0.0.0/24')} />
-        </Form.Item>
-
-        {canManage ? (
-          <Form.Item>
-            <Button type="primary" htmlType="submit" loading={settingsLoading}>
-              {tr('telephonySettings.actions.saveBase', 'Сохранить базовые настройки')}
-            </Button>
-          </Form.Item>
-        ) : null}
-      </Form>
-
-      <Divider orientation="left">{tr('telephonySettings.sections.routing', '2. Pattern-based routing')}</Divider>
       <Card
         size="small"
-        style={{ marginBottom: 24 }}
-        bodyStyle={{ paddingBottom: 8 }}
+        style={{
+          position: 'sticky',
+          bottom: 0,
+          zIndex: 20,
+          marginTop: 8,
+          marginBottom: 12,
+          borderRadius: 10,
+          boxShadow: '0 4px 14px rgba(0,0,0,0.08)',
+        }}
+        bodyStyle={{ padding: '10px 12px' }}
       >
-        <Space direction="vertical" size={12} style={{ width: '100%' }}>
-          <Alert
-            type="info"
-            showIcon
-            message={tr('telephonySettings.routing.infoTitle', 'Правила работают по приоритету: чем меньше число, тем раньше правило проверяется.')}
-            description={tr('telephonySettings.routing.infoDescription', 'Паттерны задаются в формате RegExp и сохраняются в системе телефонии (БД).')}
-          />
-
+        <Space wrap style={{ width: '100%', justifyContent: 'space-between' }}>
           <Typography.Text type="secondary">
-            {tr('telephonySettings.routing.targetsHint', 'Цели маршрутизации берутся из справочников внутренних номеров и групп.')}
+            {activeTab === 'base' && tr('telephonySettings.footer.baseHint', 'Шаг 1: сохраните базовые параметры интеграции')}
+            {activeTab === 'realtime' && tr('telephonySettings.footer.realtimeHint', 'Шаг 2: проверьте realtime и внутренние номера')}
+            {activeTab === 'routing' && tr('telephonySettings.footer.routingHint', 'Шаг 3: управляйте правилами маршрутизации и сохраните изменения')}
+            {activeTab === 'connections' && tr('telephonySettings.footer.connectionsHint', 'Шаг 4: добавьте/обновите подключения операторов')}
           </Typography.Text>
 
-          <Form form={routingForm} layout="vertical" onFinish={handleSaveRoutingRules}>
-            <Form.List name="routing_rules">
-              {(fields, { add, remove }) => (
-                <Space direction="vertical" size={12} style={{ width: '100%' }}>
-                  {routingTableLoading ? (
-                    <Alert
-                      type="info"
-                      showIcon
-                      message={tr('telephonySettings.routing.loading', 'Загрузка правил маршрутизации...')}
-                    />
-                  ) : null}
+          <Space wrap>
+            {activeTab === 'base' && canManage ? (
+              <>
+                {settingsDirty ? (
+                  <Button
+                    icon={<ReloadOutlined />}
+                    loading={settingsLoading}
+                    onClick={loadProfileSettings}
+                  >
+                    {tr('actions.reset', 'Сбросить')}
+                  </Button>
+                ) : null}
+                <Button
+                  type="primary"
+                  icon={<SaveOutlined />}
+                  loading={settingsLoading}
+                  onClick={() => settingsForm.submit()}
+                >
+                  {tr('telephonySettings.actions.saveBase', 'Сохранить базовые настройки')}
+                </Button>
+              </>
+            ) : null}
 
-                  {fields.length === 0 ? (
-                    <Empty
-                      image={Empty.PRESENTED_IMAGE_SIMPLE}
-                      description={tr('telephonySettings.routing.empty', 'Пока нет паттернов. Добавьте первое правило.')}
-                    />
-                  ) : null}
+            {activeTab === 'realtime' ? (
+              <Button onClick={() => setActiveTab('connections')}>
+                {tr('telephonySettings.footer.goConnections', 'Перейти к подключениям')}
+              </Button>
+            ) : null}
 
-                  {fields.map((field) => (
-                    <Card
-                      key={field.key}
-                      type="inner"
-                      title={tr('telephonySettings.routing.ruleTitle', 'Rule #{{number}}', { number: field.name + 1 })}
-                      extra={
-                        <Button danger type="link" icon={<DeleteOutlined />} onClick={() => remove(field.name)}>
-                          {tr('actions.delete', 'Delete')}
-                        </Button>
-                      }
-                    >
-                      <Space direction="vertical" size={8} style={{ width: '100%' }}>
-                        <Form.Item name={[field.name, 'id']} hidden>
-                          <Input />
-                        </Form.Item>
-
-                        <Form.Item
-                          label={tr('telephonySettings.routing.fields.ruleName', 'Rule name')}
-                          name={[field.name, 'name']}
-                          rules={[{ required: true, message: tr('telephonySettings.validation.enterRuleName', 'Specify rule name') }]}
-                        >
-                          <Input placeholder={tr('telephonySettings.routing.placeholders.ruleName', 'Например: Внутренние 1xx -> PBX')} />
-                        </Form.Item>
-
-                        <Form.Item
-                          label={tr('telephonySettings.routing.fields.description', 'Description (optional)')}
-                          name={[field.name, 'description']}
-                        >
-                          <Input placeholder={tr('telephonySettings.routing.placeholders.description', 'Кратко опишите бизнес-цель правила')} />
-                        </Form.Item>
-
-                        <Form.Item
-                          label={tr('telephonySettings.routing.fields.calledPattern', 'Called number pattern (required)')}
-                          name={[field.name, 'called_number_pattern']}
-                          rules={[
-                            { required: true, message: tr('telephonySettings.validation.enterCalledPattern', 'Enter called number pattern') },
-                            { validator: regexValidator(tr('telephonySettings.routing.fields.calledPatternLabel', 'Called number pattern')) },
-                          ]}
-                          extra={(
-                            <Space direction="vertical" size={6} style={{ width: '100%' }}>
-                              <Typography.Text type="secondary">
-                                {tr('telephonySettings.routing.helpers.calledPatternPreset', 'Шаблон: выберите тип номера, чтобы не вводить RegExp вручную')}
-                              </Typography.Text>
-                              <Select
-                                allowClear
-                                placeholder={tr('telephonySettings.routing.helpers.selectCalledPreset', 'Выбрать шаблон called pattern')}
-                                options={CALLED_PATTERN_PRESETS}
-                                onChange={(value) => {
-                                  if (value) routingForm.setFieldValue(['routing_rules', field.name, 'called_number_pattern'], value);
-                                }}
-                              />
-                            </Space>
-                          )}
-                        >
-                          <Input placeholder={tr('telephonySettings.routing.placeholders.calledPattern', 'Пример: ^1\\d{2}$ или ^\\+?\\d{10,15}$')} />
-                        </Form.Item>
-
-                        <Form.Item
-                          label={tr('telephonySettings.routing.fields.callerPattern', 'Caller number pattern (optional)')}
-                          name={[field.name, 'caller_id_pattern']}
-                          rules={[{ validator: regexValidator(tr('telephonySettings.routing.fields.callerPatternLabel', 'Caller number pattern')) }]}
-                          extra={(
-                            <Space direction="vertical" size={6} style={{ width: '100%' }}>
-                              <Typography.Text type="secondary">
-                                {tr('telephonySettings.routing.helpers.callerPatternPreset', 'Шаблон caller id для быстрых сценариев фильтрации')}
-                              </Typography.Text>
-                              <Select
-                                allowClear
-                                placeholder={tr('telephonySettings.routing.helpers.selectCallerPreset', 'Выбрать шаблон caller pattern')}
-                                options={CALLER_PATTERN_PRESETS}
-                                onChange={(value) => {
-                                  routingForm.setFieldValue(['routing_rules', field.name, 'caller_id_pattern'], value || '');
-                                }}
-                              />
-                            </Space>
-                          )}
-                        >
-                          <Input placeholder={tr('telephonySettings.routing.placeholders.callerPattern', 'Пример: ^\\+998 или ^8800')} />
-                        </Form.Item>
-
-                        <Form.Item
-                          label={tr('telephonySettings.routing.fields.action', 'Routing action')}
-                          name={[field.name, 'action']}
-                          rules={[{ required: true, message: tr('telephonySettings.validation.selectAction', 'Select action') }]}
-                        >
-                          <Select options={ROUTING_ACTION_OPTIONS.map((item) => ({ ...item, label: tr(`telephonySettings.routing.actions.${item.value}`, item.value) }))} />
-                        </Form.Item>
-
-                        <Form.Item noStyle dependencies={[[field.name, 'action']]}>
-                          {({ getFieldValue }) => {
-                            const action = getFieldValue(['routing_rules', field.name, 'action']);
-                            if (action === 'route_to_number') {
-                              return (
-                                <Form.Item
-                                  label={tr('telephonySettings.routing.fields.targetInternalNumber', 'Target internal number')}
-                                  name={[field.name, 'target_number']}
-                                  rules={[{ required: true, message: tr('telephonySettings.validation.selectInternalNumber', 'Select internal number') }]}
-                                >
-                                  <Select
-                                    showSearch
-                                    optionFilterProp="label"
-                                    options={internalNumbers.map((item) => ({
-                                      value: item.id,
-                                      label: `${item.number}${item.display_name ? ` - ${item.display_name}` : ''}`,
-                                    }))}
-                                    placeholder={tr('telephonySettings.placeholders.selectInternalNumber', 'Select internal number')}
-                                  />
-                                </Form.Item>
-                              );
-                            }
-                            return null;
-                          }}
-                        </Form.Item>
-
-                        <Form.Item noStyle dependencies={[[field.name, 'action']]}>
-                          {({ getFieldValue }) => {
-                            const action = getFieldValue(['routing_rules', field.name, 'action']);
-                            if (action === 'route_to_group' || action === 'route_to_queue') {
-                              return (
-                                <Form.Item
-                                  label={action === 'route_to_queue' ? tr('telephonySettings.routing.fields.targetQueueGroup', 'Target queue group') : tr('telephonySettings.routing.fields.targetGroup', 'Target group')}
-                                  name={[field.name, 'target_group']}
-                                  rules={[{ required: true, message: tr('telephonySettings.validation.selectGroup', 'Select group') }]}
-                                >
-                                  <Select
-                                    showSearch
-                                    optionFilterProp="label"
-                                    options={numberGroups.map((item) => ({
-                                      value: item.id,
-                                      label: `${item.name}${item.member_count ? ` (${item.member_count})` : ''}`,
-                                    }))}
-                                    placeholder={tr('telephonySettings.placeholders.selectGroup', 'Select group')}
-                                  />
-                                </Form.Item>
-                              );
-                            }
-                            if (action === 'forward_external') {
-                              return (
-                                <Form.Item
-                                  label={tr('telephonySettings.routing.fields.externalNumber', 'External number')}
-                                  name={[field.name, 'target_external']}
-                                  rules={[
-                                    { required: true, message: tr('telephonySettings.validation.enterExternalNumber', 'Enter external number') },
-                                    {
-                                      pattern: /^\+?[0-9]{7,15}$/,
-                                      message: tr('telephonySettings.validation.externalNumberFormat', 'Use international format, for example +998901234567'),
-                                    },
-                                  ]}
-                                >
-                                  <Input placeholder={tr('telephonySettings.placeholders.externalNumber', '+998901234567')} />
-                                </Form.Item>
-                              );
-                            }
-                            if (action === 'play_announcement') {
-                              return (
-                                <Form.Item
-                                  label={tr('telephonySettings.routing.fields.announcementText', 'Announcement text')}
-                                  name={[field.name, 'announcement_text']}
-                                  rules={[{ required: true, message: tr('telephonySettings.validation.enterAnnouncementText', 'Enter announcement text') }]}
-                                >
-                                  <Input.TextArea rows={3} placeholder={tr('telephonySettings.placeholders.announcementText', 'Text that caller will hear')} />
-                                </Form.Item>
-                              );
-                            }
-                            return null;
-                          }}
-                        </Form.Item>
-
-                        <Form.Item
-                          label={tr('telephonySettings.routing.fields.timeCondition', 'Time condition (optional)')}
-                          name={[field.name, 'time_condition']}
-                          extra={tr('telephonySettings.routing.fields.timeConditionExtra', 'For example: weekdays 09:00-18:00')}
-                        >
-                          <Input placeholder={tr('telephonySettings.placeholders.timeCondition', 'weekdays 09:00-18:00')} />
-                        </Form.Item>
-
-                        <Form.Item
-                          label={tr('telephonySettings.routing.fields.priority', 'Priority (lower = higher)')}
-                          name={[field.name, 'priority']}
-                          initialValue={100}
-                        >
-                          <InputNumber min={1} max={10000} style={{ width: '100%' }} />
-                        </Form.Item>
-
-                        <Form.Item
-                          label={tr('telephonySettings.fields.active', 'Active')}
-                          name={[field.name, 'active']}
-                          valuePropName="checked"
-                          initialValue={true}
-                        >
-                          <Switch />
-                        </Form.Item>
-                      </Space>
-                    </Card>
-                  ))}
-
-                  <Space wrap>
-                    <Button
-                      icon={<PlusCircleOutlined />}
-                      onClick={() => add(buildEmptyRoutingRule())}
-                    >
-                      {tr('telephonySettings.routing.actions.addRule', 'Add rule')}
-                    </Button>
-                    {canManage ? (
+            {activeTab === 'routing' ? (
+              <>
+                {canManage ? (
+                  <>
+                    {routingDirty ? (
                       <Button
-                        type="primary"
-                        htmlType="submit"
-                        icon={<SaveOutlined />}
-                        loading={routingLoading}
+                        icon={<ReloadOutlined />}
+                        loading={routingLoading || routingTableLoading}
+                        onClick={loadRoutingSettings}
                       >
-                        {tr('telephonySettings.routing.actions.savePatternRouting', 'Save pattern routing')}
+                        {tr('actions.reset', 'Сбросить')}
                       </Button>
                     ) : null}
-                  </Space>
-                </Space>
-              )}
-            </Form.List>
-          </Form>
+                    <Button icon={<PlusCircleOutlined />} onClick={addRoutingRuleFromFooter}>
+                      {tr('telephonySettings.routing.actions.addRule', 'Add rule')}
+                    </Button>
+                    <Button
+                      type="primary"
+                      icon={<SaveOutlined />}
+                      loading={routingLoading}
+                      onClick={() => routingForm.submit()}
+                    >
+                      {tr('telephonySettings.routing.actions.savePatternRouting', 'Save pattern routing')}
+                    </Button>
+                  </>
+                ) : null}
+              </>
+            ) : null}
+
+            {activeTab === 'connections' ? (
+              <>
+                <Button icon={<ReloadOutlined />} onClick={loadConnections} loading={tableLoading}>
+                  {tr('actions.refresh', 'Обновить')}
+                </Button>
+                {canManage ? (
+                  <Button type="primary" icon={<PlusOutlined />} onClick={openCreateConnectionModal}>
+                    {tr('telephonySettings.actions.addConnection', 'Добавить подключение')}
+                  </Button>
+                ) : null}
+              </>
+            ) : null}
+          </Space>
         </Space>
       </Card>
-
-      <Divider orientation="left">{tr('telephonySettings.sections.voip', '3. VoIP подключения')}</Divider>
-      <div style={{ marginBottom: 16 }}>
-        {canManage ? (
-          <Button
-            type="primary"
-            icon={<PlusOutlined />}
-            onClick={() => {
-              setEditingConnection(null);
-              form.resetFields();
-              setModalVisible(true);
-            }}
-          >
-            {tr('telephonySettings.actions.addConnection', 'Добавить подключение')}
-          </Button>
-        ) : null}
-      </div>
-
-      <div style={{ width: '100%', overflowX: 'auto' }}>
-        <Table
-          columns={columns}
-          dataSource={connections}
-          rowKey="id"
-          loading={tableLoading}
-          pagination={{ pageSize: 10 }}
-          scroll={{ x: 1200 }}
-        />
-      </div>
 
       <Modal
         title={editingConnection ? tr('telephonySettings.modal.editConnection', 'Edit connection') : tr('telephonySettings.modal.newConnection', 'New connection')}
@@ -1025,7 +1200,7 @@ export default function TelephonySettings({ onSuccess }) {
           type="info"
           showIcon
           message={tr('telephonySettings.connectionHelp.title', 'Что заполнять?')}
-          description={tr('telephonySettings.connectionHelp.description', 'Provider = Asterisk only. Connection type = PBX or SIP. For SIP, specify the SIP server.')}
+          description={tr('telephonySettings.connectionHelp.description', `Новые подключения создавайте только в режиме PBX Bridge для внешнего FreePBX. Рабочий диапазон agent extensions: 200-219. Основная очередь/DID: ${FREEPBX_MAIN_QUEUE_NUMBER}.`)}
         />
         <Form
           form={form}
@@ -1036,26 +1211,30 @@ export default function TelephonySettings({ onSuccess }) {
               form.setFieldsValue({ sip_server: '' });
             }
           }}
-          initialValues={{ active: true, type: 'pbx', provider: DEFAULT_TELEPHONY_PROVIDER }}
+          initialValues={{ active: true, type: 'sip', provider: DEFAULT_TELEPHONY_PROVIDER }}
         >
           <Form.Item
             label={tr('telephonySettings.fields.provider', 'Provider')}
             name="provider"
             rules={[{ required: true, message: tr('telephonySettings.validation.selectProvider', 'Select provider') }]}
-            extra={tr('telephonySettings.fields.providerExtra', 'Asterisk is the only supported provider.')}
+            extra={tr('telephonySettings.fields.providerExtra', 'Провайдер фиксирован на Asterisk/FreePBX bridge deployment.')}
           >
-            <Select placeholder={tr('telephonySettings.placeholders.provider', 'Например: Asterisk')} options={TELEPHONY_PROVIDER_OPTIONS} />
+            <Select
+              placeholder={tr('telephonySettings.placeholders.provider', 'Asterisk')}
+              options={bridgeProviderOptions}
+              disabled
+            />
           </Form.Item>
 
           <Form.Item
             label={tr('telephonySettings.fields.connectionType', 'Connection type')}
             name="type"
             rules={[{ required: true, message: tr('telephonySettings.validation.selectType', 'Select type') }]}
-            extra={tr('telephonySettings.fields.connectionTypeExtra', 'PBX: embedded Asterisk internal extension. SIP: external Asterisk trunk/account with SIP server.')}
+            extra={tr('telephonySettings.fields.connectionTypeExtra', 'Для новых подключений используйте только PBX Bridge. Embedded Asterisk оставлен только для миграции legacy данных.')}
           >
             <Select placeholder={tr('telephonySettings.placeholders.connectionType', 'Выберите тип')}>
-              {CONNECTION_TYPE_OPTIONS.map((option) => (
-                <Select.Option key={option.value} value={option.value}>
+              {bridgeTypeOptions.map((option) => (
+                <Select.Option key={option.value} value={option.value} disabled={option.disabled}>
                   {option.label}
                 </Select.Option>
               ))}
@@ -1067,8 +1246,8 @@ export default function TelephonySettings({ onSuccess }) {
               const type = getFieldValue('type');
               const hintType = type === 'sip' ? 'warning' : 'info';
               const fallback = type === 'sip'
-                ? `SIP requires the "SIP server" field. Asterisk handles routing and integration, while the SIP server handles account registration.`
-                : `Asterisk is the only provider. Connection type (${(type || 'pbx').toUpperCase()}) defines the line format.`;
+                ? `PBX Bridge режим: укажите только безопасные browser-side поля. SIP/AMI/WSS secret material остаётся на сервере bridge worker.`
+                : `Legacy embedded режим найден в старой записи. Новые FreePBX подключения должны мигрировать в bridge flow.`;
               return (
                 <Alert
                   style={{ marginBottom: 16 }}
@@ -1098,7 +1277,7 @@ export default function TelephonySettings({ onSuccess }) {
                       },
                     },
                   ]}
-                  extra={tr('telephonySettings.fields.sipServerExtra', 'SIP server host used for trunk/account registration, for example pbx.company.uz or pbx.company.uz:5060')}
+                  extra={tr('telephonySettings.fields.sipServerExtra', 'Укажите FreePBX/PJSIP host, который использует bridge worker, например pbx.company.uz или pbx.company.uz:5060')}
                 >
                   <Input placeholder={tr('telephonySettings.placeholders.sipServer', 'Например: pbx.company.uz:5060')} />
                 </Form.Item>
@@ -1110,13 +1289,13 @@ export default function TelephonySettings({ onSuccess }) {
             {({ getFieldValue }) => {
               const type = getFieldValue('type');
               const labelByType = {
-                pbx: tr('telephonySettings.fields.numberByType.pbx', 'Internal number (extension)'),
-                sip: tr('telephonySettings.fields.numberByType.sip', 'SIP number/login'),
+                pbx: tr('telephonySettings.fields.numberByType.pbx', 'Legacy extension (migration only)'),
+                sip: tr('telephonySettings.fields.numberByType.sip', 'Agent extension / SIP login'),
                 voip: tr('telephonySettings.fields.numberByType.voip', 'External number'),
               };
               const placeholderByType = {
-                pbx: tr('telephonySettings.placeholders.numberByType.pbx', 'For example: 101'),
-                sip: tr('telephonySettings.placeholders.numberByType.sip', 'For example: 1001 or sip_user_1001'),
+                pbx: tr('telephonySettings.placeholders.numberByType.pbx', 'Legacy example: 101'),
+                sip: tr('telephonySettings.placeholders.numberByType.sip', 'Use a real FreePBX extension from 200 to 219'),
                 voip: tr('telephonySettings.placeholders.numberByType.voip', 'For example: +998901234567'),
               };
 
@@ -1131,6 +1310,9 @@ export default function TelephonySettings({ onSuccess }) {
                         if (!value) return Promise.resolve();
                         const selectedType = getFormValue('type');
                         const val = String(value).trim();
+                        if (selectedType === 'sip' && !isPreferredFreePbxExtension(val)) {
+                          return Promise.reject(new Error(`Используйте реальный agent extension FreePBX из диапазона 200-219. Очередь ${FREEPBX_MAIN_QUEUE_NUMBER} задаётся в routing rules, а не в operator connection.`));
+                        }
                         if (selectedType === 'pbx' && !/^[0-9*#]{2,10}$/.test(val)) {
                           return Promise.reject(new Error(tr('telephonySettings.validation.pbxNumberFormat', 'For PBX use extension (2-10 symbols: digits, *, #)')));
                         }
@@ -1151,11 +1333,14 @@ export default function TelephonySettings({ onSuccess }) {
           <Form.Item
             label={tr('telephonySettings.fields.callerId', 'Caller ID')}
             name="callerid"
-            rules={[{ required: true, message: tr('telephonySettings.validation.enterCallerId', 'Enter caller ID') }]}
+            rules={[
+              { required: true, message: tr('telephonySettings.validation.enterCallerId', 'Enter caller ID') },
+              { validator: validateCallerId },
+            ]}
             tooltip={tr('telephonySettings.fields.callerIdTooltip', 'Number shown on outgoing calls')}
-            extra={tr('telephonySettings.fields.callerIdExtra', 'Usually matches your company external number.')}
+            extra={tr('telephonySettings.fields.callerIdExtra', `Обычно это ваш основной DID. Для текущего deployment допустимо использовать ${FREEPBX_MAIN_QUEUE_NUMBER} или внешний номер в E.164.`)}
           >
-            <Input placeholder={tr('telephonySettings.placeholders.callerId', 'Например: +998712001122')} />
+            <Input placeholder={tr('telephonySettings.placeholders.callerId', `Например: ${FREEPBX_MAIN_QUEUE_NUMBER} или +998712001122`)} />
           </Form.Item>
 
           <Form.Item label={tr('telephonySettings.fields.active', 'Active')} name="active" valuePropName="checked" initialValue={true}>

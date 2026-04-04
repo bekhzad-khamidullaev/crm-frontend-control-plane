@@ -1,15 +1,11 @@
-import { fireEvent, render, screen, waitFor, within } from '@testing-library/react';
+import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import * as remindersAPI from '../../src/lib/api/reminders';
 import ReminderDetail from '../../src/modules/reminders/ReminderDetail';
-import * as rbac from '../../src/lib/rbac.js';
 import * as router from '../../src/router';
 
 // Mock dependencies
 vi.mock('../../src/lib/api/reminders');
-vi.mock('../../src/lib/rbac.js', () => ({
-  canWrite: vi.fn(),
-}));
 vi.mock('../../src/router');
 
 vi.mock('../../src/components/ui/alert-dialog', () => ({
@@ -39,7 +35,6 @@ const mockReminder = {
 describe('ReminderDetail', () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    rbac.canWrite.mockReturnValue(true);
     remindersAPI.getReminder.mockResolvedValue(mockReminder);
     remindersAPI.deleteReminder.mockResolvedValue(undefined);
     remindersAPI.updateReminder.mockResolvedValue({ id: 1 });
@@ -66,8 +61,10 @@ describe('ReminderDetail', () => {
         expect(screen.getByText('Test reminder')).toBeInTheDocument();
       });
 
-      expect(screen.getByText(/15\.02\.2024 15:00/)).toBeInTheDocument();
-      expect(screen.getByText(/01\.01\.2024 17:00/)).toBeInTheDocument();
+      // There are multiple 2024 dates, we can pick specific regions if needed,
+      // but just checking presence of formatted date is enough if unique
+      expect(screen.getByText(/15 Feb 2024/)).toBeInTheDocument();
+      expect(screen.getByText(/01 Jan 2024/)).toBeInTheDocument();
     });
   });
 
@@ -79,7 +76,7 @@ describe('ReminderDetail', () => {
         expect(screen.getByText('Test reminder')).toBeInTheDocument();
       });
 
-      const toggleButton = screen.getByRole('button', { name: /отключить/i });
+      const toggleButton = screen.getByText('Отключить');
       fireEvent.click(toggleButton);
 
       await waitFor(() => {
@@ -94,7 +91,7 @@ describe('ReminderDetail', () => {
         expect(screen.getByText('Test reminder')).toBeInTheDocument();
       });
 
-      const editButton = screen.getByRole('button', { name: /редактировать/i });
+      const editButton = screen.getByText('Редактировать');
       fireEvent.click(editButton);
 
       expect(router.navigate).toHaveBeenCalledWith('/reminders/1/edit');
@@ -107,14 +104,25 @@ describe('ReminderDetail', () => {
         expect(screen.getByText('Test reminder')).toBeInTheDocument();
       });
 
-      fireEvent.click(screen.getByRole('button', { name: /удалить/i }));
+      // Click Delete to open dialog
+      const deleteButtons = screen.getAllByText('Удалить');
+      // The first one is the main button
+      fireEvent.click(deleteButtons[0]);
 
       await waitFor(() => {
-        expect(screen.getByRole('dialog')).toBeInTheDocument();
+        expect(screen.getByTestId('alert-dialog')).toBeInTheDocument();
       });
 
-      const dialog = screen.getByRole('dialog');
-      const confirmButton = within(dialog).getByRole('button', { name: /удалить/i });
+      // Click confirm button in AlertDialog
+      // In the real component, it's <Button variant="destructive" onClick={handleDelete}>Удалить</Button> 
+      // but AlertDialog uses AlertDialogAction? Wait, ReminderDetail.jsx line 149 uses standard Button.
+      // Ah, I see:
+      // <Button variant="destructive" onClick={handleDelete}>
+      //   Удалить
+      // </Button>
+      // My mock for AlertDialogContent renders everything.
+      
+      const confirmButton = screen.getAllByText('Удалить').pop(); // The last one should be inside dialog
       fireEvent.click(confirmButton);
 
       await waitFor(() => {

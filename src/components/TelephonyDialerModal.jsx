@@ -10,7 +10,13 @@ import {
 } from '@ant-design/icons';
 import { Alert, App, Button, Card, Col, Input, Modal, Row, Space, Tabs, Tag, Tooltip, theme } from 'antd';
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { getCallHistory, initiateCall, normalizeTelephonyCallPayload } from '../lib/api/telephony.js';
+import {
+  getActiveCalls,
+  getCallHistory,
+  hangupActiveCall,
+  initiateCall,
+  normalizeTelephonyCallPayload,
+} from '../lib/api/telephony.js';
 import { getContacts } from '../lib/api/client.js';
 import sipClient from '../lib/telephony/SIPClient.js';
 import { loadTelephonyRuntimeConfig } from '../lib/telephony/runtimeConfig.js';
@@ -53,6 +59,10 @@ function sanitizeDialInput(raw) {
 
 function normalizeProviderDial(value) {
   return sanitizeDialInput(value).replace(/[^\d+]/g, '');
+}
+
+function normalizeDigitsOnly(value) {
+  return String(value || '').replace(/\D/g, '');
 }
 
 function normalizeListResponse(payload) {
@@ -137,6 +147,7 @@ function validateDialInput(rawValue, routeMode) {
       message: 'Введите номер телефона',
       sipDial: '',
       providerDial: '',
+      targetKind: 'empty',
     };
   }
 
@@ -146,6 +157,7 @@ function validateDialInput(rawValue, routeMode) {
       message: 'Недопустимые символы. Разрешены только цифры, +, *, #, пробел, скобки и дефис',
       sipDial: '',
       providerDial: '',
+      targetKind: 'invalid',
     };
   }
 
@@ -155,12 +167,14 @@ function validateDialInput(rawValue, routeMode) {
       message: 'Символ "+" допустим только в начале номера',
       sipDial: '',
       providerDial: '',
+      targetKind: 'invalid',
     };
   }
 
   const mode = String(routeMode || DEFAULT_TELEPHONY_ROUTE_MODE).toLowerCase();
   const sipDial = normalizeDialForSip(value);
   const providerDial = normalizeProviderDial(value).replace(/^\+/, '');
+  const internalLike = isLikelyInternalExtension(value);
 
   if (hasStarHash) {
     return {
@@ -168,6 +182,7 @@ function validateDialInput(rawValue, routeMode) {
       message: 'Символы * и # разрешены только для DTMF во время активного звонка',
       sipDial,
       providerDial,
+      targetKind: 'invalid',
     };
   }
 
@@ -178,9 +193,20 @@ function validateDialInput(rawValue, routeMode) {
         message: 'Номер для встроенного режима должен содержать от 2 до 15 цифр',
         sipDial,
         providerDial,
+        targetKind: 'invalid',
       };
     }
-    return { isValid: true, message: '', sipDial, providerDial };
+    return { isValid: true, message: '', sipDial, providerDial, targetKind: internalLike ? 'internal' : 'external' };
+  }
+
+  if (internalLike) {
+    return {
+      isValid: true,
+      message: '',
+      sipDial,
+      providerDial,
+      targetKind: 'internal',
+    };
   }
 
   if (digits.length < 7 || digits.length > 15) {
@@ -189,10 +215,60 @@ function validateDialInput(rawValue, routeMode) {
       message: 'Внешний номер должен содержать от 7 до 15 цифр',
       sipDial,
       providerDial,
+      targetKind: 'invalid',
     };
   }
 
-  return { isValid: true, message: '', sipDial, providerDial };
+  return { isValid: true, message: '', sipDial, providerDial, targetKind: 'external' };
+}
+
+function mapBridgeCallStatus(call) {
+  const normalized = normalizeTelephonyCallPayload(call);
+  const status = String(normalized.status || '').toLowerCase();
+
+  if (status === 'answered') return 'connected';
+  if (['busy', 'no_answer', 'failed', 'abandoned'].includes(status)) return 'failed';
+  if (['completed', 'ended', 'hangup'].includes(status)) return 'ended';
+  if (['ringing', 'connecting', 'queued', 'waiting'].includes(status)) return 'calling';
+  return 'provider-originated';
+}
+
+function matchesBridgeCall(call, bridgeState) {
+  const candidate = normalizeTelephonyCallPayload(call);
+  const candidateSessionId = String(candidate.sessionId || '').trim();
+  if (bridgeState?.sessionId && candidateSessionId === bridgeState.sessionId) {
+    return true;
+  }
+
+  const targetDigits = normalizeDigitsOnly(bridgeState?.toNumber);
+  if (!targetDigits) return false;
+
+  const candidateTargets = [
+    candidate.normalizedCalledNumber,
+    candidate.normalizedPhoneNumber,
+    normalizeDigitsOnly(candidate.queue),
+    normalizeDigitsOnly(candidate.agentExtension),
+    normalizeDigitsOnly(candidate.routeTargetLabel),
+  ].filter(Boolean);
+
+  const targetMatched = candidateTargets.some(
+    (value) => value === targetDigits || value.endsWith(targetDigits) || targetDigits.endsWith(value),
+  );
+  if (!targetMatched) return false;
+
+  const fromDigits = normalizeDigitsOnly(bridgeState?.fromNumber);
+  if (!fromDigits) return true;
+
+  const candidateSources = [
+    candidate.normalizedCallerId,
+    normalizeDigitsOnly(candidate.fromNumber),
+    normalizeDigitsOnly(candidate.from_number),
+  ].filter(Boolean);
+
+  if (!candidateSources.length) return true;
+  return candidateSources.some(
+    (value) => value === fromDigits || value.endsWith(fromDigits) || fromDigits.endsWith(value),
+  );
 }
 
 export default function TelephonyDialerModal({
@@ -215,13 +291,16 @@ export default function TelephonyDialerModal({
   const [contactsLoadedOnce, setContactsLoadedOnce] = useState(false);
   const [loadingConfig, setLoadingConfig] = useState(false);
   const [registering, setRegistering] = useState(false);
-  const [sipStatus, setSipStatus] = useState(sipClient.isRegistered ? 'registered' : 'offline');
+  const [sipStatus, setSipStatus] = useState('checking');
+  const [sipStatusReason, setSipStatusReason] = useState('');
   const [numberLabel, setNumberLabel] = useState('-');
   const [routeMode, setRouteMode] = useState(DEFAULT_TELEPHONY_ROUTE_MODE);
   const [callStatus, setCallStatus] = useState('idle');
   const [muted, setMuted] = useState(false);
   const [callDuration, setCallDuration] = useState(0);
-  const [transportStatus, setTransportStatus] = useState(sipClient.ua ? 'connected' : 'disconnected');
+  const [transportStatus, setTransportStatus] = useState('checking');
+  const [transportReason, setTransportReason] = useState('');
+  const [bridgeRuntimeCall, setBridgeRuntimeCall] = useState(null);
   const [minimized, setMinimized] = useState(false);
   const [windowPosition, setWindowPosition] = useState({ x: 0, y: 0 });
   const [windowPositionReady, setWindowPositionReady] = useState(false);
@@ -232,6 +311,12 @@ export default function TelephonyDialerModal({
   const callTokenRef = useRef(null);
   const autoCallHandledRef = useRef('');
   const dialNumberRef = useRef(String(initialNumber || ''));
+  const bridgeCallRef = useRef({
+    sessionId: '',
+    toNumber: '',
+    fromNumber: '',
+    detectedOnce: false,
+  });
   const dragStateRef = useRef({
     active: false,
     offsetX: 0,
@@ -269,15 +354,35 @@ export default function TelephonyDialerModal({
   }, [dialNumber]);
 
   useEffect(() => {
-    const onRegistered = () => setSipStatus('registered');
-    const onUnregistered = () => setSipStatus('offline');
-    const onSipError = () => setSipStatus('error');
+    const onRegistered = () => {
+      setSipStatus('registered');
+      setSipStatusReason('');
+      setTransportReason('');
+    };
+    const onUnregistered = () => {
+      setSipStatus('offline');
+      setSipStatusReason('');
+    };
+    const onSipError = (data) => {
+      const reason = String(data?.reason || '').trim();
+      setSipStatus(data?.type === 'registration' ? 'registration-failed' : 'error');
+      setSipStatusReason(reason);
+    };
     const onTransport = (data) => {
       const status = String(data?.status || '').toLowerCase();
       if (!status) return;
-      if (status === 'connected') setTransportStatus('connected');
-      if (status === 'disconnected') setTransportStatus('disconnected');
-      if (status === 'connecting') setTransportStatus('connecting');
+      if (status === 'connected') {
+        setTransportStatus('connected');
+        setTransportReason('');
+      }
+      if (status === 'disconnected') {
+        setTransportStatus('disconnected');
+        setTransportReason(String(data?.reason || '').trim());
+      }
+      if (status === 'connecting') {
+        setTransportStatus('connecting');
+        setTransportReason('');
+      }
     };
 
     const ownCall = (data) => {
@@ -357,17 +462,37 @@ export default function TelephonyDialerModal({
     try {
       const runtime = await loadTelephonyRuntimeConfig();
       runtimeRef.current = runtime;
-      setRouteMode(runtime?.sipConfig?.routeMode || DEFAULT_TELEPHONY_ROUTE_MODE);
+      const nextRouteMode = runtime?.sipConfig?.routeMode || DEFAULT_TELEPHONY_ROUTE_MODE;
+      const bridgeMode = String(nextRouteMode || DEFAULT_TELEPHONY_ROUTE_MODE).toLowerCase() === 'bridge';
+      setRouteMode(nextRouteMode);
 
-      const activeNumber = String(runtime?.sipConfig?.phoneNumber || '').trim();
+      const activeNumber = String(
+        runtime?.sipConfig?.extension ||
+        runtime?.sipConfig?.phoneNumber ||
+        runtime?.telephonyCredentials?.extension ||
+        ''
+      ).trim();
       setNumberLabel(activeNumber || '-');
 
+      if (bridgeMode) {
+        setSipStatus('not-required');
+        setSipStatusReason('');
+        setTransportStatus('not-required');
+        setTransportReason('');
+        return runtime;
+      }
+
       setSipStatus(sipClient.isRegistered ? 'registered' : runtime?.sipReady ? 'ready' : 'missing-config');
+      setSipStatusReason('');
       setTransportStatus(sipClient.ua ? 'connected' : 'disconnected');
+      setTransportReason('');
       return runtime;
     } catch (error) {
       runtimeRef.current = null;
       setSipStatus('error');
+      setSipStatusReason(String(error?.message || '').trim());
+      setTransportStatus('disconnected');
+      setTransportReason(String(error?.message || '').trim());
       message.error('Не удалось загрузить настройки телефонии из бэкенда');
       return null;
     } finally {
@@ -377,7 +502,13 @@ export default function TelephonyDialerModal({
 
   useEffect(() => {
     if (!visible) return;
-    loadBackendTelephony();
+    loadBackendTelephony().then((runtime) => {
+      if (!runtime?.sipReady) return;
+      if (sipClient.isRegistered) return;
+      ensureSipReady().catch(() => {
+        // Error is surfaced in ensureSipReady via message + status tags.
+      });
+    });
   }, [visible]);
 
   const loadRecentCalls = async () => {
@@ -424,14 +555,74 @@ export default function TelephonyDialerModal({
     }
   }, [activeTab, contactsLoadedOnce, loadingContacts, loadingLogs, logsLoadedOnce, visible]);
 
+  useEffect(() => {
+    if (!visible) return undefined;
+    if (String(routeMode || DEFAULT_TELEPHONY_ROUTE_MODE).toLowerCase() !== 'bridge') return undefined;
+    if (!['provider-originated', 'calling', 'connected'].includes(callStatus)) return undefined;
+
+    let cancelled = false;
+
+    const syncBridgeCall = async () => {
+      try {
+        const response = await getActiveCalls();
+        const activeCalls = Array.isArray(response)
+          ? response
+          : Array.isArray(response?.results)
+            ? response.results
+            : [];
+
+        const matched = activeCalls
+          .map((item) => normalizeTelephonyCallPayload(item))
+          .find((item) => matchesBridgeCall(item, bridgeCallRef.current));
+
+        if (!matched) {
+          if (!bridgeCallRef.current.detectedOnce || cancelled) return;
+          bridgeCallRef.current = {
+            sessionId: '',
+            toNumber: bridgeCallRef.current.toNumber,
+            fromNumber: bridgeCallRef.current.fromNumber,
+            detectedOnce: false,
+          };
+          setBridgeRuntimeCall(null);
+          setCallStatus((prev) => (prev === 'connected' || prev === 'calling' || prev === 'provider-originated' ? 'ended' : prev));
+          return;
+        }
+
+        bridgeCallRef.current = {
+          sessionId: matched.sessionId || bridgeCallRef.current.sessionId,
+          toNumber: bridgeCallRef.current.toNumber,
+          fromNumber: bridgeCallRef.current.fromNumber,
+          detectedOnce: true,
+        };
+        if (cancelled) return;
+        setBridgeRuntimeCall(matched);
+        setCallStatus(mapBridgeCallStatus(matched));
+      } catch (error) {
+        if (!cancelled) {
+          console.warn('[TelephonyDialerModal] Failed to sync bridge call state:', error);
+        }
+      }
+    };
+
+    void syncBridgeCall();
+    const intervalId = window.setInterval(syncBridgeCall, 2000);
+
+    return () => {
+      cancelled = true;
+      window.clearInterval(intervalId);
+    };
+  }, [visible, routeMode, callStatus]);
+
   const ensureSipReady = async () => {
     if (sipClient.isRegistered) {
       setSipStatus('registered');
+      setSipStatusReason('');
       return true;
     }
 
     setRegistering(true);
     setSipStatus('connecting');
+    setSipStatusReason('');
 
     try {
       const runtime = runtimeRef.current || (await loadBackendTelephony());
@@ -439,6 +630,7 @@ export default function TelephonyDialerModal({
 
       if (!sip?.username || !sip?.realm || !sip?.password || !sip?.websocketProxyUrl) {
         setSipStatus('missing-config');
+        setSipStatusReason('Отсутствуют SIP credentials или WebSocket URL');
         return false;
       }
 
@@ -455,9 +647,19 @@ export default function TelephonyDialerModal({
       await sipClient.init();
       await sipClient.register(sip.username, sip.password);
       setSipStatus('registered');
+      setSipStatusReason('');
       return true;
     } catch (error) {
-      setSipStatus('error');
+      const errorMessage = String(error?.message || 'unknown error').trim();
+      const normalized = errorMessage.toLowerCase();
+      if (normalized.includes('credentials are not configured')) {
+        setSipStatus('missing-config');
+      } else if (normalized.includes('registration')) {
+        setSipStatus('registration-failed');
+      } else {
+        setSipStatus('error');
+      }
+      setSipStatusReason(errorMessage);
       message.error(`SIP регистрация не удалась: ${String(error?.message || 'unknown error')}`);
       return false;
     } finally {
@@ -467,17 +669,42 @@ export default function TelephonyDialerModal({
 
   const startProviderCall = async (runtime, validatedProviderDial = '') => {
     const toNumber = String(validatedProviderDial || normalizeProviderDial(dialNumber)).replace(/^\+/, '');
-    const fromNumber = String(runtime?.sipConfig?.phoneNumber || runtime?.profile?.pbx_number || '').trim();
+    const fromNumber = String(
+      runtime?.sipConfig?.extension ||
+      runtime?.sipConfig?.phoneNumber ||
+      runtime?.telephonyCredentials?.extension ||
+      runtime?.profile?.pbx_number ||
+      ''
+    ).trim();
     if (!toNumber) throw new Error('Введите номер');
 
-    await initiateCall({
+    const response = await initiateCall({
       to_number: toNumber,
       from_number: fromNumber || undefined,
       provider: runtime?.sipConfig?.provider || undefined,
     });
 
+    bridgeCallRef.current = {
+      sessionId: '',
+      toNumber,
+      fromNumber,
+      detectedOnce: false,
+    };
+    setBridgeRuntimeCall(
+      normalizeTelephonyCallPayload({
+        ...response,
+        direction: 'outbound',
+        status: 'initiated',
+        called_number: toNumber,
+        from_number: fromNumber,
+      }),
+    );
     setCallStatus('provider-originated');
-    message.success('Звонок отправлен через сервер телефонии');
+    message.success(
+      isLikelyInternalExtension(toNumber)
+        ? `Вызов отправлен в FreePBX на extension/queue ${toNumber}`
+        : 'Звонок отправлен через сервер телефонии'
+    );
   };
 
   const startSipCall = async (validatedDial) => {
@@ -518,6 +745,25 @@ export default function TelephonyDialerModal({
   };
 
   const handleHangup = () => {
+    if (String(routeMode || DEFAULT_TELEPHONY_ROUTE_MODE).toLowerCase() === 'bridge') {
+      const sessionId = bridgeRuntimeCall?.sessionId || bridgeCallRef.current.sessionId;
+      if (!sessionId) {
+        message.warning('CRM ещё ждёт session_id от FreePBX. Попробуйте обновить статус через пару секунд.');
+        return;
+      }
+
+      hangupActiveCall(sessionId)
+        .then(() => {
+          setCallStatus('ended');
+          setBridgeRuntimeCall((prev) => (prev ? { ...prev, status: 'ended' } : prev));
+        })
+        .catch((error) => {
+          console.error('[TelephonyDialerModal] Bridge hangup failed:', error);
+          message.error('Не удалось завершить bridge-звонок на стороне PBX');
+        });
+      return;
+    }
+
     sipClient.hangup();
     setCallStatus('ended');
   };
@@ -545,7 +791,11 @@ export default function TelephonyDialerModal({
 
   const dialValidation = useMemo(() => validateDialInput(dialNumber, routeMode), [dialNumber, routeMode]);
   const canStartCall =
-    dialValidation.isValid && callStatus !== 'calling' && callStatus !== 'connected' && !loadingConfig && !registering;
+    dialValidation.isValid &&
+    !['calling', 'connected', 'provider-originated'].includes(callStatus) &&
+    !loadingConfig &&
+    !registering;
+  const isBridgeMode = String(routeMode || DEFAULT_TELEPHONY_ROUTE_MODE).toLowerCase() === 'bridge';
 
   useEffect(() => {
     if (!visible) return;
@@ -558,13 +808,62 @@ export default function TelephonyDialerModal({
   }, [autoCallRequestId, canStartCall, dialValidation.isValid, visible]);
 
   const transportTag = useMemo(() => {
+    if (isBridgeMode) {
+      return { color: 'blue', text: 'Транспорт: bridge-only', tooltip: 'Browser WebSocket transport не используется в bridge-first режиме.' };
+    }
     const map = {
-      connected: { color: 'success', text: 'Транспорт: онлайн' },
-      connecting: { color: 'processing', text: 'Транспорт: подключение' },
-      disconnected: { color: 'default', text: 'Транспорт: оффлайн' },
+      checking: { color: 'default', text: 'Транспорт: проверка', tooltip: 'CRM определяет состояние WebSocket транспорта.' },
+      connected: { color: 'success', text: 'Транспорт: онлайн', tooltip: 'WebSocket транспорт подключен.' },
+      connecting: { color: 'processing', text: 'Транспорт: подключение', tooltip: 'Идёт подключение WebSocket транспорта.' },
+      disconnected: {
+        color: 'default',
+        text: 'Транспорт: оффлайн',
+        tooltip: transportReason || 'WebSocket транспорт не поднят, разорван или недоступен.',
+      },
+      'not-required': {
+        color: 'blue',
+        text: 'Транспорт: bridge-only',
+        tooltip: 'Browser WebSocket transport не используется в bridge-first режиме.',
+      },
     };
     return map[transportStatus] || map.disconnected;
-  }, [transportStatus]);
+  }, [isBridgeMode, transportReason, transportStatus]);
+
+  const sipTag = useMemo(() => {
+    if (isBridgeMode) {
+      return { color: 'blue', text: 'SIP: bridge-only', tooltip: 'Browser SIP registration не используется в bridge-first режиме.' };
+    }
+
+    const map = {
+      checking: { color: 'default', text: 'SIP: checking', tooltip: 'CRM загружает runtime SIP config.' },
+      ready: { color: 'processing', text: 'SIP: ready', tooltip: 'Credentials загружены, но регистрация ещё не запущена.' },
+      connecting: { color: 'processing', text: 'SIP: connecting', tooltip: 'Идёт SIP регистрация.' },
+      registered: { color: 'success', text: 'SIP: registered', tooltip: 'SIP клиент зарегистрирован.' },
+      offline: { color: 'default', text: 'SIP: offline', tooltip: 'SIP клиент не зарегистрирован или был разрегистрирован.' },
+      'missing-config': {
+        color: 'warning',
+        text: 'SIP: no credentials',
+        tooltip: sipStatusReason || 'Отсутствуют username, realm, password или WebSocket URL.',
+      },
+      'registration-failed': {
+        color: 'error',
+        text: 'SIP: registration error',
+        tooltip: sipStatusReason || 'SIP регистрация завершилась ошибкой или таймаутом.',
+      },
+      error: {
+        color: 'error',
+        text: 'SIP: error',
+        tooltip: sipStatusReason || 'SIP клиент вернул ошибку.',
+      },
+      'not-required': {
+        color: 'blue',
+        text: 'SIP: bridge-only',
+        tooltip: 'Browser SIP registration не используется в bridge-first режиме.',
+      },
+    };
+
+    return map[sipStatus] || map.offline;
+  }, [isBridgeMode, sipStatus, sipStatusReason]);
 
   const callTag = useMemo(() => {
     const map = {
@@ -590,7 +889,14 @@ export default function TelephonyDialerModal({
     setMuted(false);
     setCallDuration(0);
     setMinimized(false);
+    setBridgeRuntimeCall(null);
     autoCallHandledRef.current = '';
+    bridgeCallRef.current = {
+      sessionId: '',
+      toNumber: '',
+      fromNumber: '',
+      detectedOnce: false,
+    };
     callTokenRef.current = null;
     onClose?.();
   };
@@ -677,13 +983,20 @@ export default function TelephonyDialerModal({
             <Button block size="large" onClick={() => appendDial(digit)}>
               <div style={{ display: 'flex', flexDirection: 'column', lineHeight: 1.1 }}>
                 <span style={{ fontSize: 18, fontWeight: 600 }}>{digit}</span>
-                <span style={{ fontSize: 10, color: token.colorTextSecondary }}>{DTMF_HINTS[digit] || ' '}</span>
+                <span style={{ fontSize: 10, color: token.colorTextSecondary }}>
+                  {DTMF_HINTS[digit] || ' '}
+                </span>
               </div>
             </Button>
           </Col>
         ))}
         <Col span={8}>
-          <Button block onClick={loadBackendTelephony} icon={<ReloadOutlined />} />
+          <Button
+            block
+            onClick={loadBackendTelephony}
+            icon={<ReloadOutlined />}
+            aria-label="Обновить данные телефонии"
+          />
         </Col>
         <Col span={8}>
           <Button block onClick={() => appendDial('+')}>+</Button>
@@ -700,7 +1013,7 @@ export default function TelephonyDialerModal({
               danger
               block
               icon={<StopOutlined />}
-              disabled={callStatus !== 'calling' && callStatus !== 'connected'}
+              disabled={!['calling', 'connected', 'provider-originated'].includes(callStatus)}
               onClick={handleHangup}
             />
           </Tooltip>
@@ -732,15 +1045,42 @@ export default function TelephonyDialerModal({
 
       <Card size="small">
         <Space size={[8, 8]} wrap>
-          <Tag color={transportTag.color}>{transportTag.text}</Tag>
+          <Tooltip title={transportTag.tooltip}>
+            <Tag color={transportTag.color}>{transportTag.text}</Tag>
+          </Tooltip>
           <Tag color={callTag.color}>{callTag.text}</Tag>
-          <Tag>SIP: {sipStatus}</Tag>
+          <Tooltip title={sipTag.tooltip}>
+            <Tag color={sipTag.color}>{sipTag.text}</Tag>
+          </Tooltip>
           <Tag>{numberLabel !== '-' ? numberLabel : 'extension'}</Tag>
+          {isBridgeMode && dialValidation.targetKind === 'internal' ? (
+            <Tag color="blue">Bridge target: extension/queue</Tag>
+          ) : null}
+          {bridgeRuntimeCall?.queue ? <Tag color="purple">Queue: {bridgeRuntimeCall.queue}</Tag> : null}
+          {bridgeRuntimeCall?.agentExtension ? <Tag color="geekblue">Ext: {bridgeRuntimeCall.agentExtension}</Tag> : null}
+          {bridgeRuntimeCall?.sessionId ? <Tag>SID: {bridgeRuntimeCall.sessionId}</Tag> : null}
         </Space>
       </Card>
 
       {dialNumber && !dialValidation.isValid ? (
         <Alert type="error" showIcon message={dialValidation.message} />
+      ) : null}
+
+      {String(routeMode).toLowerCase() === 'bridge' && dialValidation.isValid ? (
+        <Alert
+          type="info"
+          showIcon
+          message={
+            dialValidation.targetKind === 'internal'
+              ? 'FreePBX bridge: внутренний extension/queue target'
+              : 'FreePBX bridge: серверный originate'
+          }
+          description={
+            bridgeRuntimeCall?.status
+              ? `CRM отслеживает bridge-звонок через active-calls и session_id${bridgeRuntimeCall.sessionId ? ` (${bridgeRuntimeCall.sessionId})` : ''}.`
+              : 'Короткие номера вроде 200-219 разрешены и отслеживаются через active-calls после server originate.'
+          }
+        />
       ) : null}
     </Space>
   );

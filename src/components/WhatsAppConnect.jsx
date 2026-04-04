@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Alert, App, Button, Card, Form, Input, Select, Space, Switch, theme as antdTheme } from 'antd';
 import { ReloadOutlined } from '@ant-design/icons';
 import { connectWhatsAppAccount, discoverWhatsAppAssets } from '../lib/api/integrations/whatsapp.js';
@@ -8,7 +8,7 @@ import ChannelBrandIcon from './channel/ChannelBrandIcon.jsx';
 
 const idsEqual = (left, right) => String(left) === String(right);
 
-export default function WhatsAppConnect({ onSuccess, onCancel }) {
+export default function WhatsAppConnect({ onSuccess, onCancel, onDirtyChange }) {
   const { message } = App.useApp();
   const { token } = antdTheme.useToken();
   const { theme } = useTheme();
@@ -21,6 +21,7 @@ export default function WhatsAppConnect({ onSuccess, onCancel }) {
   const [loading, setLoading] = useState(false);
   const [discovering, setDiscovering] = useState(false);
   const [metaAssets, setMetaAssets] = useState([]);
+  const [dirty, setDirty] = useState(false);
   const selectedBusinessId = Form.useWatch('business_account_id', form);
   const surfaceCardStyle = {
     marginBottom: 24,
@@ -45,6 +46,7 @@ export default function WhatsAppConnect({ onSuccess, onCancel }) {
     try {
       const result = await connectWhatsAppAccount(values);
       message.success(tr('whatsappConnect.messages.connected', 'WhatsApp Business подключен'));
+      setDirty(false);
       onSuccess?.(result);
     } catch (error) {
       message.error(getErrorText(error, tr('whatsappConnect.messages.connectError', 'Ошибка подключения WhatsApp Business')));
@@ -107,6 +109,12 @@ export default function WhatsAppConnect({ onSuccess, onCancel }) {
       businessName: asset.business_name || '',
     }));
 
+  useEffect(() => {
+    onDirtyChange?.(dirty);
+  }, [dirty, onDirtyChange]);
+
+  useEffect(() => () => onDirtyChange?.(false), [onDirtyChange]);
+
   return (
     <div style={{ color: token.colorText }}>
       <Alert
@@ -135,6 +143,7 @@ export default function WhatsAppConnect({ onSuccess, onCancel }) {
             auto_sync_messages: true,
             auto_create_leads: true,
           }}
+          onValuesChange={() => setDirty(true)}
           onFinish={handleSubmit}
         >
         <Form.Item>
@@ -236,7 +245,17 @@ export default function WhatsAppConnect({ onSuccess, onCancel }) {
           </Form.Item>
         </Space>
 
-          <Form.Item style={{ marginBottom: 0 }}>
+          <Form.Item
+            style={{
+              position: 'sticky',
+              bottom: 0,
+              marginBottom: 0,
+              paddingTop: 12,
+              background: isDark ? 'rgba(12, 19, 32, 0.94)' : token.colorBgContainer,
+              borderTop: `1px solid ${isDark ? 'rgba(148, 163, 184, 0.18)' : token.colorBorderSecondary}`,
+              zIndex: 5,
+            }}
+          >
             <Space wrap>
               <Button type="primary" htmlType="submit" loading={loading}>
                 {tr('whatsappConnect.actions.connect', 'Подключить WhatsApp')}

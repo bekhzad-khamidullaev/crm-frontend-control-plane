@@ -8,25 +8,39 @@ import { expect } from '@playwright/test';
 export async function login(page) {
   const username = process.env.E2E_USERNAME || 'admin';
   const password = process.env.E2E_PASSWORD || 't3sl@admin';
-  const apiBase = process.env.PLAYWRIGHT_API_BASE_URL || process.env.VITE_API_BASE_URL || '';
+  const tokenEndpoints = [
+    '/api/token/',
+    'http://127.0.0.1:8080/api/token/',
+  ];
 
-  // API-first auth: faster and more stable than UI typing in CI/headless.
-  const tokenResponse = await page.request.post(
-    apiBase ? `${apiBase}/api/token/` : '/api/token/',
-    { data: { username, password } }
-  );
-  if (tokenResponse.ok()) {
+  // API-first auth: use backend tied to current app/proxy first, then local fallback.
+  for (const tokenUrl of tokenEndpoints) {
+    const tokenResponse = await page.request
+      .post(tokenUrl, { data: { username, password } })
+      .catch(() => null);
+
+    if (!tokenResponse || !tokenResponse.ok()) {
+      continue;
+    }
+
     const payload = await tokenResponse.json();
+    if (!payload?.access) {
+      continue;
+    }
+
     await page.goto('/#/login', { waitUntil: 'domcontentloaded' });
     await page.evaluate(({ access, refresh }) => {
+      sessionStorage.setItem('crm_access_token', access);
       localStorage.setItem('crm_access_token', access);
       if (refresh) {
+        sessionStorage.setItem('crm_refresh_token', refresh);
         localStorage.setItem('crm_refresh_token', refresh);
       }
       const roles = JSON.stringify(['admin']);
       sessionStorage.setItem('enterprise_crm_roles', roles);
       localStorage.setItem('enterprise_crm_roles', roles);
     }, payload);
+
     await page.goto('/#/dashboard', { waitUntil: 'domcontentloaded' });
     await expect(page).toHaveURL(/#\/dashboard/, { timeout: 30000 });
     return;

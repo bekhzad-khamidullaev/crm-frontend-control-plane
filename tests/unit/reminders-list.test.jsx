@@ -2,16 +2,12 @@ import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import * as api from '../../src/lib/api';
 import * as remindersAPI from '../../src/lib/api/reminders';
-import * as rbac from '../../src/lib/rbac';
 import RemindersList from '../../src/modules/reminders/RemindersList';
 import * as router from '../../src/router';
 
 // Mock dependencies
 vi.mock('../../src/lib/api/reminders');
 vi.mock('../../src/lib/api');
-vi.mock('../../src/lib/rbac', () => ({
-  canWrite: vi.fn(),
-}));
 vi.mock('../../src/router');
 
 vi.mock('../../src/components/EntitySelect', () => ({
@@ -92,12 +88,10 @@ const mockReminders = [
 describe('RemindersList', () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    rbac.canWrite.mockReturnValue(true);
     remindersAPI.getReminders.mockResolvedValue({
       results: mockReminders,
       count: mockReminders.length,
     });
-    remindersAPI.getReminderContentTypes.mockResolvedValue({ results: [] });
     remindersAPI.deleteReminder.mockResolvedValue(undefined);
     remindersAPI.updateReminder.mockResolvedValue({ id: 1 });
     api.getUsers.mockResolvedValue({ results: [] });
@@ -172,9 +166,8 @@ describe('RemindersList', () => {
         expect(screen.getByText('Call client')).toBeInTheDocument();
       });
 
-      const activeFilter = document.querySelector('.ant-select-selector');
-      fireEvent.mouseDown(activeFilter);
-      fireEvent.click(await screen.findByText('Активные'));
+      const activeFilter = screen.getByLabelText(/Фильтр активности/i);
+      fireEvent.change(activeFilter, { target: { value: 'true' } });
 
       await waitFor(() => {
         expect(remindersAPI.getReminders).toHaveBeenCalledWith(
@@ -206,10 +199,10 @@ describe('RemindersList', () => {
       render(<RemindersList />);
 
       await waitFor(() => {
-        expect(screen.getByRole('button', { name: /новое напоминание/i })).toBeInTheDocument();
+        expect(screen.getByText(/Новое напоминание/i)).toBeInTheDocument();
       });
 
-      const newButton = screen.getByRole('button', { name: /новое напоминание/i });
+      const newButton = screen.getByText(/Новое напоминание/i);
       fireEvent.click(newButton);
 
       expect(router.navigate).toHaveBeenCalledWith('/reminders/new');
@@ -237,12 +230,21 @@ describe('RemindersList', () => {
         expect(screen.getByText('Call client')).toBeInTheDocument();
       });
 
-      const deleteButtons = screen.getAllByRole('button', { name: 'Удалить' });
+      const deleteButtons = screen.getAllByText('Удалить');
+      // The first one is in the table row
       fireEvent.click(deleteButtons[0]);
 
       await waitFor(() => {
-        const confirmButtons = screen.getAllByRole('button', { name: 'Удалить' });
-        fireEvent.click(confirmButtons[confirmButtons.length - 1]);
+        // Now find the "Удалить" in the AlertDialog
+        // We use getAllByRole and filter or use the container if needed
+        // but typically the dialog is last.
+        const confirmButton = screen.getAllByRole('button', { name: 'Удалить' }).find(btn => btn.closest('.fixed') || btn.closest('[role="dialog"]'));
+        if (confirmButton) {
+           fireEvent.click(confirmButton);
+        } else {
+           // fallback to index if structure is simple
+           fireEvent.click(screen.getAllByText('Удалить').pop());
+        }
       });
 
       await waitFor(() => {
@@ -253,19 +255,14 @@ describe('RemindersList', () => {
 
   describe('Pagination', () => {
     it('updates page on pagination change', async () => {
-      remindersAPI.getReminders.mockResolvedValue({
-        results: mockReminders,
-        count: 25,
-      });
-
       render(<RemindersList />);
 
       await waitFor(() => {
         expect(screen.getByText('Call client')).toBeInTheDocument();
       });
 
-      const pageTwo = document.querySelector('.ant-pagination-item-2');
-      fireEvent.click(pageTwo);
+      const nextButton = screen.getByText('Вперёд');
+      fireEvent.click(nextButton);
 
       await waitFor(() => {
         expect(remindersAPI.getReminders).toHaveBeenCalledWith(

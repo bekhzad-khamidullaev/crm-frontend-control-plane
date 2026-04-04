@@ -3,7 +3,7 @@ import { App, Button, Card, Descriptions, Modal, Result, Skeleton, Space, Tag, T
 import { useEffect, useState } from 'react';
 import { deleteProduct, getProduct } from '../../lib/api/products';
 import { canWrite } from '../../lib/rbac.js';
-import { formatCurrency } from '../../lib/utils/format';
+import { formatCurrencyForRecord, resolveCurrencyCode } from '../../lib/utils/format';
 import { navigate } from '../../router';
 
 const { Title, Text } = Typography;
@@ -63,8 +63,7 @@ export default function ProductDetail({ id }) {
   if (!data) {
     return <Result status="404" title="Продукт не найден" extra={<Button onClick={() => navigate('/products')}>К каталогу продуктов</Button>} />;
   }
-
-  const currencyCode = data.currency_code;
+  const currencyCode = resolveCurrencyCode(data, { fallback: null });
 
   return (
     <Space direction="vertical" size={16} style={{ width: '100%' }}>
@@ -89,7 +88,7 @@ export default function ProductDetail({ id }) {
       </Card>
 
       <Space wrap>
-        <Card size="small" title="Цена">{currencyCode ? formatCurrency(data.price, currencyCode) : '-'}</Card>
+        <Card size="small" title="Цена">{formatCurrencyForRecord(data.price, data)}</Card>
         <Card size="small" title="Категория">{data.category_name || '-'}</Card>
         <Card size="small" title="Тип">{data.type === 'S' ? 'Услуга' : data.type === 'G' ? 'Товар' : '-'}</Card>
       </Space>
@@ -98,7 +97,7 @@ export default function ProductDetail({ id }) {
         <Descriptions bordered column={{ xs: 1, sm: 1, md: 2 }}>
           <Descriptions.Item label="Название" span={2}>{data.name}</Descriptions.Item>
           <Descriptions.Item label="Категория">{data.category_name || '-'}</Descriptions.Item>
-          <Descriptions.Item label="Цена">{currencyCode ? formatCurrency(data.price, currencyCode) : '-'}</Descriptions.Item>
+          <Descriptions.Item label="Цена">{formatCurrencyForRecord(data.price, data)}</Descriptions.Item>
           <Descriptions.Item label="Тип"><Tag color={data.type === 'S' ? 'blue' : 'green'}>{data.type === 'S' ? 'Услуга' : data.type === 'G' ? 'Товар' : '-'}</Tag></Descriptions.Item>
           <Descriptions.Item label="В продаже"><Tag color={data.on_sale ? 'green' : 'default'}>{data.on_sale ? 'Да' : 'Нет'}</Tag></Descriptions.Item>
           <Descriptions.Item label="Валюта">{currencyCode || '-'}</Descriptions.Item>

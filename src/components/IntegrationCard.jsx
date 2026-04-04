@@ -4,7 +4,7 @@
  */
 
 import React, { useState } from 'react';
-import { Card, Button, Space, Tag, Statistic, Row, Col, App, Spin, Alert, Typography, theme as antdTheme } from 'antd';
+import { Card, Button, Space, Tag, Statistic, Row, Col, App, Spin, Alert, theme as antdTheme, Typography } from 'antd';
 import {
   CheckCircleOutlined,
   CloseCircleOutlined,
@@ -40,19 +40,14 @@ export default function IntegrationCard({
   const { theme } = useTheme();
   const isDark = theme === 'dark';
   const [actionLoading, setActionLoading] = useState(false);
-  const tt = (key, fallback) => {
-    const translated = t(key);
-    return translated === key ? fallback : translated;
-  };
 
   const isConnected = status === 'connected';
   const hasError = status === 'error';
   const isRestricted = !!disabled;
-  const restrictionTitle = tt('integrationCard.messages.restrictedTitle', 'Действие ограничено лицензией');
-  const restrictionDescription = disabledReason || tt(
-    'integrationCard.messages.restrictedDescription',
-    'Обновите лицензию для доступа к интеграциям',
-  );
+  const restrictionTitle = t('integrationCard.messages.restrictedTitle', 'Действие ограничено лицензией');
+  const restrictionDescription =
+    disabledReason ||
+    t('integrationCard.messages.restrictedDescription', 'Обновите лицензию для доступа к интеграциям');
 
   const handleConnect = async () => {
     if (isRestricted) return;
@@ -187,7 +182,7 @@ export default function IntegrationCard({
             style={{
               display: 'block',
               margin: 0,
-              color: token.colorTextSecondary,
+              color: isDark ? token.colorTextSecondary : token.colorTextSecondary,
               lineHeight: 1.6,
               fontSize: 14,
               maxWidth: 960,
@@ -210,6 +205,7 @@ export default function IntegrationCard({
               }}
             />
           )}
+
           {isRestricted && (
             <Alert
               message={restrictionTitle}
@@ -217,7 +213,7 @@ export default function IntegrationCard({
                 <Space direction="vertical" size={2} style={{ width: '100%' }}>
                   <div style={{ lineHeight: 1.55 }}>{restrictionDescription}</div>
                   <div style={{ fontSize: 12, lineHeight: 1.45, color: token.colorTextSecondary }}>
-                    {tt(
+                    {t(
                       'integrationCard.messages.restrictedHint',
                       'Connect, test, and settings actions remain disabled until the restriction is removed.',
                     )}

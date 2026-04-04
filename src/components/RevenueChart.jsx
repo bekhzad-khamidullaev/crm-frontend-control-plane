@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Card, Select, Space, Spin, Empty } from 'antd';
+import { Card, Select, Space, Spin, Empty, Alert, Button } from 'antd';
 import { LineChartOutlined } from '@ant-design/icons';
 import { Line } from 'react-chartjs-2';
 import {
@@ -14,7 +14,8 @@ import {
   Filler
 } from 'chart.js';
 import { getDashboardAnalytics } from '../lib/api/analytics';
-import { formatNumber } from '../lib/utils/format';
+import { resolveCurrencyCode } from '../lib/utils/format';
+import { formatAnalyticsMonetaryValue } from '../lib/utils/analyticsCurrency.js';
 
 // Register ChartJS components
 ChartJS.register(
@@ -30,6 +31,7 @@ ChartJS.register(
 
 export default function RevenueChart() {
   const [data, setData] = useState(null);
+  const [error, setError] = useState(null);
   const [loading, setLoading] = useState(true);
   const [period, setPeriod] = useState('30d');
 
@@ -39,9 +41,19 @@ export default function RevenueChart() {
 
   const fetchData = async () => {
     setLoading(true);
+    setError(null);
     try {
       const analytics = await getDashboardAnalytics({ period });
       const series = analytics?.monthly_growth || analytics?.revenue || analytics?.data;
+      const currencyCode =
+        resolveCurrencyCode(series, {
+          currencyKeys: ['currency_code', 'currency_name', 'currency'],
+          fallback: null,
+        }) ||
+        resolveCurrencyCode(analytics, {
+          currencyKeys: ['currency_code', 'currency_name', 'currency'],
+          fallback: null,
+        });
 
       let labels = [];
       let values = [];
@@ -49,6 +61,9 @@ export default function RevenueChart() {
       if (series?.labels && Array.isArray(series?.revenue)) {
         labels = series.labels;
         values = series.revenue;
+      } else if (series?.labels && Array.isArray(series?.revenue_series)) {
+        labels = series.labels;
+        values = series.revenue_series;
       } else if (series?.labels && Array.isArray(series?.values)) {
         labels = series.labels;
         values = series.values;
@@ -67,6 +82,7 @@ export default function RevenueChart() {
 
       setData({
         labels,
+        currencyCode,
         datasets: [
           {
             label: 'Выручка',
@@ -81,6 +97,7 @@ export default function RevenueChart() {
     } catch (error) {
       console.error('Failed to fetch revenue data:', error);
       setData(null);
+      setError(error);
     } finally {
       setLoading(false);
     }
@@ -99,6 +116,18 @@ export default function RevenueChart() {
       tooltip: {
         mode: 'index',
         intersect: false,
+        callbacks: {
+          label: function(context) {
+            let label = context.dataset.label || '';
+            if (label) {
+              label += ': ';
+            }
+            if (context.parsed.y !== null) {
+              label += formatAnalyticsMonetaryValue(context.parsed.y, { currencyCode: data?.currencyCode ?? null });
+            }
+            return label;
+          },
+        },
       },
     },
     scales: {
@@ -106,7 +135,7 @@ export default function RevenueChart() {
         beginAtZero: true,
         ticks: {
           callback: function(value) {
-            return formatNumber(value);
+            return formatAnalyticsMonetaryValue(value, { currencyCode: data?.currencyCode ?? null });
           }
         }
       },
@@ -143,6 +172,18 @@ export default function RevenueChart() {
         <div style={{ textAlign: 'center', padding: '80px' }}>
           <Spin size="large" />
         </div>
+      ) : error ? (
+        <Alert
+          type="error"
+          showIcon
+          message="Ошибка загрузки"
+          description={error.message || 'Не удалось загрузить данные'}
+          action={
+            <Button size="small" onClick={fetchData}>
+              Повторить
+            </Button>
+          }
+        />
       ) : !data ? (
         <Empty description="Нет данных" style={{ padding: '80px' }} />
       ) : (

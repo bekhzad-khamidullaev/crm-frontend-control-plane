@@ -6,6 +6,13 @@ export const contactSchema = z.object({
   middle_name: z.string().optional(),
   email: z.string().email('Некорректный email').optional().or(z.literal('')),
   phone: z.string().optional(),
+  mobile: z.string().optional(),
+  other_phone: z.string().optional(),
+  telegram_username: z.string().optional(),
+  telegram_chat_id: z.string().optional(),
+  instagram_username: z.string().optional(),
+  instagram_recipient_id: z.string().optional(),
+  facebook_psid: z.string().optional(),
   title: z.string().optional(), // Position
   company: z.number().nullable().optional(),
 

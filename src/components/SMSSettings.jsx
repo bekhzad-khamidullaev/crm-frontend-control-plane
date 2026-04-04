@@ -32,7 +32,7 @@ import ChannelBrandIcon from './channel/ChannelBrandIcon.jsx';
 
 const { TextArea } = Input;
 
-export default function SMSSettings({ onSuccess }) {
+export default function SMSSettings({ onSuccess, onDirtyChange }) {
   const { message } = App.useApp();
   const tr = (key, fallback, vars = {}) => {
     const localized = t(key, vars);
@@ -48,6 +48,14 @@ export default function SMSSettings({ onSuccess }) {
   const [providerModal, setProviderModal] = useState({ open: false, record: null });
   const [savingProvider, setSavingProvider] = useState(false);
   const [deletingId, setDeletingId] = useState(null);
+  const [testDirty, setTestDirty] = useState(false);
+  const [providerDirty, setProviderDirty] = useState(false);
+
+  useEffect(() => {
+    onDirtyChange?.(testDirty || providerDirty);
+  }, [testDirty, providerDirty, onDirtyChange]);
+
+  useEffect(() => () => onDirtyChange?.(false), [onDirtyChange]);
 
   useEffect(() => {
     loadProviders();
@@ -66,6 +74,7 @@ export default function SMSSettings({ onSuccess }) {
           form.setFieldsValue({ channel_id: firstId });
         }
       }
+      setTestDirty(false);
     } catch (error) {
       console.error('Error loading SMS providers:', error);
       message.error(tr('smsSettings.messages.loadProvidersError', 'Не удалось загрузить список SMS провайдеров'));
@@ -168,6 +177,7 @@ export default function SMSSettings({ onSuccess }) {
       });
       if (response?.status === 'ok') {
         message.success(tr('smsSettings.messages.testSent', 'Тестовое SMS отправлено'));
+        setTestDirty(false);
       } else {
         message.error(response?.detail || tr('smsSettings.messages.providerError', 'Провайдер вернул ошибку'));
         return;
@@ -183,6 +193,7 @@ export default function SMSSettings({ onSuccess }) {
 
   const openProviderModal = (record = null) => {
     setProviderModal({ open: true, record });
+    setProviderDirty(false);
     const initialValues = record
       ? {
           type: record.type || record.provider,
@@ -208,6 +219,7 @@ export default function SMSSettings({ onSuccess }) {
   const closeProviderModal = () => {
     setProviderModal({ open: false, record: null });
     providerForm.resetFields();
+    setProviderDirty(false);
   };
 
   const handleSaveProvider = async () => {
@@ -238,6 +250,7 @@ export default function SMSSettings({ onSuccess }) {
         message.success(tr('smsSettings.messages.providerAdded', 'SMS провайдер добавлен'));
       }
       closeProviderModal();
+      setProviderDirty(false);
       await Promise.all([loadProviders(), loadStatus()]);
       onSuccess?.();
     } catch (error) {
@@ -392,12 +405,19 @@ export default function SMSSettings({ onSuccess }) {
 
       <Card title={tr('smsSettings.test.title', 'Тестовая отправка')}>
         <Form form={form} layout="vertical" onFinish={handleSendTest}>
+          <Form.Item hidden name="_dirty_marker">
+            <Input />
+          </Form.Item>
           <Form.Item
             label={tr('smsSettings.test.channel', 'Канал отправки')}
             name="channel_id"
             rules={[{ required: true, message: tr('smsSettings.validation.selectChannel', 'Выберите канал') }]}
           >
-            <Select options={providerOptions} placeholder={tr('smsSettings.placeholders.selectProvider', 'Выберите провайдера')} />
+            <Select
+              options={providerOptions}
+              placeholder={tr('smsSettings.placeholders.selectProvider', 'Выберите провайдера')}
+              onChange={() => setTestDirty(true)}
+            />
           </Form.Item>
 
           <Form.Item
@@ -408,7 +428,7 @@ export default function SMSSettings({ onSuccess }) {
               { pattern: /^\+?[\d\s\-\(\)]+$/, message: tr('smsSettings.validation.invalidPhone', 'Неверный формат номера') },
             ]}
           >
-            <Input />
+            <Input onChange={() => setTestDirty(true)} />
           </Form.Item>
 
           <Form.Item
@@ -416,14 +436,34 @@ export default function SMSSettings({ onSuccess }) {
             name="text"
             rules={[{ required: true, message: tr('smsSettings.validation.enterMessageText', 'Введите текст сообщения') }]}
           >
-            <TextArea rows={4} maxLength={1000} showCount />
+            <TextArea rows={4} maxLength={1000} showCount onChange={() => setTestDirty(true)} />
           </Form.Item>
 
-          <Form.Item>
+          <Form.Item
+            style={{
+              position: 'sticky',
+              bottom: 0,
+              marginBottom: 0,
+              paddingTop: 12,
+              background: 'var(--ant-color-bg-container, #fff)',
+              borderTop: '1px solid var(--ant-color-border-secondary, #f0f0f0)',
+              zIndex: 5,
+            }}
+          >
             <Space>
               <Button type="primary" htmlType="submit" icon={<ChannelBrandIcon channel="sms" size={16} />} loading={sending}>
                 {tr('smsSettings.actions.sendTest', 'Отправить тест')}
               </Button>
+              {testDirty ? (
+                <Button
+                  onClick={() => {
+                    form.resetFields();
+                    setTestDirty(false);
+                  }}
+                >
+                  {tr('actions.reset', 'Сбросить')}
+                </Button>
+              ) : null}
             </Space>
           </Form.Item>
         </Form>
@@ -438,7 +478,7 @@ export default function SMSSettings({ onSuccess }) {
         confirmLoading={savingProvider}
         width={720}
       >
-        <Form form={providerForm} layout="vertical">
+        <Form form={providerForm} layout="vertical" onValuesChange={() => setProviderDirty(true)}>
           <Row gutter={16}>
             <Col span={12}>
               <Form.Item label={tr('smsSettings.form.providerType', 'Тип провайдера')} name="type" rules={[{ required: true, message: tr('smsSettings.validation.selectProvider', 'Выберите провайдера') }]}>
@@ -523,36 +563,28 @@ export default function SMSSettings({ onSuccess }) {
                     name="playmobile_api_url"
                     rules={[{ required: true, message: tr('smsSettings.validation.apiUrl', 'Укажите API URL') }]}
                   >
-                    <Input
-                      placeholder="https://send.smsxabar.uz/broker-api/send"
-                      addonAfter={
-                        <Button
-                          type="text"
-                          size="small"
-                          icon={<CopyOutlined />}
-                          onClick={() => handleCopyProviderUrl('playmobile_api_url')}
-                        >
-                          {tr('smsSettings.actions.copy', 'Скопировать')}
-                        </Button>
-                      }
-                    />
+                    <Space.Compact style={{ width: '100%' }}>
+                      <Input placeholder="https://send.smsxabar.uz/broker-api/send" />
+                      <Button
+                        icon={<CopyOutlined />}
+                        onClick={() => handleCopyProviderUrl('playmobile_api_url')}
+                      >
+                        {tr('smsSettings.actions.copy', 'Скопировать')}
+                      </Button>
+                    </Space.Compact>
                   </Form.Item>
                 </Col>
                 <Col span={12}>
                   <Form.Item label={tr('smsSettings.form.statusUrl', 'Status URL')} name="playmobile_status_url">
-                    <Input
-                      placeholder="https://send.smsxabar.uz/broker-api/status"
-                      addonAfter={
-                        <Button
-                          type="text"
-                          size="small"
-                          icon={<CopyOutlined />}
-                          onClick={() => handleCopyProviderUrl('playmobile_status_url')}
-                        >
-                          {tr('smsSettings.actions.copy', 'Скопировать')}
-                        </Button>
-                      }
-                    />
+                    <Space.Compact style={{ width: '100%' }}>
+                      <Input placeholder="https://send.smsxabar.uz/broker-api/status" />
+                      <Button
+                        icon={<CopyOutlined />}
+                        onClick={() => handleCopyProviderUrl('playmobile_status_url')}
+                      >
+                        {tr('smsSettings.actions.copy', 'Скопировать')}
+                      </Button>
+                    </Space.Compact>
                   </Form.Item>
                 </Col>
               </Row>

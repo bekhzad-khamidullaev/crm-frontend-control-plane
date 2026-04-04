@@ -8,6 +8,7 @@
 export type PatchedRequest = {
     readonly id?: number;
     readonly ticket?: string;
+    request_for?: string;
     description?: string;
     owner?: number | null;
     readonly owner_name?: string | null;

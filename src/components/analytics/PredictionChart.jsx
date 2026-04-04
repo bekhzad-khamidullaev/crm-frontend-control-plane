@@ -2,28 +2,25 @@ import React, { useEffect, useRef } from 'react';
 import PropTypes from 'prop-types';
 import Chart from 'chart.js/auto';
 import { Card, Empty, theme, Typography } from 'antd';
-import { formatCurrency, formatNumber } from '../../lib/utils/format';
+import { formatAnalyticsMonetaryValue } from '../../lib/utils/analyticsCurrency.js';
 
 /**
  * Prediction/Forecast chart component with confidence intervals
  * Shows predicted values with upper and lower bounds
  */
-function PredictionChart({
-  labels = [],
-  predictedData = [],
-  confidenceLower = [],
+function PredictionChart({ 
+  labels = [], 
+  predictedData = [], 
+  confidenceLower = [], 
   confidenceUpper = [],
-  currencyCode = null,
-  formatAsCurrency = false,
   title = 'Прогноз выручки',
   height = 300,
+  currencyCode = null,
 }) {
   const { token } = theme.useToken();
   const chartRef = useRef(null);
   const chartInstance = useRef(null);
   const hasData = Array.isArray(predictedData) && predictedData.length > 0;
-  const formatValue = (value) =>
-    formatAsCurrency && currencyCode ? formatCurrency(value, currencyCode) : formatNumber(value);
 
   useEffect(() => {
     if (!chartRef.current || !hasData) return;
@@ -98,29 +95,29 @@ function PredictionChart({
           },
           tooltip: {
             callbacks: {
-              label: function (context) {
+              label: function(context) {
                 let label = context.dataset.label || '';
                 if (label) {
                   label += ': ';
                 }
                 if (context.parsed.y !== null) {
-                  label += formatValue(context.parsed.y);
+                  label += formatAnalyticsMonetaryValue(context.parsed.y, { currencyCode });
                 }
                 return label;
-              },
-            },
-          },
+              }
+            }
+          }
         },
         scales: {
           y: {
             beginAtZero: false,
             ticks: {
-              callback: function (value) {
-                return formatValue(value);
-              },
-            },
-          },
-        },
+              callback: function(value) {
+                return formatAnalyticsMonetaryValue(value, { currencyCode });
+              }
+            }
+          }
+        }
       },
     });
 
@@ -129,20 +126,7 @@ function PredictionChart({
         chartInstance.current.destroy();
       }
     };
-  }, [
-    currencyCode,
-    formatAsCurrency,
-    labels,
-    predictedData,
-    confidenceLower,
-    confidenceUpper,
-    title,
-    hasData,
-    token.colorPrimary,
-    token.colorPrimaryBg,
-    token.colorPrimaryBgHover,
-    token.colorPrimaryBorder,
-  ]);
+  }, [labels, predictedData, confidenceLower, confidenceUpper, title, token.colorPrimary, token.colorPrimaryBg, token.colorPrimaryBgHover, token.colorPrimaryBorder, hasData, currencyCode]);
 
   return (
     <Card size="small" styles={{ body: { padding: 12 } }}>
@@ -150,10 +134,13 @@ function PredictionChart({
         {title}
       </Typography.Title>
       {!hasData ? (
-        <Empty image={Empty.PRESENTED_IMAGE_SIMPLE} description="Нет данных для построения прогноза" />
+        <Empty
+          image={Empty.PRESENTED_IMAGE_SIMPLE}
+          description="Нет данных для построения прогноза"
+        />
       ) : (
         <div style={{ position: 'relative', height: `${height}px` }}>
-          <canvas ref={chartRef}></canvas>
+          <canvas ref={chartRef} />
         </div>
       )}
     </Card>
@@ -165,10 +152,9 @@ PredictionChart.propTypes = {
   predictedData: PropTypes.array.isRequired,
   confidenceLower: PropTypes.array,
   confidenceUpper: PropTypes.array,
-  currencyCode: PropTypes.string,
-  formatAsCurrency: PropTypes.bool,
   title: PropTypes.string,
   height: PropTypes.number,
+  currencyCode: PropTypes.string,
 };
 
 export default PredictionChart;

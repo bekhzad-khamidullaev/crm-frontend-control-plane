@@ -35,8 +35,30 @@ export type PatchedContact = {
     email?: string;
     secondary_email?: string;
     phone?: string;
+    phone_e164?: string;
     other_phone?: string;
     mobile?: string;
+    mobile_e164?: string;
+    /**
+     * Telegram username without @
+     */
+    telegram_username?: string;
+    /**
+     * Telegram chat id for direct messages
+     */
+    telegram_chat_id?: string;
+    /**
+     * Instagram handle without @
+     */
+    instagram_username?: string;
+    /**
+     * Instagram recipient id for direct messages
+     */
+    instagram_recipient_id?: string;
+    /**
+     * Facebook Messenger PSID
+     */
+    facebook_psid?: string;
     city_name?: string;
     /**
      * Object of City in database

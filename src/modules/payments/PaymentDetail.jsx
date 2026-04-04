@@ -1,23 +1,12 @@
 import dayjs from 'dayjs';
-import { ArrowLeftOutlined, DollarOutlined, EditOutlined, DeleteOutlined } from '@ant-design/icons';
+import { ArrowLeftOutlined, CreditCardOutlined, EditOutlined, DeleteOutlined } from '@ant-design/icons';
 import { useEffect, useState } from 'react';
 
-import {
-  App,
-  Button,
-  Card,
-  Descriptions,
-  Modal,
-  Result,
-  Skeleton,
-  Space,
-  Tag,
-  Typography,
-} from 'antd';
+import { App, Button, Card, Descriptions, Modal, Result, Skeleton, Space, Tag, Typography } from 'antd';
 
 import { deletePayment, getPayment } from '../../lib/api/payments';
 import { canWrite } from '../../lib/rbac.js';
-import { formatCurrency } from '../../lib/utils/format';
+import { formatCurrencyForRecord } from '../../lib/utils/format';
 import { navigate } from '../../router';
 
 const { Title } = Typography;
@@ -34,7 +23,6 @@ export default function PaymentDetail({ id }) {
   const canManage = canWrite('crm.change_payment');
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
-  const [loadError, setLoadError] = useState('');
   const [confirmOpen, setConfirmOpen] = useState(false);
 
   useEffect(() => {
@@ -44,18 +32,12 @@ export default function PaymentDetail({ id }) {
 
   const fetchData = async () => {
     setLoading(true);
-    setLoadError('');
     try {
       const res = await getPayment(id);
       setData(res);
-    } catch (error) {
+    } catch {
+      message.error('Не удалось загрузить платеж');
       setData(null);
-      setLoadError(
-        error?.details?.message ||
-          error?.details?.detail ||
-          error?.message ||
-          'Не удалось загрузить платеж'
-      );
     } finally {
       setLoading(false);
     }
@@ -75,24 +57,6 @@ export default function PaymentDetail({ id }) {
     return <Skeleton active paragraph={{ rows: 6 }} />;
   }
 
-  if (loadError) {
-    return (
-      <Result
-        status="error"
-        title="Не удалось загрузить платеж"
-        subTitle={loadError}
-        extra={[
-          <Button key="retry" type="primary" onClick={fetchData}>
-            Повторить
-          </Button>,
-          <Button key="back" onClick={() => navigate('/payments')}>
-            Вернуться к платежам
-          </Button>,
-        ]}
-      />
-    );
-  }
-
   if (!data) {
     return (
       <Result
@@ -109,7 +73,7 @@ export default function PaymentDetail({ id }) {
       <Space direction="vertical" size={16} style={{ width: '100%' }}>
         <Space wrap style={{ width: '100%', justifyContent: 'space-between' }}>
           <Title level={3} style={{ margin: 0 }}>
-            <DollarOutlined size={18} /> Платеж
+            <CreditCardOutlined size={18} /> Платеж
           </Title>
           <Space>
             <Button icon={<ArrowLeftOutlined size={14} />} onClick={() => navigate('/payments')}>
@@ -117,11 +81,7 @@ export default function PaymentDetail({ id }) {
             </Button>
             {canManage ? (
               <>
-                <Button
-                  type="primary"
-                  icon={<EditOutlined size={14} />}
-                  onClick={() => navigate(`/payments/${id}/edit`)}
-                >
+                <Button type="primary" icon={<EditOutlined size={14} />} onClick={() => navigate(`/payments/${id}/edit`)}>
                   Редактировать
                 </Button>
                 <Button danger icon={<DeleteOutlined size={14} />} onClick={() => setConfirmOpen(true)}>
@@ -133,20 +93,13 @@ export default function PaymentDetail({ id }) {
         </Space>
 
         <Descriptions bordered column={1} size="small">
-          <Descriptions.Item label="Сумма">
-            {data.currency_code ? formatCurrency(data.amount, data.currency_code) : '-'}
-          </Descriptions.Item>
-          <Descriptions.Item label="Валюта">{data.currency_code || '-'}</Descriptions.Item>
+          <Descriptions.Item label="Сумма">{formatCurrencyForRecord(data.amount, data)}</Descriptions.Item>
           <Descriptions.Item label="Статус">
             <Tag>{statusOptions[data.status] || data.status || '—'}</Tag>
           </Descriptions.Item>
-          <Descriptions.Item label="Дата платежа">
-            {data.payment_date ? dayjs(data.payment_date).format('DD.MM.YYYY') : '-'}
-          </Descriptions.Item>
+          <Descriptions.Item label="Дата платежа">{data.payment_date ? dayjs(data.payment_date).format('DD.MM.YYYY') : '-'}</Descriptions.Item>
           <Descriptions.Item label="Сделка">{data.deal_name || '-'}</Descriptions.Item>
-          <Descriptions.Item label="Номер договора">
-            {data.contract_number || '-'}
-          </Descriptions.Item>
+          <Descriptions.Item label="Номер договора">{data.contract_number || '-'}</Descriptions.Item>
           <Descriptions.Item label="Номер счета">{data.invoice_number || '-'}</Descriptions.Item>
           <Descriptions.Item label="Номер заказа">{data.order_number || '-'}</Descriptions.Item>
         </Descriptions>

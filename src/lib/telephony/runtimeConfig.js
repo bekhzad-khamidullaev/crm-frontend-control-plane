@@ -1,5 +1,5 @@
 import { getSIPConfig, getVoipSystemSettings } from '../api/telephony.js';
-import { getProfile } from '../api/user.js';
+import { getProfile, getTelephonyCredentials } from '../api/user.js';
 import {
   DEFAULT_STUN_SERVERS,
   DEFAULT_TELEPHONY_PROVIDER,
@@ -113,12 +113,15 @@ function getActiveConnection(connectionsResponse) {
   return list.find((item) => item?.active) || list[0] || null;
 }
 
-function buildSipConfigFromBackend(profile, activeConnection, runtimeSettings) {
+function buildSipConfigFromBackend(profile, activeConnection, runtimeSettings, telephonyCredentials = {}) {
   const { username: sipUsernameFromUri, realm: sipRealmFromUri } = parseSipIdentity(profile?.jssip_sip_uri);
+  const credentials = telephonyCredentials && typeof telephonyCredentials === 'object' ? telephonyCredentials : {};
+  const credentialsExtension = String(credentials?.extension || '').trim();
+  const credentialsLogin = String(credentials?.login || '').trim();
 
-  const username = sipUsernameFromUri || String(profile?.pbx_number || '').trim();
+  const username = sipUsernameFromUri || credentialsLogin || credentialsExtension || String(profile?.pbx_number || '').trim();
   const realm = sipRealmFromUri;
-  const password = String(profile?.jssip_sip_password || '').trim();
+  const password = String(credentials?.password || profile?.jssip_sip_password || '').trim();
   const websocketProxyUrl = normalizeSipWebSocketUrl(profile?.jssip_ws_uri, ENV_SIP_WS_URL);
   const displayName =
     String(profile?.jssip_display_name || '').trim() ||
@@ -137,11 +140,15 @@ function buildSipConfigFromBackend(profile, activeConnection, runtimeSettings) {
     phoneNumber:
       String(activeConnection?.number || '').trim() ||
       String(activeConnection?.callerid || '').trim() ||
+      credentialsExtension ||
       String(profile?.pbx_number || '').trim(),
+    extension: credentialsExtension || String(profile?.pbx_number || '').trim(),
+    login: credentialsLogin || username,
     routeMode: normalizeRouteMode(runtimeSettings?.telephony_route_mode),
     provider: normalizeProvider(runtimeSettings?.telephony_provider || activeConnection?.provider || DEFAULT_TELEPHONY_PROVIDER),
     profile,
     activeConnection,
+    telephonyCredentials: credentials,
   };
 }
 
@@ -151,20 +158,27 @@ export function hasValidSipConfig(config) {
 
 export async function loadTelephonyRuntimeConfig(options = {}) {
   const { includeSystemSettings = true } = options;
-  const [profile, sipConnectionsResponse, systemSettings] = await Promise.all([
+  const [profile, sipConnectionsResponse, systemSettings, telephonyCredentials] = await Promise.all([
     getProfile(),
     getSIPConfig().catch(() => ({ results: [] })),
     includeSystemSettings ? getVoipSystemSettings().catch(() => ({})) : Promise.resolve({}),
+    getTelephonyCredentials().catch(() => null),
   ]);
 
   const activeConnection = getActiveConnection(sipConnectionsResponse);
-  const sipConfig = buildSipConfigFromBackend(profile || {}, activeConnection, systemSettings || {});
+  const sipConfig = buildSipConfigFromBackend(
+    profile || {},
+    activeConnection,
+    systemSettings || {},
+    telephonyCredentials || {},
+  );
 
   return {
     profile,
     systemSettings: systemSettings || {},
     connections: Array.isArray(sipConnectionsResponse?.results) ? sipConnectionsResponse.results : [],
     activeConnection,
+    telephonyCredentials,
     sipConfig,
     sipReady: hasValidSipConfig(sipConfig),
   };

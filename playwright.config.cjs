@@ -78,7 +78,7 @@ module.exports = defineConfig({
 
   // Web server configuration (starts dev server if not running)
   webServer: {
-    command: 'VITE_API_BASE_URL=${PLAYWRIGHT_API_BASE_URL:-http://127.0.0.1:8000} VITE_PROXY_TARGET=${PLAYWRIGHT_API_BASE_URL:-http://127.0.0.1:8000} npm run dev',
+    command: 'VITE_API_BASE_URL=${PLAYWRIGHT_API_BASE_URL:-http://127.0.0.1:8080} VITE_PROXY_TARGET=${PLAYWRIGHT_API_BASE_URL:-http://127.0.0.1:8080} npm run dev',
     url: process.env.PLAYWRIGHT_BASE_URL || process.env.BASE_URL || 'http://localhost:3000',
     reuseExistingServer: !process.env.CI, // Reuse server in dev, start fresh in CI
     timeout: 120 * 1000, // 2 minutes to start

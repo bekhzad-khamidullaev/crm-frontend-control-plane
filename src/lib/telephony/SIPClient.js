@@ -2,6 +2,7 @@
  * SIPClient - WebRTC VoIP client wrapper based on JsSIP
  * Handles SIP registration, calls (incoming/outgoing), and call management
  */
+import JsSIP from 'jssip';
 
 class SIPClient {
   constructor() {
@@ -29,14 +30,15 @@ class SIPClient {
       error: [],
     };
 
+    const appConfig = (typeof window !== 'undefined' && window.__APP_CONFIG__) || {};
     this.config = {
-      realm: import.meta.env.VITE_SIP_REALM || 'pbx.evos.uz',
-      impi: import.meta.env.VITE_SIP_USERNAME || '',
+      realm: appConfig.SIP_REALM || import.meta.env.VITE_SIP_REALM || 'pbx.evos.uz',
+      impi: appConfig.SIP_USERNAME || import.meta.env.VITE_SIP_USERNAME || '',
       impu: null,
-      password: import.meta.env.VITE_SIP_PASSWORD || '',
-      display_name: import.meta.env.VITE_SIP_DISPLAY_NAME || 'CRM User',
-      websocket_proxy_url: import.meta.env.VITE_SIP_SERVER || '',
-      ice_servers: [{ urls: import.meta.env.VITE_STUN_SERVER || 'stun:stun.l.google.com:19302' }],
+      password: appConfig.SIP_PASSWORD || import.meta.env.VITE_SIP_PASSWORD || '',
+      display_name: appConfig.SIP_DISPLAY_NAME || import.meta.env.VITE_SIP_DISPLAY_NAME || 'CRM User',
+      websocket_proxy_url: appConfig.SIP_SERVER || import.meta.env.VITE_SIP_SERVER || '',
+      ice_servers: [{ urls: appConfig.STUN_SERVER || import.meta.env.VITE_STUN_SERVER || 'stun:stun.l.google.com:19302' }],
     };
   }
 
@@ -50,9 +52,7 @@ class SIPClient {
 
   async init() {
     if (this.isInitialized && this.JsSIP) return;
-
-    const mod = await import('jssip');
-    this.JsSIP = mod?.default || mod;
+    this.JsSIP = JsSIP;
 
     if (!this.JsSIP?.UA || !this.JsSIP?.WebSocketInterface) {
       throw new Error('JsSIP library not loaded');

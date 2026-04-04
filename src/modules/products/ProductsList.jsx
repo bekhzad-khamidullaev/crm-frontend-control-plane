@@ -3,13 +3,13 @@ import { App, Button, Card, Popconfirm, Select, Space, Table, Tag, Typography } 
 import { useEffect, useState } from 'react';
 import { deleteProduct, getProductCategories, getProducts } from '../../lib/api/products';
 import { canWrite } from '../../lib/rbac.js';
-import { formatCurrency } from '../../lib/utils/format';
+import { formatCurrencyForRecord } from '../../lib/utils/format';
 import { navigate } from '../../router';
 import { EntityListToolbar } from '../../shared/ui/EntityListToolbar';
-import { LIST_HEADER_STYLE, LIST_STACK_STYLE, LIST_TITLE_STYLE } from '../../shared/ui/listLayout';
+import { PageHeader } from '../../shared/ui/PageHeader';
 
 const { Option } = Select;
-const { Text, Title } = Typography;
+const { Text } = Typography;
 
 const normalizeOptionValue = (value, options = []) => {
   const matched = options.find((option) => String(option?.value) === String(value));
@@ -145,7 +145,7 @@ function ProductsList() {
       dataIndex: 'price',
       key: 'price',
       width: 150,
-      render: (price, record) => <span>{record.currency_code ? formatCurrency(price, record.currency_code) : '-'}</span>,
+      render: (price, record) => <span>{formatCurrencyForRecord(price, record)}</span>,
     },
     {
       title: 'Тип',
@@ -169,9 +169,15 @@ function ProductsList() {
         <Space>
           {canManage ? (
             <>
-              <Button type="link" size="small" icon={<EditOutlined />} onClick={() => navigate(`/products/${record.id}/edit`)} />
+              <Button
+                type="link"
+                size="small"
+                icon={<EditOutlined />}
+                aria-label="Редактировать продукт"
+                onClick={() => navigate(`/products/${record.id}/edit`)}
+              />
               <Popconfirm title="Удалить продукт?" description="Это действие нельзя отменить" onConfirm={() => handleDelete(record.id)} okText="Да" cancelText="Нет">
-                <Button type="link" size="small" danger icon={<DeleteOutlined />} />
+                <Button type="link" size="small" danger icon={<DeleteOutlined />} aria-label="Удалить продукт" />
               </Popconfirm>
             </>
           ) : null}
@@ -205,57 +211,59 @@ function ProductsList() {
   }
 
   return (
-    <Card>
-      <Space direction="vertical" size={16} style={LIST_STACK_STYLE}>
-        <Space wrap style={LIST_HEADER_STYLE}>
-          <div>
-            <Title level={3} style={LIST_TITLE_STYLE}>Каталог продуктов</Title>
-            <Text type="secondary">Единый список продуктов с поиском и фильтрацией</Text>
-          </div>
-          {canManage ? (
+    <>
+      <PageHeader
+        title="Каталог продуктов"
+        subtitle="Единый список продуктов с поиском и фильтрацией"
+        extra={
+          canManage ? (
             <Button type="primary" icon={<PlusOutlined />} onClick={() => navigate('/products/new')}>Добавить продукт</Button>
-          ) : null}
+          ) : null
+        }
+      />
+      <Card>
+        <Space direction="vertical" size={16} style={{ width: '100%' }}>
+
+          <EntityListToolbar
+            searchValue={searchText}
+            searchPlaceholder="Поиск по названию"
+            onSearchChange={handleSearch}
+            filters={(
+              <Select
+                placeholder="Все категории"
+                style={{ width: 220 }}
+                allowClear
+                onChange={handleCategoryChange}
+                value={normalizedSelectedCategory}
+              >
+                {categories.map((cat) => (
+                  <Option key={cat.id} value={cat.id}>
+                    {cat.name}
+                  </Option>
+                ))}
+              </Select>
+            )}
+            onRefresh={() => loadProducts(1, searchText, selectedCategory)}
+            onReset={handleResetFilters}
+            loading={loading}
+            resultSummary={`Всего: ${pagination.total}`}
+            activeFilters={activeFilters}
+          />
+
+          {error ? <Text type="danger">{error}</Text> : null}
+
+          <Table
+            columns={columns}
+            dataSource={products}
+            rowKey="id"
+            loading={loading}
+            pagination={{ ...pagination, showSizeChanger: true, showTotal: (total) => `Всего: ${total}` }}
+            onChange={handleTableChange}
+            scroll={{ x: 1100 }}
+          />
         </Space>
-
-        <EntityListToolbar
-          searchValue={searchText}
-          searchPlaceholder="Поиск по названию"
-          onSearchChange={handleSearch}
-          filters={(
-            <Select
-              placeholder="Все категории"
-              style={{ width: 220 }}
-              allowClear
-              onChange={handleCategoryChange}
-              value={normalizedSelectedCategory}
-            >
-              {categories.map((cat) => (
-                <Option key={cat.id} value={cat.id}>
-                  {cat.name}
-                </Option>
-              ))}
-            </Select>
-          )}
-          onRefresh={() => loadProducts(1, searchText, selectedCategory)}
-          onReset={handleResetFilters}
-          loading={loading}
-          resultSummary={`Всего: ${pagination.total}`}
-          activeFilters={activeFilters}
-        />
-
-        {error ? <Text type="danger">{error}</Text> : null}
-
-        <Table
-          columns={columns}
-          dataSource={products}
-          rowKey="id"
-          loading={loading}
-          pagination={{ ...pagination, showSizeChanger: true, showTotal: (total) => `Всего: ${total}` }}
-          onChange={handleTableChange}
-          scroll={{ x: 1100 }}
-        />
-      </Space>
-    </Card>
+      </Card>
+    </>
   );
 }
 

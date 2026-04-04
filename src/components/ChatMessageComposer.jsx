@@ -12,15 +12,47 @@ import { useTheme } from '../lib/hooks/useTheme';
 const { TextArea } = Input;
 const { Text } = Typography;
 
+// Simple emoji picker data
 const EMOJI_CATEGORIES = {
   Смайлики: [
-    '😀', '😃', '😄', '😁', '😆', '😅', '😂', '🤣', '😊', '😇',
-    '🙂', '🙃', '😉', '😌', '😍', '🥰', '😘', '😗', '😙', '😚',
+    '😀',
+    '😃',
+    '😄',
+    '😁',
+    '😆',
+    '😅',
+    '😂',
+    '🤣',
+    '😊',
+    '😇',
+    '🙂',
+    '🙃',
+    '😉',
+    '😌',
+    '😍',
+    '🥰',
+    '😘',
+    '😗',
+    '😙',
+    '😚',
   ],
   Жесты: ['👍', '👎', '👌', '✌️', '🤞', '🤝', '👏', '🙌', '👐', '🤲', '🙏', '✍️', '💪', '🦾'],
   Объекты: [
-    '📱', '💻', '⌨️', '📧', '📨', '📩', '📤', '📥', '📦', '📋',
-    '📁', '📂', '📅', '📆', '📊',
+    '📱',
+    '💻',
+    '⌨️',
+    '📧',
+    '📨',
+    '📩',
+    '📤',
+    '📥',
+    '📦',
+    '📋',
+    '📁',
+    '📂',
+    '📅',
+    '📆',
+    '📊',
   ],
 };
 
@@ -43,6 +75,7 @@ function ChatMessageComposer({
   const typingTimeoutRef = useRef(null);
 
   useEffect(() => {
+    // Focus on textarea when replyTo changes
     if (replyTo && textAreaRef.current) {
       textAreaRef.current.focus();
     }
@@ -52,13 +85,16 @@ function ChatMessageComposer({
     const value = e.target.value;
     setMessage(value);
 
+    // Send typing indicator
     if (onTyping && value.length > 0) {
       onTyping(true);
 
+      // Clear previous timeout
       if (typingTimeoutRef.current) {
         clearTimeout(typingTimeoutRef.current);
       }
 
+      // Set new timeout to stop typing indicator
       typingTimeoutRef.current = setTimeout(() => {
         onTyping(false);
       }, 3000);
@@ -72,18 +108,23 @@ function ChatMessageComposer({
       return;
     }
 
-    await onSend({
-      content: message.trim(),
+    const nextMessage = message.trim();
+    const messageData = {
+      content: nextMessage,
       answer_to: replyTo?.id,
       entityType,
       entityId,
-    });
+    };
+
+    await onSend(messageData);
     setMessage('');
 
+    // Stop typing indicator
     if (onTyping) {
       onTyping(false);
     }
 
+    // Clear typing timeout
     if (typingTimeoutRef.current) {
       clearTimeout(typingTimeoutRef.current);
     }
@@ -103,6 +144,7 @@ function ChatMessageComposer({
     setMessage(newMessage);
     setEmojiVisible(false);
 
+    // Focus back on textarea
     setTimeout(() => {
       textAreaRef.current?.focus();
     }, 0);
@@ -143,6 +185,7 @@ function ChatMessageComposer({
           : token.colorBgContainer,
       }}
     >
+      {/* Reply preview */}
       {replyTo && (
         <div
           style={{
@@ -181,7 +224,13 @@ function ChatMessageComposer({
               {replyTo.content}
             </div>
           </div>
-          <Button type="text" size="small" icon={<CloseOutlined />} onClick={onCancelReply} />
+          <Button
+            type="text"
+            size="small"
+            icon={<CloseOutlined />}
+            aria-label="Отменить ответ"
+            onClick={onCancelReply}
+          />
         </div>
       )}
 
@@ -225,7 +274,7 @@ function ChatMessageComposer({
               placement="topRight"
             >
               <Tooltip title="Добавить эмодзи">
-                <Button icon={<SmileOutlined />} />
+                <Button icon={<SmileOutlined />} aria-label="Открыть выбор эмодзи" />
               </Tooltip>
             </Popover>
 
@@ -233,6 +282,7 @@ function ChatMessageComposer({
               <Button
                 type="primary"
                 icon={<SendOutlined />}
+                aria-label="Отправить сообщение"
                 onClick={() => void handleSend()}
                 disabled={!message.trim() || sending}
                 loading={sending}
@@ -252,7 +302,19 @@ function ChatMessageComposer({
           }}
         >
           <span>Enter отправляет сообщение, Shift+Enter добавляет новую строку</span>
-          <span>{message.length}</span>
+          <span
+            style={{
+              padding: '2px 8px',
+              borderRadius: 999,
+              background: theme === 'dark' ? 'rgba(15, 23, 42, 0.92)' : token.colorFillAlter,
+              border: `1px solid ${theme === 'dark' ? 'rgba(148, 163, 184, 0.2)' : token.colorBorderSecondary}`,
+              fontWeight: 600,
+              minWidth: 36,
+              textAlign: 'center',
+            }}
+          >
+            {message.length}
+          </span>
         </div>
       </div>
     </div>

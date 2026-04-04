@@ -4,6 +4,7 @@ let listeners = [];
 export const routeMeta = {
  'login': { auth: false, title: 'Login', breadcrumbs: [{ label: 'Login' }] },
  'dashboard': { auth: true, title: 'Dashboard', breadcrumbs: [{ label: 'Dashboard', href: '#/dashboard' }] },
+ 'legacy-freeze': { auth: true, title: 'Legacy route frozen' },
  'leads-list': { auth: true, roles: ['admin','manager'], title: 'Leads', breadcrumbs: [{ label: 'Leads', href: '#/leads' }] },
  'leads-new': { auth: true, roles: ['admin','manager'], title: 'New Lead', breadcrumbs: [{ label: 'Leads', href: '#/leads' }, { label: 'New' }] },
  'leads-detail': { auth: true, roles: ['admin','manager','sales'], title: 'Lead', breadcrumbs: [{ label: 'Leads', href: '#/leads' }, { label: 'Detail' }] },
@@ -60,26 +61,31 @@ export const routeMeta = {
  'operations': { auth: true, title: 'Operations' },
  'clients-workspace': { auth: true, title: 'Clients & Contracts' },
  'warehouse-workspace': { auth: true, title: 'Warehouse' },
+ 'warehouse-new': { auth: true, title: 'New Warehouse Item' },
+ 'warehouse-detail': { auth: true, title: 'Warehouse Item' },
+ 'warehouse-edit': { auth: true, title: 'Edit Warehouse Item' },
  'finance-planning': { auth: true, title: 'Finance Planning' },
+ 'finance-planning-new': { auth: true, title: 'New Finance Plan' },
+ 'finance-planning-detail': { auth: true, title: 'Finance Plan' },
+ 'finance-planning-edit': { auth: true, title: 'Edit Finance Plan' },
  'business-processes': { auth: true, title: 'Business Processes' },
  'meetings': { auth: true, title: 'Meetings' },
- 'documents-workspace': { auth: true, title: 'Documents' },
+ 'meetings-new': { auth: true, title: 'New Meeting' },
+ 'meetings-detail': { auth: true, title: 'Meeting' },
+ 'meetings-edit': { auth: true, title: 'Edit Meeting' },
  'content-plans': { auth: true, title: 'Content Plans' },
- 'backlog': { auth: true, title: 'Backlog' },
- 'sites-workspace': { auth: true, title: 'Sites' },
- 'functional': { auth: true, title: 'Functional' },
  'reference-data': { auth: true, title: 'Reference Data' },
  'help-center': { auth: true, title: 'Help Center' },
  'sms-center': { auth: true, title: 'SMS Center' },
  'telephony': { auth: true, title: 'Telephony' },
  'users': { auth: true, title: 'Users' },
- 'control-plane': { auth: true, title: 'Control Plane' },
  'profile': { auth: true, title: 'Profile' },
  'settings': { auth: true, title: 'Settings' },
+ 'license-workspace': { auth: true, title: 'License Workspace' },
  'integrations': { auth: true, title: 'Integrations' },
- 'onboarding': { auth: true, title: 'Onboarding Wizard' },
  'landing-builder': { auth: true, title: 'Landing Builder' },
  'landing-public': { auth: false, title: 'Public Landing' },
+ 'landing-public-domain': { auth: false, title: 'Public Landing' },
  'landing-preview': { auth: false, title: 'Landing Preview' },
  'crm-landing': { auth: false, title: 'CRM Landing' },
  'forbidden': { auth: false, title: 'Forbidden' },
@@ -89,8 +95,9 @@ export const routeMeta = {
 
 const READ_ROLES = ['admin', 'manager', 'sales'];
 const WRITE_ROLES = ['admin', 'manager'];
-const ADMIN_ROLES = ['admin', 'manager'];
+const ADMIN_ROLES = ['admin'];
 const ADMIN_PERMISSIONS = ['auth.view_user', 'settings.view_systemsettings'];
+const INTEGRATIONS_ROLES = ['admin', 'manager'];
 
 [
   'dashboard',
@@ -129,14 +136,13 @@ const ADMIN_PERMISSIONS = ['auth.view_user', 'settings.view_systemsettings'];
   'telephony',
   'clients-workspace',
   'warehouse-workspace',
+  'warehouse-detail',
   'finance-planning',
+  'finance-planning-detail',
   'business-processes',
   'meetings',
-  'documents-workspace',
+  'meetings-detail',
   'content-plans',
-  'backlog',
-  'sites-workspace',
-  'functional',
   'profile',
 ].forEach((route) => {
   if (routeMeta[route]) routeMeta[route].roles = READ_ROLES;
@@ -165,6 +171,12 @@ const ADMIN_PERMISSIONS = ['auth.view_user', 'settings.view_systemsettings'];
   'memos-edit',
   'products-new',
   'products-edit',
+  'warehouse-new',
+  'warehouse-edit',
+  'finance-planning-new',
+  'finance-planning-edit',
+  'meetings-new',
+  'meetings-edit',
 ].forEach((route) => {
   if (routeMeta[route]) routeMeta[route].roles = WRITE_ROLES;
 });
@@ -174,10 +186,12 @@ const ADMIN_PERMISSIONS = ['auth.view_user', 'settings.view_systemsettings'];
   'reference-data',
   'users',
   'settings',
-  'integrations',
-  'onboarding',
 ].forEach((route) => {
   if (routeMeta[route]) routeMeta[route].roles = ADMIN_ROLES;
+});
+
+['integrations'].forEach((route) => {
+  if (routeMeta[route]) routeMeta[route].roles = INTEGRATIONS_ROLES;
 });
 
 [
@@ -210,15 +224,20 @@ const ADMIN_PERMISSIONS = ['auth.view_user', 'settings.view_systemsettings'];
   ['payments-new', 'crm.add_payment'],
   ['payments-edit', 'crm.change_payment'],
   ['clients-workspace', 'crm.view_company'],
-  ['warehouse-workspace', 'crm.view_product'],
-  ['finance-planning', 'crm.view_payment'],
+  ['warehouse-workspace', 'crm.view_warehouseitem'],
+  ['warehouse-detail', 'crm.view_warehouseitem'],
+  ['warehouse-new', 'crm.add_warehouseitem'],
+  ['warehouse-edit', 'crm.change_warehouseitem'],
+  ['finance-planning', 'crm.view_financeplan'],
+  ['finance-planning-detail', 'crm.view_financeplan'],
+  ['finance-planning-new', 'crm.add_financeplan'],
+  ['finance-planning-edit', 'crm.change_financeplan'],
   ['business-processes', 'tasks.view_project'],
-  ['meetings', 'common.view_reminder'],
-  ['documents-workspace', 'tasks.view_memo'],
+  ['meetings', 'crm.view_meeting'],
+  ['meetings-detail', 'crm.view_meeting'],
+  ['meetings-new', 'crm.add_meeting'],
+  ['meetings-edit', 'crm.change_meeting'],
   ['content-plans', 'marketing.view_campaign'],
-  ['backlog', 'tasks.view_task'],
-  ['sites-workspace', 'landings.view_landingpage'],
-  ['functional', 'settings.view_systemsettings'],
   ['reminders-list', 'common.view_reminder'],
   ['reminders-detail', 'common.view_reminder'],
   ['reminders-new', 'common.add_reminder'],
@@ -239,8 +258,8 @@ const ADMIN_PERMISSIONS = ['auth.view_user', 'settings.view_systemsettings'];
   ['products-edit', 'crm.change_product'],
   ['chat', 'chat.view_chatmessage'],
   ['chat-list', 'chat.view_chatmessage'],
-  ['ai-chat', 'chat.view_chatmessage'],
   ['chat-thread', 'chat.view_chatmessage'],
+  ['ai-chat', 'chat.view_chatmessage'],
   ['calls-list', 'voip.view_calllog'],
   ['calls-dashboard', 'voip.view_calllog'],
   ['telephony', 'voip.view_connection'],
@@ -253,8 +272,6 @@ const ADMIN_PERMISSIONS = ['auth.view_user', 'settings.view_systemsettings'];
 [
   'users',
   'settings',
-  'integrations',
-  'onboarding',
   'reference-data',
   'operations',
 ].forEach((route) => {
@@ -263,9 +280,9 @@ const ADMIN_PERMISSIONS = ['auth.view_user', 'settings.view_systemsettings'];
 
 [
   ['dashboard', 'dashboard.core'],
-  ['chat', ['communications.chat', 'integrations.core', 'inbox.unified']],
-  ['chat-list', ['communications.chat', 'integrations.core', 'inbox.unified']],
-  ['chat-thread', ['communications.chat', 'integrations.core', 'inbox.unified']],
+  ['chat', 'communications.chat'],
+  ['chat-list', 'communications.chat'],
+  ['chat-thread', 'communications.chat'],
   ['ai-chat', 'ai.assist'],
   ['massmail', 'communications.email'],
   ['sms-center', 'communications.sms'],
@@ -280,20 +297,23 @@ const ADMIN_PERMISSIONS = ['auth.view_user', 'settings.view_systemsettings'];
   ['payments-detail', 'crm.payments'],
   ['payments-edit', 'crm.payments'],
   ['clients-workspace', ['crm.companies', 'crm.deals', 'crm.payments']],
-  ['warehouse-workspace', ['crm.products', 'settings.core']],
-  ['finance-planning', ['crm.payments', 'crm.deals']],
-  ['business-processes', ['tasks.projects', 'tasks.core']],
-  ['meetings', ['tasks.reminders', 'communications.voip']],
-  ['documents-workspace', ['tasks.memos', 'crm.payments']],
+  ['warehouse-workspace', 'inventory.lite'],
+  ['warehouse-detail', 'inventory.lite'],
+  ['warehouse-new', 'inventory.lite'],
+  ['warehouse-edit', 'inventory.lite'],
+  ['finance-planning', 'billing.invoicing'],
+  ['finance-planning-detail', 'billing.invoicing'],
+  ['finance-planning-new', 'billing.invoicing'],
+  ['finance-planning-edit', 'billing.invoicing'],
+  ['business-processes', ['business_processes', 'business_processes.base', 'business_processes.analytics']],
+  ['meetings', 'tasks.reminders'],
+  ['meetings-detail', 'tasks.reminders'],
+  ['meetings-new', 'tasks.reminders'],
+  ['meetings-edit', 'tasks.reminders'],
   ['content-plans', ['marketing.campaigns', 'marketing.templates', 'marketing.segments']],
-  ['backlog', ['tasks.core', 'crm.deals', 'crm.leads']],
-  ['sites-workspace', 'landing.builder'],
-  ['functional', 'settings.core'],
-  ['crm-emails', 'communications.email'],
   ['operations', 'settings.core'],
   ['settings', 'settings.core'],
   ['integrations', 'integrations.core'],
-  ['onboarding', ['onboarding.wizard', 'settings.core', 'integrations.core']],
   ['reference-data', 'reference.core'],
   ['landing-builder', 'landing.builder'],
   ['users', 'users.core'],
@@ -337,6 +357,7 @@ const ADMIN_PERMISSIONS = ['auth.view_user', 'settings.view_systemsettings'];
   ['products-new', 'crm.products'],
   ['products-detail', 'crm.products'],
   ['products-edit', 'crm.products'],
+  ['crm-emails', 'communications.email'],
 ].forEach(([route, feature]) => {
   if (!routeMeta[route]) return;
   if (Array.isArray(feature)) {
@@ -406,12 +427,19 @@ export function parseHash() {
   }
   if (segments[0] === 'chat') {
     if (!segments[1]) return { name: 'chat-list', params: {} };
-    // /chat/:entityType/:entityId - chat for specific entity
-    const entityType = segments[1];
-    const entityId = segments[2];
-    return { name: 'chat-thread', params: { entityType, entityId } };
+    return { name: 'chat-thread', params: { id: segments[1] } };
   }
   if (segments[0] === 'ai-chat') return { name: 'ai-chat', params: {} };
+  if (segments[0] === 'onboarding') return { name: 'legacy-freeze', params: { freezeType: 'onboarding', sourcePath: path } };
+  if (segments[0] === 'license' || segments[0] === 'licensing') {
+    return { name: 'license-workspace', params: {} };
+  }
+  if (segments[0] === 'tech' && segments[1] === 'license') {
+    return { name: 'license-workspace', params: {} };
+  }
+  if (segments[0] === 'calls-dashboard') {
+    return { name: 'calls-dashboard', params: {} };
+  }
   if (segments[0] === 'calls') {
     if (!segments[1]) return { name: 'calls-list', params: {} };
     if (segments[1] === 'dashboard') return { name: 'calls-dashboard', params: {} };
@@ -461,32 +489,47 @@ export function parseHash() {
   if (segments[0] === 'massmail') return { name: 'massmail', params: {} };
   if (segments[0] === 'operations') return { name: 'operations', params: {} };
   if (segments[0] === 'clients-workspace') return { name: 'clients-workspace', params: {} };
-  if (segments[0] === 'warehouse') return { name: 'warehouse-workspace', params: {} };
-  if (segments[0] === 'finance-planning') return { name: 'finance-planning', params: {} };
+  if (segments[0] === 'warehouse') {
+    if (!segments[1]) return { name: 'warehouse-workspace', params: {} };
+    if (segments[1] === 'new') return { name: 'warehouse-new', params: {} };
+    const id = segments[1];
+    if (segments[2] === 'edit') return { name: 'warehouse-edit', params: { id } };
+    return { name: 'warehouse-detail', params: { id } };
+  }
+  if (segments[0] === 'finance-planning') {
+    if (!segments[1]) return { name: 'finance-planning', params: {} };
+    if (segments[1] === 'new') return { name: 'finance-planning-new', params: {} };
+    const id = segments[1];
+    if (segments[2] === 'edit') return { name: 'finance-planning-edit', params: { id } };
+    return { name: 'finance-planning-detail', params: { id } };
+  }
   if (segments[0] === 'business-processes') return { name: 'business-processes', params: {} };
-  if (segments[0] === 'meetings') return { name: 'meetings', params: {} };
-  if (segments[0] === 'documents') return { name: 'documents-workspace', params: {} };
+  if (segments[0] === 'meetings') {
+    if (!segments[1]) return { name: 'meetings', params: {} };
+    if (segments[1] === 'new') return { name: 'meetings-new', params: {} };
+    const id = segments[1];
+    if (segments[2] === 'edit') return { name: 'meetings-edit', params: { id } };
+    return { name: 'meetings-detail', params: { id } };
+  }
   if (segments[0] === 'content-plans') return { name: 'content-plans', params: {} };
-  if (segments[0] === 'backlog') return { name: 'backlog', params: {} };
-  if (segments[0] === 'sites') return { name: 'sites-workspace', params: {} };
-  if (segments[0] === 'functional') return { name: 'functional', params: {} };
   if (segments[0] === 'reference-data') return { name: 'reference-data', params: {} };
   if (segments[0] === 'help') return { name: 'help-center', params: {} };
   if (segments[0] === 'analytics') return { name: 'dashboard', params: {} };
   if (segments[0] === 'sms') return { name: 'sms-center', params: {} };
   if (segments[0] === 'telephony') return { name: 'telephony', params: {} };
   if (segments[0] === 'users') return { name: 'users', params: {} };
-  if (segments[0] === 'licensing' || segments[0] === 'license') return { name: 'control-plane', params: {} };
-  if (segments[0] === 'control-plane') return { name: 'control-plane', params: {} };
   if (segments[0] === 'profile') return { name: 'profile', params: {} };
+  if (segments[0] === 'settings' && segments[1] === 'license') {
+    return { name: 'license-workspace', params: {} };
+  }
   if (segments[0] === 'settings') return { name: 'settings', params: {} };
+  if (segments[0] === 'license-workspace') return { name: 'license-workspace', params: {} };
   if (segments[0] === 'integrations') return { name: 'integrations', params: {} };
-  if (segments[0] === 'onboarding' || segments[0] === 'setup') return { name: 'onboarding', params: {} };
   if (segments[0] === 'landing-builder') return { name: 'landing-builder', params: {} };
   if (segments[0] === 'crm-landing') return { name: 'crm-landing', params: {} };
   if (segments[0] === 'public-landing') {
     const slug = segments[1];
-    if (!slug) return { name: 'not-found', params: {} };
+    if (!slug) return { name: 'landing-public-domain', params: {} };
     if (segments[2] === 'preview') {
       const token = segments[3];
       if (!token) return { name: 'not-found', params: {} };

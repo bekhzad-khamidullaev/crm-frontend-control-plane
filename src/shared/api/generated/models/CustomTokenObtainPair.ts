@@ -6,7 +6,8 @@
  * Custom JWT serializer with user roles and permissions
  */
 export type CustomTokenObtainPair = {
-    username: string;
+    username?: string;
+    identifier?: string;
     password: string;
 };
 

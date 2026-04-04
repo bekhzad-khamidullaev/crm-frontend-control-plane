@@ -239,6 +239,59 @@ export const CompanyForm: React.FC<CompanyFormProps> = ({
             </Col>
           </Row>
 
+          <Title level={4} style={{ marginTop: 24 }}>Юридические реквизиты</Title>
+          <Text type="secondary">
+            Эти поля используются для автозаполнения бумажного договора и реквизитов заказчика.
+          </Text>
+          <Divider style={{ margin: '12px 0 16px' }} />
+
+          <Row gutter={16}>
+            <Col xs={24} md={12}>
+              <Form.Item label="ФИО подписанта" name="legal_signer_name">
+                <Input placeholder="Иванов И.И." />
+              </Form.Item>
+            </Col>
+            <Col xs={24} md={12}>
+              <Form.Item label="Должность подписанта" name="legal_signer_position">
+                <Input placeholder="Директор" />
+              </Form.Item>
+            </Col>
+          </Row>
+
+          <Row gutter={16}>
+            <Col xs={24} md={12}>
+              <Form.Item label="Основание подписания" name="legal_signing_basis">
+                <Input placeholder="Устав / Доверенность №..." />
+              </Form.Item>
+            </Col>
+            <Col xs={24} md={12}>
+              <Form.Item label="СТИР / ИНН" name="legal_stir">
+                <Input placeholder="307865310" />
+              </Form.Item>
+            </Col>
+          </Row>
+
+          <Row gutter={16}>
+            <Col xs={24} md={12}>
+              <Form.Item label="МФО" name="legal_mfo">
+                <Input placeholder="00401" />
+              </Form.Item>
+            </Col>
+            <Col xs={24} md={12}>
+              <Form.Item label="Расчетный счет" name="legal_account">
+                <Input placeholder="2020 8000 1052 9900 1001" />
+              </Form.Item>
+            </Col>
+          </Row>
+
+          <Row gutter={16}>
+            <Col xs={24} md={24}>
+              <Form.Item label="Банк" name="legal_bank_name">
+                <Input placeholder='АТБ "Aloqa bank" Амалиёт бошқармаси' />
+              </Form.Item>
+            </Col>
+          </Row>
+
           <Title level={4} style={{ marginTop: 24 }}>Управление и статус</Title>
           <Text type="secondary">Статус, ответственные и коммуникационные настройки компании.</Text>
           <Divider style={{ margin: '12px 0 16px' }} />

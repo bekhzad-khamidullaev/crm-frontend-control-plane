@@ -74,7 +74,7 @@ export class RequestsService {
     public static requestsCreate({
         requestBody,
     }: {
-        requestBody: Request,
+        requestBody?: Request,
     }): CancelablePromise<Request> {
         return __request(OpenAPI, {
             method: 'POST',
@@ -117,7 +117,7 @@ export class RequestsService {
          * A unique integer value identifying this Request.
          */
         id: number,
-        requestBody: Request,
+        requestBody?: Request,
     }): CancelablePromise<Request> {
         return __request(OpenAPI, {
             method: 'PUT',

@@ -1,4 +1,4 @@
-import { DollarOutlined, EditOutlined, EyeOutlined, DeleteOutlined } from '@ant-design/icons';
+import { CreditCardOutlined, EditOutlined, EyeOutlined, DeleteOutlined } from '@ant-design/icons';
 import { useEffect, useState } from 'react';
 
 import { DownloadOutlined, PlusOutlined } from '@ant-design/icons';
@@ -7,12 +7,12 @@ import { App, Button, Card, Dropdown, Popconfirm, Select, Space, Table, Typograp
 import { deletePayment, getPayments } from '../../lib/api/payments';
 import { canWrite } from '../../lib/rbac.js';
 import { EntityListToolbar } from '../../shared/ui/EntityListToolbar';
-import { LIST_HEADER_STYLE, LIST_STACK_STYLE, LIST_TITLE_STYLE } from '../../shared/ui/listLayout';
-import { formatCurrency } from '../../lib/utils/format';
+import { PageHeader } from '../../shared/ui/PageHeader';
+import { formatCurrencyForRecord } from '../../lib/utils/format';
 import { exportToCSV, exportToExcel } from '../../lib/utils/export';
 import { navigate } from '../../router';
 
-const { Text, Title } = Typography;
+const { Text } = Typography;
 
 const statusOptions = [
   { value: 'r', label: 'Получен' },
@@ -128,7 +128,9 @@ function PaymentsList() {
       render: (_, record) => (
         <Space direction="vertical" size={0}>
           <Text strong>
-            <DollarOutlined size={14} /> {record.currency_code ? formatCurrency(record.amount, record.currency_code) : '-'}
+            <CreditCardOutlined size={14} /> {formatCurrencyForRecord(record.amount, record, {
+              currencyKeys: ['currency_code', 'currency_name', 'deal_currency_code', 'deal_currency_name'],
+            })}
           </Text>
           <Text type="secondary">{record.payment_date ? new Date(record.payment_date).toLocaleDateString('ru-RU') : ''}</Text>
         </Space>
@@ -186,15 +188,11 @@ function PaymentsList() {
   ];
 
   return (
-    <Card>
-      <Space direction="vertical" size={16} style={LIST_STACK_STYLE}>
-        <Space wrap style={LIST_HEADER_STYLE}>
-          <div>
-            <Title level={3} style={LIST_TITLE_STYLE}>
-              Платежи
-            </Title>
-            <Text type="secondary">Список платежей</Text>
-          </div>
+    <>
+      <PageHeader
+        title="Платежи"
+        subtitle="Список платежей"
+        extra={(
           <Space>
             <Dropdown
               menu={{
@@ -212,60 +210,64 @@ function PaymentsList() {
               </Button>
             ) : null}
           </Space>
-        </Space>
+        )}
+      />
+      <Card>
+        <Space direction="vertical" size={16} style={{ width: '100%' }}>
 
-        <EntityListToolbar
-          searchValue={searchText}
-          searchPlaceholder="Поиск по платежам..."
-          onSearchChange={handleSearch}
-          filters={(
-            <Select
-              allowClear
-              placeholder="Статус"
-              style={{ minWidth: 180 }}
-              value={statusFilter}
-              options={statusOptions}
-              onChange={(value) => {
-                setStatusFilter(value || null);
-                fetchPayments(1, searchText, value || null);
-              }}
-            />
-          )}
-          onRefresh={() => fetchPayments(pagination.current, searchText, statusFilter)}
-          onReset={handleResetFilters}
-          loading={loading}
-          resultSummary={`Всего: ${pagination.total}`}
-          activeFilters={[
-            ...(searchText ? [{ key: 'search', label: 'Поиск', value: searchText, onClear: () => handleSearch('') }] : []),
-            ...(statusFilter
-              ? [
-                  {
-                    key: 'status',
-                    label: 'Статус',
-                    value: statusOptions.find((opt) => opt.value === statusFilter)?.label || statusFilter,
-                    onClear: () => {
-                      setStatusFilter(null);
-                      fetchPayments(1, searchText, null);
+          <EntityListToolbar
+            searchValue={searchText}
+            searchPlaceholder="Поиск по платежам..."
+            onSearchChange={handleSearch}
+            filters={(
+              <Select
+                allowClear
+                placeholder="Статус"
+                style={{ minWidth: 180 }}
+                value={statusFilter}
+                options={statusOptions}
+                onChange={(value) => {
+                  setStatusFilter(value || null);
+                  fetchPayments(1, searchText, value || null);
+                }}
+              />
+            )}
+            onRefresh={() => fetchPayments(pagination.current, searchText, statusFilter)}
+            onReset={handleResetFilters}
+            loading={loading}
+            resultSummary={`Всего: ${pagination.total}`}
+            activeFilters={[
+              ...(searchText ? [{ key: 'search', label: 'Поиск', value: searchText, onClear: () => handleSearch('') }] : []),
+              ...(statusFilter
+                ? [
+                    {
+                      key: 'status',
+                      label: 'Статус',
+                      value: statusOptions.find((opt) => opt.value === statusFilter)?.label || statusFilter,
+                      onClear: () => {
+                        setStatusFilter(null);
+                        fetchPayments(1, searchText, null);
+                      },
                     },
-                  },
-                ]
-              : []),
-          ]}
-        />
+                  ]
+                : []),
+            ]}
+          />
 
-        {error ? <Text type="danger">{error}</Text> : null}
+          {error ? <Text type="danger">{error}</Text> : null}
 
-        <Table
-          rowKey="id"
-          columns={columns}
-          dataSource={payments}
-          loading={loading}
-          pagination={{ ...pagination, showSizeChanger: true, showTotal: (total) => `Всего: ${total}` }}
-          onChange={handleTableChange}
-          locale={{ emptyText: 'Нет платежей' }}
-        />
-      </Space>
-    </Card>
+          <Table
+            rowKey="id"
+            columns={columns}
+            dataSource={payments}
+            loading={loading}
+            pagination={{ ...pagination, showSizeChanger: true, showTotal: (total) => `Всего: ${total}` }}
+            onChange={handleTableChange}
+            locale={{ emptyText: 'Нет платежей' }}
+          />
+        </Space>
+      </Card>
+    </>
   );
 }
 

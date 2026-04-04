@@ -50,12 +50,12 @@ export const EntityListToolbar: React.FC<EntityListToolbarProps> = ({
   const isMobile = !screens.lg;
   const hasActiveFilters = activeFilters.length > 0;
   const surfaceStyle: React.CSSProperties = {
-    marginBottom: 12,
-    padding: isMobile ? 12 : 14,
+    marginBottom: 6,
+    padding: isMobile ? 8 : 10,
     borderRadius: token.borderRadiusLG,
     border: `1px solid ${token.colorBorderSecondary}`,
     background: token.colorBgElevated,
-    boxShadow: token.boxShadowSecondary,
+    boxShadow: token.boxShadowTertiary,
   };
   const chipStyle: React.CSSProperties = {
     marginInlineEnd: 0,
@@ -66,22 +66,23 @@ export const EntityListToolbar: React.FC<EntityListToolbarProps> = ({
     fontWeight: 500,
   };
   const actionButtonStyle: React.CSSProperties = {
-    borderRadius: token.borderRadiusLG,
+    borderRadius: token.borderRadius,
   };
 
   return (
     <div style={surfaceStyle}>
-      <Space direction="vertical" size={10} style={{ width: '100%' }}>
+      <Space direction="vertical" size={6} style={{ width: '100%' }}>
         <Flex
           justify="space-between"
-          align={isMobile ? 'stretch' : 'flex-start'}
-          gap={10}
+          align={isMobile ? 'stretch' : 'center'}
+          gap={6}
           vertical={isMobile}
         >
           <div style={{ flex: 1, minWidth: 0 }}>
-            <Space direction="vertical" size={8} style={{ width: '100%' }}>
-              <Space wrap size={8} style={{ width: '100%' }}>
+            <Space direction="vertical" size={4} style={{ width: '100%' }}>
+              <Space wrap size={4} style={{ width: '100%' }}>
                 <Input
+                  size={isMobile ? 'middle' : 'small'}
                   allowClear
                   prefix={<SearchOutlined />}
                   placeholder={searchPlaceholder}
@@ -91,9 +92,9 @@ export const EntityListToolbar: React.FC<EntityListToolbarProps> = ({
                   }
                   onChange={(event) => onSearchChange?.(event.target.value)}
                   style={{
-                    width: isMobile ? '100%' : 300,
+                    width: isMobile ? '100%' : 248,
                     maxWidth: '100%',
-                    borderRadius: token.borderRadiusLG,
+                    borderRadius: token.borderRadius,
                     borderColor: token.colorBorderSecondary,
                     background: token.colorBgContainer,
                   }}
@@ -102,7 +103,7 @@ export const EntityListToolbar: React.FC<EntityListToolbarProps> = ({
               </Space>
 
               {hasActiveFilters ? (
-                <Flex wrap gap={8}>
+                <Flex wrap gap={6}>
                   {activeFilters.map((filter) => (
                     <Tag
                       key={filter.key}
@@ -135,8 +136,8 @@ export const EntityListToolbar: React.FC<EntityListToolbarProps> = ({
                 bordered={false}
                 style={{
                   ...chipStyle,
-                  paddingInline: 12,
-                  minHeight: 28,
+                  paddingInline: 10,
+                  minHeight: 22,
                   display: 'inline-flex',
                   alignItems: 'center',
                   background: token.colorBgContainer,

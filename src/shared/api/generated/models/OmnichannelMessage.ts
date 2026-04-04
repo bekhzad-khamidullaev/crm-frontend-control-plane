@@ -8,6 +8,8 @@ export type OmnichannelMessage = {
     readonly channel: number;
     readonly channel_type: string;
     readonly channel_name: string;
+    readonly conversation_key: string;
+    readonly participant_id: string;
     readonly direction: OmnichannelMessageDirectionEnum;
     readonly external_id: string;
     readonly sender_id: string;

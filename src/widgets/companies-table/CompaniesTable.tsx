@@ -1,7 +1,7 @@
 import { companyKeys } from '@/entities/company/api/keys';
 import { useDeleteCompany, usePatchCompany } from '@/entities/company/api/mutations';
 import type { Company } from '@/entities/company/model/types';
-import { useClientTypes, useIndustries } from '@/features/reference';
+import { useClientTypes, useIndustries, useUsers } from '@/features/reference';
 import { getClientTypeLabel } from '@/features/reference/lib/clientTypeLabel';
 // @ts-ignore
 import EditableCell from '@/components/editable-cell';
@@ -15,9 +15,10 @@ import {
     GlobalOutlined,
     MailOutlined,
     PhoneOutlined,
-    ShopOutlined
+    ShopOutlined,
+    UserOutlined,
 } from '@ant-design/icons';
-import { Alert, Avatar, Button, Popconfirm, Space, Table, Tag, Tooltip } from 'antd';
+import { Alert, Avatar, Button, Popconfirm, Space, Table, Tag, Tooltip, theme } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
 import React from 'react';
 import { CompaniesTableFilters } from './ui/CompaniesTableFilters';
@@ -32,6 +33,7 @@ import { canWrite } from '@/lib/rbac.js';
 import { getLocale } from '@/lib/i18n';
 
 export const CompaniesTable: React.FC = () => {
+  const { token } = theme.useToken();
   const canManage = canWrite();
   // Use shared hook for server-side table logic
   const {
@@ -53,6 +55,7 @@ export const CompaniesTable: React.FC = () => {
   const patchMutation = usePatchCompany();
   const { data: clientTypesData } = useClientTypes();
   const { data: industriesData } = useIndustries();
+  const { data: usersData } = useUsers();
   const locale = getLocale();
 
   const clientTypeMap = React.useMemo(() => {
@@ -111,6 +114,24 @@ export const CompaniesTable: React.FC = () => {
     whiteSpace: 'nowrap',
   };
 
+  const clientTypeOptions = React.useMemo(
+    () =>
+      (clientTypesData?.results || []).map((item) => ({
+        value: item.id,
+        label: getClientTypeLabel(item.name, locale) || 'Тип клиента',
+      })),
+    [clientTypesData, locale],
+  );
+
+  const userOptions = React.useMemo(
+    () =>
+      (usersData?.results || []).map((user) => ({
+        value: user.id,
+        label: `${user.first_name || ''} ${user.last_name || ''}`.trim() || user.username || user.email || 'Пользователь',
+      })),
+    [usersData],
+  );
+
   const columns: ColumnsType<Company> = [
     {
       title: 'Компания',
@@ -132,7 +153,7 @@ export const CompaniesTable: React.FC = () => {
             </div>
             {Array.isArray(record.industry) && record.industry.length > 0 && (
               <div
-                style={{ ...singleLineEllipsis, fontSize: 12, color: '#999', maxWidth: 220 }}
+                style={{ ...singleLineEllipsis, fontSize: 12, color: token.colorTextSecondary, maxWidth: 220 }}
                 title={record.industry
                   .map((industryId) => industryMap.get(industryId))
                   .filter(Boolean)
@@ -154,7 +175,7 @@ export const CompaniesTable: React.FC = () => {
       render: (_, record) => (
         <Space direction="vertical" size="small" style={{ width: '100%' }}>
           <Space size="small" style={{ width: '100%' }}>
-            <MailOutlined style={{ color: '#999' }} />
+            <MailOutlined style={{ color: token.colorTextSecondary }} />
             <EditableCell
               value={record.email}
               record={record}
@@ -166,7 +187,7 @@ export const CompaniesTable: React.FC = () => {
             />
           </Space>
           <Space size="small" style={{ width: '100%' }}>
-            <PhoneOutlined style={{ color: '#999' }} />
+            <PhoneOutlined style={{ color: token.colorTextSecondary }} />
             <EditableCell
               value={record.phone}
               record={record}
@@ -178,7 +199,7 @@ export const CompaniesTable: React.FC = () => {
             />
           </Space>
           <Space size="small" style={{ width: '100%' }}>
-            <GlobalOutlined style={{ color: '#999' }} />
+            <GlobalOutlined style={{ color: token.colorTextSecondary }} />
             <EditableCell
               value={record.website}
               record={record}
@@ -197,11 +218,57 @@ export const CompaniesTable: React.FC = () => {
       dataIndex: 'type',
       key: 'type',
       width: 150,
-      render: (type) => {
-        if (!type) return '-';
-        const label = clientTypeMap.get(type);
-        return <Tag color="blue">{label || '-'}</Tag>;
-      },
+      render: (type, record) => (
+        <EditableCell
+          value={type}
+          record={record}
+          dataIndex="type"
+          editable={canManage}
+          type="select"
+          options={clientTypeOptions}
+          onSave={handleInlineSave}
+          saveOnBlur={false}
+          placeholder="Тип"
+          renderView={(val: number | null | undefined) => {
+            if (!val) return '-';
+            const option = clientTypeOptions.find((item) => String(item.value) === String(val));
+            return <Tag color="blue">{option?.label || clientTypeMap.get(val) || '-'}</Tag>;
+          }}
+          style={{ paddingInline: 0 }}
+        />
+      ),
+    },
+    {
+      title: 'Ответственный',
+      dataIndex: 'owner',
+      key: 'owner',
+      width: 180,
+      render: (ownerId, record: any) => (
+        <EditableCell
+          value={ownerId}
+          record={record}
+          dataIndex="owner"
+          editable={canManage}
+          type="select"
+          options={userOptions}
+          onSave={handleInlineSave}
+          saveOnBlur={false}
+          placeholder="Ответственный"
+          renderView={(val: number | null | undefined) => {
+            const option = userOptions.find((item) => String(item.value) === String(val));
+            const label = option?.label || record.owner_name || 'Не назначен';
+            return (
+              <Space size={6}>
+                <UserOutlined style={{ color: token.colorTextSecondary }} />
+                <span style={{ ...singleLineEllipsis, maxWidth: 140 }} title={label}>
+                  {label}
+                </span>
+              </Space>
+            );
+          }}
+          style={{ paddingInline: 0 }}
+        />
+      ),
     },
     {
       title: 'Дата создания',
@@ -229,18 +296,20 @@ export const CompaniesTable: React.FC = () => {
             type="link"
             size="small"
             icon={<EyeOutlined />}
+            aria-label="Просмотреть компанию"
             onClick={() => navigate(`/companies/${record.id}`)}
           />
           {canManage ? (
-            <Button
-              type="link"
-              size="small"
-              icon={<EditOutlined />}
-              onClick={() => navigate(`/companies/${record.id}/edit`)}
-            />
+              <Button
+                type="link"
+                size="small"
+                icon={<EditOutlined />}
+                aria-label="Редактировать компанию"
+                onClick={() => navigate(`/companies/${record.id}/edit`)}
+              />
           ) : (
             <Tooltip title="Недостаточно прав">
-              <Button type="link" size="small" icon={<EditOutlined />} disabled />
+              <Button type="link" size="small" icon={<EditOutlined />} aria-label="Редактировать компанию" disabled />
             </Tooltip>
           )}
           {canManage ? (
@@ -251,11 +320,18 @@ export const CompaniesTable: React.FC = () => {
               okText="Да"
               cancelText="Нет"
             >
-              <Button type="link" size="small" danger icon={<DeleteOutlined />} loading={deleteMutation.isPending} />
+              <Button
+                type="link"
+                size="small"
+                danger
+                icon={<DeleteOutlined />}
+                aria-label="Удалить компанию"
+                loading={deleteMutation.isPending}
+              />
             </Popconfirm>
           ) : (
             <Tooltip title="Недостаточно прав">
-              <Button type="link" size="small" danger icon={<DeleteOutlined />} disabled />
+              <Button type="link" size="small" danger icon={<DeleteOutlined />} aria-label="Удалить компанию" disabled />
             </Tooltip>
           )}
         </Space>

@@ -79,48 +79,11 @@ console.warn = (...args) => {
   if (message.includes('Consider adding an error boundary')) {
     return; // Skip error boundary warnings in tests
   }
-  if (message.includes('[AuthGuard]')) {
-    return;
-  }
-  if (message.includes('[antd: Input]') && message.includes('addonAfter')) {
-    return;
-  }
-  if (message.includes('[Router] Guard failed:')) {
-    return;
-  }
   originalWarn(...args);
-};
-
-const originalError = console.error;
-console.error = (...args) => {
-  const message = args.join(' ');
-  if (message.includes('[Router] Guard failed:')) {
-    return;
-  }
-  if (message.includes('[antd: Input]') && message.includes('addonAfter')) {
-    return;
-  }
-  originalError(...args);
-};
-
-const originalLog = console.log;
-console.log = (...args) => {
-  const message = args.join(' ');
-  if (message.includes('[AuthGuard]')) {
-    return;
-  }
-  originalLog(...args);
 };
 
 // Mock fetch for API calls
 global.fetch = vi.fn();
-Object.defineProperty(navigator, 'clipboard', {
-  value: {
-    writeText: vi.fn(),
-  },
-  configurable: true,
-});
-document.execCommand = vi.fn();
 
 function createStorageMock() {
   const store = new Map();

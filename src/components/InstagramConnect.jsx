@@ -3,7 +3,7 @@
  * Component for connecting Instagram Business API
  */
 
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Form, Input, Button, Space, Alert, Typography, Steps, Card, App, Select, theme as antdTheme } from 'antd';
 import { ReloadOutlined } from '@ant-design/icons';
 import { connectInstagram, discoverInstagramAccounts } from '../lib/api/integrations/instagram';
@@ -14,7 +14,7 @@ import ChannelBrandIcon from './channel/ChannelBrandIcon.jsx';
 const { Link, Paragraph } = Typography;
 const { Step } = Steps;
 
-export default function InstagramConnect({ onSuccess, onCancel }) {
+export default function InstagramConnect({ onSuccess, onCancel, onDirtyChange }) {
   const { message } = App.useApp();
   const { token } = antdTheme.useToken();
   const { theme } = useTheme();
@@ -28,6 +28,7 @@ export default function InstagramConnect({ onSuccess, onCancel }) {
   const [discovering, setDiscovering] = useState(false);
   const [accounts, setAccounts] = useState([]);
   const [currentStep, setCurrentStep] = useState(0);
+  const [dirty, setDirty] = useState(false);
   const surfaceCardStyle = {
     borderRadius: 18,
     border: `1px solid ${isDark ? 'rgba(148, 163, 184, 0.18)' : token.colorBorderSecondary}`,
@@ -50,6 +51,17 @@ export default function InstagramConnect({ onSuccess, onCancel }) {
     try {
       const result = await connectInstagram(values);
       message.success(tr('instagramConnect.messages.connected', 'Instagram подключен'));
+      setDirty(false);
+      if (result?.webhook_verify_token) {
+        message.info(
+          tr(
+            'instagramConnect.messages.verifyToken',
+            'Webhook verify token: {token}',
+            { token: result.webhook_verify_token },
+          ),
+          8,
+        );
+      }
       onSuccess?.(result);
     } catch (error) {
       console.error('Error connecting Instagram:', error);
@@ -97,6 +109,12 @@ export default function InstagramConnect({ onSuccess, onCancel }) {
     facebookPageId: account.facebook_page_id,
     facebookPageName: account.facebook_page_name,
   }));
+
+  useEffect(() => {
+    onDirtyChange?.(dirty);
+  }, [dirty, onDirtyChange]);
+
+  useEffect(() => () => onDirtyChange?.(false), [onDirtyChange]);
 
   return (
     <div style={{ color: token.colorText }}>
@@ -181,6 +199,7 @@ export default function InstagramConnect({ onSuccess, onCancel }) {
           <Form
             form={form}
             layout="vertical"
+            onValuesChange={() => setDirty(true)}
             onFinish={handleConnect}
           >
           <Form.Item
@@ -271,7 +290,17 @@ export default function InstagramConnect({ onSuccess, onCancel }) {
             }}
           />
 
-            <Form.Item style={{ marginBottom: 0 }}>
+            <Form.Item
+              style={{
+                position: 'sticky',
+                bottom: 0,
+                marginBottom: 0,
+                paddingTop: 12,
+                background: isDark ? 'rgba(12, 19, 32, 0.94)' : token.colorBgContainer,
+                borderTop: `1px solid ${isDark ? 'rgba(148, 163, 184, 0.18)' : token.colorBorderSecondary}`,
+                zIndex: 5,
+              }}
+            >
               <Space wrap>
                 <Button onClick={() => setCurrentStep(1)}>
                   {tr('actions.back', 'Назад')}

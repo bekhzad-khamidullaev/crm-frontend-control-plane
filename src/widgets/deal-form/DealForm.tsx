@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo } from 'react';
+import React, { useEffect } from 'react';
 import {
   Form,
   Input,
@@ -20,7 +20,6 @@ import { SaveOutlined, ArrowLeftOutlined } from '@ant-design/icons';
 import dayjs from 'dayjs';
 import { useCreateDeal, useUpdateDeal } from '@/entities/deal/api/mutations';
 import { useDeal as useDealQuery } from '@/entities/deal/api/queries';
-import { trackCrmEvent } from '@/lib/analytics/events.js';
 // @ts-ignore
 import { navigate } from '@/router.js';
 
@@ -45,22 +44,10 @@ interface DealFormProps {
   id?: number;
 }
 
-function getCreateStagePrefill(): number | undefined {
-  if (typeof window === 'undefined') return undefined;
-  const rawHash = (window.location.hash || '').replace(/^#/, '');
-  const [, rawQuery = ''] = rawHash.split('?');
-  const stageRaw = new URLSearchParams(rawQuery).get('stage');
-  if (!stageRaw) return undefined;
-
-  const parsed = Number(stageRaw);
-  return Number.isFinite(parsed) ? parsed : undefined;
-}
-
 export const DealForm: React.FC<DealFormProps> = ({ id }) => {
   const [form] = Form.useForm();
   const { message } = App.useApp();
   const isEdit = !!id;
-  const createStagePrefill = useMemo(() => (isEdit ? undefined : getCreateStagePrefill()), [isEdit]);
   const screens = Grid.useBreakpoint();
   const isMobile = !screens.md;
 
@@ -94,21 +81,51 @@ export const DealForm: React.FC<DealFormProps> = ({ id }) => {
     });
   };
 
+  const normalizeErrorMessage = (value: unknown) => {
+    if (Array.isArray(value)) {
+      return value.filter(Boolean).join(' ');
+    }
+    if (value === null || value === undefined) {
+      return '';
+    }
+    return String(value);
+  };
+
   const isPastDate = (value: dayjs.Dayjs | null) =>
     Boolean(value && value.isBefore(dayjs().startOf('day'), 'day'));
 
-  const onFinish = async (values: any) => {
-    if (values.active === false && !values.closing_reason) {
-      form.setFields([
-        {
-          name: 'closing_reason',
-          errors: ['Для закрытой сделки причина закрытия обязательна'],
-        },
-      ]);
-      message.error('Укажите причину закрытия');
-      return;
+  const applyServerErrors = (error: any) => {
+    const details = error?.details || error?.body?.details || error?.response?.data?.details || error?.response?.data;
+    if (!details || typeof details !== 'object') return false;
+
+    const fields: Array<{ name: string; errors: string[] }> = [];
+    let surfacedGlobalError = false;
+
+    Object.entries(details).forEach(([name, value]) => {
+      const errorMessage = normalizeErrorMessage(value);
+      if (!errorMessage) return;
+
+      if (name === 'detail' || name === 'non_field_errors') {
+        surfacedGlobalError = true;
+        message.error(errorMessage);
+        return;
+      }
+
+      fields.push({
+        name,
+        errors: [errorMessage],
+      });
+    });
+
+    if (fields.length > 0) {
+      form.setFields(fields);
+      return true;
     }
 
+    return surfacedGlobalError;
+  };
+
+  const onFinish = async (values: any) => {
     try {
       const payload: any = {
         ...values,
@@ -125,32 +142,16 @@ export const DealForm: React.FC<DealFormProps> = ({ id }) => {
       };
 
       if (isEdit) {
-        const updated = await updateMutation.mutateAsync({ id: id!, data: payload });
-        if (deal?.stage !== payload.stage) {
-          void trackCrmEvent('deal_stage_changed', {
-            deal_id: updated?.id || id,
-            from_stage: deal?.stage || null,
-            to_stage: payload.stage || null,
-          });
-        }
+        await updateMutation.mutateAsync({ id: id!, data: payload });
       } else {
-        const created = await createMutation.mutateAsync(payload);
-        void trackCrmEvent('deal_created', {
-          deal_id: created?.id,
-          stage: payload.stage || null,
-        });
+        await createMutation.mutateAsync(payload);
       }
       navigate('/deals');
       message.success(isEdit ? 'Сделка обновлена' : 'Сделка создана');
     } catch (error: any) {
-      if (error?.body?.details) {
-        const fields = Object.entries(error.body.details).map(([name, errors]: [string, any]) => ({
-          name,
-          errors: Array.isArray(errors) ? errors : [errors],
-        }));
-        form.setFields(fields);
+      if (!applyServerErrors(error)) {
+        message.error(isEdit ? 'Ошибка обновления' : 'Ошибка создания');
       }
-      message.error(isEdit ? 'Ошибка обновления' : 'Ошибка создания');
     }
   };
 
@@ -178,7 +179,6 @@ export const DealForm: React.FC<DealFormProps> = ({ id }) => {
             active: true,
             relevant: true,
             is_new: true,
-            stage: createStagePrefill,
           }}
         >
           <Title level={4}>Основная информация</Title>
@@ -224,19 +224,7 @@ export const DealForm: React.FC<DealFormProps> = ({ id }) => {
 
           <Row gutter={16}>
             <Col xs={24} md={8}>
-              <Form.Item
-                label="Причина закрытия"
-                name="closing_reason"
-                rules={[
-                  ({ getFieldValue }) => ({
-                    validator: async (_, value) => {
-                      if (getFieldValue('active') === false && !value) {
-                        throw new Error('Для закрытой сделки причина закрытия обязательна');
-                      }
-                    },
-                  }),
-                ]}
-              >
+              <Form.Item label="Причина закрытия" name="closing_reason">
                 <ClosingReasonSelect />
               </Form.Item>
             </Col>

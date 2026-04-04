@@ -3,29 +3,17 @@
  * Component for connecting Telegram Bot
  */
 
-import React, { useState } from 'react';
-import { Form, Input, Button, Space, Alert, Typography, Card, App } from 'antd';
+import React, { useEffect, useState } from 'react';
+import { Form, Input, Button, Space, Alert, Typography, Card, App, Divider } from 'antd';
 import { CopyOutlined } from '@ant-design/icons';
 import { connectTelegramBot, setTelegramWebhook } from '../lib/api/integrations/telegram';
-import { apiConfig } from '../lib/api/client';
 import { t } from '../lib/i18n';
+import TelegramUserConnect from './TelegramUserConnect.jsx';
 import ChannelBrandIcon from './channel/ChannelBrandIcon.jsx';
 
 const { Link, Paragraph } = Typography;
 
-const getDefaultTelegramWebhookUrl = () => {
-  if (typeof window === 'undefined') return '';
-
-  const fallbackOrigin = window.location.origin;
-  try {
-    const origin = new URL(apiConfig?.baseUrl || fallbackOrigin, fallbackOrigin).origin;
-    return `${origin.replace(/\/+$/, '')}/api/telegram/webhook/`;
-  } catch {
-    return `${fallbackOrigin.replace(/\/+$/, '')}/api/telegram/webhook/`;
-  }
-};
-
-export default function TelegramConnect({ onSuccess, onCancel }) {
+export default function TelegramConnect({ onSuccess, onCancel, onDirtyChange }) {
   const { message } = App.useApp();
   const tr = (key, fallback, vars = {}) => {
     const localized = t(key, vars);
@@ -33,11 +21,28 @@ export default function TelegramConnect({ onSuccess, onCancel }) {
   };
   const [form] = Form.useForm();
   const [loading, setLoading] = useState(false);
-  const defaultWebhookUrl = getDefaultTelegramWebhookUrl();
+  const [dirty, setDirty] = useState(false);
   const webhookUrlValue = Form.useWatch('webhook_url', form);
+
+  useEffect(() => {
+    onDirtyChange?.(dirty);
+  }, [dirty, onDirtyChange]);
+
+  useEffect(() => () => onDirtyChange?.(false), [onDirtyChange]);
 
   const getErrorText = (error, fallback) => {
     const details = error?.details || {};
+    if (Array.isArray(details?.non_field_errors) && details.non_field_errors.length) {
+      return String(details.non_field_errors[0]);
+    }
+    if (details && typeof details === 'object') {
+      const firstFieldError = Object.values(details).find((entry) => {
+        if (Array.isArray(entry) && entry.length > 0) return true;
+        return typeof entry === 'string';
+      });
+      if (Array.isArray(firstFieldError) && firstFieldError.length) return String(firstFieldError[0]);
+      if (typeof firstFieldError === 'string') return firstFieldError;
+    }
     if (typeof details === 'string') return details;
     if (typeof details?.message === 'string') return details.message;
     if (typeof details?.error === 'string') return details.error;
@@ -52,11 +57,13 @@ export default function TelegramConnect({ onSuccess, onCancel }) {
       const result = await connectTelegramBot(values);
       const botId = result?.id || result?.bot_id;
 
-      if (botId && values.webhook_url) {
-        await setTelegramWebhook(botId, { webhook_url: values.webhook_url });
+      if (botId) {
+        const customWebhookUrl = (values.webhook_url || '').trim();
+        await setTelegramWebhook(botId, customWebhookUrl ? { webhook_url: customWebhookUrl } : {});
       }
 
       message.success(tr('telegramConnect.messages.connected', 'Telegram бот успешно подключен'));
+      setDirty(false);
       onSuccess?.(result);
     } catch (error) {
       console.error('Error connecting Telegram:', error);
@@ -145,7 +152,8 @@ export default function TelegramConnect({ onSuccess, onCancel }) {
       <Form
         form={form}
         layout="vertical"
-        initialValues={{ webhook_url: defaultWebhookUrl }}
+        initialValues={{ webhook_url: '' }}
+        onValuesChange={() => setDirty(true)}
         onFinish={handleConnect}
       >
         <Form.Item
@@ -171,22 +179,20 @@ export default function TelegramConnect({ onSuccess, onCancel }) {
           description={
             <div>
               <Paragraph>
-                При необходимости укажите URL, на который Telegram будет отправлять события:
+                Оставьте поле пустым, чтобы система автоматически использовала защищенный URL с секретом.
               </Paragraph>
               <Form.Item name="webhook_url" style={{ marginBottom: 0 }}>
-                <Input
-                  placeholder={defaultWebhookUrl || 'https://crm.example.com/api/telegram/webhook/'}
-                  addonAfter={
-                    <Button
-                      type="text"
-                      size="small"
-                      icon={<CopyOutlined />}
-                      onClick={handleCopyWebhookUrl}
-                    >
-                      {tr('telegramConnect.actions.copy', 'Скопировать')}
-                    </Button>
-                  }
-                />
+                <Space.Compact style={{ width: '100%' }}>
+                  <Input
+                    placeholder="https://crm.example.com/integrations/telegram/webhook/<secret>/"
+                  />
+                  <Button
+                    icon={<CopyOutlined />}
+                    onClick={handleCopyWebhookUrl}
+                  >
+                    {tr('telegramConnect.actions.copy', 'Скопировать')}
+                  </Button>
+                </Space.Compact>
               </Form.Item>
             </div>
           }
@@ -209,7 +215,17 @@ export default function TelegramConnect({ onSuccess, onCancel }) {
           style={{ marginBottom: 16 }}
         />
 
-        <Form.Item>
+        <Form.Item
+          style={{
+            position: 'sticky',
+            bottom: 0,
+            marginBottom: 0,
+            paddingTop: 12,
+            background: 'var(--ant-color-bg-container, #fff)',
+            borderTop: '1px solid var(--ant-color-border-secondary, #f0f0f0)',
+            zIndex: 5,
+          }}
+        >
           <Space>
             <Button
               type="primary"
@@ -227,6 +243,18 @@ export default function TelegramConnect({ onSuccess, onCancel }) {
           </Space>
         </Form.Item>
       </Form>
+
+      <Divider />
+
+      <Card
+        title={tr('telegramConnect.userBeta.title', 'Личный Telegram аккаунт (beta)')}
+        style={{ marginTop: 8 }}
+      >
+        <TelegramUserConnect
+          onSuccess={onSuccess}
+          onCancel={onCancel}
+        />
+      </Card>
     </div>
   );
 }

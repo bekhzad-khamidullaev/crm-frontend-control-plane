@@ -4,7 +4,7 @@
  */
 
 import React from 'react';
-import { Table, Empty } from 'antd';
+import { Table, Empty, theme } from 'antd';
 import { InboxOutlined } from '@ant-design/icons';
 
 export default function EnhancedTable({
@@ -29,16 +29,17 @@ export default function EnhancedTable({
   locale,
   ...rest
 }) {
+  const { token } = theme.useToken();
   const emptyLocale = {
     emptyText: (
       <Empty
-        image={<InboxOutlined style={{ fontSize: 48, color: '#bfbfbf' }} />}
+        image={<InboxOutlined style={{ fontSize: 48, color: token.colorTextTertiary }} />}
         description={
           <div style={{ padding: '8px 0' }}>
-            <div style={{ marginBottom: 6, fontWeight: 600, fontSize: 15, color: '#18181b' }}>
+            <div style={{ marginBottom: 6, fontWeight: 600, fontSize: 15, color: token.colorText }}>
               {emptyText}
             </div>
-            <div style={{ fontSize: 13, lineHeight: 1.5, color: '#71717a', maxWidth: 320, margin: '0 auto' }}>
+            <div style={{ fontSize: 13, lineHeight: 1.5, color: token.colorTextSecondary, maxWidth: 320, margin: '0 auto' }}>
               {emptyDescription}
             </div>
           </div>

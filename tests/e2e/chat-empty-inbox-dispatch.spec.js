@@ -53,6 +53,7 @@ const installEmptyInboxDryRunMocks = async (page, capture) => {
       ],
     });
   });
+
   await page.route(/\/api\/settings\/telegram\/bots\/(\?.*)?$/, async (route) => {
     await mockJson(route, { results: [] });
   });

@@ -1,5 +1,4 @@
 import { getUserFromToken, isAuthenticated } from './api/auth.js';
-import { readStoredLicenseFeatures } from './api/licenseFeatures.js';
 import {
   getLicenseStateRestriction,
   readStoredLicenseState,
@@ -46,6 +45,17 @@ function normalizePermissions(rawPermissions = []) {
   return Array.from(normalized);
 }
 
+function normalizeFeatures(rawFeatures = []) {
+  if (!Array.isArray(rawFeatures)) return [];
+  const normalized = new Set();
+  rawFeatures.forEach((feature) => {
+    const value = String(feature || '').trim().toLowerCase();
+    if (!value) return;
+    normalized.add(value);
+  });
+  return Array.from(normalized);
+}
+
 function getStoredRoles() {
   try {
     const raw = sessionStorage.getItem('enterprise_crm_roles');
@@ -72,15 +82,17 @@ function getStoredPermissions() {
   return [];
 }
 
-function normalizeFeatures(rawFeatures = []) {
-  if (!Array.isArray(rawFeatures)) return [];
-  const normalized = new Set();
-  rawFeatures.forEach((feature) => {
-    const value = String(feature || '').trim().toLowerCase();
-    if (!value) return;
-    normalized.add(value);
-  });
-  return Array.from(normalized);
+function getStoredLicenseFeatures() {
+  try {
+    const raw = sessionStorage.getItem('enterprise_crm_license_features');
+    if (!raw) return [];
+    const parsed = JSON.parse(raw);
+    if (Array.isArray(parsed)) return normalizeFeatures(parsed);
+    if (parsed && Array.isArray(parsed.features)) return normalizeFeatures(parsed.features);
+  } catch {
+    return [];
+  }
+  return [];
 }
 
 export function getCurrentRoles() {
@@ -116,7 +128,11 @@ export function hasAnyFeature(requiredFeatures = []) {
     Array.isArray(requiredFeatures) ? requiredFeatures : [requiredFeatures],
   );
   if (normalizedRequired.length === 0) return true;
-  const currentFeatures = readStoredLicenseFeatures();
+  const licenseState = readStoredLicenseState();
+  const licenseRestriction = getLicenseStateRestriction(licenseState);
+  if (licenseRestriction) return false;
+  const currentFeatures = getStoredLicenseFeatures();
+  if (!shouldEnforceLicenseFeatures(licenseState)) return true;
   if (currentFeatures.length === 0) return false;
   return currentFeatures.some((feature) => normalizedRequired.includes(feature));
 }
@@ -140,21 +156,42 @@ export function canAccessRoute(routeName) {
 export function getRouteAccessState(routeName) {
   const meta = getRouteMeta(routeName);
   if (!meta || meta.auth === false) {
-    return { allowed: true, reason: null, feature: null, permissions: [], roles: [] };
+    return { allowed: true, reason: null, feature: null, code: null, message: '', permissions: [], roles: [] };
   }
   if (!isAuthenticated()) {
-    return { allowed: false, reason: 'auth', feature: null, permissions: [], roles: [] };
+    return { allowed: false, reason: 'auth', feature: null, code: null, message: '', permissions: [], roles: [] };
   }
+
+  // License workspace must stay accessible without a valid license state,
+  // but only for superuser/admin and CRM system admins.
+  if (routeName === 'license-workspace') {
+    const hasLicenseAdminAccess =
+      hasAnyRole(['admin']) || hasAnyPermission(['settings.view_systemsettings']);
+    if (hasLicenseAdminAccess) {
+      return { allowed: true, reason: null, feature: null, code: null, message: '', permissions: [], roles: [] };
+    }
+    return {
+      allowed: false,
+      reason: 'permission',
+      feature: null,
+      code: null,
+      message: '',
+      permissions: ['settings.view_systemsettings'],
+      roles: ['admin'],
+    };
+  }
+
   const requiredRoles = normalizeRoles(Array.isArray(meta.roles) ? meta.roles : []);
   const requiredPermissions = normalizePermissions(Array.isArray(meta.permissions) ? meta.permissions : []);
   const requiredFeatures = normalizeFeatures(
-    Array.isArray(meta.features) ? meta.features : meta.feature ? [meta.feature] : [],
+    Array.isArray(meta.features) ? meta.features : meta.feature ? [meta.feature] : []
   );
   const licenseState = readStoredLicenseState();
   const enforceLicenseFeatures = shouldEnforceLicenseFeatures(licenseState);
   const hasRoles = requiredRoles.length === 0 || hasAnyRole(requiredRoles);
   const hasPermissions = requiredPermissions.length === 0 || hasAnyPermission(requiredPermissions);
-  const hasFeatures = requiredFeatures.length === 0 || !enforceLicenseFeatures || hasAnyFeature(requiredFeatures);
+  const hasFeatures = requiredFeatures.length === 0 || hasAnyFeature(requiredFeatures);
+
   if (requiredFeatures.length > 0) {
     const licenseRestriction = getLicenseStateRestriction(licenseState);
     if (licenseRestriction) {
@@ -169,10 +206,12 @@ export function getRouteAccessState(routeName) {
       };
     }
   }
+
   if (hasRoles && hasPermissions && hasFeatures) {
     return { allowed: true, reason: null, feature: null, code: null, message: '', permissions: [], roles: [] };
   }
-  if (!hasFeatures) {
+
+  if (enforceLicenseFeatures && !hasFeatures) {
     return {
       allowed: false,
       reason: 'license',
@@ -183,6 +222,7 @@ export function getRouteAccessState(routeName) {
       roles: [],
     };
   }
+
   if (!hasPermissions) {
     return {
       allowed: false,
@@ -194,6 +234,7 @@ export function getRouteAccessState(routeName) {
       roles: [],
     };
   }
+
   return {
     allowed: false,
     reason: 'role',

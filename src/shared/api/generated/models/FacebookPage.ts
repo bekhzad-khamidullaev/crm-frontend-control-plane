@@ -24,6 +24,7 @@ export type FacebookPage = {
      */
     auto_sync_posts?: boolean;
     webhook_url?: string;
+    readonly webhook_verify_token: string;
     readonly messages_synced: number;
     readonly comments_synced: number;
     readonly posts_synced: number;
@@ -31,6 +32,7 @@ export type FacebookPage = {
     page_url?: string;
     profile_picture_url?: string;
     readonly followers_count: number;
+    app_secret?: string;
     /**
      * List of granted Facebook permissions
      */

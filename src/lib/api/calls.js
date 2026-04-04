@@ -50,6 +50,246 @@ function normalizeCallLogPayload(data = {}) {
   return payload;
 }
 
+function normalizeKpiAlias(source, snakeKey, camelKey, fallback = null) {
+  if (!source || typeof source !== 'object') return fallback;
+  return source[snakeKey] ?? source[camelKey] ?? fallback;
+}
+
+function normalizeTrendAlias(...values) {
+  const hasTrendPayload = (value) => {
+    if (Array.isArray(value)) return value.length > 0;
+    if (value === null || value === undefined || value === '') return false;
+    if (typeof value !== 'object') return true;
+    if (Array.isArray(value.results)) return value.results.length > 0;
+    if (Array.isArray(value.labels)) return value.labels.length > 0;
+
+    return Object.values(value).some((entry) => {
+      if (Array.isArray(entry)) return entry.length > 0;
+      return entry !== undefined && entry !== null && entry !== '';
+    });
+  };
+
+  for (const value of values) {
+    if (hasTrendPayload(value)) {
+      return value;
+    }
+  }
+
+  for (const value of values) {
+    if (value !== undefined && value !== null) {
+      return value;
+    }
+  }
+
+  return [];
+}
+
+function normalizeOmnichannelChannelEntry(source, key, fallbackLabel) {
+  const raw = source?.[key];
+  const value = raw && typeof raw === 'object' && !Array.isArray(raw) ? raw : { count: raw };
+  const count = value.count ?? value.total ?? value.total_count ?? value.messages_total ?? value.value ?? 0;
+  const inbound =
+    value.inbound ?? value.total_social_inbound ?? value.social_inbound ?? value.inbound_count ?? 0;
+  const outbound =
+    value.outbound ?? value.total_social_outbound ?? value.social_outbound ?? value.outbound_count ?? 0;
+  const activeConversations =
+    value.active_conversations ??
+    value.activeConversations ??
+    value.open_conversations ??
+    value.openConversations ??
+    value.active ??
+    null;
+  const responseRate =
+    value.response_rate ??
+    value.responseRate ??
+    value.reply_rate ??
+    value.replyRate ??
+    value.rate ??
+    null;
+
+  return {
+    key,
+    label: value.label ?? value.name ?? value.title ?? fallbackLabel,
+    count: count ?? 0,
+    inbound,
+    outbound,
+    active_conversations: activeConversations,
+    activeConversations,
+    response_rate: responseRate,
+    responseRate,
+    raw: value,
+  };
+}
+
+function normalizeOmnichannelPayload(source) {
+  if (!source || typeof source !== 'object') return null;
+
+  const channelsSource =
+    source.channels ??
+    source.channel_breakdown ??
+    source.channelBreakdown ??
+    source.breakdown ??
+    source.channels_breakdown ??
+    source.channelsBreakdown ??
+    source.meta_channels ??
+    source.metaChannels ??
+    null;
+
+  const preferredChannelOrder = ['instagram', 'facebook', 'whatsapp'];
+  const channels = [];
+  const seenKeys = new Set();
+
+  if (Array.isArray(channelsSource)) {
+    channelsSource.forEach((item, index) => {
+      if (!item) return;
+      const key = item.key ?? item.id ?? item.code ?? item.channel ?? item.name ?? `channel-${index}`;
+      const label = item.label ?? item.name ?? item.title ?? key;
+      const count =
+        item.count ?? item.total ?? item.total_count ?? item.messages_total ?? item.value ?? 0;
+      const inbound =
+        item.inbound ?? item.total_social_inbound ?? item.social_inbound ?? item.inbound_count ?? 0;
+      const outbound =
+        item.outbound ??
+        item.total_social_outbound ??
+        item.social_outbound ??
+        item.outbound_count ??
+        0;
+      const activeConversations =
+        item.active_conversations ??
+        item.activeConversations ??
+        item.open_conversations ??
+        item.openConversations ??
+        item.active ??
+        null;
+      const responseRate =
+        item.response_rate ?? item.responseRate ?? item.reply_rate ?? item.replyRate ?? item.rate ?? null;
+
+      channels.push({
+        key,
+        label,
+        count,
+        inbound,
+        outbound,
+        active_conversations: activeConversations,
+        activeConversations,
+        response_rate: responseRate,
+        responseRate,
+        raw: item,
+      });
+      seenKeys.add(String(key).toLowerCase());
+    });
+  } else if (channelsSource && typeof channelsSource === 'object') {
+    preferredChannelOrder.forEach((key) => {
+      if (Object.prototype.hasOwnProperty.call(channelsSource, key)) {
+        channels.push(normalizeOmnichannelChannelEntry(channelsSource, key, key));
+        seenKeys.add(key.toLowerCase());
+      }
+    });
+
+    Object.entries(channelsSource).forEach(([key, value]) => {
+      if (seenKeys.has(String(key).toLowerCase())) return;
+      if (!value) return;
+      const item = value && typeof value === 'object' && !Array.isArray(value) ? value : { count: value };
+      const count =
+        item.count ?? item.total ?? item.total_count ?? item.messages_total ?? item.value ?? 0;
+      const inbound =
+        item.inbound ?? item.total_social_inbound ?? item.social_inbound ?? item.inbound_count ?? 0;
+      const outbound =
+        item.outbound ??
+        item.total_social_outbound ??
+        item.social_outbound ??
+        item.outbound_count ??
+        0;
+      const activeConversations =
+        item.active_conversations ??
+        item.activeConversations ??
+        item.open_conversations ??
+        item.openConversations ??
+        item.active ??
+        null;
+      const responseRate =
+        item.response_rate ??
+        item.responseRate ??
+        item.reply_rate ??
+        item.replyRate ??
+        item.rate ??
+        null;
+
+      channels.push({
+        key,
+        label: item.label ?? item.name ?? item.title ?? key,
+        count,
+        inbound,
+        outbound,
+        active_conversations: activeConversations,
+        activeConversations,
+        response_rate: responseRate,
+        responseRate,
+        raw: item,
+      });
+    });
+  } else {
+    preferredChannelOrder.forEach((key) => {
+      if (Object.prototype.hasOwnProperty.call(source, key)) {
+        channels.push(normalizeOmnichannelChannelEntry(source, key, key));
+      }
+    });
+  }
+
+  const totalSocialInbound = source.total_social_inbound ?? source.totalSocialInbound ?? source.inbound ?? null;
+  const totalSocialOutbound =
+    source.total_social_outbound ?? source.totalSocialOutbound ?? source.outbound ?? null;
+  const responseRate =
+    source.response_rate ?? source.responseRate ?? source.reply_rate ?? source.replyRate ?? null;
+  const activeConversations =
+    source.active_conversations ??
+    source.activeConversations ??
+    source.open_conversations ??
+    source.openConversations ??
+    null;
+
+  const derivedInbound =
+    totalSocialInbound ??
+    channels.reduce((sum, item) => sum + (Number(item.inbound) || 0), 0);
+  const derivedOutbound =
+    totalSocialOutbound ??
+    channels.reduce((sum, item) => sum + (Number(item.outbound) || 0), 0);
+  const derivedActiveConversations =
+    activeConversations ??
+    channels.reduce((sum, item) => sum + (Number(item.active_conversations) || 0), 0);
+  const derivedResponseRate =
+    responseRate ??
+    (channels.length > 0
+      ? channels.reduce((sum, item) => sum + (Number(item.response_rate) || 0), 0) / channels.length
+      : null);
+
+  const sortedChannels = channels.sort((a, b) => {
+    const aIndex = preferredChannelOrder.indexOf(String(a.key).toLowerCase());
+    const bIndex = preferredChannelOrder.indexOf(String(b.key).toLowerCase());
+    if (aIndex === -1 && bIndex === -1) return String(a.label || a.key).localeCompare(String(b.label || b.key));
+    if (aIndex === -1) return 1;
+    if (bIndex === -1) return -1;
+    return aIndex - bIndex;
+  });
+
+  return {
+    ...source,
+    license_restricted: Boolean(source.license_restricted ?? source.licenseRestricted ?? false),
+    total_social_inbound: derivedInbound,
+    totalSocialInbound: derivedInbound,
+    total_social_outbound: derivedOutbound,
+    totalSocialOutbound: derivedOutbound,
+    response_rate: derivedResponseRate,
+    responseRate: derivedResponseRate,
+    active_conversations: derivedActiveConversations,
+    activeConversations: derivedActiveConversations,
+    channels: sortedChannels,
+    channel_breakdown: sortedChannels,
+    channelBreakdown: sortedChannels,
+    breakdown: sortedChannels,
+  };
+}
+
 /**
  * Create a new CRM call log
  * @param {Object} data - Call log data
@@ -97,11 +337,17 @@ export async function addCallNote(logId, data) {
  * @returns {Promise<{count: number, results: Array}>}
  */
 export async function getEntityCallLogs(entityType, entityId, params = {}) {
-  const response = await getCallLogs({ ...params, ordering: '-timestamp', page_size: params.page_size || 200 });
+  const response = await getCallLogs({
+    ...params,
+    ordering: '-timestamp',
+    page_size: params.page_size || 200,
+  });
   const results = response?.results || response || [];
 
   if (entityType === 'contact' && entityId) {
-    const filtered = results.filter((call) => Number(call.contact) === Number(entityId));
+    const filtered = results.filter(
+      (call) => Number(call.contact ?? call.related_contact) === Number(entityId)
+    );
     return { count: filtered.length, results: filtered };
   }
 
@@ -126,9 +372,15 @@ export async function getCompanyCallLogs(companyId, params = {}) {
     return { count: 0, results: [] };
   }
 
-  const response = await getCallLogs({ ...params, ordering: '-timestamp', page_size: params.page_size || 1000 });
+  const response = await getCallLogs({
+    ...params,
+    ordering: '-timestamp',
+    page_size: params.page_size || 1000,
+  });
   const results = response?.results || response || [];
-  const filtered = results.filter((call) => contactIds.includes(Number(call.contact)));
+  const filtered = results.filter((call) =>
+    contactIds.includes(Number(call.contact ?? call.related_contact))
+  );
   return { count: filtered.length, results: filtered };
 }
 
@@ -166,6 +418,9 @@ export async function getCallStatistics(params = {}) {
     missed: stats.missed ?? stats.missed_calls ?? stats.no_answer ?? 0,
     totalDuration: stats.totalDuration ?? stats.total_duration ?? stats.duration_total ?? 0,
     averageDuration: stats.averageDuration ?? stats.average_duration ?? stats.avg_duration ?? 0,
+    hourly_distribution: stats.hourly_distribution ?? stats.hourlyDistribution ?? [],
+    status_breakdown: stats.status_breakdown ?? stats.statusBreakdown ?? [],
+    cause_breakdown: stats.cause_breakdown ?? stats.causeBreakdown ?? [],
   };
 }
 
@@ -175,7 +430,96 @@ export async function getCallStatistics(params = {}) {
  * @returns {Promise<Object>}
  */
 export async function getContactCenterKpi(params = {}) {
-  return apiClient.get('/api/voip/contact-center-kpi/', { params });
+  const kpi = await apiClient.get('/api/voip/contact-center-kpi/', { params });
+  if (!kpi || typeof kpi !== 'object') {
+    return kpi;
+  }
+
+  const current = kpi.current ?? kpi.current_period ?? null;
+  const previous = kpi.previous ?? kpi.previous_period ?? null;
+  const normalizedCurrent = current
+    ? {
+        ...current,
+        daily_trend: normalizeTrendAlias(
+          normalizeKpiAlias(current, 'daily_trend', 'dailyTrend', [])
+        ),
+        dailyTrend: normalizeTrendAlias(
+          normalizeKpiAlias(current, 'daily_trend', 'dailyTrend', [])
+        ),
+      }
+    : null;
+  const normalizedPrevious = previous
+    ? {
+        ...previous,
+        daily_trend: normalizeTrendAlias(
+          normalizeKpiAlias(previous, 'daily_trend', 'dailyTrend', [])
+        ),
+        dailyTrend: normalizeTrendAlias(
+          normalizeKpiAlias(previous, 'daily_trend', 'dailyTrend', [])
+        ),
+      }
+    : null;
+  const omnichannelSource = normalizeKpiAlias(
+    kpi,
+    'omnichannel',
+    'omniChannel',
+    normalizeKpiAlias(kpi, 'omnichannel_kpi', 'omniChannelKpi', null)
+  );
+  const normalizedOmnichannel = normalizeOmnichannelPayload(
+    omnichannelSource ??
+      normalizedCurrent?.omnichannel ??
+      normalizedCurrent?.omniChannel ??
+      normalizedCurrent?.omnichannel_kpi ??
+      normalizedCurrent?.omniChannelKpi ??
+      normalizedPrevious?.omnichannel ??
+      normalizedPrevious?.omniChannel ??
+      normalizedPrevious?.omnichannel_kpi ??
+      normalizedPrevious?.omniChannelKpi ??
+      null
+  );
+  const dailyTrend = normalizeTrendAlias(
+    normalizeKpiAlias(kpi, 'daily_trend', 'dailyTrend', []),
+    normalizeKpiAlias(normalizedCurrent, 'daily_trend', 'dailyTrend', []),
+    normalizeKpiAlias(kpi?.current ?? kpi?.current_period ?? null, 'daily_trend', 'dailyTrend', [])
+  );
+  const previousDailyTrend = normalizeTrendAlias(
+    normalizeKpiAlias(kpi, 'previous_daily_trend', 'previousDailyTrend', []),
+    normalizeKpiAlias(normalizedPrevious, 'daily_trend', 'dailyTrend', [])
+  );
+
+  return {
+    ...kpi,
+    current: normalizedCurrent,
+    previous: normalizedPrevious,
+    daily_trend: dailyTrend,
+    dailyTrend,
+    previous_daily_trend: previousDailyTrend,
+    previousDailyTrend,
+    omnichannel: normalizedOmnichannel,
+    omnichannel_license_restricted: normalizedOmnichannel?.license_restricted ?? false,
+    hourly_distribution:
+      kpi.hourly_distribution ??
+      kpi.hourlyDistribution ??
+      normalizedCurrent?.hourly_distribution ??
+      normalizedCurrent?.hourlyDistribution ??
+      [],
+    status_breakdown:
+      kpi.status_breakdown ??
+      kpi.statusBreakdown ??
+      normalizedCurrent?.status_breakdown ??
+      normalizedCurrent?.statusBreakdown ??
+      [],
+    cause_breakdown:
+      kpi.cause_breakdown ??
+      kpi.causeBreakdown ??
+      kpi.failure_reason_breakdown ??
+      kpi.failureReasonBreakdown ??
+      normalizedCurrent?.cause_breakdown ??
+      normalizedCurrent?.causeBreakdown ??
+      normalizedCurrent?.failure_reason_breakdown ??
+      normalizedCurrent?.failureReasonBreakdown ??
+      [],
+  };
 }
 
 /**

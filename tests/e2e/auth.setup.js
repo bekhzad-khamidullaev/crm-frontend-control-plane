@@ -7,7 +7,7 @@ import { test as setup } from '@playwright/test';
 
 const authFile = 'tests/e2e/.auth/user.json';
 const BASE_URL = process.env.BASE_URL || 'http://localhost:3000';
-const API_BASE_URL = process.env.VITE_API_BASE_URL || 'https://api.crm.windevs.uz';
+const API_BASE_URL = process.env.PLAYWRIGHT_API_BASE_URL || process.env.VITE_API_BASE_URL || 'http://127.0.0.1:8080';
 const USERNAME = 'admin';
 const PASSWORD = 't3sl@admin';
 
@@ -51,8 +51,10 @@ setup('authenticate', async ({ page, request }) => {
   await page.goto(BASE_URL);
   await page.evaluate(
     ({ accessToken, refreshToken }) => {
+      sessionStorage.setItem('crm_access_token', accessToken);
       localStorage.setItem('crm_access_token', accessToken);
       if (refreshToken) {
+        sessionStorage.setItem('crm_refresh_token', refreshToken);
         localStorage.setItem('crm_refresh_token', refreshToken);
       }
       localStorage.setItem('enterprise_crm_locale', 'ru');

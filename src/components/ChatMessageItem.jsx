@@ -9,6 +9,7 @@ import {
   Button,
   Dropdown,
   theme as antdTheme,
+  Space,
   Tooltip,
   Typography,
   message as antMessage,
@@ -81,11 +82,6 @@ function getPillColors(tone, isDark, token) {
   };
 }
 
-function createdAtDifferent(updatedAt, createdAt) {
-  if (!updatedAt || !createdAt) return false;
-  return dayjs(updatedAt).valueOf() !== dayjs(createdAt).valueOf();
-}
-
 function buildStatusPills(message, isCurrentUser) {
   const pills = [];
   const queueStateMap = {
@@ -147,6 +143,11 @@ function buildStatusPills(message, isCurrentUser) {
   }
 
   return pills;
+}
+
+function createdAtDifferent(updatedAt, createdAt) {
+  if (!updatedAt || !createdAt) return false;
+  return dayjs(updatedAt).valueOf() !== dayjs(createdAt).valueOf();
 }
 
 function ChatMessageItem({
@@ -296,7 +297,7 @@ function ChatMessageItem({
               fontSize: 12,
               marginBottom: 6,
               paddingLeft: 6,
-              color: token.colorTextSecondary,
+              color: isDark ? token.colorTextSecondary : token.colorTextSecondary,
               fontWeight: 600,
             }}
           >
@@ -326,7 +327,7 @@ function ChatMessageItem({
                 overflow: 'hidden',
                 textOverflow: 'ellipsis',
                 whiteSpace: 'nowrap',
-                color: token.colorTextSecondary,
+                color: isDark ? token.colorTextSecondary : token.colorTextSecondary,
                 fontWeight: 500,
               }}
             >
@@ -399,7 +400,7 @@ function ChatMessageItem({
             </Text>
           </Tooltip>
         </div>
-      </div>
+        </div>
 
       {isHovered && menuItems.length > 0 && (
         <Dropdown

@@ -1,4 +1,4 @@
-# Production Deploy (crm-frontend-control-plane)
+# Production Deploy (crm-frontend)
 
 ## Prerequisites
 - Docker Engine + Docker Compose plugin installed
@@ -6,7 +6,7 @@
 
 ## Start / Update
 ```bash
-cd /Users/sysadmin/Documents/CRM/crm-frontend-control-plane
+cd /Users/sysadmin/Documents/CRM/crm-frontend
 docker compose -f docker-compose.prod.yml pull
 docker compose -f docker-compose.prod.yml up -d --build
 ```

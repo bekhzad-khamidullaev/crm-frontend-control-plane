@@ -1,13 +1,14 @@
 import { DealsRejectionsView } from '@/widgets/deals-rejections';
 import { DealsTable } from '@/widgets/deals-table';
+import { PageHeader } from '@/shared/ui/PageHeader';
 import { PlusOutlined, StopOutlined, UnorderedListOutlined } from '@ant-design/icons';
-import { Button, Card, Grid, Segmented, Space, Typography } from 'antd';
+import { Button, Card, Grid, Segmented, Space } from 'antd';
 import React, { useEffect, useState } from 'react';
 // @ts-ignore
 import { navigate } from '@/router.js';
 // @ts-ignore
 import { canWrite } from '@/lib/rbac.js';
-const { Title } = Typography;
+import { t } from '@/lib/i18n';
 
 export const DealsListPage: React.FC = () => {
   const screens = Grid.useBreakpoint();
@@ -25,30 +26,32 @@ export const DealsListPage: React.FC = () => {
 
   return (
     <>
-      <Space style={{ width: '100%', justifyContent: 'space-between', marginBottom: 16 }} wrap>
-        <Title level={3} style={{ margin: 0 }}>Сделки</Title>
-        <Space direction={isMobile ? 'vertical' : 'horizontal'} size="middle">
-          <Segmented
-            value={viewMode}
-            options={[
-              { label: 'Таблица', value: 'table', icon: <UnorderedListOutlined /> },
-              { label: 'Отказы', value: 'rejections', icon: <StopOutlined /> },
-            ]}
-            onChange={(value) => setViewMode(value as 'table' | 'rejections')}
-          />
-          {canManage ? (
-            <Button
-              key="create"
-              type="primary"
-              icon={<PlusOutlined />}
-              onClick={() => navigate('/deals/new')}
-              block={isMobile}
-            >
-              {isMobile ? 'Создать' : 'Создать сделку'}
-            </Button>
-          ) : null}
-        </Space>
-      </Space>
+      <PageHeader
+        title={t('dealsListPage.title')}
+        extra={(
+          <Space direction={isMobile ? 'vertical' : 'horizontal'} size="middle">
+            <Segmented
+              value={viewMode}
+              options={[
+                { label: t('dealsListPage.view.table'), value: 'table', icon: <UnorderedListOutlined /> },
+                { label: t('dealsListPage.view.rejections'), value: 'rejections', icon: <StopOutlined /> },
+              ]}
+              onChange={(value) => setViewMode(value as 'table' | 'rejections')}
+            />
+            {canManage ? (
+              <Button
+                key="create"
+                type="primary"
+                icon={<PlusOutlined />}
+                onClick={() => navigate('/deals/new')}
+                block={isMobile}
+              >
+                {isMobile ? t('dealsListPage.actions.createShort') : t('dealsListPage.actions.createDeal')}
+              </Button>
+            ) : null}
+          </Space>
+        )}
+      />
       <Card>
         {viewMode === 'table' ? <DealsTable /> : null}
         {viewMode === 'rejections' ? <DealsRejectionsView readOnly={!canManage} /> : null}

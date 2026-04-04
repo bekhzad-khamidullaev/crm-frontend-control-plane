@@ -21,6 +21,13 @@ export type Company = {
      * Registration number of Company
      */
     registration_number?: string;
+    legal_stir?: string;
+    legal_mfo?: string;
+    legal_account?: string;
+    legal_bank_name?: string;
+    legal_signer_name?: string;
+    legal_signer_position?: string;
+    legal_signing_basis?: string;
     /**
      * Company Country
      */

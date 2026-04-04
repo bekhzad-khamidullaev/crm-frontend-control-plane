@@ -4,10 +4,18 @@
 
 import { api } from './client.js';
 
-const resolveSettingsPath = (basePath, payload = {}, id) => {
-  const resolvedId = id ?? payload?.id ?? payload?.pk ?? payload?.key ?? null;
-  if (resolvedId) return `${basePath}${resolvedId}/`;
-  return basePath;
+const resolveSingletonId = async (getter, payload = {}, id, fallback = 1) => {
+  const explicit = id ?? payload?.id ?? payload?.pk ?? payload?.key ?? null;
+  if (explicit) return explicit;
+  try {
+    const current = await getter();
+    if (current?.id !== undefined && current?.id !== null) {
+      return current.id;
+    }
+  } catch {
+    // fallback below
+  }
+  return fallback;
 };
 
 export const settingsApi = {
@@ -24,13 +32,17 @@ export const settingsApi = {
 
   // General settings
   general: () => api.get('/api/settings/general/'),
-  updateGeneral: (payload = {}, id) =>
-    api.patch(resolveSettingsPath('/api/settings/general/', payload, id), { body: payload }),
+  updateGeneral: async (payload = {}, id) => {
+    const resolvedId = await resolveSingletonId(settingsApi.general, payload, id);
+    return api.patch(`/api/settings/general/${resolvedId}/`, { body: payload });
+  },
 
   // Notifications settings
   notifications: () => api.get('/api/settings/notifications/'),
-  updateNotifications: (payload = {}, id) =>
-    api.patch(resolveSettingsPath('/api/settings/notifications/', payload, id), { body: payload }),
+  updateNotifications: async (payload = {}, id) => {
+    const resolvedId = await resolveSingletonId(settingsApi.notifications, payload, id);
+    return api.patch(`/api/settings/notifications/${resolvedId}/`, { body: payload });
+  },
   testNotifications: (payload = {}) => api.post('/api/settings/notifications/test/', { body: payload }),
   userNotifications: () => api.get('/api/settings/notifications/user/'),
   updateUserNotifications: (payload = {}) =>
@@ -38,8 +50,10 @@ export const settingsApi = {
 
   // Security settings
   security: () => api.get('/api/settings/security/'),
-  updateSecurity: (payload = {}, id) =>
-    api.patch(resolveSettingsPath('/api/settings/security/', payload, id), { body: payload }),
+  updateSecurity: async (payload = {}, id) => {
+    const resolvedId = await resolveSingletonId(settingsApi.security, payload, id);
+    return api.patch(`/api/settings/security/${resolvedId}/`, { body: payload });
+  },
   securityAuditLog: (params = {}) => api.get('/api/settings/security/audit-log/', { params }),
   securitySessions: (params = {}) => api.get('/api/settings/security/sessions/', { params }),
   revokeSecuritySession: (sessionId) =>
@@ -82,19 +96,6 @@ export const settingsApi = {
     exportCsv: (params = {}) => api.get('/api/settings/integration-logs/export/', { params, responseType: 'blob' }),
     cleanup: () => api.delete('/api/settings/integration-logs/cleanup/'),
     stats: () => api.get('/api/settings/integration-logs/stats/'),
-  },
-
-  // Lead assignment rules
-  leadRules: {
-    list: (params = {}) => api.get('/api/settings/lead-assignment-rules/', { params }),
-    retrieve: (id) => api.get(`/api/settings/lead-assignment-rules/${id}/`),
-    create: (payload = {}) => api.post('/api/settings/lead-assignment-rules/', { body: payload }),
-    update: (id, payload = {}) => api.put(`/api/settings/lead-assignment-rules/${id}/`, { body: payload }),
-    patch: (id, payload = {}) => api.patch(`/api/settings/lead-assignment-rules/${id}/`, { body: payload }),
-    remove: (id) => api.delete(`/api/settings/lead-assignment-rules/${id}/`),
-    toggle: (id, payload = {}) => api.post(`/api/settings/lead-assignment-rules/${id}/toggle/`, { body: payload }),
-    templates: () => api.get('/api/settings/lead-assignment-rules/templates/'),
-    simulate: (payload = {}) => api.post('/api/settings/lead-assignment-rules/simulate/', { body: payload }),
   },
 };
 

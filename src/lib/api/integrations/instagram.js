@@ -72,34 +72,11 @@ export const getInstagramStatus = async () => {
   };
 };
 
-export const getInstagramMessages = (params = {}) =>
-  api.get('/api/settings/omnichannel/timeline/', {
-    params: { ...params, channel: 'instagram' },
-  });
+const notSupported = (feature) =>
+  Promise.reject(new Error(`${feature} is not available in Django-CRM API.yaml.`));
 
-export const sendInstagramMessage = ({ channel_id, recipient_id, handle, text }) =>
-  api.post('/api/settings/omnichannel/send/', {
-    body: {
-      channel: 'instagram',
-      channel_id,
-      recipient_id,
-      handle,
-      text,
-    },
-  });
-
-export const replyToInstagramComment = ({ channel_id, recipient_id, text }) =>
-  sendInstagramMessage({ channel_id, recipient_id, text });
-
-export const syncInstagramContacts = () =>
-  Promise.resolve({ success: true, detail: 'Auto-sync is handled by webhook pipeline.' });
-
-export const getInstagramStats = async () => {
-  const response = await getInstagramMessages({ limit: 200 });
-  const items = response?.results || [];
-  return {
-    total: items.length,
-    inbound: items.filter((item) => item.direction === 'in').length,
-    outbound: items.filter((item) => item.direction === 'out').length,
-  };
-};
+export const getInstagramMessages = () => notSupported('Instagram messages');
+export const sendInstagramMessage = () => notSupported('Instagram send message');
+export const replyToInstagramComment = () => notSupported('Instagram reply comment');
+export const syncInstagramContacts = () => notSupported('Instagram sync contacts');
+export const getInstagramStats = () => notSupported('Instagram statistics');

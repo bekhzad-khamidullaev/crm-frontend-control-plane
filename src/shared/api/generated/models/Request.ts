@@ -8,6 +8,7 @@
 export type Request = {
     readonly id: number;
     readonly ticket: string;
+    request_for?: string;
     description?: string;
     owner?: number | null;
     readonly owner_name: string | null;
@@ -21,7 +22,7 @@ export type Request = {
     /**
      * The name of the contact person (one word).
      */
-    first_name: string;
+    first_name?: string;
     /**
      * The middle name of the contact person.
      */

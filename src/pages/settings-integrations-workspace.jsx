@@ -28,7 +28,6 @@ import {
   theme as antdTheme,
 } from 'antd';
 import {
-  AppstoreAddOutlined,
   ApiOutlined,
   BellOutlined,
   CloudSyncOutlined,
@@ -36,19 +35,13 @@ import {
   DownloadOutlined,
   GlobalOutlined,
   ReloadOutlined,
-  SearchOutlined,
   SafetyCertificateOutlined,
   SettingOutlined,
   ShareAltOutlined,
   UploadOutlined,
 } from '@ant-design/icons';
 import LegacyIntegrationsPage from './integrations.jsx';
-import LeadRulesPanel from './settings-lead-rules-panel.jsx';
 import settingsApi from '../lib/api/settings.js';
-import marketplaceApi, {
-  groupModulesByType,
-  normalizeModuleType,
-} from '../lib/api/plugins.js';
 import { exportCrmDataExcel, importCrmDataExcel } from '../lib/api/crmData.js';
 import {
   executeDsrRequest,
@@ -453,71 +446,6 @@ function normalizeList(response) {
   return Array.isArray(response?.results) ? response.results : [];
 }
 
-function normalizeMarketplaceStatus(value) {
-  return String(value || 'unknown').toLowerCase();
-}
-
-function getMarketplaceStatusMeta(status, tr) {
-  const normalized = normalizeMarketplaceStatus(status);
-  if (normalized === 'installed') {
-    return { color: 'success', label: tr('settingsWorkspace.marketplace.status.installed', 'Installed') };
-  }
-  if (normalized === 'failed' || normalized === 'error') {
-    return { color: 'error', label: tr('settingsWorkspace.marketplace.status.failed', 'Failed') };
-  }
-  if (normalized === 'uninstalled') {
-    return { color: 'default', label: tr('settingsWorkspace.marketplace.status.uninstalled', 'Uninstalled') };
-  }
-  if (normalized === 'upgrading' || normalized === 'installing' || normalized === 'pending') {
-    return { color: 'processing', label: tr('settingsWorkspace.marketplace.status.pending', 'In progress') };
-  }
-  return { color: 'blue', label: prettifyKey(normalized) };
-}
-
-function resolveMarketplaceCompatibility(extension, compatibility = []) {
-  const codeNeedle = String(extension?.code || '').toLowerCase();
-  const nameNeedle = String(extension?.name || '').toLowerCase();
-  return compatibility.find((item) => {
-    const haystack = [
-      item?.extension_code,
-      item?.extension_name,
-      item?.code,
-      item?.name,
-    ]
-      .filter(Boolean)
-      .join(' ')
-      .toLowerCase();
-    return (codeNeedle && haystack.includes(codeNeedle)) || (nameNeedle && haystack.includes(nameNeedle));
-  }) || null;
-}
-
-function normalizeMarketplaceCatalogPayload(payload) {
-  const modules = Array.isArray(payload)
-    ? payload
-    : Array.isArray(payload?.modules)
-      ? payload.modules
-      : Array.isArray(payload?.results)
-        ? payload.results
-        : [];
-  const version = payload?.version || payload?.catalog_version || '';
-  return { modules, version };
-}
-
-function resolveModuleManifest(moduleItem = {}) {
-  const manifest = isPlainObject(moduleItem?.manifest) ? moduleItem.manifest : {};
-  return {
-    ...manifest,
-    manifest_version: manifest?.manifest_version || 'v1',
-    code: manifest?.code || moduleItem?.code || '',
-    name: manifest?.name || moduleItem?.name || moduleItem?.code || '',
-    version: manifest?.version || moduleItem?.version || '1.0.0',
-    compatibility: {
-      ...(manifest?.compatibility || {}),
-      crm_version: manifest?.compatibility?.crm_version || moduleItem?.crm_version || '2026.03',
-    },
-  };
-}
-
 function getPreviewEntries(payload, limit = 8) {
   if (!isPlainObject(payload)) return [];
   return Object.entries(payload).slice(0, limit);
@@ -534,7 +462,11 @@ function getIntegrationLogContext(record = {}) {
   };
 }
 
-export default function SettingsIntegrationsWorkspace({ defaultTab = 'system' } = {}) {
+export default function SettingsIntegrationsWorkspace({
+  defaultTab = 'system',
+  canAccessSystemTabs = true,
+  canAccessIntegrationsTab = true,
+} = {}) {
   const screens = Grid.useBreakpoint();
   const { token } = antdTheme.useToken();
   const { message } = App.useApp();
@@ -544,8 +476,22 @@ export default function SettingsIntegrationsWorkspace({ defaultTab = 'system' } 
     const localized = t(key, vars);
     return localized === key ? interpolateFallback(fallback, vars) : localized;
   };
+  const visibleTabKeys = useMemo(() => {
+    const nextKeys = [];
+    if (canAccessSystemTabs) {
+      nextKeys.push('overview', 'system', 'operations', 'compliance');
+    }
+    if (canAccessIntegrationsTab) {
+      nextKeys.push('integrations');
+    }
+    return nextKeys.length ? nextKeys : ['overview'];
+  }, [canAccessSystemTabs, canAccessIntegrationsTab]);
+  const resolvedDefaultTab = useMemo(() => {
+    if (visibleTabKeys.includes(defaultTab)) return defaultTab;
+    return visibleTabKeys[0] || 'overview';
+  }, [defaultTab, visibleTabKeys]);
 
-  const [activeTab, setActiveTab] = useState(defaultTab);
+  const [activeTab, setActiveTab] = useState(resolvedDefaultTab);
   const [sectionLoading, setSectionLoading] = useState({});
   const [sectionSaving, setSectionSaving] = useState({});
   const [sectionErrors, setSectionErrors] = useState({});
@@ -582,28 +528,6 @@ export default function SettingsIntegrationsWorkspace({ defaultTab = 'system' } 
   const [complianceReport, setComplianceReport] = useState(null);
   const [dsrItems, setDsrItems] = useState([]);
   const [retentionItems, setRetentionItems] = useState([]);
-  const [marketplaceExtensions, setMarketplaceExtensions] = useState([]);
-  const [marketplaceCompatibility, setMarketplaceCompatibility] = useState([]);
-  const [marketplaceCatalogModules, setMarketplaceCatalogModules] = useState([]);
-  const [marketplaceCatalogVersion, setMarketplaceCatalogVersion] = useState('');
-  const [marketplaceModuleSearch, setMarketplaceModuleSearch] = useState('');
-  const [marketplaceSearch, setMarketplaceSearch] = useState('');
-  const [marketplaceStatusFilter, setMarketplaceStatusFilter] = useState('all');
-  const [marketplaceModuleTypeFilter, setMarketplaceModuleTypeFilter] = useState('all');
-  const [marketplaceModal, setMarketplaceModal] = useState({
-    open: false,
-    mode: 'install',
-    extensionId: null,
-    extensionName: '',
-    manifestVersion: 'v1',
-    code: '',
-    name: '',
-    version: '1.0.0',
-    crmVersion: '2026.03',
-    manifestRaw: '',
-    diagnostics: null,
-    loading: false,
-  });
   const [dataExchangeLoading, setDataExchangeLoading] = useState(false);
   const [importFile, setImportFile] = useState(null);
   const [importResult, setImportResult] = useState(null);
@@ -705,94 +629,6 @@ export default function SettingsIntegrationsWorkspace({ defaultTab = 'system' } 
     ? Math.round((systemReadyCount / systemSectionReadiness.length) * 100)
     : 0;
 
-  const filteredMarketplaceExtensions = useMemo(() => {
-    const search = marketplaceSearch.trim().toLowerCase();
-    return marketplaceExtensions.filter((item) => {
-      const statusMatches =
-        marketplaceStatusFilter === 'all'
-          ? true
-          : normalizeMarketplaceStatus(item?.status) === marketplaceStatusFilter;
-      if (!statusMatches) return false;
-      if (!search) return true;
-      return [item?.name, item?.code, item?.installed_version]
-        .filter(Boolean)
-        .some((value) => String(value).toLowerCase().includes(search));
-    });
-  }, [marketplaceExtensions, marketplaceSearch, marketplaceStatusFilter]);
-
-  const marketplaceStats = useMemo(() => {
-    const installed = marketplaceExtensions.filter(
-      (item) => normalizeMarketplaceStatus(item?.status) === 'installed'
-    ).length;
-    const failed = marketplaceExtensions.filter((item) => {
-      const status = normalizeMarketplaceStatus(item?.status);
-      return status === 'failed' || status === 'error';
-    }).length;
-    const blocked = marketplaceCompatibility.filter((item) => item.compatible === false).length;
-
-    return { installed, failed, blocked };
-  }, [marketplaceExtensions, marketplaceCompatibility]);
-  const marketplaceOperationalScore = useMemo(() => {
-    const totalSignals = Math.max(1, marketplaceStats.installed + marketplaceStats.failed + marketplaceStats.blocked);
-    const penalty = marketplaceStats.failed * 2 + marketplaceStats.blocked * 2;
-    const score = Math.max(0, Math.round(((totalSignals - penalty) / totalSignals) * 100));
-    return Number.isFinite(score) ? score : 0;
-  }, [marketplaceStats]);
-  const moduleCatalogRows = useMemo(() => {
-    return marketplaceCatalogModules.map((moduleItem, index) => {
-      const code = String(moduleItem?.code || resolveModuleManifest(moduleItem).code || '').toLowerCase();
-      const installed = marketplaceExtensions.find((item) => String(item?.code || '').toLowerCase() === code) || null;
-      const status = installed?.status || 'available';
-      return {
-        ...moduleItem,
-        key: moduleItem?.id || moduleItem?.code || `catalog-${index}`,
-        code,
-        type: normalizeModuleType(moduleItem?.type || moduleItem?.category || moduleItem?.manifest?.type || code),
-        manifest: resolveModuleManifest(moduleItem),
-        installed,
-        status,
-      };
-    });
-  }, [marketplaceCatalogModules, marketplaceExtensions]);
-  const moduleCatalogSections = useMemo(() => groupModulesByType(moduleCatalogRows), [moduleCatalogRows]);
-  const filteredModuleCatalogSections = useMemo(() => {
-    const query = marketplaceModuleSearch.trim().toLowerCase();
-    return moduleCatalogSections
-      .filter((section) => marketplaceModuleTypeFilter === 'all' || section.type === marketplaceModuleTypeFilter)
-      .map((section) => {
-        const items = section.items.filter((item) => {
-          if (!query) return true;
-          return [item?.name, item?.code, item?.summary, item?.provider]
-            .filter(Boolean)
-            .some((value) => String(value).toLowerCase().includes(query));
-        });
-        return { ...section, items };
-      })
-      .filter((section) => section.items.length > 0);
-  }, [marketplaceModuleSearch, moduleCatalogSections, marketplaceModuleTypeFilter]);
-  const moduleCatalogTypeOptions = useMemo(
-    () => [
-      { value: 'all', label: tr('settingsWorkspace.filters.allTypes', 'Все типы') },
-      ...moduleCatalogSections.map((section) => ({
-        value: section.type,
-        label: `${section.title} (${section.items.length})`,
-      })),
-    ],
-    [moduleCatalogSections, tr],
-  );
-  const marketplaceAlertType =
-    marketplaceStats.failed > 0 || marketplaceStats.blocked > 0 ? 'warning' : 'info';
-
-  const marketplaceStatusOptions = useMemo(
-    () => [
-      { value: 'all', label: tr('settingsWorkspace.filters.allStatuses', 'Все статусы') },
-      { value: 'installed', label: tr('settingsWorkspace.marketplace.status.installed', 'Installed') },
-      { value: 'pending', label: tr('settingsWorkspace.marketplace.status.pending', 'In progress') },
-      { value: 'failed', label: tr('settingsWorkspace.marketplace.status.failed', 'Failed') },
-      { value: 'uninstalled', label: tr('settingsWorkspace.marketplace.status.uninstalled', 'Uninstalled') },
-    ],
-    [tr]
-  );
   const toneStyles = {
     info: {
       border: isDark ? 'rgba(96, 165, 250, 0.34)' : 'rgba(59, 130, 246, 0.18)',
@@ -827,31 +663,39 @@ export default function SettingsIntegrationsWorkspace({ defaultTab = 'system' } 
   };
 
   useEffect(() => {
-    setActiveTab(defaultTab);
-  }, [defaultTab]);
+    setActiveTab(resolvedDefaultTab);
+  }, [resolvedDefaultTab]);
 
   useEffect(() => {
     loadWorkspace();
-  }, []);
+  }, [canAccessSystemTabs, canAccessIntegrationsTab]);
 
   const setLoadingState = (key, value) => setSectionLoading((prev) => ({ ...prev, [key]: value }));
   const setSavingState = (key, value) => setSectionSaving((prev) => ({ ...prev, [key]: value }));
   const setErrorState = (key, value) => setSectionErrors((prev) => ({ ...prev, [key]: value }));
 
   const loadWorkspace = async () => {
-    await Promise.all([
-      loadGeneralSettings(),
-      loadNotifications(),
-      loadSecurity(),
-      loadMassmailSettings(),
-      loadReminderSettings(),
-      loadPublicDomains(),
-      loadWebhooks(),
-      loadIntegrationLogs(),
-      loadSecurityActivity(),
-      loadComplianceData(),
-      loadMarketplace(),
-    ]);
+    const loaders = [];
+
+    if (canAccessSystemTabs) {
+      loaders.push(
+        loadGeneralSettings(),
+        loadNotifications(),
+        loadSecurity(),
+        loadMassmailSettings(),
+        loadReminderSettings(),
+        loadPublicDomains(),
+        loadSecurityActivity(),
+        loadComplianceData()
+      );
+    }
+
+    if (canAccessSystemTabs || canAccessIntegrationsTab) {
+      loaders.push(loadWebhooks(), loadIntegrationLogs());
+    }
+
+    if (!loaders.length) return;
+    await Promise.all(loaders);
   };
 
   const wrapLoad = async (key, loader) => {
@@ -935,35 +779,6 @@ export default function SettingsIntegrationsWorkspace({ defaultTab = 'system' } 
     setRetentionItems(normalizeList(retentionResp));
   });
 
-  const loadMarketplace = () => wrapLoad('marketplace', async () => {
-    const [extensionsResp, compatibilityResp, catalogResp] = await Promise.all([
-      marketplaceApi.listExtensions({ limit: 100 }),
-      marketplaceApi.compatibilityMatrix(),
-      marketplaceApi.moduleCatalog().catch(() => null),
-    ]);
-    const extensions = normalizeList(extensionsResp);
-    setMarketplaceExtensions(extensions);
-    setMarketplaceCompatibility(Array.isArray(compatibilityResp) ? compatibilityResp : []);
-    const parsedCatalog = normalizeMarketplaceCatalogPayload(catalogResp || {});
-    if (parsedCatalog.modules.length) {
-      setMarketplaceCatalogModules(parsedCatalog.modules);
-      setMarketplaceCatalogVersion(parsedCatalog.version || '');
-      return;
-    }
-    const fallbackModules = extensions.map((item) => ({
-      code: item?.code,
-      name: item?.name,
-      type: normalizeModuleType(item?.manifest?.type || item?.compatibility?.integration_type || item?.code),
-      provider: 'control-plane',
-      summary: item?.last_error
-        ? `Installed extension, last issue: ${item.last_error}`
-        : 'Installed extension from registry',
-      manifest: resolveModuleManifest(item?.manifest || item),
-    }));
-    setMarketplaceCatalogModules(fallbackModules);
-    setMarketplaceCatalogVersion('fallback');
-  });
-
   const saveSection = async (key, payload, request, reload) => {
     setSavingState(key, true);
     try {
@@ -1000,176 +815,6 @@ export default function SettingsIntegrationsWorkspace({ defaultTab = 'system' } 
       message.error(tr('settingsWorkspace.messages.retentionExecuteError', 'Не удалось выполнить retention политики'));
     } finally {
       setLoadingState('compliance', false);
-    }
-  };
-
-  const openMarketplaceModal = (mode, extension = null) => {
-    const manifest = extension?.manifest || {};
-    const compatibility = manifest.compatibility || {};
-    setMarketplaceModal({
-      open: true,
-      mode,
-      extensionId: extension?.id || null,
-      extensionName: extension?.name || '',
-      manifestVersion: manifest.manifest_version || 'v1',
-      code: manifest.code || extension?.code || '',
-      name: manifest.name || extension?.name || '',
-      version: manifest.version || extension?.installed_version || '1.0.0',
-      crmVersion: compatibility.crm_version || '2026.03',
-      manifestRaw: Object.keys(manifest || {}).length ? JSON.stringify(manifest, null, 2) : '',
-      diagnostics: null,
-      loading: false,
-    });
-  };
-
-  const openMarketplaceModalWithManifest = (mode, manifest, extension = null) => {
-    const normalizedManifest = resolveModuleManifest({ manifest, code: manifest?.code, name: manifest?.name, version: manifest?.version });
-    setMarketplaceModal({
-      open: true,
-      mode,
-      extensionId: extension?.id || null,
-      extensionName: extension?.name || normalizedManifest.name || '',
-      manifestVersion: normalizedManifest.manifest_version || 'v1',
-      code: normalizedManifest.code || '',
-      name: normalizedManifest.name || '',
-      version: normalizedManifest.version || '1.0.0',
-      crmVersion: normalizedManifest.compatibility?.crm_version || '2026.03',
-      manifestRaw: JSON.stringify(normalizedManifest, null, 2),
-      diagnostics: null,
-      loading: false,
-    });
-  };
-
-  const handleInstallCatalogModule = (moduleItem) => {
-    openMarketplaceModalWithManifest('install', resolveModuleManifest(moduleItem), null);
-  };
-
-  const handleUpgradeCatalogModule = (moduleItem) => {
-    const installed = moduleItem?.installed;
-    if (installed?.id) {
-      openMarketplaceModalWithManifest('upgrade', resolveModuleManifest(moduleItem), installed);
-      return;
-    }
-    openMarketplaceModalWithManifest('install', resolveModuleManifest(moduleItem), null);
-  };
-
-  const handleLoadManifestFile = async (file) => {
-    try {
-      const text = await file.text();
-      const parsed = JSON.parse(text);
-      setMarketplaceModal((prev) => ({
-        ...prev,
-        manifestRaw: text,
-        manifestVersion: parsed?.manifest_version || prev.manifestVersion,
-        code: parsed?.code || prev.code,
-        name: parsed?.name || prev.name,
-        version: parsed?.version || prev.version,
-        crmVersion: parsed?.compatibility?.crm_version || prev.crmVersion,
-      }));
-      message.success(tr('settingsWorkspace.marketplace.manifestLoaded', 'Manifest загружен'));
-    } catch (error) {
-      message.error(tr('settingsWorkspace.marketplace.manifestInvalid', 'Не удалось прочитать manifest JSON'));
-    }
-    return false;
-  };
-
-  const handleMarketplaceSubmit = async () => {
-    if (!marketplaceModal.code || !marketplaceModal.name || !marketplaceModal.version) {
-      message.error(
-        tr(
-          'settingsWorkspace.marketplace.formRequired',
-          'Заполните обязательные поля: code, name, version.',
-        ),
-      );
-      return;
-    }
-
-    let parsedManifest = {
-      manifest_version: marketplaceModal.manifestVersion || 'v1',
-      code: marketplaceModal.code.trim(),
-      name: marketplaceModal.name.trim(),
-      version: marketplaceModal.version.trim(),
-      compatibility: {
-        crm_version: marketplaceModal.crmVersion || '2026.03',
-      },
-    };
-    if (marketplaceModal.manifestRaw?.trim()) {
-      try {
-        const rawParsed = JSON.parse(marketplaceModal.manifestRaw);
-        parsedManifest = {
-          ...rawParsed,
-          manifest_version: rawParsed?.manifest_version || marketplaceModal.manifestVersion || 'v1',
-          compatibility: {
-            ...(rawParsed?.compatibility || {}),
-            crm_version: rawParsed?.compatibility?.crm_version || marketplaceModal.crmVersion || '2026.03',
-          },
-        };
-      } catch {
-        message.error(tr('settingsWorkspace.marketplace.manifestInvalid', 'Не удалось прочитать manifest JSON'));
-        return;
-      }
-    }
-
-    try {
-      setMarketplaceModal((prev) => ({ ...prev, loading: true }));
-      if (marketplaceModal.mode === 'upgrade' && marketplaceModal.extensionId) {
-        await marketplaceApi.upgradeExtension(marketplaceModal.extensionId, parsedManifest);
-      } else {
-        await marketplaceApi.installExtension(parsedManifest);
-      }
-      message.success(
-        marketplaceModal.mode === 'upgrade'
-          ? tr('settingsWorkspace.marketplace.upgradeSuccess', 'Extension обновлён')
-          : tr('settingsWorkspace.marketplace.installSuccess', 'Extension установлен'),
-      );
-      setMarketplaceModal((prev) => ({ ...prev, open: false, loading: false }));
-      await loadMarketplace();
-    } catch (error) {
-      console.error('Error upserting extension:', error);
-      setMarketplaceModal((prev) => ({ ...prev, loading: false }));
-      message.error(
-        error?.message ||
-          tr('settingsWorkspace.marketplace.installError', 'Не удалось применить manifest extension'),
-      );
-    }
-  };
-
-  const handleUninstallExtension = async (extension) => {
-    try {
-      await marketplaceApi.uninstallExtension(extension.id);
-      message.success(tr('settingsWorkspace.marketplace.uninstallSuccess', 'Extension удалён'));
-      await loadMarketplace();
-    } catch (error) {
-      console.error('Error uninstalling extension:', error);
-      message.error(tr('settingsWorkspace.marketplace.uninstallError', 'Не удалось удалить extension'));
-    }
-  };
-
-  const handleLoadDiagnostics = async (extension) => {
-    try {
-      const diagnosticsResp = await marketplaceApi.extensionDiagnostics(extension.id);
-      const diagnosticsData = diagnosticsResp?.diagnostics || diagnosticsResp || {};
-      const diagnosticsEntries = getPreviewEntries(diagnosticsData, 16);
-      Modal.info({
-        title: tr('settingsWorkspace.marketplace.diagnosticsTitle', 'Diagnostics extension'),
-        width: 760,
-        content: (
-          diagnosticsEntries.length ? (
-            <Descriptions column={1} size="small" bordered style={{ marginTop: 12 }}>
-              {diagnosticsEntries.map(([key, value]) => (
-                <Descriptions.Item key={key} label={prettifyKey(key)}>
-                  {formatValueForUi(value)}
-                </Descriptions.Item>
-              ))}
-            </Descriptions>
-          ) : (
-            <Empty image={Empty.PRESENTED_IMAGE_SIMPLE} description={tr('settingsWorkspace.empty.diagnostics', 'Diagnostics пока недоступны')} />
-          )
-        ),
-      });
-    } catch (error) {
-      console.error('Error loading extension diagnostics:', error);
-      message.error(tr('settingsWorkspace.marketplace.diagnosticsError', 'Не удалось загрузить diagnostics'));
     }
   };
 
@@ -1323,12 +968,6 @@ export default function SettingsIntegrationsWorkspace({ defaultTab = 'system' } 
       icon: <ShareAltOutlined style={{ color: '#13c2c2' }} />,
     },
     {
-      key: 'marketplace',
-      title: tr('settingsWorkspace.overview.marketplace', 'Marketplace extensions'),
-      value: marketplaceExtensions.filter((item) => item.status !== 'uninstalled').length,
-      icon: <AppstoreAddOutlined style={{ color: '#9254de' }} />,
-    },
-    {
       key: 'logs',
       title: tr('settingsWorkspace.overview.logs', 'Integration log errors'),
       value: integrationErrorCount,
@@ -1372,7 +1011,7 @@ export default function SettingsIntegrationsWorkspace({ defaultTab = 'system' } 
     { success: 0, pending: 0, failed: 0 }
   );
 
-  const tabItems = [
+  const allTabItems = [
     {
       key: 'overview',
       label: tr('settingsWorkspace.tabs.overview', 'Обзор'),
@@ -1408,7 +1047,6 @@ export default function SettingsIntegrationsWorkspace({ defaultTab = 'system' } 
                   <Descriptions.Item label="Security">{Object.keys(securitySettings || {}).length ? 'synced' : 'empty'}</Descriptions.Item>
                   <Descriptions.Item label="Webhooks">{webhooks.length}</Descriptions.Item>
                   <Descriptions.Item label="Integration Logs">{integrationLogs.length}</Descriptions.Item>
-                  <Descriptions.Item label="Marketplace">{marketplaceExtensions.length}</Descriptions.Item>
                 </Descriptions>
               </Card>
             </Col>
@@ -1416,11 +1054,20 @@ export default function SettingsIntegrationsWorkspace({ defaultTab = 'system' } 
               <Card title={tr('settingsWorkspace.overview.quickActions', 'Быстрые действия')}>
                 <Space wrap>
                   <Button onClick={() => navigate('/onboarding')}>{tr('settingsWorkspace.actions.openOnboarding', 'Открыть onboarding')}</Button>
-                  <Button onClick={() => setActiveTab('system')}>{tr('settingsWorkspace.actions.openSystem', 'Открыть систему')}</Button>
-                  <Button onClick={() => setActiveTab('operations')}>{tr('settingsWorkspace.actions.openOps', 'Открыть ops')}</Button>
-                  <Button onClick={() => setActiveTab('compliance')}>{tr('settingsWorkspace.actions.openCompliance', 'Открыть compliance')}</Button>
-                  <Button onClick={() => setActiveTab('marketplace')}>{tr('settingsWorkspace.actions.openMarketplace', 'Открыть marketplace')}</Button>
-                  <Button type="primary" onClick={() => setActiveTab('integrations')}>{tr('settingsWorkspace.actions.openIntegrations', 'Открыть интеграции')}</Button>
+                  {visibleTabKeys.includes('system') ? (
+                    <Button onClick={() => setActiveTab('system')}>{tr('settingsWorkspace.actions.openSystem', 'Открыть систему')}</Button>
+                  ) : null}
+                  {visibleTabKeys.includes('operations') ? (
+                    <Button onClick={() => setActiveTab('operations')}>{tr('settingsWorkspace.actions.openOps', 'Открыть ops')}</Button>
+                  ) : null}
+                  {visibleTabKeys.includes('compliance') ? (
+                    <Button onClick={() => setActiveTab('compliance')}>{tr('settingsWorkspace.actions.openCompliance', 'Открыть compliance')}</Button>
+                  ) : null}
+                  {visibleTabKeys.includes('integrations') ? (
+                    <Button type="primary" onClick={() => setActiveTab('integrations')}>
+                      {tr('settingsWorkspace.actions.openIntegrations', 'Открыть интеграции')}
+                    </Button>
+                  ) : null}
                 </Space>
               </Card>
             </Col>
@@ -1491,9 +1138,11 @@ export default function SettingsIntegrationsWorkspace({ defaultTab = 'system' } 
                 <Button onClick={() => setActiveTab('operations')}>
                   {tr('settingsWorkspace.actions.openOps', 'Открыть ops')}
                 </Button>
-                <Button type="primary" onClick={() => setActiveTab('integrations')}>
-                  {tr('settingsWorkspace.actions.openIntegrations', 'Открыть интеграции')}
-                </Button>
+                {visibleTabKeys.includes('integrations') ? (
+                  <Button type="primary" onClick={() => setActiveTab('integrations')}>
+                    {tr('settingsWorkspace.actions.openIntegrations', 'Открыть интеграции')}
+                  </Button>
+                ) : null}
               </Space>
             </Space>
           </Card>
@@ -1822,7 +1471,7 @@ export default function SettingsIntegrationsWorkspace({ defaultTab = 'system' } 
                   dataIndex: 'status',
                   key: 'status',
                   width: 130,
-                  render: (value) => {
+                  render: (value, record) => {
                     const normalized = String(value || '').toLowerCase();
                     const color =
                       normalized === 'success'
@@ -2146,375 +1795,6 @@ export default function SettingsIntegrationsWorkspace({ defaultTab = 'system' } 
       ),
     },
     {
-      key: 'marketplace',
-      label: tr('settingsWorkspace.tabs.marketplace', 'Marketplace'),
-      children: (
-        <Space direction="vertical" size="large" style={{ width: '100%' }}>
-          <Alert
-            type={marketplaceAlertType}
-            showIcon
-            message={tr('settingsWorkspace.marketplace.title', 'Marketplace Registry')}
-            description={tr(
-              'settingsWorkspace.marketplace.description',
-              'Устанавливайте и обновляйте extension через versioned manifest v1. Для каждого extension доступен diagnostics и compatibility matrix.',
-            )}
-            action={(
-              <Space wrap>
-                <Button type="primary" icon={<AppstoreAddOutlined />} onClick={() => openMarketplaceModal('install')}>
-                  {tr('settingsWorkspace.marketplace.installAction', 'Установить extension')}
-                </Button>
-                <Button onClick={() => {
-                  setMarketplaceStatusFilter('failed');
-                  setMarketplaceSearch('');
-                }}>
-                  {tr('settingsWorkspace.marketplace.viewProblems', 'Показать проблемные')}
-                </Button>
-                <Button onClick={() => setActiveTab('integrations')}>
-                  {tr('settingsWorkspace.actions.openIntegrations', 'Открыть интеграции')}
-                </Button>
-              </Space>
-            )}
-          />
-          <Row gutter={[12, 12]}>
-            <Col xs={24} md={8}>
-              <Card size="small">
-                <Statistic
-                  title={tr('settingsWorkspace.marketplace.cards.installed', 'Installed extensions')}
-                  value={marketplaceStats.installed}
-                />
-              </Card>
-            </Col>
-            <Col xs={24} md={8}>
-              <Card size="small">
-                <Statistic
-                  title={tr('settingsWorkspace.marketplace.cards.failed', 'Проблемные extensions')}
-                  value={marketplaceStats.failed}
-                />
-              </Card>
-            </Col>
-            <Col xs={24} md={8}>
-              <Card size="small">
-                <Statistic
-                  title={tr('settingsWorkspace.marketplace.cards.compatibilityIssues', 'Compatibility blocked')}
-                  value={marketplaceStats.blocked}
-                />
-              </Card>
-            </Col>
-            <Col xs={24}>
-              <Card size="small">
-                <Space direction="vertical" size={6} style={{ width: '100%' }}>
-                  <Space style={{ width: '100%', justifyContent: 'space-between' }}>
-                    <Text strong>{tr('settingsWorkspace.marketplace.cards.operationalScore', 'Operational score')}</Text>
-                    <Text>{marketplaceOperationalScore}%</Text>
-                  </Space>
-                  <Progress
-                    percent={marketplaceOperationalScore}
-                    size="small"
-                    status={marketplaceOperationalScore >= 80 ? 'success' : marketplaceOperationalScore >= 50 ? 'active' : 'exception'}
-                  />
-                  <Text type="secondary">
-                    {tr(
-                      'settingsWorkspace.marketplace.cards.operationalHint',
-                      'Score учитывает ошибки extension и блокировки compatibility.',
-                    )}
-                  </Text>
-                </Space>
-              </Card>
-            </Col>
-          </Row>
-          <Card
-            title={tr('settingsWorkspace.marketplace.catalogTitle', 'Каталог модулей интеграции (control-plane)')}
-            extra={(
-              <Space wrap>
-                <Tag color="blue">
-                  {tr('settingsWorkspace.marketplace.catalogVersion', 'Catalog')}: {marketplaceCatalogVersion || 'n/a'}
-                </Tag>
-                <Button icon={<ReloadOutlined />} onClick={loadMarketplace} loading={sectionLoading.marketplace}>
-                  {tr('actions.refresh', 'Обновить')}
-                </Button>
-              </Space>
-            )}
-          >
-            <Space direction="vertical" size="middle" style={{ width: '100%' }}>
-              <Alert
-                type="info"
-                showIcon
-                message={tr('settingsWorkspace.marketplace.catalogDescription', 'Все типы интеграций выделены в отдельные устанавливаемые модули.')}
-                description={tr(
-                  'settingsWorkspace.marketplace.catalogDescriptionHint',
-                  'Выберите тип, откройте модуль и установите его через manifest из control-plane catalog.',
-                )}
-              />
-              <Space wrap style={{ width: '100%', justifyContent: 'space-between' }}>
-                <Input
-                  allowClear
-                  prefix={<SearchOutlined />}
-                  placeholder={tr('settingsWorkspace.marketplace.searchModules', 'Поиск модулей по code, названию, описанию')}
-                  value={marketplaceModuleSearch}
-                  onChange={(event) => setMarketplaceModuleSearch(event.target.value)}
-                  style={{ width: screens.md ? 420 : '100%' }}
-                />
-                <Space wrap>
-                  <Select
-                    value={marketplaceModuleTypeFilter}
-                    options={moduleCatalogTypeOptions}
-                    onChange={setMarketplaceModuleTypeFilter}
-                    style={{ width: screens.md ? 260 : 180 }}
-                  />
-                  <Button
-                    onClick={() => {
-                      setMarketplaceModuleSearch('');
-                      setMarketplaceModuleTypeFilter('all');
-                    }}
-                  >
-                    {tr('actions.reset', 'Сбросить')}
-                  </Button>
-                </Space>
-              </Space>
-              <Tabs
-                destroyInactiveTabPane={false}
-                items={filteredModuleCatalogSections.map((section) => ({
-                  key: section.type,
-                  label: `${section.title} (${section.items.length})`,
-                  children: (
-                    <Row gutter={[12, 12]}>
-                      {section.items.map((moduleItem) => {
-                        const statusMeta = getMarketplaceStatusMeta(moduleItem?.status, tr);
-                        const compatibleRecord = moduleItem?.installed
-                          ? resolveMarketplaceCompatibility(moduleItem.installed, marketplaceCompatibility)
-                          : null;
-                        const blocked = compatibleRecord?.compatible === false;
-                        const moduleType = normalizeModuleType(moduleItem?.type);
-                        return (
-                          <Col xs={24} md={12} xl={8} key={moduleItem.key}>
-                            <Card
-                              size="small"
-                              title={moduleItem?.name || moduleItem?.code}
-                              extra={<Tag>{moduleType}</Tag>}
-                              styles={{ body: { paddingTop: 12 } }}
-                            >
-                              <Space direction="vertical" size={8} style={{ width: '100%' }}>
-                                <Text type="secondary">{moduleItem?.summary || '-'}</Text>
-                                <Space wrap>
-                                  <Tag color={statusMeta.color}>{statusMeta.label}</Tag>
-                                  <Tag>{moduleItem?.provider || 'control-plane'}</Tag>
-                                  {blocked
-                                    ? <Tag color="error">Blocked</Tag>
-                                    : compatibleRecord
-                                      ? <Tag color="success">Compatible</Tag>
-                                      : <Tag>Unknown</Tag>}
-                                </Space>
-                                <Text code>{moduleItem?.code}</Text>
-                                <Space wrap>
-                                  <Button
-                                    type={moduleItem?.installed ? 'default' : 'primary'}
-                                    size="small"
-                                    onClick={() => handleInstallCatalogModule(moduleItem)}
-                                  >
-                                    {moduleItem?.installed
-                                      ? tr('actions.reinstall', 'Переустановить')
-                                      : tr('actions.install', 'Установить')}
-                                  </Button>
-                                  <Button
-                                    size="small"
-                                    onClick={() => handleUpgradeCatalogModule(moduleItem)}
-                                  >
-                                    {tr('actions.update', 'Обновить')}
-                                  </Button>
-                                  {moduleItem?.installed ? (
-                                    <Button
-                                      size="small"
-                                      danger
-                                      onClick={() => handleUninstallExtension(moduleItem.installed)}
-                                    >
-                                      {tr('actions.delete', 'Удалить')}
-                                    </Button>
-                                  ) : null}
-                                </Space>
-                              </Space>
-                            </Card>
-                          </Col>
-                        );
-                      })}
-                    </Row>
-                  ),
-                }))}
-              />
-              {!filteredModuleCatalogSections.length ? (
-                <Empty
-                  image={Empty.PRESENTED_IMAGE_SIMPLE}
-                  description={tr('settingsWorkspace.empty.moduleCatalog', 'Модули не найдены по выбранному фильтру')}
-                />
-              ) : null}
-            </Space>
-          </Card>
-          <Card
-            title={tr('settingsWorkspace.marketplace.installed', 'Установленные extensions')}
-            extra={(
-              <Space wrap>
-                <Button icon={<ReloadOutlined />} onClick={loadMarketplace} loading={sectionLoading.marketplace}>
-                  {tr('actions.refresh', 'Обновить')}
-                </Button>
-                <Button type="primary" icon={<AppstoreAddOutlined />} onClick={() => openMarketplaceModal('install')}>
-                  {tr('settingsWorkspace.marketplace.installAction', 'Установить extension')}
-                </Button>
-              </Space>
-            )}
-          >
-            <Space direction="vertical" size="middle" style={{ width: '100%', marginBottom: 12 }}>
-              <Space wrap style={{ width: '100%', justifyContent: 'space-between' }}>
-                <Input
-                  allowClear
-                  prefix={<SearchOutlined />}
-                  placeholder={tr('settingsWorkspace.marketplace.searchPlaceholder', 'Поиск по code, названию или версии')}
-                  value={marketplaceSearch}
-                  onChange={(event) => setMarketplaceSearch(event.target.value)}
-                  style={{ width: screens.md ? 360 : '100%' }}
-                />
-                <Space wrap>
-                  <Select
-                    value={marketplaceStatusFilter}
-                    options={marketplaceStatusOptions}
-                    onChange={setMarketplaceStatusFilter}
-                    style={{ width: screens.md ? 210 : 180 }}
-                  />
-                  <Button
-                    onClick={() => {
-                      setMarketplaceSearch('');
-                      setMarketplaceStatusFilter('all');
-                    }}
-                  >
-                    {tr('actions.reset', 'Сбросить')}
-                  </Button>
-                </Space>
-              </Space>
-              <Text type="secondary">
-                {tr(
-                  'settingsWorkspace.marketplace.filteredHint',
-                  'Показано {visible} из {total} extensions',
-                  { visible: filteredMarketplaceExtensions.length, total: marketplaceExtensions.length },
-                )}
-              </Text>
-            </Space>
-            <Table
-              rowKey={(record) => record.id}
-              loading={sectionLoading.marketplace}
-              dataSource={filteredMarketplaceExtensions}
-              pagination={false}
-              locale={{
-                emptyText: (
-                  <Empty
-                    description={tr('settingsWorkspace.empty.extensions', 'Extensions не найдены по выбранному фильтру')}
-                    image={Empty.PRESENTED_IMAGE_SIMPLE}
-                  >
-                    <Button
-                      type="primary"
-                      block={!screens.md}
-                      icon={<AppstoreAddOutlined />}
-                      onClick={() => openMarketplaceModal('install')}
-                    >
-                      {tr('settingsWorkspace.marketplace.installAction', 'Установить extension')}
-                    </Button>
-                  </Empty>
-                ),
-              }}
-              columns={[
-                { title: tr('settingsWorkspace.table.code', 'Code'), dataIndex: 'code', key: 'code', width: 200 },
-                { title: tr('settingsWorkspace.table.name', 'Название'), dataIndex: 'name', key: 'name' },
-                { title: tr('settingsWorkspace.table.version', 'Версия'), dataIndex: 'installed_version', key: 'installed_version', width: 140 },
-                {
-                  title: tr('settingsWorkspace.table.status', 'Статус'),
-                  dataIndex: 'status',
-                  key: 'status',
-                  width: 160,
-                  render: (value) => {
-                    const meta = getMarketplaceStatusMeta(value, tr);
-                    return <Tag color={meta.color}>{meta.label}</Tag>;
-                  },
-                },
-                {
-                  title: tr('settingsWorkspace.table.compatible', 'Совместимость'),
-                  key: 'compatible',
-                  width: 180,
-                  render: (_, record) => {
-                    const match = resolveMarketplaceCompatibility(record, marketplaceCompatibility);
-                    if (!match) return <Tag>Unknown</Tag>;
-                    return match.compatible ? <Tag color="success">Compatible</Tag> : <Tag color="error">Blocked</Tag>;
-                  },
-                },
-                {
-                  title: tr('settingsWorkspace.table.actions', 'Действия'),
-                  key: 'actions',
-                  width: 360,
-                  render: (_, record) => (
-                    <Space size="small" wrap>
-                      <Button size="small" onClick={() => openMarketplaceModal('upgrade', record)}>
-                        {tr('actions.update', 'Обновить')}
-                      </Button>
-                      <Button size="small" onClick={() => handleLoadDiagnostics(record)}>
-                        {tr('settingsWorkspace.marketplace.diagnostics', 'Diagnostics')}
-                      </Button>
-                      <Button size="small" danger disabled={record.status === 'uninstalled'} onClick={() => handleUninstallExtension(record)}>
-                        {tr('actions.delete', 'Удалить')}
-                      </Button>
-                      <Button size="small" onClick={() => {
-                        setMarketplaceSearch(record?.code || record?.name || '');
-                        setActiveTab('integrations');
-                      }}>
-                        {tr('settingsWorkspace.actions.openIntegrations', 'Открыть интеграции')}
-                      </Button>
-                    </Space>
-                  ),
-                },
-              ]}
-            />
-          </Card>
-          <Card title={tr('settingsWorkspace.marketplace.compatibility', 'Compatibility matrix')}>
-            {marketplaceStats.blocked > 0 && (
-              <Alert
-                type="warning"
-                showIcon
-                style={{ marginBottom: 12 }}
-                message={tr(
-                  'settingsWorkspace.marketplace.compatibilityWarning',
-                  'Найдено {count} несовместимых extensions',
-                  { count: marketplaceStats.blocked },
-                )}
-                description={tr(
-                  'settingsWorkspace.marketplace.compatibilityWarningDescription',
-                  'Проверьте причину блокировки и обновите manifest или версию CRM перед rollout.',
-                )}
-              />
-            )}
-            <Table
-              rowKey={(record) => record.id}
-              dataSource={marketplaceCompatibility}
-              pagination={false}
-              locale={{ emptyText: tr('settingsWorkspace.empty.compatibility', 'Матрица совместимости пока пуста') }}
-              columns={[
-                { title: tr('settingsWorkspace.table.extension', 'Extension'), dataIndex: 'extension_name', key: 'extension_name' },
-                { title: tr('settingsWorkspace.table.crmVersion', 'CRM version'), dataIndex: 'crm_version', key: 'crm_version', width: 180 },
-                {
-                  title: tr('settingsWorkspace.table.compatible', 'Совместимость'),
-                  dataIndex: 'compatible',
-                  key: 'compatible',
-                  width: 160,
-                  render: (value) => (value ? <Tag color="green">Compatible</Tag> : <Tag color="red">Blocked</Tag>),
-                },
-                { title: tr('settingsWorkspace.table.reason', 'Причина'), dataIndex: 'reason', key: 'reason' },
-                { title: tr('settingsWorkspace.table.checkedAt', 'Проверено'), dataIndex: 'checked_at', key: 'checked_at', width: 200, render: formatDateTime },
-              ]}
-            />
-          </Card>
-        </Space>
-      ),
-    },
-    {
-      key: 'lead-rules',
-      label: tr('settingsWorkspace.tabs.leadRules', 'Лид Rules'),
-      children: <LeadRulesPanel />,
-    },
-    {
       key: 'integrations',
       label: tr('settingsWorkspace.tabs.integrations', 'Интеграции'),
       children: (
@@ -2537,9 +1817,6 @@ export default function SettingsIntegrationsWorkspace({ defaultTab = 'system' } 
                     {tr('settingsWorkspace.actions.openOps', 'Открыть ops')}
                   </Button>
                 ) : null}
-                <Button onClick={() => setActiveTab('marketplace')}>
-                  {tr('settingsWorkspace.actions.openMarketplace', 'Открыть marketplace')}
-                </Button>
               </Space>
             )}
           />
@@ -2548,6 +1825,7 @@ export default function SettingsIntegrationsWorkspace({ defaultTab = 'system' } 
       ),
     },
   ];
+  const tabItems = allTabItems.filter((item) => visibleTabKeys.includes(item.key));
 
   return (
     <div style={{ padding: 24 }}>
@@ -2572,100 +1850,6 @@ export default function SettingsIntegrationsWorkspace({ defaultTab = 'system' } 
       >
         <Tabs activeKey={activeTab} onChange={setActiveTab} items={tabItems} />
       </Card>
-      <Modal
-        title={
-          marketplaceModal.mode === 'upgrade'
-            ? tr('settingsWorkspace.marketplace.upgradeTitle', 'Обновить extension')
-            : tr('settingsWorkspace.marketplace.installTitle', 'Установить extension')
-        }
-        open={marketplaceModal.open}
-        onCancel={() => setMarketplaceModal((prev) => ({ ...prev, open: false, loading: false }))}
-        onOk={handleMarketplaceSubmit}
-        confirmLoading={marketplaceModal.loading}
-        width={760}
-        okText={marketplaceModal.mode === 'upgrade' ? tr('actions.update', 'Обновить') : tr('actions.install', 'Установить')}
-      >
-        <Space direction="vertical" size="middle" style={{ width: '100%' }}>
-          <Alert
-            type="info"
-            showIcon
-            message={tr('settingsWorkspace.marketplace.manifestHint', 'Параметры extension')}
-            description={tr('settingsWorkspace.marketplace.manifestHintDescription', 'Заполните поля extension в структурированной форме.')}
-          />
-          <Upload
-            accept=".json,application/json"
-            showUploadList={false}
-            beforeUpload={handleLoadManifestFile}
-          >
-            <Button icon={<UploadOutlined />}>
-              {tr('settingsWorkspace.marketplace.uploadManifest', 'Загрузить manifest.json')}
-            </Button>
-          </Upload>
-          <Form layout="vertical">
-            <Row gutter={[12, 0]}>
-              <Col xs={24} md={12}>
-                <Form.Item label={tr('settingsWorkspace.marketplace.formManifestVersion', 'Manifest version')}>
-                  <Select
-                    value={marketplaceModal.manifestVersion}
-                    options={[{ label: 'v1', value: 'v1' }]}
-                    onChange={(value) => setMarketplaceModal((prev) => ({ ...prev, manifestVersion: value }))}
-                  />
-                </Form.Item>
-              </Col>
-              <Col xs={24} md={12}>
-                <Form.Item label={tr('settingsWorkspace.table.crmVersion', 'CRM version')}>
-                  <Select
-                    value={marketplaceModal.crmVersion}
-                    options={[
-                      { label: '2026.03', value: '2026.03' },
-                      { label: '2026.04', value: '2026.04' },
-                      { label: '2026.05', value: '2026.05' },
-                    ]}
-                    onChange={(value) => setMarketplaceModal((prev) => ({ ...prev, crmVersion: value }))}
-                  />
-                </Form.Item>
-              </Col>
-              <Col xs={24} md={12}>
-                <Form.Item label={tr('settingsWorkspace.table.code', 'Code')} required>
-                  <Input
-                    value={marketplaceModal.code}
-                    onChange={(event) => setMarketplaceModal((prev) => ({ ...prev, code: event.target.value }))}
-                    placeholder="com.crm.extension.demo"
-                  />
-                </Form.Item>
-              </Col>
-              <Col xs={24} md={12}>
-                <Form.Item label={tr('settingsWorkspace.table.name', 'Название')} required>
-                  <Input
-                    value={marketplaceModal.name}
-                    onChange={(event) => setMarketplaceModal((prev) => ({ ...prev, name: event.target.value }))}
-                    placeholder={tr('settingsWorkspace.marketplace.formNamePlaceholder', 'Например: Demo Extension')}
-                  />
-                </Form.Item>
-              </Col>
-              <Col xs={24} md={12}>
-                <Form.Item label={tr('settingsWorkspace.table.version', 'Версия')} required>
-                  <Input
-                    value={marketplaceModal.version}
-                    onChange={(event) => setMarketplaceModal((prev) => ({ ...prev, version: event.target.value }))}
-                    placeholder="1.0.0"
-                  />
-                </Form.Item>
-              </Col>
-              <Col xs={24}>
-                <Form.Item label={tr('settingsWorkspace.marketplace.manifestRaw', 'Manifest JSON (опционально)')}>
-                  <Input.TextArea
-                    rows={8}
-                    value={marketplaceModal.manifestRaw}
-                    onChange={(event) => setMarketplaceModal((prev) => ({ ...prev, manifestRaw: event.target.value }))}
-                    placeholder='{"manifest_version":"v1","code":"com.crm.extension.demo","name":"Demo Extension","version":"1.0.0","compatibility":{"crm_version":"2026.03"}}'
-                  />
-                </Form.Item>
-              </Col>
-            </Row>
-          </Form>
-        </Space>
-      </Modal>
       <Modal
         title={tr('settingsWorkspace.logs.detailsTitle', 'Детали integration log')}
         open={integrationLogModal.open}
@@ -3059,7 +2243,7 @@ export default function SettingsIntegrationsWorkspace({ defaultTab = 'system' } 
                   dataIndex: 'status',
                   key: 'status',
                   width: 130,
-                  render: (value) => {
+                  render: (value, record) => {
                     const normalized = String(value || '').toLowerCase();
                     const color =
                       ['success', 'completed', 'ok'].includes(normalized)

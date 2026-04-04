@@ -2,7 +2,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import dayjs from 'dayjs';
 import { ArrowLeftOutlined, FileTextOutlined, SaveOutlined } from '@ant-design/icons';
 import { useEffect, useState } from 'react';
-import { useForm } from 'react-hook-form';
+import { Controller, useForm } from 'react-hook-form';
 import { z } from 'zod';
 
 import { App, Button, Card, Col, DatePicker, Input, Result, Row, Select, Skeleton, Space, Switch, Typography } from 'antd';
@@ -68,7 +68,7 @@ export default function MemoForm({ id }) {
   const canManage = canWrite('tasks.change_memo');
 
   const {
-    register,
+    control,
     handleSubmit,
     setValue,
     reset,
@@ -199,18 +199,56 @@ export default function MemoForm({ id }) {
             <Space direction="vertical" size={16} style={{ width: '100%' }}>
               <div>
                 <FieldLabel htmlFor="name">Название *</FieldLabel>
-                <Input id="name" placeholder="Например: Итоги встречи" {...register('name')} />
+                <Controller
+                  name="name"
+                  control={control}
+                  render={({ field }) => (
+                    <Input
+                      id="name"
+                      placeholder="Например: Итоги встречи"
+                      value={field.value ?? ''}
+                      onChange={(event) => field.onChange(event.target.value)}
+                      onBlur={field.onBlur}
+                    />
+                  )}
+                />
                 <FieldError message={errors.name?.message} />
               </div>
 
               <div>
                 <FieldLabel htmlFor="description">Описание</FieldLabel>
-                <TextArea id="description" rows={3} placeholder="Краткое описание" {...register('description')} />
+                <Controller
+                  name="description"
+                  control={control}
+                  render={({ field }) => (
+                    <TextArea
+                      id="description"
+                      rows={3}
+                      placeholder="Краткое описание"
+                      value={field.value ?? ''}
+                      onChange={(event) => field.onChange(event.target.value)}
+                      onBlur={field.onBlur}
+                    />
+                  )}
+                />
               </div>
 
               <div>
                 <FieldLabel htmlFor="note">Заключение</FieldLabel>
-                <TextArea id="note" rows={4} placeholder="Ключевые выводы и договоренности" {...register('note')} />
+                <Controller
+                  name="note"
+                  control={control}
+                  render={({ field }) => (
+                    <TextArea
+                      id="note"
+                      rows={4}
+                      placeholder="Ключевые выводы и договоренности"
+                      value={field.value ?? ''}
+                      onChange={(event) => field.onChange(event.target.value)}
+                      onBlur={field.onBlur}
+                    />
+                  )}
+                />
               </div>
 
               <Row gutter={[16, 16]}>

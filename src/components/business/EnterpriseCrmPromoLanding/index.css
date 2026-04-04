@@ -1,0 +1,125 @@
+.component_EnterpriseCrmPromoLanding {
+  min-height: 100vh;
+  padding: 20px 14px 40px;
+  background:
+    radial-gradient(1200px 380px at 6% -5%, #dbeafe 0%, rgba(219, 234, 254, 0.1) 55%, transparent 100%),
+    linear-gradient(180deg, #eef4fb 0%, #f7fbff 55%, #ffffff 100%);
+}
+
+.component_EnterpriseCrmPromoLanding_dark {
+  background:
+    radial-gradient(1000px 360px at 6% -5%, rgba(59, 130, 246, 0.25) 0%, rgba(59, 130, 246, 0.05) 55%, transparent 100%),
+    linear-gradient(180deg, #0d1322 0%, #121b2f 55%, #0f172a 100%);
+}
+
+.component_EnterpriseCrmPromoLanding_container {
+  width: min(1140px, 100%);
+  margin: 0 auto;
+}
+
+.component_EnterpriseCrmPromoLanding_hero {
+  margin-bottom: 16px;
+  color: #f8fbff;
+  border-radius: 18px;
+  background: linear-gradient(135deg, #0f1f39 0%, #0f3e71 48%, #1296db 100%);
+  box-shadow: 0 14px 30px rgba(15, 23, 42, 0.2);
+}
+
+.component_EnterpriseCrmPromoLanding_dark .component_EnterpriseCrmPromoLanding_hero {
+  background: linear-gradient(135deg, #0a1020 0%, #10294a 48%, #0b5d92 100%);
+}
+
+.component_EnterpriseCrmPromoLanding_title {
+  margin: 0 !important;
+  color: #ffffff !important;
+  line-height: 1.12 !important;
+}
+
+.component_EnterpriseCrmPromoLanding_logo {
+  display: block;
+  width: 180px;
+  max-width: 100%;
+  height: auto;
+}
+
+.component_EnterpriseCrmPromoLanding_subtitle {
+  max-width: 780px;
+  margin: 0 !important;
+  color: rgba(255, 255, 255, 0.92) !important;
+  font-size: 17px;
+}
+
+.component_EnterpriseCrmPromoLanding_metrics {
+  margin-bottom: 16px;
+}
+
+.component_EnterpriseCrmPromoLanding_metricCard {
+  border-radius: 14px;
+}
+
+.component_EnterpriseCrmPromoLanding_sectionCard {
+  margin-bottom: 16px;
+  border-radius: 16px;
+}
+
+.component_EnterpriseCrmPromoLanding_splitCard,
+.component_EnterpriseCrmPromoLanding_benefitCard,
+.component_EnterpriseCrmPromoLanding_stepCard,
+.component_EnterpriseCrmPromoLanding_offerCard {
+  height: 100%;
+  border-radius: 12px;
+}
+
+.component_EnterpriseCrmPromoLanding_offerCardFeatured {
+  border-color: #33c27f !important;
+  box-shadow: 0 12px 24px rgba(51, 194, 127, 0.2);
+}
+
+.component_EnterpriseCrmPromoLanding_splitCard ul,
+.component_EnterpriseCrmPromoLanding_offerCard ul {
+  margin: 12px 0;
+  padding-left: 18px;
+}
+
+.component_EnterpriseCrmPromoLanding_splitCard li,
+.component_EnterpriseCrmPromoLanding_offerCard li {
+  margin-bottom: 6px;
+}
+
+.component_EnterpriseCrmPromoLanding_consent {
+  display: inline-flex;
+  align-items: flex-start;
+  gap: 8px;
+}
+
+.component_EnterpriseCrmPromoLanding_dark .component_EnterpriseCrmPromoLanding_sectionCard {
+  background: #141d31;
+  border-color: #273654;
+}
+
+.component_EnterpriseCrmPromoLanding_dark
+  .component_EnterpriseCrmPromoLanding_sectionCard
+  .ant-card-head-title,
+.component_EnterpriseCrmPromoLanding_dark
+  .component_EnterpriseCrmPromoLanding_sectionCard
+  .ant-typography,
+.component_EnterpriseCrmPromoLanding_dark
+  .component_EnterpriseCrmPromoLanding_sectionCard
+  .ant-statistic-title,
+.component_EnterpriseCrmPromoLanding_dark
+  .component_EnterpriseCrmPromoLanding_sectionCard
+  .ant-statistic-content {
+  color: #d8e3f8;
+}
+
+.component_EnterpriseCrmPromoLanding_dark
+  .component_EnterpriseCrmPromoLanding_sectionCard
+  .ant-typography-secondary {
+  color: #a8b8d5 !important;
+}
+
+@media (max-width: 768px) {
+  .component_EnterpriseCrmPromoLanding {
+    padding: 12px 8px 28px;
+  }
+}

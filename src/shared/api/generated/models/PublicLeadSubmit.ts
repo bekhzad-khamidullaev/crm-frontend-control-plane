@@ -10,5 +10,7 @@ export type PublicLeadSubmit = {
     payload?: Record<string, any>;
     utm?: Record<string, any>;
     referrer?: string;
+    ab_variant?: string;
+    idempotency_key?: string;
 };
 

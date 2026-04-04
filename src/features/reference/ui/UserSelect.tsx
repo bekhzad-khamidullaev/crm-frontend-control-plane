@@ -1,7 +1,7 @@
-import React, { useEffect, useMemo, useState } from 'react';
 import { Select, SelectProps } from 'antd';
 import { useUsers } from '../api/queries';
 import { UsersService } from '@/shared/api/generated/services/UsersService';
+import React, { useEffect, useMemo, useState } from 'react';
 import { normalizeSelectValue } from './selectValue';
 
 export interface UserSelectProps extends SelectProps {}
@@ -21,13 +21,11 @@ export const UserSelect: React.FC<UserSelectProps> = (props) => {
       value: item.id,
     })) || [];
   }, [data]);
-
   const optionsWithResolved = useMemo(() => {
     if (!resolvedOption) return options;
     if (options.some((item) => String(item.value) === String(resolvedOption.value))) return options;
     return [resolvedOption, ...options];
   }, [options, resolvedOption]);
-
   const normalizedValue = useMemo(() => normalizeSelectValue(value, optionsWithResolved), [value, optionsWithResolved]);
 
   useEffect(() => {
@@ -54,8 +52,8 @@ export const UserSelect: React.FC<UserSelectProps> = (props) => {
           value: selectedId,
           label:
             `${user.first_name || ''} ${user.last_name || ''}`.trim()
-            || user.username
             || user.email
+            || user.username
             || 'Пользователь',
         });
       })

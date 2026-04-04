@@ -29,6 +29,7 @@ import {
   Empty,
   Flex,
   Form,
+  Grid,
   Input,
   Modal,
   Segmented,
@@ -47,7 +48,7 @@ import { getLocale, t } from '../../lib/i18n';
 import { canWrite } from '../../lib/rbac.js';
 import { navigate } from '../../router';
 import { EntityListToolbar } from '../../shared/ui/EntityListToolbar';
-import { LIST_HEADER_STYLE, LIST_STACK_STYLE, LIST_TITLE_STYLE } from '../../shared/ui/listLayout';
+import { PageHeader } from '../../shared/ui/PageHeader';
 import {
   buildTaskKanbanColumns,
   parseTaskCardId,
@@ -57,7 +58,7 @@ import {
 } from './model/kanbanHelpers';
 import { buildTaskGanttRows, getTaskGanttBar, getTaskGanttBounds } from './model/ganttHelpers';
 
-const { Text, Title } = Typography;
+const { Text } = Typography;
 
 const TASK_VIEW_MODE_STORAGE_KEY = 'tasks:view-mode';
 const KANBAN_PAGE_SIZE = 200;
@@ -73,6 +74,11 @@ const formatDateSafe = (value, dateLocale) => {
 };
 
 const isPastDate = (value) => Boolean(value) && dayjs(value).isBefore(dayjs().startOf('day'), 'day');
+const normalizeStageTitle = (value) =>
+  String(value || '')
+    .trim()
+    .toLowerCase()
+    .replace(/\s+/g, ' ');
 
 function TaskKanbanCard({
   task,
@@ -114,7 +120,7 @@ function TaskKanbanCard({
       <Space direction="vertical" size={8} style={{ width: '100%' }}>
         <Space direction="vertical" size={0} style={{ width: '100%' }}>
           <Text strong ellipsis>
-            {task.name || 'Задача'}
+            {task.name || t('tasksListPage.columns.task')}
           </Text>
           {task.description ? (
             <Text type="secondary" ellipsis={{ tooltip: task.description }}>
@@ -125,7 +131,9 @@ function TaskKanbanCard({
 
         <Space size={[6, 6]} wrap>
           {task.priority ? <Tag color="blue">P{task.priority}</Tag> : null}
-          {task.responsible?.length ? <Tag>{task.responsible.length} resp.</Tag> : null}
+          {task.responsible?.length ? (
+            <Tag>{t('tasksListPage.kanban.responsibleShort', { count: task.responsible.length })}</Tag>
+          ) : null}
           {dueDateText ? (
             <Tag color={isDone ? 'default' : 'warning'} icon={<CalendarOutlined />}>
               {dueDateText}
@@ -168,10 +176,10 @@ function TaskKanbanCard({
               >
                 {isDone
                   ? t('tasksListPage.actions.reopen') === 'tasksListPage.actions.reopen'
-                    ? 'Reopen'
+                    ? t('tasksListPage.actions.reopenFallback')
                     : t('tasksListPage.actions.reopen')
                   : t('tasksListPage.actions.complete') === 'tasksListPage.actions.complete'
-                    ? 'Complete'
+                    ? t('tasksListPage.actions.completeFallback')
                     : t('tasksListPage.actions.complete')}
               </Button>
             </>
@@ -222,7 +230,7 @@ function TaskKanbanColumn({
               onClick={() => onCreate(column.stageId)}
             >
               {t('tasksListPage.actions.createShort') === 'tasksListPage.actions.createShort'
-                ? 'Add'
+                ? t('tasksListPage.actions.createShortFallback')
                 : t('tasksListPage.actions.createShort')}
             </Button>
           ) : null}
@@ -236,7 +244,7 @@ function TaskKanbanColumn({
             image={Empty.PRESENTED_IMAGE_SIMPLE}
             description={
               t('tasksListPage.kanban.emptyColumn') === 'tasksListPage.kanban.emptyColumn'
-                ? 'No tasks'
+                ? t('tasksListPage.empty')
                 : t('tasksListPage.kanban.emptyColumn')
             }
           />
@@ -248,6 +256,8 @@ function TaskKanbanColumn({
 }
 
 function TasksList() {
+  const screens = Grid.useBreakpoint();
+  const isMobile = !screens.md;
   const { message } = App.useApp();
   const { token } = theme.useToken();
   const [quickCreateForm] = Form.useForm();
@@ -450,9 +460,9 @@ function TasksList() {
     () =>
       users.map((user) => ({
         value: user.id,
-        label: userNameById[user.id] || 'Пользователь',
+        label: userNameById[user.id] || t('common.user'),
       })),
-    [users, userNameById],
+    [users, userNameById, locale],
   );
 
   const doneStage = stages.find((stage) => stage.done);
@@ -463,20 +473,63 @@ function TasksList() {
     [stages],
   );
 
+  const { dedupedKanbanColumns, kanbanStageAliasMap } = useMemo(() => {
+    const aliasMap = {};
+    const bySemanticKey = new Map();
+    let noStageColumn = null;
+
+    kanbanColumns.forEach((column) => {
+      if (!column || column.stageId === null || column.stageId === undefined) {
+        noStageColumn = column
+          ? { ...column, aliasStageIds: [] }
+          : noStageColumn;
+        return;
+      }
+
+      const stage = stagesById[column.stageId] || {};
+      const semanticKey = normalizeStageTitle(column.title || column.stageId);
+
+      const existing = bySemanticKey.get(semanticKey);
+      if (!existing) {
+        const next = { ...column, aliasStageIds: [column.stageId], done: Boolean(stage.done) };
+        bySemanticKey.set(semanticKey, next);
+        aliasMap[String(column.stageId)] = column.stageId;
+        return;
+      }
+
+      existing.aliasStageIds.push(column.stageId);
+      existing.done = Boolean(existing.done || stage.done);
+      aliasMap[String(column.stageId)] = existing.stageId;
+    });
+
+    const nextColumns = Array.from(bySemanticKey.values());
+    if (noStageColumn) nextColumns.push(noStageColumn);
+    nextColumns.sort((left, right) => (left.order ?? 0) - (right.order ?? 0));
+
+    return {
+      dedupedKanbanColumns: nextColumns,
+      kanbanStageAliasMap: aliasMap,
+    };
+  }, [kanbanColumns, stagesById]);
+
   const groupedKanbanTasks = useMemo(() => {
-    const grouped = kanbanColumns.reduce((acc, column) => {
+    const grouped = dedupedKanbanColumns.reduce((acc, column) => {
       acc[column.droppableId] = [];
       return acc;
     }, {});
 
     kanbanTasks.forEach((task) => {
-      const bucketId = toTaskStageDroppableId(task.stage ?? null);
+      const canonicalStageId =
+        task.stage === null || task.stage === undefined
+          ? null
+          : (kanbanStageAliasMap[String(task.stage)] ?? task.stage);
+      const bucketId = toTaskStageDroppableId(canonicalStageId);
       if (!grouped[bucketId]) grouped[bucketId] = [];
       grouped[bucketId].push(task);
     });
 
     return grouped;
-  }, [kanbanColumns, kanbanTasks]);
+  }, [dedupedKanbanColumns, kanbanTasks, kanbanStageAliasMap]);
 
   const isKanbanTruncated = kanbanTotal > kanbanTasks.length;
 
@@ -531,19 +584,33 @@ function TasksList() {
     if (!currentTask) return;
 
     const fromStage = currentTask.stage ?? null;
-    if (fromStage === toStage) return;
+    const canonicalFromStage =
+      fromStage === null || fromStage === undefined
+        ? null
+        : (kanbanStageAliasMap[String(fromStage)] ?? fromStage);
+    const canonicalToStage =
+      toStage === null || toStage === undefined
+        ? null
+        : (kanbanStageAliasMap[String(toStage)] ?? toStage);
+    if (canonicalFromStage === canonicalToStage) return;
 
     const previousTasks = kanbanTasks;
-    setKanbanTasks((prev) => prev.map((task) => (task.id === taskId ? { ...task, stage: toStage } : task)));
+    setKanbanTasks((prev) =>
+      prev.map((task) => (task.id === taskId ? { ...task, stage: canonicalToStage } : task))
+    );
     setUpdatingTaskId(taskId);
 
     try {
-      await patchTask(taskId, { stage: toStage });
+      await patchTask(taskId, { stage: canonicalToStage });
       message.success(
         tr(
           'tasksListPage.kanban.moved',
           'Задача перемещена в {stage}',
-          { stage: stagesById[toStage]?.name || tr('tasksListPage.kanban.noStage', 'Без стадии') },
+          {
+            stage:
+              stagesById[canonicalToStage]?.name ||
+              tr('tasksListPage.kanban.noStage', 'Без стадии'),
+          },
         ),
       );
     } catch (stageError) {
@@ -725,21 +792,24 @@ function TasksList() {
 
   return (
     <>
+      <PageHeader
+        title={t('tasksListPage.title')}
+        subtitle={t('tasksListPage.subtitle')}
+        extra={
+          canManage ? (
+            <Button
+              type="primary"
+              icon={<PlusOutlined />}
+              onClick={() => navigate('/tasks/new')}
+              block={isMobile}
+            >
+              {t('tasksListPage.actions.create')}
+            </Button>
+          ) : null
+        }
+      />
       <Card>
-        <Space direction="vertical" size={16} style={LIST_STACK_STYLE}>
-          <Space style={LIST_HEADER_STYLE} wrap>
-            <div>
-              <Title level={3} style={LIST_TITLE_STYLE}>
-                {t('tasksListPage.title')}
-              </Title>
-              <Text type="secondary">{t('tasksListPage.subtitle')}</Text>
-            </div>
-            {canManage ? (
-              <Button type="primary" icon={<PlusOutlined />} onClick={() => navigate('/tasks/new')}>
-                {t('tasksListPage.actions.create')}
-              </Button>
-            ) : null}
-          </Space>
+        <Space direction="vertical" size={16} style={{ width: '100%' }}>
 
           <EntityListToolbar
             searchValue={searchText}
@@ -843,7 +913,7 @@ function TasksList() {
                 }}
               >
                 <Space align="start" size={12} wrap={false}>
-                  {kanbanColumns.map((column) => (
+                  {dedupedKanbanColumns.map((column) => (
                     <TaskKanbanColumn
                       key={column.droppableId}
                       column={column}

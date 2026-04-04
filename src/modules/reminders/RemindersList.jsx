@@ -16,10 +16,10 @@ import {
 import { canWrite } from '../../lib/rbac.js';
 import { navigate } from '../../router';
 import { EntityListToolbar } from '../../shared/ui/EntityListToolbar';
-import { LIST_HEADER_STYLE, LIST_STACK_STYLE, LIST_TITLE_STYLE } from '../../shared/ui/listLayout';
+import { PageHeader } from '../../shared/ui/PageHeader';
 
 const { RangePicker } = DatePicker;
-const { Text, Title } = Typography;
+const { Text } = Typography;
 
 export default function RemindersList() {
   const { message } = App.useApp();
@@ -250,19 +250,19 @@ export default function RemindersList() {
 
   return (
     <>
+      <PageHeader
+        title="Напоминания"
+        subtitle="Список напоминаний"
+        extra={
+          canManage ? (
+            <Button type="primary" icon={<PlusOutlined />} onClick={() => navigate('/reminders/new')}>
+              Новое напоминание
+            </Button>
+          ) : null
+        }
+      />
       <Card>
-        <Space direction="vertical" size={16} style={LIST_STACK_STYLE}>
-          <Space wrap style={LIST_HEADER_STYLE}>
-            <div>
-              <Title level={3} style={LIST_TITLE_STYLE}>Напоминания</Title>
-              <Text type="secondary">Список напоминаний</Text>
-            </div>
-            {canManage ? (
-              <Button type="primary" icon={<PlusOutlined />} onClick={() => navigate('/reminders/new')}>
-                Новое напоминание
-              </Button>
-            ) : null}
-          </Space>
+        <Space direction="vertical" size={16} style={{ width: '100%' }}>
 
           <EntityListToolbar
             searchValue={searchText}

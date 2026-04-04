@@ -16,8 +16,14 @@ const normalizeBotPayload = (data = {}) => {
 export const getTelegramBots = (params = {}) =>
   api.get('/api/settings/telegram/bots/', { params });
 
+export const getTelegramUserAccounts = (params = {}) =>
+  api.get('/api/settings/telegram/users/', { params });
+
 export const getTelegramBot = (id) =>
   api.get(`/api/settings/telegram/bots/${id}/`);
+
+export const getTelegramUserAccount = (id) =>
+  api.get(`/api/settings/telegram/users/${id}/`);
 
 /**
  * Connect Telegram bot
@@ -28,6 +34,9 @@ export const getTelegramBot = (id) =>
 export const connectTelegramBot = (data) =>
   api.post('/api/settings/telegram/bots/', { body: normalizeBotPayload(data) });
 
+export const connectTelegramUserAccount = (data) =>
+  api.post('/api/settings/telegram/users/', { body: data });
+
 /**
  * Update Telegram bot settings
  * @param {string|number} id
@@ -36,6 +45,9 @@ export const connectTelegramBot = (data) =>
  */
 export const updateTelegramBot = (id, data) =>
   api.patch(`/api/settings/telegram/bots/${id}/`, { body: data });
+
+export const updateTelegramUserAccount = (id, data) =>
+  api.patch(`/api/settings/telegram/users/${id}/`, { body: data });
 
 /**
  * Disconnect Telegram bot
@@ -50,6 +62,14 @@ export const disconnectTelegramBot = async (id) => {
   }
 };
 
+export const disconnectTelegramUserAccount = async (id) => {
+  try {
+    return await api.post(`/api/settings/telegram/users/${id}/disconnect/`, { body: {} });
+  } catch {
+    return api.delete(`/api/settings/telegram/users/${id}/`);
+  }
+};
+
 /**
  * Test Telegram bot connection
  * @param {string|number} id
@@ -58,6 +78,21 @@ export const disconnectTelegramBot = async (id) => {
  */
 export const testTelegramBot = (id, payload = {}) =>
   api.post(`/api/settings/telegram/bots/${id}/test/`, { body: payload });
+
+export const testTelegramUserAccount = (id, payload = {}) =>
+  api.post(`/api/settings/telegram/users/${id}/test/`, { body: payload });
+
+export const requestTelegramUserCode = (id, payload = {}) =>
+  api.post(`/api/settings/telegram/users/${id}/request_code/`, { body: payload });
+
+export const confirmTelegramUserCode = (id, payload = {}) =>
+  api.post(`/api/settings/telegram/users/${id}/confirm_code/`, { body: payload });
+
+export const confirmTelegramUserPassword = (id, payload = {}) =>
+  api.post(`/api/settings/telegram/users/${id}/confirm_2fa/`, { body: payload });
+
+export const syncTelegramUserInbox = (id, payload = {}) =>
+  api.post(`/api/settings/telegram/users/${id}/sync_inbox/`, { body: payload });
 
 /**
  * Set Telegram webhook
@@ -70,12 +105,18 @@ export const setTelegramWebhook = (id, data) =>
   api.post(`/api/settings/telegram/bots/${id}/set_webhook/`, { body: data });
 
 export const getTelegramStatus = async () => {
-  const response = await getTelegramBots();
-  const items = response?.results || response || [];
+  const [botsResponse, usersResponse] = await Promise.all([
+    getTelegramBots(),
+    getTelegramUserAccounts().catch(() => []),
+  ]);
+  const items = botsResponse?.results || botsResponse || [];
+  const users = usersResponse?.results || usersResponse || [];
   return {
-    connected: items.length > 0,
+    connected: items.length > 0 || users.length > 0,
     count: items.length,
+    userCount: users.length,
     bots: items,
+    users,
   };
 };
 

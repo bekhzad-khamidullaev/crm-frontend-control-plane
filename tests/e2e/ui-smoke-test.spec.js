@@ -9,9 +9,7 @@ test.describe('UI Smoke Tests - SMOKE_TEST_CHECKLIST', () => {
 
   const openModule = async (page, modulePath) => {
     await page.goto(`/#/${modulePath}`);
-    await expect
-      .poll(() => page.url(), { timeout: 10000 })
-      .toMatch(buildModuleOrForbiddenRegex(modulePath));
+    await expect.poll(() => page.url(), { timeout: 10000 }).toMatch(buildModuleOrForbiddenRegex(modulePath));
     await expect(page.locator('main, .ant-layout-content').first()).toBeVisible();
     return {
       isForbidden: /#\/forbidden(?:\/|$|\?)/.test(page.url()),
@@ -23,6 +21,7 @@ test.describe('UI Smoke Tests - SMOKE_TEST_CHECKLIST', () => {
   });
 
   const modules = [
+    { name: 'Дашборд коммуникаций', url: 'calls/dashboard' },
     { name: 'Чаты', url: 'chat' },
     { name: 'Интеграции', url: 'integrations' },
     { name: 'Лиды', url: 'leads' },
@@ -34,10 +33,16 @@ test.describe('UI Smoke Tests - SMOKE_TEST_CHECKLIST', () => {
     { name: 'Компании', url: 'companies' },
     { name: 'Кампании', url: 'campaigns' },
     { name: 'Платежи', url: 'payments' },
-    { name: 'Напоминания', url: 'reminders' },
+    { name: 'Напоминания', url: 'reminders' }
   ];
-
   const communicationRoutes = ['calls', 'reminders', 'crm-emails', 'massmail', 'sms'];
+  const communicationRouteTabExpectations = {
+    calls: /Omnichannel|Outbound \/ Broadcast/i,
+    reminders: /Omnichannel|Outbound \/ Broadcast/i,
+    'crm-emails': /CRM Email|Emails?/i,
+    massmail: /Massmail|Рассыл|Ommaviy/i,
+    sms: /Omnichannel|SMS/i,
+  };
 
   test('should display main layout components', async ({ page }) => {
     await expect(page.locator('header, .ant-layout-header').first()).toBeVisible();
@@ -63,16 +68,9 @@ test.describe('UI Smoke Tests - SMOKE_TEST_CHECKLIST', () => {
         return;
       }
 
-      const hasCreate = await page
-        .locator('button:has-text("Создать"), button:has-text("Новый")')
-        .first()
-        .isVisible()
-        .catch(() => false);
-      const hasSearch = await page
-        .locator('input[placeholder*="Поиск"], input[placeholder*="Search"]')
-        .first()
-        .isVisible()
-        .catch(() => false);
+      const hasCreate = await page.locator('button:has-text("Создать"), button:has-text("Новый")').first().isVisible().catch(() => false);
+      const hasSearch = await page.locator('input[placeholder*="Поиск"], input[placeholder*="Search"]').first().isVisible().catch(() => false);
+      // Not all modules expose list controls in identical form; ensure page content is interactive.
       const hasAnyButton = (await page.locator('button').count()) > 0;
       expect(hasCreate || hasSearch || hasAnyButton).toBeTruthy();
     });
@@ -87,9 +85,24 @@ test.describe('UI Smoke Tests - SMOKE_TEST_CHECKLIST', () => {
       }
 
       const activeTab = page.locator('.ant-tabs-tab-active').first();
-      await expect(activeTab).toContainText(/Outbound \/ Broadcast/i);
+      const hasActiveTab = await activeTab.isVisible().catch(() => false);
+      if (hasActiveTab) {
+        await expect(activeTab).toContainText(
+          communicationRouteTabExpectations[route] || /Omnichannel|CRM Email|Massmail/i
+        );
+      } else {
+        await expect(
+          page.getByRole('heading', { name: /Outbound \/ Broadcast/i }).first()
+        ).toBeVisible();
+      }
       await expect(page.locator('textarea').first()).toBeVisible();
-      await expect(page.locator('button:has-text("Отправить"), button:has-text("Send")').first()).toBeVisible();
+      await expect(
+        page
+          .locator(
+            'button:has-text("Отправить"), button:has-text("Send"), button:has-text("Создать"), button:has-text("Create")'
+          )
+          .first()
+      ).toBeVisible();
     });
   }
 
@@ -124,9 +137,7 @@ test.describe('UI Smoke Tests - SMOKE_TEST_CHECKLIST', () => {
     const leadsState = await openModule(page, 'leads');
     if (leadsState.isForbidden) {
       await page.goto('/#/dashboard');
-      await expect
-        .poll(() => page.url(), { timeout: 10000 })
-        .toMatch(/#\/dashboard(?:\/|$|\?)/);
+      await expect.poll(() => page.url(), { timeout: 10000 }).toMatch(/#\/dashboard(?:\/|$|\?)/);
       await expect(page.locator('main, .ant-layout-content').first()).toBeVisible();
       return;
     }

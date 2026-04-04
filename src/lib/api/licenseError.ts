@@ -1,3 +1,5 @@
+import { t } from '../i18n/index.js';
+
 type AnyError = {
   code?: string;
   data?: any;
@@ -9,18 +11,6 @@ type AnyError = {
     data?: any;
   };
 };
-
-function normalizeLicenseCode(code: unknown): string {
-  const raw = String(code || '')
-    .trim()
-    .replace(/[\s-]+/g, '_')
-    .replace(/[^a-zA-Z0-9_]/g, '_')
-    .replace(/_+/g, '_')
-    .replace(/^_+|_+$/g, '')
-    .toUpperCase();
-  if (!raw) return '';
-  return raw.startsWith('LICENSE_') ? raw : `LICENSE_${raw}`;
-}
 
 function readPayloadCandidates(error: AnyError | null | undefined): any[] {
   if (!error || typeof error !== 'object') return [];
@@ -53,20 +43,37 @@ function findFirst(paths: string[][], candidates: any[]): any {
 
 export type LicenseRestriction = {
   code: string;
-  feature?: string;
+  feature: string;
   message?: string;
 };
 
-export function parseLicenseRestriction(error: AnyError | null | undefined): LicenseRestriction | null {
+export function formatLicenseRestrictionMessage(code: string = 'LICENSE_FEATURE_DISABLED'): string {
+  switch (String(code || '').trim()) {
+    case 'LICENSE_MISSING':
+      return 'License is missing';
+    case 'LICENSE_SEAT_LIMIT_EXCEEDED':
+      return 'License seat limit exceeded';
+    case 'LICENSE_EXPIRED':
+      return 'License has expired';
+    case 'LICENSE_REVOKED':
+      return 'License has been revoked';
+    case 'LICENSE_SUSPENDED':
+      return 'License is suspended';
+    case 'LICENSE_INVALID_SIGNATURE':
+      return 'License validation failed';
+    case 'LICENSE_BINDING_MISMATCH':
+      return 'License binding mismatch';
+    case 'LICENSE_FEATURE_DISABLED':
+    default:
+      return t('dashboardPage.errors.licenseFeatureDisabled');
+  }
+}
+
+export function parseLicenseRestriction(
+  error: AnyError | null | undefined
+): LicenseRestriction | null {
   const candidates = readPayloadCandidates(error);
-  const code = findFirst(
-    [
-      ['code'],
-      ['details', 'code'],
-      ['error', 'code'],
-    ],
-    candidates
-  );
+  const code = findFirst([['code'], ['details', 'code'], ['error', 'code']], candidates);
 
   const restrictiveCodes = new Set([
     'LICENSE_FEATURE_DISABLED',
@@ -78,32 +85,20 @@ export function parseLicenseRestriction(error: AnyError | null | undefined): Lic
     'LICENSE_INVALID_SIGNATURE',
     'LICENSE_BINDING_MISMATCH',
   ]);
-  const normalizedCode = normalizeLicenseCode(code);
-  if (!restrictiveCodes.has(normalizedCode)) return null;
+  if (!restrictiveCodes.has(String(code || ''))) return null;
 
-  const feature = findFirst(
-    [
-      ['feature'],
-      ['details', 'feature'],
-      ['details', 'details', 'feature'],
-      ['meta', 'feature'],
-    ],
-    candidates
-  );
-
-  const message = findFirst(
-    [
-      ['message'],
-      ['details', 'message'],
-      ['error', 'message'],
-    ],
-    candidates
-  );
+  const feature =
+    findFirst(
+      [['feature'], ['details', 'feature'], ['details', 'details', 'feature'], ['meta', 'feature']],
+      candidates
+    ) || 'unknown.feature';
+  const message =
+    findFirst([['message'], ['details', 'message'], ['error', 'message']], candidates) || undefined;
 
   return {
-    code: normalizedCode,
-    feature: feature ? String(feature) : undefined,
-    message: message ? String(message) : undefined,
+    code,
+    feature,
+    message,
   };
 }
 

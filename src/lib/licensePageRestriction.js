@@ -4,6 +4,7 @@ export function buildRouteLicenseRestriction(routeName, accessState) {
   if (!accessState || accessState.reason !== 'license') {
     return null;
   }
+
   return {
     code: String(accessState.code || 'LICENSE_FEATURE_DISABLED'),
     feature: String(accessState.feature || 'unknown.feature'),
@@ -37,7 +38,7 @@ export function storeRouteLicenseRestriction(restriction) {
   try {
     sessionStorage.setItem(LICENSE_ROUTE_RESTRICTION_STORAGE_KEY, JSON.stringify(restriction));
   } catch {
-    // ignore storage failures
+    // Ignore storage failures.
   }
 }
 
@@ -46,6 +47,6 @@ export function clearStoredRouteLicenseRestriction() {
   try {
     sessionStorage.removeItem(LICENSE_ROUTE_RESTRICTION_STORAGE_KEY);
   } catch {
-    // ignore storage failures
+    // Ignore storage failures.
   }
 }

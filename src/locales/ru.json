@@ -52,7 +52,13 @@
     "settingsWorkspace": "Настройки и интеграции",
     "controlPlane": "Control Plane",
     "licenseWorkspace": "License Workspace",
-    "version": "Версия CRM"
+    "version": "Версия CRM",
+    "newLead": "Новый лид",
+    "newContact": "Новый контакт",
+    "newCompany": "Новая компания",
+    "newDeal": "Новая сделка",
+    "newTask": "Новая задача",
+    "newCampaign": "Новая кампания"
   },
   "actions": {
     "edit": "Редактировать",
@@ -67,6 +73,215 @@
     "saveChanges": "Сохранить изменения",
     "reset": "Сбросить",
     "update": "Обновить"
+  },
+  "dealsCommon": {
+    "fields": {
+      "stage": "Стадия",
+      "owner": "Ответственный",
+      "company": "Компания",
+      "amount": "Сумма"
+    },
+    "defaults": {
+      "user": "Пользователь",
+      "noStage": "Без стадии"
+    },
+    "stages": {
+      "request": "Запрос",
+      "analysisOfRequest": "Анализ запроса",
+      "clarificationOfRequirements": "Уточнение требований",
+      "priceOffer": "Ценовое предложение",
+      "commercialProposal": "Коммерческое предложение",
+      "commercialOffer": "Коммерческий оффер",
+      "agreement": "Договор",
+      "invoice": "Инвойс",
+      "receivingFirstPayment": "Получение первого платежа",
+      "shipment": "Отгрузка",
+      "closedSuccessful": "Успешно закрыто",
+      "inProgress": "В работе",
+      "won": "Выиграна",
+      "lost": "Проиграна",
+      "rejected": "Отклонена",
+      "declined": "Отклонена",
+      "cancelled": "Отменена",
+      "completed": "Завершена"
+    }
+  },
+  "dealsListPage": {
+    "title": "Сделки",
+    "view": {
+      "table": "Таблица",
+      "kanban": "Канбан",
+      "rejections": "Отказы"
+    },
+    "actions": {
+      "createShort": "Создать",
+      "createDeal": "Создать сделку"
+    }
+  },
+  "dealsTable": {
+    "columns": {
+      "name": "Название",
+      "amount": "Сумма",
+      "stage": "Стадия",
+      "probability": "Вероятность",
+      "company": "Компания",
+      "contacts": "Контакты",
+      "owner": "Ответственный",
+      "closingDate": "Дата закрытия",
+      "actions": "Действия"
+    },
+    "actions": {
+      "view": "Просмотр",
+      "viewAria": "Просмотреть сделку",
+      "edit": "Редактировать",
+      "editAria": "Редактировать сделку",
+      "deleteAria": "Удалить сделку",
+      "deleteConfirm": "Удалить сделку?",
+      "noPermissions": "Недостаточно прав"
+    },
+    "messages": {
+      "loadError": "Не удалось загрузить список сделок"
+    },
+    "filters": {
+      "searchPlaceholder": "Поиск по названию...",
+      "refreshListAria": "Обновить список",
+      "searchTag": "Поиск"
+    }
+  },
+  "dealsKanban": {
+    "actions": {
+      "add": "Добавить"
+    },
+    "empty": {
+      "column": "Пусто"
+    },
+    "messages": {
+      "created": "Сделка создана",
+      "createForbidden": "Недостаточно прав или лицензии для создания сделки",
+      "createError": "Не удалось создать сделку",
+      "moved": "Сделка перемещена: {stage}",
+      "moveForbidden": "Недостаточно прав или лицензии для изменения стадии сделки",
+      "moveError": "Не удалось изменить стадию сделки",
+      "loadError": "Не удалось загрузить сделки",
+      "stagesUnavailable": "Справочник стадий недоступен, показан только столбец «Без стадии».",
+      "truncated": "Показаны первые {loaded} из {total} сделок. Уточните фильтр для полной выборки."
+    },
+    "quickCreate": {
+      "title": "Быстрое создание сделки ({stage})",
+      "actions": {
+        "create": "Создать"
+      },
+      "fields": {
+        "name": "Название сделки",
+        "nextStep": "Следующий шаг",
+        "closingDate": "Плановая дата закрытия"
+      },
+      "validation": {
+        "nameRequired": "Введите название сделки",
+        "nextStepRequired": "Укажите следующий шаг"
+      },
+      "placeholders": {
+        "name": "Например: Годовой контракт на сервис",
+        "nextStep": "Например: Согласовать КП с клиентом",
+        "amount": "0.00"
+      }
+    }
+  },
+  "dealsRejections": {
+    "reasonPrefix": "Причина",
+    "reasonNotSpecified": "Не указана",
+    "columns": {
+      "deal": "Сделка",
+      "stageStatus": "Этап / статус",
+      "reason": "Причина",
+      "amount": "Сумма",
+      "owner": "Ответственный",
+      "closingDate": "Дата закрытия",
+      "actions": "Действия"
+    },
+    "stats": {
+      "rejectionsInSample": "Отказов (в выборке)",
+      "rejectionsAmount": "Сумма отказов",
+      "topReason": "Топ причина"
+    },
+    "actions": {
+      "open": "Открыть",
+      "edit": "Редактировать",
+      "noPermissions": "Недостаточно прав"
+    },
+    "messages": {
+      "loadError": "Не удалось загрузить список сделок",
+      "truncated": "Показаны первые {loaded} из {total} сделок. Для полного анализа отказов уточните фильтры.",
+      "empty": "В текущей выборке отказов не найдено"
+    }
+  },
+  "dealDetailPage": {
+    "notFound": {
+      "title": "Сделка не найдена",
+      "back": "К списку сделок"
+    },
+    "breadcrumb": {
+      "deals": "Сделки"
+    },
+    "status": {
+      "active": "Активна",
+      "inactive": "Неактивна"
+    },
+    "actions": {
+      "remind": "Напомнить",
+      "askAi": "Спросить AI",
+      "edit": "Редактировать"
+    },
+    "createdAt": "Создано",
+    "cards": {
+      "amount": "Сумма",
+      "probability": "Вероятность",
+      "nextStep": "Следующий шаг",
+      "notAssigned": "Не назначен"
+    },
+    "tabs": {
+      "details": "Детали",
+      "activity": "Активность",
+      "calls": "Звонки"
+    },
+    "fields": {
+      "name": "Название",
+      "amount": "Сумма",
+      "stage": "Стадия",
+      "probability": "Вероятность",
+      "company": "Компания",
+      "contact": "Контакт",
+      "owner": "Ответственный",
+      "department": "Отдел",
+      "nextStep": "Следующий шаг",
+      "date": "Дата",
+      "closingDate": "Дата закрытия",
+      "closingReason": "Причина закрытия",
+      "tags": "Теги",
+      "description": "Описание"
+    },
+    "defaults": {
+      "company": "Компания"
+    },
+    "placeholders": {
+      "activity": "История активности (в разработке)",
+      "calls": "История звонков (в разработке)"
+    }
+  },
+  "appLayout": {
+    "quickCreate": "Создать",
+    "searchPlaceholder": "Поиск по разделу: {section}",
+    "workspace": {
+      "sales": "Продажи",
+      "communications": "Коммуникации",
+      "marketing": "Маркетинг",
+      "operations": "Операции",
+      "system": "Система"
+    },
+    "status": {
+      "controlPlaneOffline": "Control Plane недоступен",
+      "controlPlaneOnline": "Control Plane синхронизирован"
+    }
   },
   "helpCenterPage": {
     "alertTitle": "Справочный центр",
@@ -435,7 +650,12 @@
     "settingsCore": "Настройки",
     "usersCore": "Пользователи",
     "helpCenter": "Справка",
-    "landingBuilder": "Конструктор лендингов"
+    "landingBuilder": "Конструктор лендингов",
+    "businessProcesses": "Бизнес-процессы",
+    "businessProcessesBase": "Бизнес-процессы (база)",
+    "businessProcessesTransitions": "Условные переходы процессов",
+    "businessProcessesSla": "SLA бизнес-процессов",
+    "businessProcessesAnalytics": "Аналитика бизнес-процессов"
   },
   "loginPage": {
     "subtitle": "Введите свои данные для входа в систему",
@@ -499,8 +719,12 @@
       "refresh": "Обновить",
       "loading": "Загрузка...",
       "channel": "Канал",
+      "channelId": "Канал (ID)",
       "yes": "Да",
-      "no": "Нет"
+      "no": "Нет",
+      "clear": "Очистить",
+      "activeChannelHint": "Активный канал определён автоматически: #{id}",
+      "noChannelDetected": "Активный канал не найден. Добавьте SMS-канал в разделе Интеграции."
     },
     "providers": {
       "title": "SMS провайдеры",
@@ -511,6 +735,7 @@
     "history": {
       "title": "История SMS",
       "columns": {
+        "channelId": "Канал ID",
         "recipient": "Получатель",
         "text": "Текст",
         "status": "Статус",
@@ -524,16 +749,27 @@
     },
     "send": {
       "title": "Отправка SMS",
+      "subtitle": "Простой сценарий: выберите режим, укажите канал и отправьте сообщение.",
       "bulkTitle": "Отправка SMS (Bulk)",
       "submit": "Отправить",
+      "modes": {
+        "single": "Один номер",
+        "bulk": "Список номеров"
+      },
       "fields": {
+        "channelId": "Канал (ID)",
+        "mode": "Режим отправки",
         "phone": "Телефон",
         "phones": "Телефоны (по одному на строку)",
         "text": "Текст",
         "async": "Отправлять асинхронно"
       },
       "placeholders": {
-        "selectChannel": "Выберите канал"
+        "selectChannel": "Выберите канал",
+        "channelId": "Например: 12",
+        "phone": "+998901234567",
+        "phones": "+998901234567\\n+998901234568",
+        "text": "Введите текст SMS"
       },
       "validation": {
         "channelRequired": "Укажите канал",
@@ -768,7 +1004,8 @@
       "plannedShippingDate": "Плановая дата",
       "actualShippingDate": "Фактическая дата",
       "shipped": "Отгружено",
-      "serialNumber": "Серийный номер"
+      "serialNumber": "Серийный номер",
+      "requestFor": "Тема обращения"
     },
     "columns": {
       "ticket": "Тикет",
@@ -783,7 +1020,8 @@
       "quantity": "Количество",
       "amount": "Сумма",
       "currency": "Валюта",
-      "shipped": "Отгружено"
+      "shipped": "Отгружено",
+      "requestFor": "Тема"
     }
   },
   "referenceDataPage": {
@@ -960,7 +1198,13 @@
       "edit": "Редактировать",
       "delete": "Удалить",
       "create": "Создать задачу",
-      "refresh": "Обновить"
+      "refresh": "Обновить",
+      "createShort": "Добавить",
+      "createShortFallback": "Добавить",
+      "reopen": "Переоткрыть",
+      "reopenFallback": "Переоткрыть",
+      "complete": "Завершить",
+      "completeFallback": "Завершить"
     },
     "messages": {
       "stagesLoadWarning": "Не удалось загрузить стадии задач",
@@ -989,7 +1233,45 @@
     "pagination": {
       "total": "Всего: {total}"
     },
-    "empty": "Нет задач"
+    "empty": "Нет задач",
+    "kanban": {
+      "emptyColumn": "Задач нет",
+      "noStage": "Без стадии",
+      "loadErrorTitle": "Канбан недоступен",
+      "loadError": "Не удалось загрузить канбан задач",
+      "summary": "Показано {visible} из {total}",
+      "truncatedTitle": "Показаны не все задачи",
+      "truncatedDescription": "Для канбана загружено {loaded} из {total} задач. Уточните поиск или фильтр.",
+      "moved": "Задача перемещена в {stage}",
+      "rbacError": "Недостаточно прав или лицензии для изменения стадии задачи",
+      "moveError": "Не удалось изменить стадию задачи",
+      "responsibleShort": "{count} отв."
+    },
+    "view": {
+      "table": "Таблица",
+      "kanban": "Канбан",
+      "gantt": "Гант"
+    },
+    "gantt": {
+      "taskColumn": "Задача"
+    },
+    "quickCreate": {
+      "title": "Быстрое создание задачи",
+      "name": "Название",
+      "nextStep": "Следующий шаг",
+      "nextStepDate": "Дата следующего шага",
+      "dueDate": "Дедлайн",
+      "responsible": "Ответственные",
+      "defaultNextStep": "Первичный контакт",
+      "created": "Задача создана",
+      "error": "Не удалось создать задачу",
+      "validation": {
+        "name": "Введите название",
+        "nextStep": "Укажите следующий шаг",
+        "nextStepDate": "Укажите дату",
+        "nextStepDateFuture": "Дата не может быть в прошлом"
+      }
+    }
   },
   "projectsListPage": {
     "columns": {
@@ -1401,7 +1683,7 @@
       "page": "Страница",
       "sync": "Синхронизация",
       "bot": "Бот",
-      "username": "Username",
+      "username": "Имя пользователя",
       "name": "Название",
       "provider": "Провайдер",
       "model": "Модель",
@@ -1571,7 +1853,8 @@
     "important": "Важно",
     "yes": "Да",
     "no": "Нет",
-    "loading": "Загрузка..."
+    "loading": "Загрузка...",
+    "user": "Пользователь"
   },
   "smsSettings": {
     "header": {
@@ -1909,7 +2192,7 @@
         "calledPatternLabel": "Called number pattern",
         "callerPattern": "Caller number pattern (optional)",
         "callerPatternLabel": "Caller number pattern",
-        "action": "Routing action",
+        "action": "Действие маршрутизации",
         "targetInternalNumber": "Target internal number",
         "targetGroup": "Target group",
         "targetQueueGroup": "Target queue group",
@@ -1962,7 +2245,7 @@
       "enterExternalNumber": "Enter external number",
       "externalNumberFormat": "Use international format, for example +998901234567",
       "enterAnnouncementText": "Enter announcement text",
-      "selectType": "Select type",
+      "selectType": "Выберите тип",
       "enterNumber": "Enter number",
       "pbxNumberFormat": "For PBX use extension (2-10 symbols: digits, *, #)",
       "voipNumberFormat": "For external number use international format, e.g. +998901234567",
@@ -1976,30 +2259,30 @@
       "current": "Current mode: {{mode}}"
     },
     "fields": {
-      "routeMode": "Call routing mode",
+      "routeMode": "Режим маршрутизации звонков",
       "routeModeExtra": "Выберите, маршрутизировать ли звонки через встроенный Asterisk или внешний мост.",
       "preferredProvider": "Preferred provider",
       "preferredProviderExtra": "Поддерживается только Asterisk.",
-      "stunServers": "STUN servers",
+      "stunServers": "STUN серверы",
       "stunTooltip": "One per line or comma-separated. Example: stun:stun.l.google.com:19302",
       "stunExtra": "Needed to determine WebRTC client network route.",
       "enableTurnRelay": "Enable TURN relay",
       "turnRelayExtra": "Recommended for users behind NAT/CGNAT and corporate networks.",
-      "turnServer": "TURN server",
-      "turnServerExtra": "turn: and turns: (TLS) schemes are supported.",
+      "turnServer": "TURN сервер",
+      "turnServerExtra": "Поддерживаются схемы turn: и turns: (TLS).",
       "turnUsername": "TURN username",
       "turnPassword": "TURN password",
-      "connectionType": "Connection type",
+      "connectionType": "Тип подключения",
       "connectionTypeExtra": "PBX: внутренний номер встроенного Asterisk. SIP: trunk/account внешнего Asterisk с SIP сервером.",
-      "provider": "Provider",
+      "provider": "Провайдер",
       "providerExtra": "Поддерживается только Asterisk.",
-      "number": "Number",
+      "number": "Номер",
       "numberByType": {
         "pbx": "Internal number (extension)",
         "sip": "SIP number/login",
         "voip": "External number"
       },
-      "active": "Active",
+      "active": "Активен",
       "callerId": "Номер отображения",
       "callerIdTooltip": "Номер, который будет отображаться при исходящих звонках",
       "callerIdExtra": "Обычно совпадает с вашим внешним номером компании."
@@ -2023,44 +2306,44 @@
       "detailsError": "Failed to load call details"
     },
     "status": {
-      "answered": "Answered",
-      "completed": "Completed",
-      "missed": "Missed",
-      "noAnswer": "No answer",
-      "busy": "Busy",
-      "failed": "Failed",
-      "ringing": "Ringing"
+      "answered": "Отвечен",
+      "completed": "Завершено",
+      "missed": "Пропущенные",
+      "noAnswer": "Нет ответа",
+      "busy": "Занято",
+      "failed": "Ошибка",
+      "ringing": "Звонит"
     },
     "direction": {
       "inbound": "Inbound",
       "outbound": "Outbound"
     },
     "table": {
-      "direction": "Direction",
-      "phoneNumber": "Phone number",
-      "status": "Status",
+      "direction": "Направление",
+      "phoneNumber": "Номер телефона",
+      "status": "Статус",
       "dateTime": "Date and time",
-      "duration": "Duration",
-      "notes": "Notes",
-      "recording": "Recording",
-      "actions": "Actions"
+      "duration": "Длительность",
+      "notes": "Заметки",
+      "recording": "Запись",
+      "actions": "Действия"
     },
     "stats": {
       "total": "Total",
-      "answered": "Answered",
-      "missed": "Missed",
+      "answered": "Отвечен",
+      "missed": "Пропущенные",
       "durationSec": "Duration, sec"
     },
     "filters": {
       "searchByNumber": "Search by number",
-      "direction": "Direction",
-      "status": "Status"
+      "direction": "Направление",
+      "status": "Статус"
     },
     "modals": {
-      "recordingTitle": "Recording playback",
+      "recordingTitle": "Прослушивание записи",
       "recordingNotFound": "Recording not found",
       "noteTitle": "Call note",
-      "detailsTitle": "Call details",
+      "detailsTitle": "Детали звонка",
       "detailsUnavailable": "Data unavailable"
     },
     "fields": {
@@ -2073,29 +2356,29 @@
       "noteRequired": "Add note text"
     },
     "actions": {
-      "recording": "Recording",
+      "recording": "Запись",
       "listen": "Listen",
       "note": "Note",
-      "details": "Details"
+      "details": "Детали"
     }
   },
   "profilePage": {
     "title": "Профиль пользователя",
     "tabs": {
-      "mainInfo": "Main information",
-      "changePassword": "Change password",
-      "settings": "Settings",
-      "activity": "Activity"
+      "mainInfo": "Основная информация",
+      "changePassword": "Сменить пароль",
+      "settings": "Настройки",
+      "activity": "Активность"
     },
     "actions": {
       "changePhoto": "Change photo",
       "deletePhoto": "Delete photo",
-      "changePassword": "Change password",
+      "changePassword": "Сменить пароль",
       "saveSettings": "Save settings"
     },
     "fields": {
-      "fullName": "Full name",
-      "username": "Username",
+      "fullName": "Полное имя",
+      "username": "Имя пользователя",
       "email": "Email"
     },
     "stats": {
@@ -2109,7 +2392,7 @@
     },
     "regional": {
       "title": "Regional settings",
-      "language": "Language",
+      "language": "Язык",
       "timezone": "Timezone",
       "activateTimezone": "Use this timezone"
     },
@@ -2119,13 +2402,13 @@
       "almaty": "Almaty (UTC+6)"
     },
     "telephony": {
-      "title": "Telephony settings",
-      "agentSettingsTitle": "Personal agent settings",
+      "title": "Настройки телефонии",
+      "agentSettingsTitle": "Персональные настройки агента",
       "agentSettingsDescription": "Only personal call settings are configured here. System SIP/WebRTC and routing are managed by admin in Integrations -> Telephony.",
       "pbxNumber": "Internal number (PBX)",
       "pbxTooltip": "Your internal phone number in the system",
       "pbxExtra": "Example: 101, 7477. Main number for internal calls.",
-      "displayName": "Display name",
+      "displayName": "Отображаемое имя",
       "displayNameTooltip": "Name shown to call recipient",
       "displayNameExtra": "If empty, profile name is used."
     },
@@ -2140,39 +2423,42 @@
     },
     "activity": {
       "totalActions": "Total actions",
-      "callsToday": "Calls today",
+      "callsToday": "Звонков сегодня",
       "leadConversion": "Lead conversion",
       "recentActions": "Recent actions",
       "callHistory": "Call history"
     },
     "callTable": {
-      "number": "Number",
-      "type": "Type",
+      "number": "Номер",
+      "type": "Тип",
       "inbound": "Inbound",
       "outbound": "Outbound",
-      "duration": "Duration",
-      "time": "Time"
+      "duration": "Длительность",
+      "time": "Время"
     },
     "validation": {
+      "enterFullName": "Введите ФИО",
       "enterEmail": "Enter email",
       "validEmail": "Enter valid email",
+      "validWsUri": "Введите корректный WebSocket URI (ws:// или wss://)",
+      "validSipUri": "Введите корректный SIP URI (sip: или sips:)",
       "enterCurrentPassword": "Enter current password",
       "enterNewPassword": "Enter new password",
       "passwordMin": "Password must be at least 8 characters",
       "confirmNewPassword": "Confirm new password"
     },
     "messages": {
-      "loadError": "Failed to load profile",
-      "profileUpdated": "Profile updated",
-      "profileUpdateError": "Failed to update profile",
-      "avatarUpdated": "Avatar updated",
-      "avatarUploadError": "Failed to upload avatar",
-      "avatarDeleted": "Avatar removed",
-      "avatarDeleteError": "Failed to remove avatar",
+      "loadError": "Не удалось загрузить профиль",
+      "profileUpdated": "Профиль обновлён",
+      "profileUpdateError": "Не удалось обновить профиль",
+      "avatarUpdated": "Аватар обновлён",
+      "avatarUploadError": "Не удалось загрузить аватар",
+      "avatarDeleted": "Аватар удален",
+      "avatarDeleteError": "Не удалось удалить аватар",
       "passwordMismatch": "Passwords do not match",
       "passwordUpdated": "Password updated",
       "passwordUpdateError": "Failed to update password",
-      "preferencesSaved": "Settings saved",
+      "preferencesSaved": "Настройки сохранены",
       "preferencesSaveError": "Failed to save settings"
     }
   },
@@ -2184,70 +2470,70 @@
       "predictionsStartError": "Failed to start predictions"
     },
     "tabs": {
-      "decisions": "Decisions",
+      "decisions": "Решения",
       "team": "Team",
       "predictionsActions": "Predictions and actions",
-      "system": "System"
+      "system": "Система"
     },
     "sections": {
-      "executiveSummary": "Executive summary",
+      "executiveSummary": "Исполнительное резюме",
       "executiveSummaryDescription": "Summary of key metrics and risks for selected period.",
-      "risks": "Risks",
+      "risks": "Риски",
       "keyMetrics": "Key metrics",
       "keyMetricsDescription": "Quick snapshot of base size, deals and revenue.",
-      "trends": "Trends",
+      "trends": "Тренды",
       "trendsDescription": "Revenue dynamics and funnel movement for pace evaluation.",
-      "operations": "Operational control",
+      "operations": "Операционный контроль",
       "operationsDescription": "What is happening with funnel and team tasks right now.",
       "taskStatuses": "Task statuses",
       "teamActivity": "Team activity",
-      "teamActivityDescription": "Latest user actions and system auth snapshot.",
-      "activityFeed": "Activity feed",
+      "teamActivityDescription": "Последние действия пользователей и системный auth-снимок.",
+      "activityFeed": "Лента активности",
       "authSnapshot": "Auth snapshot",
       "predictionsByMetrics": "Predictions by key metrics",
       "predictionsByMetricsDescription": "Estimate of future revenue, leads and client base.",
       "predictionModelsState": "Prediction models state",
       "predictionModelsStateDescription": "Current model state and available signals.",
       "predictionStatus": "Prediction status",
-      "recommendedActions": "Recommended actions",
+      "recommendedActions": "Рекомендованные действия",
       "recommendedActionsDescription": "Next actions considered high priority by model.",
       "recommendedActionsClients": "Recommended actions (clients)",
       "recommendedActionsDeals": "Recommended actions (deals)",
-      "systemMetrics": "System metrics",
+      "systemMetrics": "Системные метрики",
       "systemMetricsDescription": "Service auth indicators and technical system snapshot.",
       "authStats": "Auth stats"
     },
     "charts": {
-      "revenue": "Revenue",
-      "leads": "Leads",
+      "revenue": "Выручка",
+      "leads": "Лиды",
       "deals": "Deals",
       "stage": "Stage {{index}}",
       "salesFunnel": "Sales funnel",
-      "revenueDynamics": "Revenue dynamics",
-      "leadsAndDeals": "Leads and deals"
+      "revenueDynamics": "Динамика выручки",
+      "leadsAndDeals": "Лиды и сделки"
     },
     "metrics": {
       "totalLeads": "Total leads",
-      "totalContacts": "Total contacts",
+      "totalContacts": "Всего контактов",
       "totalDeals": "Total deals",
-      "revenue": "Revenue"
+      "revenue": "Выручка"
     },
     "tasks": {
       "pending": "Pending",
-      "inProgress": "In progress",
-      "completed": "Completed",
-      "overdue": "Overdue"
+      "inProgress": "В работе",
+      "completed": "Завершено",
+      "overdue": "Просрочены"
     },
     "predictions": {
-      "status": "Status",
-      "inProgress": "in progress",
-      "revenueForecast": "Revenue forecast",
+      "status": "Статус",
+      "inProgress": "в работе",
+      "revenueForecast": "Прогноз выручки",
       "leadsForecast": "Leads forecast",
       "clientsForecast": "Clients forecast",
-      "empty": "Empty",
+      "empty": "Пусто",
       "oneRecord": "1 record",
       "nRecords": "{{count}} records",
-      "technicalStatus": "Technical status"
+      "technicalStatus": "Технический статус"
     },
     "summary": {
       "overdueTasks": "Overdue tasks: {{count}}",
@@ -2255,32 +2541,32 @@
       "revenueGrowth": "Revenue growth: {{value}}%"
     },
     "focus": {
-      "pipelineTitle": "Deals in progress",
+      "pipelineTitle": "Сделки в работе",
       "pipelineDescription": "Total commercial workload in the system.",
-      "pendingTitle": "Pending tasks",
+      "pendingTitle": "Задачи в ожидании",
       "pendingDescription": "Shows current team workload.",
       "predictionsTitle": "Active predictions",
       "predictionsDescription": "How many predictive signals are already available for analysis."
     },
     "risks": {
-      "overdueTitle": "Overdue tasks",
+      "overdueTitle": "Просроченные задачи",
       "overdueDescription": "Require immediate attention first.",
-      "conversionTitle": "Conversion",
+      "conversionTitle": "Конверсия",
       "conversionDescription": "If metric is below target, check follow-up and incoming lead quality.",
-      "growthTitle": "Revenue growth",
+      "growthTitle": "Рост выручки",
       "growthDescription": "Signal of current sales pace for selected period."
     },
     "actions": {
       "runPredictions": "Run predictions"
     },
     "activity": {
-      "event": "Event"
+      "event": "Событие"
     },
     "common": {
-      "count": "Count",
-      "noData": "No data",
+      "count": "Количество",
+      "noData": "Нет данных",
       "series": "Series {{index}}",
-      "unknown": "Unknown"
+      "unknown": "Неизвестный"
     },
     "empty": {
       "noRevenueData": "No revenue data",
@@ -2301,21 +2587,365 @@
       "noFailedAttempts": "No failed attempts"
     },
     "table": {
-      "group": "Group",
-      "metric": "Metric",
-      "status": "Status"
+      "group": "Группа",
+      "metric": "Метрика",
+      "status": "Статус"
     },
     "auth": {
       "period": "Period",
       "days": "{{count}} days",
-      "daysShort": "days",
+      "daysShort": "дней",
       "jwtAdoption": "JWT adoption",
       "successRate": "Success rate",
-      "requests": "Requests",
+      "requests": "Запросы",
       "topUsers": "Top users",
       "topEndpoints": "Top endpoints",
       "dailyBreakdown": "Daily breakdown",
       "failedAttempts": "Failed attempts"
+    }
+  },
+  "communicationsHub": {
+    "header": {
+      "title": "Коммуникации",
+      "subtitle": "CRM Email, массовые рассылки и omnichannel отправка."
+    },
+    "actions": {
+      "refresh": "Обновить",
+      "clear": "Очистить"
+    },
+    "tabs": {
+      "omnichannel": "Omnichannel",
+      "crmEmails": "CRM Email",
+      "massmail": "Массовая рассылка"
+    },
+    "omnichannel": {
+      "title": "Omnichannel отправка",
+      "subtitle": "Отправка сообщений в каналы через понятную форму.",
+      "fields": {
+        "channel": "Канал",
+        "channelId": "Аккаунт канала",
+        "contact": "Контакт CRM",
+        "contactDetails": "Поля контакта",
+        "target": "Адрес канала",
+        "recipient": "Получатель",
+        "text": "Сообщение"
+      },
+      "placeholders": {
+        "channelId": "Выберите подключённый аккаунт канала",
+        "contact": "Выберите контакт",
+        "targetWhatsApp": "Номер WhatsApp (например +998901234567)",
+        "targetSms": "Номер телефона (например +998901234567)",
+        "targetTelegram": "@username или chat_id",
+        "targetInstagram": "@username или recipient_id",
+        "targetFacebook": "PSID / recipient_id",
+        "recipient": "Номер, chat_id или recipient_id",
+        "text": "Введите текст сообщения"
+      },
+      "validation": {
+        "channelRequired": "Выберите канал",
+        "channelIdRequired": "Выберите аккаунт канала",
+        "contactRequired": "Выберите контакт",
+        "targetRequired": "Укажите адрес канала",
+        "contactChannelTargetRequired": "У контакта нет данных для выбранного канала. Заполните номер или username в карточке контакта.",
+        "recipientRequired": "Укажите получателя",
+        "textRequired": "Введите текст сообщения"
+      },
+      "hints": {
+        "targetAutoFilled": "Адрес канала подставлен автоматически из карточки контакта.",
+        "targetMissingInContact": "Для отправки заполните канал в карточке контакта.",
+        "targetEditable": "Можно вручную изменить адрес для выбранного канала."
+      },
+      "contact": {
+        "empty": "У контакта пока нет заполненных каналов",
+        "fields": {
+          "phone": "Телефон",
+          "phoneE164": "Телефон E.164",
+          "mobile": "Мобильный",
+          "mobileE164": "Мобильный E.164",
+          "otherPhone": "Доп. телефон",
+          "email": "Email",
+          "telegram": "Telegram",
+          "telegramChatId": "Telegram chat_id",
+          "instagram": "Instagram",
+          "instagramRecipientId": "Instagram recipient_id",
+          "facebookPsid": "Facebook PSID"
+        }
+      },
+      "actions": {
+        "send": "Отправить"
+      }
+    },
+    "crmEmails": {
+      "create": {
+        "title": "Быстрое письмо клиенту",
+        "subtitle": "Минимум полей: кому, тема и текст. Отправка в 1 шаг.",
+        "fields": {
+          "to": "Кому (email)",
+          "subject": "Тема",
+          "from": "От кого (опционально)",
+          "content": "Текст письма",
+          "template": "Шаблон сообщения"
+        },
+        "placeholders": {
+          "to": "client@example.com",
+          "subject": "Тема письма",
+          "from": "sales@your-company.com",
+          "content": "Введите текст письма",
+          "template": "Выберите готовый шаблон (опционально)"
+        },
+        "validation": {
+          "toRequired": "Укажите email получателя",
+          "toInvalid": "Введите корректный email",
+          "subjectRequired": "Введите тему письма",
+          "contentRequired": "Введите текст письма"
+        },
+        "actions": {
+          "send": "Отправить письмо"
+        },
+        "template": {
+          "defaultTitle": "Шаблон #{id}",
+          "empty": "Нет доступных шаблонов"
+        }
+      },
+      "stats": {
+        "total": "Всего: {count}",
+        "sent": "Отправлено: {count}",
+        "drafts": "Черновики: {count}"
+      },
+      "table": {
+        "title": "Последние CRM Email",
+        "columns": {
+          "subject": "Тема",
+          "from": "От",
+          "to": "Кому",
+          "status": "Статус",
+          "createdAt": "Создано"
+        },
+        "status": {
+          "sent": "Отправлено",
+          "draft": "Черновик"
+        }
+      }
+    },
+    "massmail": {
+      "create": {
+        "title": "Создать сообщение рассылки",
+        "subtitle": "Подготовьте шаблон: тема и текст. Дальше используйте его в рассылках.",
+        "fields": {
+          "subject": "Тема рассылки",
+          "content": "Текст рассылки"
+        },
+        "placeholders": {
+          "subject": "Весенняя акция для клиентов",
+          "content": "Введите текст массовой рассылки"
+        },
+        "validation": {
+          "subjectRequired": "Введите тему рассылки",
+          "contentRequired": "Введите текст рассылки"
+        },
+        "actions": {
+          "create": "Создать сообщение"
+        }
+      },
+      "stats": {
+        "total": "Сообщений: {count}",
+        "sent": "Отправлено: {count}",
+        "drafts": "Черновики: {count}",
+        "failed": "Ошибок: {count}"
+      },
+      "table": {
+        "title": "Мониторинг рассылок",
+        "modes": {
+          "messages": "Сообщения",
+          "mailings": "Рассылки"
+        },
+        "mailings": {
+          "columns": {
+            "name": "Рассылка",
+            "status": "Статус",
+            "sendingDate": "Дата отправки",
+            "recipients": "Получателей"
+          }
+        },
+        "messages": {
+          "columns": {
+            "subject": "Тема",
+            "content": "Содержание",
+            "status": "Статус",
+            "updatedAt": "Обновлено",
+            "actions": "Действия"
+          },
+          "actions": {
+            "view": "Просмотр",
+            "send": "Отправить",
+            "duplicate": "Дублировать",
+            "copySuffix": "копия",
+            "copyDefaultTitle": "Копия сообщения"
+          },
+          "preview": {
+            "title": "Просмотр черновика",
+            "subject": "Тема",
+            "status": "Статус",
+            "updatedAt": "Обновлено",
+            "content": "Содержание",
+            "close": "Закрыть"
+          },
+          "status": {
+            "draft": "Черновик"
+          }
+        }
+      },
+      "sendNow": {
+        "title": "Отправить рассылку сейчас",
+        "subtitle": "Выберите шаблон, укажите список получателей и отправьте письма сразу.",
+        "emptyTemplates": "Сначала создайте хотя бы один шаблон сообщения",
+        "emptyContacts": "Контакты с email не найдены",
+        "fields": {
+          "template": "Шаблон",
+          "subject": "Тема отправки",
+          "from": "От кого (опционально)",
+          "recipients": "Получатели (email)",
+          "preview": "Предпросмотр текста шаблона"
+        },
+        "placeholders": {
+          "template": "Выберите шаблон",
+          "subject": "Тема письма для рассылки",
+          "from": "sales@your-company.com",
+          "recipients": "Выберите контакты или введите email вручную",
+          "preview": "Выберите шаблон, чтобы увидеть текст"
+        },
+        "validation": {
+          "templateRequired": "Выберите шаблон",
+          "templateNotFound": "Выбранный шаблон не найден",
+          "subjectRequired": "Введите тему отправки",
+          "recipientsRequired": "Укажите хотя бы один email получателя"
+        },
+        "actions": {
+          "send": "Отправить рассылку"
+        }
+      }
+    },
+    "messages": {
+      "loadError": "Не удалось загрузить коммуникации",
+      "omnichannelSent": "Сообщение отправлено",
+      "omnichannelSendError": "Не удалось отправить сообщение",
+      "crmEmailCreated": "CRM Email отправлен",
+      "crmEmailCreateError": "Не удалось отправить CRM Email",
+      "massmailMessageCreated": "Сообщение рассылки создано",
+      "massmailMessageCreateError": "Не удалось создать сообщение рассылки",
+      "emptyTabs": "Нет доступных разделов коммуникаций",
+      "crmTemplateApplied": "Шаблон подставлен в тему и текст",
+      "massmailDispatched": "Рассылка отправлена: {count} писем",
+      "massmailDispatchPartial": "Не отправлено: {count} писем",
+      "massmailDispatchError": "Не удалось отправить рассылку",
+      "massmailDraftReadyForSend": "Черновик загружен в форму отправки",
+      "massmailDraftDuplicated": "Черновик продублирован в форму создания"
+    }
+  },
+  "leadsListPage": {
+    "title": "Лиды",
+    "view": {
+      "table": "Таблица",
+      "kanban": "Канбан"
+    },
+    "actions": {
+      "createShort": "Создать",
+      "createLead": "Создать лид"
+    }
+  },
+  "callButton": {
+    "actions": {
+      "call": "Позвонить",
+      "openEntity": "Открыть карточку клиента",
+      "endCall": "Завершить звонок",
+      "close": "Закрыть"
+    },
+    "status": {
+      "connecting": "Соединение...",
+      "connected": "Разговор",
+      "completed": "Звонок завершен"
+    },
+    "labels": {
+      "callStatus": "Статус звонка",
+      "direction": "Направление",
+      "entityType": "Тип сущности",
+      "entityId": "ID сущности",
+      "phone": "Номер",
+      "duration": "Длительность"
+    },
+    "direction": {
+      "outbound": "Исходящий",
+      "inbound": "Входящий"
+    },
+    "entityType": {
+      "lead": "Лид",
+      "company": "Компания",
+      "contact": "Контакт",
+      "client": "Клиент"
+    },
+    "modal": {
+      "outgoingTitle": "Исходящий звонок",
+      "connectingTitle": "Соединение...",
+      "connectedTitle": "Идет разговор",
+      "completedTitle": "Звонок завершен",
+      "defaultTitle": "Звонок"
+    },
+    "messages": {
+      "serverRouted": "Звонок отправлен через сервер телефонии{providerSuffix}",
+      "notEstablished": "Звонок не установлен{reasonSuffix}",
+      "phoneMissing": "Номер телефона не указан",
+      "serverRouteFailed": "Не удалось отправить звонок через сервер",
+      "invalidNumber": "Неверный формат номера",
+      "sipLibraryMissing": "SIP библиотека не загружена",
+      "sipNotConfigured": "SIP клиент не настроен для пользователя",
+      "callError": "Ошибка при звонке: {reason}"
+    }
+  },
+  "referenceSelect": {
+    "placeholders": {
+      "selectType": "Выберите {type}"
+    },
+    "errors": {
+      "unavailable": "Справочник недоступен",
+      "loadFailed": "Не удалось загрузить {type}",
+      "loadSelectedFailed": "Не удалось загрузить выбранное значение для {type}"
+    },
+    "unnamed": "Без названия",
+    "types": {
+      "stage": "этап",
+      "taskStage": "этап задачи",
+      "projectStage": "этап проекта",
+      "source": "источник",
+      "industry": "отрасль",
+      "country": "страну",
+      "city": "город",
+      "currency": "валюту",
+      "clientType": "тип клиента",
+      "closingReason": "причину закрытия",
+      "resolution": "резолюцию",
+      "department": "отдел",
+      "crmTag": "тег",
+      "taskTag": "тег задачи"
+    }
+  },
+  "leadSourceSelect": {
+    "placeholder": "Выберите источник"
+  },
+  "incomingCallModal": {
+    "fields": {
+      "leadSource": "Источник лида",
+      "leadSourcePlaceholder": "Источник",
+      "leadSourceFallback": "Источник"
+    }
+  },
+  "leadsTable": {
+    "sourceColumn": "Источник",
+    "sourcePlaceholder": "Источник",
+    "sourceFallback": "Источник",
+    "noSource": "Без источника",
+    "filters": {
+      "reset": "Сбросить",
+      "refreshList": "Обновить список"
     }
   }
 }

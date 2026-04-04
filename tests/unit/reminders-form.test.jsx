@@ -13,9 +13,6 @@ vi.mock('../../src/lib/rbac', () => ({
 vi.mock('../../src/lib/api/reminders', () => ({
   createReminder: vi.fn(),
   getReminder: vi.fn(),
-  getReminderContentTypes: vi.fn(),
-  getReminderObject: vi.fn(),
-  getReminderObjects: vi.fn(),
   updateReminder: vi.fn(),
 }));
 
@@ -42,11 +39,6 @@ describe('ReminderForm', () => {
     vi.clearAllMocks();
     rbac.canWrite.mockReturnValue(true);
     api.getUsers.mockResolvedValue({ results: [] });
-    remindersApi.getReminderContentTypes.mockResolvedValue({
-      results: [{ id: 12, label: 'Lead' }],
-    });
-    remindersApi.getReminderObjects.mockResolvedValue({ results: [] });
-    remindersApi.getReminderObject.mockResolvedValue({ id: 5, name: 'Object #5' });
     remindersApi.getReminder.mockResolvedValue({
       id: 1,
       subject: 'Test reminder',
@@ -59,15 +51,11 @@ describe('ReminderForm', () => {
     });
   });
 
-  it('renders create form fields', async () => {
+  it('renders create form fields', () => {
     render(<ReminderForm />);
 
-    await waitFor(() => {
-      expect(remindersApi.getReminderContentTypes).toHaveBeenCalled();
-    });
-
-    expect(screen.getByText(/^тема/i)).toBeInTheDocument();
-    expect(screen.getByText(/^тип объекта/i)).toBeInTheDocument();
+    expect(screen.getByLabelText(/тема/i)).toBeInTheDocument();
+    expect(screen.getByLabelText(/тип объекта/i)).toBeInTheDocument();
     expect(screen.getByText(/новое напоминание/i)).toBeInTheDocument();
   });
 
@@ -79,14 +67,10 @@ describe('ReminderForm', () => {
     });
   });
 
-  it('renders permission denied state without write permission', async () => {
+  it('renders permission denied state without write permission', () => {
     rbac.canWrite.mockReturnValue(false);
 
     render(<ReminderForm />);
-
-    await waitFor(() => {
-      expect(remindersApi.getReminderContentTypes).toHaveBeenCalled();
-    });
 
     expect(screen.getByText('Недостаточно прав')).toBeInTheDocument();
     expect(screen.getByText('У вас нет прав для создания или редактирования напоминаний.')).toBeInTheDocument();

@@ -2,7 +2,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import dayjs from 'dayjs';
 import { ArrowLeftOutlined, BellOutlined, SaveOutlined } from '@ant-design/icons';
 import { useEffect, useState } from 'react';
-import { useForm } from 'react-hook-form';
+import { Controller, useForm } from 'react-hook-form';
 import { z } from 'zod';
 
 import { App, Button, Card, Col, DatePicker, Input, Result, Row, Select, Skeleton, Space, Switch, Typography } from 'antd';
@@ -38,7 +38,7 @@ const FieldError = ({ message }) => (
 );
 
 const schema = z.object({
-  subject: z.string().min(1, 'Введите тему напоминания'),
+  subject: z.string().trim().min(1, 'Введите тему напоминания'),
   description: z.string().optional(),
   reminder_date: z.any().refine((val) => val, { message: 'Выберите дату и время' }),
   active: z.boolean().optional(),
@@ -64,6 +64,7 @@ function ReminderForm({ id }) {
   const canManage = canWrite('common.change_reminder');
 
   const {
+    control,
     register,
     handleSubmit,
     setValue,
@@ -72,6 +73,8 @@ function ReminderForm({ id }) {
     formState: { errors },
   } = useForm({
     resolver: zodResolver(schema),
+    mode: 'onChange',
+    reValidateMode: 'onChange',
     defaultValues: {
       subject: '',
       description: '',
@@ -208,7 +211,19 @@ function ReminderForm({ id }) {
             <Space direction="vertical" size={16} style={{ width: '100%' }}>
               <div>
                 <FieldLabel htmlFor="subject">Тема *</FieldLabel>
-                <Input id="subject" placeholder="Например: Связаться с клиентом" {...register('subject')} />
+                <Controller
+                  name="subject"
+                  control={control}
+                  render={({ field }) => (
+                    <Input
+                      id="subject"
+                      placeholder="Например: Связаться с клиентом"
+                      value={field.value ?? ''}
+                      onChange={(event) => field.onChange(event.target.value)}
+                      onBlur={field.onBlur}
+                    />
+                  )}
+                />
                 <FieldError message={errors.subject?.message} />
               </div>
 
@@ -252,6 +267,7 @@ function ReminderForm({ id }) {
                   fetchList={getUsers}
                   fetchById={getUser}
                   allowClear
+                  style={{ width: '100%' }}
                   value={ownerValue || ''}
                   onChange={(val) => setValue('owner', val)}
                 />

@@ -14,7 +14,10 @@ import type { PaginatedInternalNumberOptionList } from '../models/PaginatedInter
 import type { PaginatedNumberGroupOptionList } from '../models/PaginatedNumberGroupOptionList';
 import type { PatchedCallRoutingRule } from '../models/PatchedCallRoutingRule';
 import type { PatchedConnection } from '../models/PatchedConnection';
+import type { PatchedInternalNumberOption } from '../models/PatchedInternalNumberOption';
+import type { PatchedVoipRealtimeSettings } from '../models/PatchedVoipRealtimeSettings';
 import type { PatchedVoipSystemSettings } from '../models/PatchedVoipSystemSettings';
+import type { VoipRealtimeSettings } from '../models/VoipRealtimeSettings';
 import type { VoipSystemSettings } from '../models/VoipSystemSettings';
 import type { CancelablePromise } from '../core/CancelablePromise';
 import { OpenAPI } from '../core/OpenAPI';
@@ -290,6 +293,22 @@ export class VoIpService {
      * @returns InternalNumberOption
      * @throws ApiError
      */
+    public static voipInternalNumbersCreate({
+        requestBody,
+    }: {
+        requestBody: InternalNumberOption,
+    }): CancelablePromise<InternalNumberOption> {
+        return __request(OpenAPI, {
+            method: 'POST',
+            url: '/api/voip/internal-numbers/',
+            body: requestBody,
+            mediaType: 'application/json',
+        });
+    }
+    /**
+     * @returns InternalNumberOption
+     * @throws ApiError
+     */
     public static voipInternalNumbersRetrieve({
         id,
     }: {
@@ -310,10 +329,110 @@ export class VoIpService {
      * @returns InternalNumberOption
      * @throws ApiError
      */
+    public static voipInternalNumbersUpdate({
+        id,
+        requestBody,
+    }: {
+        /**
+         * A unique integer value identifying this Internal Number.
+         */
+        id: number,
+        requestBody: InternalNumberOption,
+    }): CancelablePromise<InternalNumberOption> {
+        return __request(OpenAPI, {
+            method: 'PUT',
+            url: '/api/voip/internal-numbers/{id}/',
+            path: {
+                'id': id,
+            },
+            body: requestBody,
+            mediaType: 'application/json',
+        });
+    }
+    /**
+     * @returns InternalNumberOption
+     * @throws ApiError
+     */
+    public static voipInternalNumbersPartialUpdate({
+        id,
+        requestBody,
+    }: {
+        /**
+         * A unique integer value identifying this Internal Number.
+         */
+        id: number,
+        requestBody?: PatchedInternalNumberOption,
+    }): CancelablePromise<InternalNumberOption> {
+        return __request(OpenAPI, {
+            method: 'PATCH',
+            url: '/api/voip/internal-numbers/{id}/',
+            path: {
+                'id': id,
+            },
+            body: requestBody,
+            mediaType: 'application/json',
+        });
+    }
+    /**
+     * @returns void
+     * @throws ApiError
+     */
+    public static voipInternalNumbersDestroy({
+        id,
+    }: {
+        /**
+         * A unique integer value identifying this Internal Number.
+         */
+        id: number,
+    }): CancelablePromise<void> {
+        return __request(OpenAPI, {
+            method: 'DELETE',
+            url: '/api/voip/internal-numbers/{id}/',
+            path: {
+                'id': id,
+            },
+        });
+    }
+    /**
+     * @returns InternalNumberOption
+     * @throws ApiError
+     */
     public static voipInternalNumbersLifecycleRetrieve(): CancelablePromise<InternalNumberOption> {
         return __request(OpenAPI, {
             method: 'GET',
             url: '/api/voip/internal-numbers/lifecycle/',
+        });
+    }
+    /**
+     * @returns InternalNumberOption
+     * @throws ApiError
+     */
+    public static voipInternalNumbersSyncCreate({
+        requestBody,
+    }: {
+        requestBody: InternalNumberOption,
+    }): CancelablePromise<InternalNumberOption> {
+        return __request(OpenAPI, {
+            method: 'POST',
+            url: '/api/voip/internal-numbers/sync/',
+            body: requestBody,
+            mediaType: 'application/json',
+        });
+    }
+    /**
+     * @returns InternalNumberOption
+     * @throws ApiError
+     */
+    public static voipInternalNumbersValidateCreate({
+        requestBody,
+    }: {
+        requestBody: InternalNumberOption,
+    }): CancelablePromise<InternalNumberOption> {
+        return __request(OpenAPI, {
+            method: 'POST',
+            url: '/api/voip/internal-numbers/validate/',
+            body: requestBody,
+            mediaType: 'application/json',
         });
     }
     /**
@@ -384,6 +503,58 @@ export class VoIpService {
             path: {
                 'id': id,
             },
+        });
+    }
+    /**
+     * @returns VoipRealtimeSettings
+     * @throws ApiError
+     */
+    public static voipRealtimeSettingsList(): CancelablePromise<Array<VoipRealtimeSettings>> {
+        return __request(OpenAPI, {
+            method: 'GET',
+            url: '/api/voip/realtime-settings/',
+        });
+    }
+    /**
+     * @returns VoipRealtimeSettings
+     * @throws ApiError
+     */
+    public static voipRealtimeSettingsCurrentRetrieve(): CancelablePromise<VoipRealtimeSettings> {
+        return __request(OpenAPI, {
+            method: 'GET',
+            url: '/api/voip/realtime-settings/current/',
+        });
+    }
+    /**
+     * @returns VoipRealtimeSettings
+     * @throws ApiError
+     */
+    public static voipRealtimeSettingsCurrentPartialUpdate({
+        requestBody,
+    }: {
+        requestBody?: PatchedVoipRealtimeSettings,
+    }): CancelablePromise<VoipRealtimeSettings> {
+        return __request(OpenAPI, {
+            method: 'PATCH',
+            url: '/api/voip/realtime-settings/current/',
+            body: requestBody,
+            mediaType: 'application/json',
+        });
+    }
+    /**
+     * @returns VoipRealtimeSettings
+     * @throws ApiError
+     */
+    public static voipRealtimeSettingsTestCreate({
+        requestBody,
+    }: {
+        requestBody?: VoipRealtimeSettings,
+    }): CancelablePromise<VoipRealtimeSettings> {
+        return __request(OpenAPI, {
+            method: 'POST',
+            url: '/api/voip/realtime-settings/test/',
+            body: requestBody,
+            mediaType: 'application/json',
         });
     }
     /**

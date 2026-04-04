@@ -3,6 +3,7 @@
  * Handles incoming call notifications and call status updates
  */
 import { resolveWebSocketUrl, stripSensitiveParams } from './resolveWsUrl.js';
+import { normalizeTelephonyCallPayload } from '../api/telephony.js';
 
 class CallsWebSocket {
   constructor() {
@@ -30,6 +31,8 @@ class CallsWebSocket {
    * Connect to WebSocket server
    */
   connect(token) {
+    this.shouldReconnect = true;
+
     if (this.ws && this.ws.readyState === WebSocket.OPEN) {
       console.warn('[CallsWebSocket] Already connected');
       return;
@@ -45,7 +48,9 @@ class CallsWebSocket {
     }
 
     try {
-      const baseUrl = resolveWebSocketUrl(import.meta.env.VITE_WS_URL, '/ws/calls/');
+      const appConfig = (typeof window !== 'undefined' && window.__APP_CONFIG__) || {};
+      const wsUrl = appConfig.WS_URL || import.meta.env.VITE_WS_URL || '';
+      const baseUrl = resolveWebSocketUrl(wsUrl, '/ws/calls/');
       if (!baseUrl) {
         console.warn('[CallsWebSocket] WebSocket URL not configured. Skipping connection.');
         return;
@@ -107,7 +112,9 @@ class CallsWebSocket {
       const data = JSON.parse(event.data);
       console.log('[CallsWebSocket] Message received:', data);
 
-      switch (data.type) {
+      const messageType = data.type || data.event_type || '';
+
+      switch (messageType) {
         case 'incoming_call':
           this.handleIncomingCall(data.payload);
           break;
@@ -116,6 +123,12 @@ class CallsWebSocket {
           break;
         case 'call_ended':
           this.handleCallEnded(data.payload);
+          break;
+        case 'recording_ready':
+          this.handleCallUpdated({
+            ...(data.payload || {}),
+            recording_ready: true,
+          });
           break;
         case 'ping':
           // Respond to ping to keep connection alive
@@ -154,15 +167,11 @@ class CallsWebSocket {
     this.isConnected = false;
     this.emit('disconnected', { code: event.code, reason: event.reason });
 
-    // Don't reconnect if server is unavailable (code 1006 = abnormal closure)
-    if (event.code === 1006 && this.reconnectAttempts === 0) {
-      console.warn('[CallsWebSocket] Server unavailable, disabling auto-reconnect');
-      this.shouldReconnect = false;
+    if (event.code === 1006) {
       this.emit('error', {
         type: 'server_unavailable',
-        message: 'WebSocket server is not available. Real-time call updates disabled.'
+        message: 'WebSocket server is temporarily unavailable. Reconnecting...',
       });
-      return;
     }
 
     if (this.shouldReconnect) {
@@ -175,13 +184,17 @@ class CallsWebSocket {
    */
   handleIncomingCall(payload) {
     console.log('[CallsWebSocket] Incoming call:', payload);
+    const normalized = normalizeTelephonyCallPayload(payload);
+
     this.emit('incomingCall', {
-      callId: payload.call_id,
-      phoneNumber: payload.phone_number,
-      callerName: payload.caller_name,
-      timestamp: payload.timestamp,
-      relatedContact: payload.related_contact,
-      relatedLead: payload.related_lead,
+      ...normalized,
+      callId: normalized.callId || normalized.sessionId,
+      sessionId: normalized.sessionId,
+      phoneNumber: normalized.phoneNumber,
+      callerName: normalized.callerName,
+      timestamp: normalized.timestamp || normalized.startedAt || payload?.timestamp,
+      relatedContact: normalized.related_contact ?? normalized.relatedContact ?? null,
+      relatedLead: normalized.related_lead ?? normalized.relatedLead ?? null,
     });
   }
 
@@ -190,10 +203,14 @@ class CallsWebSocket {
    */
   handleCallUpdated(payload) {
     console.log('[CallsWebSocket] Call updated:', payload);
+    const normalized = normalizeTelephonyCallPayload(payload);
+
     this.emit('callUpdated', {
-      callId: payload.call_id,
-      status: payload.status,
-      duration: payload.duration,
+      ...normalized,
+      callId: normalized.callId || normalized.sessionId,
+      sessionId: normalized.sessionId,
+      status: normalized.status,
+      duration: normalized.duration,
     });
   }
 
@@ -202,10 +219,14 @@ class CallsWebSocket {
    */
   handleCallEnded(payload) {
     console.log('[CallsWebSocket] Call ended:', payload);
+    const normalized = normalizeTelephonyCallPayload(payload);
+
     this.emit('callEnded', {
-      callId: payload.call_id,
-      duration: payload.duration,
-      status: payload.status,
+      ...normalized,
+      callId: normalized.callId || normalized.sessionId,
+      sessionId: normalized.sessionId,
+      duration: normalized.duration,
+      status: normalized.status,
     });
   }
 

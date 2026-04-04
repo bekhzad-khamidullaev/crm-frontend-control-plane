@@ -68,6 +68,8 @@ export function getLegacyFreezeCopy(freezeType = 'chat') {
         'Legacy license pages are frozen here. Use crm-frontend-control-plane for license and deployment management.',
       targetPath: '/control-plane',
       ctaLabel: 'Open control-plane admin',
+      localTargetPath: '/license-workspace',
+      bannerMessage: 'Local license workspace fallback',
     };
   }
 

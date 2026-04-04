@@ -1,15 +1,32 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import dayjs from 'dayjs';
-import { Tabs, Card, Button, Form, Input, InputNumber, Switch, Table, App, Space, Modal, Spin, Row, Col, Statistic, Descriptions, Tag, DatePicker, Empty } from 'antd';
-import CrudPage from '../components/CrudPage.jsx';
+import {
+  Tabs,
+  Card,
+  Alert,
+  Button,
+  Form,
+  Input,
+  InputNumber,
+  Table,
+  App,
+  Space,
+  Modal,
+  Spin,
+  Row,
+  Col,
+  Statistic,
+  Descriptions,
+  Tag,
+  DatePicker,
+  Empty,
+  theme,
+} from 'antd';
 import EntitySelect from '../components/EntitySelect.jsx';
 import { t } from '../lib/i18n/index.js';
+import { canAccessRoute } from '../lib/rbac.js';
+import { getSettingsWorkspaceTabPath } from '../lib/settingsWorkspaceNavigation.js';
 import {
-  getVoIPConnections,
-  getVoIPConnection,
-  createVoIPConnection,
-  updateVoIPConnection,
-  deleteVoIPConnection,
   getCallQueue,
   getIncomingCalls,
   getIncomingCall,
@@ -17,12 +34,42 @@ import {
   scheduleColdCall,
   bulkColdCall,
 } from '../lib/api/telephony.js';
-import { getContacts, getContact, getLead, getLeads, getUser, getUsers } from '../lib/api/client.js';
+import {
+  getContacts,
+  getContact,
+  getLead,
+  getLeads,
+} from '../lib/api/client.js';
 import { getCampaign, getCampaigns } from '../lib/api/marketing.js';
-import { CONNECTION_TYPE_OPTIONS, TELEPHONY_PROVIDER_OPTIONS } from '../lib/telephony/constants.js';
+import { navigate } from '../router.js';
 
-const providerOptions = TELEPHONY_PROVIDER_OPTIONS;
-const typeOptions = CONNECTION_TYPE_OPTIONS;
+const FREEPBX_MAIN_QUEUE_NUMBER = '0553636';
+const FREEPBX_AGENT_EXTENSION_REGEX = /^2(?:0\d|1\d)$/;
+
+function isFreePbxAgentExtension(value) {
+  return FREEPBX_AGENT_EXTENSION_REGEX.test(String(value || '').trim());
+}
+
+function validateBridgeDestination(_, value) {
+  const normalized = String(value || '').trim();
+  if (!normalized) return Promise.resolve();
+  if (normalized === FREEPBX_MAIN_QUEUE_NUMBER) return Promise.resolve();
+  if (isFreePbxAgentExtension(normalized)) return Promise.resolve();
+  if (/^(?:\+?[0-9]{7,15}|0[0-9]{6,15})$/.test(normalized)) return Promise.resolve();
+  return Promise.reject(
+    new Error(`Используйте extension 200-219, очередь ${FREEPBX_MAIN_QUEUE_NUMBER} или внешний номер в цифровом формате.`)
+  );
+}
+
+function validateBridgeSource(_, value) {
+  const normalized = String(value || '').trim();
+  if (!normalized) return Promise.resolve();
+  if (normalized === FREEPBX_MAIN_QUEUE_NUMBER) return Promise.resolve();
+  if (isFreePbxAgentExtension(normalized)) return Promise.resolve();
+  return Promise.reject(
+    new Error(`Для source number используйте extension 200-219 или основной DID/queue ${FREEPBX_MAIN_QUEUE_NUMBER}.`)
+  );
+}
 
 const formatLabel = (value) =>
   value
@@ -42,9 +89,13 @@ const renderStatusTag = (status) => {
   const normalized = String(status).toLowerCase();
   let color = 'default';
   if (['waiting', 'queued', 'pending'].some((key) => normalized.includes(key))) color = 'warning';
-  if (['active', 'in_progress', 'connected'].some((key) => normalized.includes(key))) color = 'processing';
+  if (['active', 'in_progress', 'connected'].some((key) => normalized.includes(key)))
+    color = 'processing';
+  if (['transferred', 'forwarded', 'voicemail'].some((key) => normalized.includes(key)))
+    color = 'purple';
   if (['completed', 'done', 'answered'].some((key) => normalized.includes(key))) color = 'success';
-  if (['failed', 'missed', 'error', 'canceled'].some((key) => normalized.includes(key))) color = 'error';
+  if (['failed', 'missed', 'error', 'canceled', 'abandoned'].some((key) => normalized.includes(key)))
+    color = 'error';
   return <Tag color={color}>{status}</Tag>;
 };
 
@@ -59,8 +110,9 @@ function CallQueueTab() {
     setLoading(true);
     try {
       const res = await getCallQueue();
-      const items =
-        Array.isArray(res) ? res : res?.results || res?.queue || res?.items || res?.calls || [];
+      const items = Array.isArray(res)
+        ? res
+        : res?.results || res?.queue || res?.items || res?.calls || [];
       setData(items);
       setSummary(Array.isArray(res) ? null : res);
     } catch (error) {
@@ -105,7 +157,8 @@ function CallQueueTab() {
         title: t('telephonyPage.queue.columns.status'),
         key: 'status',
         width: 140,
-        render: (_, record) => renderStatusTag(record.status || record.state || record.queue_status),
+        render: (_, record) =>
+          renderStatusTag(record.status || record.state || record.queue_status),
       },
       {
         title: t('telephonyPage.queue.columns.priority'),
@@ -142,11 +195,25 @@ function CallQueueTab() {
   );
 
   return (
-    <Card title={t('telephonyPage.queue.title')} extra={<Button onClick={load}>{t('telephonyPage.common.refresh')}</Button>}>
+    <Card
+      title={t('telephonyPage.queue.title')}
+      extra={<Button onClick={load}>{t('telephonyPage.common.refresh')}</Button>}
+    >
+      <Alert
+        type="info"
+        showIcon
+        style={{ marginBottom: 16 }}
+        message="FreePBX queue monitor"
+        description={`Основной inbound поток ожидается через очередь/DID ${FREEPBX_MAIN_QUEUE_NUMBER}. Экран read-only: он показывает состояние bridge-очереди, но не раскрывает PBX secret material.`}
+      />
+
       {stats && (
         <Row gutter={16} style={{ marginBottom: 16 }}>
           <Col xs={24} sm={12} md={6}>
-            <Statistic title={t('telephonyPage.queue.stats.total')} value={stats.total ?? data.length} />
+            <Statistic
+              title={t('telephonyPage.queue.stats.total')}
+              value={stats.total ?? data.length}
+            />
           </Col>
           <Col xs={24} sm={12} md={6}>
             <Statistic title={t('telephonyPage.queue.stats.waiting')} value={stats.waiting ?? 0} />
@@ -241,18 +308,58 @@ function IncomingCallsTab() {
   };
 
   return (
-    <Card title={t('telephonyPage.incoming.title')} extra={<Button onClick={load}>{t('telephonyPage.common.refresh')}</Button>}>
+    <Card
+      title={t('telephonyPage.incoming.title')}
+      extra={<Button onClick={load}>{t('telephonyPage.common.refresh')}</Button>}
+    >
+      <Alert
+        type="info"
+        showIcon
+        style={{ marginBottom: 16 }}
+        message="Bridge-first incoming feed"
+        description={`Ожидайте вызовы, пришедшие через queue ${FREEPBX_MAIN_QUEUE_NUMBER} и затем распределённые по operator extensions 200-219.`}
+      />
+
       <Table
         dataSource={data}
         rowKey="id"
         loading={loading}
         columns={[
-          { title: t('telephonyPage.incoming.columns.callerId'), dataIndex: 'caller_id', key: 'caller_id', width: 160 },
-          { title: t('telephonyPage.incoming.columns.client'), dataIndex: 'client_name', key: 'client_name' },
-          { title: t('telephonyPage.incoming.columns.type'), dataIndex: 'client_type', key: 'client_type', width: 120 },
-          { title: t('telephonyPage.incoming.columns.user'), dataIndex: 'user_name', key: 'user_name' },
-          { title: t('telephonyPage.incoming.columns.shown'), dataIndex: 'is_consumed', key: 'is_consumed', render: (value) => value ? t('telephonyPage.common.yes') : t('telephonyPage.common.no') },
-          { title: t('telephonyPage.incoming.columns.createdAt'), dataIndex: 'created_at', key: 'created_at', width: 180 },
+          {
+            title: t('telephonyPage.incoming.columns.callerId'),
+            dataIndex: 'caller_id',
+            key: 'caller_id',
+            width: 160,
+          },
+          {
+            title: t('telephonyPage.incoming.columns.client'),
+            dataIndex: 'client_name',
+            key: 'client_name',
+          },
+          {
+            title: t('telephonyPage.incoming.columns.type'),
+            dataIndex: 'client_type',
+            key: 'client_type',
+            width: 120,
+          },
+          {
+            title: t('telephonyPage.incoming.columns.user'),
+            dataIndex: 'user_name',
+            key: 'user_name',
+          },
+          {
+            title: t('telephonyPage.incoming.columns.shown'),
+            dataIndex: 'is_consumed',
+            key: 'is_consumed',
+            render: (value) =>
+              value ? t('telephonyPage.common.yes') : t('telephonyPage.common.no'),
+          },
+          {
+            title: t('telephonyPage.incoming.columns.createdAt'),
+            dataIndex: 'created_at',
+            key: 'created_at',
+            width: 180,
+          },
           {
             title: t('telephonyPage.incoming.columns.actions'),
             key: 'actions',
@@ -361,17 +468,36 @@ function ColdCallTab() {
 
   return (
     <Space direction="vertical" size="middle" style={{ width: '100%' }}>
+      <Alert
+        type="warning"
+        showIcon
+        message="FreePBX bridge originate"
+        description={`Для ручного originate используйте agent extensions 200-219. Номер ${FREEPBX_MAIN_QUEUE_NUMBER} трактуется как основной queue/DID и не должен использоваться как персональный операторский extension.`}
+      />
+
       <Card title={t('telephonyPage.cold.initiateTitle')}>
         <Form form={form} layout="vertical" onFinish={submitImmediate}>
-          <Form.Item label={t('telephonyPage.cold.toNumber')} name="to_number" rules={[{ required: true, message: t('telephonyPage.cold.validation.enterNumber') }]}>
-            <Input />
+          <Form.Item
+            label={t('telephonyPage.cold.toNumber')}
+            name="to_number"
+            rules={[
+              { required: true, message: t('telephonyPage.cold.validation.enterNumber') },
+              { validator: validateBridgeDestination },
+            ]}
+          >
+            <Input placeholder={`200-219, ${FREEPBX_MAIN_QUEUE_NUMBER} или +998...`} />
           </Form.Item>
-          <Form.Item label={t('telephonyPage.cold.fromNumber')} name="from_number">
-            <Input />
+          <Form.Item
+            label={t('telephonyPage.cold.fromNumber')}
+            name="from_number"
+            rules={[{ validator: validateBridgeSource }]}
+            extra={`Если поле заполнено, используйте extension 200-219 или основной DID ${FREEPBX_MAIN_QUEUE_NUMBER}.`}
+          >
+            <Input placeholder={`Например: 200 или ${FREEPBX_MAIN_QUEUE_NUMBER}`} />
           </Form.Item>
           <Form.Item label={t('telephonyPage.cold.lead')} name="lead_id">
             <EntitySelect
-              placeholder="Выберите лид"
+              placeholder={t('telephonyPage.placeholders.selectLead')}
               fetchList={getLeads}
               fetchById={getLead}
               allowClear
@@ -379,7 +505,7 @@ function ColdCallTab() {
           </Form.Item>
           <Form.Item label={t('telephonyPage.cold.contact')} name="contact_id">
             <EntitySelect
-              placeholder="Выберите контакт"
+              placeholder={t('telephonyPage.placeholders.selectContact')}
               fetchList={getContacts}
               fetchById={getContact}
               allowClear
@@ -387,7 +513,7 @@ function ColdCallTab() {
           </Form.Item>
           <Form.Item label={t('telephonyPage.cold.campaign')} name="campaign_id">
             <EntitySelect
-              placeholder="Выберите кампанию"
+              placeholder={t('telephonyPage.placeholders.selectCampaign')}
               fetchList={getCampaigns}
               fetchById={getCampaign}
               allowClear
@@ -401,11 +527,19 @@ function ColdCallTab() {
 
       <Card title={t('telephonyPage.cold.scheduleTitle')}>
         <Form form={scheduleForm} layout="vertical" onFinish={submitSchedule}>
-          <Form.Item label={t('telephonyPage.cold.toNumber')} name="to_number">
-            <Input />
+          <Form.Item
+            label={t('telephonyPage.cold.toNumber')}
+            name="to_number"
+            rules={[{ validator: validateBridgeDestination }]}
+          >
+            <Input placeholder={`200-219, ${FREEPBX_MAIN_QUEUE_NUMBER} или +998...`} />
           </Form.Item>
-          <Form.Item label={t('telephonyPage.cold.fromNumber')} name="from_number">
-            <Input />
+          <Form.Item
+            label={t('telephonyPage.cold.fromNumber')}
+            name="from_number"
+            rules={[{ validator: validateBridgeSource }]}
+          >
+            <Input placeholder={`Например: 201 или ${FREEPBX_MAIN_QUEUE_NUMBER}`} />
           </Form.Item>
           <Form.Item label={t('telephonyPage.cold.dateTime')} name="scheduled_time">
             <DatePicker
@@ -417,7 +551,7 @@ function ColdCallTab() {
           </Form.Item>
           <Form.Item label={t('telephonyPage.cold.lead')} name="lead_id">
             <EntitySelect
-              placeholder="Выберите лид"
+              placeholder={t('telephonyPage.placeholders.selectLead')}
               fetchList={getLeads}
               fetchById={getLead}
               allowClear
@@ -425,7 +559,7 @@ function ColdCallTab() {
           </Form.Item>
           <Form.Item label={t('telephonyPage.cold.contact')} name="contact_id">
             <EntitySelect
-              placeholder="Выберите контакт"
+              placeholder={t('telephonyPage.placeholders.selectContact')}
               fetchList={getContacts}
               fetchById={getContact}
               allowClear
@@ -433,7 +567,7 @@ function ColdCallTab() {
           </Form.Item>
           <Form.Item label={t('telephonyPage.cold.campaign')} name="campaign_id">
             <EntitySelect
-              placeholder="Выберите кампанию"
+              placeholder={t('telephonyPage.placeholders.selectCampaign')}
               fetchList={getCampaigns}
               fetchById={getCampaign}
               allowClear
@@ -447,15 +581,23 @@ function ColdCallTab() {
 
       <Card title={t('telephonyPage.cold.bulkTitle')}>
         <Form form={bulkForm} layout="vertical" onFinish={submitBulk}>
-          <Form.Item label={t('telephonyPage.cold.phoneNumbers')} name="phone_numbers" rules={[{ required: true, message: t('telephonyPage.cold.validation.enterNumbers') }]}>
+          <Form.Item
+            label={t('telephonyPage.cold.phoneNumbers')}
+            name="phone_numbers"
+            rules={[{ required: true, message: t('telephonyPage.cold.validation.enterNumbers') }]}
+          >
             <Input.TextArea rows={4} />
           </Form.Item>
-          <Form.Item label={t('telephonyPage.cold.fromNumber')} name="from_number">
-            <Input />
+          <Form.Item
+            label={t('telephonyPage.cold.fromNumber')}
+            name="from_number"
+            rules={[{ validator: validateBridgeSource }]}
+          >
+            <Input placeholder={`Например: 202 или ${FREEPBX_MAIN_QUEUE_NUMBER}`} />
           </Form.Item>
           <Form.Item label={t('telephonyPage.cold.campaign')} name="campaign_id">
             <EntitySelect
-              placeholder="Выберите кампанию"
+              placeholder={t('telephonyPage.placeholders.selectCampaign')}
               fetchList={getCampaigns}
               fetchById={getCampaign}
               allowClear
@@ -474,48 +616,37 @@ function ColdCallTab() {
 }
 
 export default function TelephonyPage() {
+  const { token } = theme.useToken();
+  const integrationsWorkspacePath = getSettingsWorkspaceTabPath(canAccessRoute, 'integrations');
+  const [activeTab, setActiveTab] = useState('incoming');
   const tabs = [
-    {
-      key: 'connections',
-      label: t('telephonyPage.tabs.connections'),
-      children: (
-        <CrudPage
-          title={t('telephonyPage.connections.title')}
-          api={{
-            list: getVoIPConnections,
-            retrieve: getVoIPConnection,
-            create: createVoIPConnection,
-            update: updateVoIPConnection,
-            remove: deleteVoIPConnection,
-          }}
-          columns={[
-            { title: t('telephonyPage.connections.columns.provider'), dataIndex: 'provider', key: 'provider' },
-            { title: t('telephonyPage.connections.columns.type'), dataIndex: 'type', key: 'type', width: 120 },
-            { title: t('telephonyPage.connections.columns.number'), dataIndex: 'number', key: 'number' },
-            { title: t('telephonyPage.connections.columns.callerId'), dataIndex: 'callerid', key: 'callerid' },
-            { title: t('telephonyPage.connections.columns.active'), dataIndex: 'active', key: 'active', render: (value) => value ? t('telephonyPage.common.yes') : t('telephonyPage.common.no') },
-          ]}
-          fields={[
-            { name: 'provider', label: t('telephonyPage.connections.fields.provider'), type: 'select', options: providerOptions, required: true },
-            { name: 'type', label: t('telephonyPage.connections.fields.type'), type: 'select', options: typeOptions, required: true },
-            { name: 'number', label: t('telephonyPage.connections.fields.number'), type: 'text', required: true },
-            { name: 'callerid', label: t('telephonyPage.connections.fields.callerId'), type: 'text', required: true },
-            {
-              name: 'owner',
-              label: t('telephonyPage.connections.fields.owner'),
-              type: 'entity',
-              fetchList: getUsers,
-              fetchById: getUser,
-            },
-            { name: 'active', label: t('telephonyPage.connections.fields.active'), type: 'switch' },
-          ]}
-        />
-      ),
-    },
     { key: 'incoming', label: t('telephonyPage.tabs.incoming'), children: <IncomingCallsTab /> },
     { key: 'queue', label: t('telephonyPage.tabs.queue'), children: <CallQueueTab /> },
     { key: 'cold-calls', label: t('telephonyPage.tabs.coldCalls'), children: <ColdCallTab /> },
   ];
 
-  return <Tabs items={tabs} />;
+  return (
+    <Card
+      style={{
+        borderRadius: token.borderRadiusLG,
+        border: `1px solid ${token.colorBorderSecondary}`,
+        background: token.colorBgElevated,
+        boxShadow: token.boxShadowTertiary,
+      }}
+    >
+      <Alert
+        type="info"
+        showIcon
+        style={{ marginBottom: 16 }}
+        message="Admin telephony overview for FreePBX Bridge"
+        description={`Этот маршрут теперь содержит только runtime-операции (входящие, очередь, cold calls). Настройка подключений вынесена в Интеграции > Телефония.`}
+        action={(
+          <Button type="primary" onClick={() => navigate(integrationsWorkspacePath)}>
+            Открыть Интеграции {'>'} Телефония
+          </Button>
+        )}
+      />
+      <Tabs activeKey={activeTab} onChange={setActiveTab} items={tabs} />
+    </Card>
+  );
 }

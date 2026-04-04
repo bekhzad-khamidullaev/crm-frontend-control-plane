@@ -1,8 +1,10 @@
 import { CopyOutlined, RobotOutlined } from '@ant-design/icons';
-import { App, Button, Card, Form, Input, Select, Space, Typography } from 'antd';
+import { Alert, App, Button, Card, Form, Input, Select, Space, Typography } from 'antd';
 import { useEffect, useMemo, useState } from 'react';
 
 import { getAIAssistProviders, runAIAssist } from '../lib/api/integrations/ai.js';
+import { hasAnyFeature } from '../lib/rbac.js';
+import LicenseRestrictedAction from './LicenseRestrictedAction.jsx';
 
 const { Text } = Typography;
 const { TextArea } = Input;
@@ -37,8 +39,16 @@ function AIAssistantPanel({
   const [modelInfo, setModelInfo] = useState('');
   const [loading, setLoading] = useState(false);
   const [providersLoading, setProvidersLoading] = useState(false);
+  const canUseAiAssist = hasAnyFeature('ai.assist');
+  const licenseRestrictionReason = 'Для использования AI ассистента нужна лицензия на модуль ai.assist.';
 
   useEffect(() => {
+    if (!canUseAiAssist) {
+      setProviders([]);
+      setProviderId('');
+      return;
+    }
+
     let active = true;
     const loadProviders = async () => {
       setProvidersLoading(true);
@@ -61,7 +71,7 @@ function AIAssistantPanel({
     return () => {
       active = false;
     };
-  }, []);
+  }, [canUseAiAssist]);
 
   useEffect(() => {
     setUseCase(defaultUseCase);
@@ -86,6 +96,10 @@ function AIAssistantPanel({
   );
 
   const handleGenerate = async () => {
+    if (!canUseAiAssist) {
+      message.warning('AI ассистент доступен только по лицензии');
+      return;
+    }
     if (!inputText.trim()) {
       message.warning('Введите задачу для AI ассистента');
       return;
@@ -142,49 +156,71 @@ function AIAssistantPanel({
         </Space>
       }
     >
+      {!canUseAiAssist ? (
+        <Alert
+          type="warning"
+          showIcon
+          message="AI ассистент недоступен"
+          description={licenseRestrictionReason}
+        />
+      ) : null}
       <Form layout="vertical">
         <Form.Item label="Сценарий">
-          <Select
-            value={useCase}
-            onChange={setUseCase}
-            options={USE_CASES}
-            placeholder="Выберите сценарий"
-          />
+          <LicenseRestrictedAction restricted={!canUseAiAssist} reason={licenseRestrictionReason} feature="ai.assist" block>
+            <Select
+              value={useCase}
+              onChange={setUseCase}
+              options={USE_CASES}
+              placeholder="Выберите сценарий"
+              disabled={!canUseAiAssist}
+            />
+          </LicenseRestrictedAction>
         </Form.Item>
 
         <Form.Item label="Провайдер" extra={providerHint}>
-          <Select
-            value={normalizedProviderValue}
-            onChange={(value) => setProviderId(value === '__default__' ? '' : value)}
-            loading={providersLoading}
-            options={providerOptions}
-          />
+          <LicenseRestrictedAction restricted={!canUseAiAssist} reason={licenseRestrictionReason} feature="ai.assist" block>
+            <Select
+              value={normalizedProviderValue}
+              onChange={(value) => setProviderId(value === '__default__' ? '' : value)}
+              loading={providersLoading}
+              options={providerOptions}
+              disabled={!canUseAiAssist}
+            />
+          </LicenseRestrictedAction>
         </Form.Item>
 
         <Form.Item label="Запрос">
-          <TextArea
-            value={inputText}
-            onChange={(event) => setInputText(event.target.value)}
-            rows={6}
-            placeholder="Опишите задачу: что проанализировать или сгенерировать"
-          />
+          <LicenseRestrictedAction restricted={!canUseAiAssist} reason={licenseRestrictionReason} feature="ai.assist" block>
+            <TextArea
+              value={inputText}
+              onChange={(event) => setInputText(event.target.value)}
+              rows={6}
+              placeholder="Опишите задачу: что проанализировать или сгенерировать"
+              disabled={!canUseAiAssist}
+            />
+          </LicenseRestrictedAction>
         </Form.Item>
 
         {useCase === 'custom' && (
           <Form.Item label="System prompt (опционально)">
-            <TextArea
-              value={systemPrompt}
-              onChange={(event) => setSystemPrompt(event.target.value)}
-              rows={3}
-              placeholder="Дополнительные правила для модели"
-            />
+            <LicenseRestrictedAction restricted={!canUseAiAssist} reason={licenseRestrictionReason} feature="ai.assist" block>
+              <TextArea
+                value={systemPrompt}
+                onChange={(event) => setSystemPrompt(event.target.value)}
+                rows={3}
+                placeholder="Дополнительные правила для модели"
+                disabled={!canUseAiAssist}
+              />
+            </LicenseRestrictedAction>
           </Form.Item>
         )}
 
         <Space style={{ marginBottom: 12 }}>
-          <Button type="primary" onClick={handleGenerate} loading={loading}>
-            Сгенерировать
-          </Button>
+          <LicenseRestrictedAction restricted={!canUseAiAssist} reason={licenseRestrictionReason} feature="ai.assist">
+            <Button type="primary" onClick={handleGenerate} loading={loading} disabled={!canUseAiAssist}>
+              Сгенерировать
+            </Button>
+          </LicenseRestrictedAction>
           {outputText && (
             <Button icon={<CopyOutlined />} onClick={handleCopy}>
               Копировать ответ

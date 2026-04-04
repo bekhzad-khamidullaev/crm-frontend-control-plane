@@ -168,3 +168,49 @@ export async function getDealOpsChain(params = {}) {
 export async function createDealServiceTicket(id, payload = {}) {
   return api.post(`/api/deals/${id}/ops-chain/create-service-ticket/`, { body: payload });
 }
+
+/**
+ * Get default contract context for a deal.
+ * @param {number} id - Deal ID
+ * @returns {Promise<Object>}
+ */
+export async function getDealContractContext(id, params = {}) {
+  return api.get(`/api/deals/${id}/contract-context/`, { params });
+}
+
+/**
+ * Get contract generation audit history for a deal.
+ * @param {number} id - Deal ID
+ * @returns {Promise<Array>}
+ */
+export async function getDealContractGenerations(id) {
+  return api.get(`/api/deals/${id}/contract-generations/`);
+}
+
+/**
+ * Get global contract generation journal.
+ * @param {Object} params - Query params
+ * @returns {Promise<Object>}
+ */
+export async function getContractGenerationJournal(params = {}) {
+  return api.get('/api/deals/contract-generations/', { params });
+}
+
+/**
+ * Export global contract generation journal to CSV.
+ * @param {Object} params - Query params
+ * @returns {Promise<Blob>}
+ */
+export async function exportContractGenerationJournal(params = {}) {
+  return api.get('/api/deals/contract-generations/export/', { params, responseType: 'blob' });
+}
+
+/**
+ * Generate contract .docx for deal and return blob.
+ * @param {number} id - Deal ID
+ * @param {Object} payload - Contract context overrides
+ * @returns {Promise<Blob>}
+ */
+export async function generateDealContract(id, payload = {}) {
+  return api.post(`/api/deals/${id}/generate-contract/`, { body: payload, responseType: 'blob' });
+}

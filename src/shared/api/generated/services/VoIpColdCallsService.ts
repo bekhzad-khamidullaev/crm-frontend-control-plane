@@ -7,6 +7,17 @@ import { OpenAPI } from '../core/OpenAPI';
 import { request as __request } from '../core/request';
 export class VoIpColdCallsService {
     /**
+     * Get currently active calls for current user scope.
+     * @returns any No response body
+     * @throws ApiError
+     */
+    public static voipActiveCallsRetrieve(): CancelablePromise<any> {
+        return __request(OpenAPI, {
+            method: 'GET',
+            url: '/api/voip/active-calls/',
+        });
+    }
+    /**
      * Request call hangup by session_id from CRM side.
      * @returns any No response body
      * @throws ApiError
@@ -184,6 +195,17 @@ export class VoIpColdCallsService {
         return __request(OpenAPI, {
             method: 'GET',
             url: '/api/voip/contact-center-kpi/',
+        });
+    }
+    /**
+     * Get recent incoming calls for current user
+     * @returns any No response body
+     * @throws ApiError
+     */
+    public static voipIncomingCallsFeedRetrieve(): CancelablePromise<any> {
+        return __request(OpenAPI, {
+            method: 'GET',
+            url: '/api/voip/incoming-calls-feed/',
         });
     }
     /**

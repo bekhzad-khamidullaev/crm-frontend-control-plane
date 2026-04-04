@@ -4,6 +4,9 @@
 /* eslint-disable */
 export type InternalNumberOption = {
     readonly id: number;
+    user?: number | null;
+    readonly user_name: string;
+    server?: number | null;
     /**
      * Internal extension number (e.g., 1001, 2005)
      */
@@ -12,8 +15,9 @@ export type InternalNumberOption = {
      * Name to display in calls
      */
     display_name?: string;
-    readonly user_name: string;
     readonly sip_uri: string;
     active?: boolean;
+    readonly status: string;
+    readonly warnings: string;
 };
 

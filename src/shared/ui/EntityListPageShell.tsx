@@ -57,6 +57,7 @@ export const EntityListPageShell: React.FC<EntityListPageShellProps> = ({
               {toolbar}
             </div>
           ) : null}
+
           {error ? (
             <div
               style={{
@@ -83,6 +84,7 @@ export const EntityListPageShell: React.FC<EntityListPageShellProps> = ({
               />
             </div>
           ) : null}
+
           <Flex
             vertical
             gap={16}

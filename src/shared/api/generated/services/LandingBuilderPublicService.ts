@@ -85,4 +85,24 @@ export class LandingBuilderPublicService {
             },
         });
     }
+    /**
+     * @returns any
+     * @throws ApiError
+     */
+    public static publicLandingsByDomainRetrieve({
+        domain,
+    }: {
+        /**
+         * Custom domain (optional). If omitted, Host header is used.
+         */
+        domain?: string,
+    }): CancelablePromise<Record<string, any>> {
+        return __request(OpenAPI, {
+            method: 'GET',
+            url: '/api/public/landings/by-domain/',
+            query: {
+                'domain': domain,
+            },
+        });
+    }
 }

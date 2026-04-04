@@ -11,10 +11,10 @@ import { deleteMemo, getMemos, markMemoPostponed, markMemoReviewed } from '../..
 import { canWrite } from '../../lib/rbac.js';
 import { navigate } from '../../router';
 import { EntityListToolbar } from '../../shared/ui/EntityListToolbar';
-import { LIST_HEADER_STYLE, LIST_STACK_STYLE, LIST_TITLE_STYLE } from '../../shared/ui/listLayout';
+import { PageHeader } from '../../shared/ui/PageHeader';
 
 const { RangePicker } = DatePicker;
-const { Text, Title } = Typography;
+const { Text } = Typography;
 
 const stageLabels = {
   pen: { text: 'В ожидании', color: 'blue' },
@@ -236,17 +236,17 @@ export default function MemosList() {
 
   return (
     <>
+      <PageHeader
+        title="Мемо"
+        subtitle="Список внутренних мемо"
+        extra={
+          canManage ? (
+            <Button type="primary" icon={<PlusOutlined />} onClick={() => navigate('/memos/new')}>Новое мемо</Button>
+          ) : null
+        }
+      />
       <Card>
-        <Space direction="vertical" size={16} style={LIST_STACK_STYLE}>
-          <Space wrap style={LIST_HEADER_STYLE}>
-            <div>
-              <Title level={3} style={LIST_TITLE_STYLE}>Мемо</Title>
-              <Text type="secondary">Список внутренних мемо</Text>
-            </div>
-            {canManage ? (
-              <Button type="primary" icon={<PlusOutlined />} onClick={() => navigate('/memos/new')}>Новое мемо</Button>
-            ) : null}
-          </Space>
+        <Space direction="vertical" size={16} style={{ width: '100%' }}>
 
           <EntityListToolbar
             searchValue={searchText}

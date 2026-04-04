@@ -10,18 +10,6 @@ const RESTRICTIVE_CODES = new Set([
   'LICENSE_BINDING_MISMATCH',
 ]);
 
-function normalizeLicenseCode(code) {
-  const raw = String(code || '')
-    .trim()
-    .replace(/[\s-]+/g, '_')
-    .replace(/[^a-zA-Z0-9_]/g, '_')
-    .replace(/_+/g, '_')
-    .replace(/^_+|_+$/g, '')
-    .toUpperCase();
-  if (!raw) return '';
-  return raw.startsWith('LICENSE_') ? raw : `LICENSE_${raw}`;
-}
-
 function readValue(source, path) {
   return path.reduce((acc, key) => (acc && typeof acc === 'object' ? acc[key] : undefined), source);
 }
@@ -33,9 +21,8 @@ export function parseLicenseRestrictionPayload(payload) {
     readValue(payload, ['code']) ||
     readValue(payload, ['details', 'code']) ||
     readValue(payload, ['error', 'code']);
-  const normalizedCode = normalizeLicenseCode(code);
 
-  if (!RESTRICTIVE_CODES.has(normalizedCode)) return null;
+  if (!RESTRICTIVE_CODES.has(code)) return null;
 
   const feature =
     readValue(payload, ['feature']) ||
@@ -43,24 +30,21 @@ export function parseLicenseRestrictionPayload(payload) {
     readValue(payload, ['details', 'details', 'feature']) ||
     readValue(payload, ['meta', 'feature']) ||
     'unknown.feature';
-
   const message =
     readValue(payload, ['message']) ||
     readValue(payload, ['details', 'message']) ||
     readValue(payload, ['error', 'message']) ||
     '';
 
-  return { code: normalizedCode, feature: String(feature), message: String(message || '') };
+  return { code, feature: String(feature), message: String(message || '') };
 }
 
 export function emitLicenseRestriction(restriction) {
   if (typeof window === 'undefined' || !restriction) return;
-  const normalizedCode = normalizeLicenseCode(restriction.code || 'LICENSE_FEATURE_DISABLED') || 'LICENSE_FEATURE_DISABLED';
-  if (typeof window.CustomEvent !== 'function') return;
   window.dispatchEvent(
-    new window.CustomEvent(LICENSE_RESTRICTION_EVENT, {
+    new CustomEvent(LICENSE_RESTRICTION_EVENT, {
       detail: {
-        code: normalizedCode,
+        code: restriction.code || 'LICENSE_FEATURE_DISABLED',
         feature: restriction.feature || 'unknown.feature',
         message: restriction.message || '',
         timestamp: Date.now(),

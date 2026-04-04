@@ -4,7 +4,7 @@
  */
 
 import React, { useState, useEffect } from 'react';
-import { Card, Button, Space, Avatar, Input, App, Tooltip, Tag } from 'antd';
+import { Card, Button, Space, Avatar, Input, App, Tooltip, Tag, theme } from 'antd';
 import {
   AudioMutedOutlined,
   AudioOutlined,
@@ -22,6 +22,7 @@ const { TextArea } = Input;
 
 export default function ActiveCallWidget({ call, onCallEnd, onUpdate }) {
   const { message } = App.useApp();
+  const { token } = theme.useToken();
   const [muted, setMuted] = useState(false);
   const [onHold, setOnHold] = useState(false);
   const [duration, setDuration] = useState(0);
@@ -130,7 +131,7 @@ export default function ActiveCallWidget({ call, onCallEnd, onUpdate }) {
     >
       <Card
         style={{
-          boxShadow: '0 4px 12px rgba(0, 0, 0, 0.15)',
+          boxShadow: token.boxShadowSecondary,
           borderRadius: 8,
         }}
       >
@@ -141,7 +142,7 @@ export default function ActiveCallWidget({ call, onCallEnd, onUpdate }) {
             <div style={{ fontSize: 16, fontWeight: 500 }}>
               {call.contact_name || call.number}
             </div>
-            <div style={{ fontSize: 12, color: '#8c8c8c' }}>
+            <div style={{ fontSize: 12, color: token.colorTextSecondary }}>
               {call.number}
             </div>
             <Tag color={call.direction === 'incoming' ? 'green' : 'blue'} style={{ marginTop: 8 }}>

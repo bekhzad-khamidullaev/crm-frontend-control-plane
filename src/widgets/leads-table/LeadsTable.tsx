@@ -5,7 +5,7 @@ import type { Lead } from '@/entities/lead/model/types';
 import { deriveLeadStatus } from '@/entities/lead/model/utils';
 // @ts-ignore
 import EditableCell from '@/components/editable-cell';
-import { useTags } from '@/features/reference';
+import { useLeadSources, useTags, useUsers } from '@/features/reference';
 // @ts-ignore
 import { LeadsService } from '@/shared/api/generated/services/LeadsService';
 import { useServerTable } from '@/shared/hooks';
@@ -18,7 +18,7 @@ import {
     PhoneOutlined,
     UserOutlined,
 } from '@ant-design/icons';
-import { Alert, Avatar, Badge, Button, Grid, Popconfirm, Space, Table, Tag, Tooltip } from 'antd';
+import { Alert, Avatar, Badge, Button, Grid, Popconfirm, Space, Table, Tag, Tooltip, theme } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
 import React from 'react';
 import { LeadsTableFilters } from './ui/LeadsTableFilters';
@@ -28,12 +28,19 @@ import CallButton from '@/components/CallButton';
 import { navigate } from '@/router.js';
 // @ts-ignore
 import { canWrite } from '@/lib/rbac.js';
+import { getCompanyDisplayName } from '@/lib/utils/company-display.js';
+import { getLocale, t } from '@/lib/i18n';
+import { getLeadSourceLabel } from '@/features/reference/lib/leadSourceLabel';
 
 export const LeadsTable: React.FC = () => {
+  const { token } = theme.useToken();
   const screens = Grid.useBreakpoint();
   const isMobile = !screens.md;
   const canManage = canWrite();
+  const locale = getLocale();
   const { data: tagsData } = useTags();
+  const { data: leadSourcesData } = useLeadSources();
+  const { data: usersData } = useUsers();
 
   const {
     data,
@@ -56,6 +63,32 @@ export const LeadsTable: React.FC = () => {
   const deleteMutation = useDeleteLead();
   const patchMutation = usePatchLead();
 
+  const normalizeForeignKeyValue = (
+    raw: unknown,
+    options: Array<{ value: string | number; label: string }> = [],
+  ): number | null => {
+    if (raw === null || raw === undefined || raw === '') return null;
+    if (typeof raw === 'object' && raw !== null) {
+      const nested =
+        (raw as { value?: unknown; id?: unknown; key?: unknown; label?: unknown }).value ??
+        (raw as { id?: unknown; key?: unknown; label?: unknown }).id ??
+        (raw as { key?: unknown; label?: unknown }).key ??
+        (raw as { label?: unknown }).label;
+      return normalizeForeignKeyValue(nested, options);
+    }
+    if (typeof raw === 'string') {
+      const byLabel = options.find((option) => option.label === raw);
+      if (byLabel) {
+        return normalizeForeignKeyValue(byLabel.value, options);
+      }
+    }
+    if (typeof raw === 'number') {
+      return Number.isFinite(raw) ? raw : null;
+    }
+    const asNumber = Number(raw);
+    return Number.isFinite(asNumber) ? asNumber : null;
+  };
+
   const handleDelete = async (id: number) => {
     try {
       await deleteMutation.mutateAsync(id);
@@ -64,22 +97,22 @@ export const LeadsTable: React.FC = () => {
     }
   };
 
-  const normalizeForeignKeyValue = (raw: unknown): number | null => {
-    if (raw === null || raw === undefined || raw === '') return null;
-    if (typeof raw === 'number') return Number.isFinite(raw) ? raw : null;
-    const asNumber = Number(raw);
-    return Number.isFinite(asNumber) ? asNumber : null;
-  };
-
   const handleInlineSave = async (record: Lead, dataIndex: string, value: any) => {
     if (!canManage) return;
-    const normalizedValue =
-      dataIndex === 'lead_source' || dataIndex === 'owner'
-        ? normalizeForeignKeyValue(value)
-        : value;
+    const patchPayload: Record<string, unknown> = { [dataIndex]: value };
+    if (dataIndex === 'lead_source' || dataIndex === 'owner') {
+      const fkOptions = dataIndex === 'lead_source' ? leadSourceOptions : userOptions;
+      patchPayload[dataIndex] = normalizeForeignKeyValue(value, fkOptions);
+    }
+    if (dataIndex === 'status') {
+      patchPayload.disqualified = value === 'lost';
+      if (value === 'new') {
+        patchPayload.was_in_touch = null;
+      }
+    }
     await patchMutation.mutateAsync({
       id: record.id,
-      data: { [dataIndex]: normalizedValue } as any,
+      data: patchPayload as any,
     });
     await refetch();
   };
@@ -99,6 +132,51 @@ export const LeadsTable: React.FC = () => {
     });
     return map;
   }, [tagsData]);
+
+  const leadSourceOptions = React.useMemo(
+    () =>
+      (leadSourcesData?.results || []).map((source) => ({
+        value: source.id,
+        label: getLeadSourceLabel(source.name || t('leadsTable.sourceFallback', 'Источник'), locale),
+      })),
+    [leadSourcesData, locale],
+  );
+
+  const userOptions = React.useMemo(
+    () =>
+      (usersData?.results || []).map((user) => ({
+        value: user.id,
+        label: `${user.first_name || ''} ${user.last_name || ''}`.trim() || user.username || user.email || 'Пользователь',
+      })),
+    [usersData],
+  );
+
+  const statusOptions = React.useMemo(
+    () =>
+      Object.entries(statusMap).map(([value, meta]) => ({
+        value,
+        label: meta.text,
+      })),
+    [],
+  );
+
+  const renderInlineBadge = (text: string, bg: string, border: string, color: string) => (
+    <span
+      style={{
+        display: 'inline-flex',
+        alignItems: 'center',
+        minHeight: 30,
+        padding: '4px 12px',
+        borderRadius: 10,
+        background: bg,
+        border: `1px solid ${border}`,
+        color,
+        fontWeight: 600,
+      }}
+    >
+      {text}
+    </span>
+  );
 
   const singleLineEllipsis: React.CSSProperties = {
     display: 'block',
@@ -128,11 +206,11 @@ export const LeadsTable: React.FC = () => {
             >
               {record.full_name}
             </div>
-            {record.company_name && (
+            {getCompanyDisplayName(record as any) && (
               <div
                 style={{
                   fontSize: 12,
-                  color: '#999',
+                  color: token.colorTextSecondary,
                   display: 'flex',
                   alignItems: 'center',
                   gap: 4,
@@ -141,7 +219,7 @@ export const LeadsTable: React.FC = () => {
               >
                 <BankOutlined />
                 <EditableCell
-                  value={record.company_name}
+                  value={getCompanyDisplayName(record as any)}
                   record={record}
                   dataIndex="company_name"
                   editable={canManage}
@@ -162,7 +240,7 @@ export const LeadsTable: React.FC = () => {
       render: (_, record) => (
         <Space direction="vertical" size={0} style={{ width: '100%' }}>
           <Space size={4} style={{ width: '100%' }}>
-            <MailOutlined style={{ color: '#999' }} />
+            <MailOutlined style={{ color: token.colorTextSecondary }} />
             <EditableCell
               value={record.email}
               record={record}
@@ -174,7 +252,7 @@ export const LeadsTable: React.FC = () => {
             />
           </Space>
           <Space size={4} style={{ width: '100%' }}>
-            <PhoneOutlined style={{ color: '#999' }} />
+            <PhoneOutlined style={{ color: token.colorTextSecondary }} />
             <EditableCell
               value={record.phone}
               record={record}
@@ -194,8 +272,79 @@ export const LeadsTable: React.FC = () => {
       width: 150,
       render: (_, record) => {
         const s = deriveLeadStatus(record);
-        return <Badge color={statusMap[s].color} text={statusMap[s].text} />;
+        const label = statusMap[s].text;
+        return (
+          <EditableCell
+            value={s}
+            record={record}
+            dataIndex="status"
+            editable={canManage}
+            type="select"
+            options={statusOptions}
+            onSave={handleInlineSave}
+            saveOnBlur={false}
+            renderView={(val: string) => <Badge color={statusMap[val]?.color || 'default'} text={statusMap[val]?.text || label} />}
+            style={{ paddingInline: 0 }}
+          />
+        );
       },
+    },
+    {
+      title: t('leadsTable.sourceColumn', 'Источник'),
+      dataIndex: 'lead_source',
+      key: 'lead_source',
+      width: 170,
+      responsive: ['lg'],
+      render: (sourceId: number | null | undefined, record) => (
+        <EditableCell
+          value={sourceId}
+          record={record}
+          dataIndex="lead_source"
+          editable={canManage}
+          type="select"
+          options={leadSourceOptions}
+          onSave={handleInlineSave}
+          saveOnBlur={false}
+          placeholder={t('leadsTable.sourcePlaceholder', 'Источник')}
+          renderView={(val: number | null | undefined) => {
+            const option = leadSourceOptions.find((item) => String(item.value) === String(val));
+            const text = option?.label || t('leadsTable.noSource', 'Без источника');
+            return renderInlineBadge(text, token.colorFillAlter, token.colorBorderSecondary, token.colorTextSecondary);
+          }}
+          style={{ paddingInline: 0 }}
+        />
+      ),
+    },
+    {
+      title: 'Ответственный',
+      dataIndex: 'owner',
+      key: 'owner',
+      width: 180,
+      responsive: ['xl'],
+      render: (ownerId: number | null | undefined, record: any) => (
+        <EditableCell
+          value={ownerId}
+          record={record}
+          dataIndex="owner"
+          editable={canManage}
+          type="select"
+          options={userOptions}
+          onSave={handleInlineSave}
+          saveOnBlur={false}
+          placeholder="Ответственный"
+          renderView={(val: number | null | undefined) => {
+            const option = userOptions.find((item) => String(item.value) === String(val));
+            const text = option?.label || record.owner_name || 'Не назначен';
+            return renderInlineBadge(
+              text,
+              token.colorPrimaryBg,
+              token.colorPrimaryBorder,
+              token.colorPrimaryText
+            );
+          }}
+          style={{ paddingInline: 0 }}
+        />
+      ),
     },
     {
       title: 'SLA контакта',
@@ -234,7 +383,7 @@ export const LeadsTable: React.FC = () => {
       render: (_, record) => (
         <Space wrap>
           {(record.tags || []).map((tagId) => (
-            <Badge key={tagId} count={tagsMap.get(tagId) || '-'} style={{ backgroundColor: '#52c41a' }} />
+            <Badge key={tagId} count={tagsMap.get(tagId) || '-'} style={{ backgroundColor: token.colorSuccess }} />
           ))}
         </Space>
       ),
@@ -264,12 +413,13 @@ export const LeadsTable: React.FC = () => {
             type="primary"
           />
           <Tooltip title="Просмотр">
-            <Button
-              type="link"
-              size="small"
-              icon={<EyeOutlined />}
-              onClick={() => navigate(`/leads/${record.id}`)}
-            />
+              <Button
+                type="link"
+                size="small"
+                icon={<EyeOutlined />}
+                aria-label="Просмотреть лид"
+                onClick={() => navigate(`/leads/${record.id}`)}
+              />
           </Tooltip>
           {canManage ? (
             <Tooltip title="Редактировать">
@@ -277,12 +427,13 @@ export const LeadsTable: React.FC = () => {
                 type="link"
                 size="small"
                 icon={<EditOutlined />}
+                aria-label="Редактировать лид"
                 onClick={() => navigate(`/leads/${record.id}/edit`)}
               />
             </Tooltip>
           ) : (
             <Tooltip title="Недостаточно прав">
-              <Button type="link" size="small" icon={<EditOutlined />} disabled />
+              <Button type="link" size="small" icon={<EditOutlined />} aria-label="Редактировать лид" disabled />
             </Tooltip>
           )}
           {canManage ? (
@@ -297,12 +448,13 @@ export const LeadsTable: React.FC = () => {
                 size="small"
                 danger
                 icon={<DeleteOutlined />}
+                aria-label="Удалить лид"
                 loading={deleteMutation.isPending}
               />
             </Popconfirm>
           ) : (
             <Tooltip title="Недостаточно прав">
-              <Button type="link" size="small" danger icon={<DeleteOutlined />} disabled />
+              <Button type="link" size="small" danger icon={<DeleteOutlined />} aria-label="Удалить лид" disabled />
             </Tooltip>
           )}
         </Space>

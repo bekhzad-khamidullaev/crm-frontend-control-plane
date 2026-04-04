@@ -1,0 +1,61 @@
+.component_BusinessProcessLaunchWizard_root {
+  width: 100%;
+}
+
+.component_BusinessProcessLaunchWizard_grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1.4fr) minmax(280px, 0.9fr);
+  gap: 16px;
+}
+
+.component_BusinessProcessLaunchWizard_sidebar {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.component_BusinessProcessLaunchWizard_quickActions {
+  margin-bottom: 8px;
+}
+
+.component_BusinessProcessLaunchWizard_attributeRow {
+  display: grid;
+  grid-template-columns: minmax(180px, 1.2fr) minmax(140px, 1fr) 40px;
+  gap: 8px;
+  align-items: start;
+}
+
+.component_BusinessProcessLaunchWizard_summaryTags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.component_BusinessProcessLaunchWizard_ruleList {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.component_BusinessProcessLaunchWizard_ruleItem {
+  padding: 10px 12px;
+  border: 1px solid #eef2ff;
+  border-radius: 12px;
+  background: linear-gradient(180deg, #ffffff 0%, #f8fbff 100%);
+}
+
+.component_BusinessProcessLaunchWizard_ruleMeta {
+  margin-top: 4px;
+}
+
+@media (max-width: 992px) {
+  .component_BusinessProcessLaunchWizard_grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 640px) {
+  .component_BusinessProcessLaunchWizard_attributeRow {
+    grid-template-columns: 1fr;
+  }
+}

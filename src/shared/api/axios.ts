@@ -1,8 +1,10 @@
 import { message } from 'antd';
 import axios, { AxiosError, InternalAxiosRequestConfig } from 'axios';
-import { resolveConfiguredApiBase } from './resolveApiBase';
+import resolveApiBase from './resolveApiBase';
+import parseLicenseRestriction from '../../lib/api/licenseError';
+import { emitLicenseRestriction } from '../../lib/api/licenseRestrictionBus';
 
-const API_BASE_URL = resolveConfiguredApiBase(import.meta.env.VITE_API_BASE_URL);
+const API_BASE_URL = resolveApiBase(import.meta.env.VITE_API_BASE_URL);
 
 /**
  * Central Axios instance for all API calls
@@ -72,7 +74,12 @@ apiClient.interceptors.response.use(
 
     // 403 - Forbidden
     if (error.response?.status === 403) {
-      message.error('У вас нет прав для выполнения этого действия');
+      const licenseError = parseLicenseRestriction(error);
+      if (licenseError) {
+        emitLicenseRestriction(licenseError);
+      } else {
+        message.error('У вас нет прав для выполнения этого действия');
+      }
     }
 
     // 500+ - Server errors

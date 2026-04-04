@@ -1,11 +1,17 @@
 import react from '@vitejs/plugin-react';
 import { readFileSync } from 'node:fs';
+import obfuscatorPlugin from 'rollup-plugin-obfuscator';
 import { visualizer } from 'rollup-plugin-visualizer';
 import { defineConfig, loadEnv } from 'vite';
 
 export default defineConfig(({ mode }) => {
   const env = loadEnv(mode, process.cwd(), '');
   const isProduction = mode === 'production';
+  const enableObfuscation =
+    isProduction &&
+    ['1', 'true', 'yes', 'on'].includes(
+      String(env.VITE_ENABLE_OBFUSCATION || '').toLowerCase()
+    );
   const packageVersion = JSON.parse(readFileSync(new URL('./package.json', import.meta.url), 'utf-8')).version;
   const resolvedAppVersion = (env.VITE_APP_VERSION || packageVersion || 'dev').trim();
 
@@ -15,6 +21,23 @@ export default defineConfig(({ mode }) => {
     },
     plugins: [
       react({ jsxRuntime: 'automatic' }),
+      enableObfuscation && obfuscatorPlugin({
+        options: {
+          compact: true,
+          controlFlowFlattening: true,
+          controlFlowFlatteningThreshold: 0.5,
+          deadCodeInjection: true,
+          deadCodeInjectionThreshold: 0.2,
+          stringArray: true,
+          stringArrayEncoding: ['rc4'],
+          stringArrayThreshold: 0.5,
+          identifierNamesGenerator: 'hexadecimal',
+          renameGlobals: false,
+          selfDefending: true,
+          transformObjectKeys: true,
+          unicodeEscapeSequence: false,
+        },
+      }),
       isProduction && visualizer({
         filename: './dist/stats.html',
         open: false,

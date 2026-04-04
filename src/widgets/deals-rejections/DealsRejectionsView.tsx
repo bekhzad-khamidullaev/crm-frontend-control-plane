@@ -1,5 +1,9 @@
 import type { Deal, DealListParams } from '@/entities/deal';
 import { dealKeys } from '@/entities/deal/api/keys';
+import { usePatchDeal } from '@/entities/deal/api/mutations';
+// @ts-ignore
+import EditableCell from '@/components/editable-cell';
+import { useStages, useUsers } from '@/features/reference';
 import { DealsService } from '@/shared/api/generated/services/DealsService';
 import { useServerTable } from '@/shared/hooks';
 import { EditOutlined, EyeOutlined, StopOutlined } from '@ant-design/icons';
@@ -12,10 +16,15 @@ import { navigate } from '@/router.js';
 // @ts-ignore
 import { formatCurrency } from '@/lib/utils/format.js';
 import { getRejectedReason, isDealRejected, toNumberSafe } from './model/rejectionHelpers';
+import { t } from '@/lib/i18n';
+import { formatDateByLocale, getStageDisplayName, translateDealStageName } from '@/widgets/deals-table/model/i18n';
 
 export const DealsRejectionsView: React.FC<{ readOnly?: boolean }> = ({ readOnly = false }) => {
   const screens = Grid.useBreakpoint();
   const isMobile = !screens.md;
+  const patchDeal = usePatchDeal();
+  const { data: stagesData } = useStages();
+  const { data: usersData } = useUsers();
 
   const {
     data,
@@ -48,7 +57,7 @@ export const DealsRejectionsView: React.FC<{ readOnly?: boolean }> = ({ readOnly
     if (!rejectedDeals.length) return '-';
     const buckets = new Map<string, number>();
     rejectedDeals.forEach((deal) => {
-      const reason = getRejectedReason(deal);
+      const reason = getRejectedReason(deal, t);
       buckets.set(reason, (buckets.get(reason) || 0) + 1);
     });
     let winner = '-';
@@ -64,9 +73,45 @@ export const DealsRejectionsView: React.FC<{ readOnly?: boolean }> = ({ readOnly
 
   const isTruncated = total > (Array.isArray(data) ? data.length : 0);
 
+  const stageOptions = useMemo(
+    () =>
+      (stagesData?.results || []).map((stage) => ({
+        value: stage.id,
+        label: getStageDisplayName(stage) || t('dealsCommon.fields.stage'),
+      })),
+    [stagesData],
+  );
+
+  const userOptions = useMemo(
+    () =>
+      (usersData?.results || []).map((user) => ({
+        value: user.id,
+        label: `${user.first_name || ''} ${user.last_name || ''}`.trim() || user.username || user.email || t('dealsCommon.defaults.user'),
+      })),
+    [usersData],
+  );
+
+  const normalizeForeignKeyValue = (raw: unknown): number | null => {
+    if (raw === null || raw === undefined || raw === '') return null;
+    if (typeof raw === 'number') return Number.isFinite(raw) ? raw : null;
+    const asNumber = Number(raw);
+    return Number.isFinite(asNumber) ? asNumber : null;
+  };
+
+  const handleInlineSave = async (record: Deal, dataIndex: string, value: any) => {
+    if (readOnly) return;
+    const normalizedValue =
+      dataIndex === 'stage' || dataIndex === 'owner' ? normalizeForeignKeyValue(value) : value;
+    await patchDeal.mutateAsync({
+      id: record.id,
+      data: { [dataIndex]: normalizedValue } as any,
+    });
+    await refetch();
+  };
+
   const columns: ColumnsType<Deal> = [
     {
-      title: 'Сделка',
+      title: t('dealsRejections.columns.deal'),
       dataIndex: 'name',
       key: 'name',
       width: isMobile ? 220 : 280,
@@ -75,27 +120,41 @@ export const DealsRejectionsView: React.FC<{ readOnly?: boolean }> = ({ readOnly
       ),
     },
     {
-      title: 'Этап / статус',
+      title: t('dealsRejections.columns.stageStatus'),
       key: 'stage',
       width: 190,
       render: (_: unknown, record: Deal) => {
         const status = String((record as any).status || '').trim();
         return (
           <Space direction="vertical" size={2}>
-            <Badge color="error" text={record.stage_name || '-'} />
-            {status ? <span style={{ fontSize: 12, opacity: 0.75 }}>{status}</span> : null}
+            <EditableCell
+              value={record.stage}
+              record={record}
+              dataIndex="stage"
+              editable={!readOnly}
+              type="select"
+              options={stageOptions}
+              onSave={handleInlineSave}
+              saveOnBlur={false}
+              renderView={(val: number | null | undefined) => {
+                const option = stageOptions.find((item) => String(item.value) === String(val));
+                return <Badge color="error" text={option?.label || translateDealStageName(record.stage_name) || '-'} />;
+              }}
+              style={{ paddingInline: 0 }}
+            />
+            {status ? <span style={{ fontSize: 12, opacity: 0.75 }}>{translateDealStageName(status)}</span> : null}
           </Space>
         );
       },
     },
     {
-      title: 'Причина',
+      title: t('dealsRejections.columns.reason'),
       key: 'reason',
       width: 180,
-      render: (_: unknown, record: Deal) => getRejectedReason(record),
+      render: (_: unknown, record: Deal) => getRejectedReason(record, t),
     },
     {
-      title: 'Сумма',
+      title: t('dealsRejections.columns.amount'),
       dataIndex: 'amount',
       key: 'amount',
       width: 160,
@@ -105,35 +164,51 @@ export const DealsRejectionsView: React.FC<{ readOnly?: boolean }> = ({ readOnly
       },
     },
     {
-      title: 'Ответственный',
-      dataIndex: 'owner_name',
-      key: 'owner_name',
+      title: t('dealsRejections.columns.owner'),
+      dataIndex: 'owner',
+      key: 'owner',
       width: 170,
       responsive: ['lg'],
-      render: (name: string) => name || '-',
+      render: (ownerId: number | null | undefined, record: any) => (
+        <EditableCell
+          value={ownerId}
+          record={record}
+          dataIndex="owner"
+          editable={!readOnly}
+          type="select"
+          options={userOptions}
+          onSave={handleInlineSave}
+          saveOnBlur={false}
+          renderView={(val: number | null | undefined) => {
+            const option = userOptions.find((item) => String(item.value) === String(val));
+            return option?.label || record.owner_name || '-';
+          }}
+          style={{ paddingInline: 0 }}
+        />
+      ),
     },
     {
-      title: 'Дата закрытия',
+      title: t('dealsRejections.columns.closingDate'),
       dataIndex: 'closing_date',
       key: 'closing_date',
       width: 150,
       render: (value: string) => {
         if (!value) return '-';
         const date = new Date(value);
-        return Number.isNaN(date.getTime()) ? value : date.toLocaleDateString('ru-RU');
+        return Number.isNaN(date.getTime()) ? value : formatDateByLocale(date);
       },
     },
     {
-      title: 'Действия',
+      title: t('dealsRejections.columns.actions'),
       key: 'actions',
       width: 140,
       fixed: 'right' as const,
       render: (_: unknown, record: Deal) => (
         <Space>
-          <Tooltip title="Открыть">
+          <Tooltip title={t('dealsRejections.actions.open')}>
             <Button icon={<EyeOutlined />} onClick={() => navigate(`/deals/${record.id}`)} />
           </Tooltip>
-          <Tooltip title={readOnly ? 'Недостаточно прав' : 'Редактировать'}>
+          <Tooltip title={readOnly ? t('dealsRejections.actions.noPermissions') : t('dealsRejections.actions.edit')}>
             <Button
               icon={<EditOutlined />}
               disabled={readOnly}
@@ -148,9 +223,9 @@ export const DealsRejectionsView: React.FC<{ readOnly?: boolean }> = ({ readOnly
   return (
     <Space direction="vertical" size={16} style={{ width: '100%' }}>
       <Space size={16} wrap>
-        <Statistic title="Отказов (в выборке)" value={rejectedDeals.length} prefix={<StopOutlined />} />
-        <Statistic title="Сумма отказов" value={totalRejectedAmount} precision={2} />
-        <Statistic title="Топ причина" value={topReason} />
+        <Statistic title={t('dealsRejections.stats.rejectionsInSample')} value={rejectedDeals.length} prefix={<StopOutlined />} />
+        <Statistic title={t('dealsRejections.stats.rejectionsAmount')} value={totalRejectedAmount} precision={2} />
+        <Statistic title={t('dealsRejections.stats.topReason')} value={topReason} />
       </Space>
 
       <DealsTableFilters
@@ -164,8 +239,8 @@ export const DealsRejectionsView: React.FC<{ readOnly?: boolean }> = ({ readOnly
         <Alert
           type="error"
           showIcon
-          message="Не удалось загрузить список сделок"
-          action={<Button size="small" onClick={() => refetch()}>Повторить</Button>}
+          message={t('dealsRejections.messages.loadError')}
+          action={<Button size="small" onClick={() => refetch()}>{t('actions.retry')}</Button>}
         />
       ) : null}
 
@@ -173,13 +248,16 @@ export const DealsRejectionsView: React.FC<{ readOnly?: boolean }> = ({ readOnly
         <Alert
           type="info"
           showIcon
-          message={`Показаны первые ${(Array.isArray(data) ? data.length : 0)} из ${total} сделок. Для полного анализа отказов уточните фильтры.`}
+          message={t('dealsRejections.messages.truncated', {
+            loaded: Array.isArray(data) ? data.length : 0,
+            total,
+          })}
         />
       ) : null}
 
       {!isLoading && !rejectedDeals.length ? (
         <Empty
-          description="В текущей выборке отказов не найдено"
+          description={t('dealsRejections.messages.empty')}
           image={Empty.PRESENTED_IMAGE_SIMPLE}
         />
       ) : (

@@ -1,6 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import * as auth from '../../src/lib/api/auth.js';
-import { getRouteMeta, navigate, onRouteChange, parseHash } from '../../src/router.js';
+import { navigate, onRouteChange, parseHash } from '../../src/router.js';
 
 vi.mock('../../src/lib/api/auth.js', () => ({
   isAuthenticated: vi.fn(),
@@ -43,16 +43,6 @@ describe('Router', () => {
       expect(parseHash()).toEqual({ name: 'dashboard', params: {} });
     });
 
-    it('parses #/onboarding', () => {
-      location.hash = '#/onboarding';
-      expect(parseHash()).toEqual({ name: 'onboarding', params: {} });
-    });
-
-    it('parses #/licensing', () => {
-      location.hash = '#/licensing';
-      expect(parseHash()).toEqual({ name: 'control-plane', params: {} });
-    });
-
     it('parses #/leads', () => {
       location.hash = '#/leads';
       expect(parseHash()).toEqual({ name: 'leads-list', params: {} });
@@ -73,25 +63,69 @@ describe('Router', () => {
       expect(parseHash()).toEqual({ name: 'leads-edit', params: { id: '123' } });
     });
 
-    it('parses #/ai-chat', () => {
-      location.hash = '#/ai-chat';
-      expect(parseHash()).toEqual({ name: 'ai-chat', params: {} });
+    it('parses #/chat to chat list screen', () => {
+      location.hash = '#/chat';
+      expect(parseHash()).toEqual({
+        name: 'chat-list',
+        params: {},
+      });
     });
-  });
 
-  it('exposes unified inbox route features for chat workspace', () => {
-    expect(getRouteMeta('chat').features).toEqual(
-      expect.arrayContaining(['communications.chat', 'integrations.core', 'inbox.unified']),
-    );
-  });
+    it('parses #/chat/123 to chat thread screen', () => {
+      location.hash = '#/chat/123';
+      expect(parseHash()).toEqual({
+        name: 'chat-thread',
+        params: { id: '123' },
+      });
+    });
 
-  it('uses memo and reminder-specific license features for their routes', () => {
-    expect(getRouteMeta('memos-list').feature).toBe('tasks.memos');
-    expect(getRouteMeta('reminders-list').feature).toBe('tasks.reminders');
-  });
+    it('parses frozen onboarding route to legacy freeze screen', () => {
+      location.hash = '#/onboarding';
+      expect(parseHash()).toEqual({
+        name: 'legacy-freeze',
+        params: { freezeType: 'onboarding', sourcePath: '/onboarding' },
+      });
+    });
 
-  it('exposes ai assist feature for ai-chat route', () => {
-    expect(getRouteMeta('ai-chat').feature).toBe('ai.assist');
+    it('parses #/ai-chat to ai-chat screen', () => {
+      location.hash = '#/ai-chat';
+      expect(parseHash()).toEqual({
+        name: 'ai-chat',
+        params: {},
+      });
+    });
+
+    it('parses legacy #/calls-dashboard alias to calls dashboard screen', () => {
+      location.hash = '#/calls-dashboard';
+      expect(parseHash()).toEqual({
+        name: 'calls-dashboard',
+        params: {},
+      });
+    });
+
+    it('parses #/calls/dashboard to calls dashboard screen', () => {
+      location.hash = '#/calls/dashboard';
+      expect(parseHash()).toEqual({
+        name: 'calls-dashboard',
+        params: {},
+      });
+    });
+
+    it('parses legacy technical license route to license workspace', () => {
+      location.hash = '#/tech/license';
+      expect(parseHash()).toEqual({
+        name: 'license-workspace',
+        params: {},
+      });
+    });
+
+    it('parses #/license to license workspace', () => {
+      location.hash = '#/license';
+      expect(parseHash()).toEqual({
+        name: 'license-workspace',
+        params: {},
+      });
+    });
   });
 
   describe('navigation', () => {

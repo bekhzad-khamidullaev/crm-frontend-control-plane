@@ -268,6 +268,27 @@ export class LeadsService {
      * @returns Lead
      * @throws ApiError
      */
+    public static leadsInsightsRetrieve({
+        id,
+    }: {
+        /**
+         * A unique integer value identifying this Lead.
+         */
+        id: number,
+    }): CancelablePromise<Lead> {
+        return __request(OpenAPI, {
+            method: 'GET',
+            url: '/api/leads/{id}/insights/',
+            path: {
+                'id': id,
+            },
+        });
+    }
+    /**
+     * CRUD for CRM leads with filtering and conversion actions.
+     * @returns Lead
+     * @throws ApiError
+     */
     public static leadsBulkTagCreate({
         requestBody,
     }: {

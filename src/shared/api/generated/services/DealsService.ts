@@ -189,6 +189,52 @@ export class DealsService {
      * @returns Deal
      * @throws ApiError
      */
+    public static dealsContractContextRetrieve({
+        id,
+    }: {
+        /**
+         * A unique integer value identifying this Deal.
+         */
+        id: number,
+    }): CancelablePromise<Deal> {
+        return __request(OpenAPI, {
+            method: 'GET',
+            url: '/api/deals/{id}/contract-context/',
+            path: {
+                'id': id,
+            },
+        });
+    }
+    /**
+     * CRUD for CRM deals with ownership rules.
+     * @returns Deal
+     * @throws ApiError
+     */
+    public static dealsGenerateContractCreate({
+        id,
+        requestBody,
+    }: {
+        /**
+         * A unique integer value identifying this Deal.
+         */
+        id: number,
+        requestBody: Deal,
+    }): CancelablePromise<Deal> {
+        return __request(OpenAPI, {
+            method: 'POST',
+            url: '/api/deals/{id}/generate-contract/',
+            path: {
+                'id': id,
+            },
+            body: requestBody,
+            mediaType: 'application/json',
+        });
+    }
+    /**
+     * CRUD for CRM deals with ownership rules.
+     * @returns Deal
+     * @throws ApiError
+     */
     public static dealsOpsChainCreateServiceTicketCreate({
         id,
         requestBody,

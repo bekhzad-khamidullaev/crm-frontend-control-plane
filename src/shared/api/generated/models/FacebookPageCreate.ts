@@ -12,6 +12,7 @@ export type FacebookPageCreate = {
     page_category?: string;
     access_token: string;
     app_secret?: string;
+    readonly webhook_verify_token: string;
     token_expires_at?: string | null;
     /**
      * Automatically sync Messenger messages

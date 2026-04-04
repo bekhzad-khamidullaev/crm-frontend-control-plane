@@ -9,6 +9,7 @@ import {
   deleteProject,
   getProjectStages,
   getProjects,
+  getUser,
   getUsers,
   reopenProject,
 } from '../../lib/api';
@@ -16,9 +17,9 @@ import { getLocale, t } from '../../lib/i18n';
 import { canWrite } from '../../lib/rbac.js';
 import { navigate } from '../../router';
 import { EntityListToolbar } from '../../shared/ui/EntityListToolbar';
-import { LIST_HEADER_STYLE, LIST_STACK_STYLE, LIST_TITLE_STYLE } from '../../shared/ui/listLayout';
+import { PageHeader } from '../../shared/ui/PageHeader';
 
-const { Text, Title } = Typography;
+const { Text } = Typography;
 
 function ProjectsList() {
   const { message } = App.useApp();
@@ -35,6 +36,7 @@ function ProjectsList() {
   });
   const [stages, setStages] = useState([]);
   const [users, setUsers] = useState([]);
+  const [resolvedUserNames, setResolvedUserNames] = useState({});
   const locale = getLocale();
   const dateLocale = locale === 'en' ? 'en-US' : locale === 'uz' ? 'uz-UZ' : 'ru-RU';
 
@@ -174,11 +176,47 @@ function ProjectsList() {
   const userNameById = useMemo(
     () =>
       users.reduce((acc, user) => {
-        acc[user.id] = user.username || user.email || '-';
+        acc[user.id] = `${user.first_name || ''} ${user.last_name || ''}`.trim() || user.username || user.email || '-';
         return acc;
       }, {}),
     [users],
   );
+
+  useEffect(() => {
+    const pageOwnerIds = Array.from(
+      new Set(
+        projects
+          .map((project) => Number(project.owner))
+          .filter((id) => Number.isFinite(id) && id > 0),
+      ),
+    );
+    const missingIds = pageOwnerIds.filter((id) => !userNameById[id] && !resolvedUserNames[id]);
+    if (missingIds.length === 0) return;
+
+    let cancelled = false;
+    Promise.allSettled(
+      missingIds.map(async (id) => {
+        const user = await getUser(id);
+        const name = `${user?.first_name || ''} ${user?.last_name || ''}`.trim() || user?.username || user?.email || null;
+        return { id, name };
+      }),
+    ).then((results) => {
+      if (cancelled) return;
+      const next = {};
+      for (const result of results) {
+        if (result.status === 'fulfilled' && result.value.name) {
+          next[result.value.id] = result.value.name;
+        }
+      }
+      if (Object.keys(next).length) {
+        setResolvedUserNames((prev) => ({ ...prev, ...next }));
+      }
+    });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [projects, userNameById, resolvedUserNames]);
 
   const doneStage = stages.find((stage) => stage.done);
 
@@ -223,7 +261,7 @@ function ProjectsList() {
       title: t('projectsListPage.columns.owner'),
       dataIndex: 'owner',
       key: 'owner',
-      render: (ownerId) => userNameById[ownerId] || '-',
+      render: (ownerId, record) => userNameById[ownerId] || resolvedUserNames[ownerId] || record.owner_name || '-',
     },
     {
       title: t('projectsListPage.columns.dueDate'),
@@ -266,46 +304,46 @@ function ProjectsList() {
   ];
 
   return (
-    <Card>
-      <Space direction="vertical" size={16} style={LIST_STACK_STYLE}>
-        <Space wrap style={LIST_HEADER_STYLE}>
-          <div>
-            <Title level={3} style={LIST_TITLE_STYLE}>
-              {t('projectsListPage.title')}
-            </Title>
-            <Text type="secondary">{t('projectsListPage.subtitle')}</Text>
-          </div>
-          {canManage ? (
+    <>
+      <PageHeader
+        title={t('projectsListPage.title')}
+        subtitle={t('projectsListPage.subtitle')}
+        extra={
+          canManage ? (
             <Button type="primary" icon={<PlusOutlined />} onClick={() => navigate('/projects/new')}>
               {t('projectsListPage.actions.create')}
             </Button>
-          ) : null}
+          ) : null
+        }
+      />
+      <Card>
+        <Space direction="vertical" size={16} style={{ width: '100%' }}>
+
+          <EntityListToolbar
+            searchValue={searchText}
+            searchPlaceholder={t('projectsListPage.searchPlaceholder')}
+            onSearchChange={handleSearch}
+            onRefresh={() => fetchProjects(pagination.current, searchText)}
+            onReset={handleResetFilters}
+            loading={loading}
+            resultSummary={t('projectsListPage.pagination.total', { total: pagination.total })}
+            activeFilters={searchText ? [{ key: 'search', label: t('actions.search'), value: searchText, onClear: handleResetFilters }] : []}
+          />
+
+          {error ? <Text type="danger">{error}</Text> : null}
+
+          <Table
+            rowKey="id"
+            columns={columns}
+            dataSource={projects}
+            loading={loading}
+            pagination={{ ...pagination, showSizeChanger: true, showTotal: (total) => t('projectsListPage.pagination.total', { total }) }}
+            onChange={handleTableChange}
+            locale={{ emptyText: t('projectsListPage.empty') }}
+          />
         </Space>
-
-        <EntityListToolbar
-          searchValue={searchText}
-          searchPlaceholder={t('projectsListPage.searchPlaceholder')}
-          onSearchChange={handleSearch}
-          onRefresh={() => fetchProjects(pagination.current, searchText)}
-          onReset={handleResetFilters}
-          loading={loading}
-          resultSummary={t('projectsListPage.pagination.total', { total: pagination.total })}
-          activeFilters={searchText ? [{ key: 'search', label: t('actions.search'), value: searchText, onClear: handleResetFilters }] : []}
-        />
-
-        {error ? <Text type="danger">{error}</Text> : null}
-
-        <Table
-          rowKey="id"
-          columns={columns}
-          dataSource={projects}
-          loading={loading}
-          pagination={{ ...pagination, showSizeChanger: true, showTotal: (total) => t('projectsListPage.pagination.total', { total }) }}
-          onChange={handleTableChange}
-          locale={{ emptyText: t('projectsListPage.empty') }}
-        />
-      </Space>
-    </Card>
+      </Card>
+    </>
   );
 }
 

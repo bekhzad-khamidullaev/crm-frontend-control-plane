@@ -1,0 +1,13 @@
+services:
+  frontend:
+    build:
+      args:
+        BUILD_MODE: staging
+    ports:
+      - "127.0.0.1:8081:80"
+    env_file:
+      - .env.staging
+    environment:
+      API_BASE_URL: ${API_BASE_URL:-https://api.crm.windevs.uz}
+      API_PREFIX: ${API_PREFIX:-/api}
+      PBX_SERVER: ${PBX_SERVER:-wss://crm.windevs.uz/asterisk/ws}

@@ -50,6 +50,9 @@ import { canWrite } from '../../lib/rbac.js';
 import dayjs from 'dayjs';
 import { getLocale } from '../../lib/i18n';
 import { getClientTypeLabel } from '../../features/reference/lib/clientTypeLabel';
+import { getCompanyDisplayName } from '../../lib/utils/company-display.js';
+import { UsersService } from '../../shared/api/generated/services/UsersService';
+import { DepartmentsService } from '../../shared/api/generated/services/DepartmentsService';
 import { KpiStatCard } from '../../shared/ui';
 
 const { Title, Text } = Typography;
@@ -74,6 +77,8 @@ function CompanyDetail({ id }) {
   const [cities, setCities] = useState([]);
   const [departments, setDepartments] = useState([]);
   const [users, setUsers] = useState([]);
+  const [resolvedOwnerName, setResolvedOwnerName] = useState(null);
+  const [resolvedDepartmentName, setResolvedDepartmentName] = useState(null);
 
   useEffect(() => {
     loadCompany();
@@ -82,6 +87,61 @@ function CompanyDetail({ id }) {
     loadDeals();
     loadReferenceData();
   }, [id]);
+
+  useEffect(() => {
+    const ownerId = Number(company?.owner);
+    if (!ownerId || Number.isNaN(ownerId)) {
+      setResolvedOwnerName(null);
+      return;
+    }
+    if (users.some((u) => idsEqual(u.id, ownerId))) {
+      setResolvedOwnerName(null);
+      return;
+    }
+
+    let cancelled = false;
+    UsersService.usersRetrieve({ id: ownerId })
+      .then((user) => {
+        if (cancelled) return;
+        const name = `${user.first_name || ''} ${user.last_name || ''}`.trim() || user.username || user.email || null;
+        setResolvedOwnerName(name);
+      })
+      .catch(() => {
+        if (cancelled) return;
+        setResolvedOwnerName(null);
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [company?.owner, users]);
+
+  useEffect(() => {
+    const departmentId = Number(company?.department);
+    if (!departmentId || Number.isNaN(departmentId)) {
+      setResolvedDepartmentName(null);
+      return;
+    }
+    if (departments.some((d) => idsEqual(d.id, departmentId))) {
+      setResolvedDepartmentName(null);
+      return;
+    }
+
+    let cancelled = false;
+    DepartmentsService.departmentsRetrieve({ id: departmentId })
+      .then((department) => {
+        if (cancelled) return;
+        setResolvedDepartmentName(department?.name || String(departmentId));
+      })
+      .catch(() => {
+        if (cancelled) return;
+        setResolvedDepartmentName(String(departmentId));
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [company?.department, departments]);
 
   const loadCompany = async () => {
     setLoading(true);
@@ -208,9 +268,20 @@ function CompanyDetail({ id }) {
   const locale = getLocale();
   const clientType = clientTypes.find((item) => idsEqual(item.id, company.type));
   const typeLabel = getClientTypeLabel(clientType?.name, locale) || '-';
-  const companyName = company.full_name || company.name || company.company_name || 'Компания';
-  const ownerName = users.find((u) => idsEqual(u.id, company.owner))?.username || '-';
-  const departmentName = departments.find((d) => idsEqual(d.id, company.department))?.name || '-';
+  const companyName = getCompanyDisplayName(company) || 'Компания';
+  const ownerName =
+    (() => {
+      const user = users.find((u) => idsEqual(u.id, company.owner));
+      if (!user) return null;
+      return `${user.first_name || ''} ${user.last_name || ''}`.trim() || user.username || user.email || null;
+    })()
+    || company.owner_name
+    || resolvedOwnerName
+    || '-';
+  const departmentName =
+    departments.find((d) => idsEqual(d.id, company.department))?.name
+    || resolvedDepartmentName
+    || '-';
   const countryName = countries.find((c) => idsEqual(c.id, company.country))?.name || '-';
   const cityName = cities.find((c) => idsEqual(c.id, company.city))?.name || company.city_name || '-';
   const leadSourceName = leadSources.find((ls) => idsEqual(ls.id, company.lead_source))?.name || '-';

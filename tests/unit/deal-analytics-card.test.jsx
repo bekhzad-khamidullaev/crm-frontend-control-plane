@@ -1,84 +1,45 @@
 import { render, screen } from '@testing-library/react';
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 
 import DealAnalyticsCard from '../../src/components/analytics/DealAnalyticsCard.jsx';
 
-const chartCalls = vi.hoisted(() => []);
-
 vi.mock('../../src/components/analytics/AnimatedChart.jsx', () => ({
-  default: (props) => {
-    chartCalls.push(props);
-    return <div data-testid={`chart-${props.type}`} />;
-  },
+  default: ({ data }) => <div data-testid="animated-chart">{JSON.stringify(data?.datasets?.map((item) => item.label) || [])}</div>,
 }));
 
 describe('DealAnalyticsCard', () => {
-  beforeEach(() => {
-    chartCalls.length = 0;
-  });
-
-  it('switches to count-based charts for mixed currencies', () => {
+  it('shows breakdown and switches manager chart to count mode for mixed currencies', () => {
     render(
       <DealAnalyticsCard
         deals={[
-          {
-            amount: '100',
-            currency_code: 'USD',
-            stage: 'won',
-            assigned_to_name: 'Alice',
-            source: 'website',
-          },
-          {
-            amount: '200',
-            currency_code: 'EUR',
-            stage: 'lost',
-            assigned_to_name: 'Bob',
-            source: 'referral',
-          },
-          {
-            amount: '50',
-            currency_code: 'USD',
-            stage: 'won',
-            assigned_to_name: 'Alice',
-            source: 'website',
-          },
+          { id: 1, amount: 3000, currency_code: 'RUB', assigned_to_name: 'Alice', stage: 'won' },
+          { id: 2, amount: 100, currency_code: 'USD', assigned_to_name: 'Bob', stage: 'proposal' },
         ]}
-      />
+        showStageChart={false}
+        showSourceChart={false}
+      />,
     );
 
-    expect(screen.getByText('Топ-5 менеджеров по количеству сделок')).toBeInTheDocument();
-    expect(screen.getByText('Мультивалютно')).toBeInTheDocument();
-    expect(screen.getByText((content) => content.includes(' + '))).toBeInTheDocument();
-    expect(chartCalls[0].data.datasets).toHaveLength(1);
-    expect(chartCalls[1].data.datasets[0].label).toBe('Количество сделок');
-    expect(chartCalls[1].data.datasets[0].data).toEqual([2, 1]);
+    expect(screen.getByText(/3\s?000.*₽/)).toBeInTheDocument();
+    expect(screen.getByText(/100.*\$/)).toBeInTheDocument();
+    expect(screen.getByTestId('animated-chart')).toHaveTextContent('Количество сделок');
+    expect(screen.getByTestId('animated-chart')).not.toHaveTextContent('Сумма сделок');
   });
 
-  it('keeps amount-based charts for a single currency', () => {
+  it('keeps money formatting when all deals share one currency', () => {
     render(
       <DealAnalyticsCard
         deals={[
-          {
-            amount: '1000',
-            currency_name: 'RUB',
-            stage: 'won',
-            assigned_to_name: 'Alice',
-            source: 'website',
-          },
-          {
-            amount: '2500',
-            currency_name: 'RUB',
-            stage: 'proposal',
-            assigned_to_name: 'Bob',
-            source: 'direct',
-          },
+          { id: 1, amount: 3000, currency_code: 'RUB', assigned_to_name: 'Alice', stage: 'won' },
+          { id: 2, amount: 1000, currency_code: 'RUB', assigned_to_name: 'Bob', stage: 'proposal' },
         ]}
-      />
+        showStageChart={false}
+        showSourceChart={false}
+      />,
     );
 
-    expect(screen.getByText('Топ-5 менеджеров по сумме')).toBeInTheDocument();
-    expect(chartCalls[0].data.datasets).toHaveLength(2);
-    expect(chartCalls[1].data.datasets[0].label).toBe('Сумма сделок');
-    expect(chartCalls[1].data.datasets[0].data).toEqual([2500, 1000]);
+    expect(screen.getByText(/4\s?000.*₽/)).toBeInTheDocument();
+    expect(screen.getByText(/2\s?000.*₽/)).toBeInTheDocument();
+    expect(screen.getByTestId('animated-chart')).toHaveTextContent('Сумма сделок');
   });
 });

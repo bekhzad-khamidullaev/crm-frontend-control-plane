@@ -20,6 +20,15 @@
 
 import { api } from './client.js';
 
+function makeCrud(path) {
+  return {
+    create: (payload) => api.post(path, { body: payload }),
+    update: (id, payload) => api.put(`${path}${id}/`, { body: payload }),
+    patch: (id, payload) => api.patch(`${path}${id}/`, { body: payload }),
+    remove: (id) => api.delete(`${path}${id}/`),
+  };
+}
+
 // ============================================================================
 // Stages (этапы сделок)
 // ============================================================================
@@ -41,6 +50,7 @@ export async function getStages(params = {}) {
 export async function getStage(id) {
   return api.get(`/api/stages/${id}/`);
 }
+export const stageCrud = makeCrud('/api/stages/');
 
 // ============================================================================
 // Task Stages (этапы задач)
@@ -63,6 +73,7 @@ export async function getTaskStages(params = {}) {
 export async function getTaskStage(id) {
   return api.get(`/api/task-stages/${id}/`);
 }
+export const taskStageCrud = makeCrud('/api/task-stages/');
 
 // ============================================================================
 // Project Stages (этапы проектов)
@@ -85,6 +96,7 @@ export async function getProjectStages(params = {}) {
 export async function getProjectStage(id) {
   return api.get(`/api/project-stages/${id}/`);
 }
+export const projectStageCrud = makeCrud('/api/project-stages/');
 
 // ============================================================================
 // Lead Sources (источники лидов)
@@ -107,6 +119,7 @@ export async function getLeadSources(params = {}) {
 export async function getLeadSource(id) {
   return api.get(`/api/lead-sources/${id}/`);
 }
+export const leadSourceCrud = makeCrud('/api/lead-sources/');
 
 // ============================================================================
 // Industries (отрасли)
@@ -129,6 +142,7 @@ export async function getIndustries(params = {}) {
 export async function getIndustry(id) {
   return api.get(`/api/industries/${id}/`);
 }
+export const industryCrud = makeCrud('/api/industries/');
 
 // ============================================================================
 // Countries (страны)
@@ -151,6 +165,7 @@ export async function getCountries(params = {}) {
 export async function getCountry(id) {
   return api.get(`/api/countries/${id}/`);
 }
+export const countryCrud = makeCrud('/api/countries/');
 
 // ============================================================================
 // Cities (города)
@@ -173,6 +188,7 @@ export async function getCities(params = {}) {
 export async function getCity(id) {
   return api.get(`/api/cities/${id}/`);
 }
+export const cityCrud = makeCrud('/api/cities/');
 
 // ============================================================================
 // Currencies (валюты)
@@ -204,6 +220,7 @@ export async function getCurrency(id) {
 export async function getCurrencyRates(id) {
   return api.get(`/api/currencies/${id}/rates/`);
 }
+export const currencyCrud = makeCrud('/api/currencies/');
 
 // ============================================================================
 // Client Types (типы клиентов)
@@ -226,6 +243,7 @@ export async function getClientTypes(params = {}) {
 export async function getClientType(id) {
   return api.get(`/api/client-types/${id}/`);
 }
+export const clientTypeCrud = makeCrud('/api/client-types/');
 
 // ============================================================================
 // Closing Reasons (причины закрытия)
@@ -248,6 +266,7 @@ export async function getClosingReasons(params = {}) {
 export async function getClosingReason(id) {
   return api.get(`/api/closing-reasons/${id}/`);
 }
+export const closingReasonCrud = makeCrud('/api/closing-reasons/');
 
 // ============================================================================
 // Memo Resolutions
@@ -270,6 +289,7 @@ export async function getResolutions(params = {}) {
 export async function getResolution(id) {
   return api.get(`/api/resolutions/${id}/`);
 }
+export const resolutionCrud = makeCrud('/api/resolutions/');
 
 // ============================================================================
 // Departments (отделы)
@@ -301,6 +321,7 @@ export async function getDepartment(id) {
 export async function getDepartmentMembers(id) {
   return api.get(`/api/departments/${id}/members/`);
 }
+export const departmentCrud = makeCrud('/api/departments/');
 
 // ============================================================================
 // CRM Tags (теги)
@@ -323,6 +344,7 @@ export async function getCrmTags(params = {}) {
 export async function getCrmTag(id) {
   return api.get(`/api/crm-tags/${id}/`);
 }
+export const crmTagCrud = makeCrud('/api/crm-tags/');
 
 // ============================================================================
 // Task Tags (теги задач)
@@ -345,6 +367,7 @@ export async function getTaskTags(params = {}) {
 export async function getTaskTag(id) {
   return api.get(`/api/task-tags/${id}/`);
 }
+export const taskTagCrud = makeCrud('/api/task-tags/');
 
 // ============================================================================
 // Utility Functions (вспомогательные функции)

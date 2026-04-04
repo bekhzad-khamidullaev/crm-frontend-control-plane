@@ -64,7 +64,11 @@ export function normalizeTelephonyCallPayload(rawCall = {}) {
   );
 
   const direction = String(
-    firstNonEmpty(call.direction, technicalPayload.direction, 'inbound') || 'inbound',
+    firstNonEmpty(
+      call.direction,
+      technicalPayload.direction,
+      'inbound',
+    ) || 'inbound',
   ).toLowerCase();
 
   const phoneNumber = firstNonEmpty(
@@ -181,12 +185,7 @@ export function normalizeTelephonyCallPayload(rawCall = {}) {
     recording_url: call.recording_url ?? recordingUrl,
     recordingReady: Boolean(
       recordingUrl ||
-      firstNonEmpty(
-        call.recording_ready,
-        call.recordingReady,
-        call.recording_ready_at,
-        technicalPayload.recording_ready_at,
-      )
+      firstNonEmpty(call.recording_ready, call.recordingReady, call.recording_ready_at, technicalPayload.recording_ready_at),
     ),
     routeTargetType: queue ? 'queue' : agentExtension ? 'extension' : 'external',
     routeTargetLabel: queue || agentExtension || firstNonEmpty(call.called_number, technicalPayload.called_number),
@@ -199,6 +198,21 @@ export function normalizeTelephonyCallPayload(rawCall = {}) {
     answeredAt: firstNonEmpty(call.answeredAt, call.answered_at, call.answer_time, technicalPayload.answered_at),
     endedAt: firstNonEmpty(call.endedAt, call.ended_at, call.end_time, technicalPayload.ended_at),
   };
+}
+
+function normalizeTelephonyCollectionResponse(response) {
+  if (Array.isArray(response)) {
+    return response.map((item) => normalizeTelephonyCallPayload(item));
+  }
+
+  if (response && Array.isArray(response.results)) {
+    return {
+      ...response,
+      results: response.results.map((item) => normalizeTelephonyCallPayload(item)),
+    };
+  }
+
+  return response;
 }
 
 /**
@@ -225,20 +239,9 @@ export async function initiateCall(data) {
 }
 
 /**
- * Reject active incoming call
- * Falls back to backend call-control when local SIP session is unavailable.
- * @param {string} sessionId - Session or call identifier
- * @returns {Promise<Object>}
- */
-export async function rejectActiveCall(sessionId) {
-  return api.post('/api/voip/call-control/reject/', {
-    body: { session_id: sessionId },
-  });
-}
-
-/**
  * End active call
- * Note: These call control endpoints are only available via backend VoIP control.
+ * Note: These call control endpoints don't exist in API.yaml
+ * Call control should be handled by WebRTC/SIP client (JsSIP)
  * @param {string} callId - Call ID
  * @returns {Promise<Object>}
  */
@@ -290,8 +293,8 @@ export async function getSIPConfig() {
 /**
  * Save SIP configuration
  * @param {Object} data
- * @param {string} data.provider - Provider (Asterisk only)
- * @param {string} data.type - Connection type (sip, pbx)
+ * @param {string} data.provider - Provider (Asterisk)
+ * @param {string} data.type - Connection type (pbx=embedded, sip=external bridge)
  * @param {string} data.number - Phone number
  * @param {string} data.callerid - Caller ID
  * @returns {Promise<Object>}
@@ -378,7 +381,18 @@ export async function getCallQueue(params = {}) {
  * @returns {Promise<Object>}
  */
 export async function getIncomingCalls(params = {}) {
-  return api.get('/api/voip/incoming-calls/', { params });
+  const response = await api.get('/api/voip/incoming-calls-feed/', { params });
+  return normalizeTelephonyCollectionResponse(response);
+}
+
+/**
+ * Get active calls snapshot (used for resync after WebSocket reconnect)
+ * @param {Object} params - Query parameters
+ * @returns {Promise<Object|Array>}
+ */
+export async function getActiveCalls(params = {}) {
+  const response = await api.get('/api/voip/active-calls/', { params });
+  return normalizeTelephonyCollectionResponse(response);
 }
 
 /**
@@ -387,7 +401,8 @@ export async function getIncomingCalls(params = {}) {
  * @returns {Promise<Object>}
  */
 export async function getIncomingCall(id) {
-  return api.get(`/api/voip/incoming-calls/${id}/`);
+  const response = await api.get(`/api/voip/incoming-calls/${id}/`);
+  return normalizeTelephonyCallPayload(response);
 }
 
 /**
@@ -406,6 +421,24 @@ export async function scheduleColdCall(data) {
  */
 export async function bulkColdCall(data) {
   return api.post('/api/voip/cold-call/bulk/', { body: data });
+}
+
+/**
+ * Force hangup active call in PBX by session identifier.
+ * @param {string} sessionId
+ * @returns {Promise<Object>}
+ */
+export async function hangupActiveCall(sessionId) {
+  return api.post('/api/voip/call-control/hangup/', { body: { session_id: sessionId } });
+}
+
+/**
+ * Reject ringing call in PBX by session identifier.
+ * @param {string} sessionId
+ * @returns {Promise<Object>}
+ */
+export async function rejectActiveCall(sessionId) {
+  return api.post('/api/voip/call-control/reject/', { body: { session_id: sessionId } });
 }
 
 // ============================================================================
@@ -494,6 +527,26 @@ export async function getInternalNumbers(params = {}) {
   return api.get('/api/voip/internal-numbers/', { params });
 }
 
+export async function createInternalNumber(data) {
+  return api.post('/api/voip/internal-numbers/', { body: data });
+}
+
+export async function updateInternalNumber(id, data) {
+  return api.patch(`/api/voip/internal-numbers/${id}/`, { body: data });
+}
+
+export async function deleteInternalNumber(id) {
+  return api.delete(`/api/voip/internal-numbers/${id}/`);
+}
+
+export async function validateInternalNumber(data) {
+  return api.post('/api/voip/internal-numbers/validate/', { body: data });
+}
+
+export async function syncInternalNumbers(data = {}) {
+  return api.post('/api/voip/internal-numbers/sync/', { body: data });
+}
+
 export async function getNumberGroups(params = {}) {
   return api.get('/api/voip/number-groups/', { params });
 }
@@ -508,6 +561,18 @@ export async function getVoipSystemSettings() {
 
 export async function updateVoipSystemSettings(data) {
   return api.patch('/api/voip/system-settings/current/', { body: data });
+}
+
+export async function getVoipRealtimeSettings() {
+  return api.get('/api/voip/realtime-settings/current/');
+}
+
+export async function updateVoipRealtimeSettings(data) {
+  return api.patch('/api/voip/realtime-settings/current/', { body: data });
+}
+
+export async function testVoipRealtimeSettings(data) {
+  return api.post('/api/voip/realtime-settings/test/', { body: data });
 }
 
 /**

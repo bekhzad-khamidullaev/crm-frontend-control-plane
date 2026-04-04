@@ -1,12 +1,18 @@
-import { DollarOutlined, FallOutlined, RiseOutlined, TrophyOutlined } from '@ant-design/icons';
+import {
+    DollarOutlined,
+    FallOutlined,
+    RiseOutlined,
+    TrophyOutlined,
+} from '@ant-design/icons';
 import { Card, Col, Row, Space, Statistic } from 'antd';
 import {
-  buildCurrencyTotals,
   countDistinctCurrencies,
   formatCurrency,
   formatCurrencyBreakdownFromItems,
   formatNumber,
+  resolveCurrencyCode,
 } from '../../lib/utils/format';
+import { fromMoneyMinor, toMoneyMinor } from '../../pages/workspace-utils.js';
 import AnimatedChart from './AnimatedChart';
 
 /**
@@ -28,52 +34,42 @@ function DealAnalyticsCard({
   size = 'small',
   chartHeight = 300,
 }) {
-  const dealsWithCurrency = deals.map((deal) => ({
-    ...deal,
-    analytics_currency_code: deal.currency_code || deal.currency_name || null,
-  }));
-  const totalAmount = deals.reduce((sum, deal) => sum + (parseFloat(deal.amount) || 0), 0);
-  const wonDeals = deals.filter((d) => d.stage === 'won' || d.status === 'won');
-  const lostDeals = deals.filter((d) => d.stage === 'lost' || d.status === 'lost');
-  const distinctCurrencies = countDistinctCurrencies(dealsWithCurrency, {
-    amountKey: 'amount',
-    currencyKey: 'analytics_currency_code',
-  });
-  const knownCurrencyTotals = buildCurrencyTotals(dealsWithCurrency, {
-    amountKey: 'amount',
-    currencyKey: 'analytics_currency_code',
-  }).filter(({ currencyCode }) => currencyCode !== 'UNKNOWN');
+  const totalAmount = fromMoneyMinor(deals.reduce((sum, deal) => sum + toMoneyMinor(deal.amount), 0));
+  const wonDeals = deals.filter(d => d.stage === 'won' || d.status === 'won');
+  const lostDeals = deals.filter(d => d.stage === 'lost' || d.status === 'lost');
+  const distinctCurrencies = countDistinctCurrencies(deals, { amountKey: 'amount' });
   const isMixedCurrency = distinctCurrencies > 1;
   const singleCurrencyCode =
-    distinctCurrencies === 1 && knownCurrencyTotals.length === 1
-      ? knownCurrencyTotals[0].currencyCode
+    distinctCurrencies === 1
+      ? resolveCurrencyCode(
+          deals.find((deal) => resolveCurrencyCode(deal, { fallback: null })),
+          { fallback: null },
+        )
       : null;
   const formatDealAmount = (value) =>
     singleCurrencyCode ? formatCurrency(value, singleCurrencyCode) : formatNumber(value);
-
+  
   const stats = {
     total: deals.length,
-    totalAmount,
+    totalAmount: totalAmount,
     averageAmount: deals.length > 0 ? totalAmount / deals.length : 0,
     winRate: deals.length > 0 ? ((wonDeals.length / deals.length) * 100).toFixed(1) : 0,
     won: wonDeals.length,
     lost: lostDeals.length,
   };
   const totalAmountDisplay = isMixedCurrency
-    ? formatCurrencyBreakdownFromItems(dealsWithCurrency, {
-        amountKey: 'amount',
-        currencyKey: 'analytics_currency_code',
-      })
+    ? formatCurrencyBreakdownFromItems(deals, { amountKey: 'amount' })
     : formatDealAmount(stats.totalAmount);
   const averageAmountDisplay = isMixedCurrency
     ? 'Мультивалютно'
     : formatDealAmount(stats.averageAmount);
 
+  // Воронка по стадиям
   const stageCount = deals.reduce((acc, deal) => {
     const stage = deal.stage || 'new';
     acc[stage] = acc[stage] || { count: 0, amount: 0 };
     acc[stage].count++;
-    acc[stage].amount += parseFloat(deal.amount) || 0;
+    acc[stage].amount += fromMoneyMinor(toMoneyMinor(deal.amount));
     return acc;
   }, {});
 
@@ -87,14 +83,14 @@ function DealAnalyticsCard({
   };
 
   const stageOrder = ['new', 'qualification', 'proposal', 'negotiation', 'won', 'lost'];
-  const orderedStages = stageOrder.filter((stage) => stageCount[stage]);
+  const orderedStages = stageOrder.filter(stage => stageCount[stage]);
 
   const stageData = {
-    labels: orderedStages.map((stage) => stageLabels[stage] || 'Без этапа'),
+    labels: orderedStages.map(stage => stageLabels[stage] || 'Без этапа'),
     datasets: [
       {
         label: 'Количество сделок',
-        data: orderedStages.map((stage) => stageCount[stage]?.count || 0),
+        data: orderedStages.map(stage => stageCount[stage]?.count || 0),
         backgroundColor: 'rgba(24, 144, 255, 0.6)',
         borderColor: 'rgba(24, 144, 255, 1)',
         borderWidth: 2,
@@ -104,7 +100,7 @@ function DealAnalyticsCard({
         ? [
             {
               label: 'Сумма сделок',
-              data: orderedStages.map((stage) => stageCount[stage]?.amount || 0),
+              data: orderedStages.map(stage => stageCount[stage]?.amount || 0),
               backgroundColor: 'rgba(82, 196, 26, 0.6)',
               borderColor: 'rgba(82, 196, 26, 1)',
               borderWidth: 2,
@@ -115,11 +111,12 @@ function DealAnalyticsCard({
     ],
   };
 
+  // Сделки по менеджерам
   const managerCount = deals.reduce((acc, deal) => {
     const manager = deal.assigned_to_name || deal.owner_name || 'Не назначен';
     acc[manager] = acc[manager] || { count: 0, amount: 0 };
     acc[manager].count++;
-    acc[manager].amount += parseFloat(deal.amount) || 0;
+    acc[manager].amount += fromMoneyMinor(toMoneyMinor(deal.amount));
     return acc;
   }, {});
 
@@ -158,7 +155,7 @@ function DealAnalyticsCard({
     const source = deal.source || 'direct';
     acc[source] = acc[source] || { count: 0, amount: 0 };
     acc[source].count++;
-    acc[source].amount += parseFloat(deal.amount) || 0;
+    acc[source].amount += fromMoneyMinor(toMoneyMinor(deal.amount));
     return acc;
   }, {});
 
@@ -172,11 +169,11 @@ function DealAnalyticsCard({
   };
 
   const sourceData = {
-    labels: Object.keys(sourceCount).map((key) => sourceLabels[key] || key),
+    labels: Object.keys(sourceCount).map(key => sourceLabels[key] || key),
     datasets: [
       {
         label: 'Сделки по источникам',
-        data: Object.values(sourceCount).map((v) => v.count),
+        data: Object.values(sourceCount).map(v => v.count),
         backgroundColor: [
           'rgba(24, 144, 255, 0.8)',
           'rgba(82, 196, 26, 0.8)',
@@ -198,6 +195,7 @@ function DealAnalyticsCard({
     ],
   };
 
+
   const chartOptions = {
     responsive: true,
     maintainAspectRatio: true,
@@ -208,10 +206,9 @@ function DealAnalyticsCard({
       tooltip: {
         callbacks: {
           label: (context) => {
-            const parsedValue =
-              typeof context.parsed === 'object'
-                ? (context.parsed?.x ?? context.parsed?.y ?? context.parsed?.r ?? 0)
-                : (context.parsed ?? 0);
+            const parsedValue = typeof context.parsed === 'object'
+              ? (context.parsed?.x ?? context.parsed?.y ?? context.parsed?.r ?? 0)
+              : (context.parsed ?? 0);
 
             if (context.dataset.valueType === 'currency') {
               return `${context.dataset.label}: ${formatDealAmount(parsedValue)}`;
@@ -254,22 +251,34 @@ function DealAnalyticsCard({
             <Card className="analytics-stat-card">
               <Statistic
                 title="Общая сумма"
-                value={stats.totalAmount}
+                value={isMixedCurrency ? totalAmountDisplay : stats.totalAmount}
                 prefix={<DollarOutlined />}
-                formatter={() => totalAmountDisplay}
+                formatter={isMixedCurrency ? undefined : () => totalAmountDisplay}
                 valueStyle={{ color: '#52c41a' }}
               />
             </Card>
           </Col>
           <Col xs={24} sm={12} md={6}>
             <Card className="analytics-stat-card">
-              <Statistic
-                title="Средний чек"
-                value={stats.averageAmount}
-                prefix={<RiseOutlined />}
-                formatter={() => averageAmountDisplay}
-                valueStyle={{ color: '#faad14' }}
-              />
+              {isMixedCurrency ? (
+                <div className="ant-statistic">
+                  <div className="ant-statistic-title">Средний чек</div>
+                  <div className="ant-statistic-content" style={{ color: '#faad14' }}>
+                    <span className="ant-statistic-content-prefix">
+                      <RiseOutlined />
+                    </span>
+                    <span className="ant-statistic-content-value">{averageAmountDisplay}</span>
+                  </div>
+                </div>
+              ) : (
+                <Statistic
+                  title="Средний чек"
+                  value={stats.averageAmount}
+                  prefix={<RiseOutlined />}
+                  formatter={() => averageAmountDisplay}
+                  valueStyle={{ color: '#faad14' }}
+                />
+              )}
             </Card>
           </Col>
           <Col xs={24} sm={12} md={6}>

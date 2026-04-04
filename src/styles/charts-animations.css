@@ -46,7 +46,9 @@
 
 /* Анимация для статистических карточек */
 .analytics-stat-card {
-  transition: all 0.3s ease;
+  transition:
+    transform 0.3s ease,
+    box-shadow 0.3s ease;
   animation: fadeIn 0.6s ease-out;
 }
 
@@ -86,7 +88,7 @@
 
 /* Анимация для экспорта */
 .export-button {
-  transition: all 0.3s ease;
+  transition: transform 0.3s ease;
 }
 
 .export-button:hover {
@@ -99,7 +101,9 @@
 
 /* Анимация для фильтров */
 .filter-container {
-  transition: all 0.3s ease;
+  transition:
+    max-height 0.3s ease,
+    opacity 0.3s ease;
 }
 
 .filter-container.expanded {
@@ -129,7 +133,9 @@
 
 /* Hover эффекты для легенды чартов */
 .chart-legend-item {
-  transition: all 0.2s ease;
+  transition:
+    opacity 0.2s ease,
+    transform 0.2s ease;
   cursor: pointer;
 }
 
@@ -160,12 +166,16 @@
 
 /* Плавное изменение размера чартов */
 .chart-container canvas {
-  transition: all 0.3s ease;
+  transition:
+    opacity 0.3s ease,
+    transform 0.3s ease;
 }
 
 /* Анимация появления для табов аналитики */
 .analytics-tabs .ant-tabs-tab {
-  transition: all 0.3s ease;
+  transition:
+    transform 0.3s ease,
+    color 0.3s ease;
 }
 
 .analytics-tabs .ant-tabs-tab:hover {
@@ -174,7 +184,9 @@
 
 /* Стили для карточек с данными */
 .analytics-card {
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  transition:
+    box-shadow 0.3s cubic-bezier(0.4, 0, 0.2, 1),
+    transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   overflow: hidden;
 }
 

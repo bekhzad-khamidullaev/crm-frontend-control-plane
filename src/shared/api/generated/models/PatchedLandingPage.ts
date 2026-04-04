@@ -7,6 +7,7 @@ export type PatchedLandingPage = {
     readonly id?: number;
     title?: string;
     slug?: string;
+    custom_domain?: string | null;
     is_active?: boolean;
     status?: Status77bEnum;
     draft_version?: number;

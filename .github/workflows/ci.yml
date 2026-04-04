@@ -35,15 +35,13 @@ jobs:
         run: npm run lint
 
       - name: Check formatting
-        continue-on-error: true
         run: npm run format:check
 
       - name: Run tests
-        continue-on-error: true
         run: npm run test:ci
 
       - name: Upload coverage
-        uses: codecov/codecov-action@v4
+        uses: codecov/codecov-action@v3
         if: success()
         with:
           files: ./coverage/coverage-final.json
@@ -77,7 +75,7 @@ jobs:
           NODE_ENV: production
 
       - name: Upload build artifacts
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v3
         with:
           name: dist-${{ matrix.mode }}
           path: dist/

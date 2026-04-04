@@ -3,13 +3,16 @@
 /* tslint:disable */
 /* eslint-disable */
 import type { PaginatedUserList } from '../models/PaginatedUserList';
+import type { PatchedUser } from '../models/PatchedUser';
+import type { PatchedUserWrite } from '../models/PatchedUserWrite';
 import type { User } from '../models/User';
+import type { UserWrite } from '../models/UserWrite';
 import type { CancelablePromise } from '../core/CancelablePromise';
 import { OpenAPI } from '../core/OpenAPI';
 import { request as __request } from '../core/request';
 export class UsersService {
     /**
-     * Read-only user directory.
+     * User directory with admin CRUD, group assignment and permission assignment.
      * @returns PaginatedUserList
      * @throws ApiError
      */
@@ -48,7 +51,24 @@ export class UsersService {
         });
     }
     /**
-     * Read-only user directory.
+     * User directory with admin CRUD, group assignment and permission assignment.
+     * @returns UserWrite
+     * @throws ApiError
+     */
+    public static usersCreate({
+        requestBody,
+    }: {
+        requestBody: UserWrite,
+    }): CancelablePromise<UserWrite> {
+        return __request(OpenAPI, {
+            method: 'POST',
+            url: '/api/users/',
+            body: requestBody,
+            mediaType: 'application/json',
+        });
+    }
+    /**
+     * User directory with admin CRUD, group assignment and permission assignment.
      * @returns User
      * @throws ApiError
      */
@@ -69,7 +89,178 @@ export class UsersService {
         });
     }
     /**
-     * Read-only user directory.
+     * User directory with admin CRUD, group assignment and permission assignment.
+     * @returns UserWrite
+     * @throws ApiError
+     */
+    public static usersUpdate({
+        id,
+        requestBody,
+    }: {
+        /**
+         * A unique integer value identifying this user.
+         */
+        id: number,
+        requestBody: UserWrite,
+    }): CancelablePromise<UserWrite> {
+        return __request(OpenAPI, {
+            method: 'PUT',
+            url: '/api/users/{id}/',
+            path: {
+                'id': id,
+            },
+            body: requestBody,
+            mediaType: 'application/json',
+        });
+    }
+    /**
+     * User directory with admin CRUD, group assignment and permission assignment.
+     * @returns UserWrite
+     * @throws ApiError
+     */
+    public static usersPartialUpdate({
+        id,
+        requestBody,
+    }: {
+        /**
+         * A unique integer value identifying this user.
+         */
+        id: number,
+        requestBody?: PatchedUserWrite,
+    }): CancelablePromise<UserWrite> {
+        return __request(OpenAPI, {
+            method: 'PATCH',
+            url: '/api/users/{id}/',
+            path: {
+                'id': id,
+            },
+            body: requestBody,
+            mediaType: 'application/json',
+        });
+    }
+    /**
+     * User directory with admin CRUD, group assignment and permission assignment.
+     * @returns void
+     * @throws ApiError
+     */
+    public static usersDestroy({
+        id,
+    }: {
+        /**
+         * A unique integer value identifying this user.
+         */
+        id: number,
+    }): CancelablePromise<void> {
+        return __request(OpenAPI, {
+            method: 'DELETE',
+            url: '/api/users/{id}/',
+            path: {
+                'id': id,
+            },
+        });
+    }
+    /**
+     * User directory with admin CRUD, group assignment and permission assignment.
+     * @returns UserWrite
+     * @throws ApiError
+     */
+    public static usersGroupsUpdate({
+        id,
+        requestBody,
+    }: {
+        /**
+         * A unique integer value identifying this user.
+         */
+        id: number,
+        requestBody: UserWrite,
+    }): CancelablePromise<UserWrite> {
+        return __request(OpenAPI, {
+            method: 'PUT',
+            url: '/api/users/{id}/groups/',
+            path: {
+                'id': id,
+            },
+            body: requestBody,
+            mediaType: 'application/json',
+        });
+    }
+    /**
+     * User directory with admin CRUD, group assignment and permission assignment.
+     * @returns UserWrite
+     * @throws ApiError
+     */
+    public static usersGroupsPartialUpdate({
+        id,
+        requestBody,
+    }: {
+        /**
+         * A unique integer value identifying this user.
+         */
+        id: number,
+        requestBody?: PatchedUserWrite,
+    }): CancelablePromise<UserWrite> {
+        return __request(OpenAPI, {
+            method: 'PATCH',
+            url: '/api/users/{id}/groups/',
+            path: {
+                'id': id,
+            },
+            body: requestBody,
+            mediaType: 'application/json',
+        });
+    }
+    /**
+     * User directory with admin CRUD, group assignment and permission assignment.
+     * @returns UserWrite
+     * @throws ApiError
+     */
+    public static usersPermissionsUpdate({
+        id,
+        requestBody,
+    }: {
+        /**
+         * A unique integer value identifying this user.
+         */
+        id: number,
+        requestBody: UserWrite,
+    }): CancelablePromise<UserWrite> {
+        return __request(OpenAPI, {
+            method: 'PUT',
+            url: '/api/users/{id}/permissions/',
+            path: {
+                'id': id,
+            },
+            body: requestBody,
+            mediaType: 'application/json',
+        });
+    }
+    /**
+     * User directory with admin CRUD, group assignment and permission assignment.
+     * @returns UserWrite
+     * @throws ApiError
+     */
+    public static usersPermissionsPartialUpdate({
+        id,
+        requestBody,
+    }: {
+        /**
+         * A unique integer value identifying this user.
+         */
+        id: number,
+        requestBody?: PatchedUserWrite,
+    }): CancelablePromise<UserWrite> {
+        return __request(OpenAPI, {
+            method: 'PATCH',
+            url: '/api/users/{id}/permissions/',
+            path: {
+                'id': id,
+            },
+            body: requestBody,
+            mediaType: 'application/json',
+        });
+    }
+    /**
+     * User directory with admin CRUD, group assignment and permission assignment.
      * @returns User
      * @throws ApiError
      */
@@ -80,7 +271,7 @@ export class UsersService {
         });
     }
     /**
-     * Read-only user directory.
+     * User directory with admin CRUD, group assignment and permission assignment.
      * @returns User
      * @throws ApiError
      */
@@ -91,7 +282,24 @@ export class UsersService {
         });
     }
     /**
-     * Read-only user directory.
+     * User directory with admin CRUD, group assignment and permission assignment.
+     * @returns User
+     * @throws ApiError
+     */
+    public static usersMe2FaStatusPartialUpdate({
+        requestBody,
+    }: {
+        requestBody?: PatchedUser,
+    }): CancelablePromise<User> {
+        return __request(OpenAPI, {
+            method: 'PATCH',
+            url: '/api/users/me/2fa/status/',
+            body: requestBody,
+            mediaType: 'application/json',
+        });
+    }
+    /**
+     * User directory with admin CRUD, group assignment and permission assignment.
      * @returns User
      * @throws ApiError
      */
@@ -108,7 +316,7 @@ export class UsersService {
         });
     }
     /**
-     * Read-only user directory.
+     * User directory with admin CRUD, group assignment and permission assignment.
      * @returns User
      * @throws ApiError
      */
@@ -119,7 +327,7 @@ export class UsersService {
         });
     }
     /**
-     * Read-only user directory.
+     * User directory with admin CRUD, group assignment and permission assignment.
      * @returns void
      * @throws ApiError
      */
@@ -130,7 +338,7 @@ export class UsersService {
         });
     }
     /**
-     * Read-only user directory.
+     * User directory with admin CRUD, group assignment and permission assignment.
      * @returns User
      * @throws ApiError
      */

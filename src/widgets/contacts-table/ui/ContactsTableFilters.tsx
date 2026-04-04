@@ -1,6 +1,7 @@
 import { useCompanies } from '@/entities/company/api/queries';
 import { useDebounce } from '@/shared/hooks';
 import { CountrySelect, UserSelect } from '@/features/reference';
+import { getCompanyDisplayName } from '@/lib/utils/company-display.js';
 import { SearchOutlined } from '@ant-design/icons';
 import { Button, Card, Col, Flex, Input, Row, Select, Space, Tag, theme } from 'antd';
 import React, { useEffect, useState } from 'react';
@@ -26,7 +27,7 @@ export const ContactsTableFilters: React.FC<FiltersProps> = ({ filters, onFilter
     () =>
       (companies?.results || []).map((company: any) => ({
         value: company.id,
-        label: company.full_name || company.name,
+        label: getCompanyDisplayName(company) || 'Компания',
       })),
     [companies],
   );

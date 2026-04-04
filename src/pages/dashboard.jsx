@@ -50,6 +50,7 @@ import { t } from '../lib/i18n/index.js';
 import { canAccessRoute } from '../lib/rbac.js';
 import { getSettingsWorkspaceTabPath } from '../lib/settingsWorkspaceNavigation.js';
 import { navigate } from '../router.js';
+import { translateDealStageName } from '../widgets/deals-table/model/i18n';
 
 const { Title, Text } = Typography;
 
@@ -918,12 +919,13 @@ function Dashboard() {
     const grouped = new Map();
 
     safeArray(funnel).forEach((item, index) => {
-      const stageName = readField(
+      const stageRawName = readField(
         item,
         ['stage_name', 'stage', 'name', 'label'],
         `${tr('dashboardPage.stage', 'Bosqich')} ${index + 1}`,
       );
-      const normalizedStage = String(stageName || '').trim();
+      const normalizedStage = String(stageRawName || '').trim();
+      const translatedStage = translateDealStageName(normalizedStage) || normalizedStage;
       const stageKey = normalizedStage.toLocaleLowerCase() || `__stage_${index}`;
       const count = parseFiniteNumber(item?.value ?? item?.count ?? item?.total, 0);
       const amount = parseFiniteNumber(item?.amount ?? item?.sum ?? item?.revenue, 0);
@@ -931,7 +933,7 @@ function Dashboard() {
       if (!grouped.has(stageKey)) {
         grouped.set(stageKey, {
           key: stageKey,
-          stage: normalizedStage || stageName,
+          stage: translatedStage || stageRawName,
           count: 0,
           amount: 0,
         });
@@ -1037,9 +1039,9 @@ function Dashboard() {
   const additionalDashboards = useMemo(() => ([
     {
       key: 'calls',
-      title: tr('dashboardPage.extraDashboards.callsTitle', 'Дашборд звонков'),
-      description: tr('dashboardPage.extraDashboards.callsDesc', 'Операционные показатели звонков, SLA и QA.'),
-      path: '/calls-dashboard',
+      title: tr('dashboardPage.extraDashboards.callsTitle', 'Дашборд коммуникаций'),
+      description: tr('dashboardPage.extraDashboards.callsDesc', 'Операционные KPI по звонкам, мессенджерам, SMS и email.'),
+      path: '/calls/dashboard',
     },
     {
       key: 'telephony',
@@ -1126,6 +1128,7 @@ function Dashboard() {
                 value={derivedMetrics.averageDealSize}
                 formatter={(value) => formatCurrency(value, overview?.currency_code || 'UZS')}
               />
+              <Text type="secondary">{tr('dashboardPage.kpi.pipelineAmount', 'Сумма сделок в работе')}</Text>
             </Card>
           </Col>
           <Col xs={24} md={8}>
@@ -1136,6 +1139,7 @@ function Dashboard() {
                 precision={1}
                 suffix="%"
               />
+              <Text type="secondary">{tr('dashboardPage.kpi.wonLost', 'Won / Lost')}</Text>
             </Card>
           </Col>
           <Col span={24}>
@@ -1612,15 +1616,34 @@ function Dashboard() {
       >
         <Row gutter={[12, 12]}>
           {additionalDashboards.map((item) => (
-            <Col xs={24} md={12} xl={6} key={item.key}>
-              <Card size="small" style={{ height: '100%' }}>
-                <Space direction="vertical" size={8} style={{ width: '100%' }}>
+            <Col xs={24} md={12} xl={8} key={item.key}>
+              <Card
+                size="small"
+                style={{
+                  height: '100%',
+                  borderRadius: token.borderRadius,
+                  border: `1px solid ${token.colorBorderSecondary}`,
+                  background: token.colorBgContainer,
+                }}
+                styles={{
+                  body: {
+                    height: '100%',
+                    minHeight: 150,
+                    display: 'flex',
+                    flexDirection: 'column',
+                    gap: 10,
+                    justifyContent: 'space-between',
+                    padding: 14,
+                  },
+                }}
+              >
+                <Space direction="vertical" size={6} style={{ width: '100%' }}>
                   <Text strong>{item.title}</Text>
-                  <Text type="secondary">{item.description}</Text>
-                  <Button type="primary" block onClick={() => navigate(item.path)}>
-                    {tr('dashboardPage.extraDashboards.open', 'Открыть')}
-                  </Button>
+                  <Text type="secondary" style={{ minHeight: 44 }}>{item.description}</Text>
                 </Space>
+                <Button type="primary" block onClick={() => navigate(item.path)}>
+                  {tr('dashboardPage.extraDashboards.open', 'Открыть')}
+                </Button>
               </Card>
             </Col>
           ))}

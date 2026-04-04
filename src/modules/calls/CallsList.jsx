@@ -17,6 +17,7 @@ import {
   Button,
   Card,
   DatePicker,
+  Descriptions,
   Form,
   Input,
   Modal,
@@ -25,6 +26,7 @@ import {
   Table,
   Tag,
   Typography,
+  theme as antdTheme,
 } from 'antd';
 
 import AudioPlayer from '../../components/AudioPlayer.jsx';
@@ -38,8 +40,50 @@ const { RangePicker } = DatePicker;
 const { Search } = Input;
 const { Text, Title } = Typography;
 
+function firstNonEmpty(...values) {
+  for (const value of values) {
+    if (value === null || value === undefined) continue;
+    const str = String(value).trim();
+    if (str) return str;
+  }
+  return '';
+}
+
+function resolveRecordingUrl(call = {}) {
+  return firstNonEmpty(
+    call.recording_url,
+    call.recordingUrl,
+    call.recording_file,
+    call.recordingFile,
+    call.audio_url,
+    call.audioUrl,
+    call.media_url,
+    call.mediaUrl,
+    call.technical_payload?.recording_url,
+    call.technical_payload?.recording_file
+  );
+}
+
+function formatDateTime(value) {
+  if (!value) return '-';
+  const date = dayjs(value);
+  if (!date.isValid()) return String(value);
+  return date.format('DD.MM.YYYY HH:mm:ss');
+}
+
+function formatDuration(value) {
+  const sec = Number(value);
+  if (!Number.isFinite(sec) || sec < 0) return '-';
+  const hours = Math.floor(sec / 3600);
+  const mins = Math.floor((sec % 3600) / 60);
+  const secs = Math.floor(sec % 60);
+  if (hours > 0) return `${hours}h ${mins}m ${secs}s`;
+  return `${mins}m ${secs.toString().padStart(2, '0')}s`;
+}
+
 function CallsList() {
   const { message } = App.useApp();
+  const { token } = antdTheme.useToken();
   const tr = (key, fallback, vars = {}) => {
     const localized = t(key, vars);
     return localized === key ? fallback : localized;
@@ -116,7 +160,9 @@ function CallsList() {
   }, [searchText, filters]);
 
   const handlePlayRecording = (call) => {
-    setSelectedRecording(call);
+    const recordingUrl = resolveRecordingUrl(call);
+    if (!recordingUrl) return;
+    setSelectedRecording({ ...call, recording_url: recordingUrl });
     setRecordingModalVisible(true);
   };
 
@@ -167,6 +213,144 @@ function CallsList() {
     ringing: { color: 'processing', text: tr('callsList.status.ringing', 'Ringing') },
   };
 
+  const renderHumanCallDetails = (call) => {
+    const directionRaw = String(call?.direction || '').toLowerCase();
+    const directionLabel =
+      directionRaw === 'inbound'
+        ? tr('callsList.direction.inbound', 'Inbound')
+        : directionRaw === 'outbound'
+          ? tr('callsList.direction.outbound', 'Outbound')
+          : '-';
+    const statusRaw = String(call?.status || '').toLowerCase();
+    const statusLabel = statusConfig[statusRaw]?.text || firstNonEmpty(call?.status, '-');
+    const phoneNumber = firstNonEmpty(
+      call?.phone_number,
+      call?.number,
+      call?.caller_id,
+      call?.called_number
+    );
+    const customerName = firstNonEmpty(
+      call?.contact_name,
+      call?.customer_name,
+      call?.client_name,
+      call?.contact,
+      call?.related_contact_name,
+      call?.related_lead_name
+    );
+    const agentName = firstNonEmpty(
+      call?.agent_name,
+      call?.user_agent,
+      call?.operator_name,
+      call?.user_name
+    );
+    const startedAt = firstNonEmpty(call?.started_at, call?.start_time, call?.timestamp);
+    const answeredAt = firstNonEmpty(call?.answered_at, call?.answer_time);
+    const endedAt = firstNonEmpty(call?.ended_at, call?.end_time);
+    const queueWait = call?.queue_wait_time ?? call?.wait_time ?? null;
+    const recordingUrl = resolveRecordingUrl(call);
+
+    const summaryItems = [
+      {
+        key: 'customer',
+        label: tr('callsList.modals.customer', 'Customer'),
+        children: customerName || '-',
+      },
+      {
+        key: 'phone',
+        label: tr('callsList.modals.phoneNumber', 'Phone number'),
+        children: phoneNumber || '-',
+      },
+      {
+        key: 'direction',
+        label: tr('callsList.modals.direction', 'Direction'),
+        children: directionLabel,
+      },
+      {
+        key: 'status',
+        label: tr('callsList.modals.status', 'Status'),
+        children: statusLabel,
+      },
+      {
+        key: 'agent',
+        label: tr('callsList.modals.agent', 'Agent'),
+        children: agentName || '-',
+      },
+      {
+        key: 'queue',
+        label: tr('callsList.modals.queue', 'Queue/Group'),
+        children: firstNonEmpty(call?.routed_to_group, call?.queue_name, call?.queue, '-') || '-',
+      },
+      {
+        key: 'start',
+        label: tr('callsList.modals.startedAt', 'Call started'),
+        children: formatDateTime(startedAt),
+      },
+      {
+        key: 'answer',
+        label: tr('callsList.modals.answeredAt', 'Answered at'),
+        children: formatDateTime(answeredAt),
+      },
+      {
+        key: 'end',
+        label: tr('callsList.modals.endedAt', 'Call ended'),
+        children: formatDateTime(endedAt),
+      },
+      {
+        key: 'duration',
+        label: tr('callsList.modals.duration', 'Talk duration'),
+        children: formatDuration(firstNonEmpty(call?.call_duration, call?.duration, call?.total_duration)),
+      },
+      {
+        key: 'wait',
+        label: tr('callsList.modals.waitTime', 'Queue wait'),
+        children:
+          queueWait === null || queueWait === undefined || queueWait === ''
+            ? '-'
+            : formatDuration(queueWait),
+      },
+      {
+        key: 'session',
+        label: tr('callsList.modals.callRef', 'Call reference'),
+        children: firstNonEmpty(call?.session_id, call?.call_id, call?.id, '-') || '-',
+      },
+    ];
+
+    return (
+      <Space direction="vertical" size={12} style={{ width: '100%' }}>
+        <Descriptions
+          size="small"
+          column={1}
+          bordered
+          items={summaryItems}
+        />
+
+        {recordingUrl ? (
+          <Card
+            size="small"
+            title={tr('callsList.modals.recordingTitle', 'Recording playback')}
+            styles={{ body: { paddingTop: 10, paddingBottom: 10 } }}
+          >
+            <AudioPlayer src={recordingUrl} />
+          </Card>
+        ) : (
+          <Text type="secondary">
+            {tr('callsList.modals.recordingNotFound', 'Recording not found')}
+          </Text>
+        )}
+
+        {firstNonEmpty(call?.notes, call?.note) ? (
+          <Card
+            size="small"
+            title={tr('callsList.modals.noteTitle', 'Call note')}
+            styles={{ body: { paddingTop: 10, paddingBottom: 10 } }}
+          >
+            <Text>{firstNonEmpty(call?.notes, call?.note)}</Text>
+          </Card>
+        ) : null}
+      </Space>
+    );
+  };
+
   const columns = [
     {
       title: tr('callsList.table.direction', 'Direction'),
@@ -175,7 +359,9 @@ function CallsList() {
       width: 140,
       render: (direction) => (
         <Space>
-          <PhoneTwoTone twoToneColor={direction === 'inbound' ? '#52c41a' : '#1890ff'} />
+          <PhoneTwoTone
+            twoToneColor={direction === 'inbound' ? token.colorSuccess : token.colorPrimary}
+          />
           <Text>{direction === 'inbound' ? tr('callsList.direction.inbound', 'Inbound') : tr('callsList.direction.outbound', 'Outbound')}</Text>
         </Space>
       ),
@@ -239,8 +425,8 @@ function CallsList() {
       key: 'recording',
       width: 120,
       align: 'center',
-      render: (recordingUrl, record) =>
-        recordingUrl ? (
+      render: (_, record) =>
+        resolveRecordingUrl(record) ? (
           <Button type="link" icon={<AudioOutlined />} size="small" onClick={() => handlePlayRecording(record)}>
             {tr('callsList.actions.recording', 'Recording')}
           </Button>
@@ -254,7 +440,7 @@ function CallsList() {
       width: 240,
       render: (_, record) => (
         <Space>
-          {record.recording_url ? (
+          {resolveRecordingUrl(record) ? (
             <Button type="link" icon={<PlayCircleOutlined />} size="small" onClick={() => handlePlayRecording(record)}>
               {tr('callsList.actions.listen', 'Listen')}
             </Button>
@@ -290,63 +476,43 @@ function CallsList() {
   }, [statistics, calls.length]);
 
   return (
-    <Card bodyStyle={{ padding: 16 }}>
-      <Space direction="vertical" size={12} style={{ width: '100%', maxWidth: 1320 }}>
+    <Card size="small" bodyStyle={{ padding: 12 }}>
+      <Space direction="vertical" size={8} style={{ width: '100%', maxWidth: 1320 }}>
         <Space wrap style={{ width: '100%', justifyContent: 'space-between' }}>
           <div>
             <Space size={8} align="center" style={{ marginBottom: 2 }}>
               <ChannelBrandIcon channel="telephony" size={16} />
-              <Title level={3} style={{ margin: 0 }}>{tr('callsList.title', 'Call history')}</Title>
+              <Title level={3} style={{ margin: 0, fontSize: 18, lineHeight: 1.2 }}>{tr('callsList.title', 'Call history')}</Title>
             </Space>
-            <Text type="secondary">{tr('callsList.subtitle', 'VoIP log and analytics')}</Text>
+            <Text type="secondary" style={{ fontSize: 13 }}>{tr('callsList.subtitle', 'VoIP log and analytics')}</Text>
           </div>
-          <Button icon={<ReloadOutlined />} onClick={fetchCalls} loading={loading}>{tr('actions.refresh', 'Refresh')}</Button>
+          <Button size="small" icon={<ReloadOutlined />} onClick={fetchCalls} loading={loading}>{tr('actions.refresh', 'Refresh')}</Button>
         </Space>
 
         {stats ? (
-          <Space wrap size={10}>
-            <KpiStatCard
-              title={tr('callsList.stats.total', 'Total')}
-              value={stats.total}
-              borderRadius={14}
-              bodyPadding="10px 14px"
-            />
-            <KpiStatCard
-              title={tr('callsList.stats.answered', 'Answered')}
-              value={stats.answered}
-              borderRadius={14}
-              bodyPadding="10px 14px"
-            />
-            <KpiStatCard
-              title={tr('callsList.stats.missed', 'Missed')}
-              value={stats.missed}
-              borderRadius={14}
-              bodyPadding="10px 14px"
-            />
-            <KpiStatCard
-              title={tr('callsList.stats.durationSec', 'Duration, sec')}
-              value={stats.duration}
-              borderRadius={14}
-              bodyPadding="10px 14px"
-            />
+          <Space wrap size={8}>
+            <KpiStatCard title={tr('callsList.stats.total', 'Total')} value={stats.total} />
+            <KpiStatCard title={tr('callsList.stats.answered', 'Answered')} value={stats.answered} />
+            <KpiStatCard title={tr('callsList.stats.missed', 'Missed')} value={stats.missed} />
+            <KpiStatCard title={tr('callsList.stats.durationSec', 'Duration, sec')} value={stats.duration} />
           </Space>
         ) : null}
 
-        <Space wrap size={10}>
+        <Space wrap size={8}>
           <Search
             placeholder={tr('callsList.filters.searchByNumber', 'Search by number')}
             allowClear
             value={searchText}
             onChange={(e) => setSearchText(e.target.value)}
             onSearch={setSearchText}
-            size="middle"
-            style={{ width: 250, minWidth: 220 }}
+            size="small"
+            style={{ width: 220, minWidth: 200 }}
           />
           <Select
             allowClear
             placeholder={tr('callsList.filters.direction', 'Direction')}
-            size="middle"
-            style={{ width: 170 }}
+            size="small"
+            style={{ width: 150 }}
             value={filters.direction}
             options={[
               { value: 'inbound', label: tr('callsList.direction.inbound', 'Inbound') },
@@ -357,20 +523,20 @@ function CallsList() {
           <Select
             allowClear
             placeholder={tr('callsList.filters.status', 'Status')}
-            size="middle"
-            style={{ width: 170 }}
+            size="small"
+            style={{ width: 150 }}
             value={filters.status}
             options={Object.entries(statusConfig).map(([value, meta]) => ({ value, label: meta.text }))}
             onChange={(v) => setFilters((prev) => ({ ...prev, status: v ?? null }))}
           />
           <RangePicker
-            size="middle"
+            size="small"
             format="DD.MM.YYYY"
-            style={{ width: 320 }}
+            style={{ width: 290 }}
             value={filters.dateRange}
             onChange={(vals) => setFilters((prev) => ({ ...prev, dateRange: vals || null }))}
           />
-          <Button size="middle" onClick={() => setFilters({ direction: null, status: null, dateRange: null })}>
+          <Button size="small" onClick={() => setFilters({ direction: null, status: null, dateRange: null })}>
             {tr('actions.reset', 'Reset')}
           </Button>
         </Space>
@@ -435,14 +601,7 @@ function CallsList() {
         ) : !detailModal.data ? (
           <Text type="secondary">{tr('callsList.modals.detailsUnavailable', 'Data unavailable')}</Text>
         ) : (
-          <Space direction="vertical" size={8} style={{ width: '100%' }}>
-            {Object.entries(detailModal.data).map(([key, value]) => (
-              <div key={key}>
-                <Text strong>{key}: </Text>
-                <Text>{String(value ?? '-')}</Text>
-              </div>
-            ))}
-          </Space>
+          renderHumanCallDetails(detailModal.data)
         )}
       </Modal>
     </Card>

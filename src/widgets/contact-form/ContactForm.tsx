@@ -160,6 +160,53 @@ export const ContactForm: React.FC<ContactFormProps> = ({
 
           <Row gutter={16}>
             <Col xs={24} md={12}>
+              <Form.Item label="Мобильный" name="mobile">
+                <Input placeholder="+998 90 123 45 67" />
+              </Form.Item>
+            </Col>
+            <Col xs={24} md={12}>
+              <Form.Item label="Доп. телефон" name="other_phone">
+                <Input placeholder="+998 90 123 45 67" />
+              </Form.Item>
+            </Col>
+          </Row>
+
+          <Row gutter={16}>
+            <Col xs={24} md={12}>
+              <Form.Item label="Telegram username" name="telegram_username">
+                <Input placeholder="username (без @)" />
+              </Form.Item>
+            </Col>
+            <Col xs={24} md={12}>
+              <Form.Item label="Telegram chat_id" name="telegram_chat_id">
+                <Input placeholder="например 123456789 или -1001234567890" />
+              </Form.Item>
+            </Col>
+          </Row>
+
+          <Row gutter={16}>
+            <Col xs={24} md={12}>
+              <Form.Item label="Instagram username" name="instagram_username">
+                <Input placeholder="username (без @)" />
+              </Form.Item>
+            </Col>
+            <Col xs={24} md={12}>
+              <Form.Item label="Instagram recipient_id" name="instagram_recipient_id">
+                <Input placeholder="например 1784..." />
+              </Form.Item>
+            </Col>
+          </Row>
+
+          <Row gutter={16}>
+            <Col xs={24} md={12}>
+              <Form.Item label="Facebook PSID" name="facebook_psid">
+                <Input placeholder="например 1234567890123456" />
+              </Form.Item>
+            </Col>
+          </Row>
+
+          <Row gutter={16}>
+            <Col xs={24} md={12}>
               <Form.Item label="Компания" name="company">
                 <CompanySelect style={{ width: '100%' }} />
               </Form.Item>

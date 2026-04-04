@@ -14,7 +14,7 @@ import type { FacebookPageCreate } from '../models/FacebookPageCreate';
 import type { InstagramAccount } from '../models/InstagramAccount';
 import type { InstagramAccountCreate } from '../models/InstagramAccountCreate';
 import type { IntegrationLog } from '../models/IntegrationLog';
-import type { MarketplaceExtension } from '../models/MarketplaceExtension';
+import type { LeadAssignmentRule } from '../models/LeadAssignmentRule';
 import type { OmnichannelMessage } from '../models/OmnichannelMessage';
 import type { PaginatedAIProviderSettingsList } from '../models/PaginatedAIProviderSettingsList';
 import type { PaginatedAPIKeyList } from '../models/PaginatedAPIKeyList';
@@ -25,8 +25,9 @@ import type { PaginatedDataSubjectRequestList } from '../models/PaginatedDataSub
 import type { PaginatedFacebookPageList } from '../models/PaginatedFacebookPageList';
 import type { PaginatedInstagramAccountList } from '../models/PaginatedInstagramAccountList';
 import type { PaginatedIntegrationLogList } from '../models/PaginatedIntegrationLogList';
-import type { PaginatedMarketplaceExtensionList } from '../models/PaginatedMarketplaceExtensionList';
+import type { PaginatedLeadAssignmentRuleList } from '../models/PaginatedLeadAssignmentRuleList';
 import type { PaginatedTelegramBotList } from '../models/PaginatedTelegramBotList';
+import type { PaginatedTelegramUserAccountList } from '../models/PaginatedTelegramUserAccountList';
 import type { PaginatedWebhookList } from '../models/PaginatedWebhookList';
 import type { PaginatedWhatsAppBusinessAccountList } from '../models/PaginatedWhatsAppBusinessAccountList';
 import type { PatchedAIProviderSettings } from '../models/PatchedAIProviderSettings';
@@ -36,11 +37,15 @@ import type { PatchedDataRetentionPolicy } from '../models/PatchedDataRetentionP
 import type { PatchedDataSubjectRequest } from '../models/PatchedDataSubjectRequest';
 import type { PatchedFacebookPage } from '../models/PatchedFacebookPage';
 import type { PatchedInstagramAccount } from '../models/PatchedInstagramAccount';
+import type { PatchedLeadAssignmentRule } from '../models/PatchedLeadAssignmentRule';
 import type { PatchedTelegramBot } from '../models/PatchedTelegramBot';
+import type { PatchedTelegramUserAccount } from '../models/PatchedTelegramUserAccount';
 import type { PatchedWebhook } from '../models/PatchedWebhook';
 import type { PatchedWhatsAppBusinessAccount } from '../models/PatchedWhatsAppBusinessAccount';
 import type { TelegramBot } from '../models/TelegramBot';
 import type { TelegramBotCreate } from '../models/TelegramBotCreate';
+import type { TelegramUserAccount } from '../models/TelegramUserAccount';
+import type { TelegramUserAccountCreate } from '../models/TelegramUserAccountCreate';
 import type { Webhook } from '../models/Webhook';
 import type { WebhookCreate } from '../models/WebhookCreate';
 import type { WhatsAppBusinessAccount } from '../models/WhatsAppBusinessAccount';
@@ -1590,6 +1595,50 @@ export class SettingsService {
         });
     }
     /**
+     * UX-focused integration hub endpoints for non-technical admins.
+     * @returns any No response body
+     * @throws ApiError
+     */
+    public static settingsIntegrationHubRetrieve(): CancelablePromise<any> {
+        return __request(OpenAPI, {
+            method: 'GET',
+            url: '/api/settings/integration-hub/',
+        });
+    }
+    /**
+     * UX-focused integration hub endpoints for non-technical admins.
+     * @returns any No response body
+     * @throws ApiError
+     */
+    public static settingsIntegrationHubCatalogRetrieve(): CancelablePromise<any> {
+        return __request(OpenAPI, {
+            method: 'GET',
+            url: '/api/settings/integration-hub/catalog/',
+        });
+    }
+    /**
+     * UX-focused integration hub endpoints for non-technical admins.
+     * @returns any No response body
+     * @throws ApiError
+     */
+    public static settingsIntegrationHubStatusCardsRetrieve(): CancelablePromise<any> {
+        return __request(OpenAPI, {
+            method: 'GET',
+            url: '/api/settings/integration-hub/status-cards/',
+        });
+    }
+    /**
+     * UX-focused integration hub endpoints for non-technical admins.
+     * @returns any No response body
+     * @throws ApiError
+     */
+    public static settingsIntegrationHubWizardContextRetrieve(): CancelablePromise<any> {
+        return __request(OpenAPI, {
+            method: 'GET',
+            url: '/api/settings/integration-hub/wizard-context/',
+        });
+    }
+    /**
      * ViewSet for integration logs (read-only).
      *
      * Endpoints:
@@ -1697,10 +1746,11 @@ export class SettingsService {
         });
     }
     /**
-     * @returns PaginatedMarketplaceExtensionList
+     * CRUD for lead auto-assignment rules in Settings workspace.
+     * @returns PaginatedLeadAssignmentRuleList
      * @throws ApiError
      */
-    public static settingsMarketplaceExtensionsList({
+    public static settingsLeadAssignmentRulesList({
         ordering,
         page,
         pageSize,
@@ -1722,10 +1772,10 @@ export class SettingsService {
          * A search term.
          */
         search?: string,
-    }): CancelablePromise<PaginatedMarketplaceExtensionList> {
+    }): CancelablePromise<PaginatedLeadAssignmentRuleList> {
         return __request(OpenAPI, {
             method: 'GET',
-            url: '/api/settings/marketplace/extensions/',
+            url: '/api/settings/lead-assignment-rules/',
             query: {
                 'ordering': ordering,
                 'page': page,
@@ -1735,62 +1785,61 @@ export class SettingsService {
         });
     }
     /**
-     * @returns MarketplaceExtension
+     * CRUD for lead auto-assignment rules in Settings workspace.
+     * @returns LeadAssignmentRule
      * @throws ApiError
      */
-    public static settingsMarketplaceExtensionsRetrieve({
+    public static settingsLeadAssignmentRulesCreate({
+        requestBody,
+    }: {
+        requestBody: LeadAssignmentRule,
+    }): CancelablePromise<LeadAssignmentRule> {
+        return __request(OpenAPI, {
+            method: 'POST',
+            url: '/api/settings/lead-assignment-rules/',
+            body: requestBody,
+            mediaType: 'application/json',
+        });
+    }
+    /**
+     * CRUD for lead auto-assignment rules in Settings workspace.
+     * @returns LeadAssignmentRule
+     * @throws ApiError
+     */
+    public static settingsLeadAssignmentRulesRetrieve({
         id,
     }: {
         /**
-         * A UUID string identifying this Marketplace Extension.
+         * A UUID string identifying this Lead assignment rule.
          */
         id: string,
-    }): CancelablePromise<MarketplaceExtension> {
+    }): CancelablePromise<LeadAssignmentRule> {
         return __request(OpenAPI, {
             method: 'GET',
-            url: '/api/settings/marketplace/extensions/{id}/',
+            url: '/api/settings/lead-assignment-rules/{id}/',
             path: {
                 'id': id,
             },
         });
     }
     /**
-     * @returns MarketplaceExtension
+     * CRUD for lead auto-assignment rules in Settings workspace.
+     * @returns LeadAssignmentRule
      * @throws ApiError
      */
-    public static settingsMarketplaceExtensionsDiagnosticsRetrieve({
-        id,
-    }: {
-        /**
-         * A UUID string identifying this Marketplace Extension.
-         */
-        id: string,
-    }): CancelablePromise<MarketplaceExtension> {
-        return __request(OpenAPI, {
-            method: 'GET',
-            url: '/api/settings/marketplace/extensions/{id}/diagnostics/',
-            path: {
-                'id': id,
-            },
-        });
-    }
-    /**
-     * @returns MarketplaceExtension
-     * @throws ApiError
-     */
-    public static settingsMarketplaceExtensionsUninstallCreate({
+    public static settingsLeadAssignmentRulesUpdate({
         id,
         requestBody,
     }: {
         /**
-         * A UUID string identifying this Marketplace Extension.
+         * A UUID string identifying this Lead assignment rule.
          */
         id: string,
-        requestBody?: MarketplaceExtension,
-    }): CancelablePromise<MarketplaceExtension> {
+        requestBody: LeadAssignmentRule,
+    }): CancelablePromise<LeadAssignmentRule> {
         return __request(OpenAPI, {
-            method: 'POST',
-            url: '/api/settings/marketplace/extensions/{id}/uninstall/',
+            method: 'PUT',
+            url: '/api/settings/lead-assignment-rules/{id}/',
             path: {
                 'id': id,
             },
@@ -1799,22 +1848,23 @@ export class SettingsService {
         });
     }
     /**
-     * @returns MarketplaceExtension
+     * CRUD for lead auto-assignment rules in Settings workspace.
+     * @returns LeadAssignmentRule
      * @throws ApiError
      */
-    public static settingsMarketplaceExtensionsUpgradeCreate({
+    public static settingsLeadAssignmentRulesPartialUpdate({
         id,
         requestBody,
     }: {
         /**
-         * A UUID string identifying this Marketplace Extension.
+         * A UUID string identifying this Lead assignment rule.
          */
         id: string,
-        requestBody?: MarketplaceExtension,
-    }): CancelablePromise<MarketplaceExtension> {
+        requestBody?: PatchedLeadAssignmentRule,
+    }): CancelablePromise<LeadAssignmentRule> {
         return __request(OpenAPI, {
-            method: 'POST',
-            url: '/api/settings/marketplace/extensions/{id}/upgrade/',
+            method: 'PATCH',
+            url: '/api/settings/lead-assignment-rules/{id}/',
             path: {
                 'id': id,
             },
@@ -1823,29 +1873,77 @@ export class SettingsService {
         });
     }
     /**
-     * @returns MarketplaceExtension
+     * CRUD for lead auto-assignment rules in Settings workspace.
+     * @returns void
      * @throws ApiError
      */
-    public static settingsMarketplaceExtensionsCompatibilityMatrixRetrieve(): CancelablePromise<MarketplaceExtension> {
+    public static settingsLeadAssignmentRulesDestroy({
+        id,
+    }: {
+        /**
+         * A UUID string identifying this Lead assignment rule.
+         */
+        id: string,
+    }): CancelablePromise<void> {
         return __request(OpenAPI, {
-            method: 'GET',
-            url: '/api/settings/marketplace/extensions/compatibility-matrix/',
+            method: 'DELETE',
+            url: '/api/settings/lead-assignment-rules/{id}/',
+            path: {
+                'id': id,
+            },
         });
     }
     /**
-     * @returns MarketplaceExtension
+     * CRUD for lead auto-assignment rules in Settings workspace.
+     * @returns LeadAssignmentRule
      * @throws ApiError
      */
-    public static settingsMarketplaceExtensionsInstallCreate({
+    public static settingsLeadAssignmentRulesToggleCreate({
+        id,
         requestBody,
     }: {
-        requestBody?: MarketplaceExtension,
-    }): CancelablePromise<MarketplaceExtension> {
+        /**
+         * A UUID string identifying this Lead assignment rule.
+         */
+        id: string,
+        requestBody: LeadAssignmentRule,
+    }): CancelablePromise<LeadAssignmentRule> {
         return __request(OpenAPI, {
             method: 'POST',
-            url: '/api/settings/marketplace/extensions/install/',
+            url: '/api/settings/lead-assignment-rules/{id}/toggle/',
+            path: {
+                'id': id,
+            },
             body: requestBody,
             mediaType: 'application/json',
+        });
+    }
+    /**
+     * CRUD for lead auto-assignment rules in Settings workspace.
+     * @returns LeadAssignmentRule
+     * @throws ApiError
+     */
+    public static settingsLeadAssignmentRulesSimulateCreate({
+        requestBody,
+    }: {
+        requestBody: LeadAssignmentRule,
+    }): CancelablePromise<LeadAssignmentRule> {
+        return __request(OpenAPI, {
+            method: 'POST',
+            url: '/api/settings/lead-assignment-rules/simulate/',
+            body: requestBody,
+            mediaType: 'application/json',
+        });
+    }
+    /**
+     * CRUD for lead auto-assignment rules in Settings workspace.
+     * @returns LeadAssignmentRule
+     * @throws ApiError
+     */
+    public static settingsLeadAssignmentRulesTemplatesRetrieve(): CancelablePromise<LeadAssignmentRule> {
+        return __request(OpenAPI, {
+            method: 'GET',
+            url: '/api/settings/lead-assignment-rules/templates/',
         });
     }
     /**
@@ -2061,6 +2159,16 @@ export class SettingsService {
         return __request(OpenAPI, {
             method: 'GET',
             url: '/api/settings/omnichannel/timeline/',
+        });
+    }
+    /**
+     * @returns OmnichannelMessage
+     * @throws ApiError
+     */
+    public static settingsOmnichannelWhatsappTemplatesRetrieve(): CancelablePromise<OmnichannelMessage> {
+        return __request(OpenAPI, {
+            method: 'GET',
+            url: '/api/settings/omnichannel/whatsapp/templates/',
         });
     }
     /**
@@ -2457,6 +2565,304 @@ export class SettingsService {
         return __request(OpenAPI, {
             method: 'POST',
             url: '/api/settings/telegram/bots/{id}/test/',
+            path: {
+                'id': id,
+            },
+            body: requestBody,
+            mediaType: 'application/json',
+        });
+    }
+    /**
+     * ViewSet for managing Telegram personal account integrations.
+     * @returns PaginatedTelegramUserAccountList
+     * @throws ApiError
+     */
+    public static settingsTelegramUsersList({
+        ordering,
+        page,
+        pageSize,
+        search,
+    }: {
+        /**
+         * Which field to use when ordering the results.
+         */
+        ordering?: string,
+        /**
+         * A page number within the paginated result set.
+         */
+        page?: number,
+        /**
+         * Number of results to return per page.
+         */
+        pageSize?: number,
+        /**
+         * A search term.
+         */
+        search?: string,
+    }): CancelablePromise<PaginatedTelegramUserAccountList> {
+        return __request(OpenAPI, {
+            method: 'GET',
+            url: '/api/settings/telegram/users/',
+            query: {
+                'ordering': ordering,
+                'page': page,
+                'page_size': pageSize,
+                'search': search,
+            },
+        });
+    }
+    /**
+     * ViewSet for managing Telegram personal account integrations.
+     * @returns TelegramUserAccountCreate
+     * @throws ApiError
+     */
+    public static settingsTelegramUsersCreate({
+        requestBody,
+    }: {
+        requestBody: TelegramUserAccountCreate,
+    }): CancelablePromise<TelegramUserAccountCreate> {
+        return __request(OpenAPI, {
+            method: 'POST',
+            url: '/api/settings/telegram/users/',
+            body: requestBody,
+            mediaType: 'application/json',
+        });
+    }
+    /**
+     * ViewSet for managing Telegram personal account integrations.
+     * @returns TelegramUserAccount
+     * @throws ApiError
+     */
+    public static settingsTelegramUsersRetrieve({
+        id,
+    }: {
+        /**
+         * A UUID string identifying this Telegram User Account.
+         */
+        id: string,
+    }): CancelablePromise<TelegramUserAccount> {
+        return __request(OpenAPI, {
+            method: 'GET',
+            url: '/api/settings/telegram/users/{id}/',
+            path: {
+                'id': id,
+            },
+        });
+    }
+    /**
+     * ViewSet for managing Telegram personal account integrations.
+     * @returns TelegramUserAccount
+     * @throws ApiError
+     */
+    public static settingsTelegramUsersUpdate({
+        id,
+        requestBody,
+    }: {
+        /**
+         * A UUID string identifying this Telegram User Account.
+         */
+        id: string,
+        requestBody: TelegramUserAccount,
+    }): CancelablePromise<TelegramUserAccount> {
+        return __request(OpenAPI, {
+            method: 'PUT',
+            url: '/api/settings/telegram/users/{id}/',
+            path: {
+                'id': id,
+            },
+            body: requestBody,
+            mediaType: 'application/json',
+        });
+    }
+    /**
+     * ViewSet for managing Telegram personal account integrations.
+     * @returns TelegramUserAccount
+     * @throws ApiError
+     */
+    public static settingsTelegramUsersPartialUpdate({
+        id,
+        requestBody,
+    }: {
+        /**
+         * A UUID string identifying this Telegram User Account.
+         */
+        id: string,
+        requestBody?: PatchedTelegramUserAccount,
+    }): CancelablePromise<TelegramUserAccount> {
+        return __request(OpenAPI, {
+            method: 'PATCH',
+            url: '/api/settings/telegram/users/{id}/',
+            path: {
+                'id': id,
+            },
+            body: requestBody,
+            mediaType: 'application/json',
+        });
+    }
+    /**
+     * ViewSet for managing Telegram personal account integrations.
+     * @returns void
+     * @throws ApiError
+     */
+    public static settingsTelegramUsersDestroy({
+        id,
+    }: {
+        /**
+         * A UUID string identifying this Telegram User Account.
+         */
+        id: string,
+    }): CancelablePromise<void> {
+        return __request(OpenAPI, {
+            method: 'DELETE',
+            url: '/api/settings/telegram/users/{id}/',
+            path: {
+                'id': id,
+            },
+        });
+    }
+    /**
+     * ViewSet for managing Telegram personal account integrations.
+     * @returns TelegramUserAccount
+     * @throws ApiError
+     */
+    public static settingsTelegramUsersConfirm2FaCreate({
+        id,
+        requestBody,
+    }: {
+        /**
+         * A UUID string identifying this Telegram User Account.
+         */
+        id: string,
+        requestBody: TelegramUserAccount,
+    }): CancelablePromise<TelegramUserAccount> {
+        return __request(OpenAPI, {
+            method: 'POST',
+            url: '/api/settings/telegram/users/{id}/confirm_2fa/',
+            path: {
+                'id': id,
+            },
+            body: requestBody,
+            mediaType: 'application/json',
+        });
+    }
+    /**
+     * ViewSet for managing Telegram personal account integrations.
+     * @returns TelegramUserAccount
+     * @throws ApiError
+     */
+    public static settingsTelegramUsersConfirmCodeCreate({
+        id,
+        requestBody,
+    }: {
+        /**
+         * A UUID string identifying this Telegram User Account.
+         */
+        id: string,
+        requestBody: TelegramUserAccount,
+    }): CancelablePromise<TelegramUserAccount> {
+        return __request(OpenAPI, {
+            method: 'POST',
+            url: '/api/settings/telegram/users/{id}/confirm_code/',
+            path: {
+                'id': id,
+            },
+            body: requestBody,
+            mediaType: 'application/json',
+        });
+    }
+    /**
+     * ViewSet for managing Telegram personal account integrations.
+     * @returns TelegramUserAccount
+     * @throws ApiError
+     */
+    public static settingsTelegramUsersDisconnectCreate({
+        id,
+        requestBody,
+    }: {
+        /**
+         * A UUID string identifying this Telegram User Account.
+         */
+        id: string,
+        requestBody: TelegramUserAccount,
+    }): CancelablePromise<TelegramUserAccount> {
+        return __request(OpenAPI, {
+            method: 'POST',
+            url: '/api/settings/telegram/users/{id}/disconnect/',
+            path: {
+                'id': id,
+            },
+            body: requestBody,
+            mediaType: 'application/json',
+        });
+    }
+    /**
+     * ViewSet for managing Telegram personal account integrations.
+     * @returns TelegramUserAccount
+     * @throws ApiError
+     */
+    public static settingsTelegramUsersRequestCodeCreate({
+        id,
+        requestBody,
+    }: {
+        /**
+         * A UUID string identifying this Telegram User Account.
+         */
+        id: string,
+        requestBody: TelegramUserAccount,
+    }): CancelablePromise<TelegramUserAccount> {
+        return __request(OpenAPI, {
+            method: 'POST',
+            url: '/api/settings/telegram/users/{id}/request_code/',
+            path: {
+                'id': id,
+            },
+            body: requestBody,
+            mediaType: 'application/json',
+        });
+    }
+    /**
+     * ViewSet for managing Telegram personal account integrations.
+     * @returns TelegramUserAccount
+     * @throws ApiError
+     */
+    public static settingsTelegramUsersSyncInboxCreate({
+        id,
+        requestBody,
+    }: {
+        /**
+         * A UUID string identifying this Telegram User Account.
+         */
+        id: string,
+        requestBody: TelegramUserAccount,
+    }): CancelablePromise<TelegramUserAccount> {
+        return __request(OpenAPI, {
+            method: 'POST',
+            url: '/api/settings/telegram/users/{id}/sync_inbox/',
+            path: {
+                'id': id,
+            },
+            body: requestBody,
+            mediaType: 'application/json',
+        });
+    }
+    /**
+     * ViewSet for managing Telegram personal account integrations.
+     * @returns TelegramUserAccount
+     * @throws ApiError
+     */
+    public static settingsTelegramUsersTestCreate({
+        id,
+        requestBody,
+    }: {
+        /**
+         * A UUID string identifying this Telegram User Account.
+         */
+        id: string,
+        requestBody: TelegramUserAccount,
+    }): CancelablePromise<TelegramUserAccount> {
+        return __request(OpenAPI, {
+            method: 'POST',
+            url: '/api/settings/telegram/users/{id}/test/',
             path: {
                 'id': id,
             },
