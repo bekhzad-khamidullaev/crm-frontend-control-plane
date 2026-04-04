@@ -9,6 +9,9 @@ let observer = null;
 let activeLocale = 'ru';
 const hasCyrillic = /[А-Яа-яЁё]/;
 const hasLatin = /[A-Za-z]/;
+const ELEMENT_NODE = typeof window !== 'undefined' && window.Node ? window.Node.ELEMENT_NODE : 1;
+const TEXT_NODE = typeof window !== 'undefined' && window.Node ? window.Node.TEXT_NODE : 3;
+const SHOW_TEXT = typeof window !== 'undefined' && window.NodeFilter ? window.NodeFilter.SHOW_TEXT : 4;
 
 const fallbackWordMaps = {
   en: {
@@ -126,7 +129,6 @@ const fallbackWordMaps = {
     'Статус': 'Status',
     'Действия': 'Actions',
     'Название': 'Name',
-    'Провайдер': 'Provider',
     'Провайдеров': 'Providers',
     'Модель': 'Model',
     'Ключ': 'Key',
@@ -250,7 +252,6 @@ const fallbackWordMaps = {
     'Статус': 'Holat',
     'Действия': 'Amallar',
     'Название': 'Nomi',
-    'Провайдер': 'Provayder',
     'Провайдеров': 'Provayderlar',
     'Модель': 'Model',
     'Ключ': 'Kalit',
@@ -370,7 +371,6 @@ const fallbackWordMaps = {
     'Status': 'Статус',
     'Actions': 'Действия',
     'Name': 'Название',
-    'Provider': 'Провайдер',
     'Providers': 'Провайдеров',
     'Model': 'Модель',
     'Key': 'Ключ',
@@ -381,7 +381,7 @@ const fallbackWordMaps = {
 };
 
 function isElementNode(node) {
-  return node && node.nodeType === Node.ELEMENT_NODE;
+  return node && node.nodeType === ELEMENT_NODE;
 }
 
 function shouldSkipTextNode(node) {
@@ -537,7 +537,7 @@ function translateSubtree(root, locale) {
     translateElementAttributes(root, locale);
   }
 
-  const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT);
+  const walker = document.createTreeWalker(root, SHOW_TEXT);
   while (walker.nextNode()) {
     translateTextNode(walker.currentNode, locale);
   }
@@ -554,7 +554,8 @@ function ensureObserver() {
   const mount = document.getElementById('root');
   if (!mount) return;
 
-  observer = new MutationObserver((mutations) => {
+  if (typeof window.MutationObserver !== 'function') return;
+  observer = new window.MutationObserver((mutations) => {
     for (const mutation of mutations) {
       if (mutation.type === 'characterData') {
         translateTextNode(mutation.target, activeLocale);
@@ -562,7 +563,7 @@ function ensureObserver() {
       }
 
       mutation.addedNodes.forEach((node) => {
-        if (node.nodeType === Node.TEXT_NODE) {
+        if (node.nodeType === TEXT_NODE) {
           translateTextNode(node, activeLocale);
         } else if (isElementNode(node)) {
           translateSubtree(node, activeLocale);

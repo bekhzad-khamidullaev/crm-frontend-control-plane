@@ -56,8 +56,9 @@ export function parseLicenseRestrictionPayload(payload) {
 export function emitLicenseRestriction(restriction) {
   if (typeof window === 'undefined' || !restriction) return;
   const normalizedCode = normalizeLicenseCode(restriction.code || 'LICENSE_FEATURE_DISABLED') || 'LICENSE_FEATURE_DISABLED';
+  if (typeof window.CustomEvent !== 'function') return;
   window.dispatchEvent(
-    new CustomEvent(LICENSE_RESTRICTION_EVENT, {
+    new window.CustomEvent(LICENSE_RESTRICTION_EVENT, {
       detail: {
         code: normalizedCode,
         feature: restriction.feature || 'unknown.feature',

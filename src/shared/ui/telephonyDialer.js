@@ -6,8 +6,9 @@ export function normalizeDialerNumber(raw) {
 
 export function requestDialerOpen({ number = '', autoCall = false } = {}) {
   if (typeof window === 'undefined') return;
+  if (typeof window.CustomEvent !== 'function') return;
   window.dispatchEvent(
-    new CustomEvent(TELEPHONY_DIALER_OPEN_EVENT, {
+    new window.CustomEvent(TELEPHONY_DIALER_OPEN_EVENT, {
       detail: {
         number: normalizeDialerNumber(number),
         autoCall: Boolean(autoCall),
