@@ -1,19 +1,33 @@
-# CRM Frontend
+# CRM Frontend Control Plane
 
-Frontend application for client CRM.
+Frontend for control-plane admins and commercial/licensing workflows.
 
-## Instance boundary
-- `crm-frontend` is the client-facing CRM instance.
-- `crm-frontend-control-plane` is a separate instance for license/commercial/control-plane workflows.
-- These two frontends are developed in parallel as separate products and must not be merged into a single runtime app.
+## Instance Boundary
 
-## Production
-- Compose file: `docker-compose.prod.yml`
-- Build/runtime env: `.env.production`
-- Compose vars source: `.env`
-- Deploy guide: `DEPLOY_PROD.md`
+1. `crm-frontend-control-plane` serves control-plane operators.
+2. `crm-frontend` serves client runtime users.
 
-## Quick start
+Do not merge these UIs into one runtime deployment.
+
+## Quick Start
+
+```bash
+docker compose up -d --build
+```
+
+## Production Deploy
+
 ```bash
 docker compose -f docker-compose.prod.yml up -d --build
 ```
+
+Detailed steps: `DEPLOY_PROD.md`.
+
+## Testing
+
+```bash
+npm run test
+npm run test:e2e
+```
+
+E2E guide: `tests/e2e/README.md`.

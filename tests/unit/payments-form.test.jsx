@@ -60,8 +60,9 @@ describe('PaymentForm', () => {
   it('renders create form fields', () => {
     render(<PaymentForm />);
 
-    expect(screen.getByLabelText(/сумма/i)).toBeInTheDocument();
-    expect(screen.getByLabelText(/статус/i)).toBeInTheDocument();
+    expect(screen.getByPlaceholderText('0.00')).toBeInTheDocument();
+    expect(screen.getByText('Статус *')).toBeInTheDocument();
+    expect(screen.getByTestId('currency-select')).toBeInTheDocument();
     expect(screen.getByText(/новый платеж/i)).toBeInTheDocument();
   });
 

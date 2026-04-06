@@ -1,6 +1,7 @@
-import { fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { act, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import * as api from '../../src/lib/api';
+import * as rbac from '../../src/lib/rbac.js';
 import TasksList from '../../src/modules/tasks/TasksList';
 import * as router from '../../src/router';
 
@@ -19,6 +20,9 @@ vi.mock('../../src/lib/api/client', () => ({
 vi.mock('../../src/lib/api/reference', () => ({
   getTaskStages: vi.fn(),
   getTaskTags: vi.fn(),
+}));
+vi.mock('../../src/lib/rbac.js', () => ({
+  canWrite: vi.fn(),
 }));
 vi.mock('../../src/router');
 
@@ -78,6 +82,7 @@ const mockUsers = [
 describe('TasksList', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    rbac.canWrite.mockReturnValue(true);
     api.getTasks.mockResolvedValue({
       results: mockTasks,
       count: 3,
@@ -104,11 +109,15 @@ describe('TasksList', () => {
     expect(screen.getByText('Звонок клиенту')).toBeInTheDocument();
   });
 
-  it('shows loading state initially', () => {
+  it('shows loading state initially', async () => {
     api.getTasks.mockImplementation(() => new Promise(() => {}));
     render(<TasksList />);
 
-    expect(screen.getByRole('table')).toBeInTheDocument();
+    await waitFor(() => {
+      expect(api.getTaskStages).toHaveBeenCalledWith({ page_size: 200 });
+      expect(api.getUsers).toHaveBeenCalledWith({ page_size: 200 });
+      expect(screen.getByRole('table')).toBeInTheDocument();
+    });
   });
 
   it('handles search functionality', async () => {
@@ -138,7 +147,7 @@ describe('TasksList', () => {
       expect(screen.getByText('Создать задачу')).toBeInTheDocument();
     });
 
-    const createButton = screen.getByText('Создать задачу');
+    const createButton = screen.getByRole('button', { name: /создать задачу/i });
     fireEvent.click(createButton);
 
     expect(router.navigate).toHaveBeenCalledWith('/tasks/new');
@@ -163,7 +172,7 @@ describe('TasksList', () => {
       expect(screen.getByText('Подготовить презентацию')).toBeInTheDocument();
     });
 
-    const editButton = screen.getAllByText('Редактировать')[0];
+    const editButton = screen.getAllByRole('button', { name: /редактировать/i })[0];
     fireEvent.click(editButton);
     expect(router.navigate).toHaveBeenCalledWith('/tasks/1/edit');
   });
@@ -180,12 +189,22 @@ describe('TasksList', () => {
       count: 2,
     });
 
-    const deleteButton = screen.getAllByText('Удалить')[0];
-    fireEvent.click(deleteButton);
+    const deleteButton = screen.getAllByRole('button', { name: /удалить/i })[0];
+
+    await act(async () => {
+      fireEvent.click(deleteButton);
+    });
 
     await waitFor(() => {
-      const confirmButton = screen.getByText('Да');
-      fireEvent.click(confirmButton);
+      expect(screen.getByRole('dialog')).toBeInTheDocument();
+    });
+
+    await act(async () => {
+      fireEvent.click(within(screen.getByRole('dialog')).getByRole('button', { name: /^да$/i }));
+    });
+
+    await waitFor(() => {
+      expect(api.deleteTask).toHaveBeenCalledWith(1);
     });
   });
 
@@ -193,22 +212,20 @@ describe('TasksList', () => {
     render(<TasksList />);
 
     await waitFor(() => {
-      expect(screen.getByText('Подготовить презентацию')).toBeInTheDocument();
+      expect(screen.getByRole('table')).toBeInTheDocument();
     });
 
-    // Check if pagination is rendered
-    const pagination = screen.queryByRole('navigation');
-    expect(pagination || screen.getByRole('table')).toBeInTheDocument();
+    expect(screen.getAllByRole('row').length).toBeGreaterThan(1);
   });
 
-  it('displays task priority badges', async () => {
+  it('renders completion checkboxes for task rows', async () => {
     render(<TasksList />);
 
     await waitFor(() => {
       expect(screen.getByText('Подготовить презентацию')).toBeInTheDocument();
     });
 
-    expect(screen.getAllByText(/Низкий|Средний|Высокий/i).length).toBeGreaterThan(0);
+    expect(screen.getAllByRole('checkbox').length).toBeGreaterThan(1);
   });
 
   it('displays task stage badges', async () => {
