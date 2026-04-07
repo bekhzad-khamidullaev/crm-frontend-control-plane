@@ -1,12 +1,22 @@
 import {
+  AudioMutedOutlined,
+  CheckCircleFilled,
   CloseOutlined,
   DeleteOutlined,
+  ExclamationCircleFilled,
+  PauseCircleFilled,
+  PhoneTwoTone,
+  PushpinFilled,
+  PushpinOutlined,
+  QuestionCircleOutlined,
   MinusOutlined,
   PhoneFilled,
   PhoneOutlined,
   ReloadOutlined,
   ArrowsAltOutlined,
   StopOutlined,
+  SyncOutlined,
+  ThunderboltOutlined,
 } from '@ant-design/icons';
 import { Alert, App, Button, Card, Col, Input, Modal, Row, Space, Tabs, Tag, Tooltip, theme } from 'antd';
 import { useEffect, useMemo, useRef, useState } from 'react';
@@ -35,6 +45,15 @@ const DTMF_HINTS = {
   '8': 'TUV',
   '9': 'WXYZ',
 };
+const PINNED_Z_INDEX = 9999;
+const DEFAULT_Z_INDEX = 1060;
+
+function readPersistedFlag(key, fallback = false) {
+  if (typeof window === 'undefined') return fallback;
+  const raw = String(window.localStorage.getItem(key) || '').trim().toLowerCase();
+  if (!raw) return fallback;
+  return ['1', 'true', 'yes', 'on'].includes(raw);
+}
 
 function normalizeDialForSip(value) {
   const digits = String(value || '').replace(/\D/g, '');
@@ -304,6 +323,9 @@ export default function TelephonyDialerModal({
   const [minimized, setMinimized] = useState(false);
   const [windowPosition, setWindowPosition] = useState({ x: 0, y: 0 });
   const [windowPositionReady, setWindowPositionReady] = useState(false);
+  const [dndEnabled, setDndEnabled] = useState(() => readPersistedFlag('crm:dialer:dnd', false));
+  const [autoAnswerEnabled, setAutoAnswerEnabled] = useState(() => readPersistedFlag('crm:dialer:auto-answer', false));
+  const [pinOnTop, setPinOnTop] = useState(() => readPersistedFlag('crm:dialer:pin-on-top', false));
 
   const runtimeRef = useRef(null);
   const audioRef = useRef(null);
@@ -322,6 +344,8 @@ export default function TelephonyDialerModal({
     offsetX: 0,
     offsetY: 0,
   });
+  const dndEnabledRef = useRef(dndEnabled);
+  const autoAnswerEnabledRef = useRef(autoAnswerEnabled);
 
   useEffect(() => {
     setDialNumber(String(initialNumber || ''));
@@ -352,6 +376,26 @@ export default function TelephonyDialerModal({
   useEffect(() => {
     dialNumberRef.current = String(dialNumber || '');
   }, [dialNumber]);
+
+  useEffect(() => {
+    dndEnabledRef.current = dndEnabled;
+    if (typeof window !== 'undefined') {
+      window.localStorage.setItem('crm:dialer:dnd', dndEnabled ? 'true' : 'false');
+    }
+  }, [dndEnabled]);
+
+  useEffect(() => {
+    autoAnswerEnabledRef.current = autoAnswerEnabled;
+    if (typeof window !== 'undefined') {
+      window.localStorage.setItem('crm:dialer:auto-answer', autoAnswerEnabled ? 'true' : 'false');
+    }
+  }, [autoAnswerEnabled]);
+
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      window.localStorage.setItem('crm:dialer:pin-on-top', pinOnTop ? 'true' : 'false');
+    }
+  }, [pinOnTop]);
 
   useEffect(() => {
     const onRegistered = () => {
@@ -417,6 +461,32 @@ export default function TelephonyDialerModal({
       callTokenRef.current = null;
     };
 
+    const onIncomingCall = (data) => {
+      const from = String(data?.from || data?.displayName || '').trim();
+      if (dndEnabledRef.current) {
+        sipClient.rejectCall();
+        message.info(`DND: входящий вызов ${from || ''} отклонен`.trim());
+        return;
+      }
+
+      setCallStatus('calling');
+      if (from) {
+        setDialNumber(from);
+      }
+
+      if (autoAnswerEnabledRef.current) {
+        window.setTimeout(() => {
+          try {
+            sipClient.answerCall(audioRef.current);
+          } catch (error) {
+            console.error('[TelephonyDialerModal] Auto-answer failed:', error);
+          }
+        }, 450);
+      } else {
+        message.info(`Входящий вызов${from ? `: ${from}` : ''}`);
+      }
+    };
+
     sipClient.on('registered', onRegistered);
     sipClient.on('unregistered', onUnregistered);
     sipClient.on('error', onSipError);
@@ -424,6 +494,7 @@ export default function TelephonyDialerModal({
     sipClient.on('callStarted', onCallStarted);
     sipClient.on('callAnswered', onCallAnswered);
     sipClient.on('callEnded', onCallEnded);
+    sipClient.on('incomingCall', onIncomingCall);
 
     return () => {
       sipClient.off('registered', onRegistered);
@@ -433,8 +504,9 @@ export default function TelephonyDialerModal({
       sipClient.off('callStarted', onCallStarted);
       sipClient.off('callAnswered', onCallAnswered);
       sipClient.off('callEnded', onCallEnded);
+      sipClient.off('incomingCall', onIncomingCall);
     };
-  }, []);
+  }, [message]);
 
   useEffect(() => {
     if (callStatus !== 'connected') {
@@ -809,21 +881,28 @@ export default function TelephonyDialerModal({
 
   const transportTag = useMemo(() => {
     if (isBridgeMode) {
-      return { color: 'blue', text: 'Транспорт: bridge-only', tooltip: 'Browser WebSocket transport не используется в bridge-first режиме.' };
+      return {
+        color: 'blue',
+        text: 'Транспорт: bridge-only',
+        tooltip: 'Browser WebSocket transport не используется в bridge-first режиме.',
+        icon: <PauseCircleFilled />,
+      };
     }
     const map = {
-      checking: { color: 'default', text: 'Транспорт: проверка', tooltip: 'CRM определяет состояние WebSocket транспорта.' },
-      connected: { color: 'success', text: 'Транспорт: онлайн', tooltip: 'WebSocket транспорт подключен.' },
-      connecting: { color: 'processing', text: 'Транспорт: подключение', tooltip: 'Идёт подключение WebSocket транспорта.' },
+      checking: { color: 'default', text: 'Транспорт: проверка', tooltip: 'CRM определяет состояние WebSocket транспорта.', icon: <QuestionCircleOutlined /> },
+      connected: { color: 'success', text: 'Транспорт: онлайн', tooltip: 'WebSocket транспорт подключен.', icon: <CheckCircleFilled /> },
+      connecting: { color: 'processing', text: 'Транспорт: подключение', tooltip: 'Идёт подключение WebSocket транспорта.', icon: <SyncOutlined spin /> },
       disconnected: {
         color: 'default',
         text: 'Транспорт: оффлайн',
         tooltip: transportReason || 'WebSocket транспорт не поднят, разорван или недоступен.',
+        icon: <ExclamationCircleFilled />,
       },
       'not-required': {
         color: 'blue',
         text: 'Транспорт: bridge-only',
         tooltip: 'Browser WebSocket transport не используется в bridge-first режиме.',
+        icon: <PauseCircleFilled />,
       },
     };
     return map[transportStatus] || map.disconnected;
@@ -831,34 +910,43 @@ export default function TelephonyDialerModal({
 
   const sipTag = useMemo(() => {
     if (isBridgeMode) {
-      return { color: 'blue', text: 'SIP: bridge-only', tooltip: 'Browser SIP registration не используется в bridge-first режиме.' };
+      return {
+        color: 'blue',
+        text: 'SIP: bridge-only',
+        tooltip: 'Browser SIP registration не используется в bridge-first режиме.',
+        icon: <PauseCircleFilled />,
+      };
     }
 
     const map = {
-      checking: { color: 'default', text: 'SIP: checking', tooltip: 'CRM загружает runtime SIP config.' },
-      ready: { color: 'processing', text: 'SIP: ready', tooltip: 'Credentials загружены, но регистрация ещё не запущена.' },
-      connecting: { color: 'processing', text: 'SIP: connecting', tooltip: 'Идёт SIP регистрация.' },
-      registered: { color: 'success', text: 'SIP: registered', tooltip: 'SIP клиент зарегистрирован.' },
-      offline: { color: 'default', text: 'SIP: offline', tooltip: 'SIP клиент не зарегистрирован или был разрегистрирован.' },
+      checking: { color: 'default', text: 'SIP: checking', tooltip: 'CRM загружает runtime SIP config.', icon: <QuestionCircleOutlined /> },
+      ready: { color: 'processing', text: 'SIP: ready', tooltip: 'Credentials загружены, но регистрация ещё не запущена.', icon: <SyncOutlined spin /> },
+      connecting: { color: 'processing', text: 'SIP: connecting', tooltip: 'Идёт SIP регистрация.', icon: <SyncOutlined spin /> },
+      registered: { color: 'success', text: 'SIP: registered', tooltip: 'SIP клиент зарегистрирован.', icon: <CheckCircleFilled /> },
+      offline: { color: 'default', text: 'SIP: offline', tooltip: 'SIP клиент не зарегистрирован или был разрегистрирован.', icon: <ExclamationCircleFilled /> },
       'missing-config': {
         color: 'warning',
         text: 'SIP: no credentials',
         tooltip: sipStatusReason || 'Отсутствуют username, realm, password или WebSocket URL.',
+        icon: <ExclamationCircleFilled />,
       },
       'registration-failed': {
         color: 'error',
         text: 'SIP: registration error',
         tooltip: sipStatusReason || 'SIP регистрация завершилась ошибкой или таймаутом.',
+        icon: <ExclamationCircleFilled />,
       },
       error: {
         color: 'error',
         text: 'SIP: error',
         tooltip: sipStatusReason || 'SIP клиент вернул ошибку.',
+        icon: <ExclamationCircleFilled />,
       },
       'not-required': {
         color: 'blue',
         text: 'SIP: bridge-only',
         tooltip: 'Browser SIP registration не используется в bridge-first режиме.',
+        icon: <PauseCircleFilled />,
       },
     };
 
@@ -867,15 +955,17 @@ export default function TelephonyDialerModal({
 
   const callTag = useMemo(() => {
     const map = {
-      idle: { color: 'default', text: 'Вызов: ожидание' },
-      calling: { color: 'processing', text: 'Вызов: набор' },
-      connected: { color: 'success', text: `Вызов: разговор ${formatDuration(callDuration)}` },
-      ended: { color: 'default', text: `Вызов: завершен ${formatDuration(callDuration)}` },
-      failed: { color: 'error', text: 'Вызов: ошибка' },
-      'provider-originated': { color: 'blue', text: 'Вызов: отправлен провайдеру' },
+      idle: { color: 'default', text: 'Вызов: ожидание', icon: <PauseCircleFilled /> },
+      calling: { color: 'processing', text: 'Вызов: набор', icon: <SyncOutlined spin /> },
+      connected: { color: 'success', text: `Вызов: разговор ${formatDuration(callDuration)}`, icon: <PhoneTwoTone twoToneColor="#22c55e" /> },
+      ended: { color: 'default', text: `Вызов: завершен ${formatDuration(callDuration)}`, icon: <CheckCircleFilled /> },
+      failed: { color: 'error', text: 'Вызов: ошибка', icon: <ExclamationCircleFilled /> },
+      'provider-originated': { color: 'blue', text: 'Вызов: отправлен провайдеру', icon: <PhoneOutlined /> },
     };
     return map[callStatus] || map.idle;
   }, [callDuration, callStatus]);
+
+  const modalZIndex = pinOnTop ? PINNED_Z_INDEX : DEFAULT_Z_INDEX;
 
   const closeAndReset = () => {
     if (callStatus === 'calling' || callStatus === 'connected') {
@@ -1044,22 +1134,67 @@ export default function TelephonyDialerModal({
       </Row>
 
       <Card size="small">
-        <Space size={[8, 8]} wrap>
-          <Tooltip title={transportTag.tooltip}>
-            <Tag color={transportTag.color}>{transportTag.text}</Tag>
-          </Tooltip>
-          <Tag color={callTag.color}>{callTag.text}</Tag>
-          <Tooltip title={sipTag.tooltip}>
-            <Tag color={sipTag.color}>{sipTag.text}</Tag>
-          </Tooltip>
-          <Tag>{numberLabel !== '-' ? numberLabel : 'extension'}</Tag>
-          {isBridgeMode && dialValidation.targetKind === 'internal' ? (
-            <Tag color="blue">Bridge target: extension/queue</Tag>
-          ) : null}
-          {bridgeRuntimeCall?.queue ? <Tag color="purple">Queue: {bridgeRuntimeCall.queue}</Tag> : null}
-          {bridgeRuntimeCall?.agentExtension ? <Tag color="geekblue">Ext: {bridgeRuntimeCall.agentExtension}</Tag> : null}
-          {bridgeRuntimeCall?.sessionId ? <Tag>SID: {bridgeRuntimeCall.sessionId}</Tag> : null}
-        </Space>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'nowrap' }}>
+            <Tooltip title={transportTag.tooltip}>
+              <Tag color={transportTag.color} icon={transportTag.icon}>WS</Tag>
+            </Tooltip>
+            <Tooltip title={callTag.text}>
+              <Tag color={callTag.color} icon={callTag.icon}>CALL</Tag>
+            </Tooltip>
+            <Tooltip title={sipTag.tooltip}>
+              <Tag color={sipTag.color} icon={sipTag.icon}>SIP</Tag>
+            </Tooltip>
+            <Tooltip title={dndEnabled ? 'Отключить DND (не беспокоить)' : 'Включить DND: входящие вызовы будут отклоняться'}>
+              <Button
+                size="small"
+                type={dndEnabled ? 'primary' : 'default'}
+                danger={dndEnabled}
+                icon={<AudioMutedOutlined />}
+                aria-label={dndEnabled ? 'Отключить DND' : 'Включить DND'}
+                onClick={() => setDndEnabled((prev) => !prev)}
+              >
+                DND
+              </Button>
+            </Tooltip>
+            <Tooltip title={autoAnswerEnabled ? 'Отключить Auto Answer' : 'Включить Auto Answer: входящие вызовы будут приниматься автоматически'}>
+              <Button
+                size="small"
+                type={autoAnswerEnabled ? 'primary' : 'default'}
+                icon={<ThunderboltOutlined />}
+                aria-label={autoAnswerEnabled ? 'Отключить Auto Answer' : 'Включить Auto Answer'}
+                onClick={() => setAutoAnswerEnabled((prev) => !prev)}
+              >
+                AA
+              </Button>
+            </Tooltip>
+          </div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'nowrap' }}>
+            <Tooltip title="Текущий внутренний номер">
+              <Tag>{numberLabel !== '-' ? numberLabel : 'EXT'}</Tag>
+            </Tooltip>
+            {isBridgeMode && dialValidation.targetKind === 'internal' ? (
+              <Tooltip title="Bridge target: extension/queue">
+                <Tag color="blue">TARGET</Tag>
+              </Tooltip>
+            ) : null}
+            {bridgeRuntimeCall?.queue ? (
+              <Tooltip title={`Queue: ${bridgeRuntimeCall.queue}`}>
+                <Tag color="purple">Q:{bridgeRuntimeCall.queue}</Tag>
+              </Tooltip>
+            ) : null}
+            {bridgeRuntimeCall?.agentExtension ? (
+              <Tooltip title={`Agent extension: ${bridgeRuntimeCall.agentExtension}`}>
+                <Tag color="geekblue">EXT:{bridgeRuntimeCall.agentExtension}</Tag>
+              </Tooltip>
+            ) : null}
+            {bridgeRuntimeCall?.sessionId ? (
+              <Tooltip title={`Session ID: ${bridgeRuntimeCall.sessionId}`}>
+                <Tag>SID</Tag>
+              </Tooltip>
+            ) : null}
+          </div>
+        </div>
       </Card>
 
       {dialNumber && !dialValidation.isValid ? (
@@ -1183,7 +1318,7 @@ export default function TelephonyDialerModal({
             left: windowPosition.x,
             top: windowPosition.y,
             width: 320,
-            zIndex: 1060,
+            zIndex: modalZIndex,
             boxShadow: token.boxShadowSecondary,
             borderRadius: 10,
             background: token.colorBgElevated,
@@ -1208,6 +1343,16 @@ export default function TelephonyDialerModal({
               </span>
             </Space>
             <div className="telephony-window-controls">
+              <Tooltip title={pinOnTop ? 'Открепить модалку (обычный слой)' : 'Закрепить модалку поверх всех окон'}>
+                <Button
+                  size="small"
+                  type="text"
+                  icon={pinOnTop ? <PushpinFilled /> : <PushpinOutlined />}
+                  className="telephony-window-control-btn"
+                  onMouseDown={(event) => event.stopPropagation()}
+                  onClick={() => setPinOnTop((prev) => !prev)}
+                />
+              </Tooltip>
               <Button
                 size="small"
                 type="text"
@@ -1258,6 +1403,16 @@ export default function TelephonyDialerModal({
             <span>Телефонная звонилка</span>
           </Space>
           <div className="telephony-window-controls">
+            <Tooltip title={pinOnTop ? 'Открепить модалку (обычный слой)' : 'Закрепить модалку поверх всех окон'}>
+              <Button
+                size="small"
+                type="text"
+                icon={pinOnTop ? <PushpinFilled /> : <PushpinOutlined />}
+                className="telephony-window-control-btn"
+                onMouseDown={(event) => event.stopPropagation()}
+                onClick={() => setPinOnTop((prev) => !prev)}
+              />
+            </Tooltip>
             <Button
               size="small"
               type="text"
@@ -1285,6 +1440,7 @@ export default function TelephonyDialerModal({
       centered={false}
       mask={false}
       style={{ left: windowPosition.x, top: windowPosition.y, margin: 0, paddingBottom: 0, position: 'fixed' }}
+      zIndex={modalZIndex}
       destroyOnHidden
     >
       <Space direction="vertical" size={12} style={{ width: '100%' }}>

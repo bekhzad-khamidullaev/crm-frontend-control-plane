@@ -44,6 +44,7 @@ describe('user admin API helpers', () => {
     expect(response).toEqual({ ok: true });
     expect(api.patch).toHaveBeenCalledWith('/api/users/15/', {
       body: {
+        roles: ['manager'],
         is_staff: true,
         is_superuser: false,
         groups: ['sales'],

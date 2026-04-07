@@ -7,6 +7,18 @@ const ROLE_ALIASES = {
   staff: 'manager',
   salespersons: 'sales',
   salesperson: 'sales',
+  sales_manager: 'manager',
+  'sales manager': 'manager',
+  marketing_manager: 'manager',
+  'marketing manager': 'manager',
+  crm_analyst: 'manager',
+  'crm analyst': 'manager',
+  sales_rep: 'sales',
+  'sales rep': 'sales',
+  support_agent: 'sales',
+  'support agent': 'sales',
+  read_only_auditor: 'sales',
+  'read only auditor': 'sales',
 };
 
 function toArray(input) {

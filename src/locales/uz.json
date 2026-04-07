@@ -412,7 +412,8 @@
     "minutes": "daq",
     "mode": {
       "myDay": "Mening kunim",
-      "team": "Jamoa"
+      "team": "Jamoa",
+      "company": "Kompaniya"
     },
     "team": {
       "empty": "Jamoa bo‘yicha maʼlumot yo‘q",

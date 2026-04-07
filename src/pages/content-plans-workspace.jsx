@@ -195,6 +195,7 @@ export default function ContentPlansWorkspacePage({ initialTab = 'plans' }) {
   const [activePlanId, setActivePlanId] = useState(null);
   const [planView, setPlanView] = useState('board');
   const [tasksOnly, setTasksOnly] = useState(false);
+  const [planDetailsModalOpen, setPlanDetailsModalOpen] = useState(false);
 
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [editingCampaignId, setEditingCampaignId] = useState(null);
@@ -343,6 +344,11 @@ export default function ContentPlansWorkspacePage({ initialTab = 'plans' }) {
     [selectedPlanItems],
   );
 
+  const openPlanDetails = useCallback((planId) => {
+    setActivePlanId(planId);
+    setPlanDetailsModalOpen(true);
+  }, []);
+
   const openCreate = () => {
     setEditingCampaignId(null);
     form.resetFields();
@@ -416,6 +422,7 @@ export default function ContentPlansWorkspacePage({ initialTab = 'plans' }) {
           message.success('Контент-план удален');
           if (record.id === activePlanId) {
             setActivePlanId(null);
+            setPlanDetailsModalOpen(false);
           }
           await loadData();
         } catch (error) {
@@ -649,7 +656,7 @@ export default function ContentPlansWorkspacePage({ initialTab = 'plans' }) {
         dataIndex: 'name',
         key: 'name',
         render: (value, record) => (
-          <Button type="link" style={{ paddingInline: 0 }} onClick={() => setActivePlanId(record.id)}>
+          <Button type="link" style={{ paddingInline: 0 }} onClick={() => openPlanDetails(record.id)}>
             {value || `План #${record.id}`}
           </Button>
         ),
@@ -683,7 +690,7 @@ export default function ContentPlansWorkspacePage({ initialTab = 'plans' }) {
         width: 220,
         render: (_, record) => (
           <Space size={6}>
-            <Button size="small" type={record.id === activePlanId ? 'primary' : 'default'} onClick={() => setActivePlanId(record.id)}>
+            <Button size="small" type={record.id === activePlanId ? 'primary' : 'default'} onClick={() => openPlanDetails(record.id)}>
               Открыть
             </Button>
             <Button size="small" icon={<EditOutlined />} onClick={() => openEdit(record)}>
@@ -696,7 +703,7 @@ export default function ContentPlansWorkspacePage({ initialTab = 'plans' }) {
         ),
       },
     ],
-    [activePlanId],
+    [activePlanId, openPlanDetails],
   );
 
   const planItemsColumns = [
@@ -886,7 +893,7 @@ export default function ContentPlansWorkspacePage({ initialTab = 'plans' }) {
                                 <Col key={record.id} xs={24} md={12} xl={8}>
                                   <Card
                                     hoverable
-                                    onClick={() => setActivePlanId(record.id)}
+                                    onClick={() => openPlanDetails(record.id)}
                                     style={{
                                       height: '100%',
                                       borderColor: isActive ? token.colorPrimary : token.colorBorderSecondary,
@@ -910,7 +917,7 @@ export default function ContentPlansWorkspacePage({ initialTab = 'plans' }) {
                                     </Space>
 
                                     <Space size={6} wrap>
-                                      <Button size="small" type={isActive ? 'primary' : 'default'} onClick={() => setActivePlanId(record.id)}>
+                                      <Button size="small" type={isActive ? 'primary' : 'default'} onClick={() => openPlanDetails(record.id)}>
                                         Открыть
                                       </Button>
                                       <Button size="small" icon={<EditOutlined />} onClick={(event) => {
@@ -946,123 +953,6 @@ export default function ContentPlansWorkspacePage({ initialTab = 'plans' }) {
                     </Space>
                   </Card>
 
-                  <Card
-                    variant="borderless"
-                    style={{ border: `1px solid ${token.colorBorderSecondary}` }}
-                    styles={{ body: { padding: isMobile ? 10 : 14 } }}
-                  >
-                    {selectedPlan ? (
-                      <Space direction="vertical" size={12} style={{ width: '100%' }}>
-                        <Space style={{ width: '100%', justifyContent: 'space-between' }} wrap>
-                          <Space direction="vertical" size={0}>
-                            <Title level={5} style={{ margin: 0 }}>{selectedPlan.name || `План #${selectedPlan.id}`}</Title>
-                            <Text type="secondary">
-                              {formatDateSafe(selectedPlan.start_date)} - {formatDateSafe(selectedPlan.end_date)}
-                              {' · '}
-                              Готово: {doneItemsCount} из {selectedPlanItems.length}
-                            </Text>
-                          </Space>
-                          <Space wrap>
-                            <Button icon={<CopyOutlined />} loading={copying} onClick={handleDuplicateSelectedPlan}>Копировать</Button>
-                            <Button icon={<ReloadOutlined />} onClick={loadData}>Обновить</Button>
-                            <Button type="primary" icon={<PlusOutlined />} onClick={openAddContentModal}>Создать</Button>
-                          </Space>
-                        </Space>
-
-                        <Space style={{ width: '100%', justifyContent: 'space-between' }} wrap>
-                          <Segmented value={planView} onChange={setPlanView} options={planViewOptions} />
-                          <Button type={tasksOnly ? 'primary' : 'default'} onClick={() => setTasksOnly((prev) => !prev)}>
-                            Задачи
-                          </Button>
-                        </Space>
-
-                        {planView === 'calendar' ? (
-                          <Calendar cellRender={planCalendarCellRender} />
-                        ) : null}
-
-                        {planView === 'list' ? (
-                          <Table
-                            rowKey="id"
-                            dataSource={visiblePlanItems}
-                            columns={planItemsColumns}
-                            pagination={{ pageSize: 8, hideOnSinglePage: true }}
-                            locale={{ emptyText: 'Публикации не найдены' }}
-                          />
-                        ) : null}
-
-                        {planView === 'board' ? (
-                          <div style={{ overflowX: 'auto' }}>
-                            <div
-                              style={{
-                                display: 'grid',
-                                gridTemplateColumns: `repeat(${PLAN_STAGES.length}, minmax(230px, 1fr))`,
-                                gap: 10,
-                                minWidth: PLAN_STAGES.length * 230,
-                              }}
-                            >
-                              {PLAN_STAGES.map((stage) => {
-                                const stageItems = groupedPlanItems[stage.value] || [];
-                                return (
-                                  <Card
-                                    key={stage.value}
-                                    size="small"
-                                    title={(
-                                      <Space size={6}>
-                                        <Tag color={stage.color} style={{ marginInlineEnd: 0 }}>{stage.label}</Tag>
-                                        <Badge count={stageItems.length} style={{ backgroundColor: '#1677ff' }} />
-                                      </Space>
-                                    )}
-                                    styles={{ body: { padding: 8 } }}
-                                  >
-                                    <Space direction="vertical" size={8} style={{ width: '100%' }}>
-                                      {stageItems.length ? stageItems.map((item) => (
-                                        <Card key={item.id} size="small" styles={{ body: { padding: 8 } }}>
-                                          <Space direction="vertical" size={4} style={{ width: '100%' }}>
-                                            <Text strong style={{ fontSize: 12 }}>{item.topic}</Text>
-                                            <Text type="secondary" style={{ fontSize: 12 }}>{formatDateSafe(item.date)}</Text>
-                                            <Text type="secondary" style={{ fontSize: 12 }}>{item.platform} · {item.format}</Text>
-                                            <Space size={4}>
-                                              <Button
-                                                size="small"
-                                                type="text"
-                                                icon={<EditOutlined />}
-                                                onClick={() => openEditContentModal(item)}
-                                              >
-                                                Ред.
-                                              </Button>
-                                              <Button
-                                                size="small"
-                                                type="text"
-                                                danger
-                                                icon={<DeleteOutlined />}
-                                                onClick={() => handleDeleteContentItem(item)}
-                                              >
-                                                Удал.
-                                              </Button>
-                                            </Space>
-                                          </Space>
-                                        </Card>
-                                      )) : <Empty image={Empty.PRESENTED_IMAGE_SIMPLE} description="Пусто" />}
-                                    </Space>
-                                  </Card>
-                                );
-                              })}
-                            </div>
-                          </div>
-                        ) : null}
-
-                        {planView === 'timeline' ? (
-                          timelineItems.length ? (
-                            <Timeline mode={isMobile ? 'left' : 'alternate'} items={timelineItems} />
-                          ) : (
-                            <Empty description="Таймлайн пуст" />
-                          )
-                        ) : null}
-                      </Space>
-                    ) : (
-                      <Empty description="Выберите контент-план из списка выше" />
-                    )}
-                  </Card>
                 </Space>
               ),
             },
@@ -1079,6 +969,127 @@ export default function ContentPlansWorkspacePage({ initialTab = 'plans' }) {
           ]}
         />
       </WorkspaceTabsShell>
+
+      <Modal
+        title={selectedPlan?.name || 'Контент-план'}
+        open={planDetailsModalOpen}
+        onCancel={() => setPlanDetailsModalOpen(false)}
+        footer={null}
+        width={1200}
+        destroyOnHidden={false}
+      >
+        {selectedPlan ? (
+          <Space direction="vertical" size={12} style={{ width: '100%' }}>
+            <Space style={{ width: '100%', justifyContent: 'space-between' }} wrap>
+              <Space direction="vertical" size={0}>
+                <Title level={5} style={{ margin: 0 }}>{selectedPlan.name || `План #${selectedPlan.id}`}</Title>
+                <Text type="secondary">
+                  {formatDateSafe(selectedPlan.start_date)} - {formatDateSafe(selectedPlan.end_date)}
+                  {' · '}
+                  Готово: {doneItemsCount} из {selectedPlanItems.length}
+                </Text>
+              </Space>
+              <Space wrap>
+                <Button icon={<CopyOutlined />} loading={copying} onClick={handleDuplicateSelectedPlan}>Копировать</Button>
+                <Button icon={<ReloadOutlined />} onClick={loadData}>Обновить</Button>
+                <Button type="primary" icon={<PlusOutlined />} onClick={openAddContentModal}>Создать</Button>
+              </Space>
+            </Space>
+
+            <Space style={{ width: '100%', justifyContent: 'space-between' }} wrap>
+              <Segmented value={planView} onChange={setPlanView} options={planViewOptions} />
+              <Button type={tasksOnly ? 'primary' : 'default'} onClick={() => setTasksOnly((prev) => !prev)}>
+                Задачи
+              </Button>
+            </Space>
+
+            {planView === 'calendar' ? (
+              <Calendar cellRender={planCalendarCellRender} />
+            ) : null}
+
+            {planView === 'list' ? (
+              <Table
+                rowKey="id"
+                dataSource={visiblePlanItems}
+                columns={planItemsColumns}
+                pagination={{ pageSize: 8, hideOnSinglePage: true }}
+                locale={{ emptyText: 'Публикации не найдены' }}
+              />
+            ) : null}
+
+            {planView === 'board' ? (
+              <div style={{ overflowX: 'auto' }}>
+                <div
+                  style={{
+                    display: 'grid',
+                    gridTemplateColumns: `repeat(${PLAN_STAGES.length}, minmax(230px, 1fr))`,
+                    gap: 10,
+                    minWidth: PLAN_STAGES.length * 230,
+                  }}
+                >
+                  {PLAN_STAGES.map((stage) => {
+                    const stageItems = groupedPlanItems[stage.value] || [];
+                    return (
+                      <Card
+                        key={stage.value}
+                        size="small"
+                        title={(
+                          <Space size={6}>
+                            <Tag color={stage.color} style={{ marginInlineEnd: 0 }}>{stage.label}</Tag>
+                            <Badge count={stageItems.length} style={{ backgroundColor: '#1677ff' }} />
+                          </Space>
+                        )}
+                        styles={{ body: { padding: 8 } }}
+                      >
+                        <Space direction="vertical" size={8} style={{ width: '100%' }}>
+                          {stageItems.length ? stageItems.map((item) => (
+                            <Card key={item.id} size="small" styles={{ body: { padding: 8 } }}>
+                              <Space direction="vertical" size={4} style={{ width: '100%' }}>
+                                <Text strong style={{ fontSize: 12 }}>{item.topic}</Text>
+                                <Text type="secondary" style={{ fontSize: 12 }}>{formatDateSafe(item.date)}</Text>
+                                <Text type="secondary" style={{ fontSize: 12 }}>{item.platform} · {item.format}</Text>
+                                <Space size={4}>
+                                  <Button
+                                    size="small"
+                                    type="text"
+                                    icon={<EditOutlined />}
+                                    onClick={() => openEditContentModal(item)}
+                                  >
+                                    Ред.
+                                  </Button>
+                                  <Button
+                                    size="small"
+                                    type="text"
+                                    danger
+                                    icon={<DeleteOutlined />}
+                                    onClick={() => handleDeleteContentItem(item)}
+                                  >
+                                    Удал.
+                                  </Button>
+                                </Space>
+                              </Space>
+                            </Card>
+                          )) : <Empty image={Empty.PRESENTED_IMAGE_SIMPLE} description="Пусто" />}
+                        </Space>
+                      </Card>
+                    );
+                  })}
+                </div>
+              </div>
+            ) : null}
+
+            {planView === 'timeline' ? (
+              timelineItems.length ? (
+                <Timeline mode={isMobile ? 'left' : 'alternate'} items={timelineItems} />
+              ) : (
+                <Empty description="Таймлайн пуст" />
+              )
+            ) : null}
+          </Space>
+        ) : (
+          <Empty description="Выберите контент-план из списка выше" />
+        )}
+      </Modal>
 
       <Modal
         title={editingCampaignId ? 'Редактирование контент-плана' : 'Создание контент-плана'}

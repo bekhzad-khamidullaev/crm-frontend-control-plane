@@ -1415,7 +1415,7 @@ export function AppLayout({
             borderBottom: `1px solid ${shell.border}`,
             position: 'sticky',
             top: 0,
-            zIndex: 1100,
+            zIndex: 900,
             boxShadow: shell.shadow,
             display: 'flex',
             flexDirection: 'column',

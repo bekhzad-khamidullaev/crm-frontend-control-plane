@@ -412,7 +412,8 @@
     "minutes": "min",
     "mode": {
       "myDay": "My day",
-      "team": "Team"
+      "team": "Team",
+      "company": "Company"
     },
     "team": {
       "empty": "No team data",

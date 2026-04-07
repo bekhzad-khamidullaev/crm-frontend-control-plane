@@ -195,6 +195,7 @@ const INTEGRATIONS_ROLES = ['admin', 'manager'];
 });
 
 [
+  ['dashboard', 'crm.view_lead'],
   ['leads-list', 'crm.view_lead'],
   ['leads-detail', 'crm.view_lead'],
   ['leads-new', 'crm.add_lead'],

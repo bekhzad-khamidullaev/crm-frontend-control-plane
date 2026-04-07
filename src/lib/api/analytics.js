@@ -350,6 +350,20 @@ export function normalizeOverview(data = {}) {
     deals_growth: toNumber(data.deals_growth ?? data.deals_growth_percent ?? data.dealsGrowth),
     revenue_growth: toNumber(data.revenue_growth ?? data.revenue_growth_percent ?? data.revenueGrowth),
     conversion_rate: toNumber(data.conversion_rate ?? data.conversion ?? data.conversionRate),
+    open_pipeline_amount: toNumber(
+      data.open_pipeline_amount ??
+      data.pipeline_amount ??
+      data.active_deals_amount ??
+      data.deals_in_progress_amount ??
+      (typeof data.deals === 'object'
+        ? (
+          data.deals?.open_amount ??
+          data.deals?.active_amount ??
+          data.deals?.pipeline_amount ??
+          data.deals?.in_progress_amount
+        )
+        : undefined)
+    ),
     currency_code: overviewCurrency || null,
     currency_name: overviewCurrency || null,
     total_revenue_by_currency: totalRevenueByCurrency,
@@ -443,8 +457,8 @@ export function normalizeDashboardAnalytics(data = {}) {
   };
 }
 
-export async function getOverview() {
-  const res = await api.get('/api/analytics/overview/');
+export async function getOverview(params = {}) {
+  const res = await api.get('/api/analytics/overview/', { params });
   return normalizeOverview(res);
 }
 
@@ -512,7 +526,7 @@ export async function getMarketingCampaigns(params = {}) {
 export async function getAllDashboardData(params = {}) {
   try {
     const [overview, analytics, funnel, activity] = await Promise.all([
-      getOverview(),
+      getOverview(params),
       getDashboardAnalytics(params),
       getFunnelData(params),
       getActivityFeed(params),

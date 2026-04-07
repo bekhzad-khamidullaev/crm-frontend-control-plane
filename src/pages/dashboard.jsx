@@ -47,8 +47,6 @@ import { getTasks } from '../lib/api/tasks.js';
 import { getUserFromToken } from '../lib/api/auth.js';
 import { formatCurrency, formatDate, formatNumber } from '../lib/utils/format.js';
 import { t } from '../lib/i18n/index.js';
-import { canAccessRoute } from '../lib/rbac.js';
-import { getSettingsWorkspaceTabPath } from '../lib/settingsWorkspaceNavigation.js';
 import { navigate } from '../router.js';
 import { translateDealStageName } from '../widgets/deals-table/model/i18n';
 
@@ -60,11 +58,7 @@ const PERIOD_OPTIONS = [
   { label: '90d', value: '90d', days: 90 },
 ];
 const PERIOD_VALUES = PERIOD_OPTIONS.map((option) => option.value);
-const VIEW_OPTIONS = [
-  { label: 'Mening kunim', value: 'my_day' },
-  { label: 'Jamoa', value: 'team' },
-  { label: 'Kompaniya', value: 'company' },
-];
+const VIEW_VALUES = ['my_day', 'team', 'company'];
 const FILTER_ALL = 'all';
 const DEFAULT_PERIOD = '30d';
 const DEFAULT_VIEW = 'my_day';
@@ -123,7 +117,7 @@ function getHashParams() {
 
   return {
     period: PERIOD_VALUES.includes(period) ? period : DEFAULT_PERIOD,
-    view: VIEW_OPTIONS.some((entry) => entry.value === view) ? view : DEFAULT_VIEW,
+    view: VIEW_VALUES.includes(view) ? view : DEFAULT_VIEW,
     manager: params.get('manager') || FILTER_ALL,
     pipeline: params.get('pipeline') || FILTER_ALL,
     source: params.get('source') || FILTER_ALL,
@@ -132,6 +126,17 @@ function getHashParams() {
 
 function parseFiniteNumber(value, fallback = 0) {
   if (value === null || value === undefined || value === '') return fallback;
+  if (typeof value === 'number') {
+    return Number.isFinite(value) ? value : fallback;
+  }
+  if (typeof value === 'string') {
+    const normalized = value
+      .replace(/\s+/g, '')
+      .replace(',', '.')
+      .replace(/[^\d.-]/g, '');
+    const parsedFromString = Number(normalized);
+    return Number.isFinite(parsedFromString) ? parsedFromString : fallback;
+  }
   const parsed = Number(value);
   return Number.isFinite(parsed) ? parsed : fallback;
 }
@@ -141,6 +146,34 @@ function safeArray(value) {
   if (Array.isArray(value?.results)) return value.results;
   if (Array.isArray(value?.data)) return value.data;
   return [];
+}
+
+async function fetchAllPaginated(fetcher, baseParams = {}, options = {}) {
+  const maxPages = Number.isFinite(options.maxPages) ? options.maxPages : 20;
+  const pageSize = Number.isFinite(options.pageSize) ? options.pageSize : 500;
+  const results = [];
+  let page = 1;
+  let truncated = false;
+
+  while (page <= maxPages) {
+    const payload = await fetcher({ ...baseParams, page, page_size: pageSize });
+    const rows = safeArray(payload);
+    results.push(...rows);
+
+    const totalCount = parseFiniteNumber(payload?.count, NaN);
+    const hasNextByCount = Number.isFinite(totalCount) ? results.length < totalCount : false;
+    const hasNextByLink = Boolean(payload?.next);
+    if (!hasNextByCount && !hasNextByLink) {
+      break;
+    }
+    page += 1;
+  }
+
+  if (page > maxPages) {
+    truncated = true;
+  }
+
+  return { rows: results, truncated };
 }
 
 function parseDateValue(value) {
@@ -317,8 +350,37 @@ function getDealStatus(deal) {
   return String(deal?.status || deal?.deal_status || '').toLowerCase();
 }
 
+function isDealWon(deal) {
+  if (deal?.win_closing_date) return true;
+  const status = getDealStatus(deal);
+  if (['won', 'closed_won', 'success'].includes(status)) return true;
+  const stageName = String(deal?.stage_name || deal?.stage || '').toLowerCase();
+  return /(won|успеш|выиг|yut)/.test(stageName);
+}
+
+function isDealLost(deal) {
+  if (deal?.closing_reason && !deal?.win_closing_date) return true;
+  const status = getDealStatus(deal);
+  if (['lost', 'rejected', 'cancelled', 'canceled', 'closed_lost', 'declined'].includes(status)) return true;
+  const stageName = String(deal?.stage_name || deal?.stage || '').toLowerCase();
+  return /(lost|проиг|отказ|потер|rejected|declined|cancel)/.test(stageName);
+}
+
 function isDealClosed(deal) {
-  return ['won', 'lost', 'closed', 'cancelled', 'canceled', 'rejected'].includes(getDealStatus(deal));
+  if (deal?.active === false) return true;
+  if (deal?.closing_date || deal?.win_closing_date) return true;
+  return isDealWon(deal) || isDealLost(deal);
+}
+
+function getDealClosedDate(deal) {
+  return parseDateValue(
+    deal?.win_closing_date
+      || deal?.closing_date
+      || deal?.closed_date
+      || deal?.closed_at
+      || deal?.update_date
+      || deal?.updated_at,
+  );
 }
 
 function isTaskClosed(task) {
@@ -340,7 +402,7 @@ function getSavedViews() {
         id: String(entry?.id || ''),
         name: String(entry?.name || '').trim(),
         period: PERIOD_VALUES.includes(entry?.period) ? entry.period : DEFAULT_PERIOD,
-        view: VIEW_OPTIONS.some((item) => item.value === entry?.view) ? entry.view : DEFAULT_VIEW,
+        view: VIEW_VALUES.includes(entry?.view) ? entry.view : DEFAULT_VIEW,
         manager: entry?.manager || FILTER_ALL,
         pipeline: entry?.pipeline || FILTER_ALL,
         source: entry?.source || FILTER_ALL,
@@ -378,8 +440,6 @@ function freshnessBadge(timestamp) {
 function Dashboard() {
   const { token } = theme.useToken();
   const { message } = App.useApp();
-  const integrationsWorkspacePath = getSettingsWorkspaceTabPath(canAccessRoute, 'integrations');
-
   const initialHash = getHashParams();
   const [period, setPeriod] = useState(initialHash.period);
   const [viewMode, setViewMode] = useState(initialHash.view);
@@ -411,10 +471,15 @@ function Dashboard() {
   });
 
   const user = useMemo(() => getUserFromToken(), []);
+  const viewOptions = [
+    { label: tr('dashboardPage.mode.myDay', 'Mening kunim'), value: 'my_day' },
+    { label: tr('dashboardPage.mode.team', 'Jamoa'), value: 'team' },
+    { label: tr('dashboardPage.mode.company', 'Kompaniya'), value: 'company' },
+  ];
 
   useEffect(() => {
     void loadDashboardData();
-  }, [period]);
+  }, [period, viewMode]);
 
   useEffect(() => {
     replaceHashQuery({
@@ -453,12 +518,12 @@ function Dashboard() {
     try {
       const [overviewPayload, activityPayload, funnelPayload, tasksPayload, dealsPayload, leadsPayload, predictionPayload] =
         await Promise.allSettled([
-          getOverview(),
+          getOverview({ days: getPeriodDays(period) }),
           getActivityFeed({ period }),
           getFunnelData({ period }),
-          getTasks({ page_size: 300, ordering: 'due_date' }),
-          getDeals({ page_size: 300, ordering: '-expected_close_date' }),
-          getLeads({ page_size: 300, ordering: '-create_date' }),
+          fetchAllPaginated(getTasks, { ordering: 'due_date' }, { pageSize: 500, maxPages: 20 }),
+          fetchAllPaginated(getDeals, { ordering: '-expected_close_date' }, { pageSize: 500, maxPages: 20 }),
+          fetchAllPaginated(getLeads, { ordering: '-create_date' }, { pageSize: 500, maxPages: 20 }),
           revenuePredictions.forecast({ period }),
         ]);
 
@@ -486,21 +551,30 @@ function Dashboard() {
       }
 
       if (tasksPayload.status === 'fulfilled') {
-        setTasks(safeArray(tasksPayload.value));
+        setTasks(tasksPayload.value.rows);
+        if (tasksPayload.value.truncated) {
+          issues.push(tr('dashboardPage.quality.tasksTruncated', 'Задачи загружены не полностью (достигнут лимит страниц)'));
+        }
       } else {
         issues.push(tr('dashboardPage.quality.tasksUnavailable', 'Не удалось загрузить задачи для блока исключений'));
         setTasks([]);
       }
 
       if (dealsPayload.status === 'fulfilled') {
-        setDeals(safeArray(dealsPayload.value));
+        setDeals(dealsPayload.value.rows);
+        if (dealsPayload.value.truncated) {
+          issues.push(tr('dashboardPage.quality.dealsTruncated', 'Сделки загружены не полностью (достигнут лимит страниц)'));
+        }
       } else {
         issues.push(tr('dashboardPage.quality.dealsUnavailable', 'Не удалось загрузить сделки для оперативных KPI'));
         setDeals([]);
       }
 
       if (leadsPayload.status === 'fulfilled') {
-        setLeads(safeArray(leadsPayload.value));
+        setLeads(leadsPayload.value.rows);
+        if (leadsPayload.value.truncated) {
+          issues.push(tr('dashboardPage.quality.leadsTruncated', 'Лиды загружены не полностью (достигнут лимит страниц)'));
+        }
       } else {
         issues.push(tr('dashboardPage.quality.leadsUnavailable', 'Не удалось загрузить лиды для оперативных KPI'));
         setLeads([]);
@@ -611,13 +685,24 @@ function Dashboard() {
     const { start, end, prevStart, prevEnd, days } = rangeMeta;
 
     const openDeals = deals.filter((deal) => !isDealClosed(deal));
-    const wonDeals = deals.filter((deal) => getDealStatus(deal) === 'won');
-    const lostDeals = deals.filter((deal) => getDealStatus(deal) === 'lost');
+    const closedDeals = deals.filter((deal) => isDealClosed(deal));
+    const wonDeals = closedDeals.filter((deal) => isDealWon(deal));
+    const lostDeals = closedDeals.filter((deal) => !isDealWon(deal) && isDealLost(deal));
+    const closedDealsInRange = closedDeals.filter((deal) => {
+      const closedDate = getDealClosedDate(deal);
+      return closedDate && isDateInRange(closedDate, start, end);
+    });
+    const wonDealsInRange = closedDealsInRange.filter((deal) => isDealWon(deal));
+    const lostDealsInRange = closedDealsInRange.filter((deal) => !isDealWon(deal) && isDealLost(deal));
 
-    const openPipelineAmount = openDeals.reduce(
+    const openPipelineAmountFromDeals = openDeals.reduce(
       (sum, deal) => sum + parseFiniteNumber(deal?.amount || deal?.total_amount || deal?.value, 0),
       0,
     );
+    const openPipelineAmountFromOverview = parseFiniteNumber(overview?.open_pipeline_amount, NaN);
+    const openPipelineAmount = Number.isFinite(openPipelineAmountFromOverview)
+      ? openPipelineAmountFromOverview
+      : openPipelineAmountFromDeals;
 
     const forecastCloseAmount = openDeals
       .filter((deal) => {
@@ -628,22 +713,16 @@ function Dashboard() {
 
     const wonAmountInPeriod = deals
       .filter((deal) => {
-        const status = getDealStatus(deal);
-        if (status !== 'won') return false;
-        const wonDate = parseDateValue(
-          deal?.closed_date || deal?.closed_at || deal?.updated_at || deal?.close_date,
-        );
+        if (!isDealWon(deal)) return false;
+        const wonDate = getDealClosedDate(deal);
         return wonDate && isDateInRange(wonDate, start, end);
       })
       .reduce((sum, deal) => sum + parseFiniteNumber(deal?.amount || deal?.total_amount || deal?.value, 0), 0);
 
     const wonAmountPrevPeriod = deals
       .filter((deal) => {
-        const status = getDealStatus(deal);
-        if (status !== 'won') return false;
-        const wonDate = parseDateValue(
-          deal?.closed_date || deal?.closed_at || deal?.updated_at || deal?.close_date,
-        );
+        if (!isDealWon(deal)) return false;
+        const wonDate = getDealClosedDate(deal);
         return wonDate && isDateInRange(wonDate, prevStart, prevEnd);
       })
       .reduce((sum, deal) => sum + parseFiniteNumber(deal?.amount || deal?.total_amount || deal?.value, 0), 0);
@@ -684,18 +763,25 @@ function Dashboard() {
       ? (completedTasks.length / (activeTasks.length + completedTasks.length)) * 100
       : 0;
 
+    const convertedLeadsInRange = leadsInRange.filter((lead) => {
+      const status = String(lead?.status || '').toLowerCase();
+      return status === 'converted';
+    });
     const leadToDealConversion = leadsInRange.length
-      ? (openDeals.length + wonDeals.length + lostDeals.length) / leadsInRange.length * 100
+      ? (convertedLeadsInRange.length / leadsInRange.length) * 100
       : parseFiniteNumber(overview?.conversion_rate, 0);
 
-    const dealToWonConversion = (wonDeals.length + lostDeals.length)
-      ? (wonDeals.length / (wonDeals.length + lostDeals.length)) * 100
+    const wonLostBaseWon = wonDealsInRange.length > 0 || lostDealsInRange.length > 0 ? wonDealsInRange : wonDeals;
+    const wonLostBaseLost = wonDealsInRange.length > 0 || lostDealsInRange.length > 0 ? lostDealsInRange : lostDeals;
+
+    const dealToWonConversion = (wonLostBaseWon.length + wonLostBaseLost.length)
+      ? (wonLostBaseWon.length / (wonLostBaseWon.length + wonLostBaseLost.length)) * 100
       : 0;
 
     const salesVelocity = days > 0 ? wonAmountInPeriod / days : 0;
     const salesVelocityPrev = days > 0 ? wonAmountPrevPeriod / days : 0;
-    const winRatePercent = (wonDeals.length + lostDeals.length) > 0
-      ? (wonDeals.length / (wonDeals.length + lostDeals.length)) * 100
+    const winRatePercent = (wonLostBaseWon.length + wonLostBaseLost.length) > 0
+      ? (wonLostBaseWon.length / (wonLostBaseWon.length + wonLostBaseLost.length)) * 100
       : 0;
     const averageDealSize = openDeals.length > 0 ? openPipelineAmount / openDeals.length : 0;
     const forecastCoveragePercent = openPipelineAmount > 0
@@ -712,8 +798,8 @@ function Dashboard() {
       openDealsCount: openDeals.length,
       openPipelineAmount,
       forecastCloseAmount,
-      wonDeals: wonDeals.length,
-      lostDeals: lostDeals.length,
+      wonDeals: wonLostBaseWon.length,
+      lostDeals: wonLostBaseLost.length,
       leadToDealConversion,
       dealToWonConversion,
       salesVelocity,
@@ -1049,13 +1135,7 @@ function Dashboard() {
       description: tr('dashboardPage.extraDashboards.telephonyDesc', 'Очереди звонков, каналы и маршрутизация обращений.'),
       path: '/telephony',
     },
-    {
-      key: 'integrations',
-      title: tr('dashboardPage.extraDashboards.integrationsTitle', 'Интеграции'),
-      description: tr('dashboardPage.extraDashboards.integrationsDesc', 'Meta/каналы коммуникаций и состояние подключений.'),
-      path: integrationsWorkspacePath,
-    },
-  ]), [integrationsWorkspacePath]);
+  ]), []);
 
   const predictionChartData = useMemo(() => {
     if (predictionSeries?.predictedData?.length) {
@@ -1090,6 +1170,7 @@ function Dashboard() {
     border: `1px solid ${token.colorBorderSecondary}`,
     background: token.colorBgContainer,
     minHeight: 132,
+    height: '100%',
   }), [token.borderRadius, token.colorBgContainer, token.colorBorderSecondary]);
 
   const compactMetricCardBody = useMemo(() => ({
@@ -1422,7 +1503,7 @@ function Dashboard() {
             />
             <Segmented
               value={viewMode}
-              options={VIEW_OPTIONS}
+              options={viewOptions}
               onChange={(value) => setViewMode(String(value))}
             />
             <Select
@@ -1499,6 +1580,7 @@ function Dashboard() {
                   border: `1px solid ${token.colorBorderSecondary}`,
                   background: token.colorBgContainer,
                   minHeight: 180,
+                  height: '100%',
                 }}
                 styles={{ body: { padding: 12 } }}
               >
@@ -1957,7 +2039,7 @@ function Dashboard() {
             const state = freshnessBadge(item.value);
             return (
               <Col xs={24} sm={12} lg={6} key={item.key}>
-                <Card size="small" style={{ borderRadius: token.borderRadius }}>
+                <Card size="small" style={{ borderRadius: token.borderRadius, height: '100%' }}>
                   <Space direction="vertical" size={0}>
                     <Text>{item.label}</Text>
                     <Tag color={state.status}>{state.text}</Tag>

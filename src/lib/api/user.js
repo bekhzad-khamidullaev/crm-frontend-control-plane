@@ -278,9 +278,11 @@ async function requestUserWriteWithFallback(makeRequest) {
 }
 
 export async function detectUserWriteCapability() {
+  let hasIntrospectableEndpoint = false;
   for (const basePath of USER_BASE_CANDIDATES) {
     try {
       const response = await api.options(basePath);
+      hasIntrospectableEndpoint = true;
       const allowRaw =
         response?.allow ||
         response?.ALLOW ||
@@ -298,11 +300,11 @@ export async function detectUserWriteCapability() {
       }
     } catch (error) {
       if (!isUnsupportedEndpoint(error)) {
-        return 'readonly';
+        return 'unknown';
       }
     }
   }
-  return 'readonly';
+  return hasIntrospectableEndpoint ? 'readonly' : 'unknown';
 }
 
 /**
@@ -368,6 +370,7 @@ export async function updateUserAccess(userId, access = {}) {
   const isStaff = Boolean(access.is_staff) || isSuperuser || roles.includes('manager');
 
   const primaryPayload = {
+    roles,
     is_staff: isStaff,
     is_superuser: isSuperuser,
     groups,

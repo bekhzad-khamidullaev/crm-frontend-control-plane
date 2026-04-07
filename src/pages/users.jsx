@@ -45,6 +45,12 @@ const ROLE_OPTIONS = [
   { label: 'Admin', value: 'admin' },
   { label: 'Manager', value: 'manager' },
   { label: 'Sales', value: 'sales' },
+  { label: 'Sales Rep (SF/Zoho)', value: 'sales_rep' },
+  { label: 'Sales Manager (SF/Bitrix)', value: 'sales_manager' },
+  { label: 'Marketing Manager (Zoho/Bitrix)', value: 'marketing_manager' },
+  { label: 'Support Agent (Bitrix)', value: 'support_agent' },
+  { label: 'CRM Analyst', value: 'crm_analyst' },
+  { label: 'Read-only Auditor', value: 'read_only_auditor' },
 ];
 
 function extractListResponse(payload) {
