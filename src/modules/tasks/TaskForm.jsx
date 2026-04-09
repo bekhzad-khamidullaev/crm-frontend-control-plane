@@ -1,11 +1,13 @@
 import { zodResolver } from '@hookform/resolvers/zod';
 import dayjs from 'dayjs';
-import { ArrowLeftOutlined, SaveOutlined } from '@ant-design/icons';
+import { SaveOutlined } from '@ant-design/icons';
 import { useEffect, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
 
-import { App, Button, Card, Col, DatePicker, Input, Result, Row, Select, Skeleton, Space, Switch, Typography } from 'antd';
+import { App, Button, Card, Col, DatePicker, Input, Row, Select, Space, Switch, Typography } from 'antd';
+import { BusinessFormHeader } from '../../components/business/BusinessFormHeader';
+import { BusinessScreenState } from '../../components/business/BusinessScreenState';
 import EntitySelect from '../../components/EntitySelect';
 import FormPermissionGuard from '../../components/permissions/FormPermissionGuard';
 import ReferenceSelect from '../../components/ReferenceSelect';
@@ -203,19 +205,23 @@ function TaskForm({ id }) {
   };
 
   if (loading) {
-    return <Skeleton active paragraph={{ rows: 8 }} />;
+    return (
+      <BusinessScreenState
+        variant="loading"
+        title="Загрузка задачи"
+        description="Подготавливаем форму задачи для редактирования."
+      />
+    );
   }
 
   if (isEdit && loadError) {
     return (
-      <Result
-        status="error"
+      <BusinessScreenState
+        variant="error"
         title={t('taskFormPage.messages.error')}
-        subTitle={t('taskFormPage.messages.loadError')}
-        extra={[
-          <Button key="retry" onClick={loadTask}>Повторить</Button>,
-          <Button key="list" type="primary" onClick={() => navigate('/tasks')}>{t('taskFormPage.permission.backToList')}</Button>,
-        ]}
+        description={t('taskFormPage.messages.loadError')}
+        actionLabel="Повторить"
+        onAction={loadTask}
       />
     );
   }
@@ -228,12 +234,17 @@ function TaskForm({ id }) {
       description={t('taskFormPage.permission.description')}
     >
       <Space direction="vertical" size={16} style={{ width: '100%' }}>
-        <Button onClick={() => navigate('/tasks')} icon={<ArrowLeftOutlined size={16} />}>
-          {t('taskFormPage.actions.back')}
-        </Button>
+        <BusinessFormHeader
+          formId="task-form"
+          title={isEdit ? t('taskFormPage.titleEdit') : t('taskFormPage.titleCreate')}
+          subtitle="Заполните параметры задачи, срок и ответственных."
+          submitLabel={isEdit ? 'Сохранить задачу' : 'Создать задачу'}
+          isSubmitting={saving}
+          onBack={() => navigate('/tasks')}
+        />
 
         <Card title={<Title level={4} style={{ margin: 0 }}>{isEdit ? t('taskFormPage.titleEdit') : t('taskFormPage.titleCreate')}</Title>}>
-          <form onSubmit={handleSubmit(onSubmit)}>
+          <form id="task-form" onSubmit={handleSubmit(onSubmit)}>
             <Space direction="vertical" size={20} style={{ width: '100%' }}>
               <section>
                 <Title level={5}>{t('taskFormPage.sections.main')}</Title>

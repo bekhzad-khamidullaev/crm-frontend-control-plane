@@ -1,7 +1,8 @@
-import { ArrowLeftOutlined, SaveOutlined } from '@ant-design/icons';
-import { App, Button, Card, Form, Input, InputNumber, Result, Select, Skeleton, Space } from 'antd';
+import { App, Button, Card, Form, Input, InputNumber, Select, Space } from 'antd';
 import { useEffect, useState } from 'react';
 
+import { BusinessFormHeader } from '../../components/business/BusinessFormHeader';
+import { BusinessScreenState } from '../../components/business/BusinessScreenState';
 import FormPermissionGuard from '../../components/permissions/FormPermissionGuard';
 import { BusinessFeatureGateNotice } from '../../components/business/BusinessFeatureGateNotice';
 import {
@@ -71,18 +72,23 @@ export default function WarehouseForm({ id }) {
   };
 
   if (loading) {
-    return <Skeleton active paragraph={{ rows: 8 }} />;
+    return (
+      <BusinessScreenState
+        variant="loading"
+        title="Загрузка позиции"
+        description="Подготавливаем форму складской позиции для редактирования."
+      />
+    );
   }
 
   if (isEdit && loadError) {
     return (
-      <Result
-        status="error"
+      <BusinessScreenState
+        variant="error"
         title="Не удалось загрузить позицию"
-        extra={[
-          <Button key="retry" onClick={loadItem}>Повторить</Button>,
-          <Button key="list" type="primary" onClick={() => navigate('/warehouse')}>К списку</Button>,
-        ]}
+        description="Повторите загрузку или вернитесь к списку."
+        actionLabel="Повторить"
+        onAction={loadItem}
       />
     );
   }
@@ -104,12 +110,18 @@ export default function WarehouseForm({ id }) {
       description="У вас нет прав для создания или редактирования складских позиций."
     >
       <Space direction="vertical" style={{ width: '100%' }} size={16}>
-        <Button icon={<ArrowLeftOutlined />} onClick={() => navigate('/warehouse')}>
-          Назад
-        </Button>
+        <BusinessFormHeader
+          formId="warehouse-form"
+          title={isEdit ? 'Редактирование складской позиции' : 'Новая складская позиция'}
+          subtitle="Ведите остатки и статусы позиций в едином каталоге склада."
+          submitLabel={isEdit ? 'Сохранить' : 'Создать'}
+          isSubmitting={saving}
+          onBack={() => navigate('/warehouse')}
+        />
 
-        <Card title={isEdit ? 'Редактирование складской позиции' : 'Новая складская позиция'}>
+        <Card>
           <Form
+            id="warehouse-form"
             form={form}
             layout="vertical"
             initialValues={{
@@ -161,9 +173,6 @@ export default function WarehouseForm({ id }) {
             </Form.Item>
 
             <Space>
-              <Button type="primary" htmlType="submit" icon={<SaveOutlined />} loading={saving}>
-                {isEdit ? 'Сохранить' : 'Создать'}
-              </Button>
               <Button onClick={() => navigate('/warehouse')}>Отмена</Button>
             </Space>
           </Form>

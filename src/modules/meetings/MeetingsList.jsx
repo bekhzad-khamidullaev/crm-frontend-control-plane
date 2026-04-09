@@ -1,13 +1,13 @@
 import { CalendarOutlined, DeleteOutlined, EditOutlined, EyeOutlined, PlusOutlined } from '@ant-design/icons';
-import { App, Button, Card, Popconfirm, Space, Table, Tag, Typography } from 'antd';
+import { App, Button, Popconfirm, Space, Table, Tag, Typography } from 'antd';
 import dayjs from 'dayjs';
 import { useEffect, useState } from 'react';
 
+import { BusinessEntityListShell } from '../../components/business/BusinessEntityListShell';
 import { deleteMeeting, getMeetings } from '../../lib/api/meetings.js';
 import { canWrite, hasAnyFeature } from '../../lib/rbac.js';
 import { navigate } from '../../router.js';
 import { EntityListToolbar } from '../../shared/ui/EntityListToolbar';
-import { PageHeader } from '../../shared/ui/PageHeader';
 import { BusinessFeatureGateNotice } from '../../components/business/BusinessFeatureGateNotice';
 
 const { Text } = Typography;
@@ -71,32 +71,28 @@ export default function MeetingsList() {
 
   if (!canReadFeature) {
     return (
-      <>
-        <PageHeader title="Встречи" subtitle="Полноценный CRUD по встречам и follow-up" />
+      <BusinessEntityListShell title="Встречи" subtitle="Полноценный CRUD по встречам и follow-up">
         <BusinessFeatureGateNotice
           featureCode="tasks.reminders"
           description="Для доступа к встречам включите модуль Reminders в лицензии."
         />
-      </>
+      </BusinessEntityListShell>
     );
   }
 
   return (
-    <>
-      <PageHeader
-        title="Встречи"
-        subtitle="Полноценный CRUD по встречам и follow-up"
-        extra={
-          canManage ? (
-            <Button type="primary" icon={<PlusOutlined />} onClick={() => navigate('/meetings/new')}>
-              Создать встречу
-            </Button>
-          ) : null
-        }
-      />
-
-      <Card>
-        <Space direction="vertical" size={16} style={{ width: '100%' }}>
+    <BusinessEntityListShell
+      title="Встречи"
+      subtitle="Полноценный CRUD по встречам и follow-up"
+      extra={
+        canManage ? (
+          <Button type="primary" icon={<PlusOutlined />} onClick={() => navigate('/meetings/new')}>
+            Создать встречу
+          </Button>
+        ) : null
+      }
+    >
+      <Space direction="vertical" size={16} style={{ width: '100%' }}>
           <EntityListToolbar
             searchValue={search}
             searchPlaceholder="Поиск по теме, описанию, локации"
@@ -187,8 +183,7 @@ export default function MeetingsList() {
               },
             ]}
           />
-        </Space>
-      </Card>
-    </>
+      </Space>
+    </BusinessEntityListShell>
   );
 }

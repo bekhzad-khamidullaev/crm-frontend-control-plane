@@ -44,11 +44,11 @@ import {
 } from 'antd';
 
 import { createTask, deleteTask, getTasks, getTaskStages, getUsers, patchTask } from '../../lib/api';
+import { BusinessEntityListShell } from '../../components/business/BusinessEntityListShell';
 import { getLocale, t } from '../../lib/i18n';
 import { canWrite } from '../../lib/rbac.js';
 import { navigate } from '../../router';
 import { EntityListToolbar } from '../../shared/ui/EntityListToolbar';
-import { PageHeader } from '../../shared/ui/PageHeader';
 import {
   buildTaskKanbanColumns,
   parseTaskCardId,
@@ -792,7 +792,7 @@ function TasksList() {
 
   return (
     <>
-      <PageHeader
+      <BusinessEntityListShell
         title={t('tasksListPage.title')}
         subtitle={t('tasksListPage.subtitle')}
         extra={
@@ -807,8 +807,7 @@ function TasksList() {
             </Button>
           ) : null
         }
-      />
-      <Card>
+      >
         <Space direction="vertical" size={16} style={{ width: '100%' }}>
 
           <EntityListToolbar
@@ -1075,7 +1074,7 @@ function TasksList() {
             )
           ) : null}
         </Space>
-      </Card>
+      </BusinessEntityListShell>
 
       <style>{`
         .row-completed {

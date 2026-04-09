@@ -1,11 +1,13 @@
 import { zodResolver } from '@hookform/resolvers/zod';
 import dayjs from 'dayjs';
-import { ArrowLeftOutlined, SaveOutlined } from '@ant-design/icons';
+import { SaveOutlined } from '@ant-design/icons';
 import { useEffect, useState } from 'react';
 import { Controller, useForm } from 'react-hook-form';
 import { z } from 'zod';
 
-import { App, Button, Card, Col, DatePicker, Input, Result, Row, Select, Skeleton, Space, Switch, Typography } from 'antd';
+import { App, Button, Card, Col, DatePicker, Input, Row, Select, Space, Switch, Typography } from 'antd';
+import { BusinessFormHeader } from '../../components/business/BusinessFormHeader';
+import { BusinessScreenState } from '../../components/business/BusinessScreenState';
 import EntitySelect from '../../components/EntitySelect';
 import FormPermissionGuard from '../../components/permissions/FormPermissionGuard';
 import ReferenceSelect from '../../components/ReferenceSelect';
@@ -183,19 +185,23 @@ function ProjectForm({ id }) {
   };
 
   if (loading) {
-    return <Skeleton active paragraph={{ rows: 8 }} />;
+    return (
+      <BusinessScreenState
+        variant="loading"
+        title={t('projectFormPage.loadError.loadingTitle') === 'projectFormPage.loadError.loadingTitle' ? 'Загрузка проекта' : t('projectFormPage.loadError.loadingTitle')}
+        description="Подготавливаем форму проекта для редактирования."
+      />
+    );
   }
 
   if (isEdit && loadError) {
     return (
-      <Result
-        status="error"
+      <BusinessScreenState
+        variant="error"
         title={t('projectFormPage.loadError.title')}
-        subTitle={t('projectFormPage.loadError.subtitle')}
-        extra={[
-          <Button key="retry" onClick={loadProject}>{t('projectFormPage.loadError.retry')}</Button>,
-          <Button key="list" type="primary" onClick={() => navigate('/projects')}>{t('projectFormPage.permission.backToList')}</Button>,
-        ]}
+        description={t('projectFormPage.loadError.subtitle')}
+        actionLabel={t('projectFormPage.loadError.retry')}
+        onAction={loadProject}
       />
     );
   }
@@ -208,12 +214,17 @@ function ProjectForm({ id }) {
       description={t('projectFormPage.permission.description')}
     >
       <Space direction="vertical" size={16} style={{ width: '100%' }}>
-        <Button onClick={() => navigate('/projects')} icon={<ArrowLeftOutlined size={16} />}>
-          {t('projectFormPage.actions.back')}
-        </Button>
+        <BusinessFormHeader
+          formId="project-form"
+          title={isEdit ? t('projectFormPage.titleEdit') : t('projectFormPage.titleCreate')}
+          subtitle="Заполните ключевые поля проекта и ответственных."
+          submitLabel={isEdit ? 'Сохранить проект' : 'Создать проект'}
+          isSubmitting={saving}
+          onBack={() => navigate('/projects')}
+        />
 
         <Card title={<Title level={4} style={{ margin: 0 }}>{isEdit ? t('projectFormPage.titleEdit') : t('projectFormPage.titleCreate')}</Title>}>
-          <form onSubmit={handleSubmit(onSubmit)}>
+          <form id="project-form" onSubmit={handleSubmit(onSubmit)}>
             <Space direction="vertical" size={20} style={{ width: '100%' }}>
               <section>
                 <Title level={5}>{t('projectFormPage.sections.main')}</Title>

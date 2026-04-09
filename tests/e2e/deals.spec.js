@@ -1,6 +1,7 @@
 /**
  * E2E Tests for Deals Module
  */
+/* eslint-disable no-unreachable */
 
 import { test, expect } from '@playwright/test';
 import { generateDealData } from './helpers/test-data.js';

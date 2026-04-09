@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
-import { App, Button, Card, Descriptions, Modal, Result, Skeleton, Space, Tag, Typography } from 'antd';
+import { App, Button, Card, Descriptions, Modal, Space, Tag, Typography } from 'antd';
 import { DeleteOutlined, EditOutlined } from '@ant-design/icons';
+import { BusinessScreenState } from '../../components/business/BusinessScreenState';
 import { getCampaign, deleteCampaign, patchCampaign } from '../../lib/api/marketing';
 import { canWrite } from '../../lib/rbac.js';
 import { navigate } from '../../router';
@@ -63,25 +64,35 @@ export default function CampaignDetail({ id }) {
     }
   };
 
-  if (loading) return <Skeleton active paragraph={{ rows: 8 }} />;
+  if (loading) {
+    return (
+      <BusinessScreenState
+        variant="loading"
+        title="Загрузка кампании"
+        description="Открываем карточку кампании."
+      />
+    );
+  }
 
   if (loadError) {
     return (
-      <Result
-        status="error"
+      <BusinessScreenState
+        variant="error"
         title="Не удалось открыть кампанию"
-        subTitle="Попробуйте повторить загрузку"
-        extra={<Button onClick={fetchData}>Повторить</Button>}
+        description="Попробуйте повторить загрузку."
+        actionLabel="Повторить"
+        onAction={fetchData}
       />
     );
   }
 
   if (!data) {
     return (
-      <Result
-        status="404"
+      <BusinessScreenState
+        variant="notFound"
         title="Кампания не найдена"
-        extra={<Button onClick={() => navigate('/campaigns')}>К списку кампаний</Button>}
+        actionLabel="К списку кампаний"
+        onAction={() => navigate('/campaigns')}
       />
     );
   }

@@ -4,8 +4,8 @@ import EditableCell from '@/components/editable-cell';
 import { getCallLogs } from '../lib/api/calls.js';
 import { getUpcomingReminders, patchReminder } from '../lib/api/reminders.js';
 import { getTasks, patchTask } from '../lib/api/tasks.js';
+import { BusinessEntityListShell } from '../components/business/BusinessEntityListShell';
 import { EntityListToolbar } from '../shared/ui/EntityListToolbar';
-import { PageHeader } from '../shared/ui/PageHeader';
 import { WorkspaceSummaryStrip, WorkspaceTabsShell } from '../shared/ui/WorkspaceRhythm';
 import { containsText, formatDateSafe, toResults } from './workspace-utils.js';
 
@@ -164,11 +164,11 @@ export default function MeetingsWorkspacePage() {
   };
 
   return (
-    <Space direction="vertical" size={10} style={{ width: '100%' }}>
-      <PageHeader
-        title="Встречи"
-        subtitle="Планирование встреч, звонков и follow-up задач в одном окне."
-      />
+    <BusinessEntityListShell
+      title="Встречи"
+      subtitle="Планирование встреч, звонков и follow-up задач в одном окне."
+    >
+      <Space direction="vertical" size={10} style={{ width: '100%' }}>
       <EntityListToolbar
         searchValue={search}
         searchPlaceholder="Поиск по встречам, звонкам и задачам"
@@ -353,6 +353,7 @@ export default function MeetingsWorkspacePage() {
           ]}
         />
       </WorkspaceTabsShell>
-    </Space>
+      </Space>
+    </BusinessEntityListShell>
   );
 }

@@ -1,6 +1,7 @@
-import { ArrowLeftOutlined } from '@ant-design/icons';
 import React, { useEffect, useState } from 'react';
-import { App, Button, Card, Col, Form, Input, InputNumber, Result, Row, Select, Skeleton, Space, Switch, Typography } from 'antd';
+import { App, Button, Card, Col, Form, Input, InputNumber, Row, Select, Space, Switch, Typography } from 'antd';
+import { BusinessFormHeader } from '../../components/business/BusinessFormHeader';
+import { BusinessScreenState } from '../../components/business/BusinessScreenState';
 import { navigate } from '../../router';
 import { getProduct, createProduct, updateProduct, getProductCategories, getProductCategory } from '../../lib/api/products';
 import { canWrite } from '../../lib/rbac';
@@ -10,7 +11,7 @@ import FormPermissionGuard from '../../components/permissions/FormPermissionGuar
 import { normalizePayload } from '../../lib/utils/payload';
 
 const { TextArea } = Input;
-const { Title, Text } = Typography;
+const { Title } = Typography;
 
 const typeOptions = [
   { value: 'G', label: 'Товар' },
@@ -81,15 +82,24 @@ function ProductForm({ id }) {
     }
   };
 
-  if (loading) return <Skeleton active paragraph={{ rows: 8 }} />;
+  if (loading) {
+    return (
+      <BusinessScreenState
+        variant="loading"
+        title="Загрузка продукта"
+        description="Подготавливаем карточку продукта для редактирования."
+      />
+    );
+  }
 
   if (isEdit && loadError) {
     return (
-      <Result
-        status="error"
-        title="Не удалось загрузить продукт для редактирования"
-        subTitle="Попробуйте повторить загрузку или вернитесь к каталогу продуктов"
-        extra={<Button onClick={loadProduct}>Повторить</Button>}
+      <BusinessScreenState
+        variant="error"
+        title="Не удалось загрузить продукт"
+        description="Попробуйте повторить загрузку или вернитесь в каталог."
+        actionLabel="Повторить"
+        onAction={loadProduct}
       />
     );
   }
@@ -102,25 +112,17 @@ function ProductForm({ id }) {
       description="У вас нет прав для создания или редактирования продуктов."
     >
       <Space direction="vertical" size={16} style={{ width: '100%' }}>
-        <Space wrap style={{ width: '100%', justifyContent: 'space-between' }}>
-          <Button onClick={() => navigate('/products')} icon={<ArrowLeftOutlined size={16} />}>Назад</Button>
-          <Space>
-            <Button onClick={() => navigate('/products')}>Отмена</Button>
-            {canManage && (
-              <Button type="primary" loading={saving} onClick={() => form.submit()}>
-                {isEdit ? 'Сохранить продукт' : 'Создать продукт'}
-              </Button>
-            )}
-          </Space>
-        </Space>
+        <BusinessFormHeader
+          formId="product-form"
+          title={isEdit ? 'Редактировать продукт' : 'Новый продукт'}
+          subtitle="Настройка карточки товара или услуги"
+          submitLabel={isEdit ? 'Сохранить продукт' : 'Создать продукт'}
+          isSubmitting={saving}
+          onBack={() => navigate('/products')}
+        />
 
         <Card>
-          <Title level={3} style={{ marginTop: 0 }}>{isEdit ? 'Редактировать продукт' : 'Новый продукт'}</Title>
-          <Text type="secondary">Настройка карточки товара или услуги</Text>
-        </Card>
-
-        <Card>
-          <Form form={form} layout="vertical" onFinish={onFinish} autoComplete="off">
+          <Form id="product-form" form={form} layout="vertical" onFinish={onFinish} autoComplete="off">
             <Title level={5} style={{ marginTop: 0 }}>Основное</Title>
             <Row gutter={16}>
               <Col xs={24} md={12}>

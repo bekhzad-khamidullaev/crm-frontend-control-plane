@@ -1,8 +1,8 @@
 import { DealsRejectionsView } from '@/widgets/deals-rejections';
 import { DealsTable } from '@/widgets/deals-table';
-import { PageHeader } from '@/shared/ui/PageHeader';
+import { BusinessEntityListShell } from '@/components/business/BusinessEntityListShell';
 import { PlusOutlined, StopOutlined, UnorderedListOutlined } from '@ant-design/icons';
-import { Button, Card, Grid, Segmented, Space } from 'antd';
+import { Button, Grid, Segmented, Space } from 'antd';
 import React, { useEffect, useState } from 'react';
 // @ts-ignore
 import { navigate } from '@/router.js';
@@ -25,9 +25,9 @@ export const DealsListPage: React.FC = () => {
   const canManage = canWrite();
 
   return (
-    <>
-      <PageHeader
+    <BusinessEntityListShell
         title={t('dealsListPage.title')}
+        subtitle="Контролируйте сделки по стадиям, отслеживайте причины отказов и быстро создавайте новые возможности."
         extra={(
           <Space direction={isMobile ? 'vertical' : 'horizontal'} size="middle">
             <Segmented
@@ -51,12 +51,10 @@ export const DealsListPage: React.FC = () => {
             ) : null}
           </Space>
         )}
-      />
-      <Card>
-        {viewMode === 'table' ? <DealsTable /> : null}
-        {viewMode === 'rejections' ? <DealsRejectionsView readOnly={!canManage} /> : null}
-      </Card>
-    </>
+      >
+      {viewMode === 'table' ? <DealsTable /> : null}
+      {viewMode === 'rejections' ? <DealsRejectionsView readOnly={!canManage} /> : null}
+    </BusinessEntityListShell>
   );
 };
 

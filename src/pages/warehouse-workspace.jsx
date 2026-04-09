@@ -4,8 +4,8 @@ import EditableCell from '@/components/editable-cell';
 import { getProducts, patchProduct } from '../lib/api/products.js';
 import { getShipments, patchShipment } from '../lib/api/shipments.js';
 import { getOutputs, patchOutput } from '../lib/api/outputs.js';
+import { BusinessEntityListShell } from '../components/business/BusinessEntityListShell';
 import { EntityListToolbar } from '../shared/ui/EntityListToolbar';
-import { PageHeader } from '../shared/ui/PageHeader';
 import { WorkspaceSummaryStrip, WorkspaceTabsShell } from '../shared/ui/WorkspaceRhythm';
 import { containsText, formatDateSafe, toNumberSafe, toResults } from './workspace-utils.js';
 import { formatCurrency } from '../lib/utils/format.js';
@@ -146,11 +146,11 @@ export default function WarehouseWorkspacePage() {
   };
 
   return (
-    <Space direction="vertical" size={10} style={{ width: '100%' }}>
-      <PageHeader
-        title="Склад"
-        subtitle="Остатки, номенклатура, журнал движений и складские документы."
-      />
+    <BusinessEntityListShell
+      title="Склад"
+      subtitle="Остатки, номенклатура, журнал движений и складские документы."
+    >
+      <Space direction="vertical" size={10} style={{ width: '100%' }}>
       <EntityListToolbar
         searchValue={search}
         searchPlaceholder="Поиск по товарам, отгрузкам и документам"
@@ -366,6 +366,7 @@ export default function WarehouseWorkspacePage() {
           ]}
         />
       </WorkspaceTabsShell>
-    </Space>
+      </Space>
+    </BusinessEntityListShell>
   );
 }

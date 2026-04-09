@@ -26,7 +26,7 @@ export const ContactCreatePage: React.FC = () => {
     }
   };
 
-  return <ContactForm onSubmit={handleSubmit} isLoading={createMutation.isPending} />;
+  return <ContactForm onSubmit={handleSubmit} isLoading={createMutation.isPending} isEdit={false} />;
 };
 
 export default ContactCreatePage;

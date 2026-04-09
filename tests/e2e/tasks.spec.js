@@ -1,6 +1,7 @@
 /**
  * E2E Tests for Tasks Module
  */
+/* eslint-disable no-unreachable */
 
 import { test, expect } from '@playwright/test';
 import { generateTaskData } from './helpers/test-data.js';

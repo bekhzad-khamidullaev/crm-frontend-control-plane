@@ -1,12 +1,12 @@
 import { DeleteOutlined, EditOutlined, EyeOutlined, PlusOutlined, ShopOutlined } from '@ant-design/icons';
-import { App, Button, Card, Popconfirm, Space, Table, Tag, Typography } from 'antd';
+import { App, Button, Popconfirm, Space, Table, Tag, Typography } from 'antd';
 import { useEffect, useState } from 'react';
 
+import { BusinessEntityListShell } from '../../components/business/BusinessEntityListShell';
 import { deleteWarehouseItem, getWarehouseItems } from '../../lib/api/warehouseItems.js';
 import { canWrite, hasAnyFeature } from '../../lib/rbac.js';
 import { navigate } from '../../router.js';
 import { EntityListToolbar } from '../../shared/ui/EntityListToolbar';
-import { PageHeader } from '../../shared/ui/PageHeader';
 import { BusinessFeatureGateNotice } from '../../components/business/BusinessFeatureGateNotice';
 
 const { Text } = Typography;
@@ -63,19 +63,17 @@ export default function WarehouseList() {
 
   if (!canReadFeature) {
     return (
-      <>
-        <PageHeader title="Склад" subtitle="Полноценный CRUD по складским позициям" />
+      <BusinessEntityListShell title="Склад" subtitle="Полноценный CRUD по складским позициям">
         <BusinessFeatureGateNotice
           featureCode="inventory.lite"
           description="Для доступа к складу включите модуль Inventory Lite в лицензии."
         />
-      </>
+      </BusinessEntityListShell>
     );
   }
 
   return (
-    <>
-      <PageHeader
+    <BusinessEntityListShell
         title="Склад"
         subtitle="Полноценный CRUD по складским позициям"
         extra={
@@ -85,10 +83,8 @@ export default function WarehouseList() {
             </Button>
           ) : null
         }
-      />
-
-      <Card>
-        <Space direction="vertical" style={{ width: '100%' }} size={16}>
+      >
+      <Space direction="vertical" style={{ width: '100%' }} size={16}>
           <EntityListToolbar
             searchValue={search}
             searchPlaceholder="Поиск по названию, SKU, категории"
@@ -178,8 +174,7 @@ export default function WarehouseList() {
               },
             ]}
           />
-        </Space>
-      </Card>
-    </>
+      </Space>
+    </BusinessEntityListShell>
   );
 }

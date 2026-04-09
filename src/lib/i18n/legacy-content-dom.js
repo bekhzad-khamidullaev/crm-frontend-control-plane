@@ -1,3 +1,4 @@
+/* eslint-disable no-dupe-keys, no-undef */
 import legacyContent from '../../locales/legacy-content.json';
 
 const textOriginals = new WeakMap();

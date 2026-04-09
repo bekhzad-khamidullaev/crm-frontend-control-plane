@@ -1,8 +1,9 @@
 import React, { useMemo } from 'react';
-import { Space, Button, Typography, Descriptions, Tag, Avatar, Spin, List, Table, Card, Result, Tabs } from 'antd';
+import { Space, Button, Typography, Descriptions, Tag, Avatar, List, Table, Card, Tabs } from 'antd';
 import { EditOutlined, PlayCircleOutlined, RobotOutlined, ShopOutlined, PhoneOutlined, TeamOutlined } from '@ant-design/icons';
 import dayjs from 'dayjs';
 import { navigate } from '@/router.js';
+import { BusinessScreenState } from '@/components/business/BusinessScreenState';
 import { usePatchDeal } from '@/entities/deal/api/mutations';
 import { useCompany, useCompanyContacts, useCompanyDeals } from '@/entities/company/api/queries';
 import { useClientTypes, useIndustries, useStages } from '@/features/reference';
@@ -98,9 +99,26 @@ export const CompanyDetailPage: React.FC<CompanyDetailPageProps> = ({ id }) => {
     });
   };
 
-  if (isLoadingCompany) return <Spin size="large" style={{ display: 'block', margin: '50px auto' }} />;
+  if (isLoadingCompany) {
+    return (
+      <BusinessScreenState
+        variant="loading"
+        title="Загрузка компании"
+        description="Подготавливаем карточку компании, контакты и сделки."
+      />
+    );
+  }
 
-  if (!company) return <Result status="404" title="Компания не найдена" extra={<Button onClick={() => navigate('/companies')}>К компаниям</Button>} />;
+  if (!company) {
+    return (
+      <BusinessScreenState
+        variant="notFound"
+        title="Компания не найдена"
+        actionLabel="К компаниям"
+        onAction={() => navigate('/companies')}
+      />
+    );
+  }
 
   return (
     <Space direction="vertical" size={16} style={{ width: '100%' }}>

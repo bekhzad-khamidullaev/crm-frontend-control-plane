@@ -3,15 +3,15 @@ import { CheckOutlined, ClockCircleOutlined, EditOutlined, EyeOutlined, DeleteOu
 import dayjs from 'dayjs';
 
 import { PlusOutlined } from '@ant-design/icons';
-import { App, Button, Card, DatePicker, Modal, Select, Space, Table, Tag, Typography } from 'antd';
+import { App, Button, DatePicker, Modal, Select, Space, Table, Tag, Typography } from 'antd';
 
+import { BusinessEntityListShell } from '../../components/business/BusinessEntityListShell';
 import EntitySelect from '../../components/EntitySelect.jsx';
 import { getUser, getUsers } from '../../lib/api';
 import { deleteMemo, getMemos, markMemoPostponed, markMemoReviewed } from '../../lib/api/memos';
 import { canWrite } from '../../lib/rbac.js';
 import { navigate } from '../../router';
 import { EntityListToolbar } from '../../shared/ui/EntityListToolbar';
-import { PageHeader } from '../../shared/ui/PageHeader';
 
 const { RangePicker } = DatePicker;
 const { Text } = Typography;
@@ -235,8 +235,7 @@ export default function MemosList() {
   }
 
   return (
-    <>
-      <PageHeader
+    <BusinessEntityListShell
         title="Мемо"
         subtitle="Список внутренних мемо"
         extra={
@@ -244,70 +243,68 @@ export default function MemosList() {
             <Button type="primary" icon={<PlusOutlined />} onClick={() => navigate('/memos/new')}>Новое мемо</Button>
           ) : null
         }
-      />
-      <Card>
-        <Space direction="vertical" size={16} style={{ width: '100%' }}>
+      >
+      <Space direction="vertical" size={16} style={{ width: '100%' }}>
 
-          <EntityListToolbar
-            searchValue={searchText}
-            searchPlaceholder="Поиск по названию или тексту"
-            onSearchChange={setSearchText}
-            filters={(
-              <Space wrap>
-                <Select
-                  allowClear
-                  placeholder="Черновики"
-                  style={{ minWidth: 150 }}
-                  value={draftFilter}
-                  options={[
-                    { value: true, label: 'Черновик' },
-                    { value: false, label: 'Опубликованные' },
-                  ]}
-                  onChange={(v) => setDraftFilter(v ?? null)}
-                />
-                <Select
-                  allowClear
-                  placeholder="Стадия"
-                  style={{ minWidth: 160 }}
-                  value={stageFilter}
-                  options={Object.entries(stageLabels).map(([value, meta]) => ({ value, label: meta.text }))}
-                  onChange={(v) => setStageFilter(v ?? null)}
-                />
-                <EntitySelect
-                  placeholder="Получатель"
-                  value={recipientFilter}
-                  onChange={setRecipientFilter}
-                  fetchList={getUsers}
-                  fetchById={getUser}
-                  allowClear
-                />
-                <RangePicker
-                  format="DD.MM.YYYY"
-                  value={dateRange}
-                  onChange={(vals) => setDateRange(vals || null)}
-                />
-              </Space>
-            )}
-            onRefresh={fetchData}
-            onReset={handleResetFilters}
-            loading={loading}
-            resultSummary={`Всего: ${pagination.total}`}
-            activeFilters={activeFilters}
-          />
+        <EntityListToolbar
+          searchValue={searchText}
+          searchPlaceholder="Поиск по названию или тексту"
+          onSearchChange={setSearchText}
+          filters={(
+            <Space wrap>
+              <Select
+                allowClear
+                placeholder="Черновики"
+                style={{ minWidth: 150 }}
+                value={draftFilter}
+                options={[
+                  { value: true, label: 'Черновик' },
+                  { value: false, label: 'Опубликованные' },
+                ]}
+                onChange={(v) => setDraftFilter(v ?? null)}
+              />
+              <Select
+                allowClear
+                placeholder="Стадия"
+                style={{ minWidth: 160 }}
+                value={stageFilter}
+                options={Object.entries(stageLabels).map(([value, meta]) => ({ value, label: meta.text }))}
+                onChange={(v) => setStageFilter(v ?? null)}
+              />
+              <EntitySelect
+                placeholder="Получатель"
+                value={recipientFilter}
+                onChange={setRecipientFilter}
+                fetchList={getUsers}
+                fetchById={getUser}
+                allowClear
+              />
+              <RangePicker
+                format="DD.MM.YYYY"
+                value={dateRange}
+                onChange={(vals) => setDateRange(vals || null)}
+              />
+            </Space>
+          )}
+          onRefresh={fetchData}
+          onReset={handleResetFilters}
+          loading={loading}
+          resultSummary={`Всего: ${pagination.total}`}
+          activeFilters={activeFilters}
+        />
 
-          {error ? <Text type="danger">{error}</Text> : null}
+        {error ? <Text type="danger">{error}</Text> : null}
 
-          <Table
-            rowKey="id"
-            columns={columns}
-            dataSource={data}
-            loading={loading}
-            pagination={{ ...pagination, showSizeChanger: true, showTotal: (total) => `Всего: ${total}` }}
-            onChange={(pg) => setPagination((prev) => ({ ...prev, current: pg.current, pageSize: pg.pageSize }))}
-            locale={{ emptyText: 'Нет мемо' }}
-          />
-        </Space>
-      </Card>
+        <Table
+          rowKey="id"
+          columns={columns}
+          dataSource={data}
+          loading={loading}
+          pagination={{ ...pagination, showSizeChanger: true, showTotal: (total) => `Всего: ${total}` }}
+          onChange={(pg) => setPagination((prev) => ({ ...prev, current: pg.current, pageSize: pg.pageSize }))}
+          locale={{ emptyText: 'Нет мемо' }}
+        />
+      </Space>
 
       <Modal
         title="Удалить мемо?"
@@ -320,6 +317,6 @@ export default function MemosList() {
       >
         Действие нельзя отменить.
       </Modal>
-    </>
+    </BusinessEntityListShell>
   );
 }

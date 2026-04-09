@@ -1,12 +1,12 @@
 import React, { useEffect, useState } from 'react';
-import { App, Button, Card, DatePicker, Select, Space, Table, Tag, Typography } from 'antd';
+import { App, Button, DatePicker, Select, Space, Table, Tag, Typography } from 'antd';
 import { PlusOutlined } from '@ant-design/icons';
 import { navigate } from '../../router';
 import { activateCampaign, cloneCampaign, completeCampaign, deleteCampaign, getCampaigns, patchCampaign, pauseCampaign } from '../../lib/api/marketing';
 import { canWrite } from '../../lib/rbac.js';
 import QuickActions from '../../components/QuickActions.jsx';
+import { BusinessEntityListShell } from '../../components/business/BusinessEntityListShell';
 import { EntityListToolbar } from '../../shared/ui/EntityListToolbar';
-import { PageHeader } from '../../shared/ui/PageHeader';
 
 const { Text } = Typography;
 
@@ -274,20 +274,17 @@ function CampaignsList({ embedded = false }) {
   }
 
   return (
-    <>
-      <PageHeader
-        title="Кампании"
-        subtitle="Список маркетинговых кампаний"
-        extra={
-          canManage ? (
-            <Button type="primary" icon={<PlusOutlined />} onClick={() => navigate('/campaigns/new')}>Создать кампанию</Button>
-          ) : null
-        }
-      />
-      <Card>
-        {content}
-      </Card>
-    </>
+    <BusinessEntityListShell
+      title="Кампании"
+      subtitle="Список маркетинговых кампаний"
+      extra={
+        canManage ? (
+          <Button type="primary" icon={<PlusOutlined />} onClick={() => navigate('/campaigns/new')}>Создать кампанию</Button>
+        ) : null
+      }
+    >
+      {content}
+    </BusinessEntityListShell>
   );
 }
 

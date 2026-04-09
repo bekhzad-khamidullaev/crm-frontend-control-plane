@@ -2,8 +2,9 @@ import React, { useEffect, useMemo, useState } from 'react';
 import { EditOutlined, EyeOutlined, FolderOutlined, DeleteOutlined } from '@ant-design/icons';
 
 import { PlusOutlined } from '@ant-design/icons';
-import { App, Button, Card, Checkbox, Popconfirm, Space, Table, Tag, Typography } from 'antd';
+import { App, Button, Checkbox, Popconfirm, Space, Table, Tag, Typography } from 'antd';
 
+import { BusinessEntityListShell } from '../../components/business/BusinessEntityListShell';
 import {
   completeProject,
   deleteProject,
@@ -17,7 +18,6 @@ import { getLocale, t } from '../../lib/i18n';
 import { canWrite } from '../../lib/rbac.js';
 import { navigate } from '../../router';
 import { EntityListToolbar } from '../../shared/ui/EntityListToolbar';
-import { PageHeader } from '../../shared/ui/PageHeader';
 
 const { Text } = Typography;
 
@@ -304,20 +304,18 @@ function ProjectsList() {
   ];
 
   return (
-    <>
-      <PageHeader
-        title={t('projectsListPage.title')}
-        subtitle={t('projectsListPage.subtitle')}
-        extra={
-          canManage ? (
-            <Button type="primary" icon={<PlusOutlined />} onClick={() => navigate('/projects/new')}>
-              {t('projectsListPage.actions.create')}
-            </Button>
-          ) : null
-        }
-      />
-      <Card>
-        <Space direction="vertical" size={16} style={{ width: '100%' }}>
+    <BusinessEntityListShell
+      title={t('projectsListPage.title')}
+      subtitle={t('projectsListPage.subtitle')}
+      extra={
+        canManage ? (
+          <Button type="primary" icon={<PlusOutlined />} onClick={() => navigate('/projects/new')}>
+            {t('projectsListPage.actions.create')}
+          </Button>
+        ) : null
+      }
+    >
+      <Space direction="vertical" size={16} style={{ width: '100%' }}>
 
           <EntityListToolbar
             searchValue={searchText}
@@ -341,9 +339,8 @@ function ProjectsList() {
             onChange={handleTableChange}
             locale={{ emptyText: t('projectsListPage.empty') }}
           />
-        </Space>
-      </Card>
-    </>
+      </Space>
+    </BusinessEntityListShell>
   );
 }
 

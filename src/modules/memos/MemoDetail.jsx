@@ -2,7 +2,8 @@ import { useEffect, useState } from 'react';
 import { ArrowLeftOutlined, CheckOutlined, ClockCircleOutlined, EditOutlined, FileTextOutlined, DeleteOutlined } from '@ant-design/icons';
 import dayjs from 'dayjs';
 
-import { App, Button, Card, Descriptions, Modal, Result, Skeleton, Space, Tag, Typography } from 'antd';
+import { App, Button, Card, Descriptions, Modal, Space, Tag, Typography } from 'antd';
+import { BusinessScreenState } from '../../components/business/BusinessScreenState';
 
 import { deleteMemo, getMemo, markMemoPostponed, markMemoReviewed } from '../../lib/api/memos';
 import { canWrite } from '../../lib/rbac.js';
@@ -74,26 +75,36 @@ export default function MemoDetail({ id }) {
     }
   };
 
-  if (loading) return <Skeleton active paragraph={{ rows: 8 }} />;
+  if (loading) {
+    return (
+      <BusinessScreenState
+        variant="loading"
+        title="Загрузка мемо"
+        description="Собираем карточку мемо и связанные данные."
+      />
+    );
+  }
 
   if (loadError) {
     return (
-      <Result
-        status="error"
+      <BusinessScreenState
+        variant="error"
         title="Не удалось открыть мемо"
-        subTitle="Попробуйте повторить загрузку"
-        extra={<Button onClick={fetchData}>Повторить</Button>}
+        description="Попробуйте повторить загрузку."
+        actionLabel="Повторить"
+        onAction={fetchData}
       />
     );
   }
 
   if (!data) {
     return (
-      <Result
-        status="404"
+      <BusinessScreenState
+        variant="notFound"
         title="Мемо не найдено"
-        subTitle="Запись могла быть удалена или недоступна"
-        extra={<Button onClick={() => navigate('/memos')}>К списку мемо</Button>}
+        description="Запись могла быть удалена или недоступна."
+        actionLabel="К списку мемо"
+        onAction={() => navigate('/memos')}
       />
     );
   }

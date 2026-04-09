@@ -2,12 +2,12 @@ import { CreditCardOutlined, EditOutlined, EyeOutlined, DeleteOutlined } from '@
 import { useEffect, useState } from 'react';
 
 import { DownloadOutlined, PlusOutlined } from '@ant-design/icons';
-import { App, Button, Card, Dropdown, Popconfirm, Select, Space, Table, Typography } from 'antd';
+import { App, Button, Dropdown, Popconfirm, Select, Space, Table, Typography } from 'antd';
 
+import { BusinessEntityListShell } from '../../components/business/BusinessEntityListShell';
 import { deletePayment, getPayments } from '../../lib/api/payments';
 import { canWrite } from '../../lib/rbac.js';
 import { EntityListToolbar } from '../../shared/ui/EntityListToolbar';
-import { PageHeader } from '../../shared/ui/PageHeader';
 import { formatCurrencyForRecord } from '../../lib/utils/format';
 import { exportToCSV, exportToExcel } from '../../lib/utils/export';
 import { navigate } from '../../router';
@@ -188,32 +188,30 @@ function PaymentsList() {
   ];
 
   return (
-    <>
-      <PageHeader
-        title="Платежи"
-        subtitle="Список платежей"
-        extra={(
-          <Space>
-            <Dropdown
-              menu={{
-                items: [
-                  { key: 'csv', label: 'CSV', onClick: () => handleExport('csv') },
-                  { key: 'excel', label: 'Excel', onClick: () => handleExport('excel') },
-                ],
-              }}
-            >
-              <Button icon={<DownloadOutlined />}>Экспорт</Button>
-            </Dropdown>
-            {canManage ? (
-              <Button type="primary" icon={<PlusOutlined />} onClick={() => navigate('/payments/new')}>
-                Создать платеж
-              </Button>
-            ) : null}
-          </Space>
-        )}
-      />
-      <Card>
-        <Space direction="vertical" size={16} style={{ width: '100%' }}>
+    <BusinessEntityListShell
+      title="Платежи"
+      subtitle="Список платежей"
+      extra={(
+        <Space>
+          <Dropdown
+            menu={{
+              items: [
+                { key: 'csv', label: 'CSV', onClick: () => handleExport('csv') },
+                { key: 'excel', label: 'Excel', onClick: () => handleExport('excel') },
+              ],
+            }}
+          >
+            <Button icon={<DownloadOutlined />}>Экспорт</Button>
+          </Dropdown>
+          {canManage ? (
+            <Button type="primary" icon={<PlusOutlined />} onClick={() => navigate('/payments/new')}>
+              Создать платеж
+            </Button>
+          ) : null}
+        </Space>
+      )}
+    >
+      <Space direction="vertical" size={16} style={{ width: '100%' }}>
 
           <EntityListToolbar
             searchValue={searchText}
@@ -265,9 +263,8 @@ function PaymentsList() {
             onChange={handleTableChange}
             locale={{ emptyText: 'Нет платежей' }}
           />
-        </Space>
-      </Card>
-    </>
+      </Space>
+    </BusinessEntityListShell>
   );
 }
 

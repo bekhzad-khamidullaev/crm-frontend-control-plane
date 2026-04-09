@@ -1,5 +1,5 @@
 import { ArrowLeftOutlined, DeleteOutlined, EditOutlined } from '@ant-design/icons';
-import { App, Button, Card, Descriptions, Modal, Result, Space, Tag, Typography } from 'antd';
+import { App, Button, Card, Descriptions, Modal, Space, Tag, Typography } from 'antd';
 import dayjs from 'dayjs';
 import { useEffect, useState } from 'react';
 
@@ -7,6 +7,7 @@ import { deleteMeeting, getMeeting } from '../../lib/api/meetings.js';
 import { canWrite, hasAnyFeature } from '../../lib/rbac.js';
 import { navigate } from '../../router.js';
 import { BusinessFeatureGateNotice } from '../../components/business/BusinessFeatureGateNotice';
+import { BusinessScreenState } from '../../components/business/BusinessScreenState';
 
 const { Title } = Typography;
 
@@ -44,7 +45,12 @@ export default function MeetingDetail({ id }) {
   };
 
   useEffect(() => {
-    if (canReadFeature) loadData();
+    if (!canReadFeature) {
+      setLoading(false);
+      setData(null);
+      return;
+    }
+    loadData();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [id, canReadFeature]);
 
@@ -58,23 +64,32 @@ export default function MeetingDetail({ id }) {
     }
   };
 
-  if (loading) return <Card loading />;
-
-  if (!data) {
-    return (
-      <Result
-        status="404"
-        title="Встреча не найдена"
-        extra={<Button onClick={() => navigate('/meetings')}>К списку</Button>}
-      />
-    );
-  }
-
   if (!canReadFeature) {
     return (
       <BusinessFeatureGateNotice
         featureCode="tasks.reminders"
         description="Для доступа к деталям встречи включите модуль Reminders в лицензии."
+      />
+    );
+  }
+
+  if (loading) {
+    return (
+      <BusinessScreenState
+        variant="loading"
+        title="Загрузка встречи"
+        description="Собираем карточку встречи и связанные данные."
+      />
+    );
+  }
+
+  if (!data) {
+    return (
+      <BusinessScreenState
+        variant="notFound"
+        title="Встреча не найдена"
+        actionLabel="К списку"
+        onAction={() => navigate('/meetings')}
       />
     );
   }

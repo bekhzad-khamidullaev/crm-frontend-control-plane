@@ -1,11 +1,12 @@
 import { ArrowLeftOutlined, DeleteOutlined, EditOutlined } from '@ant-design/icons';
-import { App, Button, Card, Descriptions, Modal, Result, Space, Tag, Typography } from 'antd';
+import { App, Button, Card, Descriptions, Modal, Space, Tag, Typography } from 'antd';
 import { useEffect, useState } from 'react';
 
 import { deleteWarehouseItem, getWarehouseItem } from '../../lib/api/warehouseItems.js';
 import { canWrite, hasAnyFeature } from '../../lib/rbac.js';
 import { navigate } from '../../router.js';
 import { BusinessFeatureGateNotice } from '../../components/business/BusinessFeatureGateNotice';
+import { BusinessScreenState } from '../../components/business/BusinessScreenState';
 
 const { Title } = Typography;
 
@@ -31,7 +32,12 @@ export default function WarehouseDetail({ id }) {
   };
 
   useEffect(() => {
-    if (canReadFeature) loadItem();
+    if (!canReadFeature) {
+      setLoading(false);
+      setItem(null);
+      return;
+    }
+    loadItem();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [id, canReadFeature]);
 
@@ -45,23 +51,32 @@ export default function WarehouseDetail({ id }) {
     }
   };
 
-  if (loading) return <Card loading />;
-
-  if (!item) {
-    return (
-      <Result
-        status="404"
-        title="Позиция не найдена"
-        extra={<Button onClick={() => navigate('/warehouse')}>К списку</Button>}
-      />
-    );
-  }
-
   if (!canReadFeature) {
     return (
       <BusinessFeatureGateNotice
         featureCode="inventory.lite"
         description="Для доступа к деталям складской позиции включите модуль Inventory Lite в лицензии."
+      />
+    );
+  }
+
+  if (loading) {
+    return (
+      <BusinessScreenState
+        variant="loading"
+        title="Загрузка позиции"
+        description="Собираем карточку складской позиции."
+      />
+    );
+  }
+
+  if (!item) {
+    return (
+      <BusinessScreenState
+        variant="notFound"
+        title="Позиция не найдена"
+        actionLabel="К списку"
+        onAction={() => navigate('/warehouse')}
       />
     );
   }

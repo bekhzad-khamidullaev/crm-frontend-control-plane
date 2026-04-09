@@ -1,8 +1,8 @@
 import { LeadsKanbanBoard } from '@/widgets/leads-kanban';
 import { LeadsTable } from '@/widgets/leads-table';
-import { PageHeader } from '@/shared/ui/PageHeader';
+import { BusinessEntityListShell } from '@/components/business/BusinessEntityListShell';
 import { AppstoreOutlined, PlusOutlined, UnorderedListOutlined } from '@ant-design/icons';
-import { Button, Card, Grid, Segmented, Space } from 'antd';
+import { Button, Grid, Segmented, Space } from 'antd';
 import React, { useEffect, useState } from 'react';
 // @ts-ignore
 import { navigate } from '@/router.js';
@@ -24,9 +24,9 @@ export const LeadsListPage: React.FC = () => {
   const canManage = canWrite();
 
   return (
-    <>
-      <PageHeader
+    <BusinessEntityListShell
         title={t('leadsListPage.title')}
+        subtitle="Управляйте воронкой лидов, фильтрами и быстрым переходом между табличным и канбан режимом."
         extra={(
           <Space direction={isMobile ? 'vertical' : 'horizontal'} size="middle">
             <Segmented
@@ -49,11 +49,9 @@ export const LeadsListPage: React.FC = () => {
             )}
           </Space>
         )}
-      />
-      <Card>
-        {viewMode === 'table' ? <LeadsTable /> : <LeadsKanbanBoard readOnly={!canManage} />}
-      </Card>
-    </>
+      >
+      {viewMode === 'table' ? <LeadsTable /> : <LeadsKanbanBoard readOnly={!canManage} />}
+    </BusinessEntityListShell>
   );
 };
 

@@ -259,6 +259,86 @@ export async function getSMSTemplates(params = {}) {
   return getTemplates({ ...params, type: 'sms' });
 }
 
+// ============================================================================
+// Content Plans (контент-планы и контент-элементы)
+// ============================================================================
+
+export async function getContentPlans(params = {}) {
+  return api.get('/api/content/plans/', { params });
+}
+
+export async function getContentPlan(id) {
+  return api.get(`/api/content/plans/${id}/`);
+}
+
+export async function createContentPlan(data) {
+  return api.post('/api/content/plans/', { body: data });
+}
+
+export async function updateContentPlan(id, data) {
+  return api.put(`/api/content/plans/${id}/`, { body: data });
+}
+
+export async function deleteContentPlan(id) {
+  return api.delete(`/api/content/plans/${id}/`);
+}
+
+export async function getContentItems(params = {}) {
+  return api.get('/api/content/items/', { params });
+}
+
+export async function createContentItem(data) {
+  return api.post('/api/content/items/', { body: data });
+}
+
+export async function updateContentItem(id, data) {
+  return api.put(`/api/content/items/${id}/`, { body: data });
+}
+
+export async function deleteContentItem(id) {
+  return api.delete(`/api/content/items/${id}/`);
+}
+
+export async function transitionContentItem(id, target_stage) {
+  return api.post(`/api/content/items/${id}/transition/`, { body: { target_stage } });
+}
+
+export async function bulkTransitionContentItems(ids, target_stage) {
+  return api.post('/api/content/items/bulk_transition/', { body: { ids, target_stage } });
+}
+
+export async function requestContentItemApproval(id, data = {}) {
+  return api.post(`/api/content/items/${id}/request_approval/`, { body: data });
+}
+
+export async function approveContentItem(id, data = {}) {
+  return api.post(`/api/content/items/${id}/approve/`, { body: data });
+}
+
+export async function rejectContentItem(id, data = {}) {
+  return api.post(`/api/content/items/${id}/reject/`, { body: data });
+}
+
+export async function scheduleContentItem(id, plannedAtIso) {
+  return api.post(`/api/content/items/${id}/schedule/`, { body: { planned_at: plannedAtIso } });
+}
+
+export async function publishContentItemNow(id) {
+  return api.post(`/api/content/items/${id}/publish_now/`, { body: {} });
+}
+
+export async function getContentItemActivity(id) {
+  return api.get(`/api/content/items/${id}/activity/`);
+}
+
+export async function createContentChannelVariant(data) {
+  return api.post('/api/content/channel-variants/', { body: data });
+}
+
+export async function updateContentChannelVariant(id, data) {
+  return api.put(`/api/content/channel-variants/${id}/`, { body: data });
+}
+
 /**
  * Activate campaign
  * @param {number} id - Campaign ID

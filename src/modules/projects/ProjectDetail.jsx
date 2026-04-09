@@ -2,9 +2,10 @@ import React, { useEffect, useMemo, useState } from 'react';
 import { ArrowLeftOutlined, CheckCircleOutlined, EditOutlined, RollbackOutlined, DeleteOutlined, UserOutlined } from '@ant-design/icons';
 import dayjs from 'dayjs';
 
-import { App, Button, Card, Descriptions, Modal, Result, Skeleton, Space, Tabs, Tag, Typography } from 'antd';
+import { App, Button, Card, Descriptions, Modal, Space, Tabs, Tag, Typography } from 'antd';
 
 import ActivityLog from '../../components/ActivityLog';
+import { BusinessScreenState } from '../../components/business/BusinessScreenState';
 import EntitySelect from '../../components/EntitySelect.jsx';
 import { getProject, deleteProject, getUsers, projectsApi } from '../../lib/api/client';
 import { getProjectStages, getCrmTags } from '../../lib/api/reference';
@@ -147,27 +148,35 @@ function ProjectDetail({ id }) {
   );
 
   if (loading) {
-    return <Skeleton active paragraph={{ rows: 8 }} />;
+    return (
+      <BusinessScreenState
+        variant="loading"
+        title="Загрузка проекта"
+        description="Открываем карточку проекта."
+      />
+    );
   }
 
   if (loadError) {
     return (
-      <Result
-        status="error"
+      <BusinessScreenState
+        variant="error"
         title={t('projectDetailPage.loadError.title')}
-        subTitle={t('projectDetailPage.loadError.subtitle')}
-        extra={<Button onClick={loadProject}>{t('projectDetailPage.loadError.retry')}</Button>}
+        description={t('projectDetailPage.loadError.subtitle')}
+        actionLabel={t('projectDetailPage.loadError.retry')}
+        onAction={loadProject}
       />
     );
   }
 
   if (!project) {
     return (
-      <Result
-        status="404"
+      <BusinessScreenState
+        variant="notFound"
         title={t('projectDetailPage.notFound.title')}
-        subTitle={t('projectDetailPage.notFound.subtitle')}
-        extra={<Button onClick={() => navigate('/projects')}>{t('projectDetailPage.notFound.back')}</Button>}
+        description={t('projectDetailPage.notFound.subtitle')}
+        actionLabel={t('projectDetailPage.notFound.back')}
+        onAction={() => navigate('/projects')}
       />
     );
   }

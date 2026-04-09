@@ -3,8 +3,9 @@ import { CheckOutlined, EditOutlined, EyeOutlined, DeleteOutlined, CloseOutlined
 import { useEffect, useMemo, useState } from 'react';
 
 import { PlusOutlined } from '@ant-design/icons';
-import { App, Button, Card, DatePicker, Modal, Select, Space, Table, Tag, Typography } from 'antd';
+import { App, Button, DatePicker, Modal, Select, Space, Table, Tag, Typography } from 'antd';
 
+import { BusinessEntityListShell } from '../../components/business/BusinessEntityListShell';
 import EntitySelect from '../../components/EntitySelect.jsx';
 import { getUser, getUsers } from '../../lib/api';
 import {
@@ -16,7 +17,6 @@ import {
 import { canWrite } from '../../lib/rbac.js';
 import { navigate } from '../../router';
 import { EntityListToolbar } from '../../shared/ui/EntityListToolbar';
-import { PageHeader } from '../../shared/ui/PageHeader';
 
 const { RangePicker } = DatePicker;
 const { Text } = Typography;
@@ -249,8 +249,7 @@ export default function RemindersList() {
   }
 
   return (
-    <>
-      <PageHeader
+    <BusinessEntityListShell
         title="Напоминания"
         subtitle="Список напоминаний"
         extra={
@@ -260,70 +259,68 @@ export default function RemindersList() {
             </Button>
           ) : null
         }
-      />
-      <Card>
-        <Space direction="vertical" size={16} style={{ width: '100%' }}>
+      >
+      <Space direction="vertical" size={16} style={{ width: '100%' }}>
 
-          <EntityListToolbar
-            searchValue={searchText}
-            searchPlaceholder="Поиск по теме или описанию"
-            onSearchChange={setSearchText}
-            filters={(
-              <Space wrap>
-                <Select
-                  allowClear
-                  placeholder="Активность"
-                  style={{ minWidth: 150 }}
-                  value={activeFilter}
-                  options={[
-                    { value: true, label: 'Активные' },
-                    { value: false, label: 'Неактивные' },
-                  ]}
-                  onChange={(v) => setActiveFilter(v ?? null)}
-                />
-                <EntitySelect
-                  placeholder="Владелец"
-                  value={ownerFilter}
-                  onChange={setOwnerFilter}
-                  fetchList={getUsers}
-                  fetchById={getUser}
-                  allowClear
-                />
-                <Select
-                  allowClear
-                  placeholder="Тип объекта"
-                  value={contentTypeFilter}
-                  options={contentTypeOptions}
-                  onChange={(val) => setContentTypeFilter(val ?? null)}
-                  style={{ minWidth: 180 }}
-                />
-                <RangePicker
-                  format="DD.MM.YYYY"
-                  value={dateRange}
-                  onChange={(vals) => setDateRange(vals || null)}
-                />
-              </Space>
-            )}
-            onRefresh={fetchData}
-            onReset={handleResetFilters}
-            loading={loading}
-            resultSummary={`Всего: ${pagination.total}`}
-            activeFilters={activeFilters}
-          />
+        <EntityListToolbar
+          searchValue={searchText}
+          searchPlaceholder="Поиск по теме или описанию"
+          onSearchChange={setSearchText}
+          filters={(
+            <Space wrap>
+              <Select
+                allowClear
+                placeholder="Активность"
+                style={{ minWidth: 150 }}
+                value={activeFilter}
+                options={[
+                  { value: true, label: 'Активные' },
+                  { value: false, label: 'Неактивные' },
+                ]}
+                onChange={(v) => setActiveFilter(v ?? null)}
+              />
+              <EntitySelect
+                placeholder="Владелец"
+                value={ownerFilter}
+                onChange={setOwnerFilter}
+                fetchList={getUsers}
+                fetchById={getUser}
+                allowClear
+              />
+              <Select
+                allowClear
+                placeholder="Тип объекта"
+                value={contentTypeFilter}
+                options={contentTypeOptions}
+                onChange={(val) => setContentTypeFilter(val ?? null)}
+                style={{ minWidth: 180 }}
+              />
+              <RangePicker
+                format="DD.MM.YYYY"
+                value={dateRange}
+                onChange={(vals) => setDateRange(vals || null)}
+              />
+            </Space>
+          )}
+          onRefresh={fetchData}
+          onReset={handleResetFilters}
+          loading={loading}
+          resultSummary={`Всего: ${pagination.total}`}
+          activeFilters={activeFilters}
+        />
 
-          {error ? <Text type="danger">{error}</Text> : null}
+        {error ? <Text type="danger">{error}</Text> : null}
 
-          <Table
-            rowKey="id"
-            columns={columns}
-            dataSource={data}
-            loading={loading}
-            pagination={{ ...pagination, showSizeChanger: true, showTotal: (total) => `Всего: ${total}` }}
-            onChange={handleTableChange}
-            locale={{ emptyText: 'Нет напоминаний' }}
-          />
-        </Space>
-      </Card>
+        <Table
+          rowKey="id"
+          columns={columns}
+          dataSource={data}
+          loading={loading}
+          pagination={{ ...pagination, showSizeChanger: true, showTotal: (total) => `Всего: ${total}` }}
+          onChange={handleTableChange}
+          locale={{ emptyText: 'Нет напоминаний' }}
+        />
+      </Space>
 
       <Modal
         title="Удалить напоминание?"
@@ -336,6 +333,6 @@ export default function RemindersList() {
       >
         Действие нельзя отменить.
       </Modal>
-    </>
+    </BusinessEntityListShell>
   );
 }

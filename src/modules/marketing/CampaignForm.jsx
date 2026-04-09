@@ -1,14 +1,14 @@
 import React, { useState, useEffect } from 'react';
-import { Form, Input, Card, message, DatePicker, Row, Col, Switch, Space, Button, Result, Skeleton, Typography } from 'antd';
+import { Form, Input, Card, message, DatePicker, Row, Col, Switch, Space } from 'antd';
 import { RocketOutlined } from '@ant-design/icons';
 import dayjs from 'dayjs';
 import { navigate } from '../../router';
+import { BusinessFormHeader } from '../../components/business/BusinessFormHeader';
+import { BusinessScreenState } from '../../components/business/BusinessScreenState';
 import { getCampaign, createCampaign, updateCampaign, getSegments, getSegment, getTemplates, getTemplate } from '../../lib/api/marketing';
 import { canWrite } from '../../lib/rbac';
 import EntitySelect from '../../components/EntitySelect';
 import FormPermissionGuard from '../../components/permissions/FormPermissionGuard';
-
-const { Title, Text } = Typography;
 
 function CampaignForm({ id }) {
   const [form] = Form.useForm();
@@ -62,15 +62,24 @@ function CampaignForm({ id }) {
     }
   };
 
-  if (loading) return <Skeleton active paragraph={{ rows: 8 }} />;
+  if (loading) {
+    return (
+      <BusinessScreenState
+        variant="loading"
+        title="Загрузка кампании"
+        description="Подготавливаем форму кампании для редактирования."
+      />
+    );
+  }
 
   if (isEdit && loadError) {
     return (
-      <Result
-        status="error"
-        title="Не удалось загрузить кампанию для редактирования"
-        subTitle="Попробуйте повторить загрузку"
-        extra={<Button onClick={loadCampaign}>Повторить</Button>}
+      <BusinessScreenState
+        variant="error"
+        title="Не удалось загрузить кампанию"
+        description="Попробуйте повторить загрузку."
+        actionLabel="Повторить"
+        onAction={loadCampaign}
       />
     );
   }
@@ -83,25 +92,17 @@ function CampaignForm({ id }) {
       description="У вас нет прав для создания или редактирования кампаний."
     >
       <Space direction="vertical" size={16} style={{ width: '100%' }}>
-        <Space wrap style={{ width: '100%', justifyContent: 'space-between' }}>
-          <Button onClick={() => navigate('/campaigns')}>Назад</Button>
-          <Space>
-            <Button onClick={() => navigate('/campaigns')}>Отмена</Button>
-            {canManage && (
-              <Button type="primary" loading={saving} onClick={() => form.submit()}>
-                {isEdit ? 'Сохранить кампанию' : 'Создать кампанию'}
-              </Button>
-            )}
-          </Space>
-        </Space>
+        <BusinessFormHeader
+          formId="campaign-form"
+          title={isEdit ? 'Редактирование кампании' : 'Новая кампания'}
+          subtitle="Создание и настройка маркетинговой кампании"
+          submitLabel={isEdit ? 'Сохранить кампанию' : 'Создать кампанию'}
+          isSubmitting={saving}
+          onBack={() => navigate('/campaigns')}
+        />
 
         <Card>
-          <Title level={3} style={{ marginTop: 0 }}>{isEdit ? 'Редактирование кампании' : 'Новая кампания'}</Title>
-          <Text type="secondary">Создание и настройка маркетинговой кампании</Text>
-        </Card>
-
-        <Card>
-          <Form form={form} layout="vertical" onFinish={handleSubmit}>
+          <Form id="campaign-form" form={form} layout="vertical" onFinish={handleSubmit}>
             <Form.Item label="Название кампании" name="name" rules={[{ required: true, message: 'Введите название кампании' }]}>
               <Input prefix={<RocketOutlined />} placeholder="Например: Летняя акция 2026" />
             </Form.Item>

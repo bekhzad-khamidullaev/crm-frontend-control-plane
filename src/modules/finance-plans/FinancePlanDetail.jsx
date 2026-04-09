@@ -1,5 +1,5 @@
 import { ArrowLeftOutlined, DeleteOutlined, EditOutlined } from '@ant-design/icons';
-import { App, Button, Card, Descriptions, Modal, Result, Space, Tag, Typography } from 'antd';
+import { App, Button, Card, Descriptions, Modal, Space, Tag, Typography } from 'antd';
 import dayjs from 'dayjs';
 import { useEffect, useState } from 'react';
 
@@ -8,6 +8,7 @@ import { canWrite, hasAnyFeature } from '../../lib/rbac.js';
 import { navigate } from '../../router.js';
 import { formatCurrencyForRecord } from '../../lib/utils/format';
 import { BusinessFeatureGateNotice } from '../../components/business/BusinessFeatureGateNotice';
+import { BusinessScreenState } from '../../components/business/BusinessScreenState';
 
 const { Title } = Typography;
 
@@ -39,7 +40,12 @@ export default function FinancePlanDetail({ id }) {
   };
 
   useEffect(() => {
-    if (canReadFeature) loadData();
+    if (!canReadFeature) {
+      setLoading(false);
+      setData(null);
+      return;
+    }
+    loadData();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [id, canReadFeature]);
 
@@ -53,23 +59,32 @@ export default function FinancePlanDetail({ id }) {
     }
   };
 
-  if (loading) return <Card loading />;
-
-  if (!data) {
-    return (
-      <Result
-        status="404"
-        title="Финплан не найден"
-        extra={<Button onClick={() => navigate('/finance-planning')}>К списку</Button>}
-      />
-    );
-  }
-
   if (!canReadFeature) {
     return (
       <BusinessFeatureGateNotice
         featureCode="billing.invoicing"
         description="Для доступа к деталям финплана включите модуль Invoicing в лицензии."
+      />
+    );
+  }
+
+  if (loading) {
+    return (
+      <BusinessScreenState
+        variant="loading"
+        title="Загрузка финплана"
+        description="Собираем карточку финансового плана."
+      />
+    );
+  }
+
+  if (!data) {
+    return (
+      <BusinessScreenState
+        variant="notFound"
+        title="Финплан не найден"
+        actionLabel="К списку"
+        onAction={() => navigate('/finance-planning')}
       />
     );
   }

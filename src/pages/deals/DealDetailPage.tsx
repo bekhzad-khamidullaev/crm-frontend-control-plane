@@ -1,7 +1,8 @@
 import { useDeal } from '@/entities/deal/api/queries';
 import { navigate } from '@/router.js';
+import { BusinessScreenState } from '@/components/business/BusinessScreenState';
 import { BellOutlined, EditOutlined, PlayCircleOutlined, RobotOutlined } from '@ant-design/icons';
-import { Badge, Button, Card, Descriptions, Result, Space, Spin, Tag, Tabs, Typography } from 'antd';
+import { Badge, Button, Card, Descriptions, Space, Tag, Tabs, Typography } from 'antd';
 import React from 'react';
 // @ts-ignore
 import { formatCurrencyForRecord } from '@/lib/utils/format.js';
@@ -37,15 +38,22 @@ export const DealDetailPage: React.FC<DealDetailPageProps> = ({ id }) => {
   const openBusinessProcesses = () => navigate(`/business-processes?context_type=deal&context_id=${dealId}`);
 
   if (isLoading) {
-    return <Spin size="large" style={{ display: 'block', margin: '50px auto' }} />;
+    return (
+      <BusinessScreenState
+        variant="loading"
+        title="Загрузка сделки"
+        description="Собираем карточку сделки и связанные данные."
+      />
+    );
   }
 
   if (!deal) {
     return (
-      <Result
-        status="404"
+      <BusinessScreenState
+        variant="notFound"
         title={t('dealDetailPage.notFound.title')}
-        extra={<Button onClick={() => navigate('/deals')}>{t('dealDetailPage.notFound.back')}</Button>}
+        actionLabel={t('dealDetailPage.notFound.back')}
+        onAction={() => navigate('/deals')}
       />
     );
   }

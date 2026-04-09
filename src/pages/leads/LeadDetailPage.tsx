@@ -1,8 +1,9 @@
 import { BankOutlined, BellOutlined, CheckCircleOutlined, ClockCircleOutlined, EditOutlined, LinkOutlined, MailOutlined, PhoneOutlined, PlayCircleOutlined, ReloadOutlined, RobotOutlined, UserOutlined } from '@ant-design/icons';
-import { Alert, App, Avatar, Button, Card, Descriptions, Empty, List, Modal, Result, Space, Spin, Steps, Tag, Tabs, Timeline, Typography } from 'antd';
+import { Alert, App, Avatar, Button, Card, Descriptions, Empty, List, Modal, Space, Spin, Steps, Tag, Tabs, Timeline, Typography } from 'antd';
 import dayjs from 'dayjs';
 import React from 'react';
 import { useDeals } from '@/entities/deal';
+import { BusinessScreenState } from '@/components/business/BusinessScreenState';
 // @ts-ignore
 import { useLead } from '@/entities/lead/api/queries';
 import { LeadsService } from '@/shared/api/generated/services/LeadsService';
@@ -160,8 +161,25 @@ export const LeadDetailPage: React.FC<LeadDetailPageProps> = ({ id }) => {
     });
   };
 
-  if (isLoading) return <Spin size="large" style={{ display: 'block', margin: '50px auto' }} />;
-  if (!lead) return <Result status="404" title="Лид не найден" extra={<Button onClick={() => navigate('/leads')}>К лидам</Button>} />;
+  if (isLoading) {
+    return (
+      <BusinessScreenState
+        variant="loading"
+        title="Загрузка лида"
+        description="Собираем карточку лида, историю и связанные данные."
+      />
+    );
+  }
+  if (!lead) {
+    return (
+      <BusinessScreenState
+        variant="notFound"
+        title="Лид не найден"
+        actionLabel="К лидам"
+        onAction={() => navigate('/leads')}
+      />
+    );
+  }
 
   const leadSourceName =
     insights?.lead?.lead_source_name

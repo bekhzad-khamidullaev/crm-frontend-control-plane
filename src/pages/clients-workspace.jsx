@@ -14,8 +14,8 @@ import {
   patchDeal,
 } from '../lib/api/deals.js';
 import { deletePayment, getPayments, patchPayment } from '../lib/api/payments.js';
+import { BusinessEntityListShell } from '../components/business/BusinessEntityListShell';
 import { EntityListToolbar } from '../shared/ui/EntityListToolbar';
-import { PageHeader } from '../shared/ui/PageHeader';
 import { WorkspaceSummaryStrip, WorkspaceTabsShell } from '../shared/ui/WorkspaceRhythm';
 import { containsText, formatDateSafe, fromMoneyMinor, toMoneyMinor, toResults } from './workspace-utils.js';
 import { formatCurrency } from '../lib/utils/format.js';
@@ -473,11 +473,11 @@ export default function ClientsWorkspacePage() {
   );
 
   return (
-    <Space direction="vertical" size={10} style={{ width: '100%' }}>
-      <PageHeader
-        title="Клиенты и договоры"
-        subtitle="Единый реестр клиентов, продаж, оплат и задолженностей."
-      />
+    <BusinessEntityListShell
+      title="Клиенты и договоры"
+      subtitle="Единый реестр клиентов, продаж, оплат и задолженностей."
+    >
+      <Space direction="vertical" size={10} style={{ width: '100%' }}>
       <EntityListToolbar
         searchValue={search}
         searchPlaceholder="Поиск по клиентам, сделкам и оплатам"
@@ -1292,6 +1292,7 @@ export default function ClientsWorkspacePage() {
           </Form.Item>
         </Form>
       </Modal>
-    </Space>
+      </Space>
+    </BusinessEntityListShell>
   );
 }

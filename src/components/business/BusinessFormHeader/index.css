@@ -1,0 +1,39 @@
+.component_BusinessFormHeader_root {
+  width: 100%;
+  margin-bottom: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.component_BusinessFormHeader_topRow {
+  width: 100%;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 10px;
+}
+
+.component_BusinessFormHeader_topRow_mobile {
+  flex-direction: column;
+  align-items: stretch;
+}
+
+.component_BusinessFormHeader_backButton,
+.component_BusinessFormHeader_submitButton {
+  border-radius: 10px;
+}
+
+.component_BusinessFormHeader_submitButton {
+  min-width: 168px;
+}
+
+.component_BusinessFormHeader_title {
+  margin: 0 !important;
+}
+
+.component_BusinessFormHeader_subtitle {
+  margin: 0 !important;
+  display: block;
+}
+

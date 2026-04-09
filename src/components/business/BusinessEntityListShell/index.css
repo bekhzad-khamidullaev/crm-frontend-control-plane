@@ -1,0 +1,50 @@
+.component_BusinessEntityListShell_card {
+  border-radius: 12px;
+  border: 1px solid var(--crm-app-border, #e2e8f0);
+  background: var(--crm-app-surface, #ffffff);
+  box-shadow: var(--crm-app-shadow, 0 12px 30px rgba(15, 23, 42, 0.08));
+  overflow: hidden;
+}
+
+.component_BusinessEntityListShell_card > .ant-card-body {
+  padding: 0;
+}
+
+.component_BusinessEntityListShell_stack {
+  width: 100%;
+}
+
+.component_BusinessEntityListShell_toolbar {
+  padding: 20px;
+  border-bottom: 1px solid var(--crm-app-border, #e2e8f0);
+  background: var(--crm-app-surface-solid, #ffffff);
+}
+
+.component_BusinessEntityListShell_toolbar_mobile {
+  padding: 16px;
+}
+
+.component_BusinessEntityListShell_error {
+  padding: 20px;
+  background: var(--crm-app-surface-solid, #ffffff);
+}
+
+.component_BusinessEntityListShell_error_mobile {
+  padding: 16px;
+}
+
+.component_BusinessEntityListShell_errorAlert {
+  border-radius: 10px;
+}
+
+.component_BusinessEntityListShell_content {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  padding: 20px;
+  background: var(--crm-app-surface-solid, #ffffff);
+}
+
+.component_BusinessEntityListShell_content_mobile {
+  padding: 16px;
+}

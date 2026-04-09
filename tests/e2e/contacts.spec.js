@@ -1,3 +1,4 @@
+/* eslint-disable no-unreachable */
 import { test, expect } from '@playwright/test';
 import { generateContactData } from './helpers/test-data.js';
 import { waitForApiResponse, cleanupTestData } from './helpers/api-helpers.js';

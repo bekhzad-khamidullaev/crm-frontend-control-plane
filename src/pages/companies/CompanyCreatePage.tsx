@@ -1,7 +1,7 @@
 import { CompanyForm } from '@/widgets/company-form';
 import { useCreateCompany } from '@/entities/company/api/mutations';
 import { navigate } from '@/router.js';
-import { Space } from 'antd';
+import React from 'react';
 
 export const CompanyCreatePage: React.FC = () => {
   const createMutation = useCreateCompany();
@@ -21,13 +21,11 @@ export const CompanyCreatePage: React.FC = () => {
   };
 
   return (
-    <Space direction="vertical" size={16} style={{ width: '100%' }}>
-      <CompanyForm
-        onSubmit={handleSubmit}
-        isLoading={createMutation.isPending}
-        isEdit={false}
-      />
-    </Space>
+    <CompanyForm
+      onSubmit={handleSubmit}
+      isLoading={createMutation.isPending}
+      isEdit={false}
+    />
   );
 };
 export default CompanyCreatePage;

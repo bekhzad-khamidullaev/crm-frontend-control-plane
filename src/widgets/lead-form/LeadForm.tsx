@@ -9,15 +9,13 @@ import {
   Select,
   Switch,
   DatePicker,
-  Spin,
   Modal,
-  Button,
-  Space,
   Typography,
   Divider,
 } from 'antd';
-import { ArrowLeftOutlined, SaveOutlined } from '@ant-design/icons';
+import { BusinessFormHeader } from '@/components/business/BusinessFormHeader';
 import dayjs from 'dayjs';
+import { BusinessScreenState } from '@/components/business/BusinessScreenState';
 import { useCreateLead, useUpdateLead } from '@/entities/lead/api/mutations';
 import { useLead as useLeadQuery } from '@/entities/lead/api/queries';
 // @ts-ignore
@@ -117,34 +115,40 @@ export const LeadForm: React.FC<LeadFormProps> = ({ id }) => {
   };
 
   if (isEdit && isLoadingLead) {
-    return <Spin size="large" style={{ display: 'block', margin: '50px auto' }} />;
+    return (
+      <BusinessScreenState
+        variant="loading"
+        title="Загрузка лида"
+        description="Подготавливаем карточку лида к редактированию."
+      />
+    );
+  }
+
+  if (isEdit && !lead) {
+    return (
+      <BusinessScreenState
+        variant="notFound"
+        title="Лид не найден"
+        actionLabel="К лидам"
+        onAction={() => navigate('/leads')}
+      />
+    );
   }
 
   return (
     <div>
-      <Space wrap style={{ marginBottom: 16, width: '100%', justifyContent: 'space-between' }}>
-        <Button icon={<ArrowLeftOutlined />} onClick={handleLeave}>
-          Назад
-        </Button>
-        <Button
-          type="primary"
-          icon={<SaveOutlined />}
-          htmlType="submit"
-          form={formId}
-          loading={createMutation.isPending || updateMutation.isPending}
-        >
-          {isEdit ? 'Сохранить изменения' : 'Создать лид'}
-        </Button>
-      </Space>
-
-      <Title level={2} style={{ marginBottom: 4 }}>
-        {isEdit ? 'Редактировать лид' : 'Создать новый лид'}
-      </Title>
-      <Text type="secondary">
-        {isEdit
-          ? 'Обновите данные лида и подготовьте его к следующему шагу воронки.'
-          : 'Соберите минимум данных, чтобы не терять скорость входящей обработки.'}
-      </Text>
+      <BusinessFormHeader
+        formId={formId}
+        title={isEdit ? 'Редактировать лид' : 'Создать новый лид'}
+        subtitle={
+          isEdit
+            ? 'Обновите данные лида и подготовьте его к следующему шагу воронки.'
+            : 'Соберите минимум данных, чтобы не терять скорость входящей обработки.'
+        }
+        submitLabel={isEdit ? 'Сохранить изменения' : 'Создать лид'}
+        isSubmitting={createMutation.isPending || updateMutation.isPending}
+        onBack={handleLeave}
+      />
 
       <Card style={{ marginTop: 16 }}>
         <Form

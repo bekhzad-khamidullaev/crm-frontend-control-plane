@@ -41,8 +41,10 @@ export function parseLicenseRestrictionPayload(payload) {
 
 export function emitLicenseRestriction(restriction) {
   if (typeof window === 'undefined' || !restriction) return;
+  const BrowserCustomEvent = window.CustomEvent;
+  if (typeof BrowserCustomEvent !== 'function') return;
   window.dispatchEvent(
-    new CustomEvent(LICENSE_RESTRICTION_EVENT, {
+    new BrowserCustomEvent(LICENSE_RESTRICTION_EVENT, {
       detail: {
         code: restriction.code || 'LICENSE_FEATURE_DISABLED',
         feature: restriction.feature || 'unknown.feature',

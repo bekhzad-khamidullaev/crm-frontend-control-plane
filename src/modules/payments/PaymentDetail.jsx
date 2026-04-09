@@ -2,7 +2,8 @@ import dayjs from 'dayjs';
 import { ArrowLeftOutlined, CreditCardOutlined, EditOutlined, DeleteOutlined } from '@ant-design/icons';
 import { useEffect, useState } from 'react';
 
-import { App, Button, Card, Descriptions, Modal, Result, Skeleton, Space, Tag, Typography } from 'antd';
+import { App, Button, Card, Descriptions, Modal, Space, Tag, Typography } from 'antd';
+import { BusinessScreenState } from '../../components/business/BusinessScreenState';
 
 import { deletePayment, getPayment } from '../../lib/api/payments';
 import { canWrite } from '../../lib/rbac.js';
@@ -54,16 +55,23 @@ export default function PaymentDetail({ id }) {
   };
 
   if (loading) {
-    return <Skeleton active paragraph={{ rows: 6 }} />;
+    return (
+      <BusinessScreenState
+        variant="loading"
+        title="Загрузка платежа"
+        description="Собираем карточку платежа и связанные данные."
+      />
+    );
   }
 
   if (!data) {
     return (
-      <Result
-        status="404"
+      <BusinessScreenState
+        variant="notFound"
         title="Платеж не найден"
-        subTitle="Возможно, запись удалена или у вас нет доступа"
-        extra={<Button onClick={() => navigate('/payments')}>Вернуться к платежам</Button>}
+        description="Возможно, запись удалена или у вас нет доступа."
+        actionLabel="Вернуться к платежам"
+        onAction={() => navigate('/payments')}
       />
     );
   }

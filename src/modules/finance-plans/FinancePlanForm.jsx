@@ -1,8 +1,9 @@
-import { ArrowLeftOutlined, SaveOutlined } from '@ant-design/icons';
-import { App, Button, Card, DatePicker, Form, Input, InputNumber, Result, Select, Skeleton, Space } from 'antd';
+import { App, Button, Card, DatePicker, Form, Input, InputNumber, Select, Space } from 'antd';
 import dayjs from 'dayjs';
 import { useEffect, useState } from 'react';
 
+import { BusinessFormHeader } from '../../components/business/BusinessFormHeader';
+import { BusinessScreenState } from '../../components/business/BusinessScreenState';
 import FormPermissionGuard from '../../components/permissions/FormPermissionGuard';
 import { BusinessFeatureGateNotice } from '../../components/business/BusinessFeatureGateNotice';
 import ReferenceSelect from '../../components/ReferenceSelect.jsx';
@@ -81,17 +82,24 @@ export default function FinancePlanForm({ id }) {
     }
   };
 
-  if (loading) return <Skeleton active paragraph={{ rows: 8 }} />;
+  if (loading) {
+    return (
+      <BusinessScreenState
+        variant="loading"
+        title="Загрузка финплана"
+        description="Подготавливаем форму финансового плана для редактирования."
+      />
+    );
+  }
 
   if (isEdit && loadError) {
     return (
-      <Result
-        status="error"
+      <BusinessScreenState
+        variant="error"
         title="Не удалось загрузить финплан"
-        extra={[
-          <Button key="retry" onClick={loadPlan}>Повторить</Button>,
-          <Button key="list" type="primary" onClick={() => navigate('/finance-planning')}>К списку</Button>,
-        ]}
+        description="Повторите загрузку или вернитесь к списку."
+        actionLabel="Повторить"
+        onAction={loadPlan}
       />
     );
   }
@@ -113,12 +121,18 @@ export default function FinancePlanForm({ id }) {
       description="У вас нет прав для создания или редактирования финплана."
     >
       <Space direction="vertical" style={{ width: '100%' }} size={16}>
-        <Button icon={<ArrowLeftOutlined />} onClick={() => navigate('/finance-planning')}>
-          Назад
-        </Button>
+        <BusinessFormHeader
+          formId="finance-plan-form"
+          title={isEdit ? 'Редактирование финплана' : 'Новый финплан'}
+          subtitle="Планируйте и сравнивайте плановые и фактические показатели."
+          submitLabel={isEdit ? 'Сохранить' : 'Создать'}
+          isSubmitting={saving}
+          onBack={() => navigate('/finance-planning')}
+        />
 
-        <Card title={isEdit ? 'Редактирование финплана' : 'Новый финплан'}>
+        <Card>
           <Form
+            id="finance-plan-form"
             form={form}
             layout="vertical"
             initialValues={{
@@ -166,9 +180,6 @@ export default function FinancePlanForm({ id }) {
             </Form.Item>
 
             <Space>
-              <Button type="primary" htmlType="submit" icon={<SaveOutlined />} loading={saving}>
-                {isEdit ? 'Сохранить' : 'Создать'}
-              </Button>
               <Button onClick={() => navigate('/finance-planning')}>Отмена</Button>
             </Space>
           </Form>

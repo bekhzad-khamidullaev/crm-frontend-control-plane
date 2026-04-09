@@ -1,6 +1,7 @@
 import { DeleteOutlined, EditOutlined } from '@ant-design/icons';
-import { App, Button, Card, Descriptions, Modal, Result, Skeleton, Space, Tag, Typography } from 'antd';
+import { App, Button, Card, Descriptions, Modal, Space, Tag, Typography } from 'antd';
 import { useEffect, useState } from 'react';
+import { BusinessScreenState } from '../../components/business/BusinessScreenState';
 import { deleteProduct, getProduct } from '../../lib/api/products';
 import { canWrite } from '../../lib/rbac.js';
 import { formatCurrencyForRecord, resolveCurrencyCode } from '../../lib/utils/format';
@@ -54,14 +55,37 @@ export default function ProductDetail({ id }) {
     });
   };
 
-  if (loading) return <Skeleton active paragraph={{ rows: 8 }} />;
+  if (loading) {
+    return (
+      <BusinessScreenState
+        variant="loading"
+        title="Загрузка продукта"
+        description="Открываем карточку продукта."
+      />
+    );
+  }
 
   if (loadError) {
-    return <Result status="error" title="Не удалось открыть продукт" subTitle="Попробуйте повторить загрузку" extra={<Button onClick={fetchData}>Повторить</Button>} />;
+    return (
+      <BusinessScreenState
+        variant="error"
+        title="Не удалось открыть продукт"
+        description="Попробуйте повторить загрузку."
+        actionLabel="Повторить"
+        onAction={fetchData}
+      />
+    );
   }
 
   if (!data) {
-    return <Result status="404" title="Продукт не найден" extra={<Button onClick={() => navigate('/products')}>К каталогу продуктов</Button>} />;
+    return (
+      <BusinessScreenState
+        variant="notFound"
+        title="Продукт не найден"
+        actionLabel="К каталогу продуктов"
+        onAction={() => navigate('/products')}
+      />
+    );
   }
   const currencyCode = resolveCurrencyCode(data, { fallback: null });
 

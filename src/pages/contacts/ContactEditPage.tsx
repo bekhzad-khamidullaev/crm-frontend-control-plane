@@ -1,9 +1,10 @@
 import { useUpdateContact } from '@/entities/contact/api/mutations';
 import { useContact } from '@/entities/contact/api/queries';
 import { ContactFormData } from '@/entities/contact/model/schema';
+import { BusinessScreenState } from '@/components/business/BusinessScreenState';
 import { navigate } from '@/router.js';
 import { ContactForm } from '@/widgets/contact-form';
-import { message, Spin } from 'antd';
+import { message } from 'antd';
 import React from 'react';
 
 export interface ContactEditPageProps {
@@ -34,7 +35,24 @@ export const ContactEditPage: React.FC<ContactEditPageProps> = ({ id }) => {
   };
 
   if (isLoadingContact) {
-      return <Spin size="large" style={{ display: 'block', margin: '50px auto' }} />;
+    return (
+      <BusinessScreenState
+        variant="loading"
+        title="Загрузка контакта"
+        description="Подготавливаем данные контакта для редактирования."
+      />
+    );
+  }
+
+  if (!contact) {
+    return (
+      <BusinessScreenState
+        variant="notFound"
+        title="Контакт не найден"
+        actionLabel="К контактам"
+        onAction={() => navigate('/contacts')}
+      />
+    );
   }
 
   return (

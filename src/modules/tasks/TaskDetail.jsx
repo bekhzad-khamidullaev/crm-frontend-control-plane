@@ -2,9 +2,10 @@ import React, { useEffect, useMemo, useState } from 'react';
 import { ArrowLeftOutlined, CalendarOutlined, EditOutlined, DeleteOutlined, UserOutlined } from '@ant-design/icons';
 import dayjs from 'dayjs';
 
-import { App, Button, Card, Descriptions, Empty, Result, Skeleton, Space, Tabs, Tag, Typography } from 'antd';
+import { App, Button, Card, Descriptions, Space, Tabs, Tag, Typography } from 'antd';
 
 import ActivityLog from '../../components/ActivityLog';
+import { BusinessScreenState } from '../../components/business/BusinessScreenState';
 import { getTask, deleteTask, getUsers } from '../../lib/api/client';
 import { getTaskStages, getTaskTags } from '../../lib/api/reference';
 import { t } from '../../lib/i18n';
@@ -96,20 +97,23 @@ function TaskDetail({ id }) {
   );
 
   if (loading) {
-    return <Skeleton active paragraph={{ rows: 8 }} />;
+    return (
+      <BusinessScreenState
+        variant="loading"
+        title="Загрузка задачи"
+        description="Открываем карточку задачи."
+      />
+    );
   }
 
   if (!task) {
     return (
-      <Result
-        status="404"
+      <BusinessScreenState
+        variant="notFound"
         title={t('taskDetailPage.notFound.title')}
-        subTitle={t('taskDetailPage.notFound.subtitle')}
-        extra={
-          <Button type="primary" onClick={() => navigate('/tasks')}>
-            {t('taskDetailPage.notFound.back')}
-          </Button>
-        }
+        description={t('taskDetailPage.notFound.subtitle')}
+        actionLabel={t('taskDetailPage.notFound.back')}
+        onAction={() => navigate('/tasks')}
       />
     );
   }

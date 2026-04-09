@@ -1,10 +1,11 @@
-import { ArrowLeftOutlined, SaveOutlined } from '@ant-design/icons';
-import { App, Button, Card, DatePicker, Form, Input, Result, Select, Skeleton, Space } from 'antd';
+import { App, Button, Card, DatePicker, Form, Input, Select, Space } from 'antd';
 import dayjs from 'dayjs';
 import { useEffect, useState } from 'react';
 
 import EntitySelect from '../../components/EntitySelect.jsx';
 import { BusinessFeatureGateNotice } from '../../components/business/BusinessFeatureGateNotice';
+import { BusinessFormHeader } from '../../components/business/BusinessFormHeader';
+import { BusinessScreenState } from '../../components/business/BusinessScreenState';
 import FormPermissionGuard from '../../components/permissions/FormPermissionGuard.jsx';
 import { getCompany, getCompanies, getContact, getContacts, getDeal, getDeals } from '../../lib/api/client.js';
 import {
@@ -90,17 +91,24 @@ export default function MeetingForm({ id }) {
     }
   };
 
-  if (loading) return <Skeleton active paragraph={{ rows: 8 }} />;
+  if (loading) {
+    return (
+      <BusinessScreenState
+        variant="loading"
+        title="Загрузка встречи"
+        description="Подготавливаем форму встречи для редактирования."
+      />
+    );
+  }
 
   if (isEdit && loadError) {
     return (
-      <Result
-        status="error"
+      <BusinessScreenState
+        variant="error"
         title="Не удалось загрузить встречу"
-        extra={[
-          <Button key="retry" onClick={loadMeeting}>Повторить</Button>,
-          <Button key="list" type="primary" onClick={() => navigate('/meetings')}>К списку</Button>,
-        ]}
+        description="Повторите загрузку или вернитесь к списку."
+        actionLabel="Повторить"
+        onAction={loadMeeting}
       />
     );
   }
@@ -122,12 +130,18 @@ export default function MeetingForm({ id }) {
       description="У вас нет прав для создания или редактирования встреч."
     >
       <Space direction="vertical" size={16} style={{ width: '100%' }}>
-        <Button icon={<ArrowLeftOutlined />} onClick={() => navigate('/meetings')}>
-          Назад
-        </Button>
+        <BusinessFormHeader
+          formId="meeting-form"
+          title={isEdit ? 'Редактирование встречи' : 'Новая встреча'}
+          subtitle="Синхронизируйте время, участников и outcome встречи с CRM."
+          submitLabel={isEdit ? 'Сохранить' : 'Создать'}
+          isSubmitting={saving}
+          onBack={() => navigate('/meetings')}
+        />
 
-        <Card title={isEdit ? 'Редактирование встречи' : 'Новая встреча'}>
+        <Card>
           <Form
+            id="meeting-form"
             form={form}
             layout="vertical"
             initialValues={{
@@ -199,9 +213,6 @@ export default function MeetingForm({ id }) {
             </Form.Item>
 
             <Space>
-              <Button type="primary" htmlType="submit" icon={<SaveOutlined />} loading={saving}>
-                {isEdit ? 'Сохранить' : 'Создать'}
-              </Button>
               <Button onClick={() => navigate('/meetings')}>Отмена</Button>
             </Space>
           </Form>

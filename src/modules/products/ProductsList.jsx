@@ -1,12 +1,12 @@
 import { DeleteOutlined, EditOutlined, PlusOutlined } from '@ant-design/icons';
-import { App, Button, Card, Popconfirm, Select, Space, Table, Tag, Typography } from 'antd';
+import { App, Button, Popconfirm, Select, Space, Table, Tag, Typography } from 'antd';
 import { useEffect, useState } from 'react';
+import { BusinessEntityListShell } from '../../components/business/BusinessEntityListShell';
 import { deleteProduct, getProductCategories, getProducts } from '../../lib/api/products';
 import { canWrite } from '../../lib/rbac.js';
 import { formatCurrencyForRecord } from '../../lib/utils/format';
 import { navigate } from '../../router';
 import { EntityListToolbar } from '../../shared/ui/EntityListToolbar';
-import { PageHeader } from '../../shared/ui/PageHeader';
 
 const { Option } = Select;
 const { Text } = Typography;
@@ -211,18 +211,16 @@ function ProductsList() {
   }
 
   return (
-    <>
-      <PageHeader
-        title="Каталог продуктов"
-        subtitle="Единый список продуктов с поиском и фильтрацией"
-        extra={
-          canManage ? (
-            <Button type="primary" icon={<PlusOutlined />} onClick={() => navigate('/products/new')}>Добавить продукт</Button>
-          ) : null
-        }
-      />
-      <Card>
-        <Space direction="vertical" size={16} style={{ width: '100%' }}>
+    <BusinessEntityListShell
+      title="Каталог продуктов"
+      subtitle="Единый список продуктов с поиском и фильтрацией"
+      extra={
+        canManage ? (
+          <Button type="primary" icon={<PlusOutlined />} onClick={() => navigate('/products/new')}>Добавить продукт</Button>
+        ) : null
+      }
+    >
+      <Space direction="vertical" size={16} style={{ width: '100%' }}>
 
           <EntityListToolbar
             searchValue={searchText}
@@ -261,9 +259,8 @@ function ProductsList() {
             onChange={handleTableChange}
             scroll={{ x: 1100 }}
           />
-        </Space>
-      </Card>
-    </>
+      </Space>
+    </BusinessEntityListShell>
   );
 }
 

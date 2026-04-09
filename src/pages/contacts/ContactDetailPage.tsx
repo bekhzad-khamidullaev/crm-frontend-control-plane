@@ -1,11 +1,12 @@
 import { useCompany } from '@/entities/company/api/queries';
 import { useContact } from '@/entities/contact/api/queries';
 import { UsersService } from '@/shared/api/generated/services/UsersService';
+import { BusinessScreenState } from '@/components/business/BusinessScreenState';
 import { getCompanyDisplayName } from '@/lib/utils/company-display.js';
 import { buildAiChatUrl } from '@/lib/utils/ai-chat-context.js';
 import { navigate } from '@/router.js';
 import { BankOutlined, BellOutlined, EditOutlined, MailOutlined, PhoneOutlined, RobotOutlined, UserOutlined } from '@ant-design/icons';
-import { Avatar, Button, Card, Descriptions, Result, Space, Spin, Tabs, Tag, Typography } from 'antd';
+import { Avatar, Button, Card, Descriptions, Space, Tabs, Tag, Typography } from 'antd';
 import dayjs from 'dayjs';
 import React from 'react';
 // @ts-ignore
@@ -58,10 +59,25 @@ export const ContactDetailPage: React.FC<ContactDetailPageProps> = ({ id }) => {
     };
   }, [contact?.owner]);
 
-  if (isLoading) return <Spin size="large" style={{ display: 'block', margin: '50px auto' }} />;
+  if (isLoading) {
+    return (
+      <BusinessScreenState
+        variant="loading"
+        title="Загрузка контакта"
+        description="Подготавливаем карточку контакта и связи с компанией."
+      />
+    );
+  }
 
   if (!contact) {
-    return <Result status="404" title="Контакт не найден" extra={<Button onClick={() => navigate('/contacts')}>К контактам</Button>} />;
+    return (
+      <BusinessScreenState
+        variant="notFound"
+        title="Контакт не найден"
+        actionLabel="К контактам"
+        onAction={() => navigate('/contacts')}
+      />
+    );
   }
 
   const contactView = contact as any;

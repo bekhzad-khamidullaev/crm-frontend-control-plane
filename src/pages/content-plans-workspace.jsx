@@ -26,7 +26,6 @@ import {
   Form,
   Grid,
   Input,
-  InputNumber,
   Modal,
   Row,
   Select,
@@ -42,78 +41,75 @@ import {
 import dayjs from 'dayjs';
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import {
-  createCampaign,
-  deleteCampaign,
-  getCampaign,
+  bulkTransitionContentItems,
+  createContentChannelVariant,
+  createContentItem,
+  createContentPlan,
+  approveContentItem,
+  deleteContentItem,
+  deleteContentPlan,
   getCampaigns,
+  getContentItemActivity,
+  getContentPlan,
+  getContentItems,
+  getContentPlans,
   getSegments,
   getTemplates,
-  updateCampaign,
+  publishContentItemNow,
+  rejectContentItem,
+  requestContentItemApproval,
+  scheduleContentItem,
+  transitionContentItem,
+  updateContentChannelVariant,
+  updateContentItem,
+  updateContentPlan,
 } from '../lib/api/marketing.js';
+import { BusinessEntityListShell } from '../components/business/BusinessEntityListShell';
 import { EntityListToolbar } from '../shared/ui/EntityListToolbar';
-import { PageHeader } from '../shared/ui/PageHeader';
 import { WorkspaceSummaryStrip, WorkspaceTabsShell } from '../shared/ui/WorkspaceRhythm';
 import CampaignsList from '../modules/marketing/CampaignsList.jsx';
 import MarketingSegmentsPage from './marketing-segments.jsx';
 import MarketingTemplatesPage from './marketing-templates.jsx';
-import { containsText, formatDateSafe, toNumberSafe, toResults } from './workspace-utils.js';
+import { containsText, formatDateSafe, toResults } from './workspace-utils.js';
 
 const { Text, Title } = Typography;
 
 const STATUS_OPTIONS = [
   { value: 'draft', label: 'Черновик' },
   { value: 'active', label: 'Активна' },
-  { value: 'paused', label: 'Пауза' },
-  { value: 'completed', label: 'Завершена' },
-];
-
-const TYPE_OPTIONS = [
-  { value: 'email', label: 'Email' },
-  { value: 'sms', label: 'SMS' },
-  { value: 'social', label: 'Social' },
-  { value: 'omnichannel', label: 'Omnichannel' },
+  { value: 'archived', label: 'Архив' },
 ];
 
 const PLAN_STAGES = [
   { value: 'idea', label: 'ИДЕЯ', color: 'default' },
   { value: 'copywriting', label: 'КОПИРАЙТИНГ', color: 'gold' },
   { value: 'design', label: 'ДИЗАЙН', color: 'blue' },
-  { value: 'approval', label: 'СОГЛАСОВАНИЕ', color: 'purple' },
-  { value: 'planned', label: 'ПЛАН', color: 'processing' },
-  { value: 'done', label: 'ГОТОВО', color: 'success' },
+  { value: 'review', label: 'СОГЛАСОВАНИЕ', color: 'purple' },
+  { value: 'approved', label: 'ОДОБРЕНО', color: 'cyan' },
+  { value: 'scheduled', label: 'ЗАПЛАНИРОВАНО', color: 'processing' },
+  { value: 'published', label: 'ОПУБЛИКОВАНО', color: 'success' },
+  { value: 'failed', label: 'ОШИБКА', color: 'error' },
 ];
 
-const CONTENT_FORMATS = ['Пост', 'Stories', 'Reels', 'Видео'];
+const CONTENT_FORMATS = ['post', 'stories', 'reels', 'video'];
 
-const PLATFORM_BY_TYPE = {
-  email: 'Email',
+const CHANNEL_LABELS = {
   sms: 'SMS',
-  social: 'Instagram',
-  omnichannel: 'Omnichannel',
+  tg: 'Telegram',
+  ig: 'Instagram',
+  email: 'Email',
 };
 
-const DEFAULT_TOPIC_POOL = [
-  'Анонс акции',
-  'Пост о кейсе клиента',
-  'Сторис с опросом',
-  'Обзор продукта',
-  'Экспертный совет недели',
-  'Рилс с демонстрацией процесса',
-];
-
-const PLAN_ITEMS_STORAGE_KEY = 'crm_marketing_plan_items_v1';
-
-function readStoredPlanItems() {
-  if (typeof window === 'undefined') return {};
-  try {
-    const raw = window.localStorage.getItem(PLAN_ITEMS_STORAGE_KEY);
-    if (!raw) return {};
-    const parsed = JSON.parse(raw);
-    return parsed && typeof parsed === 'object' ? parsed : {};
-  } catch {
-    return {};
-  }
-}
+const STAGE_TRANSITIONS = {
+  idea: ['copywriting'],
+  copywriting: ['design', 'review'],
+  design: ['review'],
+  review: ['copywriting', 'design', 'approved'],
+  approved: ['scheduled'],
+  scheduled: ['published', 'failed'],
+  failed: ['scheduled'],
+  published: [],
+};
 
 const stageMetaMap = PLAN_STAGES.reduce((acc, stage) => {
   acc[stage.value] = stage;
@@ -123,53 +119,20 @@ const stageMetaMap = PLAN_STAGES.reduce((acc, stage) => {
 const campaignStatusTag = (status) => {
   const normalized = String(status || '').toLowerCase();
   if (normalized === 'active') return <Tag color="success">Активна</Tag>;
-  if (normalized === 'paused') return <Tag color="warning">Пауза</Tag>;
-  if (normalized === 'completed') return <Tag color="processing">Завершена</Tag>;
+  if (normalized === 'archived') return <Tag color="default">Архив</Tag>;
   return <Tag>Черновик</Tag>;
 };
 
 function toCampaignFormValues(record = {}) {
   return {
     name: record.name || '',
-    type: record.type || 'omnichannel',
     status: record.status || 'draft',
+    timezone: record.timezone || 'Asia/Tashkent',
+    campaign: record.campaign || undefined,
     description: record.description || '',
-    start_date: record.start_date ? dayjs(record.start_date) : null,
+    start_date: (record.start_date || record.start_at) ? dayjs(record.start_date || record.start_at) : null,
     end_date: record.end_date ? dayjs(record.end_date) : null,
-    budget: typeof record.budget === 'number' ? record.budget : null,
-    segment: record.segment || undefined,
-    template: record.template || undefined,
   };
-}
-
-function buildPlanItems(campaign, templates = []) {
-  if (!campaign) return [];
-
-  const sourceTopics = templates.length
-    ? templates.map((item) => item.name || 'Контент').filter(Boolean)
-    : DEFAULT_TOPIC_POOL;
-  const planSeed = Number(campaign.id) || String(campaign.name || '').length || 1;
-  const stageOffset = Math.abs(planSeed) % PLAN_STAGES.length;
-  const totalItems = Math.max(12, Math.min(30, sourceTopics.length * 2));
-  const baseDateRaw = campaign.start_date || campaign.start_at || campaign.update_date || campaign.created_at;
-  const baseDate = baseDateRaw ? dayjs(baseDateRaw) : dayjs();
-  const platform = PLATFORM_BY_TYPE[campaign.type] || 'Omnichannel';
-
-  return Array.from({ length: totalItems }, (_, index) => {
-    const stage = PLAN_STAGES[(index + stageOffset) % PLAN_STAGES.length].value;
-    const topic = sourceTopics[index % sourceTopics.length];
-    const format = CONTENT_FORMATS[(index + planSeed) % CONTENT_FORMATS.length];
-
-    return {
-      id: `generated-${campaign.id}-${index}`,
-      campaignId: campaign.id,
-      date: baseDate.add(index, 'day').format('YYYY-MM-DD'),
-      topic,
-      platform,
-      format,
-      status: stage,
-    };
-  });
 }
 
 export default function ContentPlansWorkspacePage({ initialTab = 'plans' }) {
@@ -187,6 +150,7 @@ export default function ContentPlansWorkspacePage({ initialTab = 'plans' }) {
 
   const [search, setSearch] = useState('');
   const [campaigns, setCampaigns] = useState([]);
+  const [contentPlans, setContentPlans] = useState([]);
   const [segments, setSegments] = useState([]);
   const [templates, setTemplates] = useState([]);
 
@@ -202,40 +166,45 @@ export default function ContentPlansWorkspacePage({ initialTab = 'plans' }) {
 
   const [contentModalOpen, setContentModalOpen] = useState(false);
   const [editingPlanItemId, setEditingPlanItemId] = useState(null);
-  const [planItemsByCampaign, setPlanItemsByCampaign] = useState(() => readStoredPlanItems());
+  const [planItemsByCampaign, setPlanItemsByCampaign] = useState({});
+  const [activityModalOpen, setActivityModalOpen] = useState(false);
+  const [activityLoading, setActivityLoading] = useState(false);
+  const [activityEntries, setActivityEntries] = useState([]);
+  const [activityTitle, setActivityTitle] = useState('История действий');
+  const [selectedPlanItemIds, setSelectedPlanItemIds] = useState([]);
+  const [bulkTargetStage, setBulkTargetStage] = useState(null);
 
   useEffect(() => {
     setActiveTab(initialTab);
   }, [initialTab]);
 
-  const segmentOptions = useMemo(
-    () => segments.map((item) => ({ value: item.id, label: item.name || 'Сегмент' })),
-    [segments],
-  );
-  const templateOptions = useMemo(
-    () => templates.map((item) => ({ value: item.id, label: item.name || 'Шаблон' })),
-    [templates],
+  const campaignOptions = useMemo(
+    () => campaigns.map((item) => ({ value: item.id, label: item.name || `Кампания #${item.id}` })),
+    [campaigns],
   );
 
   const loadData = useCallback(async () => {
     setLoading(true);
     try {
-      const [campaignsRes, segmentsRes, templatesRes] = await Promise.allSettled([
+      const [campaignsRes, segmentsRes, templatesRes, contentPlansRes] = await Promise.allSettled([
         getCampaigns({ page_size: 500, ordering: '-created_at' }),
         getSegments({ page_size: 500, ordering: '-updated_at' }),
         getTemplates({ page_size: 500, ordering: '-updated_at' }),
+        getContentPlans({ page_size: 500 }),
       ]);
       setCampaigns(campaignsRes.status === 'fulfilled' ? toResults(campaignsRes.value) : []);
       setSegments(segmentsRes.status === 'fulfilled' ? toResults(segmentsRes.value) : []);
       setTemplates(templatesRes.status === 'fulfilled' ? toResults(templatesRes.value) : []);
+      setContentPlans(contentPlansRes.status === 'fulfilled' ? toResults(contentPlansRes.value) : []);
 
-      const failed = [campaignsRes, segmentsRes, templatesRes].some((item) => item.status === 'rejected');
+      const failed = [campaignsRes, segmentsRes, templatesRes, contentPlansRes].some((item) => item.status === 'rejected');
       if (failed) {
         message.warning('Часть данных маркетинга не загрузилась. Проверьте права доступа и повторите обновление.');
       }
     } catch (error) {
       message.error(error?.message || 'Не удалось загрузить контент-планы');
       setCampaigns([]);
+      setContentPlans([]);
       setSegments([]);
       setTemplates([]);
     } finally {
@@ -247,24 +216,13 @@ export default function ContentPlansWorkspacePage({ initialTab = 'plans' }) {
     loadData();
   }, [loadData]);
 
-  useEffect(() => {
-    if (typeof window === 'undefined') return;
-    try {
-      window.localStorage.setItem(PLAN_ITEMS_STORAGE_KEY, JSON.stringify(planItemsByCampaign));
-    } catch {
-      // ignore localStorage write errors
-    }
-  }, [planItemsByCampaign]);
-
   const filteredCampaigns = useMemo(
-    () => campaigns.filter((item) =>
+    () => contentPlans.filter((item) =>
       containsText(item.name, search)
-      || containsText(item.type, search)
       || containsText(item.status, search)
-      || containsText(item.segment_name, search)
-      || containsText(item.template_name, search)
+      || containsText(item.campaign_name, search)
     ),
-    [campaigns, search],
+    [contentPlans, search],
   );
 
   useEffect(() => {
@@ -286,37 +244,43 @@ export default function ContentPlansWorkspacePage({ initialTab = 'plans' }) {
     [filteredCampaigns],
   );
   const pausedCampaigns = useMemo(
-    () => filteredCampaigns.filter((item) => String(item.status || '').toLowerCase() === 'paused').length,
+    () => filteredCampaigns.filter((item) => String(item.status || '').toLowerCase() === 'archived').length,
     [filteredCampaigns],
   );
 
+  const loadPlanItems = useCallback(async (planId) => {
+    if (!planId) return;
+    try {
+      const response = await getContentItems({ plan: planId, page_size: 500, ordering: 'planned_at' });
+      const rawItems = toResults(response);
+      const normalized = rawItems.map((item) => {
+        const firstVariant = Array.isArray(item.channel_variants) && item.channel_variants.length ? item.channel_variants[0] : null;
+        return {
+          id: item.id,
+          campaignId: item.plan,
+          date: item.planned_at ? dayjs(item.planned_at).format('YYYY-MM-DD') : dayjs().format('YYYY-MM-DD'),
+          topic: item.title || 'Контент',
+          platform: firstVariant?.channel || 'omnichannel',
+          format: firstVariant?.format || CONTENT_FORMATS[0],
+          status: item.workflow_stage || PLAN_STAGES[0].value,
+          variantId: firstVariant?.id,
+        };
+      });
+      setPlanItemsByCampaign((prev) => ({ ...prev, [planId]: normalized }));
+    } catch (error) {
+      message.error(error?.message || 'Не удалось загрузить публикации контент-плана');
+    }
+  }, [message]);
+
   useEffect(() => {
-    setPlanItemsByCampaign((prev) => {
-      let changed = false;
-      const next = { ...prev };
-      const campaignIdSet = new Set(campaigns.map((campaign) => String(campaign.id)));
-
-      Object.keys(next).forEach((campaignId) => {
-        if (!campaignIdSet.has(String(campaignId))) {
-          delete next[campaignId];
-          changed = true;
-        }
-      });
-
-      campaigns.forEach((campaign) => {
-        if (!next[campaign.id]) {
-          next[campaign.id] = buildPlanItems(campaign, templates);
-          changed = true;
-        }
-      });
-
-      return changed ? next : prev;
-    });
-  }, [campaigns, templates]);
+    if (!selectedPlan?.id) return;
+    setSelectedPlanItemIds([]);
+    loadPlanItems(selectedPlan.id);
+  }, [selectedPlan?.id, loadPlanItems]);
 
   const selectedPlan = useMemo(
-    () => campaigns.find((item) => item.id === activePlanId) || null,
-    [campaigns, activePlanId],
+    () => contentPlans.find((item) => item.id === activePlanId) || null,
+    [contentPlans, activePlanId],
   );
 
   const selectedPlanItems = useMemo(() => {
@@ -327,7 +291,7 @@ export default function ContentPlansWorkspacePage({ initialTab = 'plans' }) {
   }, [selectedPlan, planItemsByCampaign]);
 
   const visiblePlanItems = useMemo(
-    () => (tasksOnly ? selectedPlanItems.filter((item) => item.status !== 'done') : selectedPlanItems),
+    () => (tasksOnly ? selectedPlanItems.filter((item) => item.status !== 'published') : selectedPlanItems),
     [selectedPlanItems, tasksOnly],
   );
 
@@ -340,7 +304,7 @@ export default function ContentPlansWorkspacePage({ initialTab = 'plans' }) {
   );
 
   const doneItemsCount = useMemo(
-    () => selectedPlanItems.filter((item) => item.status === 'done').length,
+    () => selectedPlanItems.filter((item) => item.status === 'published').length,
     [selectedPlanItems],
   );
 
@@ -359,7 +323,7 @@ export default function ContentPlansWorkspacePage({ initialTab = 'plans' }) {
   const openEdit = async (record) => {
     setEditingCampaignId(record.id);
     try {
-      const full = await getCampaign(record.id);
+      const full = await getContentPlan(record.id);
       form.setFieldsValue(toCampaignFormValues(full));
       setDrawerOpen(true);
     } catch (error) {
@@ -372,21 +336,19 @@ export default function ContentPlansWorkspacePage({ initialTab = 'plans' }) {
       const values = await form.validateFields();
       const payload = {
         name: values.name,
-        type: values.type,
         status: values.status,
         description: values.description || '',
+        campaign: values.campaign || null,
         start_date: values.start_date ? values.start_date.format('YYYY-MM-DD') : null,
         end_date: values.end_date ? values.end_date.format('YYYY-MM-DD') : null,
-        budget: toNumberSafe(values.budget),
-        segment: values.segment || null,
-        template: values.template || null,
+        timezone: values.timezone || 'Asia/Tashkent',
       };
       setSaving(true);
       if (editingCampaignId) {
-        await updateCampaign(editingCampaignId, payload);
+        await updateContentPlan(editingCampaignId, payload);
         message.success('Контент-план обновлен');
       } else {
-        const createdCampaign = await createCampaign(payload);
+        const createdCampaign = await createContentPlan(payload);
         if (createdCampaign?.id) {
           setActivePlanId(createdCampaign.id);
         }
@@ -413,7 +375,7 @@ export default function ContentPlansWorkspacePage({ initialTab = 'plans' }) {
       cancelText: 'Отмена',
       onOk: async () => {
         try {
-          await deleteCampaign(record.id);
+          await deleteContentPlan(record.id);
           setPlanItemsByCampaign((prev) => {
             const next = { ...prev };
             delete next[record.id];
@@ -436,31 +398,38 @@ export default function ContentPlansWorkspacePage({ initialTab = 'plans' }) {
     if (!selectedPlan) return;
     const payload = {
       name: `${selectedPlan.name || 'Контент-план'} (копия)`,
-      type: selectedPlan.type || 'omnichannel',
       status: selectedPlan.status || 'draft',
       description: selectedPlan.description || '',
+      campaign: selectedPlan.campaign || null,
       start_date: selectedPlan.start_date || null,
       end_date: selectedPlan.end_date || null,
-      budget: toNumberSafe(selectedPlan.budget),
-      segment: selectedPlan.segment || null,
-      template: selectedPlan.template || null,
+      timezone: selectedPlan.timezone || 'Asia/Tashkent',
     };
 
     setCopying(true);
     try {
-      const createdCampaign = await createCampaign(payload);
+      const createdCampaign = await createContentPlan(payload);
       const createdPlanId = createdCampaign?.id;
 
       if (createdPlanId) {
-        setPlanItemsByCampaign((prev) => ({
-          ...prev,
-          [createdPlanId]: selectedPlanItems.map((item, index) => ({
-            ...item,
-            id: `manual-${createdPlanId}-${Date.now()}-${index}`,
-            campaignId: createdPlanId,
-          })),
+        await Promise.all(selectedPlanItems.map(async (item) => {
+          const createdItem = await createContentItem({
+            plan: createdPlanId,
+            title: item.topic,
+            workflow_stage: item.status,
+            planned_at: dayjs(item.date).toISOString(),
+          });
+          if (createdItem?.id) {
+            await createContentChannelVariant({
+              item: createdItem.id,
+              channel: String(item.platform || 'ig').toLowerCase(),
+              format: String(item.format || 'post').toLowerCase(),
+              body: '',
+            });
+          }
         }));
         setActivePlanId(createdPlanId);
+        await loadPlanItems(createdPlanId);
       }
 
       message.success('Контент-план скопирован');
@@ -478,7 +447,7 @@ export default function ContentPlansWorkspacePage({ initialTab = 'plans' }) {
     contentForm.setFieldsValue({
       date: dayjs(),
       topic: '',
-      platform: PLATFORM_BY_TYPE[selectedPlan.type] || 'Omnichannel',
+      platform: 'ig',
       format: CONTENT_FORMATS[0],
       status: PLAN_STAGES[0].value,
     });
@@ -491,7 +460,7 @@ export default function ContentPlansWorkspacePage({ initialTab = 'plans' }) {
     contentForm.setFieldsValue({
       date: item.date ? dayjs(item.date) : dayjs(),
       topic: item.topic || '',
-      platform: item.platform || PLATFORM_BY_TYPE[selectedPlan?.type] || 'Omnichannel',
+      platform: item.platform || 'ig',
       format: item.format || CONTENT_FORMATS[0],
       status: item.status || PLAN_STAGES[0].value,
     });
@@ -506,40 +475,48 @@ export default function ContentPlansWorkspacePage({ initialTab = 'plans' }) {
       okText: 'Удалить',
       okButtonProps: { danger: true },
       cancelText: 'Отмена',
-      onOk: () => {
-        setPlanItemsByCampaign((prev) => ({
-          ...prev,
-          [item.campaignId]: (prev[item.campaignId] || []).filter((planItem) => planItem.id !== item.id),
-        }));
+      onOk: async () => {
+        await deleteContentItem(item.id);
+        await loadPlanItems(item.campaignId);
         message.success('Публикация удалена');
       },
     });
-  }, [message]);
+  }, [message, loadPlanItems]);
 
   const handleSaveContentItem = async () => {
     if (!selectedPlan) return;
     try {
       const values = await contentForm.validateFields();
-      const normalizedItem = {
-        id: editingPlanItemId || `manual-${selectedPlan.id}-${Date.now()}`,
-        campaignId: selectedPlan.id,
-        date: values.date.format('YYYY-MM-DD'),
-        topic: values.topic,
-        platform: values.platform,
-        format: values.format,
-        status: values.status,
+      const payload = {
+        plan: selectedPlan.id,
+        title: values.topic,
+        workflow_stage: values.status,
+        planned_at: values.date.startOf('day').toISOString(),
       };
-
-      setPlanItemsByCampaign((prev) => {
-        const existing = prev[selectedPlan.id] || [];
-        const nextItems = editingPlanItemId
-          ? existing.map((item) => (item.id === editingPlanItemId ? normalizedItem : item))
-          : [...existing, normalizedItem];
-        return {
-          ...prev,
-          [selectedPlan.id]: nextItems,
+      let savedItemId = editingPlanItemId;
+      let variantId = null;
+      if (editingPlanItemId) {
+        const existingItem = (planItemsByCampaign[selectedPlan.id] || []).find((item) => item.id === editingPlanItemId);
+        variantId = existingItem?.variantId || null;
+        await updateContentItem(editingPlanItemId, payload);
+      } else {
+        const created = await createContentItem(payload);
+        savedItemId = created?.id;
+      }
+      if (savedItemId) {
+        const variantPayload = {
+          item: savedItemId,
+          channel: String(values.platform || 'ig').toLowerCase(),
+          format: String(values.format || 'post').toLowerCase(),
+          body: '',
         };
-      });
+        if (variantId) {
+          await updateContentChannelVariant(variantId, variantPayload);
+        } else {
+          await createContentChannelVariant(variantPayload);
+        }
+      }
+      await loadPlanItems(selectedPlan.id);
       setContentModalOpen(false);
       setEditingPlanItemId(null);
       message.success(editingPlanItemId ? 'Публикация обновлена' : 'Публикация добавлена в контент-план');
@@ -550,6 +527,88 @@ export default function ContentPlansWorkspacePage({ initialTab = 'plans' }) {
     }
   };
 
+  const handleTransitionContentItem = useCallback(async (item, targetStage) => {
+    try {
+      await transitionContentItem(item.id, targetStage);
+      await loadPlanItems(item.campaignId);
+      message.success('Статус публикации обновлен');
+    } catch (error) {
+      message.error(error?.message || 'Не удалось обновить статус');
+    }
+  }, [loadPlanItems, message]);
+
+  const handleBulkTransition = useCallback(async () => {
+    if (!selectedPlan?.id || !selectedPlanItemIds.length || !bulkTargetStage) return;
+    try {
+      const response = await bulkTransitionContentItems(selectedPlanItemIds, bulkTargetStage);
+      const updatedCount = Array.isArray(response?.updated_ids) ? response.updated_ids.length : 0;
+      const failedCount = Array.isArray(response?.failed) ? response.failed.length : 0;
+      if (updatedCount) {
+        message.success(`Массово обновлено: ${updatedCount}`);
+      }
+      if (failedCount) {
+        message.warning(`Не обновлено: ${failedCount}`);
+      }
+      setSelectedPlanItemIds([]);
+      await loadPlanItems(selectedPlan.id);
+    } catch (error) {
+      message.error(error?.message || 'Не удалось выполнить массовый переход');
+    }
+  }, [bulkTargetStage, loadPlanItems, message, selectedPlan?.id, selectedPlanItemIds]);
+
+  const handleRequestApproval = useCallback(async (item) => {
+    try {
+      await requestContentItemApproval(item.id, {});
+      await loadPlanItems(item.campaignId);
+      message.success('Согласование запрошено');
+    } catch (error) {
+      message.error(error?.message || 'Не удалось запросить согласование');
+    }
+  }, [loadPlanItems, message]);
+
+  const handleApprovalDecision = useCallback(async (item, approve) => {
+    try {
+      if (approve) {
+        await approveContentItem(item.id, {});
+      } else {
+        await rejectContentItem(item.id, {});
+      }
+      await loadPlanItems(item.campaignId);
+      message.success(approve ? 'Публикация согласована' : 'Публикация отклонена');
+    } catch (error) {
+      message.error(error?.message || 'Не удалось применить решение согласования');
+    }
+  }, [loadPlanItems, message]);
+
+  const handleScheduleOrPublish = useCallback(async (item, publishNow = false) => {
+    try {
+      if (publishNow) {
+        await publishContentItemNow(item.id);
+      } else {
+        await scheduleContentItem(item.id, dayjs(item.date).startOf('day').toISOString());
+      }
+      await loadPlanItems(item.campaignId);
+      message.success(publishNow ? 'Публикация отправлена' : 'Публикация поставлена в расписание');
+    } catch (error) {
+      message.error(error?.message || 'Не удалось выполнить действие публикации');
+    }
+  }, [loadPlanItems, message]);
+
+  const openActivityModal = useCallback(async (item) => {
+    setActivityModalOpen(true);
+    setActivityLoading(true);
+    setActivityTitle(`История: ${item.topic}`);
+    try {
+      const response = await getContentItemActivity(item.id);
+      setActivityEntries(Array.isArray(response) ? response : []);
+    } catch (error) {
+      setActivityEntries([]);
+      message.error(error?.message || 'Не удалось загрузить историю действий');
+    } finally {
+      setActivityLoading(false);
+    }
+  }, [message]);
+
   const activeFilters = search
     ? [{ key: 'search', label: 'Поиск', value: search, onClear: () => setSearch('') }]
     : [];
@@ -558,7 +617,7 @@ export default function ContentPlansWorkspacePage({ initialTab = 'plans' }) {
     () => [
       { key: 'campaigns', label: 'Кампании', value: campaigns.length },
       { key: 'plans', label: 'Контент-планы', value: filteredCampaigns.length },
-      { key: 'active', label: 'Активные кампании', value: activeCampaigns },
+      { key: 'active', label: 'Активные планы', value: activeCampaigns },
       { key: 'segments', label: 'Сегменты', value: segments.length },
       { key: 'templates', label: 'Шаблоны', value: templates.length, hint: `На паузе: ${pausedCampaigns}` },
     ],
@@ -667,15 +726,15 @@ export default function ContentPlansWorkspacePage({ initialTab = 'plans' }) {
         render: (_, record) => `${formatDateSafe(record.start_date)} - ${formatDateSafe(record.end_date)}`,
       },
       {
-        title: 'Сегмент',
-        dataIndex: 'segment_name',
-        key: 'segment_name',
+        title: 'Кампания',
+        dataIndex: 'campaign_name',
+        key: 'campaign_name',
         render: (value) => value || '-',
       },
       {
-        title: 'Шаблон',
-        dataIndex: 'template_name',
-        key: 'template_name',
+        title: 'Таймзона',
+        dataIndex: 'timezone',
+        key: 'timezone',
         render: (value) => value || '-',
       },
       {
@@ -706,6 +765,39 @@ export default function ContentPlansWorkspacePage({ initialTab = 'plans' }) {
     [activePlanId, openPlanDetails],
   );
 
+  const renderWorkflowActions = useCallback((item) => {
+    const nextStages = STAGE_TRANSITIONS[item.status] || [];
+    return (
+      <Space size={4} wrap>
+        {nextStages.slice(0, 2).map((stage) => (
+          <Button
+            key={stage}
+            size="small"
+            type="text"
+            onClick={() => handleTransitionContentItem(item, stage)}
+          >
+            → {(stageMetaMap[stage] || {}).label || stage}
+          </Button>
+        ))}
+        {item.status === 'review' ? (
+          <>
+            <Button size="small" type="text" onClick={() => handleApprovalDecision(item, true)}>Approve</Button>
+            <Button size="small" type="text" danger onClick={() => handleApprovalDecision(item, false)}>Reject</Button>
+          </>
+        ) : null}
+        {item.status === 'approved' ? (
+          <Button size="small" type="text" onClick={() => handleScheduleOrPublish(item, false)}>Schedule</Button>
+        ) : null}
+        {item.status === 'scheduled' ? (
+          <Button size="small" type="text" onClick={() => handleScheduleOrPublish(item, true)}>Publish</Button>
+        ) : null}
+        {(item.status === 'design' || item.status === 'copywriting') ? (
+          <Button size="small" type="text" onClick={() => handleRequestApproval(item)}>Request approval</Button>
+        ) : null}
+      </Space>
+    );
+  }, [handleApprovalDecision, handleRequestApproval, handleScheduleOrPublish, handleTransitionContentItem]);
+
   const planItemsColumns = [
     {
       title: 'Дата',
@@ -724,6 +816,7 @@ export default function ContentPlansWorkspacePage({ initialTab = 'plans' }) {
       title: 'Площадка',
       dataIndex: 'platform',
       key: 'platform',
+      render: (value) => CHANNEL_LABELS[value] || value || '-',
     },
     {
       title: 'Формат',
@@ -745,13 +838,11 @@ export default function ContentPlansWorkspacePage({ initialTab = 'plans' }) {
       key: 'actions',
       width: 170,
       render: (_, item) => (
-        <Space size={6}>
-          <Button size="small" icon={<EditOutlined />} onClick={() => openEditContentModal(item)}>
-            Ред.
-          </Button>
-          <Button size="small" danger icon={<DeleteOutlined />} onClick={() => handleDeleteContentItem(item)}>
-            Удал.
-          </Button>
+        <Space size={6} wrap>
+          <Button size="small" icon={<EditOutlined />} onClick={() => openEditContentModal(item)}>Ред.</Button>
+          <Button size="small" onClick={() => openActivityModal(item)}>История</Button>
+          <Button size="small" danger icon={<DeleteOutlined />} onClick={() => handleDeleteContentItem(item)}>Удал.</Button>
+          {renderWorkflowActions(item)}
         </Space>
       ),
     },
@@ -766,21 +857,25 @@ export default function ContentPlansWorkspacePage({ initialTab = 'plans' }) {
         children: (
           <Space direction="vertical" size={2}>
             <Text strong>{item.topic}</Text>
-            <Text type="secondary">{item.platform} · {item.format}</Text>
+            <Text type="secondary">{CHANNEL_LABELS[item.platform] || item.platform} · {item.format}</Text>
             <Tag color={meta.color}>{meta.label}</Tag>
             <Space size={4}>
               <Button size="small" type="text" icon={<EditOutlined />} onClick={() => openEditContentModal(item)}>
                 Ред.
               </Button>
+              <Button size="small" type="text" onClick={() => openActivityModal(item)}>
+                История
+              </Button>
               <Button size="small" type="text" danger icon={<DeleteOutlined />} onClick={() => handleDeleteContentItem(item)}>
                 Удал.
               </Button>
             </Space>
+            {renderWorkflowActions(item)}
           </Space>
         ),
       };
     }),
-    [visiblePlanItems, openEditContentModal, handleDeleteContentItem],
+    [visiblePlanItems, openEditContentModal, handleDeleteContentItem, openActivityModal, renderWorkflowActions],
   );
 
   const planCalendarCellRender = useCallback((current, info) => {
@@ -820,16 +915,16 @@ export default function ContentPlansWorkspacePage({ initialTab = 'plans' }) {
   }, [visiblePlanItems, openEditContentModal]);
 
   return (
-    <Space direction="vertical" size={10} style={{ width: '100%' }}>
-      <PageHeader
-        title="Маркетинг"
-        subtitle="Контент-планы по принципу Taska: библиотека планов и единая рабочая область с режимами календаря, списка, доски и таймлайна."
-        extra={(
-          <Button type="primary" icon={<PlusOutlined />} onClick={openCreate}>
-            Новый контент-план
-          </Button>
-        )}
-      />
+    <BusinessEntityListShell
+      title="Маркетинг"
+      subtitle="Контент-планы по принципу Taska: библиотека планов и единая рабочая область с режимами календаря, списка, доски и таймлайна."
+      extra={(
+        <Button type="primary" icon={<PlusOutlined />} onClick={openCreate}>
+          Новый контент-план
+        </Button>
+      )}
+    >
+      <Space direction="vertical" size={10} style={{ width: '100%' }}>
 
       <Segmented
         block={isMobile}
@@ -912,8 +1007,8 @@ export default function ContentPlansWorkspacePage({ initialTab = 'plans' }) {
                                     </Space>
 
                                     <Space direction="vertical" size={0}>
-                                      <Text type="secondary">Сегмент: {record.segment_name || 'Не указан'}</Text>
-                                      <Text type="secondary">Шаблон: {record.template_name || 'Не указан'}</Text>
+                                      <Text type="secondary">Кампания: {record.campaign_name || 'Не привязана'}</Text>
+                                      <Text type="secondary">Таймзона: {record.timezone || 'Asia/Tashkent'}</Text>
                                     </Space>
 
                                     <Space size={6} wrap>
@@ -998,9 +1093,29 @@ export default function ContentPlansWorkspacePage({ initialTab = 'plans' }) {
 
             <Space style={{ width: '100%', justifyContent: 'space-between' }} wrap>
               <Segmented value={planView} onChange={setPlanView} options={planViewOptions} />
-              <Button type={tasksOnly ? 'primary' : 'default'} onClick={() => setTasksOnly((prev) => !prev)}>
-                Задачи
-              </Button>
+              <Space wrap>
+                {planView === 'list' ? (
+                  <Space wrap>
+                    <Select
+                      allowClear
+                      placeholder="Массовый переход"
+                      value={bulkTargetStage}
+                      onChange={setBulkTargetStage}
+                      options={PLAN_STAGES.map((stage) => ({ value: stage.value, label: stage.label }))}
+                      style={{ minWidth: 180 }}
+                    />
+                    <Button
+                      onClick={handleBulkTransition}
+                      disabled={!selectedPlanItemIds.length || !bulkTargetStage}
+                    >
+                      Применить ({selectedPlanItemIds.length})
+                    </Button>
+                  </Space>
+                ) : null}
+                <Button type={tasksOnly ? 'primary' : 'default'} onClick={() => setTasksOnly((prev) => !prev)}>
+                  Задачи
+                </Button>
+              </Space>
             </Space>
 
             {planView === 'calendar' ? (
@@ -1012,6 +1127,10 @@ export default function ContentPlansWorkspacePage({ initialTab = 'plans' }) {
                 rowKey="id"
                 dataSource={visiblePlanItems}
                 columns={planItemsColumns}
+                rowSelection={{
+                  selectedRowKeys: selectedPlanItemIds,
+                  onChange: (keys) => setSelectedPlanItemIds(keys),
+                }}
                 pagination={{ pageSize: 8, hideOnSinglePage: true }}
                 locale={{ emptyText: 'Публикации не найдены' }}
               />
@@ -1047,7 +1166,7 @@ export default function ContentPlansWorkspacePage({ initialTab = 'plans' }) {
                               <Space direction="vertical" size={4} style={{ width: '100%' }}>
                                 <Text strong style={{ fontSize: 12 }}>{item.topic}</Text>
                                 <Text type="secondary" style={{ fontSize: 12 }}>{formatDateSafe(item.date)}</Text>
-                                <Text type="secondary" style={{ fontSize: 12 }}>{item.platform} · {item.format}</Text>
+                                <Text type="secondary" style={{ fontSize: 12 }}>{CHANNEL_LABELS[item.platform] || item.platform} · {item.format}</Text>
                                 <Space size={4}>
                                   <Button
                                     size="small"
@@ -1060,6 +1179,13 @@ export default function ContentPlansWorkspacePage({ initialTab = 'plans' }) {
                                   <Button
                                     size="small"
                                     type="text"
+                                    onClick={() => openActivityModal(item)}
+                                  >
+                                    История
+                                  </Button>
+                                  <Button
+                                    size="small"
+                                    type="text"
                                     danger
                                     icon={<DeleteOutlined />}
                                     onClick={() => handleDeleteContentItem(item)}
@@ -1067,6 +1193,7 @@ export default function ContentPlansWorkspacePage({ initialTab = 'plans' }) {
                                     Удал.
                                   </Button>
                                 </Space>
+                                {renderWorkflowActions(item)}
                               </Space>
                             </Card>
                           )) : <Empty image={Empty.PRESENTED_IMAGE_SIMPLE} description="Пусто" />}
@@ -1112,14 +1239,11 @@ export default function ContentPlansWorkspacePage({ initialTab = 'plans' }) {
             <Input.TextArea rows={3} />
           </Form.Item>
           <Space size={12} style={{ width: '100%' }} wrap>
-            <Form.Item name="type" label="Тип" style={{ minWidth: 220 }}>
-              <Select options={TYPE_OPTIONS} />
-            </Form.Item>
             <Form.Item name="status" label="Статус" style={{ minWidth: 220 }}>
               <Select options={STATUS_OPTIONS} />
             </Form.Item>
-            <Form.Item name="budget" label="Бюджет" style={{ minWidth: 220 }}>
-              <InputNumber style={{ width: '100%' }} min={0} />
+            <Form.Item name="timezone" label="Таймзона" style={{ minWidth: 220 }}>
+              <Input placeholder="Asia/Tashkent" />
             </Form.Item>
           </Space>
           <Space size={12} style={{ width: '100%' }} wrap>
@@ -1130,15 +1254,38 @@ export default function ContentPlansWorkspacePage({ initialTab = 'plans' }) {
               <DatePicker style={{ width: '100%' }} format="DD.MM.YYYY" />
             </Form.Item>
           </Space>
-          <Space size={12} style={{ width: '100%' }} wrap>
-            <Form.Item name="segment" label="Сегмент" style={{ minWidth: 320 }}>
-              <Select allowClear options={segmentOptions} placeholder="Выберите сегмент" />
-            </Form.Item>
-            <Form.Item name="template" label="Шаблон" style={{ minWidth: 320 }}>
-              <Select allowClear options={templateOptions} placeholder="Выберите шаблон" />
-            </Form.Item>
-          </Space>
+          <Form.Item name="campaign" label="Связанная кампания">
+            <Select allowClear options={campaignOptions} placeholder="Выберите кампанию (необязательно)" />
+          </Form.Item>
         </Form>
+      </Modal>
+
+      <Modal
+        title={activityTitle}
+        open={activityModalOpen}
+        onCancel={() => setActivityModalOpen(false)}
+        footer={null}
+      >
+        {activityLoading ? (
+          <Text type="secondary">Загрузка...</Text>
+        ) : (
+          activityEntries.length ? (
+            <Timeline
+              items={activityEntries.map((entry) => ({
+                color: 'blue',
+                label: formatDateSafe(entry.created_at),
+                children: (
+                  <Space direction="vertical" size={0}>
+                    <Text strong>{entry.event_type}</Text>
+                    <Text type="secondary">{entry.actor_name || 'System'}</Text>
+                  </Space>
+                ),
+              }))}
+            />
+          ) : (
+            <Empty description="История пуста" />
+          )
+        )}
       </Modal>
 
       <Modal
@@ -1163,16 +1310,20 @@ export default function ContentPlansWorkspacePage({ initialTab = 'plans' }) {
             <Form.Item name="platform" label="Площадка" style={{ minWidth: 200 }}>
               <Select
                 options={[
-                  { value: 'Instagram', label: 'Instagram' },
-                  { value: 'Facebook', label: 'Facebook' },
-                  { value: 'WhatsApp', label: 'WhatsApp' },
-                  { value: 'Telegram', label: 'Telegram' },
-                  { value: 'Omnichannel', label: 'Omnichannel' },
+                  { value: 'ig', label: 'Instagram' },
+                  { value: 'tg', label: 'Telegram' },
+                  { value: 'email', label: 'Email' },
+                  { value: 'sms', label: 'SMS' },
                 ]}
               />
             </Form.Item>
             <Form.Item name="format" label="Формат" style={{ minWidth: 180 }}>
-              <Select options={CONTENT_FORMATS.map((item) => ({ value: item, label: item }))} />
+              <Select
+                options={CONTENT_FORMATS.map((item) => ({
+                  value: item,
+                  label: item === 'post' ? 'Пост' : item === 'stories' ? 'Stories' : item === 'reels' ? 'Reels' : 'Видео',
+                }))}
+              />
             </Form.Item>
             <Form.Item name="status" label="Статус" style={{ minWidth: 200 }}>
               <Select options={PLAN_STAGES.map((stage) => ({ value: stage.value, label: stage.label }))} />
@@ -1180,6 +1331,7 @@ export default function ContentPlansWorkspacePage({ initialTab = 'plans' }) {
           </Space>
         </Form>
       </Modal>
-    </Space>
+      </Space>
+    </BusinessEntityListShell>
   );
 }

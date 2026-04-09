@@ -2,9 +2,7 @@ import React, { useEffect } from 'react';
 import {
   Form,
   Input,
-  Button,
   Card,
-  Space,
   App,
   Modal,
   Typography,
@@ -12,12 +10,11 @@ import {
   Col,
   Switch,
   DatePicker,
-  Spin,
   InputNumber,
-  Grid,
 } from 'antd';
-import { SaveOutlined, ArrowLeftOutlined } from '@ant-design/icons';
+import { BusinessFormHeader } from '@/components/business/BusinessFormHeader';
 import dayjs from 'dayjs';
+import { BusinessScreenState } from '@/components/business/BusinessScreenState';
 import { useCreateDeal, useUpdateDeal } from '@/entities/deal/api/mutations';
 import { useDeal as useDealQuery } from '@/entities/deal/api/queries';
 // @ts-ignore
@@ -48,8 +45,6 @@ export const DealForm: React.FC<DealFormProps> = ({ id }) => {
   const [form] = Form.useForm();
   const { message } = App.useApp();
   const isEdit = !!id;
-  const screens = Grid.useBreakpoint();
-  const isMobile = !screens.md;
 
   const { data: deal, isLoading: isLoadingDeal } = useDealQuery(id!, !!id);
   const createMutation = useCreateDeal();
@@ -156,21 +151,40 @@ export const DealForm: React.FC<DealFormProps> = ({ id }) => {
   };
 
   if (isEdit && isLoadingDeal) {
-    return <Spin size="large" style={{ display: 'block', margin: '50px auto' }} />;
+    return (
+      <BusinessScreenState
+        variant="loading"
+        title="Загрузка сделки"
+        description="Подготавливаем карточку сделки к редактированию."
+      />
+    );
+  }
+
+  if (isEdit && !deal) {
+    return (
+      <BusinessScreenState
+        variant="notFound"
+        title="Сделка не найдена"
+        actionLabel="К сделкам"
+        onAction={() => navigate('/deals')}
+      />
+    );
   }
 
   return (
     <div>
-      <Space wrap style={{ marginBottom: 16 }}>
-        <Button icon={<ArrowLeftOutlined />} onClick={handleLeave} block={isMobile}>
-          Назад
-        </Button>
-      </Space>
-
-      <Title level={isMobile ? 3 : 2}>{isEdit ? 'Редактировать сделку' : 'Создать новую сделку'}</Title>
+      <BusinessFormHeader
+        formId="deal-form"
+        title={isEdit ? 'Редактировать сделку' : 'Создать новую сделку'}
+        subtitle="Держите следующую активность и связи сделки в актуальном состоянии."
+        submitLabel={isEdit ? 'Сохранить изменения' : 'Создать сделку'}
+        isSubmitting={createMutation.isPending || updateMutation.isPending}
+        onBack={handleLeave}
+      />
 
       <Card>
         <Form
+          id="deal-form"
           form={form}
           layout="vertical"
           onFinish={onFinish}
@@ -363,22 +377,6 @@ export const DealForm: React.FC<DealFormProps> = ({ id }) => {
             <TextArea rows={4} />
           </Form.Item>
 
-          <Form.Item>
-            <Space wrap style={{ width: '100%' }}>
-              <Button
-                type="primary"
-                htmlType="submit"
-                icon={<SaveOutlined />}
-                loading={createMutation.isPending || updateMutation.isPending}
-                block={isMobile}
-              >
-                {isEdit ? 'Обновить' : 'Создать'}
-              </Button>
-              <Button onClick={handleLeave} block={isMobile}>
-                Отмена
-              </Button>
-            </Space>
-          </Form.Item>
         </Form>
       </Card>
     </div>

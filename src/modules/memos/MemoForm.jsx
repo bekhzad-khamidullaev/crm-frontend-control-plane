@@ -1,11 +1,12 @@
 import { zodResolver } from '@hookform/resolvers/zod';
 import dayjs from 'dayjs';
-import { ArrowLeftOutlined, FileTextOutlined, SaveOutlined } from '@ant-design/icons';
 import { useEffect, useState } from 'react';
 import { Controller, useForm } from 'react-hook-form';
 import { z } from 'zod';
 
-import { App, Button, Card, Col, DatePicker, Input, Result, Row, Select, Skeleton, Space, Switch, Typography } from 'antd';
+import { App, Button, Card, Col, DatePicker, Input, Row, Select, Space, Switch, Typography } from 'antd';
+import { BusinessFormHeader } from '../../components/business/BusinessFormHeader';
+import { BusinessScreenState } from '../../components/business/BusinessScreenState';
 import EntitySelect from '../../components/EntitySelect.jsx';
 import FormPermissionGuard from '../../components/permissions/FormPermissionGuard';
 import ReferenceSelect from '../../components/ReferenceSelect';
@@ -156,19 +157,23 @@ export default function MemoForm({ id }) {
   };
 
   if (loading) {
-    return <Skeleton active paragraph={{ rows: 8 }} />;
+    return (
+      <BusinessScreenState
+        variant="loading"
+        title="Загрузка мемо"
+        description="Подготавливаем форму мемо для редактирования."
+      />
+    );
   }
 
   if (isEdit && loadError) {
     return (
-      <Result
-        status="error"
+      <BusinessScreenState
+        variant="error"
         title="Не удалось загрузить мемо для редактирования"
-        subTitle="Попробуйте повторить загрузку или вернитесь к списку мемо."
-        extra={[
-          <Button key="retry" onClick={fetchData}>Повторить</Button>,
-          <Button key="list" type="primary" onClick={() => navigate('/memos')}>К списку мемо</Button>,
-        ]}
+        description="Попробуйте повторить загрузку или вернитесь к списку мемо."
+        actionLabel="Повторить"
+        onAction={fetchData}
       />
     );
   }
@@ -181,21 +186,17 @@ export default function MemoForm({ id }) {
       description="У вас нет прав для создания или редактирования мемо."
     >
       <Space direction="vertical" size={16} style={{ width: '100%' }}>
-        <Button onClick={() => navigate('/memos')} icon={<ArrowLeftOutlined size={16} />}>
-          Назад
-        </Button>
+        <BusinessFormHeader
+          formId="memo-form"
+          title={isEdit ? 'Редактирование мемо' : 'Новое мемо'}
+          subtitle="Фиксируйте решения и follow-up в стандартизированном формате."
+          submitLabel={isEdit ? 'Сохранить' : 'Создать'}
+          isSubmitting={saving}
+          onBack={() => navigate('/memos')}
+        />
 
-        <Card
-          title={(
-            <Space>
-              <FileTextOutlined size={18} />
-              <Title level={4} style={{ margin: 0 }}>
-                {isEdit ? 'Редактирование мемо' : 'Новое мемо'}
-              </Title>
-            </Space>
-          )}
-        >
-          <form onSubmit={handleSubmit(onFinish)}>
+        <Card>
+          <form id="memo-form" onSubmit={handleSubmit(onFinish)}>
             <Space direction="vertical" size={16} style={{ width: '100%' }}>
               <div>
                 <FieldLabel htmlFor="name">Название *</FieldLabel>
@@ -363,11 +364,6 @@ export default function MemoForm({ id }) {
               </div>
 
               <Space size={12}>
-                {canManage && (
-                  <Button type="primary" htmlType="submit" loading={saving} icon={<SaveOutlined size={16} />}>
-                    {isEdit ? 'Сохранить' : 'Создать'}
-                  </Button>
-                )}
                 <Button htmlType="button" onClick={() => navigate('/memos')}>
                   Отмена
                 </Button>

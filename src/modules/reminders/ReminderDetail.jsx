@@ -2,7 +2,8 @@ import { useEffect, useState } from 'react';
 import { ArrowLeftOutlined, BellOutlined, CheckOutlined, EditOutlined, DeleteOutlined, CloseOutlined } from '@ant-design/icons';
 import dayjs from 'dayjs';
 
-import { App, Button, Card, Descriptions, Modal, Result, Skeleton, Space, Tag, Typography } from 'antd';
+import { App, Button, Card, Descriptions, Modal, Space, Tag, Typography } from 'antd';
+import { BusinessScreenState } from '../../components/business/BusinessScreenState';
 
 import { deleteReminder, getReminder, updateReminder } from '../../lib/api/reminders';
 import { canWrite } from '../../lib/rbac.js';
@@ -58,26 +59,36 @@ export default function ReminderDetail({ id }) {
     }
   };
 
-  if (loading) return <Skeleton active paragraph={{ rows: 6 }} />;
+  if (loading) {
+    return (
+      <BusinessScreenState
+        variant="loading"
+        title="Загрузка напоминания"
+        description="Собираем карточку напоминания."
+      />
+    );
+  }
 
   if (loadError) {
     return (
-      <Result
-        status="error"
+      <BusinessScreenState
+        variant="error"
         title="Не удалось открыть напоминание"
-        subTitle="Попробуйте повторить загрузку"
-        extra={<Button onClick={fetchData}>Повторить</Button>}
+        description="Попробуйте повторить загрузку."
+        actionLabel="Повторить"
+        onAction={fetchData}
       />
     );
   }
 
   if (!data) {
     return (
-      <Result
-        status="404"
+      <BusinessScreenState
+        variant="notFound"
         title="Напоминание не найдено"
-        subTitle="Запись могла быть удалена или недоступна"
-        extra={<Button onClick={() => navigate('/reminders')}>К списку напоминаний</Button>}
+        description="Запись могла быть удалена или недоступна."
+        actionLabel="К списку напоминаний"
+        onAction={() => navigate('/reminders')}
       />
     );
   }

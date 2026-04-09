@@ -1,11 +1,12 @@
 import { zodResolver } from '@hookform/resolvers/zod';
 import dayjs from 'dayjs';
-import { ArrowLeftOutlined, SaveOutlined } from '@ant-design/icons';
 import { useEffect, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
 
-import { App, Button, Card, Col, DatePicker, Input, Result, Row, Select, Skeleton, Space, Typography } from 'antd';
+import { App, Button, Card, Col, DatePicker, Input, Row, Select, Space, Typography } from 'antd';
+import { BusinessFormHeader } from '../../components/business/BusinessFormHeader';
+import { BusinessScreenState } from '../../components/business/BusinessScreenState';
 import EntitySelect from '../../components/EntitySelect';
 import FormPermissionGuard from '../../components/permissions/FormPermissionGuard';
 import ReferenceSelect from '../../components/ReferenceSelect';
@@ -201,19 +202,23 @@ function PaymentForm({ id }) {
   };
 
   if (loading) {
-    return <Skeleton active paragraph={{ rows: 8 }} />;
+    return (
+      <BusinessScreenState
+        variant="loading"
+        title="Загрузка платежа"
+        description="Подготавливаем форму платежа для работы."
+      />
+    );
   }
 
   if (isEdit && loadError) {
     return (
-      <Result
-        status="error"
+      <BusinessScreenState
+        variant="error"
         title="Не удалось загрузить платеж"
-        subTitle="Попробуйте обновить данные или вернитесь к списку платежей."
-        extra={[
-          <Button key="retry" onClick={loadPayment}>Повторить</Button>,
-          <Button key="list" type="primary" onClick={() => navigate('/payments')}>К списку платежей</Button>,
-        ]}
+        description="Попробуйте обновить данные или вернитесь к списку платежей."
+        actionLabel="Повторить"
+        onAction={loadPayment}
       />
     );
   }
@@ -226,12 +231,17 @@ function PaymentForm({ id }) {
       description="У вас нет прав для создания или редактирования платежей."
     >
       <Space direction="vertical" size={16} style={{ width: '100%' }}>
-        <Button onClick={() => navigate('/payments')} icon={<ArrowLeftOutlined size={16} />}>
-          Назад
-        </Button>
+        <BusinessFormHeader
+          formId="payment-form"
+          title={isEdit ? 'Редактирование платежа' : 'Новый платеж'}
+          subtitle="Фиксируйте оплату и связь со сделкой в одном шаге."
+          submitLabel={isEdit ? 'Сохранить' : 'Создать'}
+          isSubmitting={saving}
+          onBack={() => navigate('/payments')}
+        />
 
-        <Card title={isEdit ? 'Редактирование платежа' : 'Новый платеж'}>
-          <form onSubmit={handleSubmit(onSubmit)}>
+        <Card>
+          <form id="payment-form" onSubmit={handleSubmit(onSubmit)}>
             <Space direction="vertical" size={16} style={{ width: '100%' }}>
               <Row gutter={[16, 16]}>
                 <Col xs={24} md={12}>
@@ -309,11 +319,6 @@ function PaymentForm({ id }) {
               </Row>
 
               <Space size={12}>
-                {canManage && (
-                  <Button type="primary" htmlType="submit" loading={saving} icon={<SaveOutlined size={16} />}>
-                    {isEdit ? 'Сохранить' : 'Создать'}
-                  </Button>
-                )}
                 <Button htmlType="button" onClick={() => navigate('/payments')}>
                   Отмена
                 </Button>

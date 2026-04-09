@@ -1,5 +1,5 @@
 import React from 'react';
-import { Spin } from 'antd';
+import { BusinessScreenState } from '@/components/business/BusinessScreenState';
 import { CompanyForm } from '@/widgets/company-form';
 import { useUpdateCompany } from '@/entities/company/api/mutations';
 import { useCompany } from '@/entities/company/api/queries';
@@ -28,11 +28,24 @@ export const CompanyEditPage: React.FC<CompanyEditPageProps> = ({ id }) => {
   };
 
   if (isLoadingCompany) {
-    return <Spin size="large" style={{ display: 'block', margin: '50px auto' }} />;
+    return (
+      <BusinessScreenState
+        variant="loading"
+        title="Загрузка компании"
+        description="Подготавливаем данные компании для редактирования."
+      />
+    );
   }
 
   if (!company && !isLoadingCompany) {
-     return <div>Компания не найдена</div>;
+    return (
+      <BusinessScreenState
+        variant="notFound"
+        title="Компания не найдена"
+        actionLabel="К компаниям"
+        onAction={() => navigate('/companies')}
+      />
+    );
   }
 
   // Map company full_name to name for form if needed

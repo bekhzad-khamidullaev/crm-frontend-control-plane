@@ -1,13 +1,13 @@
 import { DeleteOutlined, EditOutlined, EyeOutlined, PlusOutlined } from '@ant-design/icons';
-import { App, Button, Card, Popconfirm, Space, Table, Tag, Typography } from 'antd';
+import { App, Button, Popconfirm, Space, Table, Tag, Typography } from 'antd';
 import dayjs from 'dayjs';
 import { useEffect, useState } from 'react';
 
+import { BusinessEntityListShell } from '../../components/business/BusinessEntityListShell';
 import { deleteFinancePlan, getFinancePlans } from '../../lib/api/financePlans.js';
 import { canWrite, hasAnyFeature } from '../../lib/rbac.js';
 import { navigate } from '../../router.js';
 import { EntityListToolbar } from '../../shared/ui/EntityListToolbar';
-import { PageHeader } from '../../shared/ui/PageHeader';
 import { formatCurrencyForRecord } from '../../lib/utils/format';
 import { BusinessFeatureGateNotice } from '../../components/business/BusinessFeatureGateNotice';
 
@@ -66,19 +66,17 @@ export default function FinancePlansList() {
 
   if (!canReadFeature) {
     return (
-      <>
-        <PageHeader title="Финплан" subtitle="Полноценный CRUD по финансовому планированию" />
+      <BusinessEntityListShell title="Финплан" subtitle="Полноценный CRUD по финансовому планированию">
         <BusinessFeatureGateNotice
           featureCode="billing.invoicing"
           description="Для доступа к финансовому планированию включите модуль Invoicing в лицензии."
         />
-      </>
+      </BusinessEntityListShell>
     );
   }
 
   return (
-    <>
-      <PageHeader
+    <BusinessEntityListShell
         title="Финплан"
         subtitle="Полноценный CRUD по финансовому планированию"
         extra={
@@ -88,10 +86,8 @@ export default function FinancePlansList() {
             </Button>
           ) : null
         }
-      />
-
-      <Card>
-        <Space direction="vertical" size={16} style={{ width: '100%' }}>
+      >
+      <Space direction="vertical" size={16} style={{ width: '100%' }}>
           <EntityListToolbar
             searchValue={search}
             searchPlaceholder="Поиск по названию или комментарию"
@@ -182,8 +178,7 @@ export default function FinancePlansList() {
               },
             ]}
           />
-        </Space>
-      </Card>
-    </>
+      </Space>
+    </BusinessEntityListShell>
   );
 }

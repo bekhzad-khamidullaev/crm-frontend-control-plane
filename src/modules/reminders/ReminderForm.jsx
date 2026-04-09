@@ -1,11 +1,12 @@
 import { zodResolver } from '@hookform/resolvers/zod';
 import dayjs from 'dayjs';
-import { ArrowLeftOutlined, BellOutlined, SaveOutlined } from '@ant-design/icons';
 import { useEffect, useState } from 'react';
 import { Controller, useForm } from 'react-hook-form';
 import { z } from 'zod';
 
-import { App, Button, Card, Col, DatePicker, Input, Result, Row, Select, Skeleton, Space, Switch, Typography } from 'antd';
+import { App, Button, Card, Col, DatePicker, Input, Row, Select, Space, Switch, Typography } from 'antd';
+import { BusinessFormHeader } from '../../components/business/BusinessFormHeader';
+import { BusinessScreenState } from '../../components/business/BusinessScreenState';
 import EntitySelect from '../../components/EntitySelect.jsx';
 import FormPermissionGuard from '../../components/permissions/FormPermissionGuard';
 import { getUser, getUsers } from '../../lib/api';
@@ -168,19 +169,23 @@ function ReminderForm({ id }) {
   };
 
   if (loading) {
-    return <Skeleton active paragraph={{ rows: 8 }} />;
+    return (
+      <BusinessScreenState
+        variant="loading"
+        title="Загрузка напоминания"
+        description="Подготавливаем форму напоминания для редактирования."
+      />
+    );
   }
 
   if (isEdit && loadError) {
     return (
-      <Result
-        status="error"
+      <BusinessScreenState
+        variant="error"
         title="Не удалось загрузить напоминание для редактирования"
-        subTitle="Попробуйте повторить загрузку или вернитесь к списку напоминаний."
-        extra={[
-          <Button key="retry" onClick={loadReminder}>Повторить</Button>,
-          <Button key="list" type="primary" onClick={() => navigate('/reminders')}>К списку напоминаний</Button>,
-        ]}
+        description="Попробуйте повторить загрузку или вернитесь к списку напоминаний."
+        actionLabel="Повторить"
+        onAction={loadReminder}
       />
     );
   }
@@ -193,21 +198,17 @@ function ReminderForm({ id }) {
       description="У вас нет прав для создания или редактирования напоминаний."
     >
       <Space direction="vertical" size={16} style={{ width: '100%' }}>
-        <Button onClick={() => navigate('/reminders')} icon={<ArrowLeftOutlined size={16} />}>
-          Назад
-        </Button>
+        <BusinessFormHeader
+          formId="reminder-form"
+          title={isEdit ? 'Редактирование напоминания' : 'Новое напоминание'}
+          subtitle="Контролируйте сроки и уведомления по задачам и связанным объектам."
+          submitLabel={isEdit ? 'Сохранить' : 'Создать'}
+          isSubmitting={saving}
+          onBack={() => navigate('/reminders')}
+        />
 
-        <Card
-          title={(
-            <Space>
-              <BellOutlined size={18} />
-              <Title level={4} style={{ margin: 0 }}>
-                {isEdit ? 'Редактирование напоминания' : 'Новое напоминание'}
-              </Title>
-            </Space>
-          )}
-        >
-          <form onSubmit={handleSubmit(handleSubmitForm)}>
+        <Card>
+          <form id="reminder-form" onSubmit={handleSubmit(handleSubmitForm)}>
             <Space direction="vertical" size={16} style={{ width: '100%' }}>
               <div>
                 <FieldLabel htmlFor="subject">Тема *</FieldLabel>
@@ -310,11 +311,6 @@ function ReminderForm({ id }) {
               </Row>
 
               <Space size={12}>
-                {canManage && (
-                  <Button type="primary" htmlType="submit" loading={saving} icon={<SaveOutlined size={16} />}>
-                    {isEdit ? 'Сохранить' : 'Создать'}
-                  </Button>
-                )}
                 <Button htmlType="button" onClick={() => navigate('/reminders')}>
                   Отмена
                 </Button>

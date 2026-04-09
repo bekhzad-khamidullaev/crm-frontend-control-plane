@@ -1,6 +1,7 @@
 /**
  * E2E Tests for Companies Module
  */
+/* eslint-disable no-unreachable */
 
 import { test, expect } from '@playwright/test';
 import { generateCompanyData } from './helpers/test-data.js';

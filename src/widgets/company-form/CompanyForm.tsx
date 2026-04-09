@@ -8,12 +8,10 @@ import {
   Switch,
   DatePicker,
   Modal,
-  Button,
-  Space,
   Typography,
   Divider,
 } from 'antd';
-import { ArrowLeftOutlined, SaveOutlined } from '@ant-design/icons';
+import { BusinessFormHeader } from '@/components/business/BusinessFormHeader';
 import dayjs from 'dayjs';
 import { navigate } from '@/router.js';
 import {
@@ -86,29 +84,18 @@ export const CompanyForm: React.FC<CompanyFormProps> = ({
 
   return (
     <div>
-      <Space wrap style={{ marginBottom: 16, width: '100%', justifyContent: 'space-between' }}>
-        <Button icon={<ArrowLeftOutlined />} onClick={handleLeave}>
-          Назад
-        </Button>
-        <Button
-          type="primary"
-          icon={<SaveOutlined />}
-          htmlType="submit"
-          form={formId}
-          loading={isLoading}
-        >
-          {isEdit ? 'Сохранить изменения' : 'Создать компанию'}
-        </Button>
-      </Space>
-
-      <Title level={2} style={{ marginBottom: 4 }}>
-        {isEdit ? 'Редактировать компанию' : 'Создать новую компанию'}
-      </Title>
-      <Text type="secondary">
-        {isEdit
-          ? 'Обновите ключевые данные компании и ответственных.'
-          : 'Заполните основные данные компании, чтобы добавить ее в CRM.'}
-      </Text>
+      <BusinessFormHeader
+        formId={formId}
+        title={isEdit ? 'Редактировать компанию' : 'Создать новую компанию'}
+        subtitle={
+          isEdit
+            ? 'Обновите ключевые данные компании и ответственных.'
+            : 'Заполните основные данные компании, чтобы добавить ее в CRM.'
+        }
+        submitLabel={isEdit ? 'Сохранить изменения' : 'Создать компанию'}
+        isSubmitting={isLoading}
+        onBack={handleLeave}
+      />
 
       <Card style={{ marginTop: 16 }}>
         <Form

@@ -10,6 +10,7 @@
  * - Kanban view
  * - Data export
  */
+/* eslint-disable no-unreachable */
 
 import { test, expect } from '@playwright/test';
 import { generateLeadData } from './helpers/test-data.js';

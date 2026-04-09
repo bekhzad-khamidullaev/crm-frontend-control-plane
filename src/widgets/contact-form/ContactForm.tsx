@@ -7,12 +7,10 @@ import {
   Col,
   Switch,
   Modal,
-  Button,
-  Space,
   Typography,
   Divider,
 } from 'antd';
-import { ArrowLeftOutlined, SaveOutlined } from '@ant-design/icons';
+import { BusinessFormHeader } from '@/components/business/BusinessFormHeader';
 import { navigate } from '@/router.js';
 import {
   CountrySelect,
@@ -78,29 +76,18 @@ export const ContactForm: React.FC<ContactFormProps> = ({
 
   return (
     <div>
-      <Space wrap style={{ marginBottom: 16, width: '100%', justifyContent: 'space-between' }}>
-        <Button icon={<ArrowLeftOutlined />} onClick={handleLeave}>
-          Назад
-        </Button>
-        <Button
-          type="primary"
-          icon={<SaveOutlined />}
-          htmlType="submit"
-          form={formId}
-          loading={isLoading}
-        >
-          {isEdit ? 'Сохранить изменения' : 'Создать контакт'}
-        </Button>
-      </Space>
-
-      <Title level={2} style={{ marginBottom: 4 }}>
-        {isEdit ? 'Редактировать контакт' : 'Создать новый контакт'}
-      </Title>
-      <Text type="secondary">
-        {isEdit
-          ? 'Уточните контактные данные и рабочий контекст.'
-          : 'Добавьте контакт, чтобы привязать его к компании и ответственному.'}
-      </Text>
+      <BusinessFormHeader
+        formId={formId}
+        title={isEdit ? 'Редактировать контакт' : 'Создать новый контакт'}
+        subtitle={
+          isEdit
+            ? 'Уточните контактные данные и рабочий контекст.'
+            : 'Добавьте контакт, чтобы привязать его к компании и ответственному.'
+        }
+        submitLabel={isEdit ? 'Сохранить изменения' : 'Создать контакт'}
+        isSubmitting={isLoading}
+        onBack={handleLeave}
+      />
 
       <Card style={{ marginTop: 16 }}>
         <Form

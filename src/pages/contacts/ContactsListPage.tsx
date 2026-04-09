@@ -1,7 +1,7 @@
 import { ContactsTable } from '@/widgets/contacts-table';
-import { PageHeader } from '@/shared/ui/PageHeader';
+import { BusinessEntityListShell } from '@/components/business/BusinessEntityListShell';
 import { PlusOutlined } from '@ant-design/icons';
-import { Button, Card, Grid } from 'antd';
+import { Button, Grid } from 'antd';
 import React from 'react';
 // @ts-ignore
 import { navigate } from '@/router.js';
@@ -14,9 +14,9 @@ export const ContactsListPage: React.FC = () => {
   const canManage = canWrite();
 
   return (
-    <>
-      <PageHeader
+    <BusinessEntityListShell
         title="Контакты"
+        subtitle="Единый реестр контактных лиц с быстрым доступом к коммуникациям и владельцам."
         extra={
           canManage ? (
             <Button
@@ -29,11 +29,9 @@ export const ContactsListPage: React.FC = () => {
             </Button>
           ) : null
         }
-      />
-      <Card>
-        <ContactsTable />
-      </Card>
-    </>
+      >
+      <ContactsTable />
+    </BusinessEntityListShell>
   );
 };
 
