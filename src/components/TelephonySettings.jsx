@@ -55,7 +55,9 @@ import { canWrite } from '../lib/rbac.js';
 import {
   CONNECTION_TYPE_OPTIONS,
   DEFAULT_STUN_SERVERS,
+  DEFAULT_TELEPHONY_EVENT_MODE,
   DEFAULT_TELEPHONY_PROVIDER,
+  TELEPHONY_EVENT_MODE_OPTIONS,
   TELEPHONY_PROVIDER_OPTIONS,
   TELEPHONY_PROVIDER_TAG_COLORS,
   TELEPHONY_ROUTE_MODE_OPTIONS,
@@ -134,21 +136,11 @@ function getBridgeProviderOptions(currentProvider) {
   ];
 }
 
-function getBridgeTypeOptions(currentType) {
+function getBridgeTypeOptions() {
   const bridgeOption = CONNECTION_TYPE_OPTIONS.find((option) => option.value === 'sip');
-  const baseOptions = bridgeOption
+  return bridgeOption
     ? [{ ...bridgeOption, label: 'PBX Bridge (FreePBX external)' }]
     : [{ value: 'sip', label: 'PBX Bridge (FreePBX external)' }];
-
-  if (currentType === 'pbx') {
-    baseOptions.unshift({
-      value: 'pbx',
-      label: 'Embedded Asterisk (legacy, migrate to bridge)',
-      disabled: true,
-    });
-  }
-
-  return baseOptions;
 }
 
 function getPreferredInternalNumbers(numbers = []) {
@@ -213,7 +205,7 @@ export default function TelephonySettings({ onSuccess, onDirtyChange }) {
   const [settingsDirty, setSettingsDirty] = useState(false);
   const [routingDirty, setRoutingDirty] = useState(false);
   const bridgeProviderOptions = getBridgeProviderOptions(editingConnection?.provider);
-  const bridgeTypeOptions = getBridgeTypeOptions(editingConnection?.type);
+  const bridgeTypeOptions = getBridgeTypeOptions();
   const preferredInternalNumbers = getPreferredInternalNumbers(internalNumbers);
   const prioritizedNumberGroups = getPrioritizedNumberGroups(numberGroups);
 
@@ -242,7 +234,8 @@ export default function TelephonySettings({ onSuccess, onDirtyChange }) {
         incoming_enabled: profile.incoming_enabled !== false,
         incoming_poll_interval_ms: Number(profile.incoming_poll_interval_ms || 4000),
         incoming_popup_ttl_ms: Number(profile.incoming_popup_ttl_ms || 20000),
-        telephony_route_mode: profile.telephony_route_mode || BRIDGE_ROUTE_MODE,
+        telephony_route_mode: BRIDGE_ROUTE_MODE,
+        telephony_event_mode: profile.telephony_event_mode || DEFAULT_TELEPHONY_EVENT_MODE,
         telephony_provider: profile.telephony_provider || DEFAULT_TELEPHONY_PROVIDER,
         webrtc_stun_servers: profile.webrtc_stun_servers || DEFAULT_STUN_SERVERS,
         forward_unknown_calls: !!profile.forward_unknown_calls,
@@ -389,6 +382,7 @@ export default function TelephonySettings({ onSuccess, onDirtyChange }) {
         incoming_poll_interval_ms: Number(values.incoming_poll_interval_ms || 4000),
         incoming_popup_ttl_ms: Number(values.incoming_popup_ttl_ms || 20000),
         telephony_route_mode: BRIDGE_ROUTE_MODE,
+        telephony_event_mode: values.telephony_event_mode || DEFAULT_TELEPHONY_EVENT_MODE,
         telephony_provider: values.telephony_provider || DEFAULT_TELEPHONY_PROVIDER,
         webrtc_stun_servers: values.webrtc_stun_servers || '',
         forward_unknown_calls: !!values.forward_unknown_calls,
@@ -489,9 +483,8 @@ export default function TelephonySettings({ onSuccess, onDirtyChange }) {
       key: 'type',
       width: 90,
       render: (type) => {
-        const colors = { pbx: 'gold', sip: 'blue' };
+        const colors = { sip: 'blue' };
         const labels = {
-          pbx: tr('telephonySettings.types.embeddedLegacy', 'Embedded legacy'),
           sip: tr('telephonySettings.types.bridge', 'PBX Bridge'),
         };
         return <Tag color={colors[type] || 'default'}>{labels[type] || String(type || '').toUpperCase()}</Tag>;
@@ -600,7 +593,6 @@ export default function TelephonySettings({ onSuccess, onDirtyChange }) {
   ];
 
   const routeModeDescription = {
-    embedded: tr('telephonySettings.routeModes.embedded', 'Legacy embedded Asterisk mode. Keep only for migration; new FreePBX deployments should use PBX Bridge.'),
     bridge: tr('telephonySettings.routeModes.bridge', 'FreePBX is connected through PBX Bridge. Browser UI manages only safe routing/runtime flags; PBX secrets stay server-side.'),
   };
 
@@ -637,6 +629,15 @@ export default function TelephonySettings({ onSuccess, onDirtyChange }) {
               extra={tr('telephonySettings.fields.routeModeExtra', 'Для этого deployment режим фиксирован: CRM разговаривает с FreePBX через bridge/backend connector.')}
             >
               <Select options={BRIDGE_ROUTE_MODE_OPTIONS} disabled />
+            </Form.Item>
+
+            <Form.Item
+              label={tr('telephonySettings.fields.eventMode', 'Event integration mode')}
+              name="telephony_event_mode"
+              rules={[{ required: true, message: tr('telephonySettings.validation.selectEventMode', 'Select event mode') }]}
+              extra={tr('telephonySettings.fields.eventModeExtra', 'bridge: события приходят через Go bridge webhook. ami: ingest идёт только через прямой AMI listener.')}
+            >
+              <Select options={TELEPHONY_EVENT_MODE_OPTIONS} disabled={!canManage} />
             </Form.Item>
 
             <Form.Item noStyle dependencies={['telephony_route_mode']}>
@@ -1230,7 +1231,7 @@ export default function TelephonySettings({ onSuccess, onDirtyChange }) {
             label={tr('telephonySettings.fields.connectionType', 'Connection type')}
             name="type"
             rules={[{ required: true, message: tr('telephonySettings.validation.selectType', 'Select type') }]}
-            extra={tr('telephonySettings.fields.connectionTypeExtra', 'Для новых подключений используйте только PBX Bridge. Embedded Asterisk оставлен только для миграции legacy данных.')}
+            extra={tr('telephonySettings.fields.connectionTypeExtra', 'Для новых подключений используйте только PBX Bridge.')}
           >
             <Select placeholder={tr('telephonySettings.placeholders.connectionType', 'Выберите тип')}>
               {bridgeTypeOptions.map((option) => (

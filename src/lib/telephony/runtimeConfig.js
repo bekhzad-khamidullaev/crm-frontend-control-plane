@@ -2,6 +2,7 @@ import { getSIPConfig, getVoipSystemSettings } from '../api/telephony.js';
 import { getProfile, getTelephonyCredentials } from '../api/user.js';
 import {
   DEFAULT_STUN_SERVERS,
+  DEFAULT_TELEPHONY_EVENT_MODE,
   DEFAULT_TELEPHONY_PROVIDER,
   DEFAULT_TELEPHONY_ROUTE_MODE,
 } from './constants.js';
@@ -10,13 +11,19 @@ const ENV_SIP_WS_URL = String(appConfig.SIP_SERVER || import.meta.env.VITE_SIP_S
 
 function normalizeRouteMode(rawValue) {
   const value = String(rawValue || '').trim().toLowerCase();
-  if (['embedded', 'auto', 'internal', 'asterisk'].includes(value)) return 'embedded';
   if (['bridge', 'external', 'provider'].includes(value)) return 'bridge';
   return DEFAULT_TELEPHONY_ROUTE_MODE;
 }
 
 function normalizeProvider(_rawValue) {
   return 'Asterisk';
+}
+
+function normalizeEventMode(rawValue) {
+  const value = String(rawValue || '').trim().toLowerCase();
+  if (['bridge', 'go-bridge', 'go_bridge', 'connector', 'external'].includes(value)) return 'bridge';
+  if (['ami', 'asterisk-ami', 'asterisk_ami', 'direct-ami', 'direct_ami'].includes(value)) return 'ami';
+  return DEFAULT_TELEPHONY_EVENT_MODE;
 }
 
 function parseSipIdentity(sipUriRaw) {
@@ -145,6 +152,7 @@ function buildSipConfigFromBackend(profile, activeConnection, runtimeSettings, t
     extension: credentialsExtension || String(profile?.pbx_number || '').trim(),
     login: credentialsLogin || username,
     routeMode: normalizeRouteMode(runtimeSettings?.telephony_route_mode),
+    eventMode: normalizeEventMode(runtimeSettings?.telephony_event_mode),
     provider: normalizeProvider(runtimeSettings?.telephony_provider || activeConnection?.provider || DEFAULT_TELEPHONY_PROVIDER),
     profile,
     activeConnection,

@@ -115,11 +115,7 @@ function ProfilePage() {
       const data = await getProfile();
       setProfile(data);
       setAvatarUrl(getAvatarUrl(data));
-      form.setFieldsValue({
-        ...data,
-        telephony_ws_uri: data?.jssip_ws_uri || '',
-        telephony_sip_uri: data?.jssip_sip_uri || '',
-      });
+      form.setFieldsValue({ ...data });
       try {
         const creds = await getTelephonyCredentials();
         setTelephonyCredentials(creds);
@@ -168,8 +164,6 @@ function ProfilePage() {
         full_name: String(values.full_name || '').trim(),
         email: String(values.email || '').trim(),
         jssip_display_name: values.jssip_display_name,
-        jssip_ws_uri: String(values.telephony_ws_uri || '').trim(),
-        jssip_sip_uri: String(values.telephony_sip_uri || '').trim(),
       };
       await updateProfile(profilePayload);
       const nextExtension = String(values.telephony_extension || '').trim();
@@ -410,26 +404,6 @@ function ProfilePage() {
                 />
               )}
 
-              {!String(profile?.jssip_ws_uri || '').trim() && (
-                <Alert
-                  type="warning"
-                  showIcon
-                  style={{ marginBottom: 16 }}
-                  message={tr('profilePage.telephony.missingWsTitle', 'WSS SIP transport is not configured')}
-                  description={tr('profilePage.telephony.missingWsDescription', 'Administrator must configure WebSocket SIP URI (wss://...) in Integrations -> Telephony.')}
-                />
-              )}
-
-              {!String(profile?.jssip_sip_uri || '').trim() && (
-                <Alert
-                  type="warning"
-                  showIcon
-                  style={{ marginBottom: 16 }}
-                  message={tr('profilePage.telephony.missingSipUriTitle', 'SIP URI is not configured')}
-                  description={tr('profilePage.telephony.missingSipUriDescription', 'Administrator must provision SIP URI for your internal extension in Telephony integration module.')}
-                />
-              )}
-
               <Form.Item 
                 label={tr('profilePage.telephony.internalNumber', 'Internal number')}
                 name="telephony_extension"
@@ -484,44 +458,6 @@ function ProfilePage() {
                 extra={tr('profilePage.telephony.displayNameExtra', 'Optional. If empty, profile name is used.')}
               >
                 <Input placeholder={tr('profilePage.placeholders.displayName', 'John Doe')} />
-              </Form.Item>
-
-              <Form.Item
-                label={tr('profilePage.telephony.wsUri', 'SIP WebSocket URI (WSS)')}
-                name="telephony_ws_uri"
-                tooltip={tr('profilePage.telephony.wsUriTooltip', 'Used by CRM softphone transport')}
-                extra={tr('profilePage.telephony.wsUriExtra', 'System-level setting managed in Integrations -> Telephony')}
-                rules={[
-                  {
-                    validator: (_, value) => {
-                      const raw = String(value || '').trim().toLowerCase();
-                      if (!raw) return Promise.resolve();
-                      if (raw.startsWith('ws://') || raw.startsWith('wss://')) return Promise.resolve();
-                      return Promise.reject(new Error(tr('profilePage.validation.validWsUri', 'Enter a valid WebSocket URI (ws:// or wss://)')));
-                    },
-                  },
-                ]}
-              >
-                <Input />
-              </Form.Item>
-
-              <Form.Item
-                label={tr('profilePage.telephony.sipUri', 'SIP URI')}
-                name="telephony_sip_uri"
-                tooltip={tr('profilePage.telephony.sipUriTooltip', 'SIP identity used for registration')}
-                extra={tr('profilePage.telephony.sipUriExtra', 'Provisioned from your internal extension in Telephony integration')}
-                rules={[
-                  {
-                    validator: (_, value) => {
-                      const raw = String(value || '').trim().toLowerCase();
-                      if (!raw) return Promise.resolve();
-                      if (raw.startsWith('sip:') || raw.startsWith('sips:')) return Promise.resolve();
-                      return Promise.reject(new Error(tr('profilePage.validation.validSipUri', 'Enter a valid SIP URI (sip: or sips:)')));
-                    },
-                  },
-                ]}
-              >
-                <Input />
               </Form.Item>
 
               <Form.Item>
