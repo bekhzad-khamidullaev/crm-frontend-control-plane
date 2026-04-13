@@ -32,6 +32,7 @@ import sipClient from '../lib/telephony/SIPClient.js';
 import { loadTelephonyRuntimeConfig } from '../lib/telephony/runtimeConfig.js';
 import { DEFAULT_TELEPHONY_ROUTE_MODE } from '../lib/telephony/constants.js';
 import { TELEPHONY_MODAL_PROPS } from '../shared/ui/telephonyModal.js';
+import OutgoingCallCard from '../modules/calls/OutgoingCallCard.jsx';
 import '../styles/telephony.css';
 
 const DTMF_KEYS = ['1', '2', '3', '4', '5', '6', '7', '8', '9', '*', '0', '#'];
@@ -326,6 +327,9 @@ export default function TelephonyDialerModal({
   const [dndEnabled, setDndEnabled] = useState(() => readPersistedFlag('crm:dialer:dnd', false));
   const [autoAnswerEnabled, setAutoAnswerEnabled] = useState(() => readPersistedFlag('crm:dialer:auto-answer', false));
   const [pinOnTop, setPinOnTop] = useState(() => readPersistedFlag('crm:dialer:pin-on-top', false));
+  const [outgoingCallCardVisible, setOutgoingCallCardVisible] = useState(false);
+  const [outgoingCallCardPhone, setOutgoingCallCardPhone] = useState('');
+  const [outgoingCallCardData, setOutgoingCallCardData] = useState(null);
 
   const runtimeRef = useRef(null);
   const audioRef = useRef(null);
@@ -333,6 +337,7 @@ export default function TelephonyDialerModal({
   const callTokenRef = useRef(null);
   const autoCallHandledRef = useRef('');
   const dialNumberRef = useRef(String(initialNumber || ''));
+  const callStatusRef = useRef('idle');
   const bridgeCallRef = useRef({
     sessionId: '',
     toNumber: '',
@@ -376,6 +381,10 @@ export default function TelephonyDialerModal({
   useEffect(() => {
     dialNumberRef.current = String(dialNumber || '');
   }, [dialNumber]);
+
+  useEffect(() => {
+    callStatusRef.current = callStatus;
+  }, [callStatus]);
 
   useEffect(() => {
     dndEnabledRef.current = dndEnabled;
@@ -445,6 +454,16 @@ export default function TelephonyDialerModal({
       setCallStatus('calling');
       setMuted(false);
       setCallDuration(0);
+      
+      // Show outgoing call card for outgoing calls (only if currently idle - meaning it's an outgoing call)
+      if (callStatusRef.current === 'idle') {
+        const phoneNumber = String(data?.phoneNumber || dialNumberRef.current || '').trim();
+        if (phoneNumber) {
+          setOutgoingCallCardPhone(phoneNumber);
+          setOutgoingCallCardData({ callId: data?.uiCallToken || callTokenRef.current || `${Date.now()}` });
+          setOutgoingCallCardVisible(true);
+        }
+      }
     };
 
     const onCallAnswered = (data) => {
@@ -506,7 +525,7 @@ export default function TelephonyDialerModal({
       sipClient.off('callEnded', onCallEnded);
       sipClient.off('incomingCall', onIncomingCall);
     };
-  }, [message]);
+  }, [message, callStatusRef.current]);
 
   useEffect(() => {
     if (callStatus !== 'connected') {
@@ -1462,6 +1481,14 @@ export default function TelephonyDialerModal({
           <audio ref={audioRef} autoPlay />
         </div>
       </Space>
+
+      {/* Outgoing Call Card - shows client info for outgoing calls */}
+      <OutgoingCallCard
+        visible={outgoingCallCardVisible}
+        phoneNumber={outgoingCallCardPhone}
+        callData={outgoingCallCardData}
+        onClose={() => setOutgoingCallCardVisible(false)}
+      />
     </Modal>
   );
 }
