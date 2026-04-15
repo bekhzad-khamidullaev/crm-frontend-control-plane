@@ -1,9 +1,9 @@
-import { useDebounce } from '@/shared/hooks';
+import { useBackgroundRefresh, useDebounce } from '@/shared/hooks';
 import React, { useEffect, useState } from 'react';
 import { Button, Card, Col, Flex, Input, Row, Space, Tag, theme } from 'antd';
 import { StageSelect, UserSelect, CompanySelect } from '@/features/reference';
 import { DealListParams } from '@/entities/deal';
-import { ReloadOutlined, SearchOutlined } from '@ant-design/icons';
+import { SearchOutlined } from '@ant-design/icons';
 import { t } from '@/lib/i18n';
 
 interface DealsTableFiltersProps {
@@ -17,8 +17,8 @@ export const DealsTableFilters: React.FC<DealsTableFiltersProps> = ({
   filters,
   onChange,
   onRefresh,
-  loading,
 }) => {
+  useBackgroundRefresh(onRefresh, { enabled: Boolean(onRefresh) });
   const [search, setSearch] = useState(filters.search || '');
   const debouncedSearch = useDebounce(search, 400);
   const { token } = theme.useToken();
@@ -109,16 +109,6 @@ export const DealsTableFilters: React.FC<DealsTableFiltersProps> = ({
               onChange={(val) => handleChange('company', val)}
               style={{ width: '100%' }}
               allowClear
-            />
-          </Col>
-          <Col xs={24} sm={12} lg={2}>
-            <Button
-              block
-              icon={<ReloadOutlined />}
-              onClick={onRefresh}
-              loading={loading}
-              size="small"
-              aria-label={t('dealsTable.filters.refreshListAria')}
             />
           </Col>
         </Row>

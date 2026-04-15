@@ -2,9 +2,9 @@ import React from 'react';
 import { Form } from 'antd';
 import { IndustrySelect } from '@/features/reference';
 import { ClientTypeSelect } from '@/features/reference';
-import { useDebounce } from '@/shared/hooks';
+import { useBackgroundRefresh, useDebounce } from '@/shared/hooks';
 import { Button, Card, Col, Flex, Input, Row, Space, Tag, theme } from 'antd';
-import { ReloadOutlined, SearchOutlined } from '@ant-design/icons';
+import { SearchOutlined } from '@ant-design/icons';
 
 export interface CompaniesTableFiltersProps {
   filters?: Record<string, unknown>;
@@ -17,8 +17,8 @@ export const CompaniesTableFilters: React.FC<CompaniesTableFiltersProps> = ({
   filters,
   onFilterChange,
   onRefresh,
-  loading,
 }) => {
+  useBackgroundRefresh(onRefresh, { enabled: Boolean(onRefresh) });
   const [form] = Form.useForm();
   const lastPayloadRef = React.useRef('');
   const searchValue = Form.useWatch('search', form) || '';
@@ -105,13 +105,6 @@ export const CompaniesTableFilters: React.FC<CompaniesTableFiltersProps> = ({
             <Col xs={24} lg={4}>
               <Space wrap>
                 <Button size="small" onClick={handleReset}>Сбросить</Button>
-                <Button
-                  icon={<ReloadOutlined />}
-                  onClick={onRefresh}
-                  loading={loading}
-                  size="small"
-                  aria-label="Обновить список"
-                />
               </Space>
             </Col>
           </Row>

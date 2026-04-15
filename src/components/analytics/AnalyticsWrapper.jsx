@@ -2,7 +2,6 @@ import React, { useState, useRef } from 'react';
 import { Card, Space, Button, Select, DatePicker, Dropdown, App, Tooltip, Switch } from 'antd';
 import {
   DownloadOutlined,
-  ReloadOutlined,
   FilterOutlined,
   FileTextOutlined,
   FilePdfOutlined,
@@ -13,6 +12,7 @@ import dayjs from 'dayjs';
 import { getPeriodOptions, formatDateRange } from '../../lib/utils/date-filters';
 import { exportToCSV, exportToPDF, exportChartAsImage } from '../../lib/utils/chart-export';
 import RealTimeIndicator from './RealTimeIndicator';
+import { useBackgroundRefresh } from '@/shared/hooks';
 
 const { RangePicker } = DatePicker;
 
@@ -52,6 +52,10 @@ function AnalyticsWrapper({
   const [showCustomPicker, setShowCustomPicker] = useState(false);
   const [isRealTimeActive, setIsRealTimeActive] = useState(false);
   const contentRef = useRef(null);
+  useBackgroundRefresh(onRefresh, {
+    enabled: Boolean(onRefresh) && !enableRealTime && !isRealTimeActive,
+    interval: realTimeInterval,
+  });
 
   const periodOptions = getPeriodOptions();
 
@@ -81,14 +85,6 @@ function AnalyticsWrapper({
         onPeriodChange('custom', range);
       }
     }
-  };
-
-  // Обработка обновления данных
-  const handleRefresh = () => {
-    if (onRefresh) {
-      onRefresh();
-    }
-    message.success('Данные обновлены');
   };
 
   // Переключение real-time режима
@@ -224,17 +220,6 @@ function AnalyticsWrapper({
             </Button>
           </Tooltip>
         </Dropdown>
-      )}
-
-      {onRefresh && (
-        <Tooltip title="Обновить данные">
-          <Button
-            icon={<ReloadOutlined className={loading ? 'chart-refresh-icon loading' : 'chart-refresh-icon'} />}
-            onClick={handleRefresh}
-            loading={loading}
-            type="default"
-          />
-        </Tooltip>
       )}
 
       {extra}

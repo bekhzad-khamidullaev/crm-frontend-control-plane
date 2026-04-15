@@ -1,6 +1,5 @@
 import {
   ClearOutlined,
-  ReloadOutlined,
   SearchOutlined,
 } from '@ant-design/icons';
 import {
@@ -11,9 +10,9 @@ import {
   Space,
   Tag,
   theme,
-  Tooltip,
 } from 'antd';
 import React from 'react';
+import { useBackgroundRefresh } from '@/shared/hooks';
 
 export interface ActiveFilterChip {
   key: string;
@@ -42,9 +41,9 @@ export const EntityListToolbar: React.FC<EntityListToolbarProps> = ({
   activeFilters = [],
   onReset,
   onRefresh,
-  loading,
   resultSummary,
 }) => {
+  useBackgroundRefresh(onRefresh, { enabled: Boolean(onRefresh) });
   const { token } = theme.useToken();
   const screens = Grid.useBreakpoint();
   const isMobile = !screens.lg;
@@ -146,18 +145,6 @@ export const EntityListToolbar: React.FC<EntityListToolbarProps> = ({
               >
                 {resultSummary}
               </Tag>
-            ) : null}
-            {onRefresh ? (
-              <Tooltip title="Обновить список">
-                <Button
-                  aria-label="Обновить список"
-                  icon={<ReloadOutlined />}
-                  size="small"
-                  loading={loading}
-                  onClick={onRefresh}
-                  style={actionButtonStyle}
-                />
-              </Tooltip>
             ) : null}
             {hasActiveFilters && onReset ? (
               <Button

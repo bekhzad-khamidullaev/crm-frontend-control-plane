@@ -1,4 +1,4 @@
-import { useDebounce } from '@/shared/hooks';
+import { useBackgroundRefresh, useDebounce } from '@/shared/hooks';
 import React, { useEffect, useState } from 'react';
 import {
   LeadSourceSelect,
@@ -8,7 +8,7 @@ import {
 } from '@/features/reference';
 import { LeadListParams } from '@/entities/lead';
 import { Button, Card, Col, Flex, Input, Row, Space, Tag, theme } from 'antd';
-import { ReloadOutlined, SearchOutlined } from '@ant-design/icons';
+import { SearchOutlined } from '@ant-design/icons';
 import { t } from '@/lib/i18n';
 
 interface LeadsTableFiltersProps {
@@ -22,8 +22,8 @@ export const LeadsTableFilters: React.FC<LeadsTableFiltersProps> = ({
   filters,
   onChange,
   onRefresh,
-  loading,
 }) => {
+  useBackgroundRefresh(onRefresh, { enabled: Boolean(onRefresh) });
   const [search, setSearch] = useState(filters.search || '');
   const debouncedSearch = useDebounce(search, 400);
   const { token } = theme.useToken();
@@ -120,16 +120,6 @@ export const LeadsTableFilters: React.FC<LeadsTableFiltersProps> = ({
               onChange={(val) => handleFilterChange('company', val)}
               allowClear
               style={{ width: '100%' }}
-            />
-          </Col>
-          <Col xs={24} lg={2}>
-            <Button
-              block
-              icon={<ReloadOutlined />}
-              onClick={onRefresh}
-              loading={loading}
-              size="small"
-              aria-label={t('leadsTable.filters.refreshList', 'Обновить список')}
             />
           </Col>
         </Row>

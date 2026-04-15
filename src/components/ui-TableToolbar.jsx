@@ -3,7 +3,6 @@ import { Input, Button, Space, Dropdown, Badge, Tooltip, Typography, Segmented }
 import {
   SearchOutlined,
   FilterOutlined,
-  ReloadOutlined,
   DownloadOutlined,
   SettingOutlined,
   ClearOutlined,
@@ -12,6 +11,7 @@ import {
   BarsOutlined,
 } from '@ant-design/icons';
 import { canWrite as canWriteByRole } from '../lib/rbac.js';
+import { useBackgroundRefresh } from '@/shared/hooks';
 
 const { Search } = Input;
 const { Title, Text } = Typography;
@@ -45,6 +45,7 @@ export default function TableToolbar({
   placeholder = 'Поиск...',
   children,
 }) {
+  useBackgroundRefresh(onRefresh, { enabled: Boolean(showRefresh && onRefresh) });
   // Handle search value change for both patterns
   const handleSearch = (val) => {
     if (onSearch) onSearch(val);
@@ -124,17 +125,6 @@ export default function TableToolbar({
 
         <Space wrap>
           {extra}
-
-          {showRefresh && (
-            <Tooltip title="Обновить">
-              <Button
-                icon={<ReloadOutlined />}
-                aria-label="Обновить таблицу"
-                onClick={onRefresh}
-                loading={loading}
-              />
-            </Tooltip>
-          )}
 
           {showExport && (
             <Tooltip title="Экспорт">
