@@ -38,6 +38,7 @@ import {
   Typography,
   theme,
 } from 'antd';
+import { useBackgroundRefresh } from '@/shared/hooks';
 import dayjs from 'dayjs';
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import {
@@ -216,6 +217,8 @@ export default function ContentPlansWorkspacePage({ initialTab = 'plans' }) {
     loadData();
   }, [loadData]);
 
+  useBackgroundRefresh(loadData, { enabled: true });
+
   const filteredCampaigns = useMemo(
     () => contentPlans.filter((item) =>
       containsText(item.name, search)
@@ -277,6 +280,11 @@ export default function ContentPlansWorkspacePage({ initialTab = 'plans' }) {
     setSelectedPlanItemIds([]);
     loadPlanItems(selectedPlan.id);
   }, [selectedPlan?.id, loadPlanItems]);
+
+  useBackgroundRefresh(
+    selectedPlan?.id ? () => loadPlanItems(selectedPlan.id) : null,
+    { enabled: Boolean(selectedPlan?.id), interval: 30000 }
+  );
 
   const selectedPlan = useMemo(
     () => contentPlans.find((item) => item.id === activePlanId) || null,
@@ -1086,7 +1094,6 @@ export default function ContentPlansWorkspacePage({ initialTab = 'plans' }) {
               </Space>
               <Space wrap>
                 <Button icon={<CopyOutlined />} loading={copying} onClick={handleDuplicateSelectedPlan}>Копировать</Button>
-                <Button icon={<ReloadOutlined />} onClick={loadData}>Обновить</Button>
                 <Button type="primary" icon={<PlusOutlined />} onClick={openAddContentModal}>Создать</Button>
               </Space>
             </Space>

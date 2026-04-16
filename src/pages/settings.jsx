@@ -47,6 +47,7 @@ import {
   getRetentionPolicies,
   runRetentionPolicies,
 } from '../lib/api/compliance.js';
+import { useBackgroundRefresh } from '@/shared/hooks';
 import {
   getLicenseEntitlements,
   requestLicenseFromControlPlane,
@@ -276,6 +277,7 @@ function SettingsConfigurator({
 }) {
   const tr = (key, fallback, vars = {}) => translateWithFallback(key, fallback, vars);
   const [form] = Form.useForm();
+  useBackgroundRefresh(onReload, { enabled: Boolean(onReload) });
 
   useEffect(() => {
     form.setFieldsValue(normalizeForForm(data || {}));
@@ -317,9 +319,6 @@ function SettingsConfigurator({
           <Space>
             <Button type="primary" htmlType="submit" loading={saving}>
               {tr('actions.save', 'Сохранить')}
-            </Button>
-            <Button icon={<ReloadOutlined />} onClick={onReload} loading={loading}>
-              {tr('actions.refresh', 'Обновить')}
             </Button>
           </Space>
         </Form>
@@ -409,6 +408,10 @@ function SettingsPage() {
     loadLicenseInfo();
     loadComplianceData();
   }, []);
+
+  useBackgroundRefresh(loadPublicDomains, { enabled: true });
+  useBackgroundRefresh(() => loadLicenseInfo({ silent: true }), { enabled: true });
+  useBackgroundRefresh(loadComplianceData, { enabled: true });
 
   const setSettingsLoadingState = (key, value) => {
     setSettingsLoading((prev) => ({ ...prev, [key]: value }));
@@ -873,11 +876,6 @@ function SettingsPage() {
       children: (
         <Card
           title={tr('settingsPage.domains.title', 'Публичные домены email')}
-          extra={
-            <Button icon={<ReloadOutlined />} onClick={loadPublicDomains}>
-              {tr('actions.refresh', 'Обновить')}
-            </Button>
-          }
         >
           <Table
             columns={domainColumns}
@@ -901,11 +899,6 @@ function SettingsPage() {
         <Space direction="vertical" style={{ width: '100%' }} size="large">
           <Card
             title={tr('settingsPage.compliance.overviewTitle', 'Compliance overview')}
-            extra={
-              <Button icon={<ReloadOutlined />} onClick={loadComplianceData} loading={complianceLoading}>
-                {tr('actions.refresh', 'Обновить')}
-              </Button>
-            }
           >
             <Alert
               type="info"
@@ -919,11 +912,6 @@ function SettingsPage() {
 
           <Card
             title={tr('settingsPage.compliance.dsrTitle', 'DSR Requests')}
-            extra={
-              <Button icon={<ReloadOutlined />} onClick={loadComplianceData} loading={complianceLoading}>
-                {tr('actions.refresh', 'Обновить')}
-              </Button>
-            }
           >
             <Table
               rowKey={(record) => record.id}
@@ -964,9 +952,6 @@ function SettingsPage() {
             title="Retention Policies"
             extra={
               <Space>
-                <Button icon={<ReloadOutlined />} onClick={loadComplianceData} loading={complianceLoading}>
-                {tr('actions.refresh', 'Обновить')}
-                </Button>
                 <Button type="primary" onClick={handleRunRetention} loading={complianceLoading}>
                   {tr('settingsPage.compliance.runRetention', 'Запустить retention')}
                 </Button>
@@ -1016,9 +1001,6 @@ function SettingsPage() {
           title={<><SafetyCertificateOutlined /> {tr('settingsPage.license.title', 'Текущая лицензия')}</>}
           extra={
             <Space>
-              <Button icon={<ReloadOutlined />} onClick={() => loadLicenseInfo()} loading={licenseLoading}>
-                {tr('actions.refresh', 'Обновить')}
-              </Button>
               <Button type="primary" onClick={handleRequestLicense} loading={licenseRequesting}>
                 {tr('settingsPage.license.requestAction', 'Запросить лицензию')}
               </Button>

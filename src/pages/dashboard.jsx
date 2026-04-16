@@ -38,6 +38,7 @@ import {
 } from '@ant-design/icons';
 import { useEffect, useMemo, useState } from 'react';
 import ExportButton from '../components/ExportButton.jsx';
+import { useBackgroundRefresh } from '@/shared/hooks';
 import PredictionChart from '../components/analytics/PredictionChart.jsx';
 import { getActivityFeed, getFunnelData, getOverview, normalizeOverview } from '../lib/api/analytics.js';
 import { getDeals } from '../lib/api/deals.js';
@@ -480,6 +481,8 @@ function Dashboard() {
   useEffect(() => {
     void loadDashboardData();
   }, [period, viewMode]);
+
+  useBackgroundRefresh(() => void loadDashboardData(), { enabled: true });
 
   useEffect(() => {
     replaceHashQuery({
@@ -1476,9 +1479,6 @@ function Dashboard() {
             </Space>
 
             <Space wrap>
-              <Button icon={<ReloadOutlined />} onClick={() => void loadDashboardData()}>
-                {tr('actions.refresh', 'Yangilash')}
-              </Button>
               <ExportButton
                 data={exportData}
                 columns={exportColumns}

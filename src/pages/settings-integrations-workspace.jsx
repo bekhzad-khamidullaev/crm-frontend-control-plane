@@ -50,6 +50,7 @@ import {
   getRetentionPolicies,
   runRetentionPolicies,
 } from '../lib/api/compliance.js';
+import { useBackgroundRefresh } from '@/shared/hooks';
 import { useTheme } from '../lib/hooks/useTheme.js';
 import { formatValueForUi, isPlainObject as isPlainObjectValue } from '../lib/utils/value-display.js';
 import { t } from '../lib/i18n/index.js';
@@ -348,6 +349,7 @@ function SettingsConfigurator({
     return localized === key ? interpolateFallback(fallback, vars) : localized;
   };
   const [form] = Form.useForm();
+  useBackgroundRefresh(onReload, { enabled: Boolean(onReload) });
   const fieldEntries = useMemo(() => Object.entries(data || {}), [data]);
 
   useEffect(() => {
@@ -371,9 +373,6 @@ function SettingsConfigurator({
           <Space>
             <Button type="primary" htmlType="submit" loading={saving}>
               {tr('actions.save', 'Сохранить')}
-            </Button>
-            <Button icon={<ReloadOutlined />} onClick={onReload} loading={loading}>
-              {tr('actions.refresh', 'Обновить')}
             </Button>
           </Space>
         </Form>
@@ -669,6 +668,13 @@ export default function SettingsIntegrationsWorkspace({
   useEffect(() => {
     loadWorkspace();
   }, [canAccessSystemTabs, canAccessIntegrationsTab]);
+
+  useBackgroundRefresh(loadWorkspace, { enabled: true });
+  useBackgroundRefresh(loadPublicDomains, { enabled: true });
+  useBackgroundRefresh(loadWebhooks, { enabled: true });
+  useBackgroundRefresh(loadIntegrationLogs, { enabled: true });
+  useBackgroundRefresh(loadSecurityActivity, { enabled: true });
+  useBackgroundRefresh(loadComplianceData, { enabled: true });
 
   const setLoadingState = (key, value) => setSectionLoading((prev) => ({ ...prev, [key]: value }));
   const setSavingState = (key, value) => setSectionSaving((prev) => ({ ...prev, [key]: value }));
@@ -1236,7 +1242,7 @@ export default function SettingsIntegrationsWorkspace({
             <Col xs={24}>
               <Card
                 title={tr('settingsWorkspace.domains.title', 'Публичные домены email')}
-                extra={<Button icon={<ReloadOutlined />} onClick={loadPublicDomains} loading={sectionLoading.domains}>{tr('actions.refresh', 'Обновить')}</Button>}
+                extra={null}
               >
                 <Table columns={domainColumns} dataSource={domains} rowKey={(record) => record.domain || record} loading={sectionLoading.domains} pagination={{ pageSize: 10, hideOnSinglePage: true }} />
               </Card>
@@ -1254,7 +1260,7 @@ export default function SettingsIntegrationsWorkspace({
             <Col xs={24} xl={12}>
               <Card
                 title={tr('settingsWorkspace.webhooks.title', 'Webhooks')}
-                extra={<Button icon={<ReloadOutlined />} onClick={loadWebhooks} loading={sectionLoading.webhooks}>{tr('actions.refresh', 'Обновить')}</Button>}
+                extra={null}
               >
                 {sectionErrors.webhooks && (
                   <Alert
@@ -1316,7 +1322,7 @@ export default function SettingsIntegrationsWorkspace({
             <Col xs={24} xl={12}>
               <Card
                 title={tr('settingsWorkspace.logs.statsTitle', 'Integration logs summary')}
-                extra={<Button icon={<ReloadOutlined />} onClick={loadIntegrationLogs} loading={sectionLoading.integrationLogs}>{tr('actions.refresh', 'Обновить')}</Button>}
+                extra={null}
               >
                 <Space direction="vertical" size="middle" style={{ width: '100%' }}>
                   {sectionErrors.integrationLogs && (
@@ -1415,7 +1421,7 @@ export default function SettingsIntegrationsWorkspace({
           </Row>
           <Card
             title={tr('settingsWorkspace.logs.recentTitle', 'Recent integration logs')}
-            extra={<Button icon={<ReloadOutlined />} onClick={loadIntegrationLogs} loading={sectionLoading.integrationLogs}>{tr('actions.refresh', 'Обновить')}</Button>}
+            extra={null}
           >
             {sectionErrors.integrationLogs && (
               <Alert
@@ -1531,7 +1537,7 @@ export default function SettingsIntegrationsWorkspace({
             <Col xs={24} xl={12}>
               <Card
                 title={tr('settingsWorkspace.security.sessionsTitle', 'Активные сессии')}
-                extra={<Button icon={<ReloadOutlined />} onClick={loadSecurityActivity} loading={sectionLoading.securityActivity}>{tr('actions.refresh', 'Обновить')}</Button>}
+                extra={null}
               >
                 <Table
                   size="small"
@@ -1550,7 +1556,7 @@ export default function SettingsIntegrationsWorkspace({
             <Col xs={24} xl={12}>
               <Card
                 title={tr('settingsWorkspace.security.auditTitle', 'Security audit')}
-                extra={<Button icon={<ReloadOutlined />} onClick={loadSecurityActivity} loading={sectionLoading.securityActivity}>{tr('actions.refresh', 'Обновить')}</Button>}
+                extra={null}
               >
                 <Table
                   size="small"
@@ -1577,7 +1583,7 @@ export default function SettingsIntegrationsWorkspace({
         <Space direction="vertical" size="large" style={{ width: '100%' }}>
           <Card
             title={tr('settingsWorkspace.compliance.overviewTitle', 'Compliance overview')}
-            extra={<Button icon={<ReloadOutlined />} onClick={loadComplianceData} loading={sectionLoading.compliance}>{tr('actions.refresh', 'Обновить')}</Button>}
+            extra={null}
           >
             <Alert
               type="info"
@@ -1738,7 +1744,7 @@ export default function SettingsIntegrationsWorkspace({
 
           <Card
             title={tr('settingsWorkspace.compliance.dsrTitle', 'DSR Requests')}
-            extra={<Button icon={<ReloadOutlined />} onClick={loadComplianceData} loading={sectionLoading.compliance}>{tr('actions.refresh', 'Обновить')}</Button>}
+            extra={null}
           >
             <Table
               rowKey={(record) => record.id}
@@ -1767,9 +1773,6 @@ export default function SettingsIntegrationsWorkspace({
             title={tr('settingsWorkspace.compliance.retentionTitle', 'Retention Policies')}
             extra={(
               <Space>
-                <Button icon={<ReloadOutlined />} onClick={loadComplianceData} loading={sectionLoading.compliance}>
-                  {tr('actions.refresh', 'Обновить')}
-                </Button>
                 <Button type="primary" onClick={handleRunRetention} loading={sectionLoading.compliance}>
                   {tr('settingsWorkspace.compliance.runRetention', 'Запустить retention')}
                 </Button>
@@ -1809,9 +1812,6 @@ export default function SettingsIntegrationsWorkspace({
             )}
             action={(
               <Space wrap>
-                <Button icon={<ReloadOutlined />} onClick={loadWorkspace} loading={Object.values(sectionLoading).some(Boolean)}>
-                  {tr('actions.refresh', 'Обновить')}
-                </Button>
                 {visibleTabKeys.includes('operations') ? (
                   <Button onClick={() => setActiveTab('operations')}>
                     {tr('settingsWorkspace.actions.openOps', 'Открыть ops')}
@@ -1842,11 +1842,7 @@ export default function SettingsIntegrationsWorkspace({
             <span>{tr('settingsWorkspace.title', 'Settings and Integrations Workspace')}</span>
           </Space>
         )}
-        extra={(
-          <Button icon={<ReloadOutlined />} onClick={loadWorkspace} loading={Object.values(sectionLoading).some(Boolean) || dataExchangeLoading}>
-            {tr('settingsWorkspace.actions.refreshAll', 'Обновить всё')}
-          </Button>
-        )}
+        extra={null}
       >
         <Tabs activeKey={activeTab} onChange={setActiveTab} items={tabItems} />
       </Card>
