@@ -5,6 +5,7 @@ import parseLicenseRestriction from '../../lib/api/licenseError';
 import { emitLicenseRestriction } from '../../lib/api/licenseRestrictionBus';
 
 const API_BASE_URL = resolveApiBase(import.meta.env.VITE_API_BASE_URL);
+const AUTH_BYPASS_PREFIXES = ['/api/token/', '/api/auth/', '/api/public/'];
 
 /**
  * Central Axios instance for all API calls
@@ -26,6 +27,13 @@ export const apiClient = axios.create({
  */
 apiClient.interceptors.request.use(
   (config: InternalAxiosRequestConfig) => {
+    const skipAuth = config.headers?.['X-Skip-Auth'] === '1';
+    (config as InternalAxiosRequestConfig & { _skipAuth?: boolean })._skipAuth = skipAuth;
+    if (skipAuth && config.headers) {
+      delete config.headers['X-Skip-Auth'];
+      delete config.headers.Authorization;
+      return config;
+    }
     const token = sessionStorage.getItem('crm_access_token');
     if (token && config.headers) {
       config.headers.Authorization = `Bearer ${token}`;
@@ -41,10 +49,17 @@ apiClient.interceptors.request.use(
 apiClient.interceptors.response.use(
   (response) => response,
   async (error: AxiosError) => {
-    const originalRequest = error.config as InternalAxiosRequestConfig & { _retry?: boolean };
+    const originalRequest = error.config as InternalAxiosRequestConfig & {
+      _retry?: boolean;
+      _skipAuth?: boolean;
+    };
+    const requestUrl = String(originalRequest?.url || '');
+    const isAuthBypassRequest =
+      originalRequest?._skipAuth === true ||
+      AUTH_BYPASS_PREFIXES.some((prefix) => requestUrl.includes(prefix));
 
     // 401 - Try to refresh token
-    if (error.response?.status === 401 && !originalRequest._retry) {
+    if (error.response?.status === 401 && !originalRequest._retry && !isAuthBypassRequest) {
       originalRequest._retry = true;
 
       try {
