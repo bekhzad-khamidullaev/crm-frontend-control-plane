@@ -7,8 +7,9 @@ import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { message } from 'antd';
 import { CompaniesService } from '@/shared/api/generated/services/CompaniesService';
 import { companyKeys } from './keys';
-import type { Company } from '@/shared/api/generated/models/Company';
-import type { PatchedCompany } from '@/shared/api/generated/models/PatchedCompany';
+import type { CompanyWritePayload } from '../model/types';
+import type { PatchedCompany } from '../model/types';
+import { getApiErrorMessage } from '@/lib/api/error-utils';
 
 /**
  * Create new company
@@ -17,13 +18,13 @@ export const useCreateCompany = () => {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: (data: Company) => CompaniesService.companiesCreate({ requestBody: data }),
+    mutationFn: (data: CompanyWritePayload) => CompaniesService.companiesCreate({ requestBody: data }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: companyKeys.lists() });
       message.success('Компания успешно создана');
     },
     onError: (error: any) => {
-      message.error(error?.body?.message || 'Ошибка при создании компании');
+      message.error(getApiErrorMessage(error, 'Ошибка при создании компании'));
     },
   });
 };
@@ -35,7 +36,7 @@ export const useUpdateCompany = () => {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: ({ id, data }: { id: number; data: Company }) =>
+    mutationFn: ({ id, data }: { id: number; data: CompanyWritePayload }) =>
       CompaniesService.companiesUpdate({ id, requestBody: data }),
     onSuccess: (_, variables) => {
       queryClient.invalidateQueries({ queryKey: companyKeys.detail(variables.id) });
@@ -43,7 +44,7 @@ export const useUpdateCompany = () => {
       message.success('Компания успешно обновлена');
     },
     onError: (error: any) => {
-      message.error(error?.body?.message || 'Ошибка при обновлении компании');
+      message.error(getApiErrorMessage(error, 'Ошибка при обновлении компании'));
     },
   });
 };
@@ -63,7 +64,7 @@ export const usePatchCompany = () => {
       message.success('Компания успешно обновлена');
     },
     onError: (error: any) => {
-      message.error(error?.body?.message || 'Ошибка при обновлении компании');
+      message.error(getApiErrorMessage(error, 'Ошибка при обновлении компании'));
     },
   });
 };
@@ -81,7 +82,7 @@ export const useDeleteCompany = () => {
       message.success('Компания успешно удалена');
     },
     onError: (error: any) => {
-      message.error(error?.body?.message || 'Ошибка при удалении компании');
+      message.error(getApiErrorMessage(error, 'Ошибка при удалении компании'));
     },
   });
 };

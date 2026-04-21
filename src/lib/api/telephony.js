@@ -294,7 +294,7 @@ export async function getSIPConfig() {
  * Save SIP configuration
  * @param {Object} data
  * @param {string} data.provider - Provider (Asterisk)
- * @param {string} data.type - Connection type (pbx=embedded, sip=external bridge)
+ * @param {string} data.type - Connection type (pbx=embedded, sip=external ami)
  * @param {string} data.number - Phone number
  * @param {string} data.callerid - Caller ID
  * @returns {Promise<Object>}
@@ -561,6 +561,18 @@ export async function getVoipSystemSettings() {
 
 export async function updateVoipSystemSettings(data) {
   return api.patch('/api/voip/system-settings/current/', { body: data });
+}
+
+export async function getVoipClientSettings() {
+  try {
+    return await api.get('/api/voip/client-settings/current/');
+  } catch {
+    return api.get('/api/voip/client-settings/');
+  }
+}
+
+export async function updateVoipClientSettings(data) {
+  return api.patch('/api/voip/client-settings/current/', { body: data });
 }
 
 export async function getVoipRealtimeSettings() {

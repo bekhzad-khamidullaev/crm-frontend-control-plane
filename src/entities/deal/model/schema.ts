@@ -2,7 +2,7 @@ import { z } from 'zod';
 
 export const dealSchema = z.object({
   name: z.string().min(1, 'Введите название'),
-  amount: z.string().nullable().optional(), // API uses string for Decimal usually, or number? Model says string | null.
+  amount: z.union([z.string(), z.number()]).nullable().optional(),
   currency: z.number().nullable().optional(),
   stage: z.number().nullable().optional(),
   probability: z.number().min(0).max(100).nullable().optional(),

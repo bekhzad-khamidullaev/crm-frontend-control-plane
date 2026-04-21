@@ -2,9 +2,11 @@
 /* istanbul ignore file */
 /* tslint:disable */
 /* eslint-disable */
+import type { ActiveSession } from '../models/ActiveSession';
 import type { AIProviderSettings } from '../models/AIProviderSettings';
 import type { APIKey } from '../models/APIKey';
 import type { APIKeyCreate } from '../models/APIKeyCreate';
+import type { AuditLog } from '../models/AuditLog';
 import type { ComplianceAuditLog } from '../models/ComplianceAuditLog';
 import type { ConsentRecord } from '../models/ConsentRecord';
 import type { DataRetentionPolicy } from '../models/DataRetentionPolicy';
@@ -15,6 +17,7 @@ import type { InstagramAccount } from '../models/InstagramAccount';
 import type { InstagramAccountCreate } from '../models/InstagramAccountCreate';
 import type { IntegrationLog } from '../models/IntegrationLog';
 import type { LeadAssignmentRule } from '../models/LeadAssignmentRule';
+import type { NotificationSettings } from '../models/NotificationSettings';
 import type { OmnichannelMessage } from '../models/OmnichannelMessage';
 import type { PaginatedAIProviderSettingsList } from '../models/PaginatedAIProviderSettingsList';
 import type { PaginatedAPIKeyList } from '../models/PaginatedAPIKeyList';
@@ -38,14 +41,20 @@ import type { PatchedDataSubjectRequest } from '../models/PatchedDataSubjectRequ
 import type { PatchedFacebookPage } from '../models/PatchedFacebookPage';
 import type { PatchedInstagramAccount } from '../models/PatchedInstagramAccount';
 import type { PatchedLeadAssignmentRule } from '../models/PatchedLeadAssignmentRule';
+import type { PatchedNotificationSettings } from '../models/PatchedNotificationSettings';
+import type { PatchedSecuritySettings } from '../models/PatchedSecuritySettings';
+import type { PatchedSystemSettings } from '../models/PatchedSystemSettings';
 import type { PatchedTelegramBot } from '../models/PatchedTelegramBot';
 import type { PatchedTelegramUserAccount } from '../models/PatchedTelegramUserAccount';
 import type { PatchedWebhook } from '../models/PatchedWebhook';
 import type { PatchedWhatsAppBusinessAccount } from '../models/PatchedWhatsAppBusinessAccount';
+import type { SecuritySettings } from '../models/SecuritySettings';
+import type { SystemSettings } from '../models/SystemSettings';
 import type { TelegramBot } from '../models/TelegramBot';
 import type { TelegramBotCreate } from '../models/TelegramBotCreate';
 import type { TelegramUserAccount } from '../models/TelegramUserAccount';
 import type { TelegramUserAccountCreate } from '../models/TelegramUserAccountCreate';
+import type { TestNotification } from '../models/TestNotification';
 import type { Webhook } from '../models/Webhook';
 import type { WebhookCreate } from '../models/WebhookCreate';
 import type { WhatsAppBusinessAccount } from '../models/WhatsAppBusinessAccount';
@@ -1293,11 +1302,51 @@ export class SettingsService {
         });
     }
     /**
-     * GET /api/settings/general/ - Retrieve general settings.
-     * @returns any No response body
+     * ViewSet for managing Facebook Page integrations.
+     *
+     * Endpoints:
+     * - GET /api/settings/facebook/pages/ - List all connected pages
+     * - POST /api/settings/facebook/pages/ - Connect new Facebook page
+     * - GET /api/settings/facebook/pages/{id}/ - Get page details
+     * - PATCH /api/settings/facebook/pages/{id}/ - Update page settings
+     * - DELETE /api/settings/facebook/pages/{id}/ - Disconnect page
+     * - POST /api/settings/facebook/pages/{id}/test/ - Test connection
+     * - POST /api/settings/facebook/pages/{id}/disconnect/ - Disconnect and cleanup
+     * @returns FacebookPage
      * @throws ApiError
      */
-    public static settingsGeneralList(): CancelablePromise<any> {
+    public static settingsFacebookPagesOauthCallbackRetrieve(): CancelablePromise<FacebookPage> {
+        return __request(OpenAPI, {
+            method: 'GET',
+            url: '/api/settings/facebook/pages/oauth/callback/',
+        });
+    }
+    /**
+     * ViewSet for managing Facebook Page integrations.
+     *
+     * Endpoints:
+     * - GET /api/settings/facebook/pages/ - List all connected pages
+     * - POST /api/settings/facebook/pages/ - Connect new Facebook page
+     * - GET /api/settings/facebook/pages/{id}/ - Get page details
+     * - PATCH /api/settings/facebook/pages/{id}/ - Update page settings
+     * - DELETE /api/settings/facebook/pages/{id}/ - Disconnect page
+     * - POST /api/settings/facebook/pages/{id}/test/ - Test connection
+     * - POST /api/settings/facebook/pages/{id}/disconnect/ - Disconnect and cleanup
+     * @returns FacebookPage
+     * @throws ApiError
+     */
+    public static settingsFacebookPagesOauthStartRetrieve(): CancelablePromise<FacebookPage> {
+        return __request(OpenAPI, {
+            method: 'GET',
+            url: '/api/settings/facebook/pages/oauth/start/',
+        });
+    }
+    /**
+     * GET /api/settings/general/ - Retrieve general settings.
+     * @returns SystemSettings
+     * @throws ApiError
+     */
+    public static settingsGeneralList(): CancelablePromise<Array<SystemSettings>> {
         return __request(OpenAPI, {
             method: 'GET',
             url: '/api/settings/general/',
@@ -1305,20 +1354,24 @@ export class SettingsService {
     }
     /**
      * PATCH /api/settings/general/ - Update general settings.
-     * @returns any No response body
+     * @returns SystemSettings
      * @throws ApiError
      */
     public static settingsGeneralPartialUpdate({
         id,
+        requestBody,
     }: {
         id: string,
-    }): CancelablePromise<any> {
+        requestBody?: PatchedSystemSettings,
+    }): CancelablePromise<SystemSettings> {
         return __request(OpenAPI, {
             method: 'PATCH',
             url: '/api/settings/general/{id}/',
             path: {
                 'id': id,
             },
+            body: requestBody,
+            mediaType: 'application/json',
         });
     }
     /**
@@ -1595,11 +1648,51 @@ export class SettingsService {
         });
     }
     /**
+     * ViewSet for managing Instagram Business Account integrations.
+     *
+     * Endpoints:
+     * - GET /api/settings/instagram/accounts/ - List all connected accounts
+     * - POST /api/settings/instagram/accounts/ - Connect new Instagram account
+     * - GET /api/settings/instagram/accounts/{id}/ - Get account details
+     * - PATCH /api/settings/instagram/accounts/{id}/ - Update account settings
+     * - DELETE /api/settings/instagram/accounts/{id}/ - Disconnect account
+     * - POST /api/settings/instagram/accounts/{id}/test/ - Test connection
+     * - POST /api/settings/instagram/accounts/{id}/disconnect/ - Disconnect and cleanup
+     * @returns InstagramAccount
+     * @throws ApiError
+     */
+    public static settingsInstagramAccountsOauthCallbackRetrieve(): CancelablePromise<InstagramAccount> {
+        return __request(OpenAPI, {
+            method: 'GET',
+            url: '/api/settings/instagram/accounts/oauth/callback/',
+        });
+    }
+    /**
+     * ViewSet for managing Instagram Business Account integrations.
+     *
+     * Endpoints:
+     * - GET /api/settings/instagram/accounts/ - List all connected accounts
+     * - POST /api/settings/instagram/accounts/ - Connect new Instagram account
+     * - GET /api/settings/instagram/accounts/{id}/ - Get account details
+     * - PATCH /api/settings/instagram/accounts/{id}/ - Update account settings
+     * - DELETE /api/settings/instagram/accounts/{id}/ - Disconnect account
+     * - POST /api/settings/instagram/accounts/{id}/test/ - Test connection
+     * - POST /api/settings/instagram/accounts/{id}/disconnect/ - Disconnect and cleanup
+     * @returns InstagramAccount
+     * @throws ApiError
+     */
+    public static settingsInstagramAccountsOauthStartRetrieve(): CancelablePromise<InstagramAccount> {
+        return __request(OpenAPI, {
+            method: 'GET',
+            url: '/api/settings/instagram/accounts/oauth/start/',
+        });
+    }
+    /**
      * UX-focused integration hub endpoints for non-technical admins.
      * @returns any No response body
      * @throws ApiError
      */
-    public static settingsIntegrationHubRetrieve(): CancelablePromise<any> {
+    public static settingsIntegrationHubList(): CancelablePromise<any> {
         return __request(OpenAPI, {
             method: 'GET',
             url: '/api/settings/integration-hub/',
@@ -1948,10 +2041,10 @@ export class SettingsService {
     }
     /**
      * GET /api/settings/notifications/ - Get global notification settings.
-     * @returns any No response body
+     * @returns NotificationSettings
      * @throws ApiError
      */
-    public static settingsNotificationsList(): CancelablePromise<any> {
+    public static settingsNotificationsList(): CancelablePromise<Array<NotificationSettings>> {
         return __request(OpenAPI, {
             method: 'GET',
             url: '/api/settings/notifications/',
@@ -1959,39 +2052,49 @@ export class SettingsService {
     }
     /**
      * PATCH /api/settings/notifications/ - Update global settings.
-     * @returns any No response body
+     * @returns NotificationSettings
      * @throws ApiError
      */
     public static settingsNotificationsPartialUpdate({
         id,
+        requestBody,
     }: {
         id: string,
-    }): CancelablePromise<any> {
+        requestBody?: PatchedNotificationSettings,
+    }): CancelablePromise<NotificationSettings> {
         return __request(OpenAPI, {
             method: 'PATCH',
             url: '/api/settings/notifications/{id}/',
             path: {
                 'id': id,
             },
+            body: requestBody,
+            mediaType: 'application/json',
         });
     }
     /**
      * POST /api/settings/notifications/test/ - Send test notification.
-     * @returns any No response body
+     * @returns TestNotification
      * @throws ApiError
      */
-    public static settingsNotificationsTestCreate(): CancelablePromise<any> {
+    public static settingsNotificationsTestCreate({
+        requestBody,
+    }: {
+        requestBody: TestNotification,
+    }): CancelablePromise<TestNotification> {
         return __request(OpenAPI, {
             method: 'POST',
             url: '/api/settings/notifications/test/',
+            body: requestBody,
+            mediaType: 'application/json',
         });
     }
     /**
      * GET/PATCH /api/settings/notifications/user/ - User-specific settings.
-     * @returns any No response body
+     * @returns NotificationSettings
      * @throws ApiError
      */
-    public static settingsNotificationsUserRetrieve(): CancelablePromise<any> {
+    public static settingsNotificationsUserRetrieve(): CancelablePromise<NotificationSettings> {
         return __request(OpenAPI, {
             method: 'GET',
             url: '/api/settings/notifications/user/',
@@ -1999,13 +2102,19 @@ export class SettingsService {
     }
     /**
      * GET/PATCH /api/settings/notifications/user/ - User-specific settings.
-     * @returns any No response body
+     * @returns NotificationSettings
      * @throws ApiError
      */
-    public static settingsNotificationsUserPartialUpdate(): CancelablePromise<any> {
+    public static settingsNotificationsUserPartialUpdate({
+        requestBody,
+    }: {
+        requestBody?: PatchedNotificationSettings,
+    }): CancelablePromise<NotificationSettings> {
         return __request(OpenAPI, {
             method: 'PATCH',
             url: '/api/settings/notifications/user/',
+            body: requestBody,
+            mediaType: 'application/json',
         });
     }
     /**
@@ -2072,6 +2181,38 @@ export class SettingsService {
      * @returns OmnichannelMessage
      * @throws ApiError
      */
+    public static settingsOmnichannelConversationsAssignCreate({
+        requestBody,
+    }: {
+        requestBody?: OmnichannelMessage,
+    }): CancelablePromise<OmnichannelMessage> {
+        return __request(OpenAPI, {
+            method: 'POST',
+            url: '/api/settings/omnichannel/conversations/assign/',
+            body: requestBody,
+            mediaType: 'application/json',
+        });
+    }
+    /**
+     * @returns OmnichannelMessage
+     * @throws ApiError
+     */
+    public static settingsOmnichannelConversationsBulkActionCreate({
+        requestBody,
+    }: {
+        requestBody?: OmnichannelMessage,
+    }): CancelablePromise<OmnichannelMessage> {
+        return __request(OpenAPI, {
+            method: 'POST',
+            url: '/api/settings/omnichannel/conversations/bulk-action/',
+            body: requestBody,
+            mediaType: 'application/json',
+        });
+    }
+    /**
+     * @returns OmnichannelMessage
+     * @throws ApiError
+     */
     public static settingsOmnichannelConversationsContextRetrieve(): CancelablePromise<OmnichannelMessage> {
         return __request(OpenAPI, {
             method: 'GET',
@@ -2090,6 +2231,110 @@ export class SettingsService {
         return __request(OpenAPI, {
             method: 'POST',
             url: '/api/settings/omnichannel/conversations/context/',
+            body: requestBody,
+            mediaType: 'application/json',
+        });
+    }
+    /**
+     * @returns OmnichannelMessage
+     * @throws ApiError
+     */
+    public static settingsOmnichannelConversationsEntitiesSearchRetrieve(): CancelablePromise<OmnichannelMessage> {
+        return __request(OpenAPI, {
+            method: 'GET',
+            url: '/api/settings/omnichannel/conversations/entities/search/',
+        });
+    }
+    /**
+     * @returns OmnichannelMessage
+     * @throws ApiError
+     */
+    public static settingsOmnichannelConversationsEventsRetrieve(): CancelablePromise<OmnichannelMessage> {
+        return __request(OpenAPI, {
+            method: 'GET',
+            url: '/api/settings/omnichannel/conversations/events/',
+        });
+    }
+    /**
+     * @returns OmnichannelMessage
+     * @throws ApiError
+     */
+    public static settingsOmnichannelConversationsReopenCreate({
+        requestBody,
+    }: {
+        requestBody?: OmnichannelMessage,
+    }): CancelablePromise<OmnichannelMessage> {
+        return __request(OpenAPI, {
+            method: 'POST',
+            url: '/api/settings/omnichannel/conversations/reopen/',
+            body: requestBody,
+            mediaType: 'application/json',
+        });
+    }
+    /**
+     * @returns OmnichannelMessage
+     * @throws ApiError
+     */
+    public static settingsOmnichannelConversationsResolveCreate({
+        requestBody,
+    }: {
+        requestBody?: OmnichannelMessage,
+    }): CancelablePromise<OmnichannelMessage> {
+        return __request(OpenAPI, {
+            method: 'POST',
+            url: '/api/settings/omnichannel/conversations/resolve/',
+            body: requestBody,
+            mediaType: 'application/json',
+        });
+    }
+    /**
+     * @returns OmnichannelMessage
+     * @throws ApiError
+     */
+    public static settingsOmnichannelConversationsSnoozeCreate({
+        requestBody,
+    }: {
+        requestBody?: OmnichannelMessage,
+    }): CancelablePromise<OmnichannelMessage> {
+        return __request(OpenAPI, {
+            method: 'POST',
+            url: '/api/settings/omnichannel/conversations/snooze/',
+            body: requestBody,
+            mediaType: 'application/json',
+        });
+    }
+    /**
+     * @returns OmnichannelMessage
+     * @throws ApiError
+     */
+    public static settingsOmnichannelConversationsTemplatesRetrieve(): CancelablePromise<OmnichannelMessage> {
+        return __request(OpenAPI, {
+            method: 'GET',
+            url: '/api/settings/omnichannel/conversations/templates/',
+        });
+    }
+    /**
+     * @returns OmnichannelMessage
+     * @throws ApiError
+     */
+    public static settingsOmnichannelConversationsViewsRetrieve(): CancelablePromise<OmnichannelMessage> {
+        return __request(OpenAPI, {
+            method: 'GET',
+            url: '/api/settings/omnichannel/conversations/views/',
+        });
+    }
+    /**
+     * @returns OmnichannelMessage
+     * @throws ApiError
+     */
+    public static settingsOmnichannelConversationsViewsUpdate({
+        requestBody,
+    }: {
+        requestBody?: OmnichannelMessage,
+    }): CancelablePromise<OmnichannelMessage> {
+        return __request(OpenAPI, {
+            method: 'PUT',
+            url: '/api/settings/omnichannel/conversations/views/',
             body: requestBody,
             mediaType: 'application/json',
         });
@@ -2147,6 +2392,22 @@ export class SettingsService {
         return __request(OpenAPI, {
             method: 'POST',
             url: '/api/settings/omnichannel/send/',
+            body: requestBody,
+            mediaType: 'application/json',
+        });
+    }
+    /**
+     * @returns OmnichannelMessage
+     * @throws ApiError
+     */
+    public static settingsOmnichannelSlaCheckCreate({
+        requestBody,
+    }: {
+        requestBody?: OmnichannelMessage,
+    }): CancelablePromise<OmnichannelMessage> {
+        return __request(OpenAPI, {
+            method: 'POST',
+            url: '/api/settings/omnichannel/sla/check/',
             body: requestBody,
             mediaType: 'application/json',
         });
@@ -2213,10 +2474,10 @@ export class SettingsService {
     }
     /**
      * GET /api/settings/security/ - Get security settings.
-     * @returns any No response body
+     * @returns SecuritySettings
      * @throws ApiError
      */
-    public static settingsSecurityList(): CancelablePromise<any> {
+    public static settingsSecurityList(): CancelablePromise<Array<SecuritySettings>> {
         return __request(OpenAPI, {
             method: 'GET',
             url: '/api/settings/security/',
@@ -2224,28 +2485,32 @@ export class SettingsService {
     }
     /**
      * PATCH /api/settings/security/ - Update security settings.
-     * @returns any No response body
+     * @returns SecuritySettings
      * @throws ApiError
      */
     public static settingsSecurityPartialUpdate({
         id,
+        requestBody,
     }: {
         id: string,
-    }): CancelablePromise<any> {
+        requestBody?: PatchedSecuritySettings,
+    }): CancelablePromise<SecuritySettings> {
         return __request(OpenAPI, {
             method: 'PATCH',
             url: '/api/settings/security/{id}/',
             path: {
                 'id': id,
             },
+            body: requestBody,
+            mediaType: 'application/json',
         });
     }
     /**
      * GET /api/settings/security/audit-log/ - Get security audit log.
-     * @returns any No response body
+     * @returns AuditLog
      * @throws ApiError
      */
-    public static settingsSecurityAuditLogRetrieve(): CancelablePromise<any> {
+    public static settingsSecurityAuditLogList(): CancelablePromise<Array<AuditLog>> {
         return __request(OpenAPI, {
             method: 'GET',
             url: '/api/settings/security/audit-log/',
@@ -2253,10 +2518,10 @@ export class SettingsService {
     }
     /**
      * GET /api/settings/security/sessions/ - List active sessions.
-     * @returns any No response body
+     * @returns ActiveSession
      * @throws ApiError
      */
-    public static settingsSecuritySessionsRetrieve(): CancelablePromise<any> {
+    public static settingsSecuritySessionsList(): CancelablePromise<Array<ActiveSession>> {
         return __request(OpenAPI, {
             method: 'GET',
             url: '/api/settings/security/sessions/',

@@ -3,8 +3,9 @@
 /* tslint:disable */
 /* eslint-disable */
 import type { Company } from '../models/Company';
+import type { CompanyWrite } from '../models/CompanyWrite';
 import type { PaginatedCompanyList } from '../models/PaginatedCompanyList';
-import type { PatchedCompany } from '../models/PatchedCompany';
+import type { PatchedCompanyWrite } from '../models/PatchedCompanyWrite';
 import type { CancelablePromise } from '../core/CancelablePromise';
 import { OpenAPI } from '../core/OpenAPI';
 import { request as __request } from '../core/request';
@@ -74,7 +75,7 @@ export class CompaniesService {
     public static companiesCreate({
         requestBody,
     }: {
-        requestBody: Company,
+        requestBody: CompanyWrite,
     }): CancelablePromise<Company> {
         return __request(OpenAPI, {
             method: 'POST',
@@ -117,7 +118,7 @@ export class CompaniesService {
          * A unique integer value identifying this Company.
          */
         id: number,
-        requestBody: Company,
+        requestBody: CompanyWrite,
     }): CancelablePromise<Company> {
         return __request(OpenAPI, {
             method: 'PUT',
@@ -142,7 +143,7 @@ export class CompaniesService {
          * A unique integer value identifying this Company.
          */
         id: number,
-        requestBody?: PatchedCompany,
+        requestBody?: PatchedCompanyWrite,
     }): CancelablePromise<Company> {
         return __request(OpenAPI, {
             method: 'PATCH',
@@ -170,6 +171,27 @@ export class CompaniesService {
         return __request(OpenAPI, {
             method: 'DELETE',
             url: '/api/companies/{id}/',
+            path: {
+                'id': id,
+            },
+        });
+    }
+    /**
+     * CRUD for companies with search and filters.
+     * @returns Company
+     * @throws ApiError
+     */
+    public static companiesHistoryRetrieve({
+        id,
+    }: {
+        /**
+         * A unique integer value identifying this Company.
+         */
+        id: number,
+    }): CancelablePromise<Company> {
+        return __request(OpenAPI, {
+            method: 'GET',
+            url: '/api/companies/{id}/history/',
             path: {
                 'id': id,
             },

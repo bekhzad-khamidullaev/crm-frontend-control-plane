@@ -22,5 +22,6 @@ export type PatchedUser = {
     readonly groups?: Array<string>;
     readonly roles?: Array<string>;
     readonly permissions?: Array<string>;
+    readonly direct_permissions?: Array<string>;
 };
 

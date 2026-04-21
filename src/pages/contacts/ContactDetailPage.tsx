@@ -1,6 +1,5 @@
 import { useCompany } from '@/entities/company/api/queries';
 import { useContact } from '@/entities/contact/api/queries';
-import { UsersService } from '@/shared/api/generated/services/UsersService';
 import { BusinessScreenState } from '@/components/business/BusinessScreenState';
 import { getCompanyDisplayName } from '@/lib/utils/company-display.js';
 import { buildAiChatUrl } from '@/lib/utils/ai-chat-context.js';
@@ -24,7 +23,6 @@ export const ContactDetailPage: React.FC<ContactDetailPageProps> = ({ id }) => {
   const canManage = canWrite();
   const canUseAiAssist = hasAnyFeature('ai.assist');
   const { data: company } = useCompany(contact?.company || 0, !!contact?.company);
-  const [resolvedOwnerName, setResolvedOwnerName] = React.useState<string | null>(null);
   const [quickReminderOpen, setQuickReminderOpen] = React.useState(false);
   const openAiChat = () =>
     navigate(
@@ -34,30 +32,6 @@ export const ContactDetailPage: React.FC<ContactDetailPageProps> = ({ id }) => {
         entityName: contact?.full_name || (contact as any)?.name,
       }),
     );
-
-  React.useEffect(() => {
-    const ownerId = Number(contact?.owner);
-    if (!ownerId || Number.isNaN(ownerId)) {
-      setResolvedOwnerName(null);
-      return;
-    }
-
-    let cancelled = false;
-    UsersService.usersRetrieve({ id: ownerId })
-      .then((user) => {
-        if (cancelled) return;
-        const name = `${user.first_name || ''} ${user.last_name || ''}`.trim() || user.username || user.email || null;
-        setResolvedOwnerName(name);
-      })
-      .catch(() => {
-        if (cancelled) return;
-        setResolvedOwnerName(null);
-      });
-
-    return () => {
-      cancelled = true;
-    };
-  }, [contact?.owner]);
 
   if (isLoading) {
     return (
@@ -83,7 +57,7 @@ export const ContactDetailPage: React.FC<ContactDetailPageProps> = ({ id }) => {
   const contactView = contact as any;
   const companyName = getCompanyDisplayName(company as any) || 'Компания';
 
-  const ownerName = resolvedOwnerName || contactView.owner_name || 'Не назначен';
+  const ownerName = contactView.owner_name || 'Не назначен';
   const telegramUsername = String(contactView.telegram_username || '').trim().replace(/^@/, '');
   const telegramChatId = String(contactView.telegram_chat_id || '').trim();
   const instagramUsername = String(contactView.instagram_username || '').trim().replace(/^@/, '');

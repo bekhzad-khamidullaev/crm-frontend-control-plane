@@ -3,10 +3,16 @@
 /* tslint:disable */
 /* eslint-disable */
 import type { BlankEnum } from './BlankEnum';
-import type { TelephonyProviderEnum } from './TelephonyProviderEnum';
-import type { TelephonyRouteModeEnum } from './TelephonyRouteModeEnum';
+import type { TelephonyEventModeEnum } from './TelephonyEventModeEnum';
 export type VoipSystemSettings = {
     readonly id: number;
+    /**
+     * bridge: CRM receives events from the Go connector webhook; ami: CRM receives events from direct AMI ingest
+     *
+     * * `bridge` - Direct AMI ingest
+     * * `ami` - Direct AMI ingest
+     */
+    telephony_event_mode?: (TelephonyEventModeEnum | BlankEnum);
     ami_host?: string;
     ami_port?: number;
     ami_username?: string;
@@ -17,42 +23,14 @@ export type VoipSystemSettings = {
     ami_use_ssl?: boolean;
     ami_connect_timeout?: number;
     ami_reconnect_delay?: number;
-    incoming_enabled?: boolean;
-    incoming_poll_interval_ms?: number;
-    incoming_popup_ttl_ms?: number;
     /**
-     * Global outbound call routing mode for CRM
-     *
-     * * `embedded` - Embedded Asterisk (CRM-managed)
-     * * `bridge` - External Asterisk via PBX Bridge
+     * Secret token for the Go connector to authenticate webhooks.
      */
-    telephony_route_mode?: (TelephonyRouteModeEnum | BlankEnum);
+    internal_api_token?: string;
     /**
-     * Global preferred provider for outbound calls
-     *
-     * * `Asterisk` - Asterisk
+     * Comma or newline separated list of IP addresses allowed to call connector webhook endpoints. Leave empty to rely on token auth only (allow all IPs).
      */
-    telephony_provider?: (TelephonyProviderEnum | BlankEnum);
-    /**
-     * Comma or newline separated STUN URLs
-     */
-    webrtc_stun_servers?: string;
-    webrtc_turn_enabled?: boolean;
-    /**
-     * Example: turn:turn.example.com:3478?transport=udp
-     */
-    webrtc_turn_server?: string;
-    webrtc_turn_username?: string;
-    webrtc_turn_password?: string;
-    /**
-     * Forward webhook payload to external URL when no CRM objects are matched
-     */
-    forward_unknown_calls?: boolean;
-    forward_url?: string;
-    /**
-     * Optional: restrict forwarding source IP check (for relayed requests)
-     */
-    forwarding_allowed_ip?: string;
+    connector_allowed_ips?: string;
     readonly updated_at: string;
 };
 

@@ -10,6 +10,7 @@ import type { LicenseUxPermission } from './LicenseUxPermission';
 import type { LicenseUxRecommendation } from './LicenseUxRecommendation';
 import type { LicenseUxRecommendedFlow } from './LicenseUxRecommendedFlow';
 import type { LicenseUxRestrictionEvent } from './LicenseUxRestrictionEvent';
+import type { LicenseUxRestrictionStat } from './LicenseUxRestrictionStat';
 import type { SeatUsage } from './SeatUsage';
 export type LicenseUxSummary = {
     status: string;
@@ -21,6 +22,7 @@ export type LicenseUxSummary = {
     modules: Array<LicenseUxModule>;
     recommendations: Array<LicenseUxRecommendation>;
     recent_restrictions: Array<LicenseUxRestrictionEvent>;
+    restriction_stats: Array<LicenseUxRestrictionStat>;
     permissions: LicenseUxPermission;
     auto_request: LicenseUxAutoRequest;
     manual_request: LicenseUxManualRequest;

@@ -227,7 +227,7 @@ export const LeadsKanbanBoard: React.FC<{ readOnly?: boolean }> = ({ readOnly = 
       if (toStatus === 'converted') {
         await convertLead.mutateAsync({ id: leadId, data: { create_deal: true } });
       } else if (toStatus === 'lost') {
-        await disqualifyLead.mutateAsync({ id: leadId, data: currentLead });
+        await disqualifyLead.mutateAsync({ id: leadId, data: currentLead as any });
       } else {
         await patchLead.mutateAsync({
           id: leadId,

@@ -24,6 +24,7 @@ import {
 import { api } from '../../lib/api/client.js';
 import { rejectActiveCall } from '../../lib/api/telephony.js';
 import sipClient from '../../lib/telephony/SIPClient.js';
+import telephonyManager from '../../lib/telephony/TelephonyManager.js';
 import { loadTelephonyRuntimeConfig } from '../../lib/telephony/runtimeConfig.js';
 import { getCompanyDisplayName } from '../../lib/utils/company-display.js';
 import { getLocale, t } from '../../lib/i18n';
@@ -81,15 +82,16 @@ function IncomingCallModal({ visible, callData, onAnswer, onReject, onDismiss })
   const [incomingCallLeadSourceId, setIncomingCallLeadSourceId] = useState(null);
   const [creatingLead, setCreatingLead] = useState(false);
   const [answered, setAnswered] = useState(false);
+  const [hasSipSession, setHasSipSession] = useState(() => Boolean(sipClient.callSession));
+  const [answerPending, setAnswerPending] = useState(false);
   const [leadForm] = Form.useForm();
   const locale = getLocale();
 
   const searchedPhoneRef = useRef('');
 
   const phoneNumber = String(callData?.phoneNumber || '');
-  const hasSipSession = Boolean(sipClient.callSession);
-  const isBridgeAssistMode = routeMode === 'bridge' && !hasSipSession;
-  const bridgeTargetLabel =
+  const isAmiMode = routeMode === 'ami' && !hasSipSession;
+  const amiTargetLabel =
     callData?.queue ||
     callData?.routeTargetLabel ||
     callData?.agentExtension ||
@@ -209,9 +211,72 @@ function IncomingCallModal({ visible, callData, onAnswer, onReject, onDismiss })
       setRouteMode('embedded');
       setIncomingCallLeadSourceId(null);
       setAnswered(false);
+      setAnswerPending(false);
+      setHasSipSession(Boolean(sipClient.callSession));
       leadForm.resetFields();
     }
   }, [visible, leadForm]);
+
+  useEffect(() => {
+    if (!visible) return;
+    if (typeof sipClient?.on !== 'function' || typeof sipClient?.off !== 'function') {
+      setHasSipSession(Boolean(sipClient?.callSession));
+      return;
+    }
+
+    const syncSip = () => {
+      setHasSipSession(Boolean(sipClient.callSession));
+    };
+
+    // When WS opens the modal before SIP INVITE arrives, we still need to re-render
+    // once JsSIP creates the session so Answer/Reject paths behave correctly.
+    sipClient.on('incomingCall', syncSip);
+    sipClient.on('callEnded', syncSip);
+    sipClient.on('callFailed', syncSip);
+    sipClient.on('unregistered', syncSip);
+
+    // Initial sync
+    syncSip();
+
+    return () => {
+      sipClient.off('incomingCall', syncSip);
+      sipClient.off('callEnded', syncSip);
+      sipClient.off('callFailed', syncSip);
+      sipClient.off('unregistered', syncSip);
+    };
+  }, [visible]);
+
+  useEffect(() => {
+    if (!visible) return;
+    if (!answerPending) return;
+    if (isAmiMode) return;
+    if (!hasSipSession) return;
+
+    const sipDigits = String(sipClient.currentCall?.phoneNumber || '').replace(/\D/g, '');
+    const wsDigits = String(callData?.phoneNumber || '').replace(/\D/g, '');
+    if (sipDigits && wsDigits) {
+      const matches = sipDigits.endsWith(wsDigits) || wsDigits.endsWith(sipDigits);
+      if (!matches) {
+        setAnswerPending(false);
+        message.warning('SIP-сессия не совпадает с входящим звонком, приём отменён');
+        return;
+      }
+    }
+
+    const audioElement =
+      document.getElementById('telephony-remote-audio') ||
+      document.getElementById('incoming-call-audio');
+
+    if (audioElement) {
+      sipClient.answerCall(audioElement);
+    } else {
+      sipClient.answerCall();
+    }
+
+    telephonyManager.notifyCallConnected(callData);
+    setAnswered(true);
+    setAnswerPending(false);
+  }, [answerPending, callData, hasSipSession, isAmiMode, message, visible]);
 
   const openMatchedEntityCard = (pathOverride) => {
     const path = pathOverride || buildEntityPath(matchedEntity);
@@ -221,17 +286,45 @@ function IncomingCallModal({ visible, callData, onAnswer, onReject, onDismiss })
   };
 
   const handleAnswer = () => {
-    if (!isBridgeAssistMode) {
+    if (isAmiMode) {
       onAnswer?.(callData);
-      const audioElement = document.getElementById('incoming-call-audio');
-      if (audioElement) {
-        sipClient.answerCall(audioElement);
+      setAnswered(true);
+      return;
+    }
+
+    if (!hasSipSession) {
+      setAnswerPending(true);
+      message.info('Ожидаю SIP-сессию... попробую принять автоматически');
+      return;
+    }
+
+    const sipDigits = String(sipClient.currentCall?.phoneNumber || '').replace(/\D/g, '');
+    const wsDigits = String(callData?.phoneNumber || '').replace(/\D/g, '');
+    if (sipDigits && wsDigits) {
+      const matches = sipDigits.endsWith(wsDigits) || wsDigits.endsWith(sipDigits);
+      if (!matches) {
+        message.warning('SIP-сессия не совпадает с входящим звонком');
+        return;
       }
     }
+
+    onAnswer?.(callData);
+    const audioElement =
+      document.getElementById('telephony-remote-audio') ||
+      document.getElementById('incoming-call-audio');
+    if (audioElement) {
+      sipClient.answerCall(audioElement);
+    } else {
+      sipClient.answerCall();
+    }
+
+    telephonyManager.notifyCallConnected(callData);
     setAnswered(true);
   };
 
   const handleReject = async () => {
+    // Stop deferred answer path if operator changed decision to reject.
+    setAnswerPending(false);
     onReject?.(callData);
     if (hasSipSession) {
       sipClient.rejectCall();
@@ -266,7 +359,7 @@ function IncomingCallModal({ visible, callData, onAnswer, onReject, onDismiss })
 
       const created = await api.post('/api/leads/', { body: payload });
       message.success(
-        isBridgeAssistMode
+        isAmiMode
           ? 'Лид создан. Звонок продолжает обрабатываться в FreePBX.'
           : 'Лид создан по входящему звонку'
       );
@@ -307,14 +400,14 @@ function IncomingCallModal({ visible, callData, onAnswer, onReject, onDismiss })
           description={`Номер: ${phoneNumber || '-'}`}
         />
 
-        {isBridgeAssistMode ? (
+        {isAmiMode ? (
           <Alert
             type="warning"
             showIcon
-            message="FreePBX bridge mode"
+            message="PBX AMI mode"
             description={
-              bridgeTargetLabel
-                ? `Ответ выполняется на стороне FreePBX (${bridgeTargetLabel}). CRM откроет карточку и дождётся realtime-статуса.`
+              amiTargetLabel
+                ? `Ответ выполняется на стороне FreePBX (${amiTargetLabel}). CRM откроет карточку и дождётся realtime-статуса.`
                 : 'Ответ выполняется на стороне FreePBX. CRM не подтверждает answer локально, а ждёт realtime-статус.'
             }
           />
@@ -342,7 +435,7 @@ function IncomingCallModal({ visible, callData, onAnswer, onReject, onDismiss })
 
             <Space style={{ width: '100%', justifyContent: 'space-between' }}>
               <Button danger onClick={handleReject}>
-                {isBridgeAssistMode ? 'Отклонить на PBX' : 'Отклонить'}
+                {isAmiMode ? 'Отклонить на PBX' : 'Отклонить'}
               </Button>
               <Button
                 type="primary"
@@ -499,6 +592,7 @@ function IncomingCallModal({ visible, callData, onAnswer, onReject, onDismiss })
         )}
 
         <audio id="incoming-call-audio" autoPlay />
+        <audio id="telephony-remote-audio" autoPlay style={{ display: 'none' }} />
       </Space>
     </Modal>
   );

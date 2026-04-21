@@ -114,7 +114,7 @@ export const CompanyForm: React.FC<CompanyFormProps> = ({
             <Col xs={24} md={12}>
               <Form.Item
                 label="Название компании"
-                name="name"
+                name="full_name"
                 rules={[{ required: true, message: 'Введите название' }]}
               >
                 <Input placeholder="ООО «ТехноПром»" />
@@ -178,7 +178,7 @@ export const CompanyForm: React.FC<CompanyFormProps> = ({
             </Col>
             <Col xs={24} md={12}>
               <Form.Item label="Теги" name="tags">
-                <TagSelect style={{ width: '100%' }} />
+                <TagSelect mode="multiple" style={{ width: '100%' }} />
               </Form.Item>
             </Col>
           </Row>

@@ -2,6 +2,10 @@
 /* istanbul ignore file */
 /* tslint:disable */
 /* eslint-disable */
+import type { AgentPresence } from '../models/AgentPresence';
+import type { CallControlRequest } from '../models/CallControlRequest';
+import type { CallControlResponse } from '../models/CallControlResponse';
+import type { CallRoutingResponse } from '../models/CallRoutingResponse';
 import type { CancelablePromise } from '../core/CancelablePromise';
 import { OpenAPI } from '../core/OpenAPI';
 import { request as __request } from '../core/request';
@@ -18,6 +22,22 @@ export class VoIpColdCallsService {
         });
     }
     /**
+     * List agent presence status with real SIP registration check via AMI PJSIPShowContacts.
+     * GET /api/voip/call-control/agent-presence/
+     *
+     * Checks which extensions are actually registered in Asterisk (PJSIP contacts),
+     * not just whether a SIP account exists in the DB.
+     * Result is cached for 30 seconds to avoid excessive AMI connections.
+     * @returns AgentPresence
+     * @throws ApiError
+     */
+    public static voipCallControlAgentPresenceList(): CancelablePromise<Array<AgentPresence>> {
+        return __request(OpenAPI, {
+            method: 'GET',
+            url: '/api/voip/call-control/agent-presence/',
+        });
+    }
+    /**
      * Request call hangup by session_id from CRM side.
      * @returns any No response body
      * @throws ApiError
@@ -29,6 +49,55 @@ export class VoIpColdCallsService {
         });
     }
     /**
+     * Unified incoming call control contract for frontend runtime.
+     * @returns any No response body
+     * @throws ApiError
+     */
+    public static voipCallControlIncomingActionCreate(): CancelablePromise<any> {
+        return __request(OpenAPI, {
+            method: 'POST',
+            url: '/api/voip/call-control/incoming-action/',
+        });
+    }
+    /**
+     * Park a call.
+     * POST /api/voip/call-control/park/
+     * Body: {"call_id": "..."} or {"channel": "..."}
+     * @returns CallControlResponse
+     * @throws ApiError
+     */
+    public static voipCallControlParkCreate({
+        requestBody,
+    }: {
+        requestBody: CallControlRequest,
+    }): CancelablePromise<CallControlResponse> {
+        return __request(OpenAPI, {
+            method: 'POST',
+            url: '/api/voip/call-control/park/',
+            body: requestBody,
+            mediaType: 'application/json',
+        });
+    }
+    /**
+     * Redirect a call to a different extension.
+     * POST /api/voip/call-control/redirect/
+     * Body: {"call_id": "...", "exten": "1001"} or {"channel": "...", "exten": "1001"}
+     * @returns CallControlResponse
+     * @throws ApiError
+     */
+    public static voipCallControlRedirectCreate({
+        requestBody,
+    }: {
+        requestBody: CallControlRequest,
+    }): CancelablePromise<CallControlResponse> {
+        return __request(OpenAPI, {
+            method: 'POST',
+            url: '/api/voip/call-control/redirect/',
+            body: requestBody,
+            mediaType: 'application/json',
+        });
+    }
+    /**
      * Reject inbound ringing call by session_id.
      * @returns any No response body
      * @throws ApiError
@@ -37,6 +106,39 @@ export class VoIpColdCallsService {
         return __request(OpenAPI, {
             method: 'POST',
             url: '/api/voip/call-control/reject/',
+        });
+    }
+    /**
+     * Resolve where an incoming call from a given number should be routed.
+     * Returns the target extension (CRM owner's SIP extension), match info.
+     *
+     * GET /api/voip/call-control/resolve-routing/?caller_id=+998901234567&called_number=100
+     * @returns CallRoutingResponse
+     * @throws ApiError
+     */
+    public static voipCallControlResolveRoutingRetrieve(): CancelablePromise<CallRoutingResponse> {
+        return __request(OpenAPI, {
+            method: 'GET',
+            url: '/api/voip/call-control/resolve-routing/',
+        });
+    }
+    /**
+     * Blind transfer a call to another extension.
+     * POST /api/voip/call-control/transfer/
+     * Body: {"call_id": "...", "exten": "1001"} or {"channel": "...", "exten": "1001"}
+     * @returns CallControlResponse
+     * @throws ApiError
+     */
+    public static voipCallControlTransferCreate({
+        requestBody,
+    }: {
+        requestBody: CallControlRequest,
+    }): CancelablePromise<CallControlResponse> {
+        return __request(OpenAPI, {
+            method: 'POST',
+            url: '/api/voip/call-control/transfer/',
+            body: requestBody,
+            mediaType: 'application/json',
         });
     }
     /**
@@ -76,7 +178,7 @@ export class VoIpColdCallsService {
         });
     }
     /**
-     * Add a note to a call log
+     * Add a note and optional wrap-up payload to a call log
      * @returns any No response body
      * @throws ApiError
      */
@@ -119,15 +221,28 @@ export class VoIpColdCallsService {
         });
     }
     /**
-     * Schedule multiple cold calls in bulk
+     * CDR (Call Detail Record) reporting endpoint.
+     * Returns aggregated statistics and detailed call records.
      *
-     * Required fields:
-     * - phone_numbers: List of phone numbers
-     *
-     * Optional fields:
-     * - from_number: Caller ID to use
-     * - campaign_id: Campaign ID
-     * - delay_between_calls: Seconds between calls (default: 30)
+     * Query parameters:
+     * - date_from: ISO date (default: 7 days ago)
+     * - date_to: ISO date (default: today)
+     * - user_id: filter by user
+     * - direction: inbound/outbound/internal
+     * - status: filtering by call status
+     * - group_by: day/week/month/user/direction (default: day)
+     * - page, page_size: pagination
+     * @returns any No response body
+     * @throws ApiError
+     */
+    public static voipCdrReportRetrieve(): CancelablePromise<any> {
+        return __request(OpenAPI, {
+            method: 'GET',
+            url: '/api/voip/cdr-report/',
+        });
+    }
+    /**
+     * API endpoints for VoIP operations including cold calls
      * @returns any No response body
      * @throws ApiError
      */
@@ -138,14 +253,7 @@ export class VoIpColdCallsService {
         });
     }
     /**
-     * Initiate a cold call immediately
-     *
-     * Required fields:
-     * - to_number: Phone number to call
-     * - from_number: (optional) Caller ID to use
-     * - lead_id: (optional) Lead ID
-     * - contact_id: (optional) Contact ID
-     * - campaign_id: (optional) Campaign ID
+     * API endpoints for VoIP operations including cold calls
      * @returns any No response body
      * @throws ApiError
      */
@@ -156,15 +264,7 @@ export class VoIpColdCallsService {
         });
     }
     /**
-     * Schedule a cold call for later
-     *
-     * Required fields:
-     * - to_number OR lead_id OR contact_id
-     *
-     * Optional fields:
-     * - from_number: Caller ID to use
-     * - scheduled_time: ISO format datetime (e.g., "2024-01-15T14:30:00Z")
-     * - campaign_id: Campaign ID
+     * API endpoints for VoIP operations including cold calls
      * @returns any No response body
      * @throws ApiError
      */
@@ -217,6 +317,7 @@ export class VoIpColdCallsService {
         phone,
         callId,
         callerName,
+        channelType,
     }: {
         /**
          * Incoming caller phone number
@@ -230,6 +331,10 @@ export class VoIpColdCallsService {
          * Caller display name
          */
         callerName?: string,
+        /**
+         * Telephony channel type (asterisk, onlinepbx, freeswitch, ...)
+         */
+        channelType?: string,
     }): CancelablePromise<Record<string, any>> {
         return __request(OpenAPI, {
             method: 'GET',
@@ -237,8 +342,26 @@ export class VoIpColdCallsService {
             query: {
                 'call_id': callId,
                 'caller_name': callerName,
+                'channel_type': channelType,
                 'phone': phone,
             },
+        });
+    }
+    /**
+     * API endpoints for VoIP operations including cold calls
+     * @returns any
+     * @throws ApiError
+     */
+    public static voipIncomingContextExecute({
+        requestBody,
+    }: {
+        requestBody?: Record<string, any>,
+    }): CancelablePromise<Record<string, any>> {
+        return __request(OpenAPI, {
+            method: 'POST',
+            url: '/api/voip/incoming-context/execute/',
+            body: requestBody,
+            mediaType: 'application/json',
         });
     }
     /**

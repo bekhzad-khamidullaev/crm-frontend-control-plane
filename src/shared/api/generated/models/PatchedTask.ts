@@ -2,19 +2,23 @@
 /* istanbul ignore file */
 /* tslint:disable */
 /* eslint-disable */
-import type { PriorityEnum } from './PriorityEnum';
+import type { TaskPriorityEnum } from './TaskPriorityEnum';
 /**
  * Mixin to add validation helpers to serializers
  */
 export type PatchedTask = {
     readonly id?: number;
     /**
+     * Compute fixed task status based on stage and due date
+     */
+    readonly status?: Record<string, any>;
+    /**
      * Short title
      */
     name?: string;
     description?: string;
     note?: string;
-    priority?: PriorityEnum;
+    priority?: TaskPriorityEnum;
     start_date?: string | null;
     due_date?: string | null;
     closing_date?: string | null;

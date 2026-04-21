@@ -542,11 +542,13 @@ function App() {
       { loadTelephonyRuntimeConfig },
       { default: callsWebSocket },
       { default: chatWebSocket },
+      { default: telephonyManager },
     ] = await Promise.all([
       import('./lib/telephony/SIPClient.js'),
       import('./lib/telephony/runtimeConfig.js'),
       import('./lib/websocket/CallsWebSocket.js'),
       import('./lib/websocket/ChatWebSocket.js'),
+      import('./lib/telephony/TelephonyManager.js'),
     ]);
     telephonyModulesRef.current = {
       loaded: true,
@@ -554,12 +556,14 @@ function App() {
       loadTelephonyRuntimeConfig,
       callsWebSocket,
       chatWebSocket,
+      telephonyManager,
     };
     return telephonyModulesRef.current;
   };
 
   const disconnectTelephony = () => {
     const runtime = telephonyModulesRef.current;
+    runtime.telephonyManager?.unbindSipClient?.();
     runtime.callsWebSocket?.disconnect?.();
     runtime.chatWebSocket?.disconnect?.();
     runtime.sipClient?.stop?.();
@@ -570,6 +574,8 @@ function App() {
   const bootstrapTelephonyRuntime = async (token) => {
     try {
       const runtime = await ensureTelephonyModules();
+      // Bind TelephonyManager to SIPClient for unified event handling
+      runtime.telephonyManager.bindSipClient(runtime.sipClient);
       initializeWebSocket(runtime.callsWebSocket, token);
       initializeChatWebSocket(runtime.chatWebSocket, token);
       initializeSipClient(runtime.sipClient, runtime.loadTelephonyRuntimeConfig);
@@ -895,24 +901,32 @@ function App() {
     return false;
   };
 
-  const resyncActiveCalls = async () => {
-    try {
-      const response = await getActiveCalls();
-      const rawCalls = Array.isArray(response)
-        ? response
-        : response?.results || response?.active_calls || response?.items || [];
-      const calls = rawCalls.map((call) => normalizeRealtimeCall(call));
-      setActiveCalls(calls);
-      calls.forEach((call) => {
-        const status = String(call.status || '').toLowerCase();
-        if (['ringing', 'incoming'].includes(status)) {
-          addIncomingCall(call);
-        }
-      });
-    } catch (error) {
-      console.warn('[App] Active calls resync failed:', error);
-    }
-  };
+	  const resyncActiveCalls = async () => {
+	    try {
+	      const response = await getActiveCalls();
+	      const rawCalls = Array.isArray(response)
+	        ? response
+	        : response?.results || response?.active_calls || response?.items || [];
+	      const calls = rawCalls.map((call) => normalizeRealtimeCall(call));
+	      setActiveCalls(calls);
+	      calls.forEach((call) => {
+	        const status = String(call.status || '').toLowerCase();
+	        if (['ringing', 'incoming'].includes(status)) {
+	          const tm = telephonyModulesRef.current.telephonyManager;
+	          if (tm) {
+	            const shouldShowPopup = tm.handleWsIncomingCall(call) === true;
+	            if (shouldShowPopup) {
+	              addIncomingCall(call);
+	            }
+	          } else {
+	            addIncomingCall(call);
+	          }
+	        }
+	      });
+	    } catch (error) {
+	      console.warn('[App] Active calls resync failed:', error);
+	    }
+	  };
 
   const initializeWebSocket = (callsWebSocket, token) => {
     // Setup event listeners
@@ -935,17 +949,29 @@ function App() {
       setWsReconnecting(true);
     });
 
-    callsWebSocket.on('incomingCall', (callData) => {
-      const normalizedCall = normalizeRealtimeCall(callData);
-      console.log('[App] Incoming call:', normalizedCall);
-      addIncomingCall(normalizedCall);
-      upsertActiveCall(normalizedCall);
-    });
+	    callsWebSocket.on('incomingCall', (callData) => {
+	      const normalizedCall = normalizeRealtimeCall(callData);
+	      console.log('[App] Incoming call:', normalizedCall);
+	      // Route through TelephonyManager for DND/dedup/auto-answer.
+	      // Only open the IncomingCallModal when TelephonyManager says it should.
+	      const tm = telephonyModulesRef.current.telephonyManager;
+	      if (tm) {
+	        const shouldShowPopup = tm.handleWsIncomingCall(normalizedCall) === true;
+	        if (shouldShowPopup) {
+	          addIncomingCall(normalizedCall);
+	        }
+	      } else {
+	        addIncomingCall(normalizedCall);
+	      }
+	      upsertActiveCall(normalizedCall);
+	    });
 
     callsWebSocket.on('callUpdated', (data) => {
       const normalizedCall = normalizeRealtimeCall(data);
       console.log('[App] Call updated:', normalizedCall);
       upsertActiveCall(normalizedCall);
+      // Notify TelephonyManager
+      telephonyModulesRef.current.telephonyManager?.handleWsCallUpdated(normalizedCall);
       if (shouldDismissIncomingOnUpdate(normalizedCall)) {
         const identifier = normalizedCall.callId || normalizedCall.sessionId;
         removeIncomingCall(identifier);
@@ -956,6 +982,8 @@ function App() {
     callsWebSocket.on('callEnded', (data) => {
       const normalizedCall = normalizeRealtimeCall(data);
       console.log('[App] Call ended:', normalizedCall);
+      // Notify TelephonyManager
+      telephonyModulesRef.current.telephonyManager?.handleWsCallEnded(normalizedCall);
       const identifier = normalizedCall.callId || normalizedCall.sessionId;
       removeIncomingCall(identifier);
       removeActiveCall(identifier);
@@ -1012,21 +1040,14 @@ function App() {
 
   const handleAnswerCall = (callData) => {
     console.log('[App] Answering call:', callData);
-    const identifier = callData?.callId || callData?.sessionId;
-    if (identifier) {
-      removeIncomingCall(identifier);
-    }
-    setCurrentIncomingCall(null);
-    // Additional answer logic would be handled by SIPClient
+    // Keep popup ownership backend-confirmed:
+    // wait for call_updated/call_ended from websocket before dismissing UI.
   };
 
   const handleRejectCall = (callData) => {
     console.log('[App] Rejecting call:', callData);
-    const identifier = callData?.callId || callData?.sessionId;
-    if (identifier) {
-      removeIncomingCall(identifier);
-    }
-    setCurrentIncomingCall(null);
+    // Keep popup ownership backend-confirmed:
+    // wait for call_updated/call_ended from websocket before dismissing UI.
   };
 
   const handleDismissIncomingCall = (callData) => {

@@ -15,14 +15,94 @@ import type { PaginatedNumberGroupOptionList } from '../models/PaginatedNumberGr
 import type { PatchedCallRoutingRule } from '../models/PatchedCallRoutingRule';
 import type { PatchedConnection } from '../models/PatchedConnection';
 import type { PatchedInternalNumberOption } from '../models/PatchedInternalNumberOption';
+import type { PatchedVoipClientSettings } from '../models/PatchedVoipClientSettings';
 import type { PatchedVoipRealtimeSettings } from '../models/PatchedVoipRealtimeSettings';
+import type { PatchedVoipRoutingSettings } from '../models/PatchedVoipRoutingSettings';
 import type { PatchedVoipSystemSettings } from '../models/PatchedVoipSystemSettings';
+import type { VoipAmiTestResult } from '../models/VoipAmiTestResult';
+import type { VoipClientSettings } from '../models/VoipClientSettings';
 import type { VoipRealtimeSettings } from '../models/VoipRealtimeSettings';
+import type { VoipRoutingPreview } from '../models/VoipRoutingPreview';
+import type { VoipRoutingSettings } from '../models/VoipRoutingSettings';
 import type { VoipSystemSettings } from '../models/VoipSystemSettings';
 import type { CancelablePromise } from '../core/CancelablePromise';
 import { OpenAPI } from '../core/OpenAPI';
 import { request as __request } from '../core/request';
 export class VoIpService {
+    /**
+     * @returns VoipClientSettings
+     * @throws ApiError
+     */
+    public static voipClientSettingsList(): CancelablePromise<Array<VoipClientSettings>> {
+        return __request(OpenAPI, {
+            method: 'GET',
+            url: '/api/voip/client-settings/',
+        });
+    }
+    /**
+     * @returns VoipClientSettings
+     * @throws ApiError
+     */
+    public static voipClientSettingsRetrieve({
+        id,
+    }: {
+        id: string,
+    }): CancelablePromise<VoipClientSettings> {
+        return __request(OpenAPI, {
+            method: 'GET',
+            url: '/api/voip/client-settings/{id}/',
+            path: {
+                'id': id,
+            },
+        });
+    }
+    /**
+     * @returns VoipClientSettings
+     * @throws ApiError
+     */
+    public static voipClientSettingsPartialUpdate({
+        id,
+        requestBody,
+    }: {
+        id: string,
+        requestBody?: PatchedVoipClientSettings,
+    }): CancelablePromise<VoipClientSettings> {
+        return __request(OpenAPI, {
+            method: 'PATCH',
+            url: '/api/voip/client-settings/{id}/',
+            path: {
+                'id': id,
+            },
+            body: requestBody,
+            mediaType: 'application/json',
+        });
+    }
+    /**
+     * @returns VoipClientSettings
+     * @throws ApiError
+     */
+    public static voipClientSettingsCurrentRetrieve(): CancelablePromise<VoipClientSettings> {
+        return __request(OpenAPI, {
+            method: 'GET',
+            url: '/api/voip/client-settings/current/',
+        });
+    }
+    /**
+     * @returns VoipClientSettings
+     * @throws ApiError
+     */
+    public static voipClientSettingsCurrentPartialUpdate({
+        requestBody,
+    }: {
+        requestBody?: PatchedVoipClientSettings,
+    }): CancelablePromise<VoipClientSettings> {
+        return __request(OpenAPI, {
+            method: 'PATCH',
+            url: '/api/voip/client-settings/current/',
+            body: requestBody,
+            mediaType: 'application/json',
+        });
+    }
     /**
      * @returns PaginatedConnectionList
      * @throws ApiError
@@ -721,6 +801,90 @@ export class VoIpService {
         });
     }
     /**
+     * @returns VoipRoutingSettings
+     * @throws ApiError
+     */
+    public static voipRoutingSettingsList(): CancelablePromise<Array<VoipRoutingSettings>> {
+        return __request(OpenAPI, {
+            method: 'GET',
+            url: '/api/voip/routing-settings/',
+        });
+    }
+    /**
+     * @returns VoipRoutingSettings
+     * @throws ApiError
+     */
+    public static voipRoutingSettingsRetrieve({
+        id,
+    }: {
+        id: string,
+    }): CancelablePromise<VoipRoutingSettings> {
+        return __request(OpenAPI, {
+            method: 'GET',
+            url: '/api/voip/routing-settings/{id}/',
+            path: {
+                'id': id,
+            },
+        });
+    }
+    /**
+     * @returns VoipRoutingSettings
+     * @throws ApiError
+     */
+    public static voipRoutingSettingsPartialUpdate({
+        id,
+        requestBody,
+    }: {
+        id: string,
+        requestBody?: PatchedVoipRoutingSettings,
+    }): CancelablePromise<VoipRoutingSettings> {
+        return __request(OpenAPI, {
+            method: 'PATCH',
+            url: '/api/voip/routing-settings/{id}/',
+            path: {
+                'id': id,
+            },
+            body: requestBody,
+            mediaType: 'application/json',
+        });
+    }
+    /**
+     * @returns VoipRoutingSettings
+     * @throws ApiError
+     */
+    public static voipRoutingSettingsCurrentRetrieve(): CancelablePromise<VoipRoutingSettings> {
+        return __request(OpenAPI, {
+            method: 'GET',
+            url: '/api/voip/routing-settings/current/',
+        });
+    }
+    /**
+     * @returns VoipRoutingSettings
+     * @throws ApiError
+     */
+    public static voipRoutingSettingsCurrentPartialUpdate({
+        requestBody,
+    }: {
+        requestBody?: PatchedVoipRoutingSettings,
+    }): CancelablePromise<VoipRoutingSettings> {
+        return __request(OpenAPI, {
+            method: 'PATCH',
+            url: '/api/voip/routing-settings/current/',
+            body: requestBody,
+            mediaType: 'application/json',
+        });
+    }
+    /**
+     * @returns VoipRoutingPreview
+     * @throws ApiError
+     */
+    public static voipRoutingSettingsPreviewRetrieve(): CancelablePromise<VoipRoutingPreview> {
+        return __request(OpenAPI, {
+            method: 'GET',
+            url: '/api/voip/routing-settings/preview/',
+        });
+    }
+    /**
      * @returns VoipSystemSettings
      * @throws ApiError
      */
@@ -816,6 +980,22 @@ export class VoIpService {
         return __request(OpenAPI, {
             method: 'POST',
             url: '/api/voip/system-settings/reconcile/',
+            body: requestBody,
+            mediaType: 'application/json',
+        });
+    }
+    /**
+     * @returns VoipAmiTestResult
+     * @throws ApiError
+     */
+    public static voipSystemSettingsTestAmiCreate({
+        requestBody,
+    }: {
+        requestBody?: VoipSystemSettings,
+    }): CancelablePromise<VoipAmiTestResult> {
+        return __request(OpenAPI, {
+            method: 'POST',
+            url: '/api/voip/system-settings/test-ami/',
             body: requestBody,
             mediaType: 'application/json',
         });

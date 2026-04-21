@@ -106,7 +106,7 @@ class SIPClient {
           realm,
           display_name: this.config.display_name || 'CRM User',
           register: true,
-          register_expires: 600,
+          register_expires: 300,
           session_timers: false,
           user_agent: 'CRM-WebRTC-Client/2.0',
         });

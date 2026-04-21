@@ -2,7 +2,9 @@
 /* istanbul ignore file */
 /* tslint:disable */
 /* eslint-disable */
+import type { AssigneeTypeEnum } from './AssigneeTypeEnum';
 import type { BlankEnum } from './BlankEnum';
+import type { DefaultChannelEnum } from './DefaultChannelEnum';
 import type { LeadStatusEnum } from './LeadStatusEnum';
 import type { NullEnum } from './NullEnum';
 import type { SexEnum } from './SexEnum';
@@ -77,11 +79,16 @@ export type Lead = {
      * Mailing list recipient.
      */
     massmail?: boolean;
+    default_channel?: DefaultChannelEnum;
     tags?: Array<number>;
     token?: string;
     was_in_touch?: string | null;
     owner?: number | null;
+    readonly owner_name: string | null;
     department?: number | null;
+    assignee_type?: AssigneeTypeEnum;
+    assignee_user_id?: number | null;
+    assignee_group_id?: number | null;
     company_name?: string;
     website?: string;
     company_phone?: string;
@@ -91,6 +98,9 @@ export type Lead = {
     industry?: Array<number>;
     contact?: number | null;
     company?: number | null;
+    readonly available_channels: Array<string>;
+    readonly channel_targets: Record<string, any>;
+    readonly channel_discovered_at: string;
     readonly creation_date: string;
     readonly update_date: string;
 };

@@ -23,6 +23,7 @@ export class MassmailService {
      */
     public static massmailEmailAccountsList({
         doImport,
+        isSystemShared,
         main,
         massmail,
         owner,
@@ -31,6 +32,7 @@ export class MassmailService {
         search,
     }: {
         doImport?: boolean,
+        isSystemShared?: boolean,
         main?: boolean,
         massmail?: boolean,
         owner?: number,
@@ -52,6 +54,7 @@ export class MassmailService {
             url: '/api/massmail/email-accounts/',
             query: {
                 'do_import': doImport,
+                'is_system_shared': isSystemShared,
                 'main': main,
                 'massmail': massmail,
                 'owner': owner,

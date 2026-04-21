@@ -7,7 +7,6 @@ import { BusinessScreenState } from '@/components/business/BusinessScreenState';
 // @ts-ignore
 import { useLead } from '@/entities/lead/api/queries';
 import { LeadsService } from '@/shared/api/generated/services/LeadsService';
-import { UsersService } from '@/shared/api/generated/services/UsersService';
 import { navigate } from '@/router.js';
 import ChatWidget from '@/modules/chat/ChatWidget.jsx';
 import ActivityLog from '@/components/ActivityLog.jsx';
@@ -36,7 +35,6 @@ export const LeadDetailPage: React.FC<LeadDetailPageProps> = ({ id }) => {
   const [activeTab, setActiveTab] = React.useState('details');
   const [leadSources, setLeadSources] = React.useState<any[]>([]);
   const [users, setUsers] = React.useState<any[]>([]);
-  const [resolvedOwnerName, setResolvedOwnerName] = React.useState<string | null>(null);
   const [insights, setInsights] = React.useState<any>(null);
   const [insightsLoading, setInsightsLoading] = React.useState(false);
   const [quickReminderOpen, setQuickReminderOpen] = React.useState(false);
@@ -104,35 +102,6 @@ export const LeadDetailPage: React.FC<LeadDetailPageProps> = ({ id }) => {
     loadInsights(canUseAiAssist);
   }, [loadInsights, canUseAiAssist]);
 
-  React.useEffect(() => {
-    const ownerId = Number(lead?.owner);
-    if (!ownerId || Number.isNaN(ownerId)) {
-      setResolvedOwnerName(null);
-      return;
-    }
-    const localOwner = users.find((u) => String(u.id) === String(ownerId));
-    if (localOwner) {
-      setResolvedOwnerName(null);
-      return;
-    }
-
-    let cancelled = false;
-    UsersService.usersRetrieve({ id: ownerId })
-      .then((user) => {
-        if (cancelled) return;
-        const name = `${user.first_name || ''} ${user.last_name || ''}`.trim() || user.username || user.email || null;
-        setResolvedOwnerName(name);
-      })
-      .catch(() => {
-        if (cancelled) return;
-        setResolvedOwnerName(null);
-      });
-
-    return () => {
-      cancelled = true;
-    };
-  }, [lead?.owner, users]);
-
   const handleConvertToDeal = () => {
     if (!id || isConverting || isConverted || !canManage) return;
 
@@ -187,12 +156,12 @@ export const LeadDetailPage: React.FC<LeadDetailPageProps> = ({ id }) => {
     || 'Не указан';
   const ownerName =
     insights?.lead?.owner_name
+    || lead?.owner_name
     || (() => {
       const user = users.find((u) => String(u.id) === String(lead.owner));
       if (!user) return null;
       return `${user.first_name || ''} ${user.last_name || ''}`.trim() || user.username || user.email || null;
     })()
-    || resolvedOwnerName
     || 'Не назначен';
   const companyName = getCompanyDisplayName(lead as any);
 

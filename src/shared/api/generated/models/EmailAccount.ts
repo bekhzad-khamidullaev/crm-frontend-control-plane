@@ -19,6 +19,10 @@ export type EmailAccount = {
      */
     email_host: string;
     /**
+     * Port to use for the SMTP server
+     */
+    email_port?: number;
+    /**
      * The IMAP host
      */
     imap_host?: string;
@@ -26,6 +30,20 @@ export type EmailAccount = {
      * The from_email field.
      */
     from_email: string;
+    email_use_tls?: boolean;
+    email_use_ssl?: boolean;
+    /**
+     * The auth_password to use to authenticate to the SMTP server.
+     */
+    email_host_password: string;
+    /**
+     * The application password to use to authenticate to the SMTP server.
+     */
+    email_app_password?: string;
+    /**
+     * Expose this mailbox as a shared CRM sender for all users.
+     */
+    is_system_shared?: boolean;
     /**
      * Use this account for regular business correspondence.
      */

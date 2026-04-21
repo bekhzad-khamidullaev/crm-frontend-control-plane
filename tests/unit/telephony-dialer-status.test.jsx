@@ -1,4 +1,4 @@
-import { render, screen, waitFor } from '@testing-library/react';
+import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 const loadTelephonyRuntimeConfig = vi.fn();
@@ -59,7 +59,7 @@ describe('TelephonyDialerModal status tags', () => {
     });
   });
 
-  it('renders bridge-only transport and SIP tags for bridge mode', async () => {
+  it('renders compact WS/CALL/SIP status tags', async () => {
     const { default: TelephonyDialerModal } = await import('../../src/components/TelephonyDialerModal.jsx');
 
     render(<TelephonyDialerModal visible onClose={() => {}} />);
@@ -68,12 +68,12 @@ describe('TelephonyDialerModal status tags', () => {
       expect(loadTelephonyRuntimeConfig).toHaveBeenCalled();
     });
 
-    expect(await screen.findByText('Транспорт: bridge-only')).toBeInTheDocument();
-    expect(screen.getByText('SIP: bridge-only')).toBeInTheDocument();
-    expect(screen.getByText('Вызов: ожидание')).toBeInTheDocument();
+    expect(await screen.findByText('WS')).toBeInTheDocument();
+    expect(screen.getByText('CALL')).toBeInTheDocument();
+    expect(screen.getByText('SIP')).toBeInTheDocument();
   });
 
-  it('shows missing credentials when embedded runtime is incomplete', async () => {
+  it('does not start SIP registration when runtime has no credentials', async () => {
     loadTelephonyRuntimeConfig.mockResolvedValue({
       sipConfig: {
         routeMode: 'embedded',
@@ -87,11 +87,14 @@ describe('TelephonyDialerModal status tags', () => {
 
     render(<TelephonyDialerModal visible onClose={() => {}} />);
 
-    expect(await screen.findByText('SIP: no credentials')).toBeInTheDocument();
-    expect(screen.getByText('Транспорт: оффлайн')).toBeInTheDocument();
+    await waitFor(() => {
+      expect(loadTelephonyRuntimeConfig).toHaveBeenCalled();
+    });
+    expect(await screen.findByText('SIP')).toBeInTheDocument();
+    expect(sipClient.register).not.toHaveBeenCalled();
   });
 
-  it('shows registration error when SIP registration times out', async () => {
+  it('attempts SIP registration when runtime has credentials and sipReady=true', async () => {
     loadTelephonyRuntimeConfig.mockResolvedValue({
       sipConfig: {
         routeMode: 'embedded',
@@ -110,7 +113,50 @@ describe('TelephonyDialerModal status tags', () => {
 
     render(<TelephonyDialerModal visible onClose={() => {}} />);
 
-    expect(await screen.findByText('SIP: registration error')).toBeInTheDocument();
-    expect(screen.getByText('Транспорт: оффлайн')).toBeInTheDocument();
+    await waitFor(() => {
+      expect(sipClient.register).toHaveBeenCalledWith('200', 'secret');
+    });
+    expect(screen.getByText('SIP')).toBeInTheDocument();
+  });
+
+  it('uses bridge originate and bridge hangup in bridge mode', async () => {
+    loadTelephonyRuntimeConfig.mockResolvedValue({
+      sipConfig: {
+        routeMode: 'bridge',
+        extension: '200',
+      },
+      telephonyCredentials: null,
+      sipReady: false,
+    });
+    initiateCall.mockResolvedValue({
+      session_id: 'sess-1',
+      to_number: '200',
+      from_number: '200',
+      call_status: 'ringing',
+    });
+    hangupActiveCall.mockResolvedValue({ ok: true });
+
+    const { default: TelephonyDialerModal } = await import('../../src/components/TelephonyDialerModal.jsx');
+    render(<TelephonyDialerModal visible onClose={() => {}} />);
+
+    const dialInput = await screen.findByPlaceholderText('Введите номер');
+    fireEvent.change(dialInput, { target: { value: '200' } });
+    fireEvent.click(screen.getByRole('button', { name: /Позвонить/i }));
+
+    await waitFor(() => {
+      expect(initiateCall).toHaveBeenCalledWith({
+        to_number: '200',
+        from_number: '200',
+      });
+    });
+    expect(sipClient.call).not.toHaveBeenCalled();
+
+    const hangupButton = screen.getByRole('button', { name: 'stop' });
+    expect(hangupButton).toBeTruthy();
+    fireEvent.click(hangupButton);
+
+    await waitFor(() => {
+      expect(hangupActiveCall).toHaveBeenCalledWith('sess-1');
+    });
   });
 });

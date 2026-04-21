@@ -18,6 +18,6 @@ export type PatchedInternalNumberOption = {
     readonly sip_uri?: string;
     active?: boolean;
     readonly status?: string;
-    readonly warnings?: string;
+    readonly warnings?: Array<string>;
 };
 

@@ -2,14 +2,14 @@
 /* istanbul ignore file */
 /* tslint:disable */
 /* eslint-disable */
-import type { Status77bEnum } from './Status77bEnum';
+import type { LandingPageStatusEnum } from './LandingPageStatusEnum';
 export type LandingPageList = {
     readonly id: number;
     title: string;
     slug: string;
     custom_domain?: string | null;
     is_active?: boolean;
-    status?: Status77bEnum;
+    status?: LandingPageStatusEnum;
     draft_version?: number;
     department?: number | null;
     readonly department_name: string;

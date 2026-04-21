@@ -16,11 +16,7 @@ export const CompanyEditPage: React.FC<CompanyEditPageProps> = ({ id }) => {
   const handleSubmit = async (values: any) => {
     if (!id) return;
     try {
-      const payload = {
-        ...values,
-        full_name: values.name || values.full_name,
-      };
-      await updateMutation.mutateAsync({ id, data: payload });
+      await updateMutation.mutateAsync({ id, data: values });
       navigate('/companies');
     } catch (error) {
        // Error handled
@@ -47,16 +43,9 @@ export const CompanyEditPage: React.FC<CompanyEditPageProps> = ({ id }) => {
       />
     );
   }
-
-  // Map company full_name to name for form if needed
-  const initialValues = {
-    ...company,
-    name: company?.full_name,
-  };
-
   return (
     <CompanyForm
-      initialValues={initialValues as any}
+      initialValues={company as any}
       onSubmit={handleSubmit}
       isLoading={updateMutation.isPending}
       isEdit={true}

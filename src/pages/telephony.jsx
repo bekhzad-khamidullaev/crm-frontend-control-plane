@@ -50,7 +50,7 @@ function isFreePbxAgentExtension(value) {
   return FREEPBX_AGENT_EXTENSION_REGEX.test(String(value || '').trim());
 }
 
-function validateBridgeDestination(_, value) {
+function validateAmiDestination(_, value) {
   const normalized = String(value || '').trim();
   if (!normalized) return Promise.resolve();
   if (normalized === FREEPBX_MAIN_QUEUE_NUMBER) return Promise.resolve();
@@ -61,7 +61,7 @@ function validateBridgeDestination(_, value) {
   );
 }
 
-function validateBridgeSource(_, value) {
+function validateAmiSource(_, value) {
   const normalized = String(value || '').trim();
   if (!normalized) return Promise.resolve();
   if (normalized === FREEPBX_MAIN_QUEUE_NUMBER) return Promise.resolve();
@@ -204,7 +204,7 @@ function CallQueueTab() {
         showIcon
         style={{ marginBottom: 16 }}
         message="FreePBX queue monitor"
-        description={`Основной inbound поток ожидается через очередь/DID ${FREEPBX_MAIN_QUEUE_NUMBER}. Экран read-only: он показывает состояние bridge-очереди, но не раскрывает PBX secret material.`}
+        description={`Основной inbound поток ожидается через очередь/DID ${FREEPBX_MAIN_QUEUE_NUMBER}. Экран read-only: он показывает состояние ami-очереди, но не раскрывает PBX secret material.`}
       />
 
       {stats && (
@@ -471,7 +471,7 @@ function ColdCallTab() {
       <Alert
         type="warning"
         showIcon
-        message="FreePBX bridge originate"
+        message="PBX AMI originate"
         description={`Для ручного originate используйте agent extensions 200-219. Номер ${FREEPBX_MAIN_QUEUE_NUMBER} трактуется как основной queue/DID и не должен использоваться как персональный операторский extension.`}
       />
 
@@ -482,7 +482,7 @@ function ColdCallTab() {
             name="to_number"
             rules={[
               { required: true, message: t('telephonyPage.cold.validation.enterNumber') },
-              { validator: validateBridgeDestination },
+              { validator: validateAmiDestination },
             ]}
           >
             <Input placeholder={`200-219, ${FREEPBX_MAIN_QUEUE_NUMBER} или +998...`} />
@@ -490,7 +490,7 @@ function ColdCallTab() {
           <Form.Item
             label={t('telephonyPage.cold.fromNumber')}
             name="from_number"
-            rules={[{ validator: validateBridgeSource }]}
+            rules={[{ validator: validateAmiSource }]}
             extra={`Если поле заполнено, используйте extension 200-219 или основной DID ${FREEPBX_MAIN_QUEUE_NUMBER}.`}
           >
             <Input placeholder={`Например: 200 или ${FREEPBX_MAIN_QUEUE_NUMBER}`} />
@@ -530,14 +530,14 @@ function ColdCallTab() {
           <Form.Item
             label={t('telephonyPage.cold.toNumber')}
             name="to_number"
-            rules={[{ validator: validateBridgeDestination }]}
+            rules={[{ validator: validateAmiDestination }]}
           >
             <Input placeholder={`200-219, ${FREEPBX_MAIN_QUEUE_NUMBER} или +998...`} />
           </Form.Item>
           <Form.Item
             label={t('telephonyPage.cold.fromNumber')}
             name="from_number"
-            rules={[{ validator: validateBridgeSource }]}
+            rules={[{ validator: validateAmiSource }]}
           >
             <Input placeholder={`Например: 201 или ${FREEPBX_MAIN_QUEUE_NUMBER}`} />
           </Form.Item>
@@ -591,7 +591,7 @@ function ColdCallTab() {
           <Form.Item
             label={t('telephonyPage.cold.fromNumber')}
             name="from_number"
-            rules={[{ validator: validateBridgeSource }]}
+            rules={[{ validator: validateAmiSource }]}
           >
             <Input placeholder={`Например: 202 или ${FREEPBX_MAIN_QUEUE_NUMBER}`} />
           </Form.Item>
@@ -638,7 +638,7 @@ export default function TelephonyPage() {
         type="info"
         showIcon
         style={{ marginBottom: 16 }}
-        message="Admin telephony overview for FreePBX Bridge"
+        message="Admin telephony overview for PBX AMI"
         description={`Этот маршрут теперь содержит только runtime-операции (входящие, очередь, cold calls). Настройка подключений вынесена в Интеграции > Телефония.`}
         action={(
           <Button type="primary" onClick={() => navigate(integrationsWorkspacePath)}>

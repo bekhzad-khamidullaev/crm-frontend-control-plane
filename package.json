@@ -30,7 +30,8 @@
     "test:e2e:leads": "playwright test leads.spec.js",
     "test:e2e:contacts": "playwright test contacts.spec.js",
     "test:e2e:integration": "playwright test integration.spec.js",
-    "codegen": "npx openapi-typescript-codegen --input './openapi-schema.yml' --output src/shared/api/generated --client axios --useOptions --useUnionTypes",
+    "codegen": "npx openapi-typescript-codegen --input './openapi-schema.yml' --output src/shared/api/generated --client axios --useOptions --useUnionTypes && node ./scripts/fix-generated-api.mjs",
+    "contract:check": "node ./scripts/check-generated-contract.mjs && npm run typecheck",
     "sync:backend-api": "cd ../crm-backend && ./.venv/bin/python generate_schema.py ./openapi-schema-new.yml && cd - && cp ../crm-backend/openapi-schema-new.yml ./openapi-schema.yml && npm run codegen",
     "sync:full": "npm run sync:backend-api && npm run typecheck",
     "typecheck": "tsc --noEmit"

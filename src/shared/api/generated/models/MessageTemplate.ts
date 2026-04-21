@@ -2,11 +2,11 @@
 /* istanbul ignore file */
 /* tslint:disable */
 /* eslint-disable */
-import type { ChannelEnum } from './ChannelEnum';
+import type { MessageTemplateChannelEnum } from './MessageTemplateChannelEnum';
 export type MessageTemplate = {
     readonly id: number;
     name: string;
-    channel?: ChannelEnum;
+    channel?: MessageTemplateChannelEnum;
     locale?: string;
     subject?: string;
     body: string;

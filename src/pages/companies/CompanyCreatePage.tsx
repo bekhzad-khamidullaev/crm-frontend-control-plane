@@ -8,12 +8,7 @@ export const CompanyCreatePage: React.FC = () => {
 
   const handleSubmit = async (values: any) => {
     try {
-      // Map 'name' to 'full_name' if needed
-      const payload = {
-        ...values,
-        full_name: values.name || values.full_name,
-      };
-      await createMutation.mutateAsync(payload);
+      await createMutation.mutateAsync(values);
       navigate('/companies');
     } catch (error) {
       // Error handled by mutation or global handler

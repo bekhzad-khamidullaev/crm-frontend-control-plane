@@ -17,6 +17,7 @@ import dayjs from 'dayjs';
 import { BusinessScreenState } from '@/components/business/BusinessScreenState';
 import { useCreateDeal, useUpdateDeal } from '@/entities/deal/api/mutations';
 import { useDeal as useDealQuery } from '@/entities/deal/api/queries';
+import { getApiErrorPayload } from '@/lib/api/error-utils';
 // @ts-ignore
 import { navigate } from '@/router.js';
 
@@ -90,7 +91,7 @@ export const DealForm: React.FC<DealFormProps> = ({ id }) => {
     Boolean(value && value.isBefore(dayjs().startOf('day'), 'day'));
 
   const applyServerErrors = (error: any) => {
-    const details = error?.details || error?.body?.details || error?.response?.data?.details || error?.response?.data;
+    const details = getApiErrorPayload(error);
     if (!details || typeof details !== 'object') return false;
 
     const fields: Array<{ name: string; errors: string[] }> = [];
@@ -262,6 +263,7 @@ export const DealForm: React.FC<DealFormProps> = ({ id }) => {
                 label="Дата"
                 name="next_step_date"
                 rules={[
+                  { required: true, message: 'Выберите дату следующего шага' },
                   {
                     validator: async (_, value) => {
                       if (value && isPastDate(value)) {

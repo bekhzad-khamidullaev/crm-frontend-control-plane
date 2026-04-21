@@ -34,5 +34,7 @@ export type PatchedCrmEmail = {
     incoming?: boolean;
     sent?: boolean;
     readonly creation_date?: string;
+    send_now?: boolean;
+    email_account?: number | null;
 };
 

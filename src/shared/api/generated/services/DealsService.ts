@@ -3,8 +3,9 @@
 /* tslint:disable */
 /* eslint-disable */
 import type { Deal } from '../models/Deal';
+import type { DealWrite } from '../models/DealWrite';
 import type { PaginatedDealList } from '../models/PaginatedDealList';
-import type { PatchedDeal } from '../models/PatchedDeal';
+import type { PatchedDealWrite } from '../models/PatchedDealWrite';
 import type { CancelablePromise } from '../core/CancelablePromise';
 import { OpenAPI } from '../core/OpenAPI';
 import { request as __request } from '../core/request';
@@ -83,7 +84,7 @@ export class DealsService {
     public static dealsCreate({
         requestBody,
     }: {
-        requestBody: Deal,
+        requestBody: DealWrite,
     }): CancelablePromise<Deal> {
         return __request(OpenAPI, {
             method: 'POST',
@@ -126,7 +127,7 @@ export class DealsService {
          * A unique integer value identifying this Deal.
          */
         id: number,
-        requestBody: Deal,
+        requestBody: DealWrite,
     }): CancelablePromise<Deal> {
         return __request(OpenAPI, {
             method: 'PUT',
@@ -151,7 +152,7 @@ export class DealsService {
          * A unique integer value identifying this Deal.
          */
         id: number,
-        requestBody?: PatchedDeal,
+        requestBody?: PatchedDealWrite,
     }): CancelablePromise<Deal> {
         return __request(OpenAPI, {
             method: 'PATCH',
@@ -210,6 +211,27 @@ export class DealsService {
      * @returns Deal
      * @throws ApiError
      */
+    public static dealsContractGenerationsListByDeal({
+        id,
+    }: {
+        /**
+         * A unique integer value identifying this Deal.
+         */
+        id: number,
+    }): CancelablePromise<Deal> {
+        return __request(OpenAPI, {
+            method: 'GET',
+            url: '/api/deals/{id}/contract-generations/',
+            path: {
+                'id': id,
+            },
+        });
+    }
+    /**
+     * CRUD for CRM deals with ownership rules.
+     * @returns Deal
+     * @throws ApiError
+     */
     public static dealsGenerateContractCreate({
         id,
         requestBody,
@@ -228,6 +250,27 @@ export class DealsService {
             },
             body: requestBody,
             mediaType: 'application/json',
+        });
+    }
+    /**
+     * CRUD for CRM deals with ownership rules.
+     * @returns Deal
+     * @throws ApiError
+     */
+    public static dealsHistoryRetrieve({
+        id,
+    }: {
+        /**
+         * A unique integer value identifying this Deal.
+         */
+        id: number,
+    }): CancelablePromise<Deal> {
+        return __request(OpenAPI, {
+            method: 'GET',
+            url: '/api/deals/{id}/history/',
+            path: {
+                'id': id,
+            },
         });
     }
     /**
@@ -270,6 +313,28 @@ export class DealsService {
             url: '/api/deals/bulk_tag/',
             body: requestBody,
             mediaType: 'application/json',
+        });
+    }
+    /**
+     * CRUD for CRM deals with ownership rules.
+     * @returns Deal
+     * @throws ApiError
+     */
+    public static dealsContractGenerationsJournalList(): CancelablePromise<Deal> {
+        return __request(OpenAPI, {
+            method: 'GET',
+            url: '/api/deals/contract-generations/',
+        });
+    }
+    /**
+     * CRUD for CRM deals with ownership rules.
+     * @returns Deal
+     * @throws ApiError
+     */
+    public static dealsContractGenerationsExportRetrieve(): CancelablePromise<Deal> {
+        return __request(OpenAPI, {
+            method: 'GET',
+            url: '/api/deals/contract-generations/export/',
         });
     }
     /**

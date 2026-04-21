@@ -1,5 +1,6 @@
 import { useCreateContact } from '@/entities/contact/api/mutations';
 import { ContactFormData } from '@/entities/contact/model/schema';
+import { getApiErrorMessage } from '@/lib/api/error-utils';
 import { navigate } from '@/router.js';
 import { ContactForm } from '@/widgets/contact-form';
 import { message } from 'antd';
@@ -15,14 +16,7 @@ export const ContactCreatePage: React.FC = () => {
       message.success('Контакт создан');
       navigate('/contacts');
     } catch (error: any) {
-      const details = error?.body?.details;
-      const firstDetail = details && typeof details === 'object'
-        ? Object.values(details)[0]
-        : null;
-      const detailText = Array.isArray(firstDetail) ? firstDetail[0] : firstDetail;
-      message.error(
-        detailText || error?.body?.message || 'Ошибка создания контакта'
-      );
+      message.error(getApiErrorMessage(error, 'Ошибка создания контакта'));
     }
   };
 

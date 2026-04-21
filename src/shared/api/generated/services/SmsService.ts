@@ -26,7 +26,7 @@ export class SmsService {
      * @returns any No response body
      * @throws ApiError
      */
-    public static smsProvidersRetrieve(): CancelablePromise<any> {
+    public static smsProvidersList(): CancelablePromise<any> {
         return __request(OpenAPI, {
             method: 'GET',
             url: '/api/sms/providers/',
@@ -49,7 +49,7 @@ export class SmsService {
      * @returns any No response body
      * @throws ApiError
      */
-    public static smsProvidersRetrieve2({
+    public static smsProvidersRetrieve({
         providerId,
     }: {
         providerId: string,

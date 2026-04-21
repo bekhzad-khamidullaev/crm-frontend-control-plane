@@ -2,11 +2,11 @@
 /* istanbul ignore file */
 /* tslint:disable */
 /* eslint-disable */
-import type { EventTypeEnum } from './EventTypeEnum';
+import type { PublicFunnelEventTypeEnum } from './PublicFunnelEventTypeEnum';
 export type PublicFunnelEventCreate = {
     session_id?: string;
     landing_slug: string;
-    event_type: EventTypeEnum;
+    event_type: PublicFunnelEventTypeEnum;
     block_id?: string;
     form_key?: string;
     meta?: any;

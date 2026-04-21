@@ -2,7 +2,9 @@
 /* istanbul ignore file */
 /* tslint:disable */
 /* eslint-disable */
+import type { MessageTypeEnum } from './MessageTypeEnum';
 import type { OmnichannelMessageDirectionEnum } from './OmnichannelMessageDirectionEnum';
+import type { PolicyStatusEnum } from './PolicyStatusEnum';
 export type OmnichannelMessage = {
     readonly id: number;
     readonly channel: number;
@@ -15,7 +17,10 @@ export type OmnichannelMessage = {
     readonly sender_id: string;
     readonly recipient_id: string;
     readonly text: string;
+    readonly message_type: MessageTypeEnum;
     readonly status: string;
+    readonly policy_status: PolicyStatusEnum;
+    readonly policy_reason: string;
     readonly queue_state: string;
     readonly sla_deadline_at: string | null;
     readonly responded_at: string | null;

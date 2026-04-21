@@ -182,7 +182,7 @@ export class RemindersService {
      * @returns Reminder
      * @throws ApiError
      */
-    public static remindersObjectsRetrieve(): CancelablePromise<Reminder> {
+    public static remindersObjectsList(): CancelablePromise<Reminder> {
         return __request(OpenAPI, {
             method: 'GET',
             url: '/api/reminders/objects/',
@@ -193,7 +193,7 @@ export class RemindersService {
      * @returns Reminder
      * @throws ApiError
      */
-    public static remindersObjectsRetrieve2({
+    public static remindersObjectsRetrieveById({
         objectId,
     }: {
         objectId: number,

@@ -2,7 +2,7 @@
 /* istanbul ignore file */
 /* tslint:disable */
 /* eslint-disable */
-import type { PriorityEnum } from './PriorityEnum';
+import type { TaskPriorityEnum } from './TaskPriorityEnum';
 /**
  * Mixin to add validation helpers to serializers
  */
@@ -14,7 +14,7 @@ export type Project = {
     name?: string;
     description?: string;
     note?: string;
-    priority?: PriorityEnum;
+    priority?: TaskPriorityEnum;
     start_date?: string | null;
     due_date?: string | null;
     closing_date?: string | null;

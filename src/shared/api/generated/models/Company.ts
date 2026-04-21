@@ -2,6 +2,7 @@
 /* istanbul ignore file */
 /* tslint:disable */
 /* eslint-disable */
+import type { DefaultChannelEnum } from './DefaultChannelEnum';
 /**
  * Mixin to add validation helpers to serializers
  */
@@ -48,11 +49,16 @@ export type Company = {
      * Mailing list recipient.
      */
     massmail?: boolean;
+    default_channel?: DefaultChannelEnum;
     tags?: Array<number>;
     token?: string;
     was_in_touch?: string | null;
     owner?: number | null;
+    readonly owner_name: string | null;
     department?: number | null;
+    readonly available_channels: Array<string>;
+    readonly channel_targets: Record<string, any>;
+    readonly channel_discovered_at: string;
     readonly creation_date: string;
     readonly update_date: string;
 };

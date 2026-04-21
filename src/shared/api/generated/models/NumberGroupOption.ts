@@ -23,7 +23,7 @@ export type NumberGroupOption = {
      * * `least_recent` - Least Recently Called
      */
     distribution_strategy?: DistributionStrategyEnum;
-    readonly member_count: string;
+    readonly member_count: number;
     active?: boolean;
 };
 

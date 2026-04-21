@@ -29,6 +29,17 @@ export class AnalyticsPredictionsService {
         });
     }
     /**
+     * Generate deterministic or AI-powered summary for forecast scenarios.
+     * @returns any No response body
+     * @throws ApiError
+     */
+    public static predictionsInsightsSummaryCreate(): CancelablePromise<any> {
+        return __request(OpenAPI, {
+            method: 'POST',
+            url: '/api/predictions/insights/summary/',
+        });
+    }
+    /**
      * Get leads forecast data
      * @returns any No response body
      * @throws ApiError
@@ -125,6 +136,17 @@ export class AnalyticsPredictionsService {
         return __request(OpenAPI, {
             method: 'POST',
             url: '/api/predictions/revenue/predict/',
+        });
+    }
+    /**
+     * Build scenario planning data (base/upside/downside) from latest forecasts.
+     * @returns any No response body
+     * @throws ApiError
+     */
+    public static predictionsScenariosRetrieve(): CancelablePromise<any> {
+        return __request(OpenAPI, {
+            method: 'GET',
+            url: '/api/predictions/scenarios/',
         });
     }
     /**

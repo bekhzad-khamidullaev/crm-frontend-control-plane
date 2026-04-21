@@ -3,8 +3,15 @@
 /* tslint:disable */
 /* eslint-disable */
 import type { Lead } from '../models/Lead';
+import type { LeadAssignRequest } from '../models/LeadAssignRequest';
+import type { LeadAssignResponse } from '../models/LeadAssignResponse';
+import type { LeadConvertRequest } from '../models/LeadConvertRequest';
+import type { LeadConvertResponse } from '../models/LeadConvertResponse';
+import type { LeadDisqualifyRequest } from '../models/LeadDisqualifyRequest';
+import type { LeadDisqualifyResponse } from '../models/LeadDisqualifyResponse';
+import type { LeadWrite } from '../models/LeadWrite';
 import type { PaginatedLeadList } from '../models/PaginatedLeadList';
-import type { PatchedLead } from '../models/PatchedLead';
+import type { PatchedLeadWrite } from '../models/PatchedLeadWrite';
 import type { CancelablePromise } from '../core/CancelablePromise';
 import { OpenAPI } from '../core/OpenAPI';
 import { request as __request } from '../core/request';
@@ -87,7 +94,7 @@ export class LeadsService {
     public static leadsCreate({
         requestBody,
     }: {
-        requestBody?: Lead,
+        requestBody?: LeadWrite,
     }): CancelablePromise<Lead> {
         return __request(OpenAPI, {
             method: 'POST',
@@ -130,7 +137,7 @@ export class LeadsService {
          * A unique integer value identifying this Lead.
          */
         id: number,
-        requestBody?: Lead,
+        requestBody?: LeadWrite,
     }): CancelablePromise<Lead> {
         return __request(OpenAPI, {
             method: 'PUT',
@@ -155,7 +162,7 @@ export class LeadsService {
          * A unique integer value identifying this Lead.
          */
         id: number,
-        requestBody?: PatchedLead,
+        requestBody?: PatchedLeadWrite,
     }): CancelablePromise<Lead> {
         return __request(OpenAPI, {
             method: 'PATCH',
@@ -190,7 +197,7 @@ export class LeadsService {
     }
     /**
      * CRUD for CRM leads with filtering and conversion actions.
-     * @returns Lead
+     * @returns LeadAssignResponse
      * @throws ApiError
      */
     public static leadsAssignCreate({
@@ -201,8 +208,8 @@ export class LeadsService {
          * A unique integer value identifying this Lead.
          */
         id: number,
-        requestBody?: Lead,
-    }): CancelablePromise<Lead> {
+        requestBody: LeadAssignRequest,
+    }): CancelablePromise<LeadAssignResponse> {
         return __request(OpenAPI, {
             method: 'POST',
             url: '/api/leads/{id}/assign/',
@@ -215,7 +222,7 @@ export class LeadsService {
     }
     /**
      * CRUD for CRM leads with filtering and conversion actions.
-     * @returns Lead
+     * @returns LeadConvertResponse
      * @throws ApiError
      */
     public static leadsConvertCreate({
@@ -226,8 +233,8 @@ export class LeadsService {
          * A unique integer value identifying this Lead.
          */
         id: number,
-        requestBody?: Lead,
-    }): CancelablePromise<Lead> {
+        requestBody?: LeadConvertRequest,
+    }): CancelablePromise<LeadConvertResponse> {
         return __request(OpenAPI, {
             method: 'POST',
             url: '/api/leads/{id}/convert/',
@@ -240,7 +247,7 @@ export class LeadsService {
     }
     /**
      * CRUD for CRM leads with filtering and conversion actions.
-     * @returns Lead
+     * @returns LeadDisqualifyResponse
      * @throws ApiError
      */
     public static leadsDisqualifyCreate({
@@ -251,8 +258,8 @@ export class LeadsService {
          * A unique integer value identifying this Lead.
          */
         id: number,
-        requestBody?: Lead,
-    }): CancelablePromise<Lead> {
+        requestBody?: LeadDisqualifyRequest,
+    }): CancelablePromise<LeadDisqualifyResponse> {
         return __request(OpenAPI, {
             method: 'POST',
             url: '/api/leads/{id}/disqualify/',
@@ -261,6 +268,27 @@ export class LeadsService {
             },
             body: requestBody,
             mediaType: 'application/json',
+        });
+    }
+    /**
+     * CRUD for CRM leads with filtering and conversion actions.
+     * @returns Lead
+     * @throws ApiError
+     */
+    public static leadsHistoryRetrieve({
+        id,
+    }: {
+        /**
+         * A unique integer value identifying this Lead.
+         */
+        id: number,
+    }): CancelablePromise<Lead> {
+        return __request(OpenAPI, {
+            method: 'GET',
+            url: '/api/leads/{id}/history/',
+            path: {
+                'id': id,
+            },
         });
     }
     /**

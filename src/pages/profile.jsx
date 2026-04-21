@@ -35,6 +35,8 @@ import {
 import {
   getProfile,
   updateProfile,
+  getSoftphoneSettings,
+  updateSoftphoneSettings,
   getTelephonyCredentials,
   updateTelephonyCredentials,
   uploadAvatar,
@@ -112,10 +114,16 @@ function ProfilePage() {
 
   const loadProfile = async () => {
     try {
-      const data = await getProfile();
+      const [data, softphone] = await Promise.all([
+        getProfile(),
+        getSoftphoneSettings().catch(() => ({})),
+      ]);
       setProfile(data);
       setAvatarUrl(getAvatarUrl(data));
-      form.setFieldsValue({ ...data });
+      form.setFieldsValue({
+        ...data,
+        jssip_display_name: softphone?.display_name || '',
+      });
       try {
         const creds = await getTelephonyCredentials();
         setTelephonyCredentials(creds);
@@ -163,9 +171,11 @@ function ProfilePage() {
       const profilePayload = {
         full_name: String(values.full_name || '').trim(),
         email: String(values.email || '').trim(),
-        jssip_display_name: values.jssip_display_name,
       };
       await updateProfile(profilePayload);
+      await updateSoftphoneSettings({
+        display_name: String(values.jssip_display_name || '').trim(),
+      });
       const nextExtension = String(values.telephony_extension || '').trim();
       const nextLogin = String(values.telephony_login || '').trim();
       const nextPassword = String(values.telephony_password || '').trim();

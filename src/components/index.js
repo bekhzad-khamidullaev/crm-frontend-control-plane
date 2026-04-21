@@ -5,7 +5,6 @@
 export { default as CallButton } from './CallButton.jsx';
 export { default as SendSMSModal } from './SendSMSModal.jsx';
 export { default as BulkSMSModal } from './BulkSMSModal.jsx';
-export { default as ActiveCallWidget } from './ActiveCallWidget.jsx';
 export { default as AudioPlayer } from './AudioPlayer.jsx';
 export { default as ChatMessageItem } from './ChatMessageItem.jsx';
 export { default as ChatMessageComposer } from './ChatMessageComposer.jsx';

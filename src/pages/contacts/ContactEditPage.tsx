@@ -2,6 +2,7 @@ import { useUpdateContact } from '@/entities/contact/api/mutations';
 import { useContact } from '@/entities/contact/api/queries';
 import { ContactFormData } from '@/entities/contact/model/schema';
 import { BusinessScreenState } from '@/components/business/BusinessScreenState';
+import { getApiErrorMessage } from '@/lib/api/error-utils';
 import { navigate } from '@/router.js';
 import { ContactForm } from '@/widgets/contact-form';
 import { message } from 'antd';
@@ -23,14 +24,7 @@ export const ContactEditPage: React.FC<ContactEditPageProps> = ({ id }) => {
       message.success('Контакт обновлен');
       navigate('/contacts');
     } catch (error: any) {
-      const details = error?.body?.details;
-      const firstDetail = details && typeof details === 'object'
-        ? Object.values(details)[0]
-        : null;
-      const detailText = Array.isArray(firstDetail) ? firstDetail[0] : firstDetail;
-      message.error(
-        detailText || error?.body?.message || 'Ошибка обновления контакта'
-      );
+      message.error(getApiErrorMessage(error, 'Ошибка обновления контакта'));
     }
   };
 

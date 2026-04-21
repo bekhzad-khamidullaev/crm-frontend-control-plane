@@ -3,7 +3,7 @@
 /* tslint:disable */
 /* eslint-disable */
 /**
- * * `embedded` - Embedded Asterisk (CRM-managed)
- * * `bridge` - External Asterisk via PBX Bridge
+ * * `embedded` - AMI-managed PBX routing
+ * * `bridge` - Управление вызовом через PBX
  */
-export type TelephonyRouteModeEnum = 'embedded' | 'bridge';
+export type TelephonyRouteModeEnum = 'embedded' | 'ami';

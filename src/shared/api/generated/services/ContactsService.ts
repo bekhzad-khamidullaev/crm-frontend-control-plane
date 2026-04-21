@@ -3,8 +3,9 @@
 /* tslint:disable */
 /* eslint-disable */
 import type { Contact } from '../models/Contact';
+import type { ContactWrite } from '../models/ContactWrite';
 import type { PaginatedContactList } from '../models/PaginatedContactList';
-import type { PatchedContact } from '../models/PatchedContact';
+import type { PatchedContactWrite } from '../models/PatchedContactWrite';
 import type { CancelablePromise } from '../core/CancelablePromise';
 import { OpenAPI } from '../core/OpenAPI';
 import { request as __request } from '../core/request';
@@ -71,7 +72,7 @@ export class ContactsService {
     public static contactsCreate({
         requestBody,
     }: {
-        requestBody: Contact,
+        requestBody: ContactWrite,
     }): CancelablePromise<Contact> {
         return __request(OpenAPI, {
             method: 'POST',
@@ -114,7 +115,7 @@ export class ContactsService {
          * A unique integer value identifying this Contact person.
          */
         id: number,
-        requestBody: Contact,
+        requestBody: ContactWrite,
     }): CancelablePromise<Contact> {
         return __request(OpenAPI, {
             method: 'PUT',
@@ -139,7 +140,7 @@ export class ContactsService {
          * A unique integer value identifying this Contact person.
          */
         id: number,
-        requestBody?: PatchedContact,
+        requestBody?: PatchedContactWrite,
     }): CancelablePromise<Contact> {
         return __request(OpenAPI, {
             method: 'PATCH',
@@ -167,6 +168,27 @@ export class ContactsService {
         return __request(OpenAPI, {
             method: 'DELETE',
             url: '/api/contacts/{id}/',
+            path: {
+                'id': id,
+            },
+        });
+    }
+    /**
+     * CRUD for contacts with search and filters.
+     * @returns Contact
+     * @throws ApiError
+     */
+    public static contactsHistoryRetrieve({
+        id,
+    }: {
+        /**
+         * A unique integer value identifying this Contact person.
+         */
+        id: number,
+    }): CancelablePromise<Contact> {
+        return __request(OpenAPI, {
+            method: 'GET',
+            url: '/api/contacts/{id}/history/',
             path: {
                 'id': id,
             },

@@ -1,3 +1,11 @@
 export type { Lead } from '@/shared/api/generated/models/Lead';
-export type { PatchedLead } from '@/shared/api/generated/models/PatchedLead';
+export type { LeadWrite } from '@/shared/api/generated/models/LeadWrite';
+export type { PatchedLeadWrite as PatchedLead } from '@/shared/api/generated/models/PatchedLeadWrite';
 export type { PaginatedLeadList } from '@/shared/api/generated/models/PaginatedLeadList';
+export type { LeadAssignRequest } from '@/shared/api/generated/models/LeadAssignRequest';
+export type { LeadAssignResponse } from '@/shared/api/generated/models/LeadAssignResponse';
+export type { LeadConvertRequest } from '@/shared/api/generated/models/LeadConvertRequest';
+export type { LeadConvertResponse } from '@/shared/api/generated/models/LeadConvertResponse';
+export type { LeadDisqualifyRequest } from '@/shared/api/generated/models/LeadDisqualifyRequest';
+export type { LeadDisqualifyResponse } from '@/shared/api/generated/models/LeadDisqualifyResponse';
+export type { LeadFormData as LeadWritePayload } from './schema';

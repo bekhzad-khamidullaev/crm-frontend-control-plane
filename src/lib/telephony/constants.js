@@ -11,19 +11,19 @@ export const TELEPHONY_PROVIDER_TAG_COLORS = Object.freeze({
 });
 
 export const CONNECTION_TYPE_OPTIONS = Object.freeze([
-  { label: 'External Asterisk (PBX Bridge)', value: 'sip' },
+  { label: 'External Asterisk (PBX AMI)', value: 'sip' },
 ]);
 
 export const TELEPHONY_ROUTE_MODE_OPTIONS = Object.freeze([
-  { value: 'bridge', label: 'External Asterisk via PBX Bridge' },
+  { value: 'ami', label: 'Управление вызовом через PBX (AMI)' },
 ]);
 
 export const TELEPHONY_EVENT_MODE_OPTIONS = Object.freeze([
-  { value: 'bridge', label: 'Go Bridge webhook ingest' },
+  { value: 'ami', label: 'Direct AMI ingest' },
   { value: 'ami', label: 'Direct AMI listener ingest' },
 ]);
 
-export const DEFAULT_TELEPHONY_ROUTE_MODE = 'bridge';
-export const DEFAULT_TELEPHONY_EVENT_MODE = 'bridge';
+export const DEFAULT_TELEPHONY_ROUTE_MODE = 'ami';
+export const DEFAULT_TELEPHONY_EVENT_MODE = 'ami';
 export const DEFAULT_TELEPHONY_PROVIDER = 'Asterisk';
 export const DEFAULT_STUN_SERVERS = 'stun:stun.l.google.com:19302';

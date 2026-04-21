@@ -24,6 +24,10 @@ export type PatchedUserWrite = {
      */
     groups?: Array<string>;
     /**
+     * List of business roles: platform_admin | sales_manager | sales_rep | marketing_manager | support_agent | operations_manager | finance_manager | warehouse_manager | crm_analyst | read_only_auditor
+     */
+    roles?: Array<string>;
+    /**
      * List of permissions in "app_label.codename" or unique "codename" format
      */
     permissions?: Array<string>;

@@ -18,7 +18,7 @@ export type Deal = {
     /**
      * Date to which the next step should be taken.
      */
-    next_step_date?: string;
+    next_step_date: string;
     description?: string;
     readonly workflow: string;
     stage?: number | null;

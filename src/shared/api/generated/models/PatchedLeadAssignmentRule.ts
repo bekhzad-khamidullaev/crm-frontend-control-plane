@@ -21,7 +21,7 @@ export type PatchedLeadAssignmentRule = {
     owner?: number | null;
     readonly owner_display?: string;
     candidate_users?: Array<number>;
-    readonly candidate_user_displays?: string;
+    readonly candidate_user_displays?: Array<Record<string, any>>;
     readonly last_assigned_user?: number | null;
     readonly last_assigned_user_display?: string;
     version?: number;

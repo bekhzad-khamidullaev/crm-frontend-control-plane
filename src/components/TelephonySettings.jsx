@@ -47,7 +47,9 @@ import {
   deleteRoutingRule,
   getInternalNumbers,
   getNumberGroups,
+  getVoipClientSettings,
   getVoipSystemSettings,
+  updateVoipClientSettings,
   updateVoipSystemSettings,
 } from '../lib/api/telephony';
 import { t } from '../lib/i18n';
@@ -65,7 +67,7 @@ import {
 
 const FREEPBX_MAIN_QUEUE_NUMBER = '0553636';
 const FREEPBX_AGENT_EXTENSION_REGEX = /^2(?:0\d|1\d)$/;
-const BRIDGE_ROUTE_MODE = 'bridge';
+const AMI_ROUTE_MODE = 'ami';
 
 const ROUTING_ACTION_OPTIONS = [
   { value: 'route_to_number', label: 'route_to_number' },
@@ -97,7 +99,7 @@ const CALLER_PATTERN_PRESETS = [
 const buildEmptyRoutingRule = () => ({
   id: undefined,
   name: `Queue ${FREEPBX_MAIN_QUEUE_NUMBER}`,
-  description: 'Основной inbound маршрут FreePBX Bridge',
+  description: 'Основной inbound маршрут PBX AMI',
   called_number_pattern: `^${FREEPBX_MAIN_QUEUE_NUMBER}$`,
   caller_id_pattern: '',
   time_condition: '',
@@ -110,15 +112,15 @@ const buildEmptyRoutingRule = () => ({
   active: true,
 });
 
-const BRIDGE_ROUTE_MODE_OPTIONS = TELEPHONY_ROUTE_MODE_OPTIONS.filter(
-  (option) => String(option?.value || '').toLowerCase() === BRIDGE_ROUTE_MODE
+const AMI_ROUTE_MODE_OPTIONS = TELEPHONY_ROUTE_MODE_OPTIONS.filter(
+  (option) => String(option?.value || '').toLowerCase() === AMI_ROUTE_MODE
 );
 
 function isPreferredFreePbxExtension(value) {
   return FREEPBX_AGENT_EXTENSION_REGEX.test(String(value || '').trim());
 }
 
-function getBridgeProviderOptions(currentProvider) {
+function getAmiProviderOptions(currentProvider) {
   const primaryProvider = String(DEFAULT_TELEPHONY_PROVIDER || '').trim();
   const baseOptions = TELEPHONY_PROVIDER_OPTIONS.filter(
     (option) => String(option?.value || '').trim() === primaryProvider
@@ -136,11 +138,11 @@ function getBridgeProviderOptions(currentProvider) {
   ];
 }
 
-function getBridgeTypeOptions() {
-  const bridgeOption = CONNECTION_TYPE_OPTIONS.find((option) => option.value === 'sip');
-  return bridgeOption
-    ? [{ ...bridgeOption, label: 'PBX Bridge (FreePBX external)' }]
-    : [{ value: 'sip', label: 'PBX Bridge (FreePBX external)' }];
+function getAmiTypeOptions() {
+  const amiOption = CONNECTION_TYPE_OPTIONS.find((option) => option.value === 'sip');
+  return amiOption
+    ? [{ ...amiOption, label: 'PBX AMI (FreePBX external)' }]
+    : [{ value: 'sip', label: 'PBX AMI (FreePBX external)' }];
 }
 
 function getPreferredInternalNumbers(numbers = []) {
@@ -204,8 +206,8 @@ export default function TelephonySettings({ onSuccess, onDirtyChange }) {
   const [activeTab, setActiveTab] = useState('base');
   const [settingsDirty, setSettingsDirty] = useState(false);
   const [routingDirty, setRoutingDirty] = useState(false);
-  const bridgeProviderOptions = getBridgeProviderOptions(editingConnection?.provider);
-  const bridgeTypeOptions = getBridgeTypeOptions();
+  const amiProviderOptions = getAmiProviderOptions(editingConnection?.provider);
+  const amiTypeOptions = getAmiTypeOptions();
   const preferredInternalNumbers = getPreferredInternalNumbers(internalNumbers);
   const prioritizedNumberGroups = getPrioritizedNumberGroups(numberGroups);
 
@@ -229,18 +231,18 @@ export default function TelephonySettings({ onSuccess, onDirtyChange }) {
   const loadProfileSettings = async () => {
     setSettingsLoading(true);
     try {
-      const profile = await getVoipSystemSettings();
+      const [clientSettings, systemSettings] = await Promise.all([
+        getVoipClientSettings(),
+        getVoipSystemSettings(),
+      ]);
       settingsForm.setFieldsValue({
-        incoming_enabled: profile.incoming_enabled !== false,
-        incoming_poll_interval_ms: Number(profile.incoming_poll_interval_ms || 4000),
-        incoming_popup_ttl_ms: Number(profile.incoming_popup_ttl_ms || 20000),
-        telephony_route_mode: BRIDGE_ROUTE_MODE,
-        telephony_event_mode: profile.telephony_event_mode || DEFAULT_TELEPHONY_EVENT_MODE,
-        telephony_provider: profile.telephony_provider || DEFAULT_TELEPHONY_PROVIDER,
-        webrtc_stun_servers: profile.webrtc_stun_servers || DEFAULT_STUN_SERVERS,
-        forward_unknown_calls: !!profile.forward_unknown_calls,
-        forward_url: profile.forward_url || '',
-        forwarding_allowed_ip: profile.forwarding_allowed_ip || '',
+        telephony_route_mode: AMI_ROUTE_MODE,
+        telephony_event_mode: clientSettings.telephony_event_mode || DEFAULT_TELEPHONY_EVENT_MODE,
+        telephony_provider: clientSettings.telephony_provider || DEFAULT_TELEPHONY_PROVIDER,
+        webrtc_stun_servers: clientSettings.webrtc_stun_servers || DEFAULT_STUN_SERVERS,
+        forward_unknown_calls: !!systemSettings.forward_unknown_calls,
+        forward_url: systemSettings.forward_url || '',
+        forwarding_allowed_ip: systemSettings.forwarding_allowed_ip || '',
       });
       setSettingsDirty(false);
     } catch (error) {
@@ -377,18 +379,19 @@ export default function TelephonySettings({ onSuccess, onDirtyChange }) {
   const handleSaveSettings = async (values) => {
     setSettingsLoading(true);
     try {
-      await updateVoipSystemSettings({
-        incoming_enabled: !!values.incoming_enabled,
-        incoming_poll_interval_ms: Number(values.incoming_poll_interval_ms || 4000),
-        incoming_popup_ttl_ms: Number(values.incoming_popup_ttl_ms || 20000),
-        telephony_route_mode: BRIDGE_ROUTE_MODE,
-        telephony_event_mode: values.telephony_event_mode || DEFAULT_TELEPHONY_EVENT_MODE,
-        telephony_provider: values.telephony_provider || DEFAULT_TELEPHONY_PROVIDER,
-        webrtc_stun_servers: values.webrtc_stun_servers || '',
-        forward_unknown_calls: !!values.forward_unknown_calls,
-        forward_url: values.forward_unknown_calls ? String(values.forward_url || '').trim() : '',
-        forwarding_allowed_ip: String(values.forwarding_allowed_ip || '').trim(),
-      });
+      await Promise.all([
+        updateVoipClientSettings({
+          telephony_route_mode: AMI_ROUTE_MODE,
+          telephony_event_mode: values.telephony_event_mode || DEFAULT_TELEPHONY_EVENT_MODE,
+          telephony_provider: values.telephony_provider || DEFAULT_TELEPHONY_PROVIDER,
+          webrtc_stun_servers: values.webrtc_stun_servers || '',
+        }),
+        updateVoipSystemSettings({
+          forward_unknown_calls: !!values.forward_unknown_calls,
+          forward_url: values.forward_unknown_calls ? String(values.forward_url || '').trim() : '',
+          forwarding_allowed_ip: String(values.forwarding_allowed_ip || '').trim(),
+        }),
+      ]);
       message.success(tr('telephonySettings.messages.settingsSaved', 'Настройки телефонии сохранены'));
       setSettingsDirty(false);
       onSuccess?.();
@@ -485,7 +488,7 @@ export default function TelephonySettings({ onSuccess, onDirtyChange }) {
       render: (type) => {
         const colors = { sip: 'blue' };
         const labels = {
-          sip: tr('telephonySettings.types.bridge', 'PBX Bridge'),
+          sip: tr('telephonySettings.types.ami', 'PBX AMI'),
         };
         return <Tag color={colors[type] || 'default'}>{labels[type] || String(type || '').toUpperCase()}</Tag>;
       },
@@ -593,7 +596,7 @@ export default function TelephonySettings({ onSuccess, onDirtyChange }) {
   ];
 
   const routeModeDescription = {
-    bridge: tr('telephonySettings.routeModes.bridge', 'FreePBX is connected through PBX Bridge. Browser UI manages only safe routing/runtime flags; PBX secrets stay server-side.'),
+    bridge: tr('telephonySettings.routeModes.ami', 'FreePBX is connected through PBX AMI. Browser UI manages only safe routing/runtime flags; PBX secrets stay server-side.'),
   };
 
   const tabsItems = [
@@ -607,13 +610,13 @@ export default function TelephonySettings({ onSuccess, onDirtyChange }) {
       ),
       children: (
         <>
-          <Alert
-            style={{ marginBottom: 16 }}
-            type="info"
-            showIcon
-            message={tr('telephonySettings.tabs.baseTitle', 'Шаг 1: Базовые параметры интеграции')}
-            description={tr('telephonySettings.tabs.baseDescription', 'Укажите режим bridge, параметры входящего popup и правила переадресации неизвестных звонков.')}
-          />
+            <Alert
+              style={{ marginBottom: 16 }}
+              type="info"
+              showIcon
+              message={tr('telephonySettings.tabs.baseTitle', 'Шаг 1: Разделение softphone client и PBX integration')}
+              description={tr('telephonySettings.tabs.baseDescription', 'Этот экран редактирует только browser-safe JsSIP/WebRTC параметры и отдельно webhook-forwarding для CRM AMI. Realtime transport и внутренние номера настраиваются ниже, а серверные Asterisk секреты остаются вне браузера.')}
+            />
 
           <Form
             form={settingsForm}
@@ -628,7 +631,7 @@ export default function TelephonySettings({ onSuccess, onDirtyChange }) {
               rules={[{ required: true, message: tr('telephonySettings.validation.selectMode', 'Select mode') }]}
               extra={tr('telephonySettings.fields.routeModeExtra', 'Для этого deployment режим фиксирован: CRM разговаривает с FreePBX через bridge/backend connector.')}
             >
-              <Select options={BRIDGE_ROUTE_MODE_OPTIONS} disabled />
+              <Select options={AMI_ROUTE_MODE_OPTIONS} disabled />
             </Form.Item>
 
             <Form.Item
@@ -642,7 +645,7 @@ export default function TelephonySettings({ onSuccess, onDirtyChange }) {
 
             <Form.Item noStyle dependencies={['telephony_route_mode']}>
               {({ getFieldValue }) => {
-                const mode = getFieldValue('telephony_route_mode') || BRIDGE_ROUTE_MODE;
+                const mode = getFieldValue('telephony_route_mode') || AMI_ROUTE_MODE;
                 return (
                   <Alert
                     style={{ marginBottom: 16 }}
@@ -659,51 +662,26 @@ export default function TelephonySettings({ onSuccess, onDirtyChange }) {
               label={tr('telephonySettings.fields.preferredProvider', 'Preferred provider')}
               name="telephony_provider"
               rules={[{ required: true, message: tr('telephonySettings.validation.selectProvider', 'Select provider') }]}
-              extra={tr('telephonySettings.fields.preferredProviderExtra', 'Provider фиксирован на Asterisk/FreePBX. Секреты bridge connector хранятся только на сервере.' )}
+              extra={tr('telephonySettings.fields.preferredProviderExtra', 'Provider фиксирован на Asterisk/FreePBX. Секреты AMI connector хранятся только на сервере.' )}
             >
-              <Select options={bridgeProviderOptions} disabled />
+              <Select options={amiProviderOptions} disabled />
             </Form.Item>
 
             <Alert
               style={{ marginBottom: 16 }}
               type="warning"
               showIcon
-              message={tr('telephonySettings.bridgeSecrets.title', 'PBX secret fields intentionally hidden')}
-              description={tr('telephonySettings.bridgeSecrets.description', 'AMI host/user/secret, FreePBX bridge auth, WSS/TURN credentials and other sensitive runtime secrets must be managed on the bridge/backend host. Browser admins should not see or rotate them from this screen.')}
+              message={tr('telephonySettings.amiSecrets.title', 'PBX secret fields intentionally hidden')}
+              description={tr('telephonySettings.amiSecrets.description', 'AMI host/user/secret, PBX AMI auth, WSS/TURN credentials and other sensitive runtime secrets must be managed on the bridge/backend host. Browser admins should not see or rotate them from this screen.')}
             />
 
-            <Divider orientation="left">{tr('telephonySettings.sections.incomingRealtime', 'Incoming popup и safe realtime settings')}</Divider>
-
-            <Form.Item
-              label={tr('telephonySettings.fields.incomingEnabled', 'Enable incoming call popup')}
-              name="incoming_enabled"
-              valuePropName="checked"
-              extra={tr('telephonySettings.fields.incomingEnabledExtra', 'Используйте для операторов 200-219, которым CRM должен показывать realtime popup по bridge-событиям.')}
-            >
-              <Switch />
-            </Form.Item>
-
-            <Form.Item
-              label={tr('telephonySettings.fields.incomingPollInterval', 'Incoming polling interval (ms)')}
-              name="incoming_poll_interval_ms"
-              rules={[{ required: true, message: tr('telephonySettings.validation.enterIncomingPollInterval', 'Enter polling interval') }]}
-            >
-              <InputNumber min={500} max={60000} step={100} style={{ width: '100%' }} />
-            </Form.Item>
-
-            <Form.Item
-              label={tr('telephonySettings.fields.incomingPopupTtl', 'Incoming popup lifetime (ms)')}
-              name="incoming_popup_ttl_ms"
-              rules={[{ required: true, message: tr('telephonySettings.validation.enterIncomingPopupTtl', 'Enter popup lifetime') }]}
-            >
-              <InputNumber min={1000} max={120000} step={1000} style={{ width: '100%' }} />
-            </Form.Item>
+            <Divider orientation="left">{tr('telephonySettings.sections.clientRuntime', 'JsSIP/WebRTC client runtime')}</Divider>
 
             <Form.Item
               label={tr('telephonySettings.fields.stunServers', 'STUN servers')}
               name="webrtc_stun_servers"
               tooltip={tr('telephonySettings.fields.stunTooltip', 'One per line or comma-separated. Example: stun:stun.l.google.com:19302')}
-              extra={tr('telephonySettings.fields.stunExtra', 'Нужны только browser-safe STUN адреса. TURN/WSS credentials остаются server-side вместе с bridge deployment.')}
+              extra={tr('telephonySettings.fields.stunExtra', 'Нужны только browser-safe STUN адреса. Incoming popup/WebSocket fallback настраиваются в realtime-блоке, а TURN/WSS credentials остаются server-side вместе с bridge deployment.')}
             >
               <Input.TextArea
                 rows={3}
@@ -711,7 +689,7 @@ export default function TelephonySettings({ onSuccess, onDirtyChange }) {
               />
             </Form.Item>
 
-            <Divider orientation="left">{tr('telephonySettings.sections.forwarding', 'Unknown caller forwarding')}</Divider>
+            <Divider orientation="left">{tr('telephonySettings.sections.forwarding', 'PBX AMI -> CRM forwarding')}</Divider>
 
             <Form.Item
               label={tr('telephonySettings.fields.forwardUnknownCalls', 'Forward unknown callers')}
@@ -1042,7 +1020,7 @@ export default function TelephonySettings({ onSuccess, onDirtyChange }) {
             type="info"
             showIcon
             message={tr('telephonySettings.tabs.connectionsTitle', 'Шаг 4: Подключения операторов')}
-            description={tr('telephonySettings.tabs.connectionsDescription', 'Добавляйте подключения только в режиме PBX Bridge и используйте реальные extension для операторов.')}
+            description={tr('telephonySettings.tabs.connectionsDescription', 'Добавляйте подключения только в режиме PBX AMI и используйте реальные extension для операторов.')}
           />
           <div style={{ marginBottom: 16 }}>
             {canManage ? (
@@ -1074,8 +1052,8 @@ export default function TelephonySettings({ onSuccess, onDirtyChange }) {
   return (
     <div>
       <Alert
-        message={tr('telephonySettings.header.title', 'FreePBX Bridge: безопасная browser-конфигурация')}
-        description={tr('telephonySettings.header.description', 'Этот экран рассчитан на bridge-first deployment: основные inbound маршруты идут через очередь 0553636, а рабочие agent extensions находятся в диапазоне 200-219. PBX/AMI/WSS секреты из браузера скрыты.')}
+        message={tr('telephonySettings.header.title', 'PBX AMI: безопасная browser-конфигурация')}
+        description={tr('telephonySettings.header.description', 'Этот экран рассчитан на ami-first deployment: основные inbound маршруты идут через очередь 0553636, а рабочие agent extensions находятся в диапазоне 200-219. PBX/AMI/WSS секреты из браузера скрыты.')}
         type="info"
         showIcon
         style={{ marginBottom: 16 }}
@@ -1201,7 +1179,7 @@ export default function TelephonySettings({ onSuccess, onDirtyChange }) {
           type="info"
           showIcon
           message={tr('telephonySettings.connectionHelp.title', 'Что заполнять?')}
-          description={tr('telephonySettings.connectionHelp.description', `Новые подключения создавайте только в режиме PBX Bridge для внешнего FreePBX. Рабочий диапазон agent extensions: 200-219. Основная очередь/DID: ${FREEPBX_MAIN_QUEUE_NUMBER}.`)}
+          description={tr('telephonySettings.connectionHelp.description', `Новые подключения создавайте только в режиме PBX AMI для внешнего FreePBX. Рабочий диапазон agent extensions: 200-219. Основная очередь/DID: ${FREEPBX_MAIN_QUEUE_NUMBER}.`)}
         />
         <Form
           form={form}
@@ -1218,11 +1196,11 @@ export default function TelephonySettings({ onSuccess, onDirtyChange }) {
             label={tr('telephonySettings.fields.provider', 'Provider')}
             name="provider"
             rules={[{ required: true, message: tr('telephonySettings.validation.selectProvider', 'Select provider') }]}
-            extra={tr('telephonySettings.fields.providerExtra', 'Провайдер фиксирован на Asterisk/FreePBX bridge deployment.')}
+            extra={tr('telephonySettings.fields.providerExtra', 'Провайдер фиксирован на Asterisk/PBX AMI deployment.')}
           >
             <Select
               placeholder={tr('telephonySettings.placeholders.provider', 'Asterisk')}
-              options={bridgeProviderOptions}
+              options={amiProviderOptions}
               disabled
             />
           </Form.Item>
@@ -1231,10 +1209,10 @@ export default function TelephonySettings({ onSuccess, onDirtyChange }) {
             label={tr('telephonySettings.fields.connectionType', 'Connection type')}
             name="type"
             rules={[{ required: true, message: tr('telephonySettings.validation.selectType', 'Select type') }]}
-            extra={tr('telephonySettings.fields.connectionTypeExtra', 'Для новых подключений используйте только PBX Bridge.')}
+            extra={tr('telephonySettings.fields.connectionTypeExtra', 'Для новых подключений используйте только PBX AMI.')}
           >
             <Select placeholder={tr('telephonySettings.placeholders.connectionType', 'Выберите тип')}>
-              {bridgeTypeOptions.map((option) => (
+              {amiTypeOptions.map((option) => (
                 <Select.Option key={option.value} value={option.value} disabled={option.disabled}>
                   {option.label}
                 </Select.Option>
@@ -1247,8 +1225,8 @@ export default function TelephonySettings({ onSuccess, onDirtyChange }) {
               const type = getFieldValue('type');
               const hintType = type === 'sip' ? 'warning' : 'info';
               const fallback = type === 'sip'
-                ? `PBX Bridge режим: укажите только безопасные browser-side поля. SIP/AMI/WSS secret material остаётся на сервере bridge worker.`
-                : `Legacy embedded режим найден в старой записи. Новые FreePBX подключения должны мигрировать в bridge flow.`;
+                ? `PBX AMI режим: укажите только безопасные browser-side поля. SIP/AMI/WSS secret material остаётся на сервере AMI worker.`
+                : `Legacy embedded режим найден в старой записи. Новые FreePBX подключения должны мигрировать в AMI flow.`;
               return (
                 <Alert
                   style={{ marginBottom: 16 }}
@@ -1278,7 +1256,7 @@ export default function TelephonySettings({ onSuccess, onDirtyChange }) {
                       },
                     },
                   ]}
-                  extra={tr('telephonySettings.fields.sipServerExtra', 'Укажите FreePBX/PJSIP host, который использует bridge worker, например pbx.company.uz или pbx.company.uz:5060')}
+                  extra={tr('telephonySettings.fields.sipServerExtra', 'Укажите FreePBX/PJSIP host, который использует AMI worker, например pbx.company.uz или pbx.company.uz:5060')}
                 >
                   <Input placeholder={tr('telephonySettings.placeholders.sipServer', 'Например: pbx.company.uz:5060')} />
                 </Form.Item>

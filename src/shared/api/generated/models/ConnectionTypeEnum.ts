@@ -3,7 +3,7 @@
 /* tslint:disable */
 /* eslint-disable */
 /**
- * * `pbx` - Embedded Asterisk (CRM-managed)
- * * `sip` - External Asterisk via PBX Bridge
+ * * `pbx` - AMI-managed PBX line
+ * * `sip` - Go connector PBX line
  */
 export type ConnectionTypeEnum = 'pbx' | 'sip';

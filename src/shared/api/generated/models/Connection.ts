@@ -3,7 +3,7 @@
 /* tslint:disable */
 /* eslint-disable */
 import type { ConnectionTypeEnum } from './ConnectionTypeEnum';
-import type { Provider8a3Enum } from './Provider8a3Enum';
+import type { TelephonyProviderEnum } from './TelephonyProviderEnum';
 export type Connection = {
     readonly id: number;
     /**
@@ -11,19 +11,19 @@ export type Connection = {
      *
      * * `Asterisk` - Asterisk
      */
-    provider: Provider8a3Enum;
-    type?: ConnectionTypeEnum;
+    provider?: TelephonyProviderEnum;
+    readonly type: ConnectionTypeEnum;
     number: string;
     /**
      * SIP domain or host for SIP trunk/account connections
      */
-    sip_server?: string;
+    readonly sip_server: string;
     owner?: number | null;
     readonly owner_name: string;
     /**
      * Specify the number to be displayed as             your phone number when you call
      */
-    callerid: string;
+    callerid?: string;
     active?: boolean;
 };
 

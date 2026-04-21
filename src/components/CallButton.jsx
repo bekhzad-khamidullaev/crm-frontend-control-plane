@@ -211,7 +211,7 @@ function CallButton({ phone, name, entityType, entityId, size = 'middle', type =
       try {
         const runtime = await loadTelephonyRuntimeConfig().catch(() => null);
         const routeMode = String(runtime?.sipConfig?.routeMode || DEFAULT_TELEPHONY_ROUTE_MODE).toLowerCase();
-        if (routeMode === 'bridge') {
+        if (routeMode === 'ami') {
           const started = await startServerOriginateCall(runtime);
           if (!started) throw new Error(t('callButton.messages.serverRouteFailed'));
           return;

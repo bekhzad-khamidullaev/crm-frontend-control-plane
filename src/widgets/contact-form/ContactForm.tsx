@@ -194,7 +194,11 @@ export const ContactForm: React.FC<ContactFormProps> = ({
 
           <Row gutter={16}>
             <Col xs={24} md={12}>
-              <Form.Item label="Компания" name="company">
+              <Form.Item
+                label="Компания"
+                name="company"
+                rules={[{ required: true, message: 'Выберите компанию' }]}
+              >
                 <CompanySelect style={{ width: '100%' }} />
               </Form.Item>
             </Col>

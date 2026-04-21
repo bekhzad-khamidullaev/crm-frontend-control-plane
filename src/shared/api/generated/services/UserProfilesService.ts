@@ -3,8 +3,12 @@
 /* tslint:disable */
 /* eslint-disable */
 import type { PaginatedUserProfileList } from '../models/PaginatedUserProfileList';
+import type { PatchedTelephonyCredentials } from '../models/PatchedTelephonyCredentials';
 import type { PatchedUserProfile } from '../models/PatchedUserProfile';
+import type { PatchedUserSoftphoneSettings } from '../models/PatchedUserSoftphoneSettings';
+import type { TelephonyCredentials } from '../models/TelephonyCredentials';
 import type { UserProfile } from '../models/UserProfile';
+import type { UserSoftphoneSettings } from '../models/UserSoftphoneSettings';
 import type { CancelablePromise } from '../core/CancelablePromise';
 import { OpenAPI } from '../core/OpenAPI';
 import { request as __request } from '../core/request';
@@ -228,12 +232,44 @@ export class UserProfilesService {
         });
     }
     /**
-     * Single-source-of-truth user telephony credentials endpoint.
-     * User can access only own credentials; runtime PBX/WSS settings stay in VoIP system settings.
-     * @returns UserProfile
+     * User-facing browser softphone settings.
+     * Allows per-user JsSIP/WebRTC overrides while keeping PBX credentials and
+     * system Asterisk integration separate.
+     * @returns UserSoftphoneSettings
      * @throws ApiError
      */
-    public static profilesMeTelephonyCredentialsRetrieve(): CancelablePromise<UserProfile> {
+    public static profilesMeSoftphoneSettingsRetrieve(): CancelablePromise<UserSoftphoneSettings> {
+        return __request(OpenAPI, {
+            method: 'GET',
+            url: '/api/profiles/me/softphone-settings/',
+        });
+    }
+    /**
+     * User-facing browser softphone settings.
+     * Allows per-user JsSIP/WebRTC overrides while keeping PBX credentials and
+     * system Asterisk integration separate.
+     * @returns UserSoftphoneSettings
+     * @throws ApiError
+     */
+    public static profilesMeSoftphoneSettingsPartialUpdate({
+        requestBody,
+    }: {
+        requestBody?: PatchedUserSoftphoneSettings,
+    }): CancelablePromise<UserSoftphoneSettings> {
+        return __request(OpenAPI, {
+            method: 'PATCH',
+            url: '/api/profiles/me/softphone-settings/',
+            body: requestBody,
+            mediaType: 'application/json',
+        });
+    }
+    /**
+     * Single-source-of-truth user telephony credentials endpoint.
+     * User can access only own credentials; runtime PBX/WSS settings stay in VoIP system settings.
+     * @returns TelephonyCredentials
+     * @throws ApiError
+     */
+    public static profilesMeTelephonyCredentialsRetrieve(): CancelablePromise<TelephonyCredentials> {
         return __request(OpenAPI, {
             method: 'GET',
             url: '/api/profiles/me/telephony-credentials/',
@@ -242,14 +278,14 @@ export class UserProfilesService {
     /**
      * Single-source-of-truth user telephony credentials endpoint.
      * User can access only own credentials; runtime PBX/WSS settings stay in VoIP system settings.
-     * @returns UserProfile
+     * @returns TelephonyCredentials
      * @throws ApiError
      */
     public static profilesMeTelephonyCredentialsPartialUpdate({
         requestBody,
     }: {
-        requestBody?: PatchedUserProfile,
-    }): CancelablePromise<UserProfile> {
+        requestBody?: PatchedTelephonyCredentials,
+    }): CancelablePromise<TelephonyCredentials> {
         return __request(OpenAPI, {
             method: 'PATCH',
             url: '/api/profiles/me/telephony-credentials/',

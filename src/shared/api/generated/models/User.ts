@@ -22,5 +22,6 @@ export type User = {
     readonly groups: Array<string>;
     readonly roles: Array<string>;
     readonly permissions: Array<string>;
+    readonly direct_permissions: Array<string>;
 };
 

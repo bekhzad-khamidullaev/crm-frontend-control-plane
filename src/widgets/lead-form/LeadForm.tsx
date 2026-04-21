@@ -18,6 +18,7 @@ import dayjs from 'dayjs';
 import { BusinessScreenState } from '@/components/business/BusinessScreenState';
 import { useCreateLead, useUpdateLead } from '@/entities/lead/api/mutations';
 import { useLead as useLeadQuery } from '@/entities/lead/api/queries';
+import { getApiErrorPayload } from '@/lib/api/error-utils';
 // @ts-ignore
 import { navigate } from '@/router.js';
 
@@ -70,6 +71,15 @@ export const LeadForm: React.FC<LeadFormProps> = ({ id }) => {
   }, [lead, form]);
 
   const onFinish = async (values: any) => {
+    if (!values.first_name && !values.company_name) {
+      const errors = ['Укажите имя лида или название компании'];
+      form.setFields([
+        { name: 'first_name', errors },
+        { name: 'company_name', errors },
+      ]);
+      return;
+    }
+
     try {
       const payload: any = {
         ...values,
@@ -87,8 +97,9 @@ export const LeadForm: React.FC<LeadFormProps> = ({ id }) => {
       }
       navigate('/leads');
     } catch (error: any) {
-      if (error?.body?.details) {
-        const fields = Object.entries(error.body.details).map(([name, errors]: [string, any]) => ({
+      const details = getApiErrorPayload(error);
+      if (details && typeof details === 'object') {
+        const fields = Object.entries(details).map(([name, errors]: [string, any]) => ({
           name,
           errors: Array.isArray(errors) ? errors : [errors],
         }));
