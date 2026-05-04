@@ -1,0 +1,2952 @@
+{
+  "nav": {
+    "salesGroup": "Продажи",
+    "communicationsGroup": "Коммуникации",
+    "marketingGroup": "Маркетинг",
+    "operationsGroup": "Операции",
+    "systemGroup": "Система",
+    "dashboard": "Дашборд",
+    "analytics": "Аналитика",
+    "leads": "Лиды",
+    "contacts": "Контакты",
+    "companies": "Компании",
+    "deals": "Сделки",
+    "tasks": "Задачи",
+    "projects": "Проекты",
+    "chat": "Чаты",
+    "calls": "Звонки",
+    "callsDashboard": "Дашборд",
+    "callsHistory": "История звонков",
+    "payments": "Платежи",
+    "reminders": "Напоминания",
+    "campaigns": "Кампании",
+    "memos": "Заметки",
+    "products": "Продукты",
+    "segments": "Сегменты",
+    "templates": "Шаблоны",
+    "integrations": "Интеграции",
+    "helpCenter": "Справка",
+    "reportsAndAnalytics": "Отчеты и аналитика",
+    "crmEmails": "CRM Email",
+    "massmail": "Массовые рассылки",
+    "smsCenter": "SMS",
+    "landingBuilder": "Конструктор лендингов",
+    "operations": "Операции",
+    "referenceData": "Справочники",
+    "telephony": "Телефония",
+    "users": "Пользователи",
+    "licensing": "Лицензирование",
+    "profile": "Профиль",
+    "settings": "Настройки",
+    "logout": "Выход",
+    "themeLight": "Светлая тема",
+    "themeDark": "Темная тема",
+    "language": "Язык",
+    "theme": "Тема",
+    "aiChat": "AI чат CRM",
+    "clientsWorkspace": "Клиенты и договоры",
+    "warehouseWorkspace": "Склад",
+    "financePlanning": "Финплан",
+    "businessProcesses": "Бизнес-процессы",
+    "meetings": "Встречи",
+    "settingsWorkspace": "Настройки и интеграции",
+    "controlPlane": "Control Plane",
+    "licenseWorkspace": "License Workspace",
+    "version": "Версия CRM",
+    "newLead": "Новый лид",
+    "newContact": "Новый контакт",
+    "newCompany": "Новая компания",
+    "newDeal": "Новая сделка",
+    "newTask": "Новая задача",
+    "newCampaign": "Новая кампания"
+  },
+  "actions": {
+    "edit": "Редактировать",
+    "delete": "Удалить",
+    "save": "Сохранить",
+    "cancel": "Отменить",
+    "create": "Создать",
+    "search": "Поиск",
+    "retry": "Повторить попытку",
+    "refresh": "Обновить",
+    "back": "Назад",
+    "saveChanges": "Сохранить изменения",
+    "reset": "Сбросить",
+    "update": "Обновить"
+  },
+  "dealsCommon": {
+    "fields": {
+      "stage": "Стадия",
+      "owner": "Ответственный",
+      "company": "Компания",
+      "amount": "Сумма"
+    },
+    "defaults": {
+      "user": "Пользователь",
+      "noStage": "Без стадии"
+    },
+    "stages": {
+      "request": "Запрос",
+      "analysisOfRequest": "Анализ запроса",
+      "clarificationOfRequirements": "Уточнение требований",
+      "priceOffer": "Ценовое предложение",
+      "commercialProposal": "Коммерческое предложение",
+      "commercialOffer": "Коммерческий оффер",
+      "agreement": "Договор",
+      "invoice": "Инвойс",
+      "receivingFirstPayment": "Получение первого платежа",
+      "shipment": "Отгрузка",
+      "closedSuccessful": "Успешно закрыто",
+      "inProgress": "В работе",
+      "won": "Выиграна",
+      "lost": "Проиграна",
+      "rejected": "Отклонена",
+      "declined": "Отклонена",
+      "cancelled": "Отменена",
+      "completed": "Завершена"
+    }
+  },
+  "dealsListPage": {
+    "title": "Сделки",
+    "view": {
+      "table": "Таблица",
+      "kanban": "Канбан",
+      "rejections": "Отказы"
+    },
+    "actions": {
+      "createShort": "Создать",
+      "createDeal": "Создать сделку"
+    }
+  },
+  "dealsTable": {
+    "columns": {
+      "name": "Название",
+      "amount": "Сумма",
+      "stage": "Стадия",
+      "probability": "Вероятность",
+      "company": "Компания",
+      "contacts": "Контакты",
+      "owner": "Ответственный",
+      "closingDate": "Дата закрытия",
+      "actions": "Действия"
+    },
+    "actions": {
+      "view": "Просмотр",
+      "viewAria": "Просмотреть сделку",
+      "edit": "Редактировать",
+      "editAria": "Редактировать сделку",
+      "deleteAria": "Удалить сделку",
+      "deleteConfirm": "Удалить сделку?",
+      "noPermissions": "Недостаточно прав"
+    },
+    "messages": {
+      "loadError": "Не удалось загрузить список сделок"
+    },
+    "filters": {
+      "searchPlaceholder": "Поиск по названию...",
+      "refreshListAria": "Обновить список",
+      "searchTag": "Поиск"
+    }
+  },
+  "dealsKanban": {
+    "actions": {
+      "add": "Добавить"
+    },
+    "empty": {
+      "column": "Пусто"
+    },
+    "messages": {
+      "created": "Сделка создана",
+      "createForbidden": "Недостаточно прав или лицензии для создания сделки",
+      "createError": "Не удалось создать сделку",
+      "moved": "Сделка перемещена: {stage}",
+      "moveForbidden": "Недостаточно прав или лицензии для изменения стадии сделки",
+      "moveError": "Не удалось изменить стадию сделки",
+      "loadError": "Не удалось загрузить сделки",
+      "stagesUnavailable": "Справочник стадий недоступен, показан только столбец «Без стадии».",
+      "truncated": "Показаны первые {loaded} из {total} сделок. Уточните фильтр для полной выборки."
+    },
+    "quickCreate": {
+      "title": "Быстрое создание сделки ({stage})",
+      "actions": {
+        "create": "Создать"
+      },
+      "fields": {
+        "name": "Название сделки",
+        "nextStep": "Следующий шаг",
+        "closingDate": "Плановая дата закрытия"
+      },
+      "validation": {
+        "nameRequired": "Введите название сделки",
+        "nextStepRequired": "Укажите следующий шаг"
+      },
+      "placeholders": {
+        "name": "Например: Годовой контракт на сервис",
+        "nextStep": "Например: Согласовать КП с клиентом",
+        "amount": "0.00"
+      }
+    }
+  },
+  "dealsRejections": {
+    "reasonPrefix": "Причина",
+    "reasonNotSpecified": "Не указана",
+    "columns": {
+      "deal": "Сделка",
+      "stageStatus": "Этап / статус",
+      "reason": "Причина",
+      "amount": "Сумма",
+      "owner": "Ответственный",
+      "closingDate": "Дата закрытия",
+      "actions": "Действия"
+    },
+    "stats": {
+      "rejectionsInSample": "Отказов (в выборке)",
+      "rejectionsAmount": "Сумма отказов",
+      "topReason": "Топ причина"
+    },
+    "actions": {
+      "open": "Открыть",
+      "edit": "Редактировать",
+      "noPermissions": "Недостаточно прав"
+    },
+    "messages": {
+      "loadError": "Не удалось загрузить список сделок",
+      "truncated": "Показаны первые {loaded} из {total} сделок. Для полного анализа отказов уточните фильтры.",
+      "empty": "В текущей выборке отказов не найдено"
+    }
+  },
+  "dealDetailPage": {
+    "notFound": {
+      "title": "Сделка не найдена",
+      "back": "К списку сделок"
+    },
+    "breadcrumb": {
+      "deals": "Сделки"
+    },
+    "status": {
+      "active": "Активна",
+      "inactive": "Неактивна"
+    },
+    "actions": {
+      "remind": "Напомнить",
+      "askAi": "Спросить AI",
+      "edit": "Редактировать"
+    },
+    "createdAt": "Создано",
+    "cards": {
+      "amount": "Сумма",
+      "probability": "Вероятность",
+      "nextStep": "Следующий шаг",
+      "notAssigned": "Не назначен"
+    },
+    "tabs": {
+      "details": "Детали",
+      "activity": "Активность",
+      "calls": "Звонки"
+    },
+    "fields": {
+      "name": "Название",
+      "amount": "Сумма",
+      "stage": "Стадия",
+      "probability": "Вероятность",
+      "company": "Компания",
+      "contact": "Контакт",
+      "owner": "Ответственный",
+      "department": "Отдел",
+      "nextStep": "Следующий шаг",
+      "date": "Дата",
+      "closingDate": "Дата закрытия",
+      "closingReason": "Причина закрытия",
+      "tags": "Теги",
+      "description": "Описание"
+    },
+    "defaults": {
+      "company": "Компания"
+    },
+    "placeholders": {
+      "activity": "История активности (в разработке)",
+      "calls": "История звонков (в разработке)"
+    }
+  },
+  "appLayout": {
+    "quickCreate": "Создать",
+    "searchPlaceholder": "Поиск по разделу: {section}",
+    "workspace": {
+      "sales": "Продажи",
+      "communications": "Коммуникации",
+      "marketing": "Маркетинг",
+      "operations": "Операции",
+      "system": "Система"
+    },
+    "status": {
+      "controlPlaneOffline": "Control Plane недоступен",
+      "controlPlaneOnline": "Control Plane синхронизирован"
+    }
+  },
+  "helpCenterPage": {
+    "alertTitle": "Справочный центр",
+    "alertDescription": "Актуальные инструкции, подсказки и рабочие сценарии по разделам CRM.",
+    "languageFilter": "Язык контента",
+    "fallback": "Часть материалов недоступна на выбранном языке. Показана английская версия.",
+    "pagesTitle": "Страницы справки",
+    "paragraphsTitle": "Параграфы справки",
+    "preview": "Просмотр",
+    "empty": "Записи не найдены",
+    "withoutTitle": "Параграф без заголовка",
+    "tabs": {
+      "pages": "Страницы",
+      "paragraphs": "Параграфы"
+    },
+    "columns": {
+      "page": "Страница",
+      "title": "Заголовок",
+      "language": "Язык",
+      "paragraphs": "Параграфов",
+      "index": "Индекс",
+      "preview": "Краткий текст",
+      "actions": "Действия"
+    },
+    "languages": {
+      "ru": "Русский",
+      "en": "Английский",
+      "uz": "Узбекский"
+    }
+  },
+  "dashboard": {
+    "analytics": {
+      "partialBadge": "Частично доступен",
+      "partialTooltip": "Часть аналитических виджетов недоступна. KPI и Активность доступны.",
+      "unavailable": "Аналитика временно недоступна (ошибка сервера)",
+      "predictionTitle": "Прогнозируемая выручка на следующие 6 месяцев"
+    },
+    "kpi": {
+      "conversion": "Конверсия: {value}%"
+    }
+  },
+  "dashboardPage": {
+    "title": "Дашборд",
+    "subtitle": "Ключевые показатели CRM",
+    "cards": {
+      "leads": "Лиды",
+      "contacts": "Контакты",
+      "deals": "Сделки",
+      "revenue": "Выручка"
+    },
+    "periods": {
+      "d7": "7 дней",
+      "d30": "30 дней",
+      "d90": "90 дней"
+    },
+    "lastActivity": {
+      "title": "Последняя активность",
+      "empty": "Нет активности за выбранный период",
+      "fallbackEvent": "Событие",
+      "fallbackDescription": "Без описания"
+    },
+    "errors": {
+      "loadData": "Не удалось загрузить данные дашборда",
+      "licenseFeatureDisabled": "Функция недоступна по лицензии",
+      "licenseFeatureDisabledDescription": "Текущий тариф не включает модуль: {feature}. Обратитесь к администратору лицензий.",
+      "licenseSeatLimitExceeded": "Превышен лимит пользовательских мест",
+      "licenseExpired": "Срок лицензии истек",
+      "licenseRevoked": "Лицензия отозвана",
+      "licenseInvalid": "Лицензия недействительна",
+      "licenseRestrictionDescription": "Операция ограничена текущим состоянием лицензии. Проверьте раздел лицензирования."
+    },
+    "user": "Пользователь",
+    "updated": "Обновление",
+    "actions": {
+      "share": "Поделиться ссылкой",
+      "saveView": "Сохранить вид",
+      "drilldown": "Перейти к списку",
+      "openTask": "Открыть задачу",
+      "openLead": "Открыть лид",
+      "openDeal": "Открыть сделку",
+      "openList": "Открыть список"
+    },
+    "filters": {
+      "allManagers": "Все менеджеры",
+      "allPipelines": "Все воронки",
+      "allSources": "Все источники",
+      "savedView": "Сохраненный вид"
+    },
+    "kpi": {
+      "leadsNew": "Новые лиды",
+      "leadsProcessed": "Обработанные лиды",
+      "overdueSla": "SLA / просрочки",
+      "pipelineAmount": "Сумма сделок в работе",
+      "forecastClose": "Прогноз закрытия",
+      "wonLost": "Won / Lost",
+      "conversion": "Конверсия",
+      "dealToWon": "Сделка→Won",
+      "salesVelocity": "Скорость продаж (в день)"
+    },
+    "kpiDef": {
+      "leadsNew": "Количество лидов, созданных за выбранный период.",
+      "leadsProcessed": "Количество лидов, статус которых изменился с нового.",
+      "overdueSla": "Просроченные задачи и случаи превышения лимита первого ответа SLA.",
+      "pipelineAmount": "Общая сумма незакрытых сделок в работе.",
+      "forecastClose": "Сумма сделок, планируемых к закрытию в выбранный период.",
+      "wonLost": "Соотношение успешно закрытых и потерянных сделок.",
+      "conversion": "Этапные конверсии Lead→Deal и Deal→Won.",
+      "salesVelocity": "Сумма выигранных сделок за период, деленная на число дней."
+    },
+    "noPrevComparison": "Нет корректного сравнения с прошлым периодом",
+    "exceptions": {
+      "title": "Требует внимания",
+      "empty": "Сейчас нет критичных исключений",
+      "taskOverdue": "Просроченная задача",
+      "leadNoActivity": "Лид без активности",
+      "leadNoActivityHint": "Нет активности уже {days} дней",
+      "riskyDeal": "Рискованная сделка"
+    },
+    "activity": {
+      "title": "Активность и SLA",
+      "calls": "Звонки",
+      "messages": "Сообщения",
+      "meetings": "Встречи",
+      "firstResponse": "Средний первый ответ",
+      "noActivityLeads": "Лиды без активности",
+      "taskCompletion": "Выполнение задач"
+    },
+    "minutes": "мин",
+    "mode": {
+      "myDay": "Мой день",
+      "team": "Команда",
+      "company": "Компания"
+    },
+    "team": {
+      "empty": "Нет данных по команде",
+      "columns": {
+        "manager": "Менеджер",
+        "total": "Всего активности",
+        "calls": "Звонки",
+        "messages": "Сообщения",
+        "breaches": "Нарушения SLA"
+      }
+    },
+    "company": {
+      "funnel": "Этапы воронки",
+      "funnelEmpty": "Нет данных воронки",
+      "kpiCatalog": "Справочник KPI",
+      "columns": {
+        "stage": "Этап",
+        "count": "Количество",
+        "amount": "Сумма",
+        "kpi": "KPI",
+        "definition": "Определение",
+        "source": "Источник",
+        "refresh": "Обновление"
+      }
+    },
+    "export": {
+      "title": "Отчет CRM Dashboard",
+      "sectionKpi": "KPI",
+      "sectionExceptions": "Исключения",
+      "columns": {
+        "section": "Раздел",
+        "metric": "Показатель",
+        "value": "Значение",
+        "details": "Описание"
+      }
+    },
+    "freshness": {
+      "title": "Актуальность виджетов",
+      "overview": "Блок KPI",
+      "activity": "Блок активности",
+      "funnel": "Блок воронки",
+      "entities": "Блок исключений",
+      "live": "обновлено только что",
+      "recent": "обновлено недавно",
+      "stale": "данные устарели"
+    },
+    "quality": {
+      "title": "Предупреждения по качеству данных",
+      "overviewUnavailable": "Сводная аналитика недоступна",
+      "activityUnavailable": "Лента активности недоступна",
+      "funnelUnavailable": "Воронка недоступна",
+      "tasksUnavailable": "Не удалось загрузить задачи для блока исключений",
+      "dealsUnavailable": "Не удалось загрузить сделки для KPI",
+      "leadsUnavailable": "Не удалось загрузить лиды для KPI"
+    },
+    "refreshSource": {
+      "live": "Реальное время + ручное обновление",
+      "hourly": "Ежечасно",
+      "daily": "Ежедневно"
+    },
+    "saveView": {
+      "title": "Сохранить вид",
+      "description": "Сохраните текущую конфигурацию фильтров и режима.",
+      "placeholder": "Например: Утренний контроль",
+      "save": "Сохранить",
+      "cancel": "Отмена"
+    },
+    "messages": {
+      "viewNameRequired": "Введите название сохраненного вида",
+      "viewSaved": "Вид сохранен",
+      "linkCopied": "Ссылка скопирована"
+    },
+    "stage": "Этап",
+    "deadline": "Дедлайн",
+    "closeDate": "Дата закрытия",
+    "noCloseDate": "Дата закрытия не указана",
+    "unknownTask": "Задача",
+    "unknownLead": "Лид",
+    "unknownDeal": "Сделка",
+    "sourceUnknown": "Не указан",
+    "insights": {
+      "title": "Расширенная информационная панель",
+      "planFact": "План/факт закрытия периода",
+      "avgDealSize": "Средний чек по открытым сделкам",
+      "winRate": "Доля выигранных сделок",
+      "velocity": "Скорость продаж"
+    },
+    "dashboards": {
+      "title": "Дополнительные дашборды",
+      "salesTab": "Продажи",
+      "teamTab": "Команда",
+      "sourcesTab": "Источники",
+      "communicationsTab": "Коммуникации",
+      "planFact": "План/факт закрытия",
+      "avgDealSize": "Средний размер сделки",
+      "winRate": "Win rate",
+      "sourcesEmpty": "Нет данных по источникам",
+      "sourceColumn": "Источник",
+      "leadsColumn": "Лиды",
+      "processedColumn": "Обработано",
+      "sourceConversionColumn": "Конверсия"
+    },
+    "extraDashboards": {
+      "title": "Переход к специализированным дашбордам",
+      "analyticsTitle": "Аналитика продаж",
+      "analyticsDesc": "Глубокая аналитика по конверсии, источникам и воронке.",
+      "callsTitle": "Дашборд звонков",
+      "callsDesc": "Операционные показатели звонков, SLA и QA.",
+      "telephonyTitle": "Телефония",
+      "telephonyDesc": "Очереди звонков, каналы и маршрутизация обращений.",
+      "integrationsTitle": "Интеграции",
+      "integrationsDesc": "Meta/каналы коммуникаций и состояние подключений.",
+      "open": "Открыть"
+    }
+  },
+  "licensingPage": {
+    "title": "Управление лицензией",
+    "subtitle": "Назначение лицензии, offline активация и журнал действий для текущего инстанса.",
+    "tabs": {
+      "overview": "Обзор",
+      "install": "Установка и проверка",
+      "offline": "Offline активация",
+      "events": "Журнал событий"
+    },
+    "status": {
+      "active": "Активна",
+      "grace": "Льготный период",
+      "expired": "Истекла",
+      "revoked": "Отозвана",
+      "invalid": "Недействительна",
+      "unknown": "Неизвестно"
+    },
+    "health": {
+      "title": "Состояние лицензии"
+    },
+    "state": {
+      "hint": "Рекомендуемые действия зависят от текущего статуса лицензии.",
+      "activePrimary": "Проверить артефакт",
+      "activeSecondary": "Открыть события",
+      "gracePrimary": "Установить продление",
+      "graceSecondary": "Offline challenge",
+      "expiredPrimary": "Установить новую лицензию",
+      "expiredSecondary": "Сгенерировать challenge",
+      "revokedPrimary": "Offline реактивация",
+      "revokedSecondary": "Открыть аудит событий",
+      "invalidPrimary": "Пересоздать challenge",
+      "invalidSecondary": "Проверить аудит событий"
+    },
+    "cards": {
+      "seatsUsed": "Использовано мест",
+      "seatsAvailable": "Доступно мест",
+      "seatsUtilization": "Утилизация мест %"
+    },
+    "info": {
+      "title": "Сведения о лицензии",
+      "status": "Статус",
+      "plan": "План",
+      "customer": "Клиент",
+      "instanceId": "Instance ID",
+      "licenseId": "License ID",
+      "installedAt": "Установлена",
+      "validFrom": "Действует с",
+      "expiresAt": "Действует до",
+      "graceUntil": "Льготный период до",
+      "healthReason": "Причина состояния"
+    },
+    "features": {
+      "title": "Разрешенные функции",
+      "empty": "Разрешенные функции отсутствуют"
+    },
+    "events": {
+      "empty": "События отсутствуют",
+      "columns": {
+        "when": "Когда",
+        "type": "Тип",
+        "severity": "Критичность",
+        "details": "Детали"
+      }
+    },
+    "install": {
+      "title": "Установка подписанного артефакта лицензии",
+      "description": "Вставьте canonical payload и подпись, полученные из control-plane.",
+      "payload": "Payload",
+      "payloadRequired": "Payload обязателен",
+      "signature": "Подпись",
+      "signatureRequired": "Подпись обязательна",
+      "verify": "Проверить",
+      "install": "Установить"
+    },
+    "offline": {
+      "title": "Air-gapped challenge-response",
+      "description": "Сгенерируйте challenge, передайте его в control-plane, получите signed artifact и установите его в CRM.",
+      "generate": "Сгенерировать challenge",
+      "copy": "Скопировать challenge JSON",
+      "empty": "Challenge еще не сгенерирован"
+    },
+    "messages": {
+      "loadError": "Не удалось загрузить данные лицензии",
+      "verifySuccess": "Артефакт лицензии валиден",
+      "verifyError": "Проверка лицензии не пройдена",
+      "installSuccess": "Лицензия успешно установлена",
+      "installError": "Не удалось установить лицензию",
+      "challengeLoaded": "Challenge успешно получен",
+      "challengeError": "Не удалось получить challenge",
+      "challengeCopied": "Challenge скопирован",
+      "copyError": "Не удалось скопировать"
+    }
+  },
+  "licenseFeatures": {
+    "analyticsCore": "Аналитика",
+    "dashboardCore": "Дашборд",
+    "dealsCore": "Сделки",
+    "contactsCore": "Контакты",
+    "leadsCore": "Лиды",
+    "telephonyCore": "Телефония",
+    "crmLeads": "Лиды",
+    "crmContacts": "Контакты",
+    "crmCompanies": "Компании",
+    "crmDeals": "Сделки",
+    "crmProducts": "Продукты",
+    "crmPayments": "Платежи",
+    "tasksCore": "Задачи",
+    "tasksProjects": "Проекты",
+    "tasksReminders": "Напоминания",
+    "tasksMemos": "Заметки",
+    "communicationsVoip": "Телефония",
+    "communicationsChat": "Чаты",
+    "communicationsSms": "SMS",
+    "communicationsEmail": "CRM Email",
+    "marketingCampaigns": "Кампании",
+    "marketingSegments": "Сегменты",
+    "marketingTemplates": "Шаблоны",
+    "integrationsCore": "Интеграции",
+    "referenceCore": "Справочники",
+    "settingsCore": "Настройки",
+    "usersCore": "Пользователи",
+    "helpCenter": "Справка",
+    "landingBuilder": "Конструктор лендингов",
+    "businessProcesses": "Бизнес-процессы",
+    "businessProcessesBase": "Бизнес-процессы (база)",
+    "businessProcessesTransitions": "Условные переходы процессов",
+    "businessProcessesSla": "SLA бизнес-процессов",
+    "businessProcessesAnalytics": "Аналитика бизнес-процессов"
+  },
+  "loginPage": {
+    "subtitle": "Введите свои данные для входа в систему",
+    "submit": "Войти",
+    "fields": {
+      "username": {
+        "label": "Имя пользователя",
+        "required": "Введите имя пользователя"
+      },
+      "password": {
+        "label": "Пароль",
+        "required": "Введите пароль"
+      }
+    },
+    "messages": {
+      "welcome": "Добро пожаловать!"
+    },
+    "errors": {
+      "invalidCredentials": "Неверное имя пользователя или пароль",
+      "tokenTooLarge": "Токен слишком большой для Authorization header (> {limit} байт). Включите cookie auth или уменьшите JWT на backend."
+    }
+  },
+  "usersPage": {
+    "tabs": {
+      "users": "Пользователи",
+      "profiles": "Профили",
+      "security": "Безопасность"
+    },
+    "columns": {
+      "firstName": "Имя",
+      "lastName": "Фамилия",
+      "fullName": "Полное имя"
+    },
+    "security": {
+      "twoFaTitle": "2FA статус",
+      "twoFaEmpty": "Нет данных по 2FA",
+      "sessionsTitle": "Сессии",
+      "revokeAll": "Отозвать все",
+      "createdAt": "Создано",
+      "active": "Активна"
+    },
+    "messages": {
+      "securityLoadError": "Не удалось загрузить данные безопасности",
+      "sessionsRevoked": "Все сессии отозваны",
+      "revokeError": "Не удалось отозвать сессии"
+    },
+    "common": {
+      "refresh": "Обновить",
+      "yes": "Да",
+      "no": "Нет"
+    }
+  },
+  "smsCenterPage": {
+    "tabs": {
+      "providers": "Провайдеры",
+      "history": "История",
+      "status": "Статус",
+      "send": "Отправка"
+    },
+    "common": {
+      "refresh": "Обновить",
+      "loading": "Загрузка...",
+      "channel": "Канал",
+      "channelId": "Канал (ID)",
+      "yes": "Да",
+      "no": "Нет",
+      "clear": "Очистить",
+      "activeChannelHint": "Активный канал определён автоматически: #{id}",
+      "noChannelDetected": "Активный канал не найден. Добавьте SMS-канал в разделе Интеграции."
+    },
+    "providers": {
+      "title": "SMS провайдеры",
+      "columns": {
+        "name": "Название"
+      }
+    },
+    "history": {
+      "title": "История SMS",
+      "columns": {
+        "channelId": "Канал ID",
+        "recipient": "Получатель",
+        "text": "Текст",
+        "status": "Статус",
+        "date": "Дата"
+      }
+    },
+    "status": {
+      "title": "Статус SMS",
+      "empty": "Нет данных по SMS-статусу",
+      "value": "Значение"
+    },
+    "send": {
+      "title": "Отправка SMS",
+      "subtitle": "Простой сценарий: выберите режим, укажите канал и отправьте сообщение.",
+      "bulkTitle": "Отправка SMS (Bulk)",
+      "submit": "Отправить",
+      "modes": {
+        "single": "Один номер",
+        "bulk": "Список номеров"
+      },
+      "fields": {
+        "channelId": "Канал (ID)",
+        "mode": "Режим отправки",
+        "phone": "Телефон",
+        "phones": "Телефоны (по одному на строку)",
+        "text": "Текст",
+        "async": "Отправлять асинхронно"
+      },
+      "placeholders": {
+        "selectChannel": "Выберите канал",
+        "channelId": "Например: 12",
+        "phone": "+998901234567",
+        "phones": "+998901234567\\n+998901234568",
+        "text": "Введите текст SMS"
+      },
+      "validation": {
+        "channelRequired": "Укажите канал",
+        "numbersRequired": "Укажите номера",
+        "phoneRequired": "Укажите номер",
+        "textRequired": "Введите текст"
+      }
+    },
+    "messages": {
+      "sent": "SMS отправлено",
+      "queued": "SMS поставлено в очередь",
+      "bulkQueued": "SMS поставлено в очередь: {count} получателей",
+      "sendError": "Не удалось отправить SMS"
+    }
+  },
+  "telephonyPage": {
+    "tabs": {
+      "connections": "Подключения",
+      "incoming": "Входящие",
+      "queue": "Очередь",
+      "coldCalls": "Холодные звонки"
+    },
+    "common": {
+      "refresh": "Обновить",
+      "details": "Детали",
+      "noData": "Нет данных",
+      "yes": "Да",
+      "no": "Нет",
+      "complexValue": "[сложное значение]"
+    },
+    "messages": {
+      "queueLoadError": "Не удалось загрузить очередь звонков",
+      "callDetailsError": "Не удалось загрузить детали звонка",
+      "callInitiated": "Звонок инициирован",
+      "callInitiateError": "Не удалось инициировать звонок",
+      "callScheduled": "Звонок запланирован",
+      "callScheduleError": "Не удалось запланировать звонок",
+      "bulkSent": "Bulk расписание отправлено",
+      "bulkError": "Не удалось отправить bulk"
+    },
+    "queue": {
+      "title": "Очередь звонков",
+      "detailTitle": "Детали очереди",
+      "columns": {
+        "number": "Номер",
+        "client": "Клиент",
+        "status": "Статус",
+        "priority": "Приоритет",
+        "operator": "Оператор",
+        "createdAt": "Создано",
+        "actions": "Действия"
+      },
+      "stats": {
+        "total": "Всего",
+        "waiting": "Ожидание",
+        "active": "В работе",
+        "errors": "Ошибки"
+      }
+    },
+    "incoming": {
+      "title": "Входящие звонки",
+      "detailTitle": "Детали входящего звонка",
+      "columns": {
+        "callerId": "Номер отображения",
+        "client": "Клиент",
+        "type": "Тип",
+        "user": "Пользователь",
+        "shown": "Показано",
+        "createdAt": "Создано",
+        "actions": "Действия"
+      }
+    },
+    "cold": {
+      "initiateTitle": "Инициировать звонок",
+      "scheduleTitle": "Запланировать звонок",
+      "bulkTitle": "Bulk звонки",
+      "toNumber": "To number",
+      "fromNumber": "From number",
+      "lead": "Лид",
+      "contact": "Контакт",
+      "campaign": "Кампания",
+      "dateTime": "Дата и время",
+      "selectDateTime": "Выберите дату и время",
+      "phoneNumbers": "Phone numbers (по одному на строку)",
+      "delayBetweenCalls": "Delay between calls (сек)",
+      "callNow": "Вызвать",
+      "schedule": "Запланировать",
+      "runBulk": "Запустить bulk",
+      "validation": {
+        "enterNumber": "Введите номер",
+        "enterNumbers": "Введите номера"
+      }
+    },
+    "connections": {
+      "title": "VoIP подключения",
+      "columns": {
+        "provider": "Провайдер",
+        "type": "Тип",
+        "number": "Номер",
+        "callerId": "Номер отображения",
+        "active": "Активно"
+      },
+      "fields": {
+        "provider": "Провайдер",
+        "type": "Тип",
+        "number": "Номер",
+        "callerId": "Номер отображения",
+        "owner": "Владелец",
+        "active": "Активно"
+      }
+    }
+  },
+  "callsDashboardPage": {
+    "title": "Дашборд телефонии",
+    "common": {
+      "refresh": "Обновить"
+    },
+    "period": {
+      "today": "Сегодня",
+      "week": "Неделя",
+      "month": "Месяц",
+      "year": "Год"
+    },
+    "columns": {
+      "direction": "Направление",
+      "number": "Номер",
+      "status": "Статус",
+      "time": "Время",
+      "duration": "Длительность",
+      "rate": "Оценить",
+      "team": "Команда",
+      "total": "Всего",
+      "agent": "Агент"
+    },
+    "direction": {
+      "inbound": "Входящий",
+      "outbound": "Исходящий"
+    },
+    "status": {
+      "completed": "Завершен",
+      "answered": "Отвечен",
+      "missed": "Пропущен",
+      "noAnswer": "Нет ответа",
+      "busy": "Занято",
+      "failed": "Ошибка"
+    },
+    "stats": {
+      "totalCalls": "Всего звонков",
+      "inbound": "Входящие",
+      "outbound": "Исходящие",
+      "successRate": "Успешность",
+      "completed": "Завершенные",
+      "missed": "Пропущенные",
+      "totalDuration": "Общее время",
+      "averageDuration": "Средняя длительность"
+    },
+    "duration": {
+      "hoursMinutes": "{hours}ч {minutes}м",
+      "secondsZero": "0 c",
+      "secondsValue": "{value} c"
+    },
+    "recent": {
+      "title": "Последние звонки",
+      "empty": "Нет данных о звонках"
+    },
+    "drilldown": {
+      "teams": "Drilldown по командам",
+      "agents": "Drilldown по агентам"
+    },
+    "weekly": {
+      "period": "Период",
+      "createdAt": "Создан",
+      "export": "Экспорт"
+    },
+    "automation": {
+      "start": "Старт",
+      "status": "Статус",
+      "error": "Ошибка"
+    },
+    "qa": {
+      "session": "Сессия",
+      "date": "Дата",
+      "modalTitle": "QA оценка звонка",
+      "save": "Сохранить",
+      "cancel": "Отмена",
+      "validation": {
+        "script": "Укажите оценку скрипта",
+        "communication": "Укажите оценку коммуникации",
+        "result": "Укажите оценку результата",
+        "outcome": "Выберите outcome"
+      }
+    },
+    "messages": {
+      "loadError": "Не удалось загрузить данные телефонии",
+      "qaCallNotSelected": "Не выбран звонок для QA",
+      "qaSaved": "QA оценка сохранена",
+      "qaSaveError": "Не удалось сохранить QA оценку",
+      "weeklyGenerated": "Weekly board report сгенерирован",
+      "weeklyGenerateError": "Не удалось сгенерировать weekly report",
+      "weeklyExportError": "Не удалось экспортировать weekly report",
+      "automationRunError": "Не удалось запустить automation"
+    }
+  },
+  "operationsPage": {
+    "tabs": {
+      "requests": "Запросы",
+      "outputs": "Отгрузки (Outputs)",
+      "shipments": "Поставки"
+    },
+    "common": {
+      "yes": "Да",
+      "no": "Нет"
+    },
+    "fields": {
+      "description": "Описание",
+      "firstName": "Имя",
+      "middleName": "Отчество",
+      "lastName": "Фамилия",
+      "phone": "Телефон",
+      "country": "Страна",
+      "city": "Город",
+      "owner": "Владелец",
+      "company": "Компания",
+      "contact": "Контакт",
+      "lead": "Лид",
+      "deal": "Сделка",
+      "product": "Продукт",
+      "quantity": "Количество",
+      "amount": "Сумма",
+      "currency": "Валюта",
+      "shippingDate": "Дата отгрузки",
+      "plannedShippingDate": "Плановая дата",
+      "actualShippingDate": "Фактическая дата",
+      "shipped": "Отгружено",
+      "serialNumber": "Серийный номер",
+      "requestFor": "Тема обращения"
+    },
+    "columns": {
+      "ticket": "Тикет",
+      "firstName": "Имя",
+      "lastName": "Фамилия",
+      "phone": "Телефон",
+      "company": "Компания",
+      "contact": "Контакт",
+      "lead": "Лид",
+      "deal": "Сделка",
+      "product": "Продукт",
+      "quantity": "Количество",
+      "amount": "Сумма",
+      "currency": "Валюта",
+      "shipped": "Отгружено",
+      "requestFor": "Тема"
+    }
+  },
+  "referenceDataPage": {
+    "tabs": {
+      "countries": "Страны",
+      "cities": "Города",
+      "industries": "Отрасли",
+      "leadSources": "Источники лидов",
+      "clientTypes": "Типы клиентов",
+      "closingReasons": "Причины закрытия",
+      "dealStages": "Стадии сделок",
+      "taskStages": "Стадии задач",
+      "projectStages": "Стадии проектов",
+      "crmTags": "CRM теги",
+      "taskTags": "Теги задач",
+      "departments": "Отделы",
+      "currencies": "Валюты",
+      "currencyRates": "Курсы валют",
+      "productCategories": "Категории продуктов"
+    },
+    "alert": {
+      "title": "Справочники",
+      "description": "Раздел с системными справочными списками (статусы, типы, страны, теги и т.д.), которые используются в карточках и бизнес-процессах CRM."
+    },
+    "common": {
+      "ru": "RU",
+      "en": "EN",
+      "uz": "UZ",
+      "yes": "Да",
+      "no": "Нет",
+      "name": "Название",
+      "code": "Код",
+      "rate": "Курс",
+      "autoUpdate": "Автообновление",
+      "actions": "Действия",
+      "country": "Страна",
+      "countryRu": "Страна RU",
+      "countryEn": "Страна EN",
+      "countryUz": "Страна UZ",
+      "index": "Индекс",
+      "default": "По умолчанию",
+      "successful": "Успешная",
+      "inProgress": "В работе",
+      "done": "Завершено",
+      "forContent": "Для контента"
+    },
+    "members": {
+      "title": "Сотрудники",
+      "user": "Пользователь",
+      "role": "Роль",
+      "count": "Сотрудников",
+      "composition": "Состав",
+      "empty": "Нет сотрудников в этом отделе"
+    },
+    "currencyRates": {
+      "rates": "Курсы",
+      "loadError": "Не удалось загрузить курсы",
+      "empty": "Нет доступных данных по курсам"
+    }
+  },
+  "leads": {
+    "title": "Лиды",
+    "empty": "Лиды не найдены"
+  },
+  "analytics": {
+    "leads": {
+      "title": "Аналитика лидов",
+      "totalLeads": "Всего лидов",
+      "converted": "Конвертировано",
+      "conversionRate": "Коэффициент конверсии",
+      "lost": "Потеряно",
+      "statusDistribution": "Распределение по статусам",
+      "sourceDistribution": "Лиды по источникам",
+      "conversionFunnel": "Воронка конверсии",
+      "goToLeads": "Перейти к лидам"
+    },
+    "contacts": {
+      "title": "Аналитика контактов",
+      "totalContacts": "Всего контактов",
+      "companies": "Компании",
+      "vipContacts": "VIP контакты",
+      "withPhone": "С телефоном",
+      "typeDistribution": "Распределение по типам",
+      "sourceDistribution": "Контакты по источникам",
+      "activityByMonth": "Активность по месяцам",
+      "goToContacts": "Перейти к контактам"
+    },
+    "deals": {
+      "title": "Аналитика сделок",
+      "totalDeals": "Всего сделок",
+      "totalAmount": "Общая сумма",
+      "averageCheck": "Средний чек",
+      "winRate": "Win Rate",
+      "salesFunnel": "Воронка продаж по стадиям",
+      "topManagers": "Топ-5 менеджеров по сумме",
+      "sourceDistribution": "Сделки по источникам",
+      "goToDeals": "Перейти к сделкам"
+    },
+    "filters": {
+      "period": "Период",
+      "last7days": "Последние 7 дней",
+      "last30days": "Последние 30 дней",
+      "last90days": "Последние 90 дней",
+      "last180days": "Последние 180 дней",
+      "lastYear": "Последний год",
+      "customPeriod": "Произвольный период",
+      "dateRange": "Диапазон дат",
+      "startDate": "Начало",
+      "endDate": "Конец"
+    },
+    "export": {
+      "title": "Экспорт",
+      "csv": "Экспорт в CSV",
+      "pdf": "Экспорт в PDF",
+      "image": "Экспорт как изображение",
+      "success": "Данные экспортированы",
+      "error": "Ошибка экспорта",
+      "noData": "Нет данных для экспорта"
+    },
+    "realtime": {
+      "enabled": "Real-time активен",
+      "disabled": "Real-time выключен",
+      "updating": "Обновление...",
+      "lastUpdate": "Последнее обновление",
+      "interval": "Интервал",
+      "updateEvery": "Обновление каждые",
+      "autoUpdateOn": "Автообновление включено",
+      "autoUpdateOff": "Автообновление выключено"
+    },
+    "drilldown": {
+      "title": "Детальная информация",
+      "filter": "Фильтр",
+      "totalRecords": "Всего записей",
+      "showing": "Показано",
+      "close": "Закрыть",
+      "noData": "Нет данных для отображения",
+      "loading": "Загрузка данных..."
+    },
+    "statuses": {
+      "new": "Новые",
+      "contacted": "Связались",
+      "qualified": "Квалифицированы",
+      "converted": "Конвертированы",
+      "lost": "Потеряны"
+    },
+    "sources": {
+      "website": "Веб-сайт",
+      "referral": "Реферал",
+      "email": "Email",
+      "phone": "Телефон",
+      "social": "Соцсети",
+      "advertisement": "Реклама",
+      "other": "Другое"
+    },
+    "common": {
+      "refresh": "Обновить",
+      "statistics": "Статистика",
+      "hideStatistics": "Скрыть статистику",
+      "showStatistics": "Показать статистику",
+      "noDataAvailable": "Данные недоступны",
+      "loadingError": "Не удалось загрузить данные"
+    }
+  },
+  "tasksListPage": {
+    "columns": {
+      "task": "Задача",
+      "stage": "Этап",
+      "responsible": "Ответственные",
+      "dueDate": "Срок",
+      "actions": "Действия"
+    },
+    "actions": {
+      "view": "Просмотр",
+      "edit": "Редактировать",
+      "delete": "Удалить",
+      "create": "Создать задачу",
+      "refresh": "Обновить",
+      "createShort": "Добавить",
+      "createShortFallback": "Добавить",
+      "reopen": "Переоткрыть",
+      "reopenFallback": "Переоткрыть",
+      "complete": "Завершить",
+      "completeFallback": "Завершить"
+    },
+    "messages": {
+      "stagesLoadWarning": "Не удалось загрузить стадии задач",
+      "usersLoadWarning": "Не удалось загрузить пользователей",
+      "listLoadError": "Не удалось загрузить список задач",
+      "loadError": "Ошибка загрузки задач",
+      "deleted": "Задача удалена",
+      "deleteError": "Ошибка удаления задачи",
+      "stagesNotConfigured": "Этапы задач не настроены",
+      "statusUpdated": "Статус задачи обновлен",
+      "statusUpdateError": "Ошибка обновления статуса задачи"
+    },
+    "deadline": {
+      "daysLeft": "{count} дн.",
+      "overdue": "просрочено"
+    },
+    "deleteModal": {
+      "title": "Удалить эту задачу?",
+      "description": "Это действие нельзя отменить.",
+      "confirm": "Да",
+      "cancel": "Нет"
+    },
+    "title": "Задачи",
+    "subtitle": "Список задач",
+    "searchPlaceholder": "Поиск по названию, описанию...",
+    "pagination": {
+      "total": "Всего: {total}"
+    },
+    "empty": "Нет задач",
+    "kanban": {
+      "emptyColumn": "Задач нет",
+      "noStage": "Без стадии",
+      "loadErrorTitle": "Канбан недоступен",
+      "loadError": "Не удалось загрузить канбан задач",
+      "summary": "Показано {visible} из {total}",
+      "truncatedTitle": "Показаны не все задачи",
+      "truncatedDescription": "Для канбана загружено {loaded} из {total} задач. Уточните поиск или фильтр.",
+      "moved": "Задача перемещена в {stage}",
+      "rbacError": "Недостаточно прав или лицензии для изменения стадии задачи",
+      "moveError": "Не удалось изменить стадию задачи",
+      "responsibleShort": "{count} отв."
+    },
+    "view": {
+      "table": "Таблица",
+      "kanban": "Канбан",
+      "gantt": "Гант"
+    },
+    "gantt": {
+      "taskColumn": "Задача"
+    },
+    "quickCreate": {
+      "title": "Быстрое создание задачи",
+      "name": "Название",
+      "nextStep": "Следующий шаг",
+      "nextStepDate": "Дата следующего шага",
+      "dueDate": "Дедлайн",
+      "responsible": "Ответственные",
+      "defaultNextStep": "Первичный контакт",
+      "created": "Задача создана",
+      "error": "Не удалось создать задачу",
+      "validation": {
+        "name": "Введите название",
+        "nextStep": "Укажите следующий шаг",
+        "nextStepDate": "Укажите дату",
+        "nextStepDateFuture": "Дата не может быть в прошлом"
+      }
+    }
+  },
+  "projectsListPage": {
+    "columns": {
+      "project": "Проект",
+      "stage": "Этап",
+      "owner": "Владелец",
+      "dueDate": "Срок",
+      "actions": "Действия"
+    },
+    "actions": {
+      "view": "Просмотр",
+      "edit": "Редактировать",
+      "delete": "Удалить",
+      "create": "Создать проект",
+      "refresh": "Обновить"
+    },
+    "messages": {
+      "stagesLoadWarning": "Не удалось загрузить стадии проектов",
+      "usersLoadWarning": "Не удалось загрузить пользователей",
+      "listLoadError": "Не удалось загрузить список проектов",
+      "loadError": "Ошибка загрузки проектов",
+      "deleted": "Проект удален",
+      "deleteError": "Ошибка удаления проекта",
+      "reopened": "Проект возобновлен",
+      "completed": "Проект завершен",
+      "statusUpdateError": "Ошибка обновления статуса проекта"
+    },
+    "title": "Проекты",
+    "subtitle": "Список проектов",
+    "searchPlaceholder": "Поиск проектов...",
+    "pagination": {
+      "total": "Всего: {total}"
+    },
+    "empty": "Нет проектов"
+  },
+  "taskDetailPage": {
+    "actions": {
+      "back": "Назад",
+      "edit": "Редактировать",
+      "delete": "Удалить"
+    },
+    "messages": {
+      "loadError": "Ошибка загрузки данных задачи",
+      "deleted": "Задача удалена",
+      "deleteError": "Ошибка удаления задачи"
+    },
+    "notFound": {
+      "title": "Задача не найдена",
+      "subtitle": "Запись могла быть удалена или больше не доступна",
+      "back": "Вернуться к задачам"
+    },
+    "tabs": {
+      "details": "Детали",
+      "activity": "История активности"
+    },
+    "fields": {
+      "name": "Название",
+      "stage": "Этап",
+      "priority": "Приоритет",
+      "startDate": "Дата начала",
+      "dueDate": "Срок выполнения",
+      "closingDate": "Дата закрытия",
+      "nextStep": "Следующий шаг",
+      "nextStepDate": "Дата следующего шага",
+      "active": "Активна",
+      "remindMe": "Напоминать",
+      "owner": "Владелец",
+      "coOwner": "Со-владелец",
+      "responsible": "Ответственные",
+      "subscribers": "Подписчики",
+      "tags": "Теги",
+      "createdAt": "Дата создания",
+      "updatedAt": "Последнее обновление",
+      "description": "Описание",
+      "note": "Заметка"
+    },
+    "priorityValue": "Приоритет {value}",
+    "yes": "Да",
+    "no": "Нет"
+  },
+  "projectDetailPage": {
+    "actions": {
+      "back": "Назад",
+      "edit": "Редактировать",
+      "assign": "Назначить",
+      "reopen": "Возобновить",
+      "complete": "Завершить",
+      "delete": "Удалить"
+    },
+    "messages": {
+      "loadError": "Ошибка загрузки данных проекта",
+      "deleted": "Проект удален",
+      "deleteError": "Ошибка удаления проекта",
+      "completed": "Проект завершен",
+      "completeError": "Ошибка завершения проекта",
+      "reopened": "Проект возобновлен",
+      "reopenError": "Ошибка возобновления проекта",
+      "assignmentsUpdated": "Назначения обновлены",
+      "assignmentsError": "Ошибка назначения"
+    },
+    "loadError": {
+      "title": "Не удалось открыть проект",
+      "subtitle": "Попробуйте повторить загрузку",
+      "retry": "Повторить"
+    },
+    "notFound": {
+      "title": "Проект не найден",
+      "subtitle": "Запись могла быть удалена или у вас нет доступа",
+      "back": "К списку проектов"
+    },
+    "tabs": {
+      "details": "Детали",
+      "activity": "История активности"
+    },
+    "fields": {
+      "name": "Название",
+      "stage": "Этап",
+      "priority": "Приоритет",
+      "startDate": "Дата начала",
+      "dueDate": "Срок завершения",
+      "closingDate": "Дата закрытия",
+      "nextStep": "Следующий шаг",
+      "nextStepDate": "Дата следующего шага",
+      "active": "Активен",
+      "remindMe": "Напоминать",
+      "owner": "Владелец",
+      "coOwner": "Со-владелец",
+      "responsible": "Ответственные",
+      "subscribers": "Подписчики",
+      "tags": "Теги",
+      "createdAt": "Дата создания",
+      "updatedAt": "Последнее обновление",
+      "description": "Описание",
+      "note": "Заметка"
+    },
+    "priorityValue": "Приоритет {value}",
+    "yes": "Да",
+    "no": "Нет",
+    "assignModal": {
+      "title": "Назначения проекта",
+      "save": "Сохранить",
+      "cancel": "Отмена",
+      "placeholders": {
+        "owner": "Владелец",
+        "coOwner": "Со-владелец",
+        "responsible": "Ответственные",
+        "subscribers": "Подписчики"
+      }
+    }
+  },
+  "taskFormPage": {
+    "titleEdit": "Редактировать задачу",
+    "titleCreate": "Создать новую задачу",
+    "loading": "Загрузка...",
+    "sections": {
+      "main": "Основная информация",
+      "related": "Связанные записи",
+      "assignees": "Ответственные",
+      "status": "Статус"
+    },
+    "fields": {
+      "name": "Название задачи",
+      "priority": "Приоритет",
+      "description": "Описание",
+      "note": "Заметка",
+      "stage": "Этап",
+      "startDate": "Дата начала",
+      "dueDate": "Срок выполнения",
+      "closingDate": "Дата закрытия",
+      "leadTime": "Lead time",
+      "nextStep": "Следующий шаг",
+      "nextStepDate": "Дата следующего шага",
+      "project": "Проект",
+      "parentTask": "Родительская задача",
+      "owner": "Владелец",
+      "coOwner": "Со-владелец",
+      "responsible": "Ответственные",
+      "subscribers": "Подписчики",
+      "tags": "Теги",
+      "active": "Активна",
+      "remindMe": "Напоминать"
+    },
+    "placeholders": {
+      "name": "Подготовить коммерческое предложение",
+      "priority": "Выберите приоритет",
+      "description": "Детальное описание задачи",
+      "note": "Внутренние заметки",
+      "stage": "Выберите этап",
+      "leadTime": "DD HH:MM:SS",
+      "nextStep": "Согласовать требования",
+      "project": "Выберите проект",
+      "parentTask": "Выберите задачу",
+      "user": "Выберите пользователя",
+      "users": "Выберите пользователей",
+      "tags": "Выберите теги"
+    },
+    "priority": {
+      "low": "Низкий",
+      "medium": "Средний",
+      "high": "Высокий"
+    },
+    "validation": {
+      "nameRequired": "Введите название",
+      "stageRequired": "Выберите этап",
+      "nextStepRequired": "Введите следующий шаг",
+      "nextStepDateRequired": "Выберите дату следующего шага"
+    },
+    "permission": {
+      "backToList": "К списку задач",
+      "description": "У вас нет прав для создания или редактирования задач."
+    },
+    "actions": {
+      "back": "Назад",
+      "update": "Обновить",
+      "create": "Создать",
+      "cancel": "Отмена"
+    },
+    "messages": {
+      "notification": "Уведомление",
+      "error": "Ошибка",
+      "loadError": "Ошибка загрузки данных задачи",
+      "noPermissionTitle": "Недостаточно прав",
+      "noPermissionDescription": "У вас нет прав для изменения задач",
+      "updated": "Задача обновлена",
+      "created": "Задача создана",
+      "updateError": "Ошибка обновления задачи",
+      "createError": "Ошибка создания задачи"
+    }
+  },
+  "projectFormPage": {
+    "titleEdit": "Редактировать проект",
+    "titleCreate": "Создать новый проект",
+    "sections": {
+      "main": "Основная информация",
+      "assignees": "Ответственные",
+      "status": "Статус"
+    },
+    "fields": {
+      "name": "Название проекта",
+      "priority": "Приоритет",
+      "description": "Описание",
+      "note": "Заметка",
+      "stage": "Этап",
+      "startDate": "Дата начала",
+      "dueDate": "Срок завершения",
+      "closingDate": "Дата закрытия",
+      "nextStep": "Следующий шаг",
+      "nextStepDate": "Дата следующего шага",
+      "owner": "Владелец",
+      "coOwner": "Со-владелец",
+      "responsible": "Ответственные",
+      "subscribers": "Подписчики",
+      "tags": "Теги",
+      "active": "Активен",
+      "remindMe": "Напоминать"
+    },
+    "placeholders": {
+      "name": "Внедрение CRM системы",
+      "priority": "Выберите приоритет",
+      "description": "Детальное описание проекта",
+      "note": "Внутренние заметки",
+      "stage": "Выберите этап",
+      "nextStep": "Определить цели",
+      "user": "Выберите пользователя",
+      "users": "Выберите пользователей",
+      "tags": "Выберите теги"
+    },
+    "priority": {
+      "low": "Низкий",
+      "medium": "Средний",
+      "high": "Высокий"
+    },
+    "validation": {
+      "nameRequired": "Введите название",
+      "nextStepRequired": "Введите следующий шаг",
+      "nextStepDateRequired": "Выберите дату следующего шага"
+    },
+    "permission": {
+      "backToList": "К списку проектов",
+      "description": "У вас нет прав для создания или редактирования проектов."
+    },
+    "actions": {
+      "back": "Назад",
+      "update": "Обновить",
+      "create": "Создать",
+      "cancel": "Отмена"
+    },
+    "messages": {
+      "notification": "Уведомление",
+      "error": "Ошибка",
+      "loadError": "Ошибка загрузки данных проекта",
+      "noPermissionTitle": "Недостаточно прав",
+      "noPermissionDescription": "У вас нет прав для изменения проектов",
+      "updated": "Проект обновлен",
+      "created": "Проект создан",
+      "updateError": "Ошибка обновления проекта",
+      "createError": "Ошибка создания проекта"
+    },
+    "loadError": {
+      "title": "Не удалось загрузить проект для редактирования",
+      "subtitle": "Форма не может быть заполнена, пока данные проекта не подгружены.",
+      "retry": "Повторить"
+    }
+  },
+  "integrationCard": {
+    "status": {
+      "connected": "Подключено",
+      "disconnected": "Не подключено",
+      "error": "Ошибка"
+    },
+    "actions": {
+      "refresh": "Обновить",
+      "settings": "Настройки",
+      "disconnect": "Отключить",
+      "configure": "Настроить",
+      "connect": "Подключить"
+    },
+    "messages": {
+      "connectionErrorTitle": "Ошибка подключения",
+      "connectError": "Ошибка подключения {title}",
+      "disconnectError": "Ошибка отключения {title}",
+      "disconnected": "{title} отключен"
+    }
+  },
+  "integrationsPage": {
+    "title": "Интеграции",
+    "actions": {
+      "refreshAll": "Обновить все",
+      "test": "Тест",
+      "disconnect": "Отключить",
+      "webhook": "Webhook",
+      "edit": "Редактировать",
+      "makeDefault": "По умолчанию",
+      "copy": "Скопировать",
+      "deleteProviderConfirm": "Удалить AI провайдера?"
+    },
+    "messages": {
+      "settingsSaved": "Настройки сохранены",
+      "aiProviderUpdated": "AI провайдер обновлен",
+      "aiProviderAdded": "AI провайдер добавлен",
+      "aiProviderSaveError": "Не удалось сохранить AI провайдера",
+      "testOkOutput": "Тест OK: {output}",
+      "connectionChecked": "Подключение проверено",
+      "aiProviderTestError": "Не удалось проверить AI провайдера",
+      "aiProviderDeleted": "AI провайдер удален",
+      "aiProviderDeleteError": "Не удалось удалить AI провайдера",
+      "aiProviderDefaultSet": "Провайдер \"{name}\" установлен по умолчанию",
+      "aiProviderDefaultSetError": "Не удалось установить провайдера по умолчанию",
+      "facebookTestOk": "Facebook подключение проверено",
+      "facebookTestError": "Не удалось проверить Facebook подключение",
+      "facebookDisconnected": "Facebook страница отключена",
+      "facebookDisconnectError": "Не удалось отключить Facebook страницу",
+      "instagramTestOk": "Instagram подключение проверено",
+      "instagramTestError": "Не удалось проверить Instagram подключение",
+      "instagramDisconnected": "Instagram аккаунт отключен",
+      "instagramDisconnectError": "Не удалось отключить Instagram аккаунт",
+      "telegramTestOk": "Telegram подключение проверено",
+      "telegramTestError": "Не удалось проверить Telegram подключение",
+      "telegramDisconnected": "Telegram бот отключен",
+      "telegramDisconnectError": "Не удалось отключить Telegram бот",
+      "whatsappTestOk": "WhatsApp подключение проверено",
+      "whatsappTestError": "Не удалось проверить WhatsApp подключение",
+      "whatsappDisconnected": "WhatsApp аккаунт отключен",
+      "whatsappDisconnectError": "Не удалось отключить WhatsApp аккаунт",
+      "botNotDetected": "Не удалось определить бота",
+      "webhookUpdated": "Webhook обновлен",
+      "webhookUpdateError": "Не удалось обновить webhook",
+      "urlEmpty": "URL пустой",
+      "urlCopied": "URL скопирован",
+      "urlCopyError": "Не удалось скопировать URL"
+    },
+    "cards": {
+      "instagram": {
+        "title": "Instagram",
+        "description": "Instagram Business аккаунты"
+      },
+      "telegram": {
+        "title": "Telegram",
+        "description": "Telegram боты для входящих сообщений"
+      },
+      "ai": {
+        "title": "AI Провайдеры",
+        "description": "OpenAI, Gemini, Claude и совместимые модели для AI-функций CRM"
+      },
+      "sms": {
+        "title": "SMS",
+        "description": "Провайдеры и статус отправки SMS"
+      },
+      "telephony": {
+        "title": "Телефония",
+        "description": "Подключения VoIP/SIP для звонков из CRM"
+      },
+      "whatsapp": {
+        "title": "WhatsApp Business",
+        "description": "Cloud API аккаунты для омниканала поддержки и продаж"
+      },
+      "facebook": {
+        "title": "Facebook Messenger",
+        "description": "Подключенные страницы для обработки сообщений"
+      }
+    },
+    "table": {
+      "account": "Аккаунт",
+      "number": "Номер",
+      "phoneId": "Phone ID",
+      "status": "Статус",
+      "lastActivity": "Последняя активность",
+      "actions": "Действия",
+      "page": "Страница",
+      "sync": "Синхронизация",
+      "bot": "Бот",
+      "username": "Имя пользователя",
+      "name": "Название",
+      "provider": "Провайдер",
+      "model": "Модель",
+      "key": "Ключ"
+    },
+    "status": {
+      "active": "Активен",
+      "activeFeminine": "Активна",
+      "paused": "Пауза",
+      "default": "По умолчанию"
+    },
+    "stats": {
+      "channels": "Каналов",
+      "configuredChannels": "Настроенных каналов",
+      "connections": "Подключений",
+      "activeProvider": "Активный провайдер",
+      "callsToday": "Звонков сегодня",
+      "missed": "Пропущенных",
+      "pages": "Страниц",
+      "messages": "Сообщений",
+      "followers": "Подписчиков",
+      "accounts": "Аккаунтов",
+      "messagesReceived": "Сообщений получено",
+      "messagesSent": "Сообщений отправлено",
+      "comments": "Комментариев",
+      "bots": "Ботов",
+      "activeChats": "Активных чатов",
+      "providers": "Провайдеров",
+      "active": "Активных",
+      "default": "По умолчанию"
+    },
+    "modals": {
+      "smsSettings": "Настройка SMS",
+      "telephonySettings": "Настройка телефонии",
+      "connectWhatsapp": "Подключение WhatsApp Business",
+      "connectFacebook": "Подключение Facebook",
+      "connectInstagram": "Подключение Instagram",
+      "connectTelegram": "Подключение Telegram",
+      "telegramWebhook": "Webhook Telegram",
+      "editAiProvider": "Редактирование AI провайдера",
+      "addAiProvider": "Добавление AI провайдера"
+    },
+    "validation": {
+      "url": "Укажите корректный URL",
+      "providerName": "Введите название провайдера",
+      "providerSelect": "Выберите провайдера",
+      "modelSelect": "Выберите или укажите модель",
+      "apiKey": "Введите API ключ"
+    },
+    "placeholders": {
+      "webhookUrl": "Оставьте пустым для автогенерации URL",
+      "customModel": "Введите модель, поддерживаемую вашим провайдером",
+      "modelSelect": "Выберите модель"
+    },
+    "form": {
+      "name": "Название",
+      "provider": "Провайдер",
+      "model": "Модель",
+      "apiKey": "API Key",
+      "apiKeyOptional": "API Key (оставьте пустым, чтобы не менять)",
+      "active": "Активен",
+      "default": "По умолчанию"
+    }
+  },
+  "settingsPage": {
+    "title": "Настройки системы",
+    "field": {
+      "groupDescription": "Настройка группы параметров.",
+      "addValues": "Добавьте значения",
+      "enter": "Введите"
+    },
+    "empty": {
+      "section": "Сервер ещё не вернул параметры для этой секции",
+      "complianceReport": "Нет данных по compliance-отчёту"
+    },
+    "messages": {
+      "massmailLoadError": "Не удалось загрузить настройки рассылок",
+      "remindersLoadError": "Не удалось загрузить настройки напоминаний",
+      "domainsLoadError": "Не удалось загрузить список доменов",
+      "complianceLoadError": "Не удалось загрузить compliance данные",
+      "dsrExecuted": "DSR выполнен",
+      "dsrExecuteError": "Не удалось выполнить DSR",
+      "retentionExecuted": "Retention выполнен: {count} политик",
+      "retentionExecuteError": "Не удалось выполнить retention политики",
+      "saved": "Настройки сохранены",
+      "saveError": "Ошибка сохранения настроек",
+      "exportDone": "Экспорт CRM завершён",
+      "exportError": "Не удалось экспортировать данные CRM",
+      "importDone": "Импорт CRM завершён",
+      "importError": "Ошибка импорта CRM данных"
+    },
+    "tabs": {
+      "massmail": "Рассылки",
+      "reminders": "Напоминания",
+      "crmData": "Данные CRM",
+      "domains": "Домены",
+      "compliance": "Compliance"
+    },
+    "massmail": {
+      "title": "Настройки массовых рассылок",
+      "description": "Параметры рассылок редактируются через визуальные контролы, без JSON."
+    },
+    "reminders": {
+      "title": "Настройки напоминаний",
+      "description": "Параметры напоминаний редактируются через переключатели, поля времени и лимиты."
+    },
+    "crmData": {
+      "title": "Импорт и экспорт CRM",
+      "alertTitle": "Обмен данными через Excel",
+      "alertDescription": "Экспорт формирует Excel-файл по всем сущностям CRM. Для импорта используйте тот же формат.",
+      "export": {
+        "title": "Экспорт данных",
+        "description": "Скачать полный Excel-файл с текущими данными CRM.",
+        "action": "Экспортировать в Excel"
+      },
+      "import": {
+        "title": "Импорт данных",
+        "description": "Загрузите подготовленный Excel-файл и запустите обработку.",
+        "selectFile": "Выбрать Excel файл",
+        "action": "Импортировать"
+      },
+      "lastImport": "Результат последнего импорта",
+      "stats": {
+        "created": "Создано",
+        "updated": "Обновлено",
+        "errors": "Ошибок"
+      },
+      "table": {
+        "sheet": "Лист",
+        "created": "Создано",
+        "updated": "Обновлено",
+        "errors": "Ошибки"
+      }
+    },
+    "domains": {
+      "title": "Публичные домены email",
+      "public": "Публичный"
+    },
+    "compliance": {
+      "overviewTitle": "Compliance overview",
+      "summaryTitle": "Сводка по согласию, DSR и retention",
+      "summaryDescription": "Показатели представлены в виде карточек и таблиц без сырого JSON.",
+      "dsrTitle": "DSR Requests",
+      "execute": "Выполнить",
+      "runRetention": "Запустить retention"
+    },
+    "table": {
+      "domain": "Домен",
+      "status": "Статус",
+      "type": "Тип",
+      "reason": "Причина",
+      "actions": "Действия",
+      "name": "Название",
+      "entity": "Сущность",
+      "action": "Действие",
+      "retentionDays": "Срок хранения (дни)",
+      "activity": "Активность",
+      "lastRun": "Последний запуск"
+    },
+    "status": {
+      "active": "Активна",
+      "inactive": "Неактивна"
+    }
+  },
+  "common": {
+    "next": "Далее",
+    "important": "Важно",
+    "yes": "Да",
+    "no": "Нет",
+    "loading": "Загрузка...",
+    "user": "Пользователь"
+  },
+  "smsSettings": {
+    "header": {
+      "message": "SMS провайдеры",
+      "description": "Добавляйте и редактируйте SMS-провайдеров напрямую в этом окне. После сохранения можно сразу выполнить тест отправки."
+    },
+    "providers": {
+      "title": "Доступные провайдеры"
+    },
+    "serviceStatus": {
+      "title": "Статус сервиса"
+    },
+    "test": {
+      "title": "Тестовая отправка",
+      "channel": "Канал отправки",
+      "recipient": "Номер получателя",
+      "messageText": "Текст сообщения"
+    },
+    "table": {
+      "channelId": "ID канала",
+      "provider": "Провайдер",
+      "status": "Статус",
+      "actions": "Действия"
+    },
+    "status": {
+      "notConfigured": "Не настроен",
+      "inactive": "Неактивен",
+      "ready": "Готов"
+    },
+    "statusItem": "Статус {index}",
+    "common": {
+      "channel": "Канал"
+    },
+    "boolean": {
+      "yes": "Да",
+      "no": "Нет"
+    },
+    "empty": {
+      "noData": "Нет данных"
+    },
+    "actions": {
+      "copy": "Скопировать",
+      "sendTest": "Отправить тест"
+    },
+    "confirm": {
+      "deleteProviderTitle": "Удалить SMS провайдера?",
+      "deleteProviderDescription": "Это действие удалит канал и его настройки."
+    },
+    "form": {
+      "providerType": "Тип провайдера",
+      "name": "Название",
+      "active": "Активен",
+      "sender": "Отправитель (from)",
+      "password": "Пароль",
+      "passwordOptional": "Пароль (оставьте пустым, чтобы не менять)",
+      "token": "Токен",
+      "tokenOptional": "Токен (оставьте пустым, чтобы не менять)",
+      "authType": "Тип авторизации",
+      "apiUrl": "API URL",
+      "statusUrl": "Status URL",
+      "bearerToken": "Bearer Token",
+      "bearerTokenOptional": "Bearer Token (оставьте пустым, чтобы не менять)",
+      "login": "Логин"
+    },
+    "modal": {
+      "addProvider": "Добавление SMS провайдера",
+      "editProvider": "Редактирование SMS провайдера"
+    },
+    "placeholders": {
+      "selectProvider": "Выберите провайдера",
+      "providerName": "Например: Eskiz Prod"
+    },
+    "validation": {
+      "selectChannel": "Выберите канал",
+      "enterNumber": "Введите номер",
+      "invalidPhone": "Неверный формат номера",
+      "enterMessageText": "Введите текст сообщения",
+      "selectProvider": "Выберите провайдера",
+      "apiUrl": "Укажите API URL",
+      "bearerToken": "Укажите Bearer Token",
+      "login": "Укажите логин",
+      "password": "Укажите пароль"
+    },
+    "messages": {
+      "loadProvidersError": "Не удалось загрузить список SMS провайдеров",
+      "loadStatusError": "Не удалось загрузить статус SMS",
+      "testSent": "Тестовое SMS отправлено",
+      "providerError": "Провайдер вернул ошибку",
+      "sendError": "Не удалось отправить SMS",
+      "eskizCredentialsError": "Для Eskiz укажите token или пару email/password",
+      "providerUpdated": "SMS провайдер обновлен",
+      "providerAdded": "SMS провайдер добавлен",
+      "providerSaveError": "Не удалось сохранить SMS провайдера",
+      "providerDeleted": "SMS провайдер удален",
+      "providerDeleteError": "Не удалось удалить SMS провайдера",
+      "urlEmpty": "URL пустой",
+      "urlCopied": "URL скопирован",
+      "urlCopyError": "Не удалось скопировать URL"
+    }
+  },
+  "instagramConnect": {
+    "alert": {
+      "title": "Подключение Instagram Business",
+      "description": "Для подключения вам потребуется Instagram Business аккаунт и токен доступа от Facebook Developers"
+    },
+    "steps": {
+      "createApp": "Создание приложения",
+      "getToken": "Получение токена",
+      "connect": "Подключение",
+      "inputData": "Ввод данных"
+    },
+    "guides": {
+      "step1Title": "Шаг 1: Создайте приложение в Facebook Developers",
+      "step2Title": "Шаг 2: Получите токен доступа",
+      "step1Item3": "3. Добавьте продукт \"Instagram Basic Display\" или \"Instagram Graph API\"",
+      "step2Item1": "1. В настройках приложения перейдите в раздел \"Instagram Basic Display\" или \"Instagram Graph API\""
+    },
+    "fields": {
+      "tokenExtra": "Токен доступа от Facebook для Instagram Business API",
+      "accountId": "Идентификатор Instagram Business аккаунта",
+      "accountIdExtra": "Числовой идентификатор вашего Instagram Business аккаунта",
+      "usernameExtra": "Username Instagram Business аккаунта"
+    },
+    "placeholders": {
+      "selectAccount": "Выберите Instagram аккаунт"
+    },
+    "actions": {
+      "loadFromMeta": "Загрузить аккаунты из Meta",
+      "connect": "Подключить Instagram"
+    },
+    "warning": {
+      "businessAccount": "Убедитесь, что ваш Instagram аккаунт является Business аккаунтом и подключен к Facebook странице"
+    },
+    "validation": {
+      "enterToken": "Введите токен доступа",
+      "tokenShort": "Токен слишком короткий",
+      "enterAccountId": "Введите идентификатор аккаунта",
+      "accountIdDigits": "Идентификатор должен содержать только цифры",
+      "enterUsername": "Введите username"
+    },
+    "messages": {
+      "connected": "Instagram подключен",
+      "connectError": "Ошибка подключения Instagram",
+      "enterAccessToken": "Сначала укажите Access Token",
+      "accountsNotFound": "По этому токену Instagram аккаунты не найдены",
+      "accountsFound": "Найдено аккаунтов: {count}",
+      "loadAccountsError": "Не удалось загрузить Instagram аккаунты"
+    }
+  },
+  "facebookConnect": {
+    "alert": {
+      "title": "Подключение Facebook Messenger",
+      "description": "Для подключения вам потребуется Facebook страница и токен доступа с правами manage_pages и pages_messaging"
+    },
+    "guide": {
+      "title": "Инструкция по подключению",
+      "itemMessengerSettings": "• В разделе \"Messenger\" → \"Settings\" найдите \"Access Tokens\""
+    },
+    "fields": {
+      "tokenExtra": "Долгосрочный токен доступа вашей Facebook страницы",
+      "pageId": "Идентификатор Facebook страницы",
+      "pageIdExtra": "Идентификатор вашей Facebook страницы (можно найти в настройках страницы)",
+      "pageName": "Название страницы",
+      "pageNameExtra": "Название страницы, которое отображается в Facebook"
+    },
+    "placeholders": {
+      "selectPage": "Выберите страницу"
+    },
+    "permissions": {
+      "title": "Проверка прав доступа"
+    },
+    "actions": {
+      "connect": "Подключить Facebook Messenger"
+    },
+    "validation": {
+      "enterToken": "Введите токен доступа страницы",
+      "tokenShort": "Токен слишком короткий",
+      "enterPageId": "Введите идентификатор страницы",
+      "enterPageName": "Введите название страницы"
+    },
+    "messages": {
+      "connected": "Facebook Messenger подключен",
+      "connectError": "Ошибка подключения Facebook Messenger",
+      "enterToken": "Сначала укажите Page Access Token",
+      "pagesNotFound": "По этому токену страницы не найдены",
+      "pagesFound": "Найдено страниц: {count}",
+      "loadPagesError": "Не удалось загрузить страницы из Meta"
+    }
+  },
+  "telegramConnect": {
+    "alert": {
+      "title": "Подключение Telegram бота",
+      "description": "Для подключения вам потребуется создать бота через @BotFather и получить токен"
+    },
+    "guide": {
+      "title": "Инструкция по созданию бота",
+      "aboutText": "• /setabouttext - текст \"О боте\""
+    },
+    "fields": {
+      "tokenExtra": "Токен бота, который вы получили от @BotFather"
+    },
+    "notes": {
+      "title": "Важные заметки",
+      "serverReachable": "Убедитесь, что ваш сервер доступен из интернета для получения webhook'ов",
+      "botReceivesAll": "Бот будет получать все сообщения, отправленные ему пользователями"
+    },
+    "actions": {
+      "copy": "Скопировать",
+      "connect": "Подключить Telegram бота"
+    },
+    "validation": {
+      "enterToken": "Введите токен бота",
+      "tokenFormat": "Неверный формат токена (должен быть: 123456:ABC-DEF...)"
+    },
+    "messages": {
+      "connected": "Telegram бот успешно подключен",
+      "connectError": "Ошибка подключения Telegram бота",
+      "webhookEmpty": "Webhook URL пустой",
+      "webhookCopied": "Webhook URL скопирован",
+      "webhookCopyError": "Не удалось скопировать Webhook URL"
+    }
+  },
+  "whatsappConnect": {
+    "alert": {
+      "title": "Подключение WhatsApp Cloud API",
+      "description": "Укажите Access token и подтяните Business Account/Phone Number ID автоматически из Meta."
+    },
+    "fields": {
+      "accountName": "Название аккаунта",
+      "active": "Активен",
+      "autoSync": "Автосинк",
+      "autoLeads": "Авто-лиды"
+    },
+    "placeholders": {
+      "selectPhoneFromMeta": "Выберите номер из Meta",
+      "selectBusinessAccount": "Выберите бизнес-аккаунт"
+    },
+    "actions": {
+      "loadFromMeta": "Загрузить номера из Meta",
+      "connect": "Подключить WhatsApp"
+    },
+    "validation": {
+      "enterAccountName": "Введите название аккаунта",
+      "enterPhone": "Введите номер WhatsApp",
+      "selectPhoneId": "Выберите phone_number_id",
+      "selectBusinessAccount": "Выберите business account",
+      "enterAccessToken": "Введите access token"
+    },
+    "messages": {
+      "connected": "WhatsApp Business подключен",
+      "connectError": "Ошибка подключения WhatsApp Business",
+      "enterToken": "Сначала укажите Access token",
+      "numbersNotFound": "Не удалось найти WhatsApp номера для этого токена",
+      "numbersFound": "Найдено номеров: {count}",
+      "loadMetaError": "Не удалось загрузить данные из Meta"
+    }
+  },
+  "telephonySettings": {
+    "header": {
+      "title": "Телефония: настройка подключений и правил маршрутизации",
+      "description": "Заполните поля по шагам: 1) базовая маршрутизация и WebRTC, 2) паттерны маршрутизации, 3) подключения операторов/номеров."
+    },
+    "sections": {
+      "base": "1. Базовая маршрутизация и WebRTC (STUN/TURN)",
+      "routing": "2. Pattern-based routing",
+      "voip": "3. VoIP подключения"
+    },
+    "table": {
+      "provider": "Провайдер",
+      "type": "Тип",
+      "number": "Номер",
+      "callerId": "Номер отображения",
+      "owner": "Владелец",
+      "status": "Статус",
+      "actions": "Действия"
+    },
+    "status": {
+      "active": "Активно",
+      "inactive": "Неактивно"
+    },
+    "actions": {
+      "deactivate": "Деактивировать",
+      "activate": "Активировать",
+      "saveBase": "Сохранить базовые настройки",
+      "applyPreset": "Применить пресет",
+      "addConnection": "Добавить подключение"
+    },
+    "confirm": {
+      "areYouSure": "Вы уверены?"
+    },
+    "messages": {
+      "loadSettingsError": "Ошибка загрузки настроек телефонии",
+      "loadConnectionsError": "Ошибка загрузки подключений",
+      "connectionUpdated": "Подключение обновлено",
+      "connectionCreated": "Подключение создано",
+      "saveConnectionError": "Ошибка сохранения подключения",
+      "connectionDeleted": "Подключение удалено",
+      "deleteConnectionError": "Ошибка удаления подключения",
+      "connectionDeactivated": "Подключение деактивировано",
+      "connectionActivated": "Подключение активировано",
+      "toggleStatusError": "Ошибка изменения статуса",
+      "settingsSaved": "Настройки телефонии сохранены",
+      "saveSettingsError": "Ошибка сохранения настроек телефонии",
+      "routingSaved": "Routing-паттерны сохранены в браузере",
+      "routingSaveError": "Не удалось сохранить routing-паттерны",
+      "presetApplied": "Пресет \"{label}\" применен",
+      "routingLoadError": "Не удалось загрузить правила маршрутизации",
+      "routingTargetsLoadError": "Не удалось загрузить номера и группы для маршрутизации"
+    },
+    "routing": {
+      "infoTitle": "Правила работают по приоритету: чем меньше число, тем раньше правило проверяется.",
+      "infoDescription": "Паттерны задаются в формате RegExp. Этот блок сохраняет правила в браузере и подходит для предварительной настройки dialplan-паттернов.",
+      "empty": "Пока нет паттернов. Добавьте первое правило.",
+      "placeholders": {
+        "ruleName": "Например: Внутренние 1xx -> PBX",
+        "calledPattern": "Пример: ^1\\d{2}$ или ^\\+?\\d{10,15}$",
+        "callerPattern": "Пример: ^\\+998 или ^8800",
+        "description": "Кратко опишите бизнес-цель правила"
+      },
+      "actions": {
+        "route_to_number": "Route to internal number",
+        "route_to_group": "Route to group",
+        "route_to_queue": "Route to group queue",
+        "forward_external": "Forward to external number",
+        "route_to_voicemail": "Route to voicemail",
+        "play_announcement": "Play announcement",
+        "hangup": "Hang up",
+        "addRule": "Add rule",
+        "savePatternRouting": "Save pattern routing"
+      },
+      "fields": {
+        "ruleName": "Rule name",
+        "description": "Description (optional)",
+        "calledPattern": "Called number pattern (required)",
+        "calledPatternLabel": "Called number pattern",
+        "callerPattern": "Caller number pattern (optional)",
+        "callerPatternLabel": "Caller number pattern",
+        "action": "Действие маршрутизации",
+        "targetInternalNumber": "Target internal number",
+        "targetGroup": "Target group",
+        "targetQueueGroup": "Target queue group",
+        "externalNumber": "External number",
+        "announcementText": "Announcement text",
+        "timeCondition": "Time condition (optional)",
+        "timeConditionExtra": "For example: weekdays 09:00-18:00",
+        "priority": "Priority (lower = higher)"
+      },
+      "ruleTitle": "Rule #{{number}}",
+      "targetsHint": "Цели маршрутизации берутся из справочников внутренних номеров и групп.",
+      "loading": "Загрузка правил маршрутизации..."
+    },
+    "connectionHelp": {
+      "title": "Что заполнять?",
+      "description": "Provider = только Asterisk. Type = PBX или SIP. Number = внутренний или внешний номер для исходящего вызова. Caller ID = номер, который увидит клиент."
+    },
+    "placeholders": {
+      "provider": "Например: Asterisk",
+      "connectionType": "Выберите тип",
+      "callerId": "Например: +998712001122",
+      "turnServer": "turn:turn.company.com:3478?transport=udp",
+      "turnUsername": "crm_turn_user",
+      "turnPassword": "********",
+      "externalNumber": "+998901234567",
+      "timeCondition": "weekdays 09:00-18:00",
+      "selectInternalNumber": "Выберите внутренний номер",
+      "sipServer": "Например: pbx.company.uz:5060",
+      "selectGroup": "Выберите группу",
+      "announcementText": "Текст, который услышит звонящий",
+      "numberByType": {
+        "pbx": "Например: 101",
+        "sip": "Например: 1001 или sip_user_1001",
+        "voip": "Например: +998901234567"
+      },
+      "enterNumber": "Введите номер"
+    },
+    "validation": {
+      "invalidRegexp": "{{label}}: invalid RegExp",
+      "selectMode": "Select mode",
+      "selectProvider": "Select provider",
+      "enterTurnServer": "Enter TURN server",
+      "enterTurnUsername": "Enter TURN username",
+      "enterTurnPassword": "Enter TURN password",
+      "enterRuleName": "Specify rule name",
+      "enterCalledPattern": "Enter called number pattern",
+      "selectAction": "Select action",
+      "selectInternalNumber": "Select internal number",
+      "selectGroup": "Select group",
+      "enterExternalNumber": "Enter external number",
+      "externalNumberFormat": "Use international format, for example +998901234567",
+      "enterAnnouncementText": "Enter announcement text",
+      "selectType": "Выберите тип",
+      "enterNumber": "Enter number",
+      "pbxNumberFormat": "For PBX use extension (2-10 symbols: digits, *, #)",
+      "voipNumberFormat": "For external number use international format, e.g. +998901234567",
+      "enterCallerId": "Enter caller ID"
+    },
+    "routeModes": {
+      "embedded": "CRM маршрутизирует звонки через встроенный Asterisk, которым она управляет.",
+      "bridge": "CRM маршрутизирует звонки через внешний мост Asterisk PBX."
+    },
+    "mode": {
+      "current": "Current mode: {{mode}}"
+    },
+    "fields": {
+      "routeMode": "Режим маршрутизации звонков",
+      "routeModeExtra": "Выберите, маршрутизировать ли звонки через встроенный Asterisk или внешний мост.",
+      "preferredProvider": "Preferred provider",
+      "preferredProviderExtra": "Поддерживается только Asterisk.",
+      "stunServers": "STUN серверы",
+      "stunTooltip": "One per line or comma-separated. Example: stun:stun.l.google.com:19302",
+      "stunExtra": "Needed to determine WebRTC client network route.",
+      "enableTurnRelay": "Enable TURN relay",
+      "turnRelayExtra": "Recommended for users behind NAT/CGNAT and corporate networks.",
+      "turnServer": "TURN сервер",
+      "turnServerExtra": "Поддерживаются схемы turn: и turns: (TLS).",
+      "turnUsername": "TURN username",
+      "turnPassword": "TURN password",
+      "connectionType": "Тип подключения",
+      "connectionTypeExtra": "PBX: внутренний номер встроенного Asterisk. SIP: trunk/account внешнего Asterisk с SIP сервером.",
+      "provider": "Провайдер",
+      "providerExtra": "Поддерживается только Asterisk.",
+      "number": "Номер",
+      "numberByType": {
+        "pbx": "Internal number (extension)",
+        "sip": "SIP number/login",
+        "voip": "External number"
+      },
+      "active": "Активен",
+      "callerId": "Номер отображения",
+      "callerIdTooltip": "Номер, который будет отображаться при исходящих звонках",
+      "callerIdExtra": "Обычно совпадает с вашим внешним номером компании."
+    },
+    "options": {
+      "typePbx": "PBX extension (internal)",
+      "typeSip": "SIP account"
+    },
+    "modal": {
+      "editConnection": "Редактировать подключение",
+      "newConnection": "Новое подключение"
+    }
+  },
+  "callsList": {
+    "title": "История звонков",
+    "subtitle": "VoIP-журнал и аналитика",
+    "messages": {
+      "loadError": "Failed to load call history",
+      "noteAdded": "Note added",
+      "noteAddError": "Failed to add note",
+      "detailsError": "Failed to load call details"
+    },
+    "status": {
+      "answered": "Отвечен",
+      "completed": "Завершено",
+      "missed": "Пропущенные",
+      "noAnswer": "Нет ответа",
+      "busy": "Занято",
+      "failed": "Ошибка",
+      "ringing": "Звонит"
+    },
+    "direction": {
+      "inbound": "Inbound",
+      "outbound": "Outbound"
+    },
+    "table": {
+      "direction": "Направление",
+      "phoneNumber": "Номер телефона",
+      "status": "Статус",
+      "dateTime": "Date and time",
+      "duration": "Длительность",
+      "notes": "Заметки",
+      "recording": "Запись",
+      "actions": "Действия"
+    },
+    "stats": {
+      "total": "Total",
+      "answered": "Отвечен",
+      "missed": "Пропущенные",
+      "durationSec": "Duration, sec"
+    },
+    "filters": {
+      "searchByNumber": "Search by number",
+      "direction": "Направление",
+      "status": "Статус"
+    },
+    "modals": {
+      "recordingTitle": "Прослушивание записи",
+      "recordingNotFound": "Recording not found",
+      "noteTitle": "Call note",
+      "detailsTitle": "Детали звонка",
+      "detailsUnavailable": "Data unavailable"
+    },
+    "fields": {
+      "note": "Note"
+    },
+    "placeholders": {
+      "note": "Enter note"
+    },
+    "validation": {
+      "noteRequired": "Add note text"
+    },
+    "actions": {
+      "recording": "Запись",
+      "listen": "Listen",
+      "note": "Note",
+      "details": "Детали"
+    }
+  },
+  "profilePage": {
+    "title": "Профиль пользователя",
+    "tabs": {
+      "mainInfo": "Основная информация",
+      "changePassword": "Сменить пароль",
+      "settings": "Настройки",
+      "activity": "Активность"
+    },
+    "actions": {
+      "changePhoto": "Change photo",
+      "deletePhoto": "Delete photo",
+      "changePassword": "Сменить пароль",
+      "saveSettings": "Save settings"
+    },
+    "fields": {
+      "fullName": "Полное имя",
+      "username": "Имя пользователя",
+      "email": "Email"
+    },
+    "stats": {
+      "totalLeads": "Total leads",
+      "totalDeals": "Total deals"
+    },
+    "languages": {
+      "ru": "Русский",
+      "en": "English",
+      "uz": "O'zbekcha"
+    },
+    "regional": {
+      "title": "Regional settings",
+      "language": "Язык",
+      "timezone": "Timezone",
+      "activateTimezone": "Use this timezone"
+    },
+    "timezones": {
+      "moscow": "Moscow (UTC+3)",
+      "tashkent": "Tashkent (UTC+5)",
+      "almaty": "Almaty (UTC+6)"
+    },
+    "telephony": {
+      "title": "Настройки телефонии",
+      "agentSettingsTitle": "Персональные настройки агента",
+      "agentSettingsDescription": "Only personal call settings are configured here. System SIP/WebRTC and routing are managed by admin in Integrations -> Telephony.",
+      "pbxNumber": "Internal number (PBX)",
+      "pbxTooltip": "Your internal phone number in the system",
+      "pbxExtra": "Example: 101, 7477. Main number for internal calls.",
+      "displayName": "Отображаемое имя",
+      "displayNameTooltip": "Name shown to call recipient",
+      "displayNameExtra": "If empty, profile name is used."
+    },
+    "placeholders": {
+      "displayName": "John Doe",
+      "pbxNumber": "1001"
+    },
+    "password": {
+      "current": "Current password",
+      "new": "New password",
+      "confirm": "Confirm new password"
+    },
+    "activity": {
+      "totalActions": "Total actions",
+      "callsToday": "Звонков сегодня",
+      "leadConversion": "Lead conversion",
+      "recentActions": "Recent actions",
+      "callHistory": "Call history"
+    },
+    "callTable": {
+      "number": "Номер",
+      "type": "Тип",
+      "inbound": "Inbound",
+      "outbound": "Outbound",
+      "duration": "Длительность",
+      "time": "Время"
+    },
+    "validation": {
+      "enterFullName": "Введите ФИО",
+      "enterEmail": "Enter email",
+      "validEmail": "Enter valid email",
+      "validWsUri": "Введите корректный WebSocket URI (ws:// или wss://)",
+      "validSipUri": "Введите корректный SIP URI (sip: или sips:)",
+      "enterCurrentPassword": "Enter current password",
+      "enterNewPassword": "Enter new password",
+      "passwordMin": "Password must be at least 8 characters",
+      "confirmNewPassword": "Confirm new password"
+    },
+    "messages": {
+      "loadError": "Не удалось загрузить профиль",
+      "profileUpdated": "Профиль обновлён",
+      "profileUpdateError": "Не удалось обновить профиль",
+      "avatarUpdated": "Аватар обновлён",
+      "avatarUploadError": "Не удалось загрузить аватар",
+      "avatarDeleted": "Аватар удален",
+      "avatarDeleteError": "Не удалось удалить аватар",
+      "passwordMismatch": "Passwords do not match",
+      "passwordUpdated": "Password updated",
+      "passwordUpdateError": "Failed to update password",
+      "preferencesSaved": "Настройки сохранены",
+      "preferencesSaveError": "Failed to save settings"
+    }
+  },
+  "analyticsPage": {
+    "title": "Аналитика",
+    "subtitle": "Экран для принятия решений по продажам, активности команды и прогнозам.",
+    "messages": {
+      "predictionsStarted": "Predictions started",
+      "predictionsStartError": "Failed to start predictions"
+    },
+    "tabs": {
+      "decisions": "Решения",
+      "team": "Team",
+      "predictionsActions": "Predictions and actions",
+      "system": "Система"
+    },
+    "sections": {
+      "executiveSummary": "Исполнительное резюме",
+      "executiveSummaryDescription": "Summary of key metrics and risks for selected period.",
+      "risks": "Риски",
+      "keyMetrics": "Key metrics",
+      "keyMetricsDescription": "Quick snapshot of base size, deals and revenue.",
+      "trends": "Тренды",
+      "trendsDescription": "Revenue dynamics and funnel movement for pace evaluation.",
+      "operations": "Операционный контроль",
+      "operationsDescription": "What is happening with funnel and team tasks right now.",
+      "taskStatuses": "Task statuses",
+      "teamActivity": "Team activity",
+      "teamActivityDescription": "Последние действия пользователей и системный auth-снимок.",
+      "activityFeed": "Лента активности",
+      "authSnapshot": "Auth snapshot",
+      "predictionsByMetrics": "Predictions by key metrics",
+      "predictionsByMetricsDescription": "Estimate of future revenue, leads and client base.",
+      "predictionModelsState": "Prediction models state",
+      "predictionModelsStateDescription": "Current model state and available signals.",
+      "predictionStatus": "Prediction status",
+      "recommendedActions": "Рекомендованные действия",
+      "recommendedActionsDescription": "Next actions considered high priority by model.",
+      "recommendedActionsClients": "Recommended actions (clients)",
+      "recommendedActionsDeals": "Recommended actions (deals)",
+      "systemMetrics": "Системные метрики",
+      "systemMetricsDescription": "Service auth indicators and technical system snapshot.",
+      "authStats": "Auth stats"
+    },
+    "charts": {
+      "revenue": "Выручка",
+      "leads": "Лиды",
+      "deals": "Deals",
+      "stage": "Stage {{index}}",
+      "salesFunnel": "Sales funnel",
+      "revenueDynamics": "Динамика выручки",
+      "leadsAndDeals": "Лиды и сделки"
+    },
+    "metrics": {
+      "totalLeads": "Total leads",
+      "totalContacts": "Всего контактов",
+      "totalDeals": "Total deals",
+      "revenue": "Выручка"
+    },
+    "tasks": {
+      "pending": "Pending",
+      "inProgress": "В работе",
+      "completed": "Завершено",
+      "overdue": "Просрочены"
+    },
+    "predictions": {
+      "status": "Статус",
+      "inProgress": "в работе",
+      "revenueForecast": "Прогноз выручки",
+      "leadsForecast": "Leads forecast",
+      "clientsForecast": "Clients forecast",
+      "empty": "Пусто",
+      "oneRecord": "1 record",
+      "nRecords": "{{count}} records",
+      "technicalStatus": "Технический статус"
+    },
+    "summary": {
+      "overdueTasks": "Overdue tasks: {{count}}",
+      "conversion": "Conversion: {{value}}%",
+      "revenueGrowth": "Revenue growth: {{value}}%"
+    },
+    "focus": {
+      "pipelineTitle": "Сделки в работе",
+      "pipelineDescription": "Total commercial workload in the system.",
+      "pendingTitle": "Задачи в ожидании",
+      "pendingDescription": "Shows current team workload.",
+      "predictionsTitle": "Active predictions",
+      "predictionsDescription": "How many predictive signals are already available for analysis."
+    },
+    "risks": {
+      "overdueTitle": "Просроченные задачи",
+      "overdueDescription": "Require immediate attention first.",
+      "conversionTitle": "Конверсия",
+      "conversionDescription": "If metric is below target, check follow-up and incoming lead quality.",
+      "growthTitle": "Рост выручки",
+      "growthDescription": "Signal of current sales pace for selected period."
+    },
+    "actions": {
+      "runPredictions": "Run predictions"
+    },
+    "activity": {
+      "event": "Событие"
+    },
+    "common": {
+      "count": "Количество",
+      "noData": "Нет данных",
+      "series": "Series {{index}}",
+      "unknown": "Неизвестный"
+    },
+    "empty": {
+      "noRevenueData": "No revenue data",
+      "noLeadsDealsData": "No leads and deals data",
+      "noFunnelData": "No funnel data",
+      "noActivity": "No activity for selected period",
+      "noAuthData": "No auth data",
+      "noRevenueForecast": "No revenue forecast",
+      "noLeadsForecast": "No leads forecast",
+      "noClientsForecast": "No clients forecast",
+      "noPredictionStatus": "No prediction status",
+      "noClientRecommendations": "No client recommendations",
+      "noDealRecommendations": "No deal recommendations",
+      "noSystemData": "No system data",
+      "noEndpointsData": "No endpoints data",
+      "noUsersData": "No users data",
+      "noDailyData": "No daily data",
+      "noFailedAttempts": "No failed attempts"
+    },
+    "table": {
+      "group": "Группа",
+      "metric": "Метрика",
+      "status": "Статус"
+    },
+    "auth": {
+      "period": "Period",
+      "days": "{{count}} days",
+      "daysShort": "дней",
+      "jwtAdoption": "JWT adoption",
+      "successRate": "Success rate",
+      "requests": "Запросы",
+      "topUsers": "Top users",
+      "topEndpoints": "Top endpoints",
+      "dailyBreakdown": "Daily breakdown",
+      "failedAttempts": "Failed attempts"
+    }
+  },
+  "communicationsHub": {
+    "header": {
+      "title": "Коммуникации",
+      "subtitle": "CRM Email, массовые рассылки и omnichannel отправка."
+    },
+    "actions": {
+      "refresh": "Обновить",
+      "clear": "Очистить"
+    },
+    "tabs": {
+      "omnichannel": "Omnichannel",
+      "crmEmails": "CRM Email",
+      "massmail": "Массовая рассылка"
+    },
+    "omnichannel": {
+      "title": "Omnichannel отправка",
+      "subtitle": "Отправка сообщений в каналы через понятную форму.",
+      "fields": {
+        "channel": "Канал",
+        "channelId": "Аккаунт канала",
+        "contact": "Контакт CRM",
+        "contactDetails": "Поля контакта",
+        "target": "Адрес канала",
+        "recipient": "Получатель",
+        "text": "Сообщение"
+      },
+      "placeholders": {
+        "channelId": "Выберите подключённый аккаунт канала",
+        "contact": "Выберите контакт",
+        "targetWhatsApp": "Номер WhatsApp (например +998901234567)",
+        "targetSms": "Номер телефона (например +998901234567)",
+        "targetTelegram": "@username или chat_id",
+        "targetInstagram": "@username или recipient_id",
+        "targetFacebook": "PSID / recipient_id",
+        "recipient": "Номер, chat_id или recipient_id",
+        "text": "Введите текст сообщения"
+      },
+      "validation": {
+        "channelRequired": "Выберите канал",
+        "channelIdRequired": "Выберите аккаунт канала",
+        "contactRequired": "Выберите контакт",
+        "targetRequired": "Укажите адрес канала",
+        "contactChannelTargetRequired": "У контакта нет данных для выбранного канала. Заполните номер или username в карточке контакта.",
+        "recipientRequired": "Укажите получателя",
+        "textRequired": "Введите текст сообщения"
+      },
+      "hints": {
+        "targetAutoFilled": "Адрес канала подставлен автоматически из карточки контакта.",
+        "targetMissingInContact": "Для отправки заполните канал в карточке контакта.",
+        "targetEditable": "Можно вручную изменить адрес для выбранного канала."
+      },
+      "contact": {
+        "empty": "У контакта пока нет заполненных каналов",
+        "fields": {
+          "phone": "Телефон",
+          "phoneE164": "Телефон E.164",
+          "mobile": "Мобильный",
+          "mobileE164": "Мобильный E.164",
+          "otherPhone": "Доп. телефон",
+          "email": "Email",
+          "telegram": "Telegram",
+          "telegramChatId": "Telegram chat_id",
+          "instagram": "Instagram",
+          "instagramRecipientId": "Instagram recipient_id",
+          "facebookPsid": "Facebook PSID"
+        }
+      },
+      "actions": {
+        "send": "Отправить"
+      }
+    },
+    "crmEmails": {
+      "create": {
+        "title": "Быстрое письмо клиенту",
+        "subtitle": "Минимум полей: кому, тема и текст. Отправка в 1 шаг.",
+        "fields": {
+          "to": "Кому (email)",
+          "subject": "Тема",
+          "from": "От кого (опционально)",
+          "content": "Текст письма",
+          "template": "Шаблон сообщения"
+        },
+        "placeholders": {
+          "to": "client@example.com",
+          "subject": "Тема письма",
+          "from": "sales@your-company.com",
+          "content": "Введите текст письма",
+          "template": "Выберите готовый шаблон (опционально)"
+        },
+        "validation": {
+          "toRequired": "Укажите email получателя",
+          "toInvalid": "Введите корректный email",
+          "subjectRequired": "Введите тему письма",
+          "contentRequired": "Введите текст письма"
+        },
+        "actions": {
+          "send": "Отправить письмо"
+        },
+        "template": {
+          "defaultTitle": "Шаблон #{id}",
+          "empty": "Нет доступных шаблонов"
+        }
+      },
+      "stats": {
+        "total": "Всего: {count}",
+        "sent": "Отправлено: {count}",
+        "drafts": "Черновики: {count}"
+      },
+      "table": {
+        "title": "Последние CRM Email",
+        "columns": {
+          "subject": "Тема",
+          "from": "От",
+          "to": "Кому",
+          "status": "Статус",
+          "createdAt": "Создано"
+        },
+        "status": {
+          "sent": "Отправлено",
+          "draft": "Черновик"
+        }
+      }
+    },
+    "massmail": {
+      "create": {
+        "title": "Создать сообщение рассылки",
+        "subtitle": "Подготовьте шаблон: тема и текст. Дальше используйте его в рассылках.",
+        "fields": {
+          "subject": "Тема рассылки",
+          "content": "Текст рассылки"
+        },
+        "placeholders": {
+          "subject": "Весенняя акция для клиентов",
+          "content": "Введите текст массовой рассылки"
+        },
+        "validation": {
+          "subjectRequired": "Введите тему рассылки",
+          "contentRequired": "Введите текст рассылки"
+        },
+        "actions": {
+          "create": "Создать сообщение"
+        }
+      },
+      "stats": {
+        "total": "Сообщений: {count}",
+        "sent": "Отправлено: {count}",
+        "drafts": "Черновики: {count}",
+        "failed": "Ошибок: {count}"
+      },
+      "table": {
+        "title": "Мониторинг рассылок",
+        "modes": {
+          "messages": "Сообщения",
+          "mailings": "Рассылки"
+        },
+        "mailings": {
+          "columns": {
+            "name": "Рассылка",
+            "status": "Статус",
+            "sendingDate": "Дата отправки",
+            "recipients": "Получателей"
+          }
+        },
+        "messages": {
+          "columns": {
+            "subject": "Тема",
+            "content": "Содержание",
+            "status": "Статус",
+            "updatedAt": "Обновлено",
+            "actions": "Действия"
+          },
+          "actions": {
+            "view": "Просмотр",
+            "send": "Отправить",
+            "duplicate": "Дублировать",
+            "copySuffix": "копия",
+            "copyDefaultTitle": "Копия сообщения"
+          },
+          "preview": {
+            "title": "Просмотр черновика",
+            "subject": "Тема",
+            "status": "Статус",
+            "updatedAt": "Обновлено",
+            "content": "Содержание",
+            "close": "Закрыть"
+          },
+          "status": {
+            "draft": "Черновик"
+          }
+        }
+      },
+      "sendNow": {
+        "title": "Отправить рассылку сейчас",
+        "subtitle": "Выберите шаблон, укажите список получателей и отправьте письма сразу.",
+        "emptyTemplates": "Сначала создайте хотя бы один шаблон сообщения",
+        "emptyContacts": "Контакты с email не найдены",
+        "fields": {
+          "template": "Шаблон",
+          "subject": "Тема отправки",
+          "from": "От кого (опционально)",
+          "recipients": "Получатели (email)",
+          "preview": "Предпросмотр текста шаблона"
+        },
+        "placeholders": {
+          "template": "Выберите шаблон",
+          "subject": "Тема письма для рассылки",
+          "from": "sales@your-company.com",
+          "recipients": "Выберите контакты или введите email вручную",
+          "preview": "Выберите шаблон, чтобы увидеть текст"
+        },
+        "validation": {
+          "templateRequired": "Выберите шаблон",
+          "templateNotFound": "Выбранный шаблон не найден",
+          "subjectRequired": "Введите тему отправки",
+          "recipientsRequired": "Укажите хотя бы один email получателя"
+        },
+        "actions": {
+          "send": "Отправить рассылку"
+        }
+      }
+    },
+    "messages": {
+      "loadError": "Не удалось загрузить коммуникации",
+      "omnichannelSent": "Сообщение отправлено",
+      "omnichannelSendError": "Не удалось отправить сообщение",
+      "crmEmailCreated": "CRM Email отправлен",
+      "crmEmailCreateError": "Не удалось отправить CRM Email",
+      "massmailMessageCreated": "Сообщение рассылки создано",
+      "massmailMessageCreateError": "Не удалось создать сообщение рассылки",
+      "emptyTabs": "Нет доступных разделов коммуникаций",
+      "crmTemplateApplied": "Шаблон подставлен в тему и текст",
+      "massmailDispatched": "Рассылка отправлена: {count} писем",
+      "massmailDispatchPartial": "Не отправлено: {count} писем",
+      "massmailDispatchError": "Не удалось отправить рассылку",
+      "massmailDraftReadyForSend": "Черновик загружен в форму отправки",
+      "massmailDraftDuplicated": "Черновик продублирован в форму создания"
+    }
+  },
+  "leadsListPage": {
+    "title": "Лиды",
+    "view": {
+      "table": "Таблица",
+      "kanban": "Канбан"
+    },
+    "actions": {
+      "createShort": "Создать",
+      "createLead": "Создать лид"
+    }
+  },
+  "callButton": {
+    "actions": {
+      "call": "Позвонить",
+      "openEntity": "Открыть карточку клиента",
+      "endCall": "Завершить звонок",
+      "close": "Закрыть"
+    },
+    "status": {
+      "connecting": "Соединение...",
+      "connected": "Разговор",
+      "completed": "Звонок завершен"
+    },
+    "labels": {
+      "callStatus": "Статус звонка",
+      "direction": "Направление",
+      "entityType": "Тип сущности",
+      "entityId": "ID сущности",
+      "phone": "Номер",
+      "duration": "Длительность"
+    },
+    "direction": {
+      "outbound": "Исходящий",
+      "inbound": "Входящий"
+    },
+    "entityType": {
+      "lead": "Лид",
+      "company": "Компания",
+      "contact": "Контакт",
+      "client": "Клиент"
+    },
+    "modal": {
+      "outgoingTitle": "Исходящий звонок",
+      "connectingTitle": "Соединение...",
+      "connectedTitle": "Идет разговор",
+      "completedTitle": "Звонок завершен",
+      "defaultTitle": "Звонок"
+    },
+    "messages": {
+      "serverRouted": "Звонок отправлен через сервер телефонии{providerSuffix}",
+      "notEstablished": "Звонок не установлен{reasonSuffix}",
+      "phoneMissing": "Номер телефона не указан",
+      "serverRouteFailed": "Не удалось отправить звонок через сервер",
+      "invalidNumber": "Неверный формат номера",
+      "sipLibraryMissing": "SIP библиотека не загружена",
+      "sipNotConfigured": "SIP клиент не настроен для пользователя",
+      "callError": "Ошибка при звонке: {reason}"
+    }
+  },
+  "referenceSelect": {
+    "placeholders": {
+      "selectType": "Выберите {type}"
+    },
+    "errors": {
+      "unavailable": "Справочник недоступен",
+      "loadFailed": "Не удалось загрузить {type}",
+      "loadSelectedFailed": "Не удалось загрузить выбранное значение для {type}"
+    },
+    "unnamed": "Без названия",
+    "types": {
+      "stage": "этап",
+      "taskStage": "этап задачи",
+      "projectStage": "этап проекта",
+      "source": "источник",
+      "industry": "отрасль",
+      "country": "страну",
+      "city": "город",
+      "currency": "валюту",
+      "clientType": "тип клиента",
+      "closingReason": "причину закрытия",
+      "resolution": "резолюцию",
+      "department": "отдел",
+      "crmTag": "тег",
+      "taskTag": "тег задачи"
+    }
+  },
+  "leadSourceSelect": {
+    "placeholder": "Выберите источник"
+  },
+  "incomingCallModal": {
+    "fields": {
+      "leadSource": "Источник лида",
+      "leadSourcePlaceholder": "Источник",
+      "leadSourceFallback": "Источник"
+    }
+  },
+  "leadsTable": {
+    "sourceColumn": "Источник",
+    "sourcePlaceholder": "Источник",
+    "sourceFallback": "Источник",
+    "noSource": "Без источника",
+    "filters": {
+      "reset": "Сбросить",
+      "refreshList": "Обновить список"
+    }
+  }
+}

@@ -1,0 +1,377 @@
+import { zodResolver } from '@hookform/resolvers/zod';
+import dayjs from 'dayjs';
+import { useEffect, useState } from 'react';
+import { Controller, useForm } from 'react-hook-form';
+import { z } from 'zod';
+
+import { App, Button, Card, Col, DatePicker, Input, Row, Select, Space, Switch, Typography } from 'antd';
+import { BusinessFormHeader } from '../../components/business/BusinessFormHeader';
+import { BusinessScreenState } from '../../components/business/BusinessScreenState';
+import EntitySelect from '../../components/EntitySelect.jsx';
+import FormPermissionGuard from '../../components/permissions/FormPermissionGuard';
+import ReferenceSelect from '../../components/ReferenceSelect';
+import { getDeal, getDeals, getProject, getProjects, getTask, getTasks, getUser, getUsers } from '../../lib/api';
+import { canWrite } from '../../lib/rbac';
+import { getMemo, createMemo, updateMemo } from '../../lib/api/memos';
+import { navigate } from '../../router';
+
+const { Text, Title } = Typography;
+const { TextArea } = Input;
+
+const FieldLabel = ({ children, ...props }) => (
+  <Text strong style={{ display: 'block', marginBottom: 6 }} {...props}>
+    {children}
+  </Text>
+);
+
+const FieldError = ({ message }) => (
+  message ? (
+    <Text type="danger" style={{ display: 'block', marginTop: 6 }}>
+      {message}
+    </Text>
+  ) : null
+);
+
+const stageOptions = [
+  { value: 'pen', label: 'В ожидании' },
+  { value: 'pos', label: 'Отложено' },
+  { value: 'rev', label: 'Рассмотрено' },
+];
+
+const schema = z.object({
+  name: z.string().min(1, 'Введите название'),
+  description: z.string().optional(),
+  note: z.string().optional(),
+  draft: z.boolean().optional(),
+  notified: z.boolean().optional(),
+  stage: z.string().optional(),
+  review_date: z.any().optional(),
+  to: z.any().refine((val) => val !== undefined && val !== null && val !== '', { message: 'Выберите получателя' }),
+  deal: z.any().optional(),
+  project: z.any().optional(),
+  task: z.any().optional(),
+  resolution: z.any().optional(),
+  tags: z.any().optional(),
+});
+
+export default function MemoForm({ id }) {
+  const { message } = App.useApp();
+  const notify = ({ title, description, variant }) => {
+    const text = description || title || 'Уведомление';
+    if (variant === 'destructive') message.error(text);
+    else message.success(text);
+  };
+
+  const [loading, setLoading] = useState(false);
+  const [loadError, setLoadError] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const isEdit = !!id;
+  const canManage = canWrite('tasks.change_memo');
+
+  const {
+    control,
+    handleSubmit,
+    setValue,
+    reset,
+    watch,
+    formState: { errors },
+  } = useForm({
+    resolver: zodResolver(schema),
+    defaultValues: {
+      name: '',
+      description: '',
+      note: '',
+      draft: false,
+      notified: false,
+      stage: 'pen',
+      review_date: null,
+      to: '',
+      deal: '',
+      project: '',
+      task: '',
+      resolution: '',
+      tags: [],
+    },
+  });
+
+  const reviewDate = watch('review_date');
+  const draftValue = watch('draft');
+  const notifiedValue = watch('notified');
+  const stageValue = watch('stage');
+  const toValue = watch('to');
+  const dealValue = watch('deal');
+  const projectValue = watch('project');
+  const taskValue = watch('task');
+  const resolutionValue = watch('resolution');
+  const tagsValue = watch('tags');
+
+  useEffect(() => {
+    if (isEdit) {
+      fetchData();
+    }
+  }, [id]);
+
+  const fetchData = async () => {
+    setLoading(true);
+    setLoadError(false);
+    try {
+      const res = await getMemo(id);
+      reset({
+        ...res,
+        review_date: res.review_date ? dayjs(res.review_date) : null,
+      });
+    } catch (error) {
+      setLoadError(true);
+      notify({ title: 'Ошибка', description: 'Не удалось загрузить мемо', variant: 'destructive' });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const onFinish = async (values) => {
+    if (!canManage) {
+      notify({ title: 'Недостаточно прав', description: 'У вас нет прав для изменения мемо', variant: 'destructive' });
+      return;
+    }
+
+    setSaving(true);
+    try {
+      const payload = {
+        ...values,
+        review_date: values.review_date ? values.review_date.format('YYYY-MM-DD') : null,
+      };
+
+      if (isEdit) {
+        await updateMemo(id, payload);
+        notify({ title: 'Мемо обновлено', description: 'Мемо обновлено' });
+      } else {
+        await createMemo(payload);
+        notify({ title: 'Мемо создано', description: 'Мемо создано' });
+      }
+      navigate('/memos');
+    } catch (error) {
+      notify({ title: 'Ошибка', description: `Не удалось ${isEdit ? 'обновить' : 'создать'} мемо`, variant: 'destructive' });
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  if (loading) {
+    return (
+      <BusinessScreenState
+        variant="loading"
+        title="Загрузка мемо"
+        description="Подготавливаем форму мемо для редактирования."
+      />
+    );
+  }
+
+  if (isEdit && loadError) {
+    return (
+      <BusinessScreenState
+        variant="error"
+        title="Не удалось загрузить мемо для редактирования"
+        description="Попробуйте повторить загрузку или вернитесь к списку мемо."
+        actionLabel="Повторить"
+        onAction={fetchData}
+      />
+    );
+  }
+
+  return (
+    <FormPermissionGuard
+      allowed={canManage}
+      listPath="/memos"
+      listButtonText="К списку мемо"
+      description="У вас нет прав для создания или редактирования мемо."
+    >
+      <Space direction="vertical" size={16} style={{ width: '100%' }}>
+        <BusinessFormHeader
+          formId="memo-form"
+          title={isEdit ? 'Редактирование мемо' : 'Новое мемо'}
+          subtitle="Фиксируйте решения и follow-up в стандартизированном формате."
+          submitLabel={isEdit ? 'Сохранить' : 'Создать'}
+          isSubmitting={saving}
+          onBack={() => navigate('/memos')}
+        />
+
+        <Card>
+          <form id="memo-form" onSubmit={handleSubmit(onFinish)}>
+            <Space direction="vertical" size={16} style={{ width: '100%' }}>
+              <div>
+                <FieldLabel htmlFor="name">Название *</FieldLabel>
+                <Controller
+                  name="name"
+                  control={control}
+                  render={({ field }) => (
+                    <Input
+                      id="name"
+                      placeholder="Например: Итоги встречи"
+                      value={field.value ?? ''}
+                      onChange={(event) => field.onChange(event.target.value)}
+                      onBlur={field.onBlur}
+                    />
+                  )}
+                />
+                <FieldError message={errors.name?.message} />
+              </div>
+
+              <div>
+                <FieldLabel htmlFor="description">Описание</FieldLabel>
+                <Controller
+                  name="description"
+                  control={control}
+                  render={({ field }) => (
+                    <TextArea
+                      id="description"
+                      rows={3}
+                      placeholder="Краткое описание"
+                      value={field.value ?? ''}
+                      onChange={(event) => field.onChange(event.target.value)}
+                      onBlur={field.onBlur}
+                    />
+                  )}
+                />
+              </div>
+
+              <div>
+                <FieldLabel htmlFor="note">Заключение</FieldLabel>
+                <Controller
+                  name="note"
+                  control={control}
+                  render={({ field }) => (
+                    <TextArea
+                      id="note"
+                      rows={4}
+                      placeholder="Ключевые выводы и договоренности"
+                      value={field.value ?? ''}
+                      onChange={(event) => field.onChange(event.target.value)}
+                      onBlur={field.onBlur}
+                    />
+                  )}
+                />
+              </div>
+
+              <Row gutter={[16, 16]}>
+                <Col xs={24} md={12}>
+                  <Space align="center">
+                    <Switch checked={!!draftValue} onChange={(val) => setValue('draft', val)} />
+                    <Text>Черновик</Text>
+                  </Space>
+                </Col>
+                <Col xs={24} md={12}>
+                  <Space align="center">
+                    <Switch checked={!!notifiedValue} onChange={(val) => setValue('notified', val)} />
+                    <Text>Уведомить получателей</Text>
+                  </Space>
+                </Col>
+              </Row>
+
+              <Row gutter={[16, 16]}>
+                <Col xs={24} md={12}>
+                  <FieldLabel>Стадия</FieldLabel>
+                  <Select
+                    value={stageValue || undefined}
+                    onChange={(value) => setValue('stage', value ?? '')}
+                    placeholder="Выберите стадию"
+                    allowClear
+                    options={stageOptions}
+                  />
+                </Col>
+                <Col xs={24} md={12}>
+                  <FieldLabel>Дата обзора</FieldLabel>
+                  <DatePicker
+                    value={reviewDate || null}
+                    onChange={(val) => setValue('review_date', val)}
+                    format="YYYY-MM-DD"
+                    style={{ width: '100%' }}
+                  />
+                </Col>
+              </Row>
+
+              <div>
+                <FieldLabel>Получатель *</FieldLabel>
+                <EntitySelect
+                  placeholder="Выберите пользователя"
+                  fetchList={getUsers}
+                  fetchById={getUser}
+                  allowClear
+                  value={toValue}
+                  onChange={(val) => setValue('to', val)}
+                />
+                <FieldError message={errors.to?.message} />
+              </div>
+
+              <Row gutter={[16, 16]}>
+                <Col xs={24} md={12}>
+                  <FieldLabel>Сделка</FieldLabel>
+                  <EntitySelect
+                    placeholder="Выберите сделку"
+                    fetchList={getDeals}
+                    fetchById={getDeal}
+                    allowClear
+                    value={dealValue}
+                    onChange={(val) => setValue('deal', val)}
+                  />
+                </Col>
+                <Col xs={24} md={12}>
+                  <FieldLabel>Проект</FieldLabel>
+                  <EntitySelect
+                    placeholder="Выберите проект"
+                    fetchList={getProjects}
+                    fetchById={getProject}
+                    allowClear
+                    value={projectValue}
+                    onChange={(val) => setValue('project', val)}
+                  />
+                </Col>
+              </Row>
+
+              <Row gutter={[16, 16]}>
+                <Col xs={24} md={12}>
+                  <FieldLabel>Задача</FieldLabel>
+                  <EntitySelect
+                    placeholder="Выберите задачу"
+                    fetchList={getTasks}
+                    fetchById={getTask}
+                    allowClear
+                    value={taskValue}
+                    onChange={(val) => setValue('task', val)}
+                  />
+                </Col>
+                <Col xs={24} md={12}>
+                  <FieldLabel>Резолюция</FieldLabel>
+                  <ReferenceSelect
+                    type="resolutions"
+                    placeholder="Выберите резолюцию"
+                    allowClear
+                    value={resolutionValue || undefined}
+                    onChange={(val) => setValue('resolution', val ?? '')}
+                  />
+                </Col>
+              </Row>
+
+              <div>
+                <FieldLabel>Теги</FieldLabel>
+                <ReferenceSelect
+                  type="crm-tags"
+                  mode="multiple"
+                  allowClear
+                  placeholder="Выберите теги"
+                  value={tagsValue || []}
+                  onChange={(val) => setValue('tags', val)}
+                />
+              </div>
+
+              <Space size={12}>
+                <Button htmlType="button" onClick={() => navigate('/memos')}>
+                  Отмена
+                </Button>
+              </Space>
+            </Space>
+          </form>
+        </Card>
+      </Space>
+    </FormPermissionGuard>
+  );
+}

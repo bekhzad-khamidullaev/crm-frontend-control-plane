@@ -1,0 +1,44 @@
+.component_BusinessProcessFlowConfigurator_Node {
+  border: 1px solid #d9e6ff;
+  border-radius: 10px;
+  background: linear-gradient(180deg, #fbfdff 0%, #f3f7ff 100%);
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.component_BusinessProcessFlowConfigurator_Node.is-selected {
+  border-color: #1677ff;
+}
+
+.component_BusinessProcessFlowConfigurator_NodeMain {
+  width: 100%;
+  padding: 8px;
+  justify-content: space-between;
+}
+
+.component_BusinessProcessFlowConfigurator_DragHandle {
+  color: #5b6b8c;
+}
+
+.component_BusinessProcessFlowConfigurator_NodeButton {
+  width: calc(100% - 36px);
+  text-align: left;
+  border: 0;
+  background: transparent;
+  padding: 0;
+  cursor: pointer;
+}
+
+.component_BusinessProcessFlowConfigurator_Title {
+  display: block;
+  margin-top: 2px;
+}
+
+.component_BusinessProcessFlowConfigurator_Subtitle {
+  display: block;
+  margin-top: 2px;
+}
+
+.component_BusinessProcessFlowConfigurator_Meta {
+  display: flex;
+  margin-top: 8px;
+}

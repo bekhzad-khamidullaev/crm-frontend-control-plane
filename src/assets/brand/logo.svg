@@ -1,0 +1,29 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 420 96" role="img" aria-labelledby="title desc">
+  <title id="title">Enterprise CRM Logo</title>
+  <desc id="desc">Enterprise CRM wordmark with custom mark</desc>
+  <defs>
+    <linearGradient id="bg" x1="16" y1="16" x2="80" y2="80" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#0f172a"/>
+      <stop offset="1" stop-color="#1e293b"/>
+    </linearGradient>
+    <linearGradient id="accent" x1="27" y1="20" x2="69" y2="70" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#22d3ee"/>
+      <stop offset="1" stop-color="#34d399"/>
+    </linearGradient>
+  </defs>
+
+  <g transform="translate(8 8)">
+    <rect x="0" y="0" width="80" height="80" rx="22" fill="url(#bg)"/>
+    <path d="M61 20C55.6 14.7 49.3 12 42 12C26.8 12 15 23.9 15 39C15 54.1 26.8 66 42 66C49.5 66 55.7 63.3 61 58"
+          fill="none" stroke="url(#accent)" stroke-width="7" stroke-linecap="round"/>
+    <path d="M35 27L49 39L35 52" fill="none" stroke="url(#accent)" stroke-width="6" stroke-linecap="round" stroke-linejoin="round"/>
+    <circle cx="64.5" cy="39" r="4" fill="#f8fafc"/>
+  </g>
+
+  <text x="112" y="47" font-family="'Segoe UI', 'Helvetica Neue', Arial, sans-serif" font-size="33" font-weight="700" fill="currentColor">
+    Enterprise CRM
+  </text>
+  <text x="114" y="69" font-family="'Segoe UI', 'Helvetica Neue', Arial, sans-serif" font-size="13" letter-spacing="2.6" fill="currentColor" opacity="0.7">
+    SALES PLATFORM
+  </text>
+</svg>

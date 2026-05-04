@@ -1,0 +1,61 @@
+version: 1.0
+
+project:
+  type: django
+  architecture: modular_monolith
+  source_of_truth: git
+
+rules:
+  planning_required: true
+  tests_required: true
+  security_review_required: true
+  migrations_review_required: true
+
+memory:
+  enabled: true
+  scope:
+    - architecture
+    - domain_decisions
+    - api_contracts
+
+orchestrator: django_architect
+
+agents:
+  django:
+    scope: [apps, models, views, services]
+  django_api:
+    scope: [serializers, viewsets, routers]
+  django_db:
+    scope: [migrations, indexes, orm]
+  django_async:
+    scope: [celery, tasks]
+  django_realtime:
+    scope: [channels, consumers]
+  django_tests:
+    scope: [unit, integration]
+  django_security:
+    scope: [auth, permissions, settings]
+  django_devops:
+    scope: [docker, ci, deploy]
+
+permissions:
+  allow_read_all: true
+  deny_cross_scope_writes: true
+
+enforcement:
+  on_change:
+    migrations:
+      require: [django_db, django_tests]
+    auth:
+      require: [django_security, django_tests]
+    async:
+      require: [django_async, django_devops]
+    realtime:
+      require: [django_realtime]
+    api:
+      require: [django_api, django_tests]
+
+exit_criteria:
+  tests_passed: true
+  lint_passed: true
+  security_ok: true

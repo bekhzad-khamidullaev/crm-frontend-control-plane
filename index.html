@@ -1,0 +1,31 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="description" content="Enterprise CRM - Modern CRM System for Business Management" />
+    <meta name="author" content="Enterprise CRM Team" />
+    <link rel="icon" type="image/svg+xml" href="/src/assets/brand/favicon.svg" />
+    <link rel="alternate icon" type="image/x-icon" href="/src/assets/brand/favicon.ico" />
+    <script type="module" src="/config.js"></script>
+    <title>Enterprise CRM</title>
+  </head>
+  <body>
+    <div id="root"></div>
+    <!--
+    <script>
+      // Load SIPml dynamically — ignore if unavailable (403/404 in some envs)
+      (function() {
+        var s = document.createElement('script');
+        s.src = 'https://api.crm.windevs.uz/static/voip/sipml/SIPml-api.js';
+        s.onerror = function() {
+          console.warn('[SIPml] VoIP library not available in this environment. SIP features disabled.');
+          window.SIPml = null;
+        };
+        document.body.appendChild(s);
+      })();
+    </script>
+    -->
+    <script type="module" src="/src/main.jsx"></script>
+  </body>
+</html>

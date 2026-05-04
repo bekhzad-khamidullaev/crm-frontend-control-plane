@@ -1,0 +1,22 @@
+.component_BusinessScreenState_root {
+  width: 100%;
+}
+
+.component_BusinessScreenState_loadingCard {
+  border-radius: 12px;
+  border: 1px solid var(--crm-app-border, #e2e8f0);
+  background: var(--crm-app-surface, #ffffff);
+}
+
+.component_BusinessScreenState_loadingStack {
+  width: 100%;
+}
+
+.component_BusinessScreenState_loadingTitle {
+  margin: 0 !important;
+}
+
+.component_BusinessScreenState_loadingText {
+  display: block;
+}
+

@@ -1,0 +1,148 @@
+import { useCompany } from '@/entities/company/api/queries';
+import { useContact } from '@/entities/contact/api/queries';
+import { BusinessScreenState } from '@/components/business/BusinessScreenState';
+import { getCompanyDisplayName } from '@/lib/utils/company-display.js';
+import { buildAiChatUrl } from '@/lib/utils/ai-chat-context.js';
+import { navigate } from '@/router.js';
+import { BankOutlined, BellOutlined, EditOutlined, MailOutlined, PhoneOutlined, RobotOutlined, UserOutlined } from '@ant-design/icons';
+import { Avatar, Button, Card, Descriptions, Space, Tabs, Tag, Typography } from 'antd';
+import dayjs from 'dayjs';
+import React from 'react';
+// @ts-ignore
+import { canWrite, hasAnyFeature } from '@/lib/rbac.js';
+import QuickReminderModal from '@/components/reminders/QuickReminderModal.jsx';
+
+const { Text, Title } = Typography;
+
+export interface ContactDetailPageProps {
+  id?: number;
+}
+
+export const ContactDetailPage: React.FC<ContactDetailPageProps> = ({ id }) => {
+  const { data: contact, isLoading } = useContact(id!);
+  const canManage = canWrite();
+  const canUseAiAssist = hasAnyFeature('ai.assist');
+  const { data: company } = useCompany(contact?.company || 0, !!contact?.company);
+  const [quickReminderOpen, setQuickReminderOpen] = React.useState(false);
+  const openAiChat = () =>
+    navigate(
+      buildAiChatUrl({
+        entityType: 'contact',
+        entityId: id,
+        entityName: contact?.full_name || (contact as any)?.name,
+      }),
+    );
+
+  if (isLoading) {
+    return (
+      <BusinessScreenState
+        variant="loading"
+        title="Загрузка контакта"
+        description="Подготавливаем карточку контакта и связи с компанией."
+      />
+    );
+  }
+
+  if (!contact) {
+    return (
+      <BusinessScreenState
+        variant="notFound"
+        title="Контакт не найден"
+        actionLabel="К контактам"
+        onAction={() => navigate('/contacts')}
+      />
+    );
+  }
+
+  const contactView = contact as any;
+  const companyName = getCompanyDisplayName(company as any) || 'Компания';
+
+  const ownerName = contactView.owner_name || 'Не назначен';
+  const telegramUsername = String(contactView.telegram_username || '').trim().replace(/^@/, '');
+  const telegramChatId = String(contactView.telegram_chat_id || '').trim();
+  const instagramUsername = String(contactView.instagram_username || '').trim().replace(/^@/, '');
+  const instagramRecipientId = String(contactView.instagram_recipient_id || '').trim();
+  const facebookPsid = String(contactView.facebook_psid || '').trim();
+
+  return (
+    <Space direction="vertical" size={16} style={{ width: '100%' }}>
+      <Space wrap style={{ width: '100%', justifyContent: 'space-between' }}>
+        <Space wrap>
+          <Button onClick={() => navigate('/contacts')}>Назад</Button>
+          {contact.massmail ? <Tag color="blue">В рассылке</Tag> : null}
+        </Space>
+        <Space wrap>
+          <Button icon={<BellOutlined />} onClick={() => setQuickReminderOpen(true)}>
+            Напомнить
+          </Button>
+          {canUseAiAssist ? (
+            <Button icon={<RobotOutlined />} onClick={openAiChat}>
+              Спросить AI
+            </Button>
+          ) : null}
+          {canManage ? (
+            <Button type="primary" icon={<EditOutlined />} onClick={() => navigate(`/contacts/${id}/edit`)}>
+              Редактировать
+            </Button>
+          ) : null}
+        </Space>
+      </Space>
+
+      <Card>
+        <Title level={3} style={{ marginTop: 0 }}>{contact.full_name}</Title>
+        <Text type="secondary">{contact.email || contact.phone || contact.title || 'Карточка контакта'}</Text>
+      </Card>
+
+      <Space wrap>
+        <Card size="small" title="Компания">{company ? companyName : 'Не указана'}</Card>
+        <Card size="small" title="Ответственный">{ownerName}</Card>
+        <Card size="small" title="Создан">{contact.creation_date ? dayjs(contact.creation_date).format('DD.MM.YYYY') : '-'}</Card>
+      </Space>
+
+      <Card>
+        <Tabs
+          defaultActiveKey="details"
+          items={[
+            {
+              key: 'details',
+              label: 'Детали',
+              children: (
+                <Descriptions bordered column={{ xs: 1, sm: 1, md: 2 }}>
+                  <Descriptions.Item label="ФИО" span={2}>
+                    <Space><Avatar icon={<UserOutlined />} style={{ backgroundColor: '#1890ff' }} /><Text strong>{contact.full_name}</Text></Space>
+                  </Descriptions.Item>
+                  <Descriptions.Item label="Должность">{contact.title || '-'}</Descriptions.Item>
+                  <Descriptions.Item label="Компания">{company ? <Space><BankOutlined /> {companyName}</Space> : '-'}</Descriptions.Item>
+                  <Descriptions.Item label="Email">{contact.email ? <a href={`mailto:${contact.email}`}><MailOutlined /> {contact.email}</a> : '-'}</Descriptions.Item>
+                  <Descriptions.Item label="Телефон">{contact.phone ? <a href={`tel:${contact.phone}`}><PhoneOutlined /> {contact.phone}</a> : '-'}</Descriptions.Item>
+                  <Descriptions.Item label="Мобильный">{contactView.mobile ? <a href={`tel:${contactView.mobile}`}><PhoneOutlined /> {contactView.mobile}</a> : '-'}</Descriptions.Item>
+                  <Descriptions.Item label="Доп. телефон">{contactView.other_phone ? <a href={`tel:${contactView.other_phone}`}><PhoneOutlined /> {contactView.other_phone}</a> : '-'}</Descriptions.Item>
+                  <Descriptions.Item label="Telegram">{telegramUsername ? `@${telegramUsername}` : '-'}</Descriptions.Item>
+                  <Descriptions.Item label="Telegram chat_id">{telegramChatId || '-'}</Descriptions.Item>
+                  <Descriptions.Item label="Instagram">{instagramUsername ? `@${instagramUsername}` : '-'}</Descriptions.Item>
+                  <Descriptions.Item label="Instagram recipient_id">{instagramRecipientId || '-'}</Descriptions.Item>
+                  <Descriptions.Item label="Facebook PSID">{facebookPsid || '-'}</Descriptions.Item>
+                  <Descriptions.Item label="Адрес" span={2}>{contact.address || '-'}</Descriptions.Item>
+                  <Descriptions.Item label="Ответственный">{ownerName}</Descriptions.Item>
+                  <Descriptions.Item label="Дата создания">{contact.creation_date ? dayjs(contact.creation_date).format('DD.MM.YYYY HH:mm') : '-'}</Descriptions.Item>
+                  <Descriptions.Item label="Описание" span={2}>{contact.description || '-'}</Descriptions.Item>
+                </Descriptions>
+              ),
+            },
+            { key: 'activity', label: 'История', children: <div>История взаимодействий (В разработке)</div> },
+          ]}
+        />
+      </Card>
+
+      <QuickReminderModal
+        open={quickReminderOpen}
+        onClose={() => setQuickReminderOpen(false)}
+        entityType="contact"
+        entityId={contact.id}
+        entityLabel={contact.full_name}
+      />
+    </Space>
+  );
+};
+
+export default ContactDetailPage;
