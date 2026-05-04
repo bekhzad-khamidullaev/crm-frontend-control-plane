@@ -1,0 +1,1 @@
+export { DealsKanbanBoard } from './DealsKanbanBoard';
